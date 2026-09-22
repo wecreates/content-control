@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "max_parallel_candidates": 2,
+  "use_when": "repair is inexpensive and evidence supports multiple plausible fixes",
+  "selection": "evidence-bound pairwise review",
+  "no_creative_winner_without_review": true
+}
