@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "design": "immutable content-addressed object plane",
+  "key": "sha256",
+  "producer_writes_once": true,
+  "consumers": [
+    "render",
+    "audio",
+    "assembly",
+    "qc",
+    "gemini_review",
+    "packaging"
+  ],
+  "status": "transport_adapter_required",
+  "publication_enabled": false
+}
