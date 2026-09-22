@@ -1,0 +1,83 @@
+name: Exact AV Reviewer
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'review-input/**'
+      - '.github/workflows/exact-av-review.yml'
+permissions:
+  contents: read
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      gemini_ready: ${{ steps.check.outputs.gemini_ready }}
+      artifact_ready: ${{ steps.check.outputs.artifact_ready }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "$GEMINI_API_KEY" ]; then echo "gemini_ready=true" >> "$GITHUB_OUTPUT"; else echo "gemini_ready=false" >> "$GITHUB_OUTPUT"; fi
+          if [ -f review-input/FINANCE_REVIEW_4_9.mp4 ]; then echo "artifact_ready=true" >> "$GITHUB_OUTPUT"; else echo "artifact_ready=false" >> "$GITHUB_OUTPUT"; fi
+          mkdir -p receipts
+          printf '{"gemini_secret_present":%s,"exact_artifact_present":%s,"expected_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"}\n' "${{ env.GEMINI_API_KEY != '' }}" "$( [ -f review-input/FINANCE_REVIEW_4_9.mp4 ] && echo true || echo false )" > receipts/preflight.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-review-preflight
+          path: receipts/preflight.json
+  review:
+    needs: preflight
+    if: needs.preflight.outputs.gemini_ready == 'true' && needs.preflight.outputs.artifact_ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact artifact hash
+        run: |
+          echo "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb  review-input/FINANCE_REVIEW_4_9.mp4" | sha256sum -c -
+      - name: Upload exact video to Gemini Files API
+        id: upload
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, urllib.request
+          p=pathlib.Path("review-input/FINANCE_REVIEW_4_9.mp4")
+          key=os.environ["GEMINI_API_KEY"]
+          meta=json.dumps({"file":{"display_name":"FINANCE_REVIEW_4_9.mp4"}}).encode()
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/upload/v1beta/files?key="+key,data=meta,headers={"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":str(p.stat().st_size),"X-Goog-Upload-Header-Content-Type":"video/mp4","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=60) as r: upload_url=r.headers["X-Goog-Upload-URL"]
+          req=urllib.request.Request(upload_url,data=p.read_bytes(),headers={"Content-Length":str(p.stat().st_size),"X-Goog-Upload-Offset":"0","X-Goog-Upload-Command":"upload, finalize"})
+          with urllib.request.urlopen(req,timeout=180) as r: obj=json.loads(r.read())
+          pathlib.Path("gemini_file.json").write_text(json.dumps(obj))
+          PY
+      - name: Complete timestamped AV review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, time, urllib.request
+          key=os.environ["GEMINI_API_KEY"]; f=json.loads(pathlib.Path("gemini_file.json").read_text())["file"]
+          name=f["name"]
+          for _ in range(60):
+            with urllib.request.urlopen("https://generativelanguage.googleapis.com/v1beta/"+name+"?key="+key,timeout=30) as r: cur=json.loads(r.read())
+            if cur.get("state")=="ACTIVE": f=cur; break
+            if cur.get("state")=="FAILED": raise RuntimeError(cur)
+            time.sleep(5)
+          else: raise RuntimeError("Gemini file processing timeout")
+          prompt="""Review this exact 8m40s consumer-finance YouTube video end-to-end as a demanding senior editor, animation director, sound editor, and factual-risk reviewer. Return STRICT JSON only. Do not approve based on technical proxies. Inspect the entire video and audio. Time-locate every material defect. Evaluate: hook/first 30s; narrative clarity; factual/financial wording risk; Alex character continuity; naturalness of motion/acting; static/robotic holds; shot/scene variety; text/caption readability; narrator pronunciation/cadence/prosody/fatigue; SFX timing/appropriateness/repetition; silence/sonic gaps; comedic timing; pacing; visual-audio sync; ending/payoff/end-screen safety; and overall readiness versus polished top-tier finance/explainer/stick-animation YouTube work. Schema: {"artifact_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb","complete_end_to_end_review":true|false,"verdict":"PASS"|"REPAIR","critical_count":0,"major_count":0,"findings":[{"start_sec":0.0,"end_sec":0.0,"severity":"critical"|"major"|"minor","category":"","evidence":"","repair":""}],"strengths":[],"release_blockers":[]}. PASS only if there are zero critical and zero major launch-required defects."""
+          body={"contents":[{"parts":[{"file_data":{"mime_type":"video/mp4","file_uri":f["uri"]}},{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+key,data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=600) as r: obj=json.loads(r.read())
+          text=obj["candidates"][0]["content"]["parts"][0]["text"]
+          parsed=json.loads(text)
+          if parsed.get("artifact_sha256")!="fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb": raise RuntimeError("review binding mismatch")
+          pathlib.Path("receipts").mkdir(exist_ok=True)
+          pathlib.Path("receipts/EXACT_AV_REVIEW.json").write_text(json.dumps(parsed,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-av-review
+          path: receipts/EXACT_AV_REVIEW.json
