@@ -1,7 +1,5 @@
 name: Task Chain Proof
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 jobs:
   worker_a:
@@ -11,9 +9,7 @@ jobs:
           mkdir -p out
           echo '{"worker":"A","status":"passed"}' > out/a.json
       - uses: actions/upload-artifact@v4
-        with:
-          name: receipt-a
-          path: out/a.json
+        with: {name: receipt-a, path: out/a.json}
   worker_b:
     runs-on: ubuntu-latest
     steps:
@@ -21,9 +17,7 @@ jobs:
           mkdir -p out
           echo '{"worker":"B","status":"passed"}' > out/b.json
       - uses: actions/upload-artifact@v4
-        with:
-          name: receipt-b
-          path: out/b.json
+        with: {name: receipt-b, path: out/b.json}
   dependent_c:
     needs: [worker_a, worker_b]
     runs-on: ubuntu-latest
@@ -32,6 +26,4 @@ jobs:
           mkdir -p out
           echo '{"worker":"C","status":"passed","depends_on":["A","B"]}' > out/c.json
       - uses: actions/upload-artifact@v4
-        with:
-          name: receipt-c
-          path: out/c.json
+        with: {name: receipt-c, path: out/c.json}
