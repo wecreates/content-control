@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "map": "artifact_sha256 -> provider_file_id",
+  "reuse_until_artifact_changes": true,
+  "never_reupload_identical_hash": true,
+  "secret_values_persisted": false
+}
