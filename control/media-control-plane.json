@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "control_plane": "GitHub Actions + manifests + receipts",
+  "media_plane": "external immutable artifact storage",
+  "github_binary_warehouse": false,
+  "identity": "sha256"
+}
