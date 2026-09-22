@@ -1,0 +1,83 @@
+{
+  "schema_version": 3,
+  "mode": "EPISODE_1_MAX_SPEED_FREEZE",
+  "publication_enabled": false,
+  "priorities": [
+    {
+      "rank": 1,
+      "id": "artifact_plane",
+      "max": "single immutable binary plane; SHA-addressed; producer->reviewer handoff; no repository binary bloat"
+    },
+    {
+      "rank": 2,
+      "id": "real_worker_migration",
+      "max": "placeholder jobs forbidden from claiming production progress; migrate executable Finance Studio functions first"
+    },
+    {
+      "rank": 3,
+      "id": "rendering",
+      "max": "scene/range sharding + content cache + invalidated-region-only rendering"
+    },
+    {
+      "rank": 4,
+      "id": "timeline_assembly",
+      "max": "frame/sample exact patching; reject any duration/sync drift"
+    },
+    {
+      "rank": 5,
+      "id": "gemini",
+      "max": "provider file ID cached by candidate SHA; upload overlaps deterministic QA"
+    },
+    {
+      "rank": 6,
+      "id": "review",
+      "max": "parallel shard discovery + delta review; one mandatory complete final watch"
+    },
+    {
+      "rank": 7,
+      "id": "runner_startup",
+      "max": "bundle cheap checks; parallelize only material workloads; reusable prebuilt worker runtime"
+    },
+    {
+      "rank": 8,
+      "id": "commit_storms",
+      "max": "batch state/receipt writes; production triggers only on semantic events/affected paths"
+    },
+    {
+      "rank": 9,
+      "id": "provider_latency",
+      "max": "per-provider adaptive concurrency/backoff; never exceed useful rate"
+    },
+    {
+      "rank": 10,
+      "id": "audio",
+      "max": "semantic segment cache keyed by voice/settings/text; regenerate changed lines only"
+    },
+    {
+      "rank": 11,
+      "id": "evidence",
+      "max": "generate evidence during render/audio jobs as side effects"
+    },
+    {
+      "rank": 12,
+      "id": "sources",
+      "max": "freshness-aware receipt cache; stable regulation decoupled from scene repairs"
+    },
+    {
+      "rank": 13,
+      "id": "resolver_intelligence",
+      "max": "optimize measured critical-path lost seconds; root-cause/alternate-route library"
+    },
+    {
+      "rank": 14,
+      "id": "queue_starvation",
+      "max": "reserved critical-path capacity; background tasks preemptible"
+    },
+    {
+      "rank": 15,
+      "id": "architecture_freeze",
+      "max": "reject new non-blocker features until Episode 1 exact candidate clears Chris review"
+    }
+  ],
+  "claim_policy": "Only exact artifact/receipt evidence counts as completed production work."
+}
