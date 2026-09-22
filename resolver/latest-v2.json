@@ -1,87 +1,87 @@
 {
   "schema_version": 2,
-  "checked_at": "2026-09-22T19:51:40.778201+00:00",
+  "checked_at": "2026-09-22T19:53:02.274611+00:00",
   "source": "Episode 1 Max-Speed Execution",
   "run_id": "35776345889",
   "failures": [
     {
-      "id": 106910464716,
-      "name": "audio_segments (4)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464719,
-      "name": "audio_segments (1)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464736,
-      "name": "render_ranges (1)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464766,
+      "id": 106910926241,
       "name": "audio_segments (2)",
       "conclusion": "failure"
     },
     {
-      "id": 106910464812,
-      "name": "render_ranges (3)",
+      "id": 106910926301,
+      "name": "audio_segments (4)",
       "conclusion": "failure"
     },
     {
-      "id": 106910464830,
-      "name": "render_ranges (8)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464850,
-      "name": "render_ranges (2)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464851,
-      "name": "audio_segments (3)",
-      "conclusion": "failure"
-    },
-    {
-      "id": 106910464870,
+      "id": 106910926347,
       "name": "render_ranges (4)",
       "conclusion": "failure"
     },
     {
-      "id": 106910464891,
-      "name": "render_ranges (7)",
+      "id": 106910926352,
+      "name": "render_ranges (1)",
       "conclusion": "failure"
     },
     {
-      "id": 106910464921,
+      "id": 106910926393,
+      "name": "audio_segments (3)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910926441,
+      "name": "audio_segments (1)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910926465,
       "name": "render_ranges (6)",
       "conclusion": "failure"
     },
     {
-      "id": 106910464957,
+      "id": 106910926472,
       "name": "render_ranges (5)",
       "conclusion": "failure"
     },
     {
-      "id": 106910714205,
+      "id": 106910926521,
+      "name": "render_ranges (2)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910926606,
+      "name": "render_ranges (7)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910926621,
+      "name": "render_ranges (8)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910927020,
+      "name": "render_ranges (3)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910978487,
       "name": "exact_patch_assembly",
       "conclusion": "failure"
     },
     {
-      "id": 106910762742,
+      "id": 106911039475,
       "name": "resolver (2)",
       "conclusion": "failure"
     },
     {
-      "id": 106910762841,
-      "name": "resolver (1)",
+      "id": 106911039595,
+      "name": "resolver (3)",
       "conclusion": "failure"
     },
     {
-      "id": 106910762852,
-      "name": "resolver (3)",
+      "id": 106911039719,
+      "name": "resolver (1)",
       "conclusion": "failure"
     }
   ],
@@ -89,7 +89,7 @@
   "publication_enabled": false,
   "actions": [
     {
-      "action": "rerun_failed_jobs_once",
+      "action": "root_cause_required",
       "ok": true
     },
     {
