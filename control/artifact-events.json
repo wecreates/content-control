@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "event_model": "receipt_driven",
+  "events": [
+    "component.created",
+    "component.verified",
+    "candidate.assembled",
+    "review.completed",
+    "repair.completed"
+  ],
+  "polling": false,
+  "recalculate_dependencies_immediately": true
+}
