@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "mode": "24x7_event_driven",
+  "publication_enabled": false,
+  "coordinator": {
+    "id": "orchestrator",
+    "duties": [
+      "dependency graph",
+      "critical path",
+      "agent leases",
+      "receipts",
+      "downstream release"
+    ]
+  },
+  "agents": [
+    {
+      "id": "artifact_engineer",
+      "parallelism": 2,
+      "owns": [
+        "artifact ingress",
+        "hash verification",
+        "provider upload cache"
+      ]
+    },
+    {
+      "id": "build_engineer",
+      "parallelism": 2,
+      "owns": [
+        "dependencies",
+        "worker image",
+        "CI failures",
+        "workflow repair"
+      ]
+    },
+    {
+      "id": "render_farm",
+      "parallelism": 8,
+      "owns": [
+        "scene rendering",
+        "patch rendering",
+        "cache reuse"
+      ]
+    },
+    {
+      "id": "audio_farm",
+      "parallelism": 4,
+      "owns": [
+        "voice",
+        "SFX",
+        "mix",
+        "alignment"
+      ]
+    },
+    {
+      "id": "qa_farm",
+      "parallelism": 8,
+      "owns": [
+        "media QA",
+        "captions",
+        "math",
+        "sources",
+        "motion",
+        "safe zones"
+      ]
+    },
+    {
+      "id": "review_farm",
+      "parallelism": 5,
+      "owns": [
+        "shard discovery review",
+        "delta review",
+        "complete final AV review"
+      ]
+    },
+    {
+      "id": "repair_router",
+      "parallelism": 4,
+      "owns": [
+        "finding classification",
+        "targeted repair plans",
+        "predictive invalidation"
+      ]
+    },
+    {
+      "id": "assembler",
+      "parallelism": 2,
+      "owns": [
+        "frame/sample patch assembly",
+        "duration/sync verification"
+      ]
+    },
+    {
+      "id": "benchmark_reviewer",
+      "parallelism": 2,
+      "owns": [
+        "finance creator comparison",
+        "animation/explainer comparison"
+      ]
+    },
+    {
+      "id": "bottleneck_resolver",
+      "parallelism": 3,
+      "owns": [
+        "diagnose",
+        "alternate route",
+        "bounded retry",
+        "failure memory"
+      ]
+    },
+    {
+      "id": "release_guard",
+      "parallelism": 1,
+      "owns": [
+        "exact hash lock",
+        "Chris approval requirement",
+        "publication lock"
+      ]
+    }
+  ],
+  "rules": [
+    "agents never wait on unrelated work",
+    "highest critical-path READY task wins",
+    "same artifact hash is never recomputed unnecessarily",
+    "one blind retry maximum",
+    "human escalation only for security/payment/irreversible/publication boundaries"
+  ]
+}
