@@ -1,0 +1,105 @@
+{
+  "schema_version": 2,
+  "checked_at": "2026-09-22T19:51:40.778201+00:00",
+  "source": "Episode 1 Max-Speed Execution",
+  "run_id": "35776345889",
+  "failures": [
+    {
+      "id": 106910464716,
+      "name": "audio_segments (4)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464719,
+      "name": "audio_segments (1)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464736,
+      "name": "render_ranges (1)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464766,
+      "name": "audio_segments (2)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464812,
+      "name": "render_ranges (3)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464830,
+      "name": "render_ranges (8)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464850,
+      "name": "render_ranges (2)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464851,
+      "name": "audio_segments (3)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464870,
+      "name": "render_ranges (4)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464891,
+      "name": "render_ranges (7)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464921,
+      "name": "render_ranges (6)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910464957,
+      "name": "render_ranges (5)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910714205,
+      "name": "exact_patch_assembly",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910762742,
+      "name": "resolver (2)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910762841,
+      "name": "resolver (1)",
+      "conclusion": "failure"
+    },
+    {
+      "id": 106910762852,
+      "name": "resolver (3)",
+      "conclusion": "failure"
+    }
+  ],
+  "mode": "DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN",
+  "publication_enabled": false,
+  "actions": [
+    {
+      "action": "rerun_failed_jobs_once",
+      "ok": true
+    },
+    {
+      "action": "artifact_ingress_route",
+      "status": "required",
+      "route": "canonical library -> supported adapter -> artifact transport -> SHA verify"
+    }
+  ],
+  "probes": {
+    "exact_artifact_in_execution_plane": false,
+    "expected_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  }
+}
