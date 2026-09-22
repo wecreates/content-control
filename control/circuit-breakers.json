@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "trip_after_consecutive_failures": 2,
+  "cooldown_minutes": 30,
+  "route_to_approved_alternate": true,
+  "examples": [
+    "HTTP 403",
+    "provider timeout",
+    "rate limit"
+  ],
+  "never_forge_success": true
+}
