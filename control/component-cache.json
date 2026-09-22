@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "hash_granularity": [
+    "scene",
+    "audio_segment",
+    "caption_block",
+    "graphic",
+    "thumbnail",
+    "metadata"
+  ],
+  "policy": "invalidate_only_changed_dependencies",
+  "global_rerender_default": false,
+  "publication_enabled": false
+}
