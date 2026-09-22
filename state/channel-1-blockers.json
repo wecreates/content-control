@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-22T13:35:00Z",
+  "channel": "credit-card",
+  "phase": 1,
+  "publication_enabled": false,
+  "resolved": [
+    {
+      "id": "GITHUB_GEMINI_PULL_ONLY",
+      "status": "resolved_infrastructure",
+      "evidence": "wecreates/content-control is writable with admin/maintain/push/pull and GitHub Actions parallel execution is proven."
+    }
+  ],
+  "open_blockers": [
+    {
+      "id": "AV_COMPLETE_REVIEW",
+      "status": "blocked_external_security_and_artifact_ingress",
+      "requirements": [
+        "GEMINI_API_KEY must be added as an Actions secret in wecreates/content-control without exposing its value.",
+        "Exact FINANCE_REVIEW_4_9.mp4 or newer exact candidate must be made available to the reviewer workflow with SHA-256 binding.",
+        "Reviewer must return complete timestamped video+audio+factual findings and exact artifact hashes."
+      ],
+      "publication_allowed": false
+    }
+  ]
+}
