@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "preinstall": [
+    "ffmpeg",
+    "python_runtime",
+    "node_runtime",
+    "renderer_dependencies",
+    "fonts",
+    "qc_scripts"
+  ],
+  "goal": "zero dependency build on repair jobs",
+  "implementation_status": "container_image_build_pending"
+}
