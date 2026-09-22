@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "discovery_shards": [
+    {
+      "id": "hook",
+      "start": 0,
+      "end": 45
+    },
+    {
+      "id": "ch1",
+      "start": 45,
+      "end": 148.2
+    },
+    {
+      "id": "ch2",
+      "start": 148.2,
+      "end": 280
+    },
+    {
+      "id": "ch3",
+      "start": 280,
+      "end": 400
+    },
+    {
+      "id": "ch4_end",
+      "start": 400,
+      "end": 520.066667
+    }
+  ],
+  "parallel": true,
+  "final_end_to_end_review_required": true,
+  "shard_pass_never_equals_release_approval": true
+}
