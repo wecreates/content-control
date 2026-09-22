@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "repair_must_reference_trigger_finding": true,
+  "compare_before_after": [
+    "motion",
+    "readability",
+    "timing",
+    "factual_clarity",
+    "audio_quality"
+  ],
+  "no_measurable_or_perceptual_improvement": "do_not_propagate"
+}
