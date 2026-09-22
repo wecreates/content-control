@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "required_before_episode2": true,
+  "synthetic_minimal_episode": true,
+  "must_prove": [
+    "artifact_transfer",
+    "render",
+    "audio",
+    "assembly",
+    "technical_QC",
+    "review",
+    "repair",
+    "reassembly",
+    "Chris_review_gate"
+  ],
+  "release_claims_from_rehearsal": false
+}
