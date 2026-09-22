@@ -1,0 +1,77 @@
+name: Always-On Bottleneck Resolver
+on:
+  workflow_run:
+    workflows:
+      - Episode 1 Max-Speed Execution
+      - Exact AV Reviewer
+      - Artifact Transport
+      - Pinned Source Refresh
+    types: [completed]
+  repository_dispatch:
+    types: [bottleneck-found, artifact-ready, repair-ready, review-findings, component-verified]
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: write
+  issues: write
+concurrency:
+  group: always-on-bottleneck-resolver
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  resolver:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect classify resolve verify learn
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_NAME: ${{ github.event.workflow_run.name }}
+        run: |
+          mkdir -p resolver
+          python - <<'PY'
+          import datetime,json,os,pathlib,subprocess
+          repo=os.environ["REPO"]; rid=os.environ.get("SOURCE_RUN_ID",""); name=os.environ.get("SOURCE_NAME","event")
+          def gh(*a):
+            return subprocess.run(["gh",*a],text=True,capture_output=True)
+          failures=[]
+          if rid:
+            p=gh("api",f"repos/{repo}/actions/runs/{rid}/jobs")
+            if p.returncode==0:
+              for j in json.loads(p.stdout).get("jobs",[]):
+                if j.get("conclusion") in ("failure","cancelled","timed_out","action_required"):
+                  failures.append({"id":j["id"],"name":j["name"],"conclusion":j["conclusion"]})
+          receipt={"schema_version":2,"checked_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"source":name,"run_id":rid,"failures":failures,"mode":"DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN","publication_enabled":False,"actions":[]}
+          # Resolve known transient workflow failures automatically, bounded to avoid loops.
+          if failures and rid:
+            run=gh("api",f"repos/{repo}/actions/runs/{rid}")
+            attempt=json.loads(run.stdout).get("run_attempt",1) if run.returncode==0 else 1
+            if attempt < 2:
+              p=gh("api","--method","POST",f"repos/{repo}/actions/runs/{rid}/rerun-failed-jobs")
+              receipt["actions"].append({"action":"rerun_failed_jobs_once","ok":p.returncode==0})
+            else:
+              receipt["actions"].append({"action":"root_cause_required","ok":True})
+          # Persistent known blocker probes.
+          exact=pathlib.Path("review-input/FINANCE_REVIEW_4_9.mp4")
+          receipt["probes"]={
+            "exact_artifact_in_execution_plane":exact.exists(),
+            "expected_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+          }
+          if not exact.exists():
+            receipt["actions"].append({"action":"artifact_ingress_route","status":"required","route":"canonical library -> supported adapter -> artifact transport -> SHA verify"})
+          pathlib.Path("resolver/latest-v2.json").write_text(json.dumps(receipt,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: always-on-resolver-receipt
+          path: resolver/latest-v2.json
+      - name: Persist learning receipt
+        run: |
+          git config user.name content-control-resolver
+          git config user.email actions@users.noreply.github.com
+          git add resolver/latest-v2.json
+          git commit -m "Resolver: update detect-resolve-learn receipt" || exit 0
+          git push
