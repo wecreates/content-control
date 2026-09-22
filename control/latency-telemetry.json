@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "timestamps": [
+    "queued_at",
+    "started_at",
+    "finished_at",
+    "downstream_started_at"
+  ],
+  "derived_metrics": [
+    "queue_latency",
+    "execution_latency",
+    "handoff_latency",
+    "critical_path_lost_seconds"
+  ],
+  "resolver_uses_metrics": true
+}
