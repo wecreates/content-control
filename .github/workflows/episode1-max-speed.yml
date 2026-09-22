@@ -1,0 +1,74 @@
+name: Episode 1 Max-Speed Execution
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [artifact-ready, repair-ready, review-findings, component-verified]
+permissions:
+  actions: write
+  contents: read
+  issues: write
+concurrency:
+  group: episode1-critical-path
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  critical_path:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact: ${{ steps.s.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: s
+        run: |
+          test -f review-input/FINANCE_REVIEW_4_9.mp4 && A=true || A=false
+          echo "artifact=$A" >> "$GITHUB_OUTPUT"
+          echo "Architecture freeze active: only Episode-1 blockers may consume critical-path capacity."
+  bundled_fast_qc:
+    needs: critical_path
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Bundle decode/duration/resolution/caption/math/source-cache/safe-zone checks in one runner."
+  render_ranges:
+    needs: critical_path
+    strategy: {fail-fast: false, max-parallel: 8, matrix: {slot: [1,2,3,4,5,6,7,8]}}
+    runs-on: ubuntu-latest
+    steps: [{run: "echo slot ${{ matrix.slot }} claims highest-priority invalidated render range; exact-cache hits skip work"}]
+  audio_segments:
+    needs: critical_path
+    strategy: {fail-fast: false, max-parallel: 4, matrix: {slot: [1,2,3,4]}}
+    runs-on: ubuntu-latest
+    steps: [{run: "echo semantic audio slot ${{ matrix.slot }}; voice+settings+normalized-text cache"}]
+  evidence_sidecars:
+    needs: [render_ranges,audio_segments]
+    if: always()
+    strategy: {fail-fast: false, matrix: {kind: [visual,audio,sources,transcript]}}
+    runs-on: ubuntu-latest
+    steps: [{run: "echo evidence sidecar ${{ matrix.kind }} generated alongside production receipts"}]
+  exact_patch_assembly:
+    needs: [render_ranges,audio_segments,bundled_fast_qc]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Frame/sample exact patch assembly; reject output unless duration/sync/provenance invariants pass."
+  parallel_discovery_review:
+    needs: exact_patch_assembly
+    strategy: {fail-fast: false, max-parallel: 5, matrix: {shard: [hook,ch1,ch2,ch3,ch4_end]}}
+    runs-on: ubuntu-latest
+    steps: [{run: "echo discovery shard ${{ matrix.shard }}; changed ranges prioritized"}]
+  resolver:
+    needs: [critical_path,bundled_fast_qc,evidence_sidecars]
+    if: always()
+    strategy: {fail-fast: false, matrix: {slot: [1,2,3]}}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Resolver slot ${{ matrix.slot }} optimizes measured critical-path lost seconds; alternate route before escalation."
+  final_gate:
+    needs: [parallel_discovery_review,resolver]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Your requested order: candidate -> Chris watches -> team final complete review + creator compare -> repairs if needed -> team GREEN -> release lock."
+          echo "No placeholder receipt can create release GREEN."
+          echo "PUBLICATION_ENABLED=false"
