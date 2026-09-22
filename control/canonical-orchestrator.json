@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "primary": ".github/workflows/episode1-max-speed.yml",
+  "legacy_workflows_policy": "manual_or_callable_only",
+  "rule": "one production orchestrator owns scheduling; no overlapping autonomous production triggers"
+}
