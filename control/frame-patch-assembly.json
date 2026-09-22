@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "master_timeline": true,
+  "video_unit": "frame",
+  "audio_unit": "sample",
+  "replacement_requires_exact_interval": true,
+  "transition_handles_seconds": 5,
+  "duration_drift_allowed": false
+}
