@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "mode": "schedule_recovery",
+  "objective": "finished exact Channel-1 candidate as fast as quality gates permit",
+  "priorities": [
+    "artifact ingress",
+    "complete exact AV review",
+    "known v4.13 safe assembly",
+    "parallel targeted repairs",
+    "final regression",
+    "complete re-review",
+    "creator comparison",
+    "Chris watch"
+  ],
+  "freeze": [
+    "noncritical features",
+    "new channels",
+    "cosmetic infrastructure",
+    "duplicate proof workflows"
+  ],
+  "sla": {
+    "blocked_detection_seconds": 30,
+    "downstream_release_seconds": 30,
+    "agent_claim_seconds": 30
+  },
+  "publication_enabled": false
+}
