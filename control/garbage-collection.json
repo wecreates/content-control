@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "delete_candidates": [
+    "superseded temporary renders",
+    "expired speculative candidates",
+    "redundant evidence copies"
+  ],
+  "retain": [
+    "canonical artifacts",
+    "hashes",
+    "receipts",
+    "release evidence",
+    "failure memory"
+  ],
+  "never_delete_release_locked": true
+}
