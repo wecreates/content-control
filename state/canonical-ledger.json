@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "authority": "canonical",
+  "component_schema": {
+    "id": "string",
+    "sha256": "string",
+    "status": "READY|RUNNING|BLOCKED|REPAIRING|VERIFIED|DONE",
+    "dependencies": "array",
+    "location": "artifact URI/reference",
+    "review_status": "string",
+    "timestamps": "object",
+    "lease": "object|null"
+  },
+  "publication_enabled": false
+}
