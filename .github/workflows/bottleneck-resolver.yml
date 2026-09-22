@@ -1,0 +1,78 @@
+name: Bottleneck Resolver
+on:
+  workflow_run:
+    workflows:
+      - Content Control Production DAG
+      - Exact AV Reviewer
+      - Pinned Source Refresh
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  actions: write
+  contents: write
+  issues: write
+concurrency:
+  group: bottleneck-resolver
+  cancel-in-progress: false
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose and resolve bounded failures
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_NAME: ${{ github.event.workflow_run.name }}
+          SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess, datetime
+          run_id=os.environ.get("SOURCE_RUN_ID","")
+          name=os.environ.get("SOURCE_NAME","manual")
+          conclusion=os.environ.get("SOURCE_CONCLUSION","manual")
+          repo=os.environ["REPO"]
+          pathlib.Path("resolver").mkdir(exist_ok=True)
+          receipt={"schema_version":1,"checked_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"source_workflow":name,"source_run_id":run_id,"source_conclusion":conclusion,"actions":[],"publication_enabled":False}
+          def gh(*args, check=True):
+            p=subprocess.run(["gh",*args],text=True,capture_output=True)
+            if check and p.returncode: raise RuntimeError(p.stderr)
+            return p
+          if run_id:
+            jobs=json.loads(gh("api",f"repos/{repo}/actions/runs/{run_id}/jobs").stdout).get("jobs",[])
+            failed=[j for j in jobs if j.get("conclusion") in ("failure","cancelled","timed_out","action_required")]
+            receipt["failed_jobs"]=[{"id":j["id"],"name":j["name"],"conclusion":j["conclusion"]} for j in failed]
+          else: failed=[]
+          # Bounded autonomous action: one rerun of failed jobs only.
+          # Loop prevention: resolver never watches itself, and source run_attempt >=2 is escalated rather than rerun.
+          attempt=1
+          if run_id:
+            run=json.loads(gh("api",f"repos/{repo}/actions/runs/{run_id}").stdout)
+            attempt=run.get("run_attempt",1)
+          if failed and attempt < 2:
+            p=gh("api","--method","POST",f"repos/{repo}/actions/runs/{run_id}/rerun-failed-jobs",check=False)
+            if p.returncode==0:
+              receipt["actions"].append({"type":"rerun_failed_jobs","status":"triggered","run_id":run_id})
+            else:
+              receipt["actions"].append({"type":"rerun_failed_jobs","status":"failed","detail":p.stderr[-1000:]})
+          elif failed:
+            title=f"[Bottleneck] {name} run {run_id} requires repair"
+            body="Automated retry budget exhausted.\n\nFailed jobs:\n"+ "\n".join(f"- {j['name']}: {j['conclusion']}" for j in failed)+"\n\nPublication remains disabled. Diagnose root cause and create a targeted repair before rerunning."
+            p=gh("issue","create","--repo",repo,"--title",title,"--body",body,check=False)
+            receipt["actions"].append({"type":"escalate_issue","status":"created" if p.returncode==0 else "failed","detail":(p.stdout+p.stderr)[-1000:]})
+          else:
+            receipt["actions"].append({"type":"no_failure","status":"healthy"})
+          pathlib.Path("resolver/latest.json").write_text(json.dumps(receipt,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bottleneck-resolver-receipt
+          path: resolver/latest.json
+      - name: Persist latest resolver receipt
+        run: |
+          git config user.name "content-control-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add resolver/latest.json
+          git commit -m "Update bottleneck resolver receipt" || exit 0
+          git push
