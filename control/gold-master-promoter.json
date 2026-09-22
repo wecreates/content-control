@@ -1,0 +1,19 @@
+{
+  "schema_version":1,
+  "status":"LOCKED_PENDING_CHRIS_APPROVAL",
+  "promotion_requirements":[
+    "exact artifact hash bound",
+    "technical QA green",
+    "complete perceptual AV review green",
+    "top-creator comparison complete",
+    "zero launch-required critical/major findings",
+    "Chris personally watched exact artifact",
+    "Chris explicitly approved exact artifact"
+  ],
+  "promote_only_surviving_rules":[
+    "character_and_acting","motion_primitives","visual_world","typography","camera_language",
+    "calculation_treatments","transitions","voice_identity","sound_language","mix_targets",
+    "pacing","chapter_architecture","QC_thresholds","thumbnail_grammar","source_rules"
+  ],
+  "rejected_components_destination":"failure_memory"
+}
