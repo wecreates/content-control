@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "mode": "bootstrap",
+  "publication_enabled": false,
+  "channel_1_phase": 1,
+  "production_standard_lock": null,
+  "channel_standard_lock": null
+}
