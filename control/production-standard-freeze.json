@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "status": "pending_chris_episode1_approval",
+  "after_approval": "immutable versioned gold master",
+  "change_requires": [
+    "explicit_version_bump",
+    "regression_suite",
+    "review"
+  ],
+  "prevents_engine_churn": true
+}
