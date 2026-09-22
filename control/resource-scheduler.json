@@ -1,0 +1,12 @@
+{
+  "schema_version":1,
+  "policy":{
+    "parallelize_independent_lanes":true,
+    "critical_path_priority":true,
+    "reuse_hash_identical_outputs":true,
+    "rerender_only_invalidated_regions":true,
+    "review_only_after_exact_hash_binding":true,
+    "blind_retry_limit":1,
+    "release_downstream_immediately_on_dependency_receipt":true
+  }
+}
