@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "run_at_component_creation": true,
+  "checks": [
+    "duration",
+    "resolution",
+    "decode",
+    "audio_clipping",
+    "text_bounds",
+    "caption_timing",
+    "arithmetic",
+    "source_coverage",
+    "motion_proxy",
+    "audio_alignment",
+    "safe_zones"
+  ],
+  "bad_component_enters_final_assembly": false
+}
