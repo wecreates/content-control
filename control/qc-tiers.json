@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "discovery_qc": "continuous cheap deterministic and specialist checks",
+  "release_qc": "expensive complete AV plus creator comparison",
+  "global_review_only_after_discovery_green": true
+}
