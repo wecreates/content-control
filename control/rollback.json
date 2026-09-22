@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "retain_previous_exact_component": true,
+  "automatic_rollback_if": [
+    "deterministic_QC_regresses",
+    "quality_delta_negative",
+    "duration_or_sync_invariant_fails"
+  ],
+  "rollback_requires_receipt": true
+}
