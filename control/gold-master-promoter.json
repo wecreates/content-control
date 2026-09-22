@@ -1,19 +1,42 @@
 {
-  "schema_version":1,
-  "status":"LOCKED_PENDING_CHRIS_APPROVAL",
-  "promotion_requirements":[
+  "schema_version": 2,
+  "status": "LOCKED_PENDING_CHRIS_REVIEW_THEN_TEAM_FINAL_REVIEW",
+  "release_order": [
+    "exact candidate is hash-bound and technically eligible for Chris review",
+    "Chris personally watches the exact candidate first",
+    "Chris supplies approval/comments",
+    "team performs final post-Chris complete review and top-creator comparison on the exact resulting artifact",
+    "team resolves any remaining launch-required findings",
+    "team issues final GREEN release decision only when all gates pass",
+    "release lock may then be created"
+  ],
+  "team_final_green_requirements": [
     "exact artifact hash bound",
+    "Chris review completed",
+    "Chris-requested repairs completed where applicable",
     "technical QA green",
-    "complete perceptual AV review green",
-    "top-creator comparison complete",
-    "zero launch-required critical/major findings",
-    "Chris personally watched exact artifact",
-    "Chris explicitly approved exact artifact"
+    "complete perceptual AV review green after Chris review/repairs",
+    "top finance/explainer creator comparison complete",
+    "top animation/explainer comparison complete",
+    "zero launch-required critical/major findings"
   ],
-  "promote_only_surviving_rules":[
-    "character_and_acting","motion_primitives","visual_world","typography","camera_language",
-    "calculation_treatments","transitions","voice_identity","sound_language","mix_targets",
-    "pacing","chapter_architecture","QC_thresholds","thumbnail_grammar","source_rules"
+  "publication_policy": "Release lock does not itself publish. Publication remains a separate controlled action.",
+  "promote_only_surviving_rules": [
+    "character_and_acting",
+    "motion_primitives",
+    "visual_world",
+    "typography",
+    "camera_language",
+    "calculation_treatments",
+    "transitions",
+    "voice_identity",
+    "sound_language",
+    "mix_targets",
+    "pacing",
+    "chapter_architecture",
+    "QC_thresholds",
+    "thumbnail_grammar",
+    "source_rules"
   ],
-  "rejected_components_destination":"failure_memory"
+  "rejected_components_destination": "failure_memory"
 }
