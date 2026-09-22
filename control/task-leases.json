@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "atomic_lease_required": true,
+  "duplicate_execution": false,
+  "exceptions": [
+    "explicit speculative A/B"
+  ],
+  "lease_expiry_reclaim": true
+}
