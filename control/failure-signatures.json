@@ -1,0 +1,16 @@
+{
+  "schema_version":1,
+  "signatures":[
+    {"id":"missing_artifact","detect":"exact_artifact_present=false","action":"artifact_transport"},
+    {"id":"hash_mismatch","detect":"sha256sum failed","action":"reject_and_reingest"},
+    {"id":"provider_403","detect":"HTTP 403","action":"switch_to_browser_or_approved_source_surface; never mark receipt passed"},
+    {"id":"gemini_timeout","detect":"Gemini file processing timeout","action":"retry_once_then_escalate"},
+    {"id":"malformed_review","detect":"review JSON/schema/binding mismatch","action":"retry_reviewer_once_then_escalate"},
+    {"id":"render_segment_failure","detect":"render job nonzero","action":"rerender_affected_segment_only"},
+    {"id":"assembly_duration_mismatch","detect":"assembled duration differs from base beyond tolerance","action":"reject_output_and_use_timeline_safe_assembler"},
+    {"id":"audio_sync_drift","detect":"audio/video duration or alignment provenance mismatch","action":"reject_output_and_reassemble"},
+    {"id":"review_repair","detect":"verdict=REPAIR","action":"route_timestamped_findings_to_repair_jobs"}
+  ],
+  "blind_retry_limit":1,
+  "publication_enabled":false
+}
