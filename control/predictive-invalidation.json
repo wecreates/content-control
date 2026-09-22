@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "rules": [
+    [
+      "narration_duration_changed",
+      [
+        "captions",
+        "audio_alignment",
+        "scene_timing"
+      ]
+    ],
+    [
+      "visual_duration_changed",
+      [
+        "assembly",
+        "caption_visual_sync"
+      ]
+    ],
+    [
+      "source_claim_changed",
+      [
+        "script_window",
+        "on_screen_claim",
+        "metadata_sources"
+      ]
+    ],
+    [
+      "renderer_changed",
+      [
+        "affected_render_cache"
+      ]
+    ]
+  ],
+  "run_before_execution": true
+}
