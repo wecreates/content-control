@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "objective": "minimize expected time to Chris-playable candidate",
+  "score_inputs": [
+    "critical_path_unlock",
+    "downstream_fanout",
+    "estimated_duration",
+    "severity",
+    "deadline_slack"
+  ],
+  "cosmetic_nonblocking_deprioritized": true
+}
