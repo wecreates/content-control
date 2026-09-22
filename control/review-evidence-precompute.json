@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "generate_during_render": [
+    "contact_sheets",
+    "scene_clips",
+    "transcript_windows",
+    "loudness",
+    "prosody",
+    "frame_difference_map",
+    "source_map",
+    "calculation_receipts"
+  ],
+  "available_before_review": true
+}
