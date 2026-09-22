@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "only_if_blocks_critical_path": true,
+  "max_candidates": 2,
+  "cosmetic_nonblocking_speculation": false
+}
