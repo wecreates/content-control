@@ -1,76 +1,8 @@
-name: Speed Control Plane
+name: Speed Control Plane (Legacy Manual)
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [component-created, component-verified, candidate-assembled, review-completed, repair-completed]
-permissions:
-  actions: write
-  contents: read
-concurrency:
-  group: speed-control-${{ github.event.client_payload.component_id || github.run_id }}
-  cancel-in-progress: false
 jobs:
-  schedule:
-    runs-on: ubuntu-latest
-    outputs:
-      cache_hit: ${{ steps.plan.outputs.cache_hit }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: plan
-        run: |
-          mkdir -p telemetry
-          python - <<'PY'
-          import datetime,json,pathlib
-          now=datetime.datetime.now(datetime.timezone.utc).isoformat()
-          pathlib.Path("telemetry/schedule.json").write_text(json.dumps({"queued_at":"${{ github.event.repository.updated_at }}","started_at":now,"event":"${{ github.event.action || 'manual' }}","policy":"critical-path + work-stealing + predictive-invalidation","publication_enabled":False},indent=2))
-          PY
-          echo "cache_hit=false" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
-        with: {name: speed-schedule-receipt, path: telemetry/schedule.json}
-  discovery_qc:
-    needs: schedule
-    strategy:
-      fail-fast: false
-      matrix: {lane: [media, audio, captions, arithmetic, sources, motion, safe_zones]}
+  redirect:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "continuous discovery QC lane=${{ matrix.lane }}"
-  evidence:
-    needs: schedule
-    strategy:
-      fail-fast: false
-      matrix: {kind: [contact_sheet,scene_clips,transcript,loudness,prosody,motion_map,source_map,calculation_receipts]}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "precompute review evidence kind=${{ matrix.kind }}"
-  repair_pool:
-    needs: discovery_qc
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix: {worker: [1,2,3,4,5,6,7,8]}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "work-stealing repair worker ${{ matrix.worker }}; READY queue claims highest critical-path task"
-  patch_assembly:
-    needs: repair_pool
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "frame/sample-accurate patch assembly; reject duration or sync drift"
-  delta_review:
-    needs: patch_assembly
-    strategy:
-      fail-fast: false
-      matrix: {reviewer: [visual,audio,factual,continuity]}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "delta reviewer ${{ matrix.reviewer }}; changed region plus handles"
-  final_gate:
-    needs: [delta_review,evidence]
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          echo "Complete final perceptual review still required."
-          echo "Creator comparison still required."
-          echo "Gold master remains locked until Chris approval."
-          echo "PUBLICATION_ENABLED=false"
+      - run: echo "Legacy workflow retained for diagnostics only. Canonical production orchestrator is episode1-max-speed.yml."
