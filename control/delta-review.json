@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "changed_region_review": true,
+  "transition_handles_seconds": 5,
+  "unchanged_regions_require_hash_identity": true,
+  "complete_final_perceptual_review_required": true
+}
