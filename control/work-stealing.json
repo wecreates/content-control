@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "queue": "READY",
+  "claim_policy": "highest_priority_eligible",
+  "fixed_worker_buckets": false,
+  "lease_and_receipt": true
+}
