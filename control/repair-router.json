@@ -1,0 +1,16 @@
+{
+  "schema_version":1,
+  "routing":{
+    "visual_motion":["animation_motion","timeline_safe_assembly"],
+    "character_continuity":["animation_motion"],
+    "audio_voice":["audio_sound"],
+    "sfx_sound":["audio_sound"],
+    "factual":["research_sources","story_evidence"],
+    "caption_text":["packaging_channel"],
+    "packaging":["packaging_channel"],
+    "ending":["animation_motion","packaging_channel"]
+  },
+  "repair_policy":"Only invalidate and rerun affected dependencies; unchanged components retain provenance.",
+  "post_repair":["technical_qa","exact_av_review","creator_compare"],
+  "publication_enabled":false
+}
