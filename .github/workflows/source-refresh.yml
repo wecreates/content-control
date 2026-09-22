@@ -1,0 +1,37 @@
+name: Pinned Source Refresh
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/source-refresh.yml'
+permissions:
+  contents: read
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch current official CFPB sources
+        shell: python
+        run: |
+          import hashlib, json, urllib.request, datetime, pathlib
+          sources = {
+            "cfpb_grace":"https://www.consumerfinance.gov/ask-cfpb/what-is-a-grace-period-for-a-credit-card-en-47/",
+            "cfpb_interest_calc":"https://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/",
+            "cfpb_deferred":"https://www.consumerfinance.gov/ask-cfpb/i-got-a-credit-card-promising-no-interest-for-a-purchase-if-i-pay-in-full-within-12-months-how-does-this-work-en-40/",
+            "reg_z_1026_53":"https://www.consumerfinance.gov/rules-policy/regulations/1026/53/",
+            "reg_z_1026_16":"https://www.consumerfinance.gov/rules-policy/regulations/1026/16/"
+          }
+          out={"schema_version":1,"checked_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"status":"passed","sources":[]}
+          for sid,url in sources.items():
+            req=urllib.request.Request(url,headers={"User-Agent":"ContentControl/1.0 source-verifier"})
+            with urllib.request.urlopen(req,timeout=30) as r:
+              body=r.read()
+              if r.status != 200 or len(body)<1000: raise RuntimeError(f"{sid}: HTTP {r.status}, bytes={len(body)}")
+              out["sources"].append({"id":sid,"url":url,"http_status":r.status,"bytes":len(body),"sha256":hashlib.sha256(body).hexdigest()})
+          pathlib.Path("receipts").mkdir()
+          pathlib.Path("receipts/PINNED_SOURCE_REFRESH.json").write_text(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinned-source-refresh
+          path: receipts/PINNED_SOURCE_REFRESH.json
