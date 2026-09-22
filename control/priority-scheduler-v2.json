@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "score_formula": [
+    "critical_path_blocking",
+    "downstream_fanout",
+    "severity",
+    "estimated_runtime_inverse"
+  ],
+  "states": [
+    "READY",
+    "RUNNING",
+    "BLOCKED",
+    "REPAIRING",
+    "VERIFIED",
+    "DONE"
+  ],
+  "release_downstream_on_verified_receipt": true,
+  "no_hourly_polling": true
+}
