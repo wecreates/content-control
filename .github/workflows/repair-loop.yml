@@ -1,0 +1,28 @@
+name: Timeline Safe Assembly and Repair Loop
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+  issues: write
+jobs:
+  assembly_contract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p receipts
+          cat > receipts/assembly-contract.json <<'JSON'
+          {"schema_version":1,"base_duration_seconds":520.066667,"duration_tolerance_seconds":0.04,"requirements":["replacement region duration must match replaced interval within tolerance","audio sample count/timing provenance must remain valid","unaffected frames/components retain prior hashes where architecture permits","caption timestamps remain unchanged unless narration timing changes","output must decode cleanly","output SHA-256 becomes new canonical review binding"],"known_repairs":[{"scene":"07","start":148.2,"end":170.3666666667,"sha256":"6c26ef6da541acefc6d81c15469be3b9f5000f704cdec0f71edba44a504b3e25"},{"scene":"17","start":456.8666666667,"end":491.6666666667,"sha256":"5055c357f920872ea392173ad10a4a76fde7510473c1890d1e987e470e7228a4"}],"publication_enabled":false}
+          JSON
+      - uses: actions/upload-artifact@v4
+        with: {name: timeline-safe-assembly-contract, path: receipts/assembly-contract.json}
+  repair_loop_contract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p receipts
+          cat > receipts/repair-loop.json <<'JSON'
+          {"schema_version":1,"loop":["exact_review","parse_findings","route_by_timestamp_and_category","parallel_targeted_repairs","timeline_safe_assembly","deterministic_regression","complete_exact_review_again"],"exit_green":["complete_end_to_end_review=true","critical_count=0","major_count=0","creator_comparison_complete=true"],"exit_escalate":["same blocker survives targeted repair","provider/security boundary requires human action"],"publication_enabled":false}
+          JSON
+      - uses: actions/upload-artifact@v4
+        with: {name: repair-loop-contract, path: receipts/repair-loop.json}
