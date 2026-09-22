@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "key_inputs": [
+    "source_hashes",
+    "config_hash",
+    "code_version",
+    "dependency_hashes"
+  ],
+  "reuse_when_exact_match": true,
+  "skip": [
+    "render",
+    "upload",
+    "analysis",
+    "review"
+  ],
+  "immutable": true
+}
