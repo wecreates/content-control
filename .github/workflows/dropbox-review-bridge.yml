@@ -43,9 +43,17 @@ jobs:
           else: raise RuntimeError("Gemini processing timeout")
           prompt="""Review this exact full consumer-finance YouTube video end-to-end, including all audio. Return strict JSON only. Find every material launch defect with timestamps. Evaluate hook, narrative clarity, factual-risk wording, character continuity, motion/acting naturalness, static/robotic holds, shot variety, text readability, narration pronunciation/cadence/prosody/fatigue, SFX timing/repetition, silence/sonic gaps, comedic timing, pacing, AV sync, ending/payoff, and readiness against polished finance/explainer and stick-animation YouTube work. Schema: {"artifact_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb","complete_end_to_end_review":true|false,"verdict":"PASS"|"REPAIR","critical_count":0,"major_count":0,"findings":[{"start_sec":0.0,"end_sec":0.0,"severity":"critical"|"major"|"minor","category":"","evidence":"","repair":""}],"strengths":[],"release_blockers":[]} PASS only with zero critical and zero major launch-required defects."""
           body={"contents":[{"parts":[{"file_data":{"mime_type":"video/mp4","file_uri":f["uri"]}},{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}
-          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-goog-api-key":key})
+          body={"model":"gemini-3.8-flash","input":[{"type":"video","uri":f["uri"],"mime_type":"video/mp4","processing":"agentic"},{"type":"text","text":prompt}]}
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/interactions",data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-goog-api-key":key})
           with urllib.request.urlopen(req,timeout=900) as r: obj=json.loads(r.read())
-          review=json.loads(obj["candidates"][0]["content"]["parts"][0]["text"])
+          texts=[]
+          for step in obj.get("steps",[]):
+            if step.get("type")=="model_output":
+              for item in step.get("content",[]):
+                if item.get("type")=="text": texts.append(item.get("text",""))
+          raw="\n".join(texts) or obj.get("output_text","")
+          if raw.startswith("```"): raw=raw.strip("`").replace("json\n","",1)
+          review=json.loads(raw)
           assert review["artifact_sha256"]=="fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
           pathlib.Path("receipts").mkdir()
           pathlib.Path("receipts/EXACT_AV_REVIEW.json").write_text(json.dumps(review,indent=2))
