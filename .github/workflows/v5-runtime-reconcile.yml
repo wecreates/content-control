@@ -1,0 +1,59 @@
+name: V5 Strict Runtime Reconciliation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v5-runtime-reconcile.yml'
+      - 'scripts/v5_reconcile.py'
+      - 'control/v5/**'
+      - 'runtime/v5/**'
+permissions:
+  contents: write
+concurrency:
+  group: v5-runtime-reconcile
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Strictly reconcile all 400 runtime tasks
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          python scripts/v5_reconcile.py
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Persist exact reconciliation ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f state/v5-runtime-summary.json
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/v5-runtime-summary.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Reconcile strict V5 runtime completion ledger'
+            for attempt in 1 2 3 4; do
+              if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+              git rebase --abort || true
+              sleep $((attempt*5))
+            done
+          fi
+      - name: Enforce strict result
+        env:
+          RC: ${{ steps.verify.outputs.rc }}
+        run: |
+          test "$RC" = "0"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v5-strict-runtime-summary
+          path: state/v5-runtime-summary.json
+          retention-days: 30
