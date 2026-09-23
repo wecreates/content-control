@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "critical_major_conflict": "additional_review",
+  "minor_conflict": "record_both",
+  "release_requires_no_unresolved_critical_major": true
+}
