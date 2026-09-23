@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "max_candidates": 3,
+  "selection_requires": "evidence_or_human_review",
+  "does_not_block_playable_candidate": true
+}
