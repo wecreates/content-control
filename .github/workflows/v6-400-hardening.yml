@@ -1,0 +1,70 @@
+name: V6 Next 400 Runtime Hardening
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v6-400-hardening.yml'
+      - 'scripts/v6_hardening_runtime.py'
+permissions:
+  contents: write
+concurrency:
+  group: v6-400-hardening
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Prove current 400 are complete before starting next batch
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['all_400_runtime_verified_done'] is True
+          assert s['runtime_done']==400 and s['runtime_verified']==400 and s['remaining']==0
+          assert s['publication_enabled'] is False
+          PY
+      - name: Execute and strictly verify next 400 tasks
+        run: |
+          set -euo pipefail
+          python scripts/v6_hardening_runtime.py
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v6-runtime-summary.json'))
+          assert s['registered']==400 and s['runtime_done']==400 and s['runtime_verified']==400 and s['remaining']==0
+          assert s['all_400_runtime_verified_done'] is True and s['failure_count']==0 and s['publication_enabled'] is False
+          controls=list(pathlib.Path('control/v6').glob('*/*.json')); receipts=list(pathlib.Path('runtime/v6').glob('*/*.receipt.json')); outputs=list(pathlib.Path('runtime/v6').glob('*/*.output.json'))
+          assert len(controls)==400 and len(receipts)==400 and len(outputs)==400
+          w=json.load(open('state/episode1-first-watch.json')); assert w['publication_enabled'] is False and w['chris_first_watch_complete'] is False
+          print({'controls':len(controls),'receipts':len(receipts),'outputs':len(outputs),'runtime_verified':s['runtime_verified']})
+          PY
+      - name: Persist all 400 V6 controls and runtime receipts
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add control/v6 runtime/v6 state/v6-bundles state/v6-runtime-summary.json state/v6-hardening-manifest.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete next 400 V6 hardening tasks'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v6-next-400-runtime-evidence
+          path: |
+            control/v6/
+            runtime/v6/
+            state/v6-runtime-summary.json
+            state/v6-hardening-manifest.json
+          retention-days: 30
