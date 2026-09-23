@@ -1,0 +1,19 @@
+{
+  "domain": "release",
+  "downstream_consumer": "V5-313",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "1969311cc02a440e19a3ef7dd203db12f231d3fa0c3a86d4502ba9f6b9bf3298",
+  "output_path": "runtime/v5/release/V5-312.output.json",
+  "output_sha256": "ab324e8fb0f51f99905a46674001fc468314e29256bdbde9074f87a3248b8e8a",
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "publication_performed": false,
+  "real_input_exercised": true,
+  "release_decision": "HOLD",
+  "runtime_workflow_run_id": "35820458771",
+  "schema_version": 1,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-312",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:58:02.180513+00:00"
+}

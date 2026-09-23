@@ -1,0 +1,22 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T04:58:02.180513+00:00",
+  "payload": {
+    "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "phase": "execute",
+    "previous_output_sha256": "2ed9221f36f634c3c40b9192d63a2585edc044e665e60e34169bd37bdb0dd0b3",
+    "publication_enabled": false,
+    "real_operation": {
+      "authorized": false,
+      "decision": "HOLD",
+      "operation": "evaluate actual Episode 1 publication authorization gates",
+      "result": "PASS"
+    },
+    "release_decision": "HOLD"
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-304"
+}

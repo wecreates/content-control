@@ -1,0 +1,24 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T04:58:02.180513+00:00",
+  "payload": {
+    "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "done_gate": {
+      "actual_release_gate_exercised": true,
+      "bypass_attempt_rejected": true,
+      "publication_dispatcher_accepts_hold": true,
+      "publication_performed": false,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "c749857fe8edbfd788cb51b68bd0ccbe592c8d101215ab617fad44b4eb3d38e6",
+    "publication_enabled": false,
+    "release_decision": "HOLD"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-320"
+}

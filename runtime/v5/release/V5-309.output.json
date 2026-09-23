@@ -1,0 +1,20 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T04:58:02.180513+00:00",
+  "payload": {
+    "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "negative_path": {
+      "forced_publication_flag_without_human_watch_rejected": true,
+      "routed_to": "resolver"
+    },
+    "phase": "failure-route",
+    "previous_output_sha256": "95469db4367a2fd8c747385c323f42f86787f693321dcb199d0194966f35c132",
+    "publication_enabled": false,
+    "release_decision": "HOLD"
+  },
+  "phase": "failure-route",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-309"
+}

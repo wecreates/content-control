@@ -1,0 +1,20 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T04:58:02.180513+00:00",
+  "payload": {
+    "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "phase": "retry",
+    "previous_output_sha256": "f0988315d26ca76cd18ee759fdb29d44ba1f305d3d2426e59e08fa3653ea613a",
+    "publication_enabled": false,
+    "release_decision": "HOLD",
+    "retry": {
+      "attempts": 2,
+      "result": "PASS"
+    }
+  },
+  "phase": "retry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-310"
+}

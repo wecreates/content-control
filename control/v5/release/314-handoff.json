@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-314",
-  "domain": "release",
-  "phase": "handoff",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,21 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "release",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "handoff",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/release/V5-314.output.json",
+    "publication_performed": false,
+    "receipt": "runtime/v5/release/V5-314.receipt.json",
+    "release_decision": "HOLD",
+    "runtime_workflow_run_id": "35820458771",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-314"
 }

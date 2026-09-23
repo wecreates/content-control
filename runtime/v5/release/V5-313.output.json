@@ -1,0 +1,22 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T04:58:02.180513+00:00",
+  "payload": {
+    "audit": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "decision": "HOLD",
+      "review_verdict": "PASS",
+      "security_receipts_sha256": "219fc34fab9b00382447de0e8f93638b21ab9222205dfdaacf7cca1dba0798bc"
+    },
+    "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "phase": "audit",
+    "previous_output_sha256": "ab324e8fb0f51f99905a46674001fc468314e29256bdbde9074f87a3248b8e8a",
+    "publication_enabled": false,
+    "release_decision": "HOLD"
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-313"
+}

@@ -1,0 +1,19 @@
+{
+  "domain": "release",
+  "downstream_consumer": "V5-305",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "2ed9221f36f634c3c40b9192d63a2585edc044e665e60e34169bd37bdb0dd0b3",
+  "output_path": "runtime/v5/release/V5-304.output.json",
+  "output_sha256": "8a29e9e7e14dcb880d88a2709ab00f72c5fb57f39b4b73fa18b206749b93e045",
+  "phase": "execute",
+  "publication_enabled": false,
+  "publication_performed": false,
+  "real_input_exercised": true,
+  "release_decision": "HOLD",
+  "runtime_workflow_run_id": "35820458771",
+  "schema_version": 1,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-304",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:58:02.180513+00:00"
+}
