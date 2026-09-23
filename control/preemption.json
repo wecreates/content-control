@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "preemptible": [
+    "cosmetic",
+    "experiments"
+  ],
+  "never_preempt": [
+    "artifact_ingress",
+    "final_assembly",
+    "final_review"
+  ]
+}
