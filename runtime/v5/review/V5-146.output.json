@@ -1,0 +1,18 @@
+{
+  "domain": "review",
+  "executed_at": "2026-09-23T04:19:40.394122+00:00",
+  "payload": {
+    "phase": "verify",
+    "previous_output_sha256": "25b8fc6a196d74e7a7916bc1ef4ceb04ff99d45bac0d9c13df354aae937698f7",
+    "publication_enabled": false,
+    "review_json_sha256": "0091fd9f96dbd1d7b6ce38a12b816c427a98f3befc7c9af75acaa215d9345dd7",
+    "source_artifact_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "phase": "verify",
+  "publication_enabled": false,
+  "run_id": "35817871230",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-146"
+}

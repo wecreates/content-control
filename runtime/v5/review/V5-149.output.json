@@ -1,0 +1,22 @@
+{
+  "domain": "review",
+  "executed_at": "2026-09-23T04:19:40.394122+00:00",
+  "payload": {
+    "negative_path": {
+      "canonical_input_unchanged": true,
+      "injected_invalid_input": true,
+      "routed_to": "resolver"
+    },
+    "phase": "failure-route",
+    "previous_output_sha256": "129542b0c11259d0b50356091b8a08aaa4920519d4fe31b5fcf3cd669b28e00e",
+    "publication_enabled": false,
+    "review_json_sha256": "0091fd9f96dbd1d7b6ce38a12b816c427a98f3befc7c9af75acaa215d9345dd7",
+    "source_artifact_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "failure-route",
+  "publication_enabled": false,
+  "run_id": "35817871230",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-149"
+}

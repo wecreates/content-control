@@ -1,0 +1,19 @@
+{
+  "domain": "review",
+  "downstream_consumer": "V5-149",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "3bc37050cd7d3fabe495be08e436ae199d0a3429f157c61e447aa23296b96b9a",
+  "output_path": "runtime/v5/review/V5-148.output.json",
+  "output_sha256": "129542b0c11259d0b50356091b8a08aaa4920519d4fe31b5fcf3cd669b28e00e",
+  "phase": "cache",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "review_workflow_run_id": 35816461220,
+  "runtime_workflow_run_id": "35817871230",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-148",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:19:40.394122+00:00"
+}

@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-148",
-  "domain": "review",
-  "phase": "cache",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,23 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "review",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "cache",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "3bc37050cd7d3fabe495be08e436ae199d0a3429f157c61e447aa23296b96b9a",
+    "output": "runtime/v5/review/V5-148.output.json",
+    "output_sha256": "129542b0c11259d0b50356091b8a08aaa4920519d4fe31b5fcf3cd669b28e00e",
+    "receipt": "runtime/v5/review/V5-148.receipt.json",
+    "review_workflow_run_id": 35816461220,
+    "runtime_workflow_run_id": "35817871230",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-148"
 }
