@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "decision_per_upload": true,
+  "requires_evidence": true,
+  "default": "REVIEW_REQUIRED"
+}
