@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "gates": [
+    "decode",
+    "duration",
+    "resolution",
+    "audio_stream",
+    "audio_clipping",
+    "av_sync",
+    "caption_timing",
+    "calculation_receipts",
+    "source_receipts",
+    "safe_zones"
+  ],
+  "all_required_for_candidate": true
+}
