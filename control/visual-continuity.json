@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "character_identity",
+    "line_weight",
+    "palette_contract",
+    "pose_continuity",
+    "text_style",
+    "camera_language"
+  ],
+  "repair_scope": "changed_scene_only"
+}
