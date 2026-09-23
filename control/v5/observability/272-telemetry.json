@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-272",
-  "domain": "observability",
-  "phase": "telemetry",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,28 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "observability",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "telemetry",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "7d7c5318acd849e3d447593002b58b5bf30ccbd57943317cbc1dade7b3c1121f",
+    "observed_runs": [
+      35816461220,
+      35818371839,
+      35818542999,
+      35818647762,
+      35818747235
+    ],
+    "output": "runtime/v5/observability/V5-272.output.json",
+    "output_sha256": "191c69da22717b1acca27db6817fb1d8895bbe163227aa02c4be1364896a1b9c",
+    "receipt": "runtime/v5/observability/V5-272.receipt.json",
+    "runtime_workflow_run_id": "35818879493",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-272"
 }

@@ -1,0 +1,49 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T04:34:32.516620+00:00",
+  "payload": {
+    "audit": {
+      "first_watch": "state/episode1-first-watch.json",
+      "jobs": {
+        "first_watch": 107044723809,
+        "packaging": 107045555023,
+        "quality": 107045854517,
+        "resolver": 107045243945,
+        "review": 107038932305
+      },
+      "runs": {
+        "first_watch": 35818371839,
+        "packaging": 35818647762,
+        "quality": 35818747235,
+        "resolver": 35818542999,
+        "review": 35816461220
+      },
+      "summary": "state/v5-runtime-summary.json"
+    },
+    "evidence_sha256": "fd3715f2e2d7f131cff403e7d8e694caf0da46502f2acc1e48e381175bbc64c1",
+    "phase": "audit",
+    "previous_output_sha256": "191c69da22717b1acca27db6817fb1d8895bbe163227aa02c4be1364896a1b9c",
+    "publication_enabled": false,
+    "source_jobs": {
+      "first_watch": 107044723809,
+      "packaging": 107045555023,
+      "quality": 107045854517,
+      "resolver": 107045243945,
+      "review": 107038932305
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_runs": {
+      "first_watch": 35818371839,
+      "packaging": 35818647762,
+      "quality": 35818747235,
+      "resolver": 35818542999,
+      "review": 35816461220
+    }
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818879493",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-273"
+}

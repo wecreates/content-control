@@ -1,0 +1,25 @@
+{
+  "domain": "observability",
+  "downstream_consumer": "V5-264",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "9b55c7a77ec3c61b0c0aa94a3e45a9cf0354691ca51711cbef2863c6e503e78b",
+  "observed_runs": [
+    35816461220,
+    35818371839,
+    35818542999,
+    35818647762,
+    35818747235
+  ],
+  "output_path": "runtime/v5/observability/V5-263.output.json",
+  "output_sha256": "f6a885f803ec00924ed4db594261610d4264f64a7fde859e35a4824e03598c33",
+  "phase": "claim",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818879493",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-263",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:34:32.516620+00:00"
+}

@@ -1,0 +1,32 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T04:34:32.516620+00:00",
+  "payload": {
+    "claim_token": "c902f0d18e45b63703a2fdfc9992a5f2afefdb7707193200bbcda0ded2658536",
+    "evidence_sha256": "fd3715f2e2d7f131cff403e7d8e694caf0da46502f2acc1e48e381175bbc64c1",
+    "phase": "claim",
+    "previous_output_sha256": "9b55c7a77ec3c61b0c0aa94a3e45a9cf0354691ca51711cbef2863c6e503e78b",
+    "publication_enabled": false,
+    "source_jobs": {
+      "first_watch": 107044723809,
+      "packaging": 107045555023,
+      "quality": 107045854517,
+      "resolver": 107045243945,
+      "review": 107038932305
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_runs": {
+      "first_watch": 35818371839,
+      "packaging": 35818647762,
+      "quality": 35818747235,
+      "resolver": 35818542999,
+      "review": 35816461220
+    }
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818879493",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-263"
+}
