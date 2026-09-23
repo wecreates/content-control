@@ -23,7 +23,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
-          import json,os,pathlib,time,urllib.request
+          import json,os,pathlib,time,urllib.request,urllib.error,random
           p=pathlib.Path("FINANCE_REVIEW_4_9.mp4"); key=os.environ["GEMINI_API_KEY"]
           meta=json.dumps({"file":{"display_name":p.name}}).encode()
           req=urllib.request.Request("https://generativelanguage.googleapis.com/upload/v1beta/files?key="+key,data=meta,headers={"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":str(p.stat().st_size),"X-Goog-Upload-Header-Content-Type":"video/mp4","Content-Type":"application/json"})
@@ -45,7 +45,22 @@ jobs:
           body={"contents":[{"parts":[{"file_data":{"mime_type":"video/mp4","file_uri":f["uri"]}},{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}
           body={"model":"gemini-3.8-flash","input":[{"type":"video","uri":f["uri"],"mime_type":"video/mp4","processing":"agentic"},{"type":"text","text":prompt}]}
           req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/interactions",data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-goog-api-key":key})
-          with urllib.request.urlopen(req,timeout=900) as r: obj=json.loads(r.read())
+          obj=None
+          models=["gemini-3.8-flash","gemini-3-flash-preview"]
+          for model in models:
+            body["model"]=model
+            for attempt in range(5):
+              req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/interactions",data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-goog-api-key":key})
+              try:
+                with urllib.request.urlopen(req,timeout=900) as r: obj=json.loads(r.read())
+                break
+              except urllib.error.HTTPError as e:
+                if e.code not in (429,500,502,503,504): raise
+                delay=min(60, 3*(2**attempt))+random.random()*2
+                print(f"transient inference HTTP {e.code}; model={model}; retry={attempt+1}; sleep={delay:.1f}s")
+                time.sleep(delay)
+            if obj is not None: break
+          if obj is None: raise RuntimeError("all Gemini inference retry/model routes exhausted")
           texts=[]
           for step in obj.get("steps",[]):
             if step.get("type")=="model_output":
