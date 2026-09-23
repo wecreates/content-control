@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "unit": "frame_range",
+  "merge_adjacent_invalidations": true,
+  "global_render_default": false
+}
