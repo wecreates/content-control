@@ -1,0 +1,73 @@
+name: V5 Thumbnail Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/v5-thumbnail-runtime.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-thumbnail-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+  EXPECTED_SHA: fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install ffmpeg runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Download durable exact Episode 1 first-watch artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: episode1-chris-first-watch
+          path: /tmp/thumbnail
+          repository: wecreates/content-control
+          run-id: 35818371839
+          github-token: ${{ github.token }}
+      - name: Verify exact source and execute thumbnail controls
+        env:
+          THUMBNAIL_MEDIA: /tmp/thumbnail/EPISODE1_FIRST_WATCH.mp4
+          THUMBNAIL_OUT: /tmp/thumbnail/EPISODE1_THUMBNAIL.jpg
+        run: |
+          set -euo pipefail
+          echo "$EXPECTED_SHA  /tmp/thumbnail/EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
+          python scripts/v5_thumbnail_runtime.py
+          python - <<'PY'
+          import json,pathlib
+          rs=sorted(pathlib.Path('runtime/v5/thumbnail').glob('V5-*.receipt.json'))
+          assert len(rs)==20
+          for p in rs:
+            r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE' and r['real_input_exercised'] is True and r['downstream_consumer_accepts_output'] is True and r['publication_enabled'] is False
+          assert pathlib.Path('/tmp/thumbnail/EPISODE1_THUMBNAIL.jpg').stat().st_size>10000
+          PY
+      - name: Persist thumbnail runtime evidence
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git restore state/v5-runtime-summary.json
+          git add control/v5/thumbnail runtime/v5/thumbnail
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 thumbnail controls 341-360'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v5-thumbnail-runtime-evidence
+          path: |
+            runtime/v5/thumbnail/
+            /tmp/thumbnail/EPISODE1_THUMBNAIL.jpg
+          retention-days: 30
