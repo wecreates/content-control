@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "classes": {
+    "regulation_stable_days": 30,
+    "product_terms_days": 7,
+    "news_days": 1
+  },
+  "expired_receipt": "refresh_only_affected_claim"
+}
