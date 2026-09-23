@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "order": [
+    "critical_release_blocker",
+    "major_release_blocker",
+    "critical_path_unlock",
+    "high_retention_impact",
+    "minor"
+  ],
+  "cosmetic_nonblocking_last": true
+}
