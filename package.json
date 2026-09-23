@@ -1,0 +1,11 @@
+{
+  "scripts": {
+    "render:episode1": "remotion render remotion/index.jsx Episode1Motion review-output/EPISODE1_MOTION_V3.mp4 --codec h264 --crf 20 --concurrency 2"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.366",
+    "remotion": "4.0.366",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  }
+}
