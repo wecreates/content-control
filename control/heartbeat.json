@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "critical_worker_heartbeat_sec": 60,
+  "stale_after_sec": 180,
+  "stale_action": "reclaim_lease_and_reschedule"
+}
