@@ -1,9 +1,22 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "hard_launch_gate": true,
   "checks": [
-    "timing",
-    "clarity",
-    "does_not_obscure_finance_fact"
+    "joke_or_visual_payoff_density",
+    "timing_and_pause_control",
+    "character_reaction",
+    "physical_comedy_or_visual_metaphor",
+    "callbacks",
+    "humor_does_not_obscure_finance_fact"
   ],
-  "optional_jokes_never_block_accuracy": true
+  "minimums": {
+    "memorable_comedic_or_surprise_beats_per_minute": 4,
+    "recurring_callbacks_per_episode": 2,
+    "visual_punchlines_independent_of_narration": 4
+  },
+  "fail_if": [
+    "humor exists only as narrator one-liners",
+    "character behaves as static instructional mannequin"
+  ],
+  "publication_enabled": false
 }
