@@ -1,0 +1,64 @@
+name: Episode 1 Minor Polish Gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'production/episode1/polish-plan.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  validate_plan:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.v.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          p=json.load(open("production/episode1/polish-plan.json"))
+          assert p["source_artifact_sha256"]=="fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+          assert p["review_verdict"]=="PASS" and p["release_blockers"]==0
+          assert len(p["polish"])==2
+          for x in p["polish"]:
+            a,b=x["range_sec"]; assert 0<=a<b<=520.066667
+            assert x["severity"]=="minor"
+            assert x["duration_change_allowed"] is False
+          pathlib.Path("receipts").mkdir(exist_ok=True)
+          pathlib.Path("receipts/polish-plan-validated.json").write_text(json.dumps({"status":"VERIFIED","finding_count":2,"source_sha":p["source_artifact_sha256"],"publication_enabled":False},indent=2))
+          PY
+          echo "count=2" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with: {name: polish-plan-validation, path: receipts/polish-plan-validated.json}
+  patch_contracts:
+    needs: validate_plan
+    strategy:
+      fail-fast: false
+      matrix:
+        finding: [F001,F002]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: bash
+        env:
+          FINDING: ${{ matrix.finding }}
+        run: |
+          set -euo pipefail
+          mkdir -p receipts
+          python - <<'PY'
+          import json,os,pathlib
+          p=json.load(open("production/episode1/polish-plan.json"))
+          f=next(x for x in p["polish"] if x["finding_id"]==os.environ["FINDING"])
+          receipt={"finding_id":f["finding_id"],"route":f["route"],"range_sec":f["range_sec"],"status":"READY_FOR_REAL_MEDIA_PATCH","source_sha":p["source_artifact_sha256"],"duration_change_allowed":False,"done":False,"publication_enabled":False}
+          pathlib.Path(f"receipts/{f['finding_id']}-patch-contract.json").write_text(json.dumps(receipt,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: patch-contract-${{ matrix.finding }}
+          path: receipts/
