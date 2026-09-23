@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "monotonic_timestamps",
+    "within_video_duration",
+    "nonempty_text",
+    "no_overlap_beyond_policy",
+    "safe_zone"
+  ],
+  "failure": "repair_captions"
+}
