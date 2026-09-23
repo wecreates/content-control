@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "record": [
+    "provider",
+    "endpoint",
+    "status",
+    "latency_ms",
+    "attempt",
+    "model"
+  ],
+  "secrets_redacted": true
+}
