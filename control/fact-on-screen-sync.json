@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "control": "fact_on_screen_sync",
+  "completion_requires_verification": true,
+  "publication_enabled": false
+}
