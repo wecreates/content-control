@@ -266,7 +266,7 @@ const FinePrintCreature = ({t}) => {
 };
 
 const Finale = ({t}) => {
-  const a = fade(t, 282, 282.2, 306, 306);
+  const a = fade(t, 282, 282.2, 305.6, 306);
   const chop = Math.sin((t - 294) * 12);
   return (
     <g opacity={a}>
