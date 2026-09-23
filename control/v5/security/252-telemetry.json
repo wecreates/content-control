@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-252",
-  "domain": "security",
-  "phase": "telemetry",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,20 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "security",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "telemetry",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/security/V5-252.output.json",
+    "receipt": "runtime/v5/security/V5-252.receipt.json",
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e",
+    "runtime_workflow_run_id": "35820342004",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-252"
 }

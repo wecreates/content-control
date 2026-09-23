@@ -1,0 +1,18 @@
+{
+  "domain": "security",
+  "downstream_consumer": "V5-257",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "69a31c076981f38866c2f39093251f94d98e66b6f862b1fedefbf1a0fd700f9c",
+  "output_path": "runtime/v5/security/V5-256.output.json",
+  "output_sha256": "ed195bdfc3e9025c636f3fab5e4dc7663250cb790fc3be8caaf0dae1a2cfe531",
+  "phase": "continuity",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e",
+  "runtime_workflow_run_id": "35820342004",
+  "schema_version": 1,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-256",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:56:08.541091+00:00"
+}

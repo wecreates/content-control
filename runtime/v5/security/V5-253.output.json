@@ -1,0 +1,20 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T04:56:08.541091+00:00",
+  "payload": {
+    "audit": {
+      "credential_findings": 0,
+      "manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e",
+      "publication_lock": "PASS"
+    },
+    "phase": "audit",
+    "previous_output_sha256": "a909c2d9b4d8600d9f773ab07a4f40609bd8dcf3857e5773162cb559b69060b1",
+    "publication_enabled": false,
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e"
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-253"
+}

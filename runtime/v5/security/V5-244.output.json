@@ -1,0 +1,23 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T04:56:08.541091+00:00",
+  "payload": {
+    "phase": "execute",
+    "previous_output_sha256": "60408e2c0f4d43f70272452345cc097f187b35b84f462636dff7db3a31973570",
+    "publication_enabled": false,
+    "real_operation": {
+      "credential_findings": 0,
+      "operation": "scan tracked repository files and publication gate",
+      "result": "PASS",
+      "text_files_scanned": 1189,
+      "tracked_env_files": 0,
+      "tracked_files": 1189
+    },
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e"
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-244"
+}

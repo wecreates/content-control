@@ -1,0 +1,18 @@
+{
+  "domain": "security",
+  "downstream_consumer": "V5 release safety gate",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "eaafad30dee7f88895d52b8ae26201328149ae2bf964884248cfd952003cd9ad",
+  "output_path": "runtime/v5/security/V5-260.output.json",
+  "output_sha256": "27c798146b323820996d65b1b40b93328fdf56b180b317c1adb6784876e4a47e",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e",
+  "runtime_workflow_run_id": "35820342004",
+  "schema_version": 1,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-260",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:56:08.541091+00:00"
+}

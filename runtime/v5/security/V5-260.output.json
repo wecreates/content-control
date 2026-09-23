@@ -1,0 +1,24 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T04:56:08.541091+00:00",
+  "payload": {
+    "done_gate": {
+      "downstream_release_gate_acceptance": true,
+      "negative_secret_detection": true,
+      "path_traversal_rejected": true,
+      "publication_lock_verified": true,
+      "real_repository_scan": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "eaafad30dee7f88895d52b8ae26201328149ae2bf964884248cfd952003cd9ad",
+    "publication_enabled": false,
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-260"
+}

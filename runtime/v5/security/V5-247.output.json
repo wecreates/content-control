@@ -1,0 +1,19 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T04:56:08.541091+00:00",
+  "payload": {
+    "binding": {
+      "first_watch_state_sha256": "1af19b3119e175398df9f1b8f20d47839edd3ced0adecc1abc5c5803c3fc5dbb",
+      "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e"
+    },
+    "phase": "receipt",
+    "previous_output_sha256": "4bb3eebcb475868c10aa8905aa00ae5e8f985890b597828491f7434dcd4b0701",
+    "publication_enabled": false,
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e"
+  },
+  "phase": "receipt",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-247"
+}

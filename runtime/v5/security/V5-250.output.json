@@ -1,0 +1,19 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T04:56:08.541091+00:00",
+  "payload": {
+    "phase": "retry",
+    "previous_output_sha256": "ed5f67f94a5d73313c9e6eadea65678282998d573b68d82912086a91467e6dee",
+    "publication_enabled": false,
+    "repository_manifest_sha256": "d8ff630e74ed3833d7d9b3c0ffedd12a696015026d234ca693550d13eace6c4e",
+    "retry": {
+      "attempts": 2,
+      "result": "PASS"
+    }
+  },
+  "phase": "retry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-250"
+}
