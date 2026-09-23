@@ -1,0 +1,67 @@
+name: V8 Next 200 Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v8-200-runtime.yml'
+      - 'tests/test_v8_runtime.py'
+      - 'scripts/v8_runtime.py'
+permissions:
+  contents: write
+concurrency:
+  group: v8-200-runtime
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Test V8 runtime contract
+        run: python -m unittest -v tests/test_v8_runtime.py
+      - name: Execute next 200 tasks
+        run: python scripts/v8_runtime.py
+      - name: Verify all 200 with evidence
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v8-runtime-summary.json'))
+          assert s['batch']=='V8'
+          assert s['registered']==200 and s['runtime_done']==200 and s['runtime_verified']==200 and s['remaining']==0
+          assert s['all_200_runtime_verified_done'] is True and s['failure_count']==0
+          assert s['publication_enabled'] is False
+          controls=list(pathlib.Path('control/v8').glob('*/*.json'))
+          outputs=list(pathlib.Path('runtime/v8').glob('*/*.output.json'))
+          receipts=list(pathlib.Path('runtime/v8').glob('*/*.receipt.json'))
+          assert len(controls)==len(outputs)==len(receipts)==200
+          w=json.load(open('state/episode1-first-watch.json'))
+          assert w['publication_enabled'] is False and w['chris_first_watch_complete'] is False
+          print({'controls':len(controls),'outputs':len(outputs),'receipts':len(receipts),'runtime_verified':200})
+          PY
+      - name: Persist V8 runtime evidence
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add control/v8 runtime/v8 state/v8-runtime-summary.json state/v8-manifest.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V8 next 200 tasks'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v8-next-200-runtime-evidence
+          path: |
+            control/v8/
+            runtime/v8/
+            state/v8-runtime-summary.json
+            state/v8-manifest.json
+          retention-days: 30
