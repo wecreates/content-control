@@ -6,10 +6,11 @@ const Root = () => (
   <Composition
     id="Episode1Motion"
     component={Episode1Motion}
-    durationInFrames={9180}
+    durationInFrames={18000}
     fps={30}
     width={1280}
     height={720}
+    defaultProps={{audioDuration:306}}
   />
 );
 
