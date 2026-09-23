@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "voice_identity",
+    "sample_rate",
+    "loudness_continuity",
+    "silence_gap",
+    "pronunciation_flags",
+    "av_alignment"
+  ],
+  "changed_line_only_regeneration": true
+}
