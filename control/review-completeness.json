@@ -1,7 +1,18 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "ACTIVE",
   "control": "review_completeness",
   "completion_requires_verification": true,
+  "required_review_layers": [
+    "technical AV integrity",
+    "finance factual-risk review",
+    "hook and first-30-second retention review",
+    "entertainment and comedy review",
+    "character acting and motion review",
+    "sound-design review",
+    "creator-comparison review",
+    "full human first watch"
+  ],
+  "automatic_pass_cannot_override_human_not_launch_ready": true,
   "publication_enabled": false
 }
