@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "control": "render_determinism",
+  "completion_requires_verification": true,
+  "publication_enabled": false
+}
