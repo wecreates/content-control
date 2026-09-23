@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "record_per_task": true,
+  "budget_does_not_override_quality_gate": true
+}
