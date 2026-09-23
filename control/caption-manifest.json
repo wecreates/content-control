@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "required": [
+    "cue_id",
+    "start_sec",
+    "end_sec",
+    "text",
+    "source_segment"
+  ]
+}
