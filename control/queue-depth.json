@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "measure": "READY_tasks",
+  "autoscale": true,
+  "critical_reserved_slots": 2
+}
