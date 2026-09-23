@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "order": 1,
+  "status": "WAITING_FOR_PLAYABLE_CANDIDATE",
+  "requires": [
+    "exact_candidate_hash",
+    "playable_artifact"
+  ],
+  "team_final_review_before_chris": false
+}
