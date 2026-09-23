@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "future_target": "approved unpublished inventory",
+  "never_publish_weak_candidate_to_fill_schedule": true
+}
