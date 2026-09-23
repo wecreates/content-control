@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "transient_local_retries": 5,
+  "blind_global_retries": 0,
+  "same_signature_after_failed_remedy": "change_strategy",
+  "retry_requires_reason": true
+}
