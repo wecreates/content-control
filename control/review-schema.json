@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "required": [
+    "artifact_sha256",
+    "complete_end_to_end_review",
+    "verdict",
+    "critical_count",
+    "major_count",
+    "findings",
+    "release_blockers"
+  ],
+  "verdicts": [
+    "PASS",
+    "REPAIR"
+  ],
+  "pass_requires": {
+    "complete_end_to_end_review": true,
+    "critical_count": 0,
+    "major_count": 0
+  }
+}
