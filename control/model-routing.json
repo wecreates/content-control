@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "video_review": [
+    "gemini-3.8-flash",
+    "gemini-3-flash-preview"
+  ],
+  "fallback_on": [
+    429,
+    500,
+    502,
+    503,
+    504
+  ]
+}
