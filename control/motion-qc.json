@@ -1,10 +1,24 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "hard_launch_gate": true,
   "checks": [
     "static_hold",
     "robotic_motion",
+    "character_pose_variety",
+    "facial_reaction",
+    "prop_interaction",
     "continuity",
-    "purposeful_camera_change"
+    "purposeful_camera_change",
+    "visual_information_change"
   ],
-  "routes_to": "render_farm"
+  "thresholds": {
+    "max_unintentional_static_hold_sec": 3,
+    "target_meaningful_visual_event_sec": [
+      1.5,
+      3
+    ],
+    "max_exposition_only_run_sec": 12
+  },
+  "routes_to": "render_farm",
+  "publication_enabled": false
 }
