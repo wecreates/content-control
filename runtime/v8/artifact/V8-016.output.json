@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "artifact",
+  "executed_at": "2026-09-23T14:46:30.706809+00:00",
+  "payload": {
+    "domain": "artifact",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "b62f7354774ee4bcac653afc6d1798a590f278ede27d720f9b19a51bda9ff8f2",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "render",
+      "producer": "artifact",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-011",
+      "V7-012",
+      "V7-013",
+      "V7-014",
+      "V7-015",
+      "V7-016",
+      "V7-017",
+      "V7-018",
+      "V7-019",
+      "V7-020"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-016"
+}

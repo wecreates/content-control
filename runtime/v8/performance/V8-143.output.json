@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "performance",
+  "executed_at": "2026-09-23T14:46:30.818685+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "publication-kill-switch",
+    "previous_v8_output_sha256": "b9467ab377af069ff5ff11a85f70f260694cb87c41ccc4bd8629f5f3bdf7986b",
+    "publication_enabled": false,
+    "result": {
+      "control_plane_locked": true,
+      "episode_locked": true,
+      "ledger_locked": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-141",
+      "V7-142",
+      "V7-143",
+      "V7-144",
+      "V7-145",
+      "V7-146",
+      "V7-147",
+      "V7-148",
+      "V7-149",
+      "V7-150"
+    ]
+  },
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-143"
+}

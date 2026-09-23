@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "security",
+  "executed_at": "2026-09-23T14:46:30.801569+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "duplicate-work-suppression",
+    "previous_v8_output_sha256": "dcd2458c9045429cedb1132bc4391126ec86bbc4c9428969f4ccc3f39cbc11a5",
+    "publication_enabled": false,
+    "result": {
+      "duplicates_suppressed": 10,
+      "executed_unique_jobs": 10,
+      "input_jobs": 20,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-121",
+      "V7-122",
+      "V7-123",
+      "V7-124",
+      "V7-125",
+      "V7-126",
+      "V7-127",
+      "V7-128",
+      "V7-129",
+      "V7-130"
+    ]
+  },
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-127"
+}

@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "observability",
+  "executed_at": "2026-09-23T14:46:30.810188+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "f37c1158da83872282a1b640ed4ab1d228fd49f302414c3f7cce5307ba9c512d",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-131",
+      "V7-132",
+      "V7-133",
+      "V7-134",
+      "V7-135",
+      "V7-136",
+      "V7-137",
+      "V7-138",
+      "V7-139",
+      "V7-140"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-139"
+}

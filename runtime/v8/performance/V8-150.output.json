@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "performance",
+  "executed_at": "2026-09-23T14:46:30.818685+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "739516c08976f00329a0e073899698f6a7a5d361a7c534c6bd4b63a3755b57dd",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-141",
+      "V7-142",
+      "V7-143",
+      "V7-144",
+      "V7-145",
+      "V7-146",
+      "V7-147",
+      "V7-148",
+      "V7-149",
+      "V7-150"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-150"
+}

@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "story",
+  "executed_at": "2026-09-23T14:46:30.750733+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "4aaa8bb424c1e4e5fa286e44fdf97f83fc53576ee7dc480404876428a8600de8",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-061",
+      "V7-062",
+      "V7-063",
+      "V7-064",
+      "V7-065",
+      "V7-066",
+      "V7-067",
+      "V7-068",
+      "V7-069",
+      "V7-070"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-070"
+}

@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "resolver",
+  "executed_at": "2026-09-23T14:46:30.776295+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "290e68d0a62445dd52715d6d6ad2396c780589a5109f5b535334585a02243764",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "assembly",
+      "producer": "resolver",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-091",
+      "V7-092",
+      "V7-093",
+      "V7-094",
+      "V7-095",
+      "V7-096",
+      "V7-097",
+      "V7-098",
+      "V7-099",
+      "V7-100"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-096"
+}

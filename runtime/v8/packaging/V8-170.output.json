@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:46:30.835681+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "220b0e28a1b20638fcf3fbdf1d77a5b9f4f53c216356af1cc4fc90f150f926b2",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-161",
+      "V7-162",
+      "V7-163",
+      "V7-164",
+      "V7-165",
+      "V7-166",
+      "V7-167",
+      "V7-168",
+      "V7-169",
+      "V7-170"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-170"
+}

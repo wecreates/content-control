@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:46:30.835681+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "publication-kill-switch",
+    "previous_v8_output_sha256": "60e1e047cd8a7051021d498f4c9332e5420a4371cc12aa9dcc173ee8f902739c",
+    "publication_enabled": false,
+    "result": {
+      "control_plane_locked": true,
+      "episode_locked": true,
+      "ledger_locked": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-161",
+      "V7-162",
+      "V7-163",
+      "V7-164",
+      "V7-165",
+      "V7-166",
+      "V7-167",
+      "V7-168",
+      "V7-169",
+      "V7-170"
+    ]
+  },
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-163"
+}

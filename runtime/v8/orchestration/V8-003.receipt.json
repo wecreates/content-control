@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "downstream_consumer": "V8-004",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "4dcfd1fa72cf0291fcd13159596026e3af16c642fe1e89a66d16f23aedee41f6",
+  "output_path": "runtime/v8/orchestration/V8-003.output.json",
+  "output_sha256": "e72d9e158d9d7e508c8cfcee96a67bfb669c77db604825d19132092c9956eb77",
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-001",
+    "V7-002",
+    "V7-003",
+    "V7-004",
+    "V7-005",
+    "V7-006",
+    "V7-007",
+    "V7-008",
+    "V7-009",
+    "V7-010"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-003",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.697536+00:00"
+}

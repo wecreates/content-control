@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "audio",
+  "executed_at": "2026-09-23T14:46:30.724389+00:00",
+  "payload": {
+    "domain": "audio",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "d3a66703d1fef01d8c81c29ff724b74a44e005accfd2f67a98815b2c37e0fbb2",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "d2689d97e5cb9def34af58102a2bfc375f9079b9ed1f1198d1a3596908f9c2b1",
+      "corrupt_sha256": "2e6164da0889a4b6439d3ea018735e108ca1c43ccb629690ad22165c40b799c3",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-031",
+      "V7-032",
+      "V7-033",
+      "V7-034",
+      "V7-035",
+      "V7-036",
+      "V7-037",
+      "V7-038",
+      "V7-039",
+      "V7-040"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-035"
+}

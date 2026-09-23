@@ -1,0 +1,34 @@
+{
+  "batch": "V8",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:46:30.767844+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "receipt-chain-audit",
+    "previous_v8_output_sha256": "b4b44c344c4ef6174e1d1c4822df9caf26ce252a18131b73426620dcad3aefd3",
+    "publication_enabled": false,
+    "result": {
+      "bindings_verified": 10,
+      "chain_sha256": "82bf4ecfa4a150af2ac0974a23a617babad8b477462acd825d9140d879d9356a",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-081",
+      "V7-082",
+      "V7-083",
+      "V7-084",
+      "V7-085",
+      "V7-086",
+      "V7-087",
+      "V7-088",
+      "V7-089",
+      "V7-090"
+    ]
+  },
+  "phase": "receipt-chain-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-082"
+}

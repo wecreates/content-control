@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "story",
+  "downstream_consumer": "review",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "4aaa8bb424c1e4e5fa286e44fdf97f83fc53576ee7dc480404876428a8600de8",
+  "output_path": "runtime/v8/story/V8-070.output.json",
+  "output_sha256": "411e522fdc61c3fc6abe19054580893e086d7a1de90081a8e8838a9f40562101",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-061",
+    "V7-062",
+    "V7-063",
+    "V7-064",
+    "V7-065",
+    "V7-066",
+    "V7-067",
+    "V7-068",
+    "V7-069",
+    "V7-070"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-070",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.750733+00:00"
+}

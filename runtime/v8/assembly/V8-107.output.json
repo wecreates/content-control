@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "assembly",
+  "executed_at": "2026-09-23T14:46:30.784729+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "duplicate-work-suppression",
+    "previous_v8_output_sha256": "3c627fd6c2941c30bdc4ac23863ce1715377a22ec1250b5fdd89a75e6a6aa9a9",
+    "publication_enabled": false,
+    "result": {
+      "duplicates_suppressed": 10,
+      "executed_unique_jobs": 10,
+      "input_jobs": 20,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-101",
+      "V7-102",
+      "V7-103",
+      "V7-104",
+      "V7-105",
+      "V7-106",
+      "V7-107",
+      "V7-108",
+      "V7-109",
+      "V7-110"
+    ]
+  },
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-107"
+}

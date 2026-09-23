@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "security",
+  "downstream_consumer": "V8-124",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "5c4910829530a4359438c2e4a0d92becd6647bee0b6f6c94ff61fc8e64d83646",
+  "output_path": "runtime/v8/security/V8-123.output.json",
+  "output_sha256": "aee859cdeaad5ebd070e4631726fa3b346243eebafb5c7cf9361eae3c8520119",
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-121",
+    "V7-122",
+    "V7-123",
+    "V7-124",
+    "V7-125",
+    "V7-126",
+    "V7-127",
+    "V7-128",
+    "V7-129",
+    "V7-130"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-123",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.801569+00:00"
+}

@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "caption",
+  "executed_at": "2026-09-23T14:46:30.733175+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "duplicate-work-suppression",
+    "previous_v8_output_sha256": "d9fc5c63d1cf97e45954df78092b2d4e5eee8c67bae8cc0bd0e5d5ed4a43d5f5",
+    "publication_enabled": false,
+    "result": {
+      "duplicates_suppressed": 10,
+      "executed_unique_jobs": 10,
+      "input_jobs": 20,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-041",
+      "V7-042",
+      "V7-043",
+      "V7-044",
+      "V7-045",
+      "V7-046",
+      "V7-047",
+      "V7-048",
+      "V7-049",
+      "V7-050"
+    ]
+  },
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-047"
+}

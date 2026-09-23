@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "story",
+  "downstream_consumer": "V8-068",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "126ebdfa483023bb553af4fc3151fb5cb27c6bc80ed42836227e2339719be6a1",
+  "output_path": "runtime/v8/story/V8-067.output.json",
+  "output_sha256": "2cdeb8ba2a94819f487a81d9087584368f2d56a44b1175c4b3972cef6c7a076f",
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-061",
+    "V7-062",
+    "V7-063",
+    "V7-064",
+    "V7-065",
+    "V7-066",
+    "V7-067",
+    "V7-068",
+    "V7-069",
+    "V7-070"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-067",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.750733+00:00"
+}

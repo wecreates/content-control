@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:46:30.767844+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "7d503190df0bc59500ae198e8fe58d9745b4485309071277733c0e36af727b44",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "resolver",
+      "producer": "repair",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-081",
+      "V7-082",
+      "V7-083",
+      "V7-084",
+      "V7-085",
+      "V7-086",
+      "V7-087",
+      "V7-088",
+      "V7-089",
+      "V7-090"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-086"
+}

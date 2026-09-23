@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:46:30.835681+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "93af0d5d0dd31d5f106205159422967d57f62747a9cd48c52a1d204c5fd63b27",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "fabeac1ea19bf36dff5c59bec6b7ec70df779b382c54408fa7ecac49406f2e4a",
+      "corrupt_sha256": "dcff58e74e51a95eb92b07722488a922dea74a3959b05ec4c5e11fa3a19ab2e4",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-161",
+      "V7-162",
+      "V7-163",
+      "V7-164",
+      "V7-165",
+      "V7-166",
+      "V7-167",
+      "V7-168",
+      "V7-169",
+      "V7-170"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-165"
+}

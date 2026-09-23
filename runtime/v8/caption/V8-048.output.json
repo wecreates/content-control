@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "caption",
+  "executed_at": "2026-09-23T14:46:30.733175+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "timeout-fallback",
+    "previous_v8_output_sha256": "f4ae771de4b496e788abdf259b341b2ccfb7422bb018d604cd96605468284c4d",
+    "publication_enabled": false,
+    "result": {
+      "fallback_sha256": "dca35519baaa9e81b5e8b96a2a8979d0fca27d3bfe72dd1c1d66ac3f56c039b2",
+      "fallback_valid": true,
+      "primary_timeout_injected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-041",
+      "V7-042",
+      "V7-043",
+      "V7-044",
+      "V7-045",
+      "V7-046",
+      "V7-047",
+      "V7-048",
+      "V7-049",
+      "V7-050"
+    ]
+  },
+  "phase": "timeout-fallback",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-048"
+}

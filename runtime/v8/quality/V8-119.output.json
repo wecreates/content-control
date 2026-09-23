@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "quality",
+  "executed_at": "2026-09-23T14:46:30.793103+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "8a03c3fd0a082cf3a0cd2a7297698813f9933e1225b17a746591f4e4e2d280e6",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-111",
+      "V7-112",
+      "V7-113",
+      "V7-114",
+      "V7-115",
+      "V7-116",
+      "V7-117",
+      "V7-118",
+      "V7-119",
+      "V7-120"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-119"
+}

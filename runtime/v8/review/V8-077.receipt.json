@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "review",
+  "downstream_consumer": "V8-078",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "56a2df0c757274b246ad488c63a488d6d2d49ffce56db338b545721521c07491",
+  "output_path": "runtime/v8/review/V8-077.output.json",
+  "output_sha256": "2a20c8f611af36e4a25ed3f7c03cf1b5c80e01634d3567b30128160ab1e1e82b",
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-071",
+    "V7-072",
+    "V7-073",
+    "V7-074",
+    "V7-075",
+    "V7-076",
+    "V7-077",
+    "V7-078",
+    "V7-079",
+    "V7-080"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-077",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.759305+00:00"
+}

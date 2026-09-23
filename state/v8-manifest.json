@@ -1,0 +1,133 @@
+{
+  "batch": "V8",
+  "completed_at": "2026-09-23T14:46:30.889567+00:00",
+  "domains": [
+    {
+      "domain": "orchestration",
+      "first_task": "V8-001",
+      "last_task": "V8-010",
+      "tasks": 10
+    },
+    {
+      "domain": "artifact",
+      "first_task": "V8-011",
+      "last_task": "V8-020",
+      "tasks": 10
+    },
+    {
+      "domain": "render",
+      "first_task": "V8-021",
+      "last_task": "V8-030",
+      "tasks": 10
+    },
+    {
+      "domain": "audio",
+      "first_task": "V8-031",
+      "last_task": "V8-040",
+      "tasks": 10
+    },
+    {
+      "domain": "caption",
+      "first_task": "V8-041",
+      "last_task": "V8-050",
+      "tasks": 10
+    },
+    {
+      "domain": "research",
+      "first_task": "V8-051",
+      "last_task": "V8-060",
+      "tasks": 10
+    },
+    {
+      "domain": "story",
+      "first_task": "V8-061",
+      "last_task": "V8-070",
+      "tasks": 10
+    },
+    {
+      "domain": "review",
+      "first_task": "V8-071",
+      "last_task": "V8-080",
+      "tasks": 10
+    },
+    {
+      "domain": "repair",
+      "first_task": "V8-081",
+      "last_task": "V8-090",
+      "tasks": 10
+    },
+    {
+      "domain": "resolver",
+      "first_task": "V8-091",
+      "last_task": "V8-100",
+      "tasks": 10
+    },
+    {
+      "domain": "assembly",
+      "first_task": "V8-101",
+      "last_task": "V8-110",
+      "tasks": 10
+    },
+    {
+      "domain": "quality",
+      "first_task": "V8-111",
+      "last_task": "V8-120",
+      "tasks": 10
+    },
+    {
+      "domain": "security",
+      "first_task": "V8-121",
+      "last_task": "V8-130",
+      "tasks": 10
+    },
+    {
+      "domain": "observability",
+      "first_task": "V8-131",
+      "last_task": "V8-140",
+      "tasks": 10
+    },
+    {
+      "domain": "performance",
+      "first_task": "V8-141",
+      "last_task": "V8-150",
+      "tasks": 10
+    },
+    {
+      "domain": "release",
+      "first_task": "V8-151",
+      "last_task": "V8-160",
+      "tasks": 10
+    },
+    {
+      "domain": "packaging",
+      "first_task": "V8-161",
+      "last_task": "V8-170",
+      "tasks": 10
+    },
+    {
+      "domain": "thumbnail",
+      "first_task": "V8-171",
+      "last_task": "V8-180",
+      "tasks": 10
+    },
+    {
+      "domain": "metadata",
+      "first_task": "V8-181",
+      "last_task": "V8-190",
+      "tasks": 10
+    },
+    {
+      "domain": "reliability",
+      "first_task": "V8-191",
+      "last_task": "V8-200",
+      "tasks": 10
+    }
+  ],
+  "publication_enabled": false,
+  "purpose": "next 200 executable resilience, integrity, and release-safety tasks",
+  "runtime_verified": 200,
+  "schema_version": 1,
+  "source_v7_verified": 200,
+  "started_at": "2026-09-23T14:46:30.695765+00:00",
+  "status": "DONE"
+}

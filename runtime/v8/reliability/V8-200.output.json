@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "reliability",
+  "executed_at": "2026-09-23T14:46:30.861594+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "fdde05fa60c73e5aebab945def3a9c6f7312fb9b2dea71780ad9f0aba096eef7",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-191",
+      "V7-192",
+      "V7-193",
+      "V7-194",
+      "V7-195",
+      "V7-196",
+      "V7-197",
+      "V7-198",
+      "V7-199",
+      "V7-200"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-200"
+}

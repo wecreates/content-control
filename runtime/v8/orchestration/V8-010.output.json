@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:46:30.697536+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "faf7c9196f32321cde2bdd2c866360f48b9b8280a5ca42c0fbe21ef6242a25a2",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-001",
+      "V7-002",
+      "V7-003",
+      "V7-004",
+      "V7-005",
+      "V7-006",
+      "V7-007",
+      "V7-008",
+      "V7-009",
+      "V7-010"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-010"
+}

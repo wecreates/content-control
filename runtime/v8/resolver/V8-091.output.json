@@ -1,0 +1,33 @@
+{
+  "batch": "V8",
+  "domain": "resolver",
+  "executed_at": "2026-09-23T14:46:30.776295+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "dependency-break-test",
+    "previous_v8_output_sha256": "7e701224931fd0f00183985e4bc00eb6f534af1930cfdab43381c17495e90f8e",
+    "publication_enabled": false,
+    "result": {
+      "missing_dependency_rejected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-091",
+      "V7-092",
+      "V7-093",
+      "V7-094",
+      "V7-095",
+      "V7-096",
+      "V7-097",
+      "V7-098",
+      "V7-099",
+      "V7-100"
+    ]
+  },
+  "phase": "dependency-break-test",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-091"
+}

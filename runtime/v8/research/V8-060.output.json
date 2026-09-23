@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:46:30.741842+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "f3cb44c66675d6f93651696061ce5c56701d51bc41ca349f9ff7443fc037d4d5",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-051",
+      "V7-052",
+      "V7-053",
+      "V7-054",
+      "V7-055",
+      "V7-056",
+      "V7-057",
+      "V7-058",
+      "V7-059",
+      "V7-060"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-060"
+}

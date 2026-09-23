@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "metadata",
+  "executed_at": "2026-09-23T14:46:30.852967+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "9404cfe3fbfbfb4ccc579e2cc6719a2ddd921a38f1304caa22c9ebc6572d2e63",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "reliability",
+      "producer": "metadata",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-181",
+      "V7-182",
+      "V7-183",
+      "V7-184",
+      "V7-185",
+      "V7-186",
+      "V7-187",
+      "V7-188",
+      "V7-189",
+      "V7-190"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-186"
+}

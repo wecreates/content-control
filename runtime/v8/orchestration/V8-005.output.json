@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:46:30.697536+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "b0108dc669cd149ff983254d10c63621256f874e3b50297de9e63394b35509aa",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "c17602f832a04d4bd022a8b517af417d30a684f4393858f90148d91cdf58a02a",
+      "corrupt_sha256": "b5a7237b45bd88dacac744690e3fbf1b8ac8536316a857ca4da7d8295c69c025",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-001",
+      "V7-002",
+      "V7-003",
+      "V7-004",
+      "V7-005",
+      "V7-006",
+      "V7-007",
+      "V7-008",
+      "V7-009",
+      "V7-010"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-005"
+}

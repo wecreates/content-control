@@ -1,0 +1,33 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:46:30.697536+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "dependency-break-test",
+    "previous_v8_output_sha256": "0cae5f68fbb2fef922edb53992e1deb57732ca1bf3c92e4fdc8a5f9c17d778ac",
+    "publication_enabled": false,
+    "result": {
+      "missing_dependency_rejected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-001",
+      "V7-002",
+      "V7-003",
+      "V7-004",
+      "V7-005",
+      "V7-006",
+      "V7-007",
+      "V7-008",
+      "V7-009",
+      "V7-010"
+    ]
+  },
+  "phase": "dependency-break-test",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-001"
+}

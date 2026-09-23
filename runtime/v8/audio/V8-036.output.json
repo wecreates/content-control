@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "audio",
+  "executed_at": "2026-09-23T14:46:30.724389+00:00",
+  "payload": {
+    "domain": "audio",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "75aabf142c267ac2f059fcbec20172835563fbae32537c4ae9f85de6cc07c367",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "caption",
+      "producer": "audio",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-031",
+      "V7-032",
+      "V7-033",
+      "V7-034",
+      "V7-035",
+      "V7-036",
+      "V7-037",
+      "V7-038",
+      "V7-039",
+      "V7-040"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-036"
+}

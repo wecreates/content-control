@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "observability",
+  "downstream_consumer": "V8-138",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "c0990b6dcc6039efa41325ecc76b6995faccc0cea0c93e6659f797beac9d076f",
+  "output_path": "runtime/v8/observability/V8-137.output.json",
+  "output_sha256": "93001f67637d69ff6b9d6f04632544d5683a41e0fa54eb8c80391532188bfbd1",
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-131",
+    "V7-132",
+    "V7-133",
+    "V7-134",
+    "V7-135",
+    "V7-136",
+    "V7-137",
+    "V7-138",
+    "V7-139",
+    "V7-140"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-137",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.810188+00:00"
+}

@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "repair",
+  "downstream_consumer": "V8-085",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "d765599813fb02e0e66072a258fa7fbee7d327ca0ea32bb348d07cd4414d7362",
+  "output_path": "runtime/v8/repair/V8-084.output.json",
+  "output_sha256": "e9c17e68277f15330f667189f8fae43c5b4e1e8468bfc20ceb42e218eac57584",
+  "phase": "recovery-replay",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-081",
+    "V7-082",
+    "V7-083",
+    "V7-084",
+    "V7-085",
+    "V7-086",
+    "V7-087",
+    "V7-088",
+    "V7-089",
+    "V7-090"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-084",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.767844+00:00"
+}

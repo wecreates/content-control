@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "audio",
+  "downstream_consumer": "caption",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "565047223d20f6fa2de441799efba4b0415c65ee7d81cda77dfe4103df008448",
+  "output_path": "runtime/v8/audio/V8-040.output.json",
+  "output_sha256": "2f62ad96119d6cd06e36cc1f5e5682774bdc34d239df641d414e00538cacf014",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-031",
+    "V7-032",
+    "V7-033",
+    "V7-034",
+    "V7-035",
+    "V7-036",
+    "V7-037",
+    "V7-038",
+    "V7-039",
+    "V7-040"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-040",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.724389+00:00"
+}

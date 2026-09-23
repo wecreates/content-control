@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "release",
+  "executed_at": "2026-09-23T14:46:30.827103+00:00",
+  "payload": {
+    "domain": "release",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "4551690006c5b84897da69e5cc2a66309d20df4f5fa1ed5d538f6d2abf0cdc7d",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "fb9b0648a8aaba614c4d62c6e1092450faf66758dd05df00358158e5bf936b98",
+      "corrupt_sha256": "6728b465a358865f8ae43a36f2b3275620933626f9bbf3ab27f09fbe161156e4",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-151",
+      "V7-152",
+      "V7-153",
+      "V7-154",
+      "V7-155",
+      "V7-156",
+      "V7-157",
+      "V7-158",
+      "V7-159",
+      "V7-160"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-155"
+}

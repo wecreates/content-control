@@ -1,0 +1,34 @@
+{
+  "batch": "V8",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:46:30.767844+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "recovery-replay",
+    "previous_v8_output_sha256": "d765599813fb02e0e66072a258fa7fbee7d327ca0ea32bb348d07cd4414d7362",
+    "publication_enabled": false,
+    "result": {
+      "injected_failure_on_attempt": 1,
+      "recovered_on_attempt": 2,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-081",
+      "V7-082",
+      "V7-083",
+      "V7-084",
+      "V7-085",
+      "V7-086",
+      "V7-087",
+      "V7-088",
+      "V7-089",
+      "V7-090"
+    ]
+  },
+  "phase": "recovery-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-084"
+}

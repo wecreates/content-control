@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "caption",
+  "executed_at": "2026-09-23T14:46:30.733175+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "publication-kill-switch",
+    "previous_v8_output_sha256": "44995b3f4d27eac7b929dc49f7e8d2182c494feaa1f0b746515d2d528c3615f6",
+    "publication_enabled": false,
+    "result": {
+      "control_plane_locked": true,
+      "episode_locked": true,
+      "ledger_locked": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-041",
+      "V7-042",
+      "V7-043",
+      "V7-044",
+      "V7-045",
+      "V7-046",
+      "V7-047",
+      "V7-048",
+      "V7-049",
+      "V7-050"
+    ]
+  },
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-043"
+}

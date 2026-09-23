@@ -1,0 +1,33 @@
+{
+  "batch": "V8",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:46:30.741842+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "dependency-break-test",
+    "previous_v8_output_sha256": "422ab99b32417d8cea9cda95dcf8a6c98967d2cb07dcfb2ea75a3601e51b99e9",
+    "publication_enabled": false,
+    "result": {
+      "missing_dependency_rejected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-051",
+      "V7-052",
+      "V7-053",
+      "V7-054",
+      "V7-055",
+      "V7-056",
+      "V7-057",
+      "V7-058",
+      "V7-059",
+      "V7-060"
+    ]
+  },
+  "phase": "dependency-break-test",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-051"
+}

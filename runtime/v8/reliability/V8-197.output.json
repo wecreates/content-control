@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "reliability",
+  "executed_at": "2026-09-23T14:46:30.861594+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "duplicate-work-suppression",
+    "previous_v8_output_sha256": "bf3b41e1b6450bce657c55ce4afa9d90828b2f67b81dca265e590d14077d9689",
+    "publication_enabled": false,
+    "result": {
+      "duplicates_suppressed": 10,
+      "executed_unique_jobs": 10,
+      "input_jobs": 20,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-191",
+      "V7-192",
+      "V7-193",
+      "V7-194",
+      "V7-195",
+      "V7-196",
+      "V7-197",
+      "V7-198",
+      "V7-199",
+      "V7-200"
+    ]
+  },
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-197"
+}

@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "release",
+  "downstream_consumer": "V8-157",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "2a4bcb70ab76dd7ede49ca9aac150ce944a28d0394578a0ee7444fa37bb77c68",
+  "output_path": "runtime/v8/release/V8-156.output.json",
+  "output_sha256": "062f54aaf4b4c874a1b70fe204fde4d8e246eb1348845170e368acb5a7571e21",
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-151",
+    "V7-152",
+    "V7-153",
+    "V7-154",
+    "V7-155",
+    "V7-156",
+    "V7-157",
+    "V7-158",
+    "V7-159",
+    "V7-160"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-156",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.827103+00:00"
+}

@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "observability",
+  "downstream_consumer": "V8-133",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "d0c75b23015462ddf5f546ebd278c5216da51dcfe14807156fadef80d85d3571",
+  "output_path": "runtime/v8/observability/V8-132.output.json",
+  "output_sha256": "e075f3ad71ac2816e7d7fc5e2226d4edf0c580c3987110e17472a2ccfc2f239f",
+  "phase": "receipt-chain-audit",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-131",
+    "V7-132",
+    "V7-133",
+    "V7-134",
+    "V7-135",
+    "V7-136",
+    "V7-137",
+    "V7-138",
+    "V7-139",
+    "V7-140"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-132",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.810188+00:00"
+}

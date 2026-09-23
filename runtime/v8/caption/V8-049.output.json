@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "caption",
+  "executed_at": "2026-09-23T14:46:30.733175+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "20b198a54889aeb8970ecca41aa097ee122c04a77386eb6603b509ceb0586c75",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-041",
+      "V7-042",
+      "V7-043",
+      "V7-044",
+      "V7-045",
+      "V7-046",
+      "V7-047",
+      "V7-048",
+      "V7-049",
+      "V7-050"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-049"
+}

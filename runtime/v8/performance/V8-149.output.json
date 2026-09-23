@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "performance",
+  "executed_at": "2026-09-23T14:46:30.818685+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "459946c927bc271e0e774a57f34c7b403c8b03d8cf93ad8246666be38d46a0c7",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-141",
+      "V7-142",
+      "V7-143",
+      "V7-144",
+      "V7-145",
+      "V7-146",
+      "V7-147",
+      "V7-148",
+      "V7-149",
+      "V7-150"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-149"
+}

@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "observability",
+  "executed_at": "2026-09-23T14:46:30.810188+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "0d874516c2bf9c3a4db80fbdd6b66418f0a4086f39687b6cfffbed30628b1942",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "c64ee786a0cd445ed57b5bdbd2637481a90ec833b95ffe550c9985b4db4bfef6",
+      "corrupt_sha256": "34e5fd14b9cd6d246d440bfc1d83a522e826406e6a6d8f51349253a027c92c17",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-131",
+      "V7-132",
+      "V7-133",
+      "V7-134",
+      "V7-135",
+      "V7-136",
+      "V7-137",
+      "V7-138",
+      "V7-139",
+      "V7-140"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-135"
+}

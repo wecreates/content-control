@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "performance",
+  "downstream_consumer": "V8-144",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "b9467ab377af069ff5ff11a85f70f260694cb87c41ccc4bd8629f5f3bdf7986b",
+  "output_path": "runtime/v8/performance/V8-143.output.json",
+  "output_sha256": "0e16b7e178e38d8331a9457783b0e3e7d697a1f6200ca8e3cfc97903a0721cb0",
+  "phase": "publication-kill-switch",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-141",
+    "V7-142",
+    "V7-143",
+    "V7-144",
+    "V7-145",
+    "V7-146",
+    "V7-147",
+    "V7-148",
+    "V7-149",
+    "V7-150"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-143",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.818685+00:00"
+}

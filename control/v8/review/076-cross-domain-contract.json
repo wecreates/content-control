@@ -1,0 +1,24 @@
+{
+  "batch": "V8",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real V7 runtime evidence exercised",
+    "failure or integrity behavior exercised",
+    "expected V8 output exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "domain": "review",
+  "failure_route": "resolver",
+  "phase": "cross-domain-contract",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "output": "runtime/v8/review/V8-076.output.json",
+    "receipt": "runtime/v8/review/V8-076.receipt.json"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V8-076"
+}

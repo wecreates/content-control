@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:46:30.697536+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "5443e4d3e6b95428bef414056ca865575779635cb074f636a9f7e325329fe7c1",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-001",
+      "V7-002",
+      "V7-003",
+      "V7-004",
+      "V7-005",
+      "V7-006",
+      "V7-007",
+      "V7-008",
+      "V7-009",
+      "V7-010"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-009"
+}

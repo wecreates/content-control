@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "artifact",
+  "executed_at": "2026-09-23T14:46:30.706809+00:00",
+  "payload": {
+    "domain": "artifact",
+    "phase": "duplicate-work-suppression",
+    "previous_v8_output_sha256": "3904126588cd34b7707e958a4e8fc7d89806bffddbcd0f2eb445b11b1fea4a4d",
+    "publication_enabled": false,
+    "result": {
+      "duplicates_suppressed": 10,
+      "executed_unique_jobs": 10,
+      "input_jobs": 20,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-011",
+      "V7-012",
+      "V7-013",
+      "V7-014",
+      "V7-015",
+      "V7-016",
+      "V7-017",
+      "V7-018",
+      "V7-019",
+      "V7-020"
+    ]
+  },
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-017"
+}

@@ -1,0 +1,40 @@
+{
+  "batch": "V8",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:46:30.835681+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "end-to-end-proof",
+    "previous_v8_output_sha256": "d0ffe82e0bba04fc8b9c15e27bd80ff5bbae3009ec61a09a4463b884e41ee769",
+    "publication_enabled": false,
+    "result": {
+      "checks": {
+        "controls_done": true,
+        "downstream_accepted": true,
+        "hashes_bound": true,
+        "outputs_pass": true,
+        "publication_locked": true,
+        "receipts_verified": true
+      },
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-161",
+      "V7-162",
+      "V7-163",
+      "V7-164",
+      "V7-165",
+      "V7-166",
+      "V7-167",
+      "V7-168",
+      "V7-169",
+      "V7-170"
+    ]
+  },
+  "phase": "end-to-end-proof",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-169"
+}

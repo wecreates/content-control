@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T14:46:30.844334+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "cross-domain-contract",
+    "previous_v8_output_sha256": "01939f62d911d9243999a854da167af0d0b69b3748774855420723f409427bea",
+    "publication_enabled": false,
+    "result": {
+      "accepted": 10,
+      "consumer": "metadata",
+      "producer": "thumbnail",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-171",
+      "V7-172",
+      "V7-173",
+      "V7-174",
+      "V7-175",
+      "V7-176",
+      "V7-177",
+      "V7-178",
+      "V7-179",
+      "V7-180"
+    ]
+  },
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-176"
+}

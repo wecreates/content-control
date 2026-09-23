@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "caption",
+  "executed_at": "2026-09-23T14:46:30.733175+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "72713f4551eac762b7fe2843d3abb3faef92ad3872990106242cd87bc5979dc8",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "ed7e470778d888846a1f8669bede982338b4b373e864baabc1b949951ec7d296",
+      "corrupt_sha256": "18ab7b333350a1b11e944b86200530ad7af027137a06d6e633768bf6c335a2a4",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-041",
+      "V7-042",
+      "V7-043",
+      "V7-044",
+      "V7-045",
+      "V7-046",
+      "V7-047",
+      "V7-048",
+      "V7-049",
+      "V7-050"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-045"
+}

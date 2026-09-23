@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "assembly",
+  "executed_at": "2026-09-23T14:46:30.784729+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "70f77613b405cafdd0c11312d8b868bb8b029d286a86744ae7c307c83f62fa0e",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-101",
+      "V7-102",
+      "V7-103",
+      "V7-104",
+      "V7-105",
+      "V7-106",
+      "V7-107",
+      "V7-108",
+      "V7-109",
+      "V7-110"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-110"
+}

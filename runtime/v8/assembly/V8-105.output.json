@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "assembly",
+  "executed_at": "2026-09-23T14:46:30.784729+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "ee7ce6bd91e80b0f0813d003edd3f11e8a72fe25211458082c028d4991e3667a",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "9d56071e5fe93f5d82a870ecb05b148b04be9fe8275d3ed70fa0000b762ca63c",
+      "corrupt_sha256": "c7efec19a28896b972b2f5832cf41ee423aa0ab2de61968d33d43a54171da7af",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-101",
+      "V7-102",
+      "V7-103",
+      "V7-104",
+      "V7-105",
+      "V7-106",
+      "V7-107",
+      "V7-108",
+      "V7-109",
+      "V7-110"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-105"
+}

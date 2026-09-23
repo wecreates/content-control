@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "assembly",
+  "downstream_consumer": "V8-107",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "1d79445c281b79150e6ccee70e58fc0ecd87931323fa6b06272e3300b2478d77",
+  "output_path": "runtime/v8/assembly/V8-106.output.json",
+  "output_sha256": "3c627fd6c2941c30bdc4ac23863ce1715377a22ec1250b5fdd89a75e6a6aa9a9",
+  "phase": "cross-domain-contract",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-101",
+    "V7-102",
+    "V7-103",
+    "V7-104",
+    "V7-105",
+    "V7-106",
+    "V7-107",
+    "V7-108",
+    "V7-109",
+    "V7-110"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-106",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.784729+00:00"
+}

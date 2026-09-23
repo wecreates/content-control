@@ -1,0 +1,33 @@
+{
+  "batch": "V8",
+  "domain": "artifact",
+  "executed_at": "2026-09-23T14:46:30.706809+00:00",
+  "payload": {
+    "domain": "artifact",
+    "phase": "dependency-break-test",
+    "previous_v8_output_sha256": "ae226ac0bfb361c182dd9145798d81b9a011d45a2af7af58c6e5f3d7440e59a3",
+    "publication_enabled": false,
+    "result": {
+      "missing_dependency_rejected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-011",
+      "V7-012",
+      "V7-013",
+      "V7-014",
+      "V7-015",
+      "V7-016",
+      "V7-017",
+      "V7-018",
+      "V7-019",
+      "V7-020"
+    ]
+  },
+  "phase": "dependency-break-test",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-011"
+}

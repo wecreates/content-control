@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "story",
+  "executed_at": "2026-09-23T14:46:30.750733+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "f05cebabfc902b302c5aa94445c26acf000abe60d7df2918399704776fcb76bf",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "accc56b6594aefb95380d018eb40b752f850e31c8d7d7641c986119310c9678f",
+      "corrupt_sha256": "d100f3d73b441518cd668e2ae0307dd5ecf75fbb668feb82e519833c5fc2ae87",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-061",
+      "V7-062",
+      "V7-063",
+      "V7-064",
+      "V7-065",
+      "V7-066",
+      "V7-067",
+      "V7-068",
+      "V7-069",
+      "V7-070"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-065"
+}

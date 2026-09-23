@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "render",
+  "downstream_consumer": "audio",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "aec04c02ff052bdb192245a08aa082ccaaf45fd4b1328d35dddb78b6a6e52f34",
+  "output_path": "runtime/v8/render/V8-030.output.json",
+  "output_sha256": "a6ac7fdb4d51d45fe7d4754fe2c201b316dffca3d3cf5b477f52fc7a721c4cf1",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-021",
+    "V7-022",
+    "V7-023",
+    "V7-024",
+    "V7-025",
+    "V7-026",
+    "V7-027",
+    "V7-028",
+    "V7-029",
+    "V7-030"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-030",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.715474+00:00"
+}

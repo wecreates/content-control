@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "metadata",
+  "executed_at": "2026-09-23T14:46:30.852967+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "artifact-corruption-detection",
+    "previous_v8_output_sha256": "8288c2f4046b7e4226796e7759182f48e428af5bd080b64518b8952db498a7f8",
+    "publication_enabled": false,
+    "result": {
+      "clean_sha256": "dbd5009092b68546abe8e512b0e1ec74966397e631d2eae20fd8837d923beb00",
+      "corrupt_sha256": "a05b9c64a789e9ae8a1a3c59e6985465fe5ae97dab1c4f100f90b54adc5489be",
+      "corruption_detected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-181",
+      "V7-182",
+      "V7-183",
+      "V7-184",
+      "V7-185",
+      "V7-186",
+      "V7-187",
+      "V7-188",
+      "V7-189",
+      "V7-190"
+    ]
+  },
+  "phase": "artifact-corruption-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-185"
+}

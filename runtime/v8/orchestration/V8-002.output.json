@@ -1,0 +1,34 @@
+{
+  "batch": "V8",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:46:30.697536+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "receipt-chain-audit",
+    "previous_v8_output_sha256": "d7435e3ac097c010b631e3afd040384909e2ec5f144dc8b2ed4ec7d2673e3892",
+    "publication_enabled": false,
+    "result": {
+      "bindings_verified": 10,
+      "chain_sha256": "f647c01d18bd76beb23491327b2721f368be8c7f7a01a1babe90b2368f842b8d",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-001",
+      "V7-002",
+      "V7-003",
+      "V7-004",
+      "V7-005",
+      "V7-006",
+      "V7-007",
+      "V7-008",
+      "V7-009",
+      "V7-010"
+    ]
+  },
+  "phase": "receipt-chain-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-002"
+}

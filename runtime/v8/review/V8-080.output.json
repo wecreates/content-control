@@ -1,0 +1,36 @@
+{
+  "batch": "V8",
+  "domain": "review",
+  "executed_at": "2026-09-23T14:46:30.759305+00:00",
+  "payload": {
+    "domain": "review",
+    "phase": "done-gate",
+    "previous_v8_output_sha256": "ea49d8edcffcf4f56ac357b3b49866c597c0dbf75054c888a2134ff9046c79d0",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v8_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v7_runtime_verified": 10,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-071",
+      "V7-072",
+      "V7-073",
+      "V7-074",
+      "V7-075",
+      "V7-076",
+      "V7-077",
+      "V7-078",
+      "V7-079",
+      "V7-080"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-080"
+}

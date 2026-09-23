@@ -1,0 +1,34 @@
+{
+  "batch": "V8",
+  "domain": "quality",
+  "executed_at": "2026-09-23T14:46:30.793103+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "receipt-chain-audit",
+    "previous_v8_output_sha256": "5b1b9a1983227f21952dbc95faa11a63e7b71837fd47506105cebad7a0803347",
+    "publication_enabled": false,
+    "result": {
+      "bindings_verified": 10,
+      "chain_sha256": "8ae4eb5649a0373dc6279417903991665db020feb68654fb3b8e83ded1039055",
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-111",
+      "V7-112",
+      "V7-113",
+      "V7-114",
+      "V7-115",
+      "V7-116",
+      "V7-117",
+      "V7-118",
+      "V7-119",
+      "V7-120"
+    ]
+  },
+  "phase": "receipt-chain-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-112"
+}

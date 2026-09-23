@@ -1,0 +1,29 @@
+{
+  "batch": "V8",
+  "domain": "artifact",
+  "downstream_consumer": "V8-018",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "3904126588cd34b7707e958a4e8fc7d89806bffddbcd0f2eb445b11b1fea4a4d",
+  "output_path": "runtime/v8/artifact/V8-017.output.json",
+  "output_sha256": "009c7df4bd853be26aa587c85924a399c22c3c9b3a3d2c5c3ca8fea193192c87",
+  "phase": "duplicate-work-suppression",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "schema_version": 1,
+  "source_v7_tasks": [
+    "V7-011",
+    "V7-012",
+    "V7-013",
+    "V7-014",
+    "V7-015",
+    "V7-016",
+    "V7-017",
+    "V7-018",
+    "V7-019",
+    "V7-020"
+  ],
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V8-017",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T14:46:30.706809+00:00"
+}

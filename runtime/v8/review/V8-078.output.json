@@ -1,0 +1,35 @@
+{
+  "batch": "V8",
+  "domain": "review",
+  "executed_at": "2026-09-23T14:46:30.759305+00:00",
+  "payload": {
+    "domain": "review",
+    "phase": "timeout-fallback",
+    "previous_v8_output_sha256": "2a20c8f611af36e4a25ed3f7c03cf1b5c80e01634d3567b30128160ab1e1e82b",
+    "publication_enabled": false,
+    "result": {
+      "fallback_sha256": "c47dd82afde3545e422a8912f0b568e98a8f254f16ada8932e5e91ee7070a295",
+      "fallback_valid": true,
+      "primary_timeout_injected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-071",
+      "V7-072",
+      "V7-073",
+      "V7-074",
+      "V7-075",
+      "V7-076",
+      "V7-077",
+      "V7-078",
+      "V7-079",
+      "V7-080"
+    ]
+  },
+  "phase": "timeout-fallback",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-078"
+}

@@ -1,0 +1,33 @@
+{
+  "batch": "V8",
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T14:46:30.844334+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "dependency-break-test",
+    "previous_v8_output_sha256": "e20f94070738c82fcfb0958c748bf47c4b0b574c22bdd913aa9f9ae2bc8afc7d",
+    "publication_enabled": false,
+    "result": {
+      "missing_dependency_rejected": true,
+      "status": "PASS"
+    },
+    "source_v7_count": 10,
+    "source_v7_tasks": [
+      "V7-171",
+      "V7-172",
+      "V7-173",
+      "V7-174",
+      "V7-175",
+      "V7-176",
+      "V7-177",
+      "V7-178",
+      "V7-179",
+      "V7-180"
+    ]
+  },
+  "phase": "dependency-break-test",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V8-171"
+}
