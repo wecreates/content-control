@@ -12,7 +12,7 @@ permissions:
   contents: write
 concurrency:
   group: v5-content-runtime
-  cancel-in-progress: false
+  cancel-in-progress: true
 env:
   PUBLICATION_ENABLED: "false"
   EXPECTED_SHA: fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb
@@ -39,14 +39,30 @@ jobs:
         run: |
           set -euo pipefail
           echo "$EXPECTED_SHA  /tmp/content/EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
-      - name: Generate exact-video transcript story and research evidence
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          EPISODE1_MEDIA: /tmp/content/EPISODE1_FIRST_WATCH.mp4
+      - name: Download prior hash-bound exact-video analysis evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: v5-content-runtime-evidence
+          path: /tmp/analysis-cache
+          repository: wecreates/content-control
+          run-id: 35820889917
+          github-token: ${{ github.token }}
+      - name: Restore and verify exact-video analysis evidence
         run: |
           set -euo pipefail
-          test -n "$GEMINI_API_KEY"
-          python scripts/gemini_content_analysis.py
+          mkdir -p state
+          test -f /tmp/analysis-cache/state/episode1-content-analysis.json
+          cp /tmp/analysis-cache/state/episode1-content-analysis.json state/episode1-content-analysis.json
+          python - <<'PY'
+          import json,os
+          p=json.load(open('state/episode1-content-analysis.json'))
+          assert p['artifact_sha256']==os.environ['EXPECTED_SHA']
+          assert p.get('complete_end_to_end_analysis') is True
+          assert len(p.get('captions',[]))>=40
+          assert len(p.get('story_beats',[]))>=4
+          assert len(p.get('research_claims',[]))>=5
+          print({'captions':len(p['captions']),'story_beats':len(p['story_beats']),'research_claims':len(p['research_claims'])})
+          PY
       - name: Execute 120 real V5 content controls
         env:
           EPISODE1_MEDIA: /tmp/content/EPISODE1_FIRST_WATCH.mp4
