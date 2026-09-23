@@ -25,7 +25,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api repos/${GITHUB_REPOSITORY}/actions/jobs/107038932305/logs > /tmp/exact-review-job.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107038932305/logs > /tmp/exact-review-job.log
           test -s /tmp/exact-review-job.log
           grep -q 'transient inference HTTP 503' /tmp/exact-review-job.log
           grep -q 'transient inference HTTP 429' /tmp/exact-review-job.log
