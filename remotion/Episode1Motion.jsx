@@ -288,10 +288,11 @@ const Finale = ({t}) => {
   );
 };
 
-export const Episode1Motion = () => {
+export const Episode1Motion = ({audioDuration = 306}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const t = frame / fps;
+  const rawTime = frame / fps;
+  const t = rawTime * (306 / Math.max(1, audioDuration));
 
   const alexX = tx(t, [0, 28, 64, 100, 130, 160, 190, 220, 248, 282, 306], [300, 600, 980, 1530, 1950, 2300, 2760, 3150, 3420, 3850, 4180]);
   const alexY = 390 + Math.sin(t * 2.1) * 7;
