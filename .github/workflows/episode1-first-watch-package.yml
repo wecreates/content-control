@@ -22,10 +22,10 @@ jobs:
         with: {fetch-depth: 0}
       - name: Download and bind exact PASS candidate
         env:
-          SOURCE_URL: "https://uc018ebb104b0ec5ab84167b893d.dl.dropboxusercontent.com/cd/0/get/DIprw9yq1FN5gdm5rRSFE_bEwyvmP01hIK__WROSXGDfRjv9uLssKJBS8g_jTCVz5yqzM0k99cImb8AlnVMO9iSLctbDJ6GYL_QPjyhDoGKRHDKFOV3mHe3vZ_6ZOdj55xCCIy4_VVnc_8LHSPiK3KKadXBnTqruQyg6dIYtmKz9LQ/file?c_luid=a22ccd02"
+          SOURCE_URL: "https://ucf063d7b56534f9b19ad680e377.dl.dropboxusercontent.com/cd/0/get/DIqF9VguMeUpVmqdKSHbmA1tW7GBMC31CGNOfFf8RFyREqP3CnsOS4iC6pAuU80Aj0QiTjeam85EMRjvXk9z5qyzsVt2nHxvEigJ4Ybk69lTxmNRenOVKPQa94Gl4DDyeVlFc5DpHnUY6IFznQuev6UywCNeRrb7-vl3TP2DZX8Egw/file?c_luid=a22ccd02"
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 --retry-all-errors "$SOURCE_URL" -o EPISODE1_FIRST_WATCH.mp4
+          curl --fail --location "$SOURCE_URL" -o EPISODE1_FIRST_WATCH.mp4
           echo "$EXPECTED_SHA  EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
           test -s EPISODE1_FIRST_WATCH.mp4
       - name: Verify duration, AV streams, and exact review PASS
