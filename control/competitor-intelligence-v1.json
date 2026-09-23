@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "purpose": "Full-video competitor intelligence for Episode 1 quality benchmarking",
+  "creators": [
+    {
+      "creator": "Fireship",
+      "role": "compression_editing",
+      "targets": [
+        {
+          "url": "https://www.youtube.com/watch?v=DHjqpvDnNGE",
+          "title": "JavaScript in 100 Seconds"
+        },
+        {
+          "url": "https://www.youtube.com/watch?v=YOlr79NaAtQ",
+          "title": "What is THIS in JavaScript? in 100 seconds"
+        }
+      ]
+    },
+    {
+      "creator": "Sam O'Nella Academy",
+      "role": "minimalist_visual_comedy",
+      "targets": [
+        {
+          "url": "https://www.youtube.com/watch?v=-A3IlRATIsI",
+          "title": "Diogenes, the Publicly-Defecating Philosopher"
+        },
+        {
+          "url": "https://www.youtube.com/watch?v=Gxbmvud_SvQ",
+          "title": "An Open Letter to Swiss Miss"
+        }
+      ]
+    },
+    {
+      "creator": "Casually Explained",
+      "role": "deadpan_minimalist_storytelling",
+      "targets": [
+        {
+          "url": "https://www.youtube.com/watch?v=ZuzPcW4djrA",
+          "title": "Casually Explained: Dating"
+        }
+      ]
+    },
+    {
+      "creator": "TheOdd1sOut",
+      "role": "character_reaction_storytelling",
+      "targets": [
+        {
+          "url": "https://www.youtube.com/watch?v=2yFCyPX3kT0",
+          "title": "Annoying Customers"
+        }
+      ]
+    },
+    {
+      "creator": "Alan Becker",
+      "role": "physical_stick_action",
+      "targets": [
+        {
+          "search_query": "Alan Becker Animation vs Minecraft original",
+          "title": "Animation vs. Minecraft (original)"
+        },
+        {
+          "search_query": "Alan Becker Animator vs Animation 4 original",
+          "title": "Animator vs. Animation 4 (original)"
+        }
+      ]
+    }
+  ],
+  "agent_outputs": [
+    "full_av_timestamp_analysis",
+    "hook_map",
+    "scene_cut_density",
+    "motion_density",
+    "retention_reset_map",
+    "joke_and_payoff_map",
+    "character_action_map",
+    "sound_design_map",
+    "transition_map",
+    "ending_payoff_map",
+    "transferable_patterns",
+    "patterns_to_avoid_copying"
+  ]
+}
