@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "done_only_when": [
+    "playable exact candidate exists",
+    "Chris first watch complete",
+    "Chris changes resolved",
+    "team final AV review green",
+    "creator comparisons complete",
+    "zero critical/major",
+    "release lock hash-bound"
+  ],
+  "publication_separate": true,
+  "publication_enabled": false
+}
