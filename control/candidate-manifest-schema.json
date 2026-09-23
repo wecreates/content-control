@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "required": [
+    "video_sha256",
+    "duration_sec",
+    "resolution",
+    "audio_present",
+    "review_receipt",
+    "repair_receipts",
+    "regression_receipt"
+  ],
+  "candidate_ready_requires": "all referenced receipts VERIFIED"
+}
