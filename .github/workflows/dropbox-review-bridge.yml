@@ -1,0 +1,51 @@
+name: Dropbox Exact Review Bridge
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/dropbox-review-bridge.yml']
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exact_review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Ingest exact candidate
+        env:
+          SOURCE_URL: "https://uc9f8e99f09414ec1c190e61f9f9.dl.dropboxusercontent.com/cd/0/get/DIo2N4mY4aF1vlfUuBOv8h8EKZX7g30cgQWqqRGqFWiWvbL3_qXWg2OkeLpjiuvd_Rl27dbAhRgDMhSZTPATknozyKRhWxRusLTHzwlRKN2hq5pMGn4o2QIsjv-BtbT7oKbLokTjKScWNJkuxT2HYujRrndHU6-v0BV8Rjuebehn8g/file?c_luid=a22ccd02"
+        run: |
+          curl --fail --location --retry 2 "$SOURCE_URL" -o FINANCE_REVIEW_4_9.mp4
+          echo "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb  FINANCE_REVIEW_4_9.mp4" | sha256sum -c -
+      - name: Upload to Gemini and review exact AV
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json,os,pathlib,time,urllib.request
+          p=pathlib.Path("FINANCE_REVIEW_4_9.mp4"); key=os.environ["GEMINI_API_KEY"]
+          meta=json.dumps({"file":{"display_name":p.name}}).encode()
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/upload/v1beta/files?key="+key,data=meta,headers={"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":str(p.stat().st_size),"X-Goog-Upload-Header-Content-Type":"video/mp4","Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=60) as r: u=r.headers["X-Goog-Upload-URL"]
+          req=urllib.request.Request(u,data=p.read_bytes(),headers={"Content-Length":str(p.stat().st_size),"X-Goog-Upload-Offset":"0","X-Goog-Upload-Command":"upload, finalize"})
+          with urllib.request.urlopen(req,timeout=240) as r: f=json.loads(r.read())["file"]
+          for _ in range(90):
+            with urllib.request.urlopen("https://generativelanguage.googleapis.com/v1beta/"+f["name"]+"?key="+key,timeout=30) as r: cur=json.loads(r.read())
+            if cur.get("state")=="ACTIVE": f=cur; break
+            if cur.get("state")=="FAILED": raise RuntimeError(cur)
+            time.sleep(5)
+          else: raise RuntimeError("Gemini processing timeout")
+          prompt="""Review this exact full consumer-finance YouTube video end-to-end, including all audio. Return strict JSON only. Find every material launch defect with timestamps. Evaluate hook, narrative clarity, factual-risk wording, character continuity, motion/acting naturalness, static/robotic holds, shot variety, text readability, narration pronunciation/cadence/prosody/fatigue, SFX timing/repetition, silence/sonic gaps, comedic timing, pacing, AV sync, ending/payoff, and readiness against polished finance/explainer and stick-animation YouTube work. Schema: {"artifact_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb","complete_end_to_end_review":true|false,"verdict":"PASS"|"REPAIR","critical_count":0,"major_count":0,"findings":[{"start_sec":0.0,"end_sec":0.0,"severity":"critical"|"major"|"minor","category":"","evidence":"","repair":""}],"strengths":[],"release_blockers":[]} PASS only with zero critical and zero major launch-required defects."""
+          body={"contents":[{"parts":[{"file_data":{"mime_type":"video/mp4","file_uri":f["uri"]}},{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+key,data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=900) as r: obj=json.loads(r.read())
+          review=json.loads(obj["candidates"][0]["content"]["parts"][0]["text"])
+          assert review["artifact_sha256"]=="fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+          pathlib.Path("receipts").mkdir()
+          pathlib.Path("receipts/EXACT_AV_REVIEW.json").write_text(json.dumps(review,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-av-review-v49
+          path: receipts/EXACT_AV_REVIEW.json
