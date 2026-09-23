@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "required": [
+    "finding_id",
+    "input_hash",
+    "output_hash",
+    "changed_range",
+    "worker",
+    "qc_status"
+  ],
+  "done_requires": {
+    "qc_status": "VERIFIED",
+    "different_hash_for_media_change": true
+  }
+}
