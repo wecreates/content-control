@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "match_task_to_capability": true,
+  "unknown_capability": "BLOCKED"
+}
