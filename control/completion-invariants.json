@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "rules": {
+    "ready_to_done_requires_artifact": true,
+    "verified_receipt_required": true,
+    "placeholder_echo_forbidden": true,
+    "detection_only_not_resolution": true,
+    "release_requires_all_gates": true
+  },
+  "publication_enabled": false
+}
