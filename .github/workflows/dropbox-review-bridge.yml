@@ -31,14 +31,14 @@ jobs:
           req=urllib.request.Request(u,data=p.read_bytes(),headers={"Content-Length":str(p.stat().st_size),"X-Goog-Upload-Offset":"0","X-Goog-Upload-Command":"upload, finalize"})
           with urllib.request.urlopen(req,timeout=240) as r: f=json.loads(r.read())["file"]
           for _ in range(90):
-            with urllib.request.urlopen("https://generativelanguage.googleapis.com/v1beta/files/"+f["name"].split("/")[-1]+"?key="+key,timeout=30) as r: cur=json.loads(r.read())
+            with urllib.request.urlopen(urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/"+f["name"],headers={"x-goog-api-key":key}),timeout=30) as r: cur=json.loads(r.read())
             if cur.get("state")=="ACTIVE": f=cur; break
             if cur.get("state")=="FAILED": raise RuntimeError(cur)
             time.sleep(5)
           else: raise RuntimeError("Gemini processing timeout")
           prompt="""Review this exact full consumer-finance YouTube video end-to-end, including all audio. Return strict JSON only. Find every material launch defect with timestamps. Evaluate hook, narrative clarity, factual-risk wording, character continuity, motion/acting naturalness, static/robotic holds, shot variety, text readability, narration pronunciation/cadence/prosody/fatigue, SFX timing/repetition, silence/sonic gaps, comedic timing, pacing, AV sync, ending/payoff, and readiness against polished finance/explainer and stick-animation YouTube work. Schema: {"artifact_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb","complete_end_to_end_review":true|false,"verdict":"PASS"|"REPAIR","critical_count":0,"major_count":0,"findings":[{"start_sec":0.0,"end_sec":0.0,"severity":"critical"|"major"|"minor","category":"","evidence":"","repair":""}],"strengths":[],"release_blockers":[]} PASS only with zero critical and zero major launch-required defects."""
           body={"contents":[{"parts":[{"file_data":{"mime_type":"video/mp4","file_uri":f["uri"]}},{"text":prompt}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0.1}}
-          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key="+key,data=json.dumps(body).encode(),headers={"Content-Type":"application/json"})
+          req=urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",data=json.dumps(body).encode(),headers={"Content-Type":"application/json","x-goog-api-key":key})
           with urllib.request.urlopen(req,timeout=900) as r: obj=json.loads(r.read())
           review=json.loads(obj["candidates"][0]["content"]["parts"][0]["text"])
           assert review["artifact_sha256"]=="fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
