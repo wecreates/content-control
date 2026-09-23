@@ -1,0 +1,45 @@
+name: Review Findings Router
+on:
+  workflow_dispatch:
+    inputs:
+      review_json:
+        description: Path to exact review JSON already present in repository
+        required: true
+        default: receipts/EXACT_AV_REVIEW.json
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: bash
+        env:
+          REVIEW_JSON: ${{ inputs.review_json }}
+        run: |
+          set -euo pipefail
+          mkdir -p routed
+          python - <<'PY'
+          import json,os,pathlib
+          p=pathlib.Path(os.environ["REVIEW_JSON"])
+          assert p.exists(), f"missing review artifact: {p}"
+          r=json.loads(p.read_text())
+          required={"artifact_sha256","complete_end_to_end_review","verdict","critical_count","major_count","findings","release_blockers"}
+          assert required <= set(r), required-set(r)
+          assert r["complete_end_to_end_review"] is True
+          routes={"motion":"render","character":"render","visual":"render","audio":"audio","voice":"audio","sfx":"audio","factual":"factual","captions":"caption","text":"caption","pacing":"story","story":"story","ending":"story","packaging":"packaging"}
+          buckets={}
+          for i,f in enumerate(r["findings"]):
+            for k in ("start_sec","end_sec","severity","category","evidence","repair"): assert k in f,(i,k)
+            assert 0 <= float(f["start_sec"]) <= float(f["end_sec"]) <= 520.066667
+            route=routes.get(str(f["category"]).lower(),"resolver")
+            f=dict(f,finding_id=f"F{i+1:03}",route=route)
+            buckets.setdefault(route,[]).append(f)
+          for route,items in buckets.items(): pathlib.Path(f"routed/{route}.json").write_text(json.dumps(items,indent=2))
+          pathlib.Path("routed/summary.json").write_text(json.dumps({"artifact_sha256":r["artifact_sha256"],"verdict":r["verdict"],"routes":{k:len(v) for k,v in buckets.items()}},indent=2))
+          print(json.dumps({k:len(v) for k,v in buckets.items()}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with: {name: routed-review-findings, path: routed/}
