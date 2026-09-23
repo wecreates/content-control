@@ -1,0 +1,72 @@
+name: V5 Quality Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v5_quality_runtime.py'
+      - '.github/workflows/v5-quality-runtime.yml'
+      - 'state/episode1-first-watch.json'
+      - 'receipts/EXACT_AV_REVIEW_v49.json'
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-quality-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exercise_and_close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install media quality tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Download exact real first-watch media
+        uses: actions/download-artifact@v4
+        with:
+          name: episode1-chris-first-watch
+          path: /tmp/first-watch
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 35818371839
+      - name: Exercise all 20 quality controls on exact real MP4
+        env:
+          QUALITY_MEDIA: /tmp/first-watch/EPISODE1_FIRST_WATCH.mp4
+        run: python scripts/v5_quality_runtime.py
+      - name: Verify strict completion and persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['registered']==400 and s['runtime_done']>=120 and s['publication_enabled'] is False
+          assert s['technical_qc']=='PASS' and s['full_decode']=='PASS' and s['exact_av_review']=='PASS' and s['release_blockers']==0 and s['downstream_acceptance']=='PASS'
+          rs=sorted(pathlib.Path('runtime/v5/quality').glob('V5-*.receipt.json')); assert len(rs)==20
+          for p in rs:
+              r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE'; assert r['real_input_exercised'] is True; assert r['verification']=='PASS'; assert r['downstream_consumer_accepts_output'] is True; assert r['publication_enabled'] is False
+          cs=sorted(pathlib.Path('control/v5/quality').glob('*.json')); assert len(cs)==20 and all(json.load(open(p))['status']=='DONE' for p in cs)
+          print(json.dumps(s,sort_keys=True))
+          PY
+          git config user.name 'content-control-runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add control/v5/quality runtime/v5/quality state/v5-runtime-summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 quality controls 221-240'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-quality-runtime-receipts
+          path: |
+            runtime/v5/quality/
+            state/v5-runtime-summary.json
