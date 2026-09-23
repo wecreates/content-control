@@ -1,11 +1,11 @@
 {
   "schema_version": 3,
-  "checked_at": "2026-09-23T02:58:25.739811+00:00",
+  "checked_at": "2026-09-23T02:59:48.835314+00:00",
   "source": "Dropbox Exact Review Bridge",
-  "run_id": "35812381625",
+  "run_id": "35812510832",
   "failures": [
     {
-      "id": 107026702693,
+      "id": 107026961063,
       "name": "exact_review",
       "conclusion": "failure"
     }
@@ -15,9 +15,8 @@
   "publication_enabled": false,
   "actions": [
     {
-      "action": "targeted_root_cause_route",
-      "status": "required",
-      "signatures": []
+      "action": "bounded_retry_unknown_transient",
+      "ok": true
     }
   ]
 }
