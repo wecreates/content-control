@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "contrast",
+    "size",
+    "duration_on_screen",
+    "safe_zone",
+    "spelling"
+  ]
+}
