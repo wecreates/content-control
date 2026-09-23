@@ -39,34 +39,34 @@ jobs:
     needs: critical_path
     strategy: {fail-fast: false, max-parallel: 8, matrix: {slot: [1,2,3,4,5,6,7,8]}}
     runs-on: ubuntu-latest
-    steps: [{run: "echo slot ${{ matrix.slot }} claims highest-priority invalidated render range; exact-cache hits skip work"}]
+    steps: [{run: 'echo "slot ${{ matrix.slot }} claims highest-priority invalidated render range; exact-cache hits skip work"'}]
   audio_segments:
     needs: critical_path
     strategy: {fail-fast: false, max-parallel: 4, matrix: {slot: [1,2,3,4]}}
     runs-on: ubuntu-latest
-    steps: [{run: "echo semantic audio slot ${{ matrix.slot }}; voice+settings+normalized-text cache"}]
+    steps: [{run: 'echo "semantic audio slot ${{ matrix.slot }}; voice+settings+normalized-text cache"'}]
   evidence_sidecars:
     needs: [render_ranges,audio_segments]
     if: always()
     strategy: {fail-fast: false, matrix: {kind: [visual,audio,sources,transcript]}}
     runs-on: ubuntu-latest
-    steps: [{run: "echo evidence sidecar ${{ matrix.kind }} generated alongside production receipts"}]
+    steps: [{run: 'echo "evidence sidecar ${{ matrix.kind }} generated alongside production receipts"'}]
   exact_patch_assembly:
     needs: [render_ranges,audio_segments,bundled_fast_qc]
     if: always()
     runs-on: ubuntu-latest
-    steps: [{run: "echo Frame/sample exact patch assembly; reject output unless duration/sync/provenance invariants pass."}]
+    steps: [{run: 'echo "Frame/sample exact patch assembly; reject output unless duration/sync/provenance invariants pass."'}]
   parallel_discovery_review:
     needs: exact_patch_assembly
     strategy: {fail-fast: false, max-parallel: 5, matrix: {shard: [hook,ch1,ch2,ch3,ch4_end]}}
     runs-on: ubuntu-latest
-    steps: [{run: "echo discovery shard ${{ matrix.shard }}; changed ranges prioritized"}]
+    steps: [{run: 'echo "discovery shard ${{ matrix.shard }}; changed ranges prioritized"'}]
   resolver:
     needs: [critical_path,bundled_fast_qc,evidence_sidecars]
     if: always()
     strategy: {fail-fast: false, matrix: {slot: [1,2,3]}}
     runs-on: ubuntu-latest
-    steps: [{run: "echo Resolver slot ${{ matrix.slot }} optimizes critical-path lost seconds; alternate route before escalation."}]
+    steps: [{run: 'echo "Resolver slot ${{ matrix.slot }} optimizes critical-path lost seconds; alternate route before escalation."'}]
   exact_av_dispatch:
     needs: [critical_path,exact_patch_assembly]
     if: needs.critical_path.outputs.artifact == 'true'
