@@ -1,0 +1,61 @@
+name: V5 Release Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/v5-release-runtime.yml']
+permissions:
+  contents: write
+concurrency:
+  group: v5-release-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Execute real release safety-gate controls
+        run: |
+          set -euo pipefail
+          python scripts/v5_release_runtime.py
+          python - <<'PY'
+          import json,pathlib
+          rs=sorted(pathlib.Path('runtime/v5/release').glob('V5-*.receipt.json'))
+          assert len(rs)==20
+          for p in rs:
+            r=json.load(open(p))
+            assert r['status']=='RUNTIME_VERIFIED_DONE'
+            assert r['real_input_exercised'] is True
+            assert r['downstream_consumer_accepts_output'] is True
+            assert r['release_decision']=='HOLD'
+            assert r['publication_performed'] is False
+            assert r['publication_enabled'] is False
+          state=json.load(open('state/episode1-first-watch.json'))
+          assert state['chris_first_watch_complete'] is False
+          assert state['publication_enabled'] is False
+          PY
+      - name: Persist release runtime evidence
+        run: |
+          set -euo pipefail
+          git restore state/v5-runtime-summary.json
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add control/v5/release runtime/v5/release
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 release controls 301-320'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v5-release-runtime-evidence
+          path: runtime/v5/release/
+          retention-days: 30
