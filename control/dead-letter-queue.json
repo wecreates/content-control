@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "entry_requires": [
+    "task_id",
+    "signature",
+    "evidence",
+    "attempted_remedies",
+    "blocked_dependency"
+  ],
+  "resolver_priority": "critical_path_first",
+  "silent_drop": false
+}
