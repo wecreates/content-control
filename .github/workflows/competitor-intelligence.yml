@@ -1,0 +1,70 @@
+name: Competitor Intelligence Full-Video Watch
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/competitor-intelligence-v1.json'
+      - 'scripts/competitor_intelligence.py'
+      - '.github/workflows/competitor-intelligence.yml'
+permissions:
+  contents: write
+concurrency:
+  group: competitor-intelligence-v1
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install video analysis runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install --disable-pip-version-check yt-dlp
+          yt-dlp --version
+          ffmpeg -version | head -1
+      - name: Watch full competitor videos and build benchmark
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          python scripts/competitor_intelligence.py
+      - name: Verify benchmark output
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('state/competitor-intelligence-v1/benchmark.json')
+          assert p.is_file()
+          d=json.load(open(p))
+          assert d['publication_enabled'] is False
+          assert d['videos_analyzed'] >= 4
+          assert d['benchmark']['video_count'] == d['videos_analyzed']
+          assert len(d['benchmark']['creators']) >= 3
+          print({'status':d['status'],'videos_analyzed':d['videos_analyzed'],'creators':d['benchmark']['creators']})
+          PY
+      - name: Persist derived competitor intelligence only
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/competitor-intelligence-v1
+          git diff --cached --quiet && exit 0
+          git commit -m 'Add full-video competitor intelligence benchmark'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: competitor-intelligence-derived-analysis
+          path: state/competitor-intelligence-v1/
+          retention-days: 30
