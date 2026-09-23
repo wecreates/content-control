@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import datetime,hashlib,json,pathlib,sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]; CONTROL=ROOT/'control'/'v5'; RUNTIME=ROOT/'runtime'/'v5'; STATE=ROOT/'state'
-DOMAINS=['orchestration','artifact','research','audio','caption','story','render','review','repair','resolver','assembly','quality','security','observability','performance','release','packaging','thumbnail','metadata','reliability']
+DOMAINS=['orchestration','artifact','render','audio','caption','research','story','review','repair','resolver','assembly','quality','security','observability','performance','release','packaging','thumbnail','metadata','reliability']
 EXPECTED_IDS=[f'V5-{i:03d}' for i in range(1,401)]
 def load(p): return json.loads(p.read_text())
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
