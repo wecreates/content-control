@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "control": "review_evidence",
+  "completion_requires_verification": true,
+  "publication_enabled": false
+}
