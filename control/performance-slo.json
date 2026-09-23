@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "targets": {
+    "ready_to_claim_sec": 30,
+    "verified_to_downstream_sec": 30
+  },
+  "measure_p95": true
+}
