@@ -5,7 +5,7 @@
   "status": "SOURCE_REBUILT",
   "publication_enabled": false,
   "launch_candidate": false,
-  "target_duration_sec": 430,
+  "target_duration_sec": 482,
   "creative_contract": {
     "cold_open_by_sec": 2,
     "viewer_promise_by_sec": 15,
@@ -47,37 +47,37 @@
     {
       "id": "cold-open",
       "start": 0,
-      "end": 18,
+      "end": 24,
       "purpose": "Immediate conflict, joke, stakes, promise"
     },
     {
       "id": "premium-card",
-      "start": 18,
-      "end": 122,
+      "start": 24,
+      "end": 159,
       "purpose": "Premium-card fantasy becomes shopping trap"
     },
     {
       "id": "interest-monster",
-      "start": 122,
-      "end": 222,
+      "start": 159,
+      "end": 246,
       "purpose": "Rewards trophy gets eaten by borrowing costs"
     },
     {
       "id": "bonus-carrot",
-      "start": 222,
-      "end": 318,
+      "start": 246,
+      "end": 338,
       "purpose": "Bonus chase turns into absurd unnecessary shopping"
     },
     {
       "id": "zero-percent-trap",
-      "start": 318,
-      "end": 408,
+      "start": 338,
+      "end": 420,
       "purpose": "Two similar zero-percent doors hide different consequences"
     },
     {
       "id": "payoff",
-      "start": 408,
-      "end": 430,
+      "start": 420,
+      "end": 482,
       "purpose": "Four-rule callback and final joke"
     }
   ],
