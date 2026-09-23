@@ -1,0 +1,90 @@
+name: Episode 1 First-Watch Package
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/episode1-first-watch-package.yml']
+permissions:
+  contents: write
+concurrency:
+  group: episode1-first-watch
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+  EXPECTED_SHA: fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb
+  EXPECTED_DURATION: "520.066667"
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Download and bind exact PASS candidate
+        env:
+          SOURCE_URL: "https://uc018ebb104b0ec5ab84167b893d.dl.dropboxusercontent.com/cd/0/get/DIprw9yq1FN5gdm5rRSFE_bEwyvmP01hIK__WROSXGDfRjv9uLssKJBS8g_jTCVz5yqzM0k99cImb8AlnVMO9iSLctbDJ6GYL_QPjyhDoGKRHDKFOV3mHe3vZ_6ZOdj55xCCIy4_VVnc_8LHSPiK3KKadXBnTqruQyg6dIYtmKz9LQ/file?c_luid=a22ccd02"
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors "$SOURCE_URL" -o EPISODE1_FIRST_WATCH.mp4
+          echo "$EXPECTED_SHA  EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
+          test -s EPISODE1_FIRST_WATCH.mp4
+      - name: Verify duration, AV streams, and exact review PASS
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 EPISODE1_FIRST_WATCH.mp4 > /tmp/streams.txt
+          grep -q video /tmp/streams.txt
+          grep -q audio /tmp/streams.txt
+          DURATION=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 EPISODE1_FIRST_WATCH.mp4)
+          python - "$DURATION" <<'PY'
+          import json,sys,hashlib,pathlib,datetime,os
+          duration=float(sys.argv[1]); expected=float(os.environ['EXPECTED_DURATION'])
+          assert abs(duration-expected) <= 0.05, (duration,expected)
+          review=json.load(open('receipts/EXACT_AV_REVIEW_v49.json'))
+          assert review['artifact_sha256']==os.environ['EXPECTED_SHA']
+          assert review['complete_end_to_end_review'] is True
+          assert review['verdict']=='PASS'
+          assert review['critical_count']==0 and review['major_count']==0
+          assert review['release_blockers']==[]
+          p=pathlib.Path('EPISODE1_FIRST_WATCH.mp4')
+          sha=hashlib.sha256(p.read_bytes()).hexdigest(); assert sha==os.environ['EXPECTED_SHA']
+          state={
+            'schema_version':1,
+            'status':'AWAITING_CHRIS_FIRST_WATCH',
+            'candidate_sha256':sha,
+            'duration_seconds':duration,
+            'audio_stream_present':True,
+            'video_stream_present':True,
+            'exact_av_review_verdict':'PASS',
+            'critical_count':0,
+            'major_count':0,
+            'minor_findings':len(review.get('findings',[])),
+            'release_blockers':0,
+            'chris_first_watch_complete':False,
+            'publication_enabled':False,
+            'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat()
+          }
+          pathlib.Path('state').mkdir(exist_ok=True)
+          pathlib.Path('state/episode1-first-watch.json').write_text(json.dumps(state,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(state,sort_keys=True))
+          PY
+      - name: Persist first-watch gate
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/episode1-first-watch.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Episode 1: bind exact candidate to Chris first-watch gate'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-chris-first-watch
+          path: |
+            EPISODE1_FIRST_WATCH.mp4
+            state/episode1-first-watch.json
+          retention-days: 30
