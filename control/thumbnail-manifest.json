@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "required": [
+    "image_hash",
+    "title_variant",
+    "safe_zone_pass",
+    "readability_pass"
+  ]
+}
