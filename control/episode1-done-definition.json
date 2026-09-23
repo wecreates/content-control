@@ -1,14 +1,25 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "done_only_when": [
-    "playable exact candidate exists",
-    "Chris first watch complete",
+    "playable exact rebuilt candidate exists",
+    "new narration and final mix are rendered",
+    "cold open occurs within first 2 seconds",
+    "viewer promise is clear by 15 seconds",
+    "no lecture-only segment exceeds 12 consecutive seconds",
+    "meaningful visual change occurs at least every 3 seconds unless stillness is an intentional joke",
+    "character acting is present throughout, not static mannequin presentation",
+    "visual punchlines and callbacks are present",
+    "retention resets occur throughout every act",
+    "Chris rebuilt-candidate watch complete",
     "Chris changes resolved",
     "team final AV review green",
-    "creator comparisons complete",
-    "zero critical/major",
+    "entertainment-retention review green",
+    "creator comparison review complete",
+    "zero critical/major creative or technical defects",
     "release lock hash-bound"
   ],
   "publication_separate": true,
-  "publication_enabled": false
+  "publication_enabled": false,
+  "rejected_candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "rejected_candidate_may_not_be_promoted": true
 }
