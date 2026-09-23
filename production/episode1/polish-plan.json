@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "source_artifact_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "review_verdict": "PASS",
+  "release_blockers": 0,
+  "polish": [
+    {
+      "finding_id": "F001",
+      "range_sec": [
+        132,
+        135
+      ],
+      "severity": "minor",
+      "route": "render",
+      "action": "Add subtle Alex head/limb micro-motion without changing timing, narration, text, or factual content.",
+      "duration_change_allowed": false
+    },
+    {
+      "finding_id": "F002",
+      "range_sec": [
+        442,
+        445
+      ],
+      "severity": "minor",
+      "route": "audio_story",
+      "action": "Tighten only unintended silence while preserving surrounding narration meaning and AV alignment.",
+      "duration_change_allowed": false
+    }
+  ],
+  "post_polish_required": [
+    "changed-range QC",
+    "duration invariant",
+    "AV sync",
+    "delta review",
+    "exact output hash"
+  ],
+  "publication_enabled": false
+}
