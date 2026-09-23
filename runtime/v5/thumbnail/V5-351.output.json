@@ -1,0 +1,20 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "phase": "rollback",
+    "previous_output_sha256": "27e74ee0c6e42491303e020f536159faae2442eee5748e485f783c5fc06dcbb0",
+    "publication_enabled": false,
+    "rollback": {
+      "restored_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc",
+      "verified": true
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "rollback",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-351"
+}

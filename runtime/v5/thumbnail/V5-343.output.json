@@ -1,0 +1,17 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "claim_token": "bf14fb6d6f8fcfd2ce88e07b745dea0ec9fc9920612ef7459d992ab4a83b8439",
+    "phase": "claim",
+    "previous_output_sha256": "d9991ac1de98ce6eeefb698e0c72643ad790cda9642fbf4311674f64d7f039a7",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-343"
+}

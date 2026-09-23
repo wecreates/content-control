@@ -1,0 +1,28 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "phase": "execute",
+    "previous_output_sha256": "9ffcb7e5cc0d70514f881b15655f88f7d18fef21e6a2414c3675e798e74ecad7",
+    "publication_enabled": false,
+    "real_operation": {
+      "operation": "ffmpeg frame extraction from exact Episode 1 candidate",
+      "result": "PASS",
+      "thumbnail": {
+        "bytes": 99108,
+        "codec": "mjpeg",
+        "height": 1080,
+        "sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc",
+        "source_timestamp_sec": 60.0,
+        "width": 1920
+      }
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-344"
+}

@@ -1,0 +1,20 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "dependencies": {
+      "ffmpeg": "PASS",
+      "ffprobe": "PASS"
+    },
+    "phase": "dependency-check",
+    "previous_output_sha256": "e26ec128c417edab16c1ff1fe07a4582d54c83f0d38c65b187c3d23b956d0256",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "dependency-check",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-342"
+}

@@ -1,0 +1,17 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "contract": "PASS",
+    "phase": "output-contract",
+    "previous_output_sha256": "ccfba1e347b2e0cd08632b3c8a6db705e4b5864686a118f07ba4d9b73bd9e317",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "output-contract",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-345"
+}

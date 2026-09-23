@@ -1,0 +1,21 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T04:56:02.254944+00:00",
+  "payload": {
+    "handoff": {
+      "accepted": true,
+      "consumer": "packaging/metadata thumbnail slot",
+      "publication_performed": false
+    },
+    "phase": "handoff",
+    "previous_output_sha256": "5bb36d15e4912d38284480da05f651f17d328b869875ece4d5f0d9f9c5c40c5b",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "thumbnail_sha256": "80d4f9ac6df7a210f5ae596c691ad4e71a928a4a56ee6694bd0f174e787f70bc"
+  },
+  "phase": "handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-354"
+}
