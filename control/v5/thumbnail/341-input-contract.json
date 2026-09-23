@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "task_id": "V5-341",
+  "domain": "thumbnail",
+  "phase": "input-contract",
+  "status": "IMPLEMENTATION_REQUIRED",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real input exercised",
+    "expected output artifact exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "placeholder_success_forbidden": true,
+  "failure_route": "resolver",
+  "publication_enabled": false
+}
