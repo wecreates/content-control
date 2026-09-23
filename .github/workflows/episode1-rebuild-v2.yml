@@ -1,4 +1,5 @@
 name: Episode 1 Rebuild V2 Render
+# trigger: rebuild-v2-runtime
 on:
   workflow_dispatch:
   push:
