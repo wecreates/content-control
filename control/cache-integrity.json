@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "verify_hash_on_read": true,
+  "corrupt_cache": "evict_and_recompute"
+}
