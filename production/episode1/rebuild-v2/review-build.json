@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "rebuild": "V2-entertainment-first",
+  "status": "REVIEW_BUILD_READY",
+  "review_url": "https://scrimba.com/explain/guide0icpcg3tn?claim=8g3gr5ck4gguu2id&fullscreen=1",
+  "review_build_type": "unlisted interactive explainer",
+  "launch_candidate": false,
+  "source_files": [
+    "production/episode1/rebuild-v2/creative-spec.json",
+    "production/episode1/rebuild-v2/narration-script.txt",
+    "production/episode1/rebuild-v2/visual-timeline.json",
+    "production/episode1/rebuild-v2/voice-manifest.json"
+  ],
+  "publication_enabled": false,
+  "notes": [
+    "Old Dropbox candidate is rejected and invalidated.",
+    "This review build demonstrates the new story, narration, pacing, structure, and teaching flow.",
+    "Final stick-figure MP4 still requires full animation/render pass."
+  ]
+}
