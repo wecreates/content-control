@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "flags": [
+    "long_static_hold",
+    "repetition",
+    "slow_exposition",
+    "unresolved_setup",
+    "audio_monotony"
+  ],
+  "routes_to": "story_or_motion"
+}
