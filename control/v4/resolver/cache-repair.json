@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "domain": "resolver",
+  "control": "cache-repair",
+  "status": "ACTIVE",
+  "completion_rule": "verified_output_required",
+  "failure_route": "resolver",
+  "publication_enabled": false
+}
