@@ -30,14 +30,55 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
           npm install
-      - name: Fetch rebuilt narration
+      - name: Build narration from verified MP3 segments
         run: |
-          mkdir -p public review-output
-          curl --fail --location --retry 3 "https://www.aidocmaker.com/g0/audio?name=bf9a38553af7403cae319a12fd81abb0" -o public/episode1-rebuild-voice.mp3
-          test -s public/episode1-rebuild-voice.mp3
-          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/episode1-rebuild-voice.mp3 | grep -q audio
+          set -euo pipefail
+          mkdir -p public/narration-parts review-output
+          urls=(
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/4d12f980-2814-48ea-b989-5d6255bd14fe.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/4477b473-2304-4e50-8c1d-fe20ff870a20.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/39448b05-bf12-4656-85a7-0e0b3140d2de.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/a2ebc425-c5a0-4524-b8dc-85a22e8baae8.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/ad0613a4-2366-4a1c-b581-9ad8bf2b8496.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/81eead32-0110-455e-aa6d-abb7c7d2d00e.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/f9dd522d-a55d-49b5-a82b-f5b2fbf39607.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/de845d5a-23e1-4ab9-9c1f-26347603339d.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/c99e5dff-04ea-4be2-b822-df77cfe7b9dc.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/0bc910ff-a593-4454-8f16-0b424fd7a498.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/d0148a2b-75de-4d83-9a64-02891daa1d40.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/1c185d58-d614-47b4-bda0-030021712015.mp3"
+            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/8b2fc524-a662-474c-ae22-6227d62929cf.mp3"
+          )
+          : > /tmp/concat.txt
+          i=0
+          for u in "${urls[@]}"; do
+            i=$((i+1))
+            p=$(printf "public/narration-parts/%02d.mp3" "$i")
+            curl --fail --location --retry 3 "$u" -o "$p"
+            test -s "$p"
+            ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$p" | grep -q audio
+            echo "file '$PWD/$p'" >> /tmp/concat.txt
+          done
+          ffmpeg -y -f concat -safe 0 -i /tmp/concat.txt -c:a libmp3lame -b:a 192k public/episode1-rebuild-voice.mp3
+          DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 public/episode1-rebuild-voice.mp3)
+          python - "$DUR" <<'PY'
+          import json,sys,pathlib
+          d=float(sys.argv[1])
+          assert 180 < d < 600, d
+          pathlib.Path("review-output/render-props.json").write_text(json.dumps({"audioDuration":d}))
+          pathlib.Path("review-output/audio-duration.txt").write_text(str(d)+"\n")
+          print({"audio_duration":d})
+          PY
       - name: Render motion graphic
-        run: npm run render:episode1
+        run: |
+          set -euo pipefail
+          DUR=$(cat review-output/audio-duration.txt)
+          END=$(python - "$DUR" <<'PY'
+          import sys
+          print(max(1,int(float(sys.argv[1])*30)-1))
+          PY
+          )
+          npx remotion render remotion/index.jsx Episode1Motion review-output/EPISODE1_MOTION_V3.mp4 --codec h264 --crf 20 --concurrency 2 --frames=0-$END --props=review-output/render-props.json
       - name: Verify runtime artifact
         run: |
           set -euo pipefail
@@ -49,7 +90,9 @@ jobs:
           import hashlib,json,pathlib,subprocess
           p=pathlib.Path('review-output/EPISODE1_MOTION_V3.mp4')
           duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(p)],text=True).strip())
-          assert duration > 290
+          audio_duration=float(pathlib.Path('review-output/audio-duration.txt').read_text())
+          assert abs(duration-audio_duration) < 1.5, (duration,audio_duration)
+          assert p.stat().st_size > 2_000_000
           state={
             'schema_version':1,
             'status':'MOTION_GRAPHIC_REVIEW_READY',
@@ -82,6 +125,7 @@ jobs:
           name: episode1-motion-v3-review
           path: |
             review-output/EPISODE1_MOTION_V3.mp4
+            review-output/audio-duration.txt
             state/episode1-motion-v3.json
             production/episode1/rebuild-v3/motion-design.json
           retention-days: 30
