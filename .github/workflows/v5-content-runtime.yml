@@ -3,7 +3,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/v5-content-runtime.yml']
+    paths:
+      - '.github/workflows/v5-content-runtime.yml'
+      - 'scripts/v5_remaining_content_runtime_fixed.py'
+      - 'scripts/gemini_content_analysis.py'
 permissions:
   actions: read
   contents: write
@@ -49,7 +52,7 @@ jobs:
           EPISODE1_MEDIA: /tmp/content/EPISODE1_FIRST_WATCH.mp4
         run: |
           set -euo pipefail
-          python scripts/v5_remaining_content_runtime.py
+          python scripts/v5_remaining_content_runtime_fixed.py
           python - <<'PY'
           import json,pathlib
           domains=['orchestration','research','caption','story','render','repair']
