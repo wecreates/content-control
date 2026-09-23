@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "unit": "semantic_segment",
+  "merge_only_if_voice_settings_equal": true
+}
