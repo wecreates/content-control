@@ -1,0 +1,24 @@
+{
+  "domain": "artifact",
+  "executed_at": "2026-09-23T04:20:59.168153+00:00",
+  "payload": {
+    "artifact_path": "receipts/EXACT_AV_REVIEW_v49.json",
+    "artifact_sha256": "0091fd9f96dbd1d7b6ce38a12b816c427a98f3befc7c9af75acaa215d9345dd7",
+    "manifest": {
+      "bytes": 979,
+      "media_type": "application/json",
+      "sha256": "0091fd9f96dbd1d7b6ce38a12b816c427a98f3befc7c9af75acaa215d9345dd7",
+      "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+    },
+    "phase": "output-contract",
+    "previous_output_sha256": "d117d927205ffcc542dc6b79f7948546330597bf9d7caf3318f3fb0c199e8424",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "output-contract",
+  "publication_enabled": false,
+  "run_id": "35817958113",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-025"
+}

@@ -1,0 +1,19 @@
+{
+  "domain": "artifact",
+  "downstream_consumer": "state/v5-runtime-summary.json",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "8ad34313a5ac302e2713563eef2681d7fb771fe6079c25eeb6b76a0da5200d1b",
+  "origin_workflow_run_id": 35816461220,
+  "output_path": "runtime/v5/artifact/V5-040.output.json",
+  "output_sha256": "7fb349f46311e63c4b767d6e9ab31034c6ca0dc4b25f66e9c4d5b64b06d318cb",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35817958113",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-040",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:20:59.168153+00:00"
+}

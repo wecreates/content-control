@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-033",
-  "domain": "artifact",
-  "phase": "audit",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,23 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "artifact",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "audit",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "053d13760b828287478ccb90533d120b8654e46d8d276e47c2cfeb33dc4cd09c",
+    "origin_workflow_run_id": 35816461220,
+    "output": "runtime/v5/artifact/V5-033.output.json",
+    "output_sha256": "b7172939dfd95eff469855b39a9ff604e5b11969c6375b429d8e6f0c141928ae",
+    "receipt": "runtime/v5/artifact/V5-033.receipt.json",
+    "runtime_workflow_run_id": "35817958113",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-033"
 }
