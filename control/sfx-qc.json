@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "repetition",
+    "masking",
+    "timing",
+    "overuse"
+  ],
+  "repair_scope": "affected_events"
+}
