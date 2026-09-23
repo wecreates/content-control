@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "required": [
+    "sha256",
+    "bytes",
+    "mime_type",
+    "producer",
+    "created_at"
+  ],
+  "verify_before_consume": true,
+  "hash_mismatch": "BLOCKED"
+}
