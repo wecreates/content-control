@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "github_actions",
+    "artifact_plane",
+    "dropbox_transport",
+    "gemini_api",
+    "renderer_runtime",
+    "ffmpeg",
+    "state_ledger"
+  ],
+  "failure_emits": "bottleneck-found"
+}
