@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/v5-assembly-runtime.yml'
 permissions:
+  actions: read
   contents: write
 concurrency:
   group: v5-assembly-runtime
@@ -26,13 +27,18 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
           ffmpeg -version | head -1
           ffprobe -version | head -1
-      - name: Download exact Episode 1 PASS candidate
-        env:
-          SOURCE_URL: "https://uca6f45ff14f38e5d3ad43d891ca.dl.dropboxusercontent.com/cd/0/get/DIrpTJ9YFc-cSg_UXZF6xxGrLvf__NjsYWOlpNLH84_WMXE2BKLJ9HHPAR68kZD8oI7c8v6UewIrhYHNrfMoBi7nR3ntcOcS6S2b-X-UDNg0BhtvYqbXsGE4L3NsAZLH0AVPTYEeaS6XS4-EjnztcRmeVZcZGJTun9Md-V1Bjrpa_A/file?c_luid=a22ccd02"
+      - name: Download durable exact Episode 1 first-watch artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: episode1-chris-first-watch
+          path: /tmp/assembly
+          repository: wecreates/content-control
+          run-id: 35818371839
+          github-token: ${{ github.token }}
+      - name: Verify exact Episode 1 PASS candidate
         run: |
           set -euo pipefail
-          mkdir -p /tmp/assembly
-          curl --fail --location --retry 4 --retry-all-errors "$SOURCE_URL" -o /tmp/assembly/EPISODE1_FIRST_WATCH.mp4
+          test -s /tmp/assembly/EPISODE1_FIRST_WATCH.mp4
           echo "$EXPECTED_SHA  /tmp/assembly/EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
       - name: Execute real assembly controls
         env:
