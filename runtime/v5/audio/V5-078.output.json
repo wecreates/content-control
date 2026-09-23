@@ -1,0 +1,20 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T04:56:05.068201+00:00",
+  "payload": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "phase": "timeout",
+    "previous_output_sha256": "3a3acff2e6158ff52042611828fd935c9d6079065e74181f069aa65e9d58f450",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "timeout": {
+      "limit_seconds": 5,
+      "probe_completed": true
+    }
+  },
+  "phase": "timeout",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-078"
+}

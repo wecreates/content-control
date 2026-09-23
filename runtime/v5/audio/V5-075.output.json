@@ -1,0 +1,21 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T04:56:05.068201+00:00",
+  "payload": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "phase": "regression",
+    "previous_output_sha256": "22bf66612a51c12d178479be5c72261c964fbacbb6c0d04a46a90dfe0f2ad4ea",
+    "publication_enabled": false,
+    "regression": {
+      "decode": "PASS",
+      "duration": "PASS",
+      "review": "PASS"
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "regression",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-075"
+}

@@ -1,0 +1,17 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T04:56:05.068201+00:00",
+  "payload": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "claim_token": "9f7256bb918645ef506adbb3f496c833a4e81ba6f70dc73a873a34f12e5e1b5d",
+    "phase": "claim",
+    "previous_output_sha256": "1400f0aff2d1d3f45aca790138ad449f2b824b27beafe5b16c428de7817deace",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-063"
+}

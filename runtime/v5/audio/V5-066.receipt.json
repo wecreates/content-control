@@ -1,0 +1,19 @@
+{
+  "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+  "domain": "audio",
+  "downstream_consumer": "V5-067",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "7d34445f1946f130848f818ab5280ca128ea10bb2259e1de8e0bd625d8a893bb",
+  "output_path": "runtime/v5/audio/V5-066.output.json",
+  "output_sha256": "35340b1dfc679a11e052c58da52fd1bfc40e3e61db057b34d6f158e6e5334338",
+  "phase": "verify",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35820296292",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-066",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:56:05.068201+00:00"
+}

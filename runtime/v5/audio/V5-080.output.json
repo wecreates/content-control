@@ -1,0 +1,23 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T04:56:05.068201+00:00",
+  "payload": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "done_gate": {
+      "decoded": true,
+      "downstream_review_acceptance": true,
+      "real_audio_extracted": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "839fc4f463446c86bfe7e886cc358c62d4df4ebe2877531bbd94a3e7b1b10118",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-080"
+}

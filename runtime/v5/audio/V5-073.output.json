@@ -1,0 +1,22 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T04:56:05.068201+00:00",
+  "payload": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "audit": {
+      "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+      "manifest": "state/episode1-audio-manifest.json",
+      "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "source_run": 35818371839
+    },
+    "phase": "audit",
+    "previous_output_sha256": "7288120d20bffadba56a45e637e52a6e9f2bff90ec220f32728c97cc7d462a0d",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-073"
+}

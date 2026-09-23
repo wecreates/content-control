@@ -1,0 +1,12 @@
+{
+  "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+  "bytes": 11063919,
+  "channels": 1,
+  "codec": "aac",
+  "duration_seconds": 520.052,
+  "generated_at": "2026-09-23T04:56:05.067100+00:00",
+  "publication_enabled": false,
+  "sample_rate": 48000,
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+}

@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-072",
-  "domain": "audio",
-  "phase": "telemetry",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,21 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "audio",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "telemetry",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "audio_sha256": "bea846b7c89db0d904721f1f1aadf7f1631363eac6f991e174801a7ea9bf1c3e",
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/audio/V5-072.output.json",
+    "receipt": "runtime/v5/audio/V5-072.receipt.json",
+    "runtime_workflow_run_id": "35820296292",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-072"
 }
