@@ -1,0 +1,23 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+      "result": "PASS"
+    },
+    "domain": "performance",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "db38d06f4e4006d53b8f87dfcfb99e2120bec933711e42029cd1903b86b0abff",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-292"
+}

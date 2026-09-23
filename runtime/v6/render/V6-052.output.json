@@ -1,0 +1,23 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:32:44.813284+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+      "result": "PASS"
+    },
+    "domain": "render",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "03009b8c6914586406b43c45f78027a83d0dd77f62443a843a863763bb3571a3",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/render.json",
+    "v5_bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-052"
+}

@@ -1,0 +1,25 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "60625e0bee69ef16b0a6d83b76ad2e9ff70f926471cfc3f1bc6d01521327ea7a",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-297"
+}

@@ -1,0 +1,25 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "domain": "observability",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "1bf8984f3f34efd5e02b95dcb4db564553922b3dad2fd76a3880854da85dc3cd",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-277"
+}

@@ -1,0 +1,25 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "handoff": {
+      "consumer": "security",
+      "consumer_accepts": true,
+      "producer": "quality",
+      "producer_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+      "result": "PASS"
+    },
+    "phase": "cross-domain-handoff",
+    "previous_v6_output_sha256": "4a6da97734c9b584db88a303283d4465bf006c4e5d1af09102b97b63b7b1c948",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "cross-domain-handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-236"
+}

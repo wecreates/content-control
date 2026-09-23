@@ -1,0 +1,23 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "82f1742ea72d1edcf43d8f4e527afac83b1dff8a21d491a6064a5278284993ba",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-364"
+}

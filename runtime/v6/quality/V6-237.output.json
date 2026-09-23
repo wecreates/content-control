@@ -1,0 +1,25 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "6f72eca38151d43668b4485ef075e785484ef8ec25533df81d61d29bdac7e4d8",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-237"
+}

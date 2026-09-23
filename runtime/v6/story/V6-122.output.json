@@ -1,0 +1,34 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "control-schema-audit",
+    "previous_v6_output_sha256": "53c05bac058c55121e4e5248f8d0071d22a385ec0f7bc874b5a406a3f413f892",
+    "publication_enabled": false,
+    "schema_audit": {
+      "missing": {},
+      "required_fields": [
+        "definition_of_done",
+        "domain",
+        "failure_route",
+        "phase",
+        "placeholder_success_forbidden",
+        "publication_enabled",
+        "runtime_evidence",
+        "schema_version",
+        "status",
+        "task_id"
+      ],
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "control-schema-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-122"
+}

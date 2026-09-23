@@ -1,0 +1,23 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T05:32:45.403042+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "643d555c81b991b033973b4b565b59e40747110a94be3b5f6a9d7fb940de29c9",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "245651081b164e6a6debe5a9fd4d76918f01e6552f6e14435dbf8941ced87eb8",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/reliability.json",
+    "v5_bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-391"
+}

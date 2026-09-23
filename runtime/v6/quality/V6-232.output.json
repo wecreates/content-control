@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+      "result": "PASS"
+    },
+    "domain": "quality",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "380aacb50073a0081a32bc97a0fabcb8363212217b16be4a38687d683ac4aa26",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-232"
+}

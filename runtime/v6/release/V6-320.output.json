@@ -1,0 +1,26 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "done_gate": {
+      "downstream_acceptance": true,
+      "prior_v6_outputs_verified": 19,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "v5_runtime_tasks_verified": 20
+    },
+    "phase": "done-gate",
+    "previous_v6_output_sha256": "781f535ca34840e1d3994922b159cc71ea413bcc142423794ebde7ff801caf18",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-320"
+}

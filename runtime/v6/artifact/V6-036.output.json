@@ -1,0 +1,25 @@
+{
+  "domain": "artifact",
+  "executed_at": "2026-09-23T05:32:44.778630+00:00",
+  "payload": {
+    "domain": "artifact",
+    "handoff": {
+      "consumer": "render",
+      "consumer_accepts": true,
+      "producer": "artifact",
+      "producer_bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+      "result": "PASS"
+    },
+    "phase": "cross-domain-handoff",
+    "previous_v6_output_sha256": "88adad44d00e091e1f1864729b07169ac128c5d8c24e444c3e82810b4488ed56",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/artifact.json",
+    "v5_bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+    "v5_input_count": 20
+  },
+  "phase": "cross-domain-handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-036"
+}

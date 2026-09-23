@@ -1,0 +1,23 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T05:32:45.334775+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "timeout-guard",
+    "previous_v6_output_sha256": "422533f5aba715a8c06457501c4f19044c8a04b9270bde3ed3f9cd11fa3fce66",
+    "publication_enabled": false,
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/thumbnail.json",
+    "v5_bundle_sha256": "9b2e293a5f628d5749e8626cd176df202b3a7176fe3de1b56f8a1db2ddd7515a",
+    "v5_input_count": 20
+  },
+  "phase": "timeout-guard",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-353"
+}

@@ -1,0 +1,22 @@
+{
+  "domain": "artifact",
+  "executed_at": "2026-09-23T05:32:44.778630+00:00",
+  "payload": {
+    "domain": "artifact",
+    "negative_test": {
+      "result": "PASS",
+      "tampered_hash_rejected": true
+    },
+    "phase": "negative-input-rejection",
+    "previous_v6_output_sha256": "7ae0e2f97fd5e7a7337c7488bc5f5d9a64493a5f639f8c07381a45a18268ede5",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/artifact.json",
+    "v5_bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+    "v5_input_count": 20
+  },
+  "phase": "negative-input-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-028"
+}

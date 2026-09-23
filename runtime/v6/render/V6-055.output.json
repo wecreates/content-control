@@ -1,0 +1,25 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:32:44.813284+00:00",
+  "payload": {
+    "domain": "render",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "85a9f807e63c2bdc178679cac4242891784a7c37c6933101723905d959881658",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 951,
+      "bytes_min": 677,
+      "bytes_total": 15305,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/render.json",
+    "v5_bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-055"
+}

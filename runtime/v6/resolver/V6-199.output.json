@@ -1,0 +1,23 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T05:32:45.059414+00:00",
+  "payload": {
+    "domain": "resolver",
+    "failure_route": {
+      "controls": 20,
+      "resolver_routes": 20,
+      "result": "PASS"
+    },
+    "phase": "failure-route-audit",
+    "previous_v6_output_sha256": "032e0954314f43f71287535bb8802e945259b06dc42d3e4225fc63189cf145a6",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/resolver.json",
+    "v5_bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+    "v5_input_count": 20
+  },
+  "phase": "failure-route-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-199"
+}

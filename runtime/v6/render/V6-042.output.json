@@ -1,0 +1,34 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:32:44.813284+00:00",
+  "payload": {
+    "domain": "render",
+    "phase": "control-schema-audit",
+    "previous_v6_output_sha256": "c2004b01ef0f0df0dd0f185d471a1b65985f45ee81a124b0282ec3928aacf1cc",
+    "publication_enabled": false,
+    "schema_audit": {
+      "missing": {},
+      "required_fields": [
+        "definition_of_done",
+        "domain",
+        "failure_route",
+        "phase",
+        "placeholder_success_forbidden",
+        "publication_enabled",
+        "runtime_evidence",
+        "schema_version",
+        "status",
+        "task_id"
+      ],
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/render.json",
+    "v5_bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+    "v5_input_count": 20
+  },
+  "phase": "control-schema-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-042"
+}

@@ -1,0 +1,24 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T05:32:45.334775+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "idempotency": {
+      "replay_1": "862294bf56cf158d780c18f67ef96b6d3dd81ecc405a5b6890d145de5e6f1cae",
+      "replay_2": "862294bf56cf158d780c18f67ef96b6d3dd81ecc405a5b6890d145de5e6f1cae",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "ab24f9ab1dded08737f52bc2ab468a5710768b7780fc5780fb560ac1a3b0a8ec",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/thumbnail.json",
+    "v5_bundle_sha256": "9b2e293a5f628d5749e8626cd176df202b3a7176fe3de1b56f8a1db2ddd7515a",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-350"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:32:44.743045+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "ee173e5f5b07806710ce3751383fea60964441aedd4808e699eaf398258bdbe6",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "e472401eecbf219cce7a2454f65a317fbc53840c492895e3d13e1859e8cbe4e2",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/orchestration.json",
+    "v5_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-011"
+}

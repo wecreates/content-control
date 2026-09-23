@@ -1,0 +1,25 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "4bb83728c000574bb2f7d1c2ff8c969a93d52242cc5ffa9deba31998da2eae6e",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-317"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "output_audit": {
+      "outputs": 20,
+      "result": "PASS",
+      "total_bytes": 12378
+    },
+    "phase": "runtime-output-audit",
+    "previous_v6_output_sha256": "f4f7620611887cb410591a3748407d7454eb101af4416ca95d944d6d88538e0b",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "runtime-output-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-303"
+}

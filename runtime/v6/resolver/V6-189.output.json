@@ -1,0 +1,23 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T05:32:45.059414+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "a54763dbe27960e982db83bc5a480a17d6a2709dee25c6073d932df60465f98d",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/resolver.json",
+    "v5_bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-189"
+}

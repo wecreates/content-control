@@ -1,0 +1,23 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:32:44.916011+00:00",
+  "payload": {
+    "domain": "research",
+    "downstream": {
+      "accepted": 20,
+      "rejected": 0,
+      "result": "PASS"
+    },
+    "phase": "downstream-acceptance-audit",
+    "previous_v6_output_sha256": "dd4fff57f6536b1dd180231188a71a33de050d3f26bbfb04cbf6705a6999d3aa",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/research.json",
+    "v5_bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+    "v5_input_count": 20
+  },
+  "phase": "downstream-acceptance-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-106"
+}

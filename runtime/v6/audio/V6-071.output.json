@@ -1,0 +1,23 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T05:32:44.847121+00:00",
+  "payload": {
+    "domain": "audio",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "9819269fae3ae0ed0ed95bef224d3c766a70e54cd63cdc0f49d262c04da33c04",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "78640328fead1800451d6d65c8db927798438465d82bd5ae948edca80d9631c6",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/audio.json",
+    "v5_bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-071"
+}

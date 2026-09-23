@@ -1,0 +1,25 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "cfa80fed6429abc089d5a7835d59ee3e8fd5c35dfddec3cd53d67df5f888ca1f",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 816,
+      "bytes_min": 525,
+      "bytes_total": 12378,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-315"
+}

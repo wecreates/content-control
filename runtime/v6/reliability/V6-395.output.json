@@ -1,0 +1,25 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T05:32:45.403042+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "c6da138f38ae5840e904711043cbb8f3d83b8cd43bd82c9e3a230410fd1f60e8",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1298,
+      "bytes_min": 714,
+      "bytes_total": 17575,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/reliability.json",
+    "v5_bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-395"
+}

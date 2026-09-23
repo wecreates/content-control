@@ -1,0 +1,23 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:32:44.881288+00:00",
+  "payload": {
+    "domain": "caption",
+    "failure_route": {
+      "controls": 20,
+      "resolver_routes": 20,
+      "result": "PASS"
+    },
+    "phase": "failure-route-audit",
+    "previous_v6_output_sha256": "de4af4c8c2472222e192cfaeda7803da03d31739b7ad34887875e65e9293877b",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/caption.json",
+    "v5_bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+    "v5_input_count": 20
+  },
+  "phase": "failure-route-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-099"
+}

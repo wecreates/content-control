@@ -1,0 +1,24 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "idempotency": {
+      "replay_1": "85d3147a0353d2952a011102cf70bef0e8069cd514f5347db1f2e603d9e3da52",
+      "replay_2": "85d3147a0353d2952a011102cf70bef0e8069cd514f5347db1f2e603d9e3da52",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "2324d05eba7060157bcbb2dd9b87728d7197c6e531a8f386da72a6516154ff13",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-290"
+}

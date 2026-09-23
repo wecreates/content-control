@@ -1,0 +1,23 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T05:32:45.334775+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "a8993acb0fe7586efea06d7fe20c2403d2b735414730a300dfcaf7b09c89eff1",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "e26ec128c417edab16c1ff1fe07a4582d54c83f0d38c65b187c3d23b956d0256",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/thumbnail.json",
+    "v5_bundle_sha256": "9b2e293a5f628d5749e8626cd176df202b3a7176fe3de1b56f8a1db2ddd7515a",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-351"
+}

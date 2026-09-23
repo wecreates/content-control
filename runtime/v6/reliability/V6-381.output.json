@@ -1,0 +1,23 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T05:32:45.403042+00:00",
+  "payload": {
+    "domain": "reliability",
+    "inventory": {
+      "bytes": 55542,
+      "files": 60,
+      "unique_v5_tasks": 20
+    },
+    "phase": "inventory",
+    "previous_v6_output_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/reliability.json",
+    "v5_bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "v5_input_count": 20
+  },
+  "phase": "inventory",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-381"
+}

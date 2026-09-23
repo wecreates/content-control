@@ -1,0 +1,23 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:32:44.916011+00:00",
+  "payload": {
+    "domain": "research",
+    "output_audit": {
+      "outputs": 20,
+      "result": "PASS",
+      "total_bytes": 15341
+    },
+    "phase": "runtime-output-audit",
+    "previous_v6_output_sha256": "7cbb42e31f4fa59bdeb0ca06eecf122f4edc082333aa82ac7e72d4d7a300c32d",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/research.json",
+    "v5_bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+    "v5_input_count": 20
+  },
+  "phase": "runtime-output-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-103"
+}

@@ -1,0 +1,25 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T05:32:45.094086+00:00",
+  "payload": {
+    "domain": "assembly",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "2bc57223d3ee7cbff52e5f712321affecdeefb108c95437ea4465ee6c7cc8b8d",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/assembly.json",
+    "v5_bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-217"
+}

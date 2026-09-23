@@ -1,0 +1,23 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "373629f862c76f6116ba70ed3405084afb4075135fd69405fa7e5b422ae984e3",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "9b09a73eef28a79df191dd842169473e852cfc35d014abf9364413cc2569f14f",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-311"
+}

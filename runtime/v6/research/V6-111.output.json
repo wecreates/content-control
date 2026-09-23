@@ -1,0 +1,23 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:32:44.916011+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "d48c69131a88b555bedd6eb445a2da378af7258d46e1d8edd31a5ead801975ac",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "41b6710e2fcd6fc5c19f4f6b6243724af0a7625a14a33f40cd4dea03c27ab514",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/research.json",
+    "v5_bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-111"
+}

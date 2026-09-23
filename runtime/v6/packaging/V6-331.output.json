@@ -1,0 +1,23 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T05:32:45.300771+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "c6a7b931546f92dfe7898ad50d1596bce5230f294b040db813a00d163eac279f",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "22c0e508f77d1831d1fe1c6c8cabdcd5fd9b862811e87abb9dc7143f0f7d29e4",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/packaging.json",
+    "v5_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-331"
+}

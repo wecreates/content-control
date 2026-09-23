@@ -1,0 +1,23 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T05:32:45.300771+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "53cca20fb6792c7a8a1ebff45d532e7297d0b1f9e8e6c3500c91cd5f867f9742",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/packaging.json",
+    "v5_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-324"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:32:44.881288+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "61ddc09aa3944c917db4c46e095e981c54de3773a71a6e9ef2f0f4b25468fb5e",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/caption.json",
+    "v5_bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-089"
+}

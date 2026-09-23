@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "e9796e87fa8ebd0c8c07b1f52d6aafc317aa2453a1d05f74a93f7cb4fb940e4e",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-229"
+}

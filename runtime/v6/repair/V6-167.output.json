@@ -1,0 +1,24 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "8091cd11a0d9b17cec7e47180f291cd188166da57f25c197237dd9c7ce9bba6f",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-167"
+}

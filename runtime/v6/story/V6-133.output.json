@@ -1,0 +1,23 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "timeout-guard",
+    "previous_v6_output_sha256": "7136cc0f1e4f26405bc41d4de007709507b76562254831b1336f4645dc35021f",
+    "publication_enabled": false,
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "timeout-guard",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-133"
+}

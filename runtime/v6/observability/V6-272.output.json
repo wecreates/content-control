@@ -1,0 +1,23 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+      "result": "PASS"
+    },
+    "domain": "observability",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "3f6cd9f9db9acffc3f4690172d0c7710f792eb2ed36efe0b05384176c50ae48e",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-272"
+}

@@ -1,0 +1,34 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T05:32:45.403042+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "control-schema-audit",
+    "previous_v6_output_sha256": "6c7143cb42b5d7c27882b890c7093558eb8bc4cf465275f4379bb2ee457d14e7",
+    "publication_enabled": false,
+    "schema_audit": {
+      "missing": {},
+      "required_fields": [
+        "definition_of_done",
+        "domain",
+        "failure_route",
+        "phase",
+        "placeholder_success_forbidden",
+        "publication_enabled",
+        "runtime_evidence",
+        "schema_version",
+        "status",
+        "task_id"
+      ],
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/reliability.json",
+    "v5_bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "v5_input_count": 20
+  },
+  "phase": "control-schema-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-382"
+}

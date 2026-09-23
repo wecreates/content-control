@@ -1,0 +1,25 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T05:32:45.059414+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "438a8213d74fe7f753bd445d0f3be0105ca6501bff89c8e4bd3c64a79cc9cafb",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1277,
+      "bytes_min": 830,
+      "bytes_total": 19862,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/resolver.json",
+    "v5_bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-195"
+}

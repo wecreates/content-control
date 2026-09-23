@@ -1,0 +1,24 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "domain": "observability",
+    "idempotency": {
+      "replay_1": "74e6457d94e3ae2f968e11659aebd223afed349779160dd075681a7cc225418e",
+      "replay_2": "74e6457d94e3ae2f968e11659aebd223afed349779160dd075681a7cc225418e",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "9fecde55bc91c60d5c483dee335f25408c69c99479e452bb27027a81364711b4",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-270"
+}

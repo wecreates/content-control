@@ -1,0 +1,24 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "4f31bebae27b096c944b2fd405c3b298de98a447c8c2e9f859bdb8b164ba9bfc",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-227"
+}

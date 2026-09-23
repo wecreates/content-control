@@ -1,0 +1,23 @@
+{
+  "domain": "artifact",
+  "executed_at": "2026-09-23T05:32:44.778630+00:00",
+  "payload": {
+    "domain": "artifact",
+    "inventory": {
+      "bytes": 52135,
+      "files": 60,
+      "unique_v5_tasks": 20
+    },
+    "phase": "inventory",
+    "previous_v6_output_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/artifact.json",
+    "v5_bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+    "v5_input_count": 20
+  },
+  "phase": "inventory",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-021"
+}

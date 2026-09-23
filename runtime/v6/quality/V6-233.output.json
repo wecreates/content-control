@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "timeout-guard",
+    "previous_v6_output_sha256": "0450f0bfa5cb30f74eeab87951a0dee800d14233b6ee99b15f484e789bf3f659",
+    "publication_enabled": false,
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "timeout-guard",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-233"
+}

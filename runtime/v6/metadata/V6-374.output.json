@@ -1,0 +1,24 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "dedup": {
+      "duplicate_removed": 1,
+      "input_entries": 21,
+      "result": "PASS",
+      "unique_entries": 20
+    },
+    "domain": "metadata",
+    "phase": "dedup-integrity",
+    "previous_v6_output_sha256": "2e564d1382d12162523b658931f3be58cc82e4dce0a9207f3ba3f22c32d395d3",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "dedup-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-374"
+}

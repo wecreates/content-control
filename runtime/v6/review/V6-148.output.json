@@ -1,0 +1,22 @@
+{
+  "domain": "review",
+  "executed_at": "2026-09-23T05:32:44.990961+00:00",
+  "payload": {
+    "domain": "review",
+    "negative_test": {
+      "result": "PASS",
+      "tampered_hash_rejected": true
+    },
+    "phase": "negative-input-rejection",
+    "previous_v6_output_sha256": "fd3c841bb078f0a2ceb20ce421eec3b8b0c0b0e5c5a07e3b18dd0cdad25f5e9a",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/review.json",
+    "v5_bundle_sha256": "9b004da2c1a3958b63298bb4af4593fec9a6fbd58da7cf549bda3d645e1ba6d6",
+    "v5_input_count": 20
+  },
+  "phase": "negative-input-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-148"
+}

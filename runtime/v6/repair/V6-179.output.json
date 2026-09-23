@@ -1,0 +1,23 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "failure_route": {
+      "controls": 20,
+      "resolver_routes": 20,
+      "result": "PASS"
+    },
+    "phase": "failure-route-audit",
+    "previous_v6_output_sha256": "7626b7feb01e2248616f9c977bd6912ea0b9027a719a62058efd95c9c790aa1c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "failure-route-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-179"
+}

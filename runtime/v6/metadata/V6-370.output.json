@@ -1,0 +1,24 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "idempotency": {
+      "replay_1": "0c108851cff8f0fa26e9c34749203ea644c38fe09ae06d4992166d09af50afe3",
+      "replay_2": "0c108851cff8f0fa26e9c34749203ea644c38fe09ae06d4992166d09af50afe3",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "0e7049ab0abad9d92f91ff54e1c84aaaedc29fdb6ec83c623a21b1d0dd33ca0c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-370"
+}

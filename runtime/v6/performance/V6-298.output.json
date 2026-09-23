@@ -1,0 +1,23 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "regression-replay",
+    "previous_v6_output_sha256": "8b48b5a7fa02a6c810dd6f4eb4c86c22ec54b79d17ccd5cb3587d24d99488249",
+    "publication_enabled": false,
+    "regression": {
+      "checks_per_task": 8,
+      "result": "PASS",
+      "v5_tasks_replayed": 20
+    },
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "regression-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-298"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "failure_route": {
+      "controls": 20,
+      "resolver_routes": 20,
+      "result": "PASS"
+    },
+    "phase": "failure-route-audit",
+    "previous_v6_output_sha256": "d6c4edf85a927bf8d1ca9e985cd6ea89111e66b492ececff756892ec20b6ed24",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "failure-route-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-379"
+}

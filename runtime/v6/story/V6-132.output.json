@@ -1,0 +1,23 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+      "result": "PASS"
+    },
+    "domain": "story",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "83b86a30c4031291693a6dfb7c5d279aabe169f49d9e03dbb8ea03292142f96e",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-132"
+}

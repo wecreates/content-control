@@ -1,0 +1,22 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T05:32:44.847121+00:00",
+  "payload": {
+    "domain": "audio",
+    "negative_test": {
+      "result": "PASS",
+      "tampered_hash_rejected": true
+    },
+    "phase": "negative-input-rejection",
+    "previous_v6_output_sha256": "eb6a4c74427b8dddd8233a596ddb64a51122daa2d5121d8f751f8136b43aae26",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/audio.json",
+    "v5_bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+    "v5_input_count": 20
+  },
+  "phase": "negative-input-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-068"
+}

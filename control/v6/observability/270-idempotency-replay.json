@@ -1,0 +1,23 @@
+{
+  "batch": "V6",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real input exercised",
+    "expected output artifact exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "domain": "observability",
+  "failure_route": "resolver",
+  "phase": "idempotency-replay",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "output": "runtime/v6/observability/V6-270.output.json",
+    "receipt": "runtime/v6/observability/V6-270.receipt.json"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V6-270"
+}

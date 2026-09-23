@@ -1,0 +1,24 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "idempotency": {
+      "replay_1": "48a1849409d66d4f365e2ec6f2103a8db372fa25a530ea1863c2c496c776d292",
+      "replay_2": "48a1849409d66d4f365e2ec6f2103a8db372fa25a530ea1863c2c496c776d292",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "8e7671339d0b5e46ff7b4f245eed9599e9d8d92d2fee272fe99de85e7b029ee9",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-230"
+}

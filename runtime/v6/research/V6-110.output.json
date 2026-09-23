@@ -1,0 +1,24 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:32:44.916011+00:00",
+  "payload": {
+    "domain": "research",
+    "idempotency": {
+      "replay_1": "4d6ed6891b3844f8e7198fd28992a8a554fda360199344a074645d45d586f0ff",
+      "replay_2": "4d6ed6891b3844f8e7198fd28992a8a554fda360199344a074645d45d586f0ff",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "8c948894ed90c5ba8791e6583cb375b4586000cc161184eece82bea06ea328f5",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/research.json",
+    "v5_bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-110"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "d47baf8a7b69afec9590a851036976c3730ffc6618f646e84eab26c0740ace9b",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-124"
+}

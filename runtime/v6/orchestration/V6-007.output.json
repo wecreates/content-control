@@ -1,0 +1,24 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:32:44.743045+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "a97943d4df43317a75cd9b0e8f056f41e468ceb105dd1ba0abadcd402a7fa005",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/orchestration.json",
+    "v5_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-007"
+}

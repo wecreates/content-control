@@ -1,0 +1,24 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T05:32:44.847121+00:00",
+  "payload": {
+    "domain": "audio",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "23537a3562b78a0ae7e2a5fddbfcc331efb90fc9201485ceb2070ba1ca66ad59",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/audio.json",
+    "v5_bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-067"
+}

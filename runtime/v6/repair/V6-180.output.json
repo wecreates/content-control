@@ -1,0 +1,26 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "done_gate": {
+      "downstream_acceptance": true,
+      "prior_v6_outputs_verified": 19,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "v5_runtime_tasks_verified": 20
+    },
+    "phase": "done-gate",
+    "previous_v6_output_sha256": "015228669bfc272555a053bebf5af8316ae1ba3c0c64d87437e1bd4db3e0943b",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-180"
+}

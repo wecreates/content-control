@@ -1,0 +1,23 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "regression-replay",
+    "previous_v6_output_sha256": "3e4d78081857631c1a608529e66a9cc5862a8318ac77eaf59edecaed519a66a0",
+    "publication_enabled": false,
+    "regression": {
+      "checks_per_task": 8,
+      "result": "PASS",
+      "v5_tasks_replayed": 20
+    },
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "regression-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-138"
+}

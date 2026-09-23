@@ -1,0 +1,24 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T05:32:45.094086+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "26a90dba5fee9b9b06b1fee4f216d85b8f6d6cf45afa76d4f5b81244ff96e477",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/assembly.json",
+    "v5_bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-207"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "2fcaf571aa30176837c77a6b2dd56dd544cc06e77d12d650234afabe7576b27b",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "a3fcedf6362d1e6004d63fae8f556ca365ad3354eb225d3cd88deb36282ce118",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-231"
+}

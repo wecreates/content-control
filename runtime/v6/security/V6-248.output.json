@@ -1,0 +1,22 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "negative_test": {
+      "result": "PASS",
+      "tampered_hash_rejected": true
+    },
+    "phase": "negative-input-rejection",
+    "previous_v6_output_sha256": "cc7cab39074289ee3dac7cf0988ecf55657990d1809117b7127aef44a7b707b3",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "negative-input-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-248"
+}

@@ -1,0 +1,25 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:32:44.743045+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "9553c0ada40c9e9307604b4454307a46d7ac929a221d40e434b436406b60dc8e",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/orchestration.json",
+    "v5_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-017"
+}

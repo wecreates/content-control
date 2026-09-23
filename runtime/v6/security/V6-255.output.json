@@ -1,0 +1,25 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "976c52ae51c37c39c32da635cc3f0b73fd6c15644fcf28add137ad4508168870",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 776,
+      "bytes_min": 502,
+      "bytes_total": 11788,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-255"
+}

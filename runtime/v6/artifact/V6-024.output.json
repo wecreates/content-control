@@ -1,0 +1,23 @@
+{
+  "domain": "artifact",
+  "executed_at": "2026-09-23T05:32:44.778630+00:00",
+  "payload": {
+    "domain": "artifact",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "884bb3dfc5f47cc5c550a4bac6b6e6dfc7397295d3883a8778779ca3d36f6877",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/artifact.json",
+    "v5_bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-024"
+}

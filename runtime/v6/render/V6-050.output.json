@@ -1,0 +1,24 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:32:44.813284+00:00",
+  "payload": {
+    "domain": "render",
+    "idempotency": {
+      "replay_1": "b50f42fbbab6a049757bef0c9e1eceba8a65796daae424ff488ba58796906cad",
+      "replay_2": "b50f42fbbab6a049757bef0c9e1eceba8a65796daae424ff488ba58796906cad",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "69326905e7e6e72867e7b657795d25ec781cf507fc24f58f8698a0b44e05f9b0",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/render.json",
+    "v5_bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-050"
+}

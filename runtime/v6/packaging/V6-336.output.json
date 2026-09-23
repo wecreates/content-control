@@ -1,0 +1,25 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T05:32:45.300771+00:00",
+  "payload": {
+    "domain": "packaging",
+    "handoff": {
+      "consumer": "thumbnail",
+      "consumer_accepts": true,
+      "producer": "packaging",
+      "producer_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+      "result": "PASS"
+    },
+    "phase": "cross-domain-handoff",
+    "previous_v6_output_sha256": "5a97713c4183e22f059e120ca64e59df99cc871f29c641d10b70fa1333970b4c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/packaging.json",
+    "v5_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+    "v5_input_count": 20
+  },
+  "phase": "cross-domain-handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-336"
+}

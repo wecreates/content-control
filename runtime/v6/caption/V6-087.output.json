@@ -1,0 +1,24 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:32:44.881288+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "b084c354255c7d3a550d247a15f17bc8239f47ee0475d59d2670bf866b1f2030",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/caption.json",
+    "v5_bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-087"
+}

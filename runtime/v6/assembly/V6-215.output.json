@@ -1,0 +1,25 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T05:32:45.094086+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "61a2125af1ba7b5757102b94f88a5f9010e7f6a24c89150335c0bc583d365836",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1112,
+      "bytes_min": 601,
+      "bytes_total": 14257,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/assembly.json",
+    "v5_bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-215"
+}

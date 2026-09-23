@@ -1,0 +1,24 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:32:44.813284+00:00",
+  "payload": {
+    "domain": "render",
+    "phase": "publication-lock-audit",
+    "previous_v6_output_sha256": "b8f8b4334da92a676e18c098e9fa16c9dd4ff5a3582d367e0e7897b7b46e9c87",
+    "publication_enabled": false,
+    "publication_lock": {
+      "controls_locked": 20,
+      "episode_locked": true,
+      "receipts_locked": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/render.json",
+    "v5_bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+    "v5_input_count": 20
+  },
+  "phase": "publication-lock-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-047"
+}

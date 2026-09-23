@@ -1,0 +1,34 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "control-schema-audit",
+    "previous_v6_output_sha256": "e5b0ad8d775c77162f3316ed7f6e77ff75e41cd373682427562c990ce912baf1",
+    "publication_enabled": false,
+    "schema_audit": {
+      "missing": {},
+      "required_fields": [
+        "definition_of_done",
+        "domain",
+        "failure_route",
+        "phase",
+        "placeholder_success_forbidden",
+        "publication_enabled",
+        "runtime_evidence",
+        "schema_version",
+        "status",
+        "task_id"
+      ],
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "control-schema-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-262"
+}

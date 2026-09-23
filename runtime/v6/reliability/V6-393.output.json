@@ -1,0 +1,23 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T05:32:45.403042+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "timeout-guard",
+    "previous_v6_output_sha256": "eb4638ba963500859a10ac0f5ff57b11ea07f2fec090b4bc70b41855a2270b28",
+    "publication_enabled": false,
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/reliability.json",
+    "v5_bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+    "v5_input_count": 20
+  },
+  "phase": "timeout-guard",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-393"
+}

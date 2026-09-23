@@ -1,0 +1,22 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "negative_test": {
+      "result": "PASS",
+      "tampered_hash_rejected": true
+    },
+    "phase": "negative-input-rejection",
+    "previous_v6_output_sha256": "73cd162f4b06caa0d3d367ebf8d767994233dd22233145ae074aa8c60ece9b64",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "negative-input-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-288"
+}

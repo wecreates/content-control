@@ -1,0 +1,23 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "3401fbe660d17b07d921a69463596f54a8dc54dcd7bf19e014d1ec0e2616c036",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "321f4f5f767a8d718bdbe1e03c9f953acc4b52ae8706d5154ca15edb9a605409",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-251"
+}

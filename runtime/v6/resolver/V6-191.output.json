@@ -1,0 +1,23 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T05:32:45.059414+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "30ee8b6aa9b7c31d48b49d901398bb3b87b138e4ed4a9994c4b393eb81946dd7",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "ff9cd8e4622e071611cd1b01ec59a3c89315187cf0bef92e9ea176afde84fdaf",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/resolver.json",
+    "v5_bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-191"
+}

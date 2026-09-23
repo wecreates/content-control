@@ -1,0 +1,23 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:32:44.743045+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "downstream": {
+      "accepted": 20,
+      "rejected": 0,
+      "result": "PASS"
+    },
+    "phase": "downstream-acceptance-audit",
+    "previous_v6_output_sha256": "835b54802cb119af074a0f324b54fa4441dd50f92e8abff0e182d37b1db3e025",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/orchestration.json",
+    "v5_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+    "v5_input_count": 20
+  },
+  "phase": "downstream-acceptance-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-006"
+}

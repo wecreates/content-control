@@ -1,0 +1,23 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "timeout-guard",
+    "previous_v6_output_sha256": "31bd5ea1bba2ca07843986af57f934197405cda3ce63c92ebe0b77b7b1714697",
+    "publication_enabled": false,
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "timeout-guard",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-293"
+}

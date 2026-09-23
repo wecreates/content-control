@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T05:32:45.128400+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "85bf189c57fabe46ffaa3ce1e0e9a673c2bb79c676a75afabe207c6229e2544e",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/quality.json",
+    "v5_bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-224"
+}

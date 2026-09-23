@@ -1,0 +1,23 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T05:32:44.847121+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+      "result": "PASS"
+    },
+    "domain": "audio",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "8d1d01ab7c063bb07e807dec3b25d82165e73e70604227afb24634d2dc4970a9",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/audio.json",
+    "v5_bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-072"
+}

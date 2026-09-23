@@ -1,0 +1,23 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "649b6bdd1dcd192f20f9307b2eca94c6d0a4997dda0284eaf7238dfb43d8d479",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-369"
+}

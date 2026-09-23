@@ -1,0 +1,23 @@
+{
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T05:32:45.334775+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "87401ee956218ed18c6fff336c9a11956c8e7506e18fe482cd59b54f1ba0817f",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/thumbnail.json",
+    "v5_bundle_sha256": "9b2e293a5f628d5749e8626cd176df202b3a7176fe3de1b56f8a1db2ddd7515a",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-349"
+}

@@ -1,0 +1,26 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "domain": "observability",
+    "done_gate": {
+      "downstream_acceptance": true,
+      "prior_v6_outputs_verified": 19,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "v5_runtime_tasks_verified": 20
+    },
+    "phase": "done-gate",
+    "previous_v6_output_sha256": "641f0bfe045974482508101ae049bbae6debdefc2be8cf636989c64f2fb94ae2",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-280"
+}

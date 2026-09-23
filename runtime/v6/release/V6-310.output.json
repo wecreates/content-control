@@ -1,0 +1,24 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "domain": "release",
+    "idempotency": {
+      "replay_1": "459ec94b68ddb71a659f47d35d006272acb05900f1001df4c77d909e50fa445e",
+      "replay_2": "459ec94b68ddb71a659f47d35d006272acb05900f1001df4c77d909e50fa445e",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "9286b00e8eaa5d214dda538b84b6709433ce14a6668f5264c45315be4390a938",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-310"
+}

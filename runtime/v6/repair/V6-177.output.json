@@ -1,0 +1,25 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "27cea9326bc25578a1550392f0fbdb0cd2ee07e9ed9f1f23ee0fd44156a5a8ba",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-177"
+}

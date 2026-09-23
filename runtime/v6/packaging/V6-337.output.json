@@ -1,0 +1,25 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T05:32:45.300771+00:00",
+  "payload": {
+    "domain": "packaging",
+    "first_watch": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_complete": false,
+      "publication_enabled": false,
+      "result": "PASS",
+      "status": "AWAITING_CHRIS_FIRST_WATCH"
+    },
+    "phase": "first-watch-safety",
+    "previous_v6_output_sha256": "2984f5660b84a85828c94dcf4ab6f894dff433836bc01dcf438b9bc39ea04679",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/packaging.json",
+    "v5_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+    "v5_input_count": 20
+  },
+  "phase": "first-watch-safety",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-337"
+}

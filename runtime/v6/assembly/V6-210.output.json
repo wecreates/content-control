@@ -1,0 +1,24 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T05:32:45.094086+00:00",
+  "payload": {
+    "domain": "assembly",
+    "idempotency": {
+      "replay_1": "8cc67a2e227916bd89f957a170ac5886e2b9a3e72f4c39dbb23296e4e476b1fa",
+      "replay_2": "8cc67a2e227916bd89f957a170ac5886e2b9a3e72f4c39dbb23296e4e476b1fa",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "5c4f5cce503f8b9c4a74248280765221ca86c22f9c9246578d924378502dfae2",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/assembly.json",
+    "v5_bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-210"
+}

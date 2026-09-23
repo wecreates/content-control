@@ -1,0 +1,23 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "regression-replay",
+    "previous_v6_output_sha256": "44bdcdf2bfe63da22f4e0fb7fc03e16b111b2dfe2d562f67f0a49e44760a359c",
+    "publication_enabled": false,
+    "regression": {
+      "checks_per_task": 8,
+      "result": "PASS",
+      "v5_tasks_replayed": 20
+    },
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "regression-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-178"
+}

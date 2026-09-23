@@ -1,0 +1,26 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:32:44.881288+00:00",
+  "payload": {
+    "domain": "caption",
+    "done_gate": {
+      "downstream_acceptance": true,
+      "prior_v6_outputs_verified": 19,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "v5_runtime_tasks_verified": 20
+    },
+    "phase": "done-gate",
+    "previous_v6_output_sha256": "2e54c6e444bc178ad31b8875d06f2bff4641cfdb303e24a3b31194a00c1c8799",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/caption.json",
+    "v5_bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+    "v5_input_count": 20
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-100"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "b035d1aa427dfe8174ddc20563981c0e939b77ae318629f568b3df8c446333d0",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "04d76406f193f3126db73a9693def909d91e3e96350b07418de207c12008c1dd",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-171"
+}

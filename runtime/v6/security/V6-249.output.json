@@ -1,0 +1,23 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "retry-behavior",
+    "previous_v6_output_sha256": "550fb6c14e0da2a4138cf24a713d6ff2b5991d91ebbee25fbe6d9b6df8a65442",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "recovered": true,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "retry-behavior",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-249"
+}

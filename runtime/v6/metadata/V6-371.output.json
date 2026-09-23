@@ -1,0 +1,23 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "093d49ca91a862cc8b6cd9aa78336d668902f60d27c7fa9e66ad6d4d692e4dbe",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "70981a2f03429bf9a84d83f111e39f3cb6f99556804f7622609a004c4362c4ca",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-371"
+}

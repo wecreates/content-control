@@ -1,0 +1,34 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "control-schema-audit",
+    "previous_v6_output_sha256": "b7477e0090ec0ba0f02463f5030adc49baa6b0426fc7edf1d21308c35bf7e160",
+    "publication_enabled": false,
+    "schema_audit": {
+      "missing": {},
+      "required_fields": [
+        "definition_of_done",
+        "domain",
+        "failure_route",
+        "phase",
+        "placeholder_success_forbidden",
+        "publication_enabled",
+        "runtime_evidence",
+        "schema_version",
+        "status",
+        "task_id"
+      ],
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "control-schema-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-242"
+}

@@ -1,0 +1,24 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "dedup": {
+      "duplicate_removed": 1,
+      "input_entries": 21,
+      "result": "PASS",
+      "unique_entries": 20
+    },
+    "domain": "story",
+    "phase": "dedup-integrity",
+    "previous_v6_output_sha256": "0fedc55c0a3b895cf4b7602682f7973f8181b26b1e3e69dd03e9d1226e78a8bb",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "dedup-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-134"
+}

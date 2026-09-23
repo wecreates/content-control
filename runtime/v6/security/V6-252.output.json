@@ -1,0 +1,23 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "cache": {
+      "bundle_roundtrip": true,
+      "bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+      "result": "PASS"
+    },
+    "domain": "security",
+    "phase": "cache-roundtrip",
+    "previous_v6_output_sha256": "09f68fabbef1f72f5d1de34afd4b553ecf68f2e200d375002a4b9566b78e7938",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "cache-roundtrip",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-252"
+}

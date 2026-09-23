@@ -1,0 +1,23 @@
+{
+  "domain": "review",
+  "executed_at": "2026-09-23T05:32:44.990961+00:00",
+  "payload": {
+    "domain": "review",
+    "downstream": {
+      "accepted": 20,
+      "rejected": 0,
+      "result": "PASS"
+    },
+    "phase": "downstream-acceptance-audit",
+    "previous_v6_output_sha256": "87bd599f4d3b9df853314bdf44a6f31f70eaba6ea58b467bcd74db874284baf4",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/review.json",
+    "v5_bundle_sha256": "9b004da2c1a3958b63298bb4af4593fec9a6fbd58da7cf549bda3d645e1ba6d6",
+    "v5_input_count": 20
+  },
+  "phase": "downstream-acceptance-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-146"
+}

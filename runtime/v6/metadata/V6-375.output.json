@@ -1,0 +1,25 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T05:32:45.369034+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "a48bc0c04752d62e298342ddcc4f419a2d5c6a3650b2d41a27ae108d763143e2",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1250,
+      "bytes_min": 587,
+      "bytes_total": 14023,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/metadata.json",
+    "v5_bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-375"
+}

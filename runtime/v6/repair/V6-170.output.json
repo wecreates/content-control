@@ -1,0 +1,24 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:32:45.025009+00:00",
+  "payload": {
+    "domain": "repair",
+    "idempotency": {
+      "replay_1": "c92172cff5706f1c96a758b9e50cecf6ae1be6fd046a9ce2e040bb52d19f5b79",
+      "replay_2": "c92172cff5706f1c96a758b9e50cecf6ae1be6fd046a9ce2e040bb52d19f5b79",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "6364e80e9038261946624470e2be9fe2c57299bbf205e50b6a8d9c37d5761c8c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/repair.json",
+    "v5_bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-170"
+}

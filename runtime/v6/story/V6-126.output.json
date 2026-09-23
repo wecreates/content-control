@@ -1,0 +1,23 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:32:44.956283+00:00",
+  "payload": {
+    "domain": "story",
+    "downstream": {
+      "accepted": 20,
+      "rejected": 0,
+      "result": "PASS"
+    },
+    "phase": "downstream-acceptance-audit",
+    "previous_v6_output_sha256": "b58aedc81e9f26120eee1928dd55d67ace8f29e723915dd309c8adf363bd0b69",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/story.json",
+    "v5_bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+    "v5_input_count": 20
+  },
+  "phase": "downstream-acceptance-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-126"
+}

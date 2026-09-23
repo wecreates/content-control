@@ -1,0 +1,25 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:32:44.743045+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "handoff": {
+      "consumer": "artifact",
+      "consumer_accepts": true,
+      "producer": "orchestration",
+      "producer_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+      "result": "PASS"
+    },
+    "phase": "cross-domain-handoff",
+    "previous_v6_output_sha256": "37e9ad847d961adb6f2b5fb650d5aaafd0598cabac658f17407a22d47d01732f",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/orchestration.json",
+    "v5_bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+    "v5_input_count": 20
+  },
+  "phase": "cross-domain-handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-016"
+}

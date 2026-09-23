@@ -1,0 +1,25 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T05:32:45.300771+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "9cf9dc5979b3cedfad815387dacfd44bce0615226558cb22a01d9980a8c3a272",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1008,
+      "bytes_min": 749,
+      "bytes_total": 17001,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/packaging.json",
+    "v5_bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-335"
+}

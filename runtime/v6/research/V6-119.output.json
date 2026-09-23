@@ -1,0 +1,23 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:32:44.916011+00:00",
+  "payload": {
+    "domain": "research",
+    "failure_route": {
+      "controls": 20,
+      "resolver_routes": 20,
+      "result": "PASS"
+    },
+    "phase": "failure-route-audit",
+    "previous_v6_output_sha256": "ba87aa63a2b4bde662d29dc7090b38c4deb0c95b839c28a1de38fba8bc05447a",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/research.json",
+    "v5_bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+    "v5_input_count": 20
+  },
+  "phase": "failure-route-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-119"
+}

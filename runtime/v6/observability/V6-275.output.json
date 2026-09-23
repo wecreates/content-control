@@ -1,0 +1,25 @@
+{
+  "domain": "observability",
+  "executed_at": "2026-09-23T05:32:45.197751+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "telemetry-coverage",
+    "previous_v6_output_sha256": "c440a44b51f599f02a6eefe559dd26478beaf2df981229ac22bb4c4050f83c42",
+    "publication_enabled": false,
+    "telemetry": {
+      "bytes_max": 1663,
+      "bytes_min": 1007,
+      "bytes_total": 23489,
+      "outputs": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/observability.json",
+    "v5_bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+    "v5_input_count": 20
+  },
+  "phase": "telemetry-coverage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-275"
+}

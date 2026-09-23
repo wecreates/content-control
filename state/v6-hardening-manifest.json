@@ -1,0 +1,153 @@
+{
+  "batch": "V6",
+  "completed_at": "2026-09-23T05:32:45.485203+00:00",
+  "domains": [
+    {
+      "bundle_sha256": "22775f108c3542a8ac44f1a248b2a69ac533155c8a6b92782f1835edd05a3c40",
+      "domain": "orchestration",
+      "first_task": "V6-001",
+      "last_task": "V6-020",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "cad1cffc501ffdefa492006e94c80253b0924d4602d0edba0a23679b485e910c",
+      "domain": "artifact",
+      "first_task": "V6-021",
+      "last_task": "V6-040",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "077f8843f068ecffabb8d81543e7ab14e33d92c5fd325c43cb032f817e7ca343",
+      "domain": "render",
+      "first_task": "V6-041",
+      "last_task": "V6-060",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+      "domain": "audio",
+      "first_task": "V6-061",
+      "last_task": "V6-080",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+      "domain": "caption",
+      "first_task": "V6-081",
+      "last_task": "V6-100",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "66d01025cbb5577201812adddaa8a4fee22d92143cdc838464f91df3636b5672",
+      "domain": "research",
+      "first_task": "V6-101",
+      "last_task": "V6-120",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "dbbd3e5abadb7d04b64e64bb3eb0f344b1ddecbaa0c76d26ac0ffa996d75bf7b",
+      "domain": "story",
+      "first_task": "V6-121",
+      "last_task": "V6-140",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "9b004da2c1a3958b63298bb4af4593fec9a6fbd58da7cf549bda3d645e1ba6d6",
+      "domain": "review",
+      "first_task": "V6-141",
+      "last_task": "V6-160",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "fc65b40d8b95fbc372e404e7d44dd93cd3843c53bf7ea24d90ce6b2354b4df40",
+      "domain": "repair",
+      "first_task": "V6-161",
+      "last_task": "V6-180",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+      "domain": "resolver",
+      "first_task": "V6-181",
+      "last_task": "V6-200",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+      "domain": "assembly",
+      "first_task": "V6-201",
+      "last_task": "V6-220",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "14d53f74e115e9af1e7a01db61f2d387b9e71cac00f560e6047234afb78c9023",
+      "domain": "quality",
+      "first_task": "V6-221",
+      "last_task": "V6-240",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+      "domain": "security",
+      "first_task": "V6-241",
+      "last_task": "V6-260",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "fa9b26449d5ced0a9e57c5925d7149fce1eeae344e7113614fdc55a7c177ff57",
+      "domain": "observability",
+      "first_task": "V6-261",
+      "last_task": "V6-280",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+      "domain": "performance",
+      "first_task": "V6-281",
+      "last_task": "V6-300",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+      "domain": "release",
+      "first_task": "V6-301",
+      "last_task": "V6-320",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "87119837f897d5a3adfb2db62840c08c2643d1dcad25a10e031a69dec7e6b0ce",
+      "domain": "packaging",
+      "first_task": "V6-321",
+      "last_task": "V6-340",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "9b2e293a5f628d5749e8626cd176df202b3a7176fe3de1b56f8a1db2ddd7515a",
+      "domain": "thumbnail",
+      "first_task": "V6-341",
+      "last_task": "V6-360",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "16f6115aba9c5192db1e052458e64283aefd9a2158596befa2b37cd4515c10aa",
+      "domain": "metadata",
+      "first_task": "V6-361",
+      "last_task": "V6-380",
+      "tasks": 20
+    },
+    {
+      "bundle_sha256": "15e494bce1556f22d404d2d787ef12653a14c40b5037b7475ceb09a07a3f0789",
+      "domain": "reliability",
+      "first_task": "V6-381",
+      "last_task": "V6-400",
+      "tasks": 20
+    }
+  ],
+  "publication_enabled": false,
+  "purpose": "production hardening and independent replay of V5 runtime evidence",
+  "runtime_verified": 400,
+  "schema_version": 1,
+  "source_v5_verified": 400,
+  "started_at": "2026-09-23T05:32:44.738037+00:00",
+  "status": "DONE"
+}

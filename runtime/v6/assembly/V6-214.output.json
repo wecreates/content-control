@@ -1,0 +1,24 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T05:32:45.094086+00:00",
+  "payload": {
+    "dedup": {
+      "duplicate_removed": 1,
+      "input_entries": 21,
+      "result": "PASS",
+      "unique_entries": 20
+    },
+    "domain": "assembly",
+    "phase": "dedup-integrity",
+    "previous_v6_output_sha256": "c80e84b901324ea6b963b1b14145d2ba8ea0a962f1cc2f23a30e71756a187fa8",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/assembly.json",
+    "v5_bundle_sha256": "87aafc422a2850a892896ebc847f8bfe0ec13e44cf94c0f6d256c44c902eeae3",
+    "v5_input_count": 20
+  },
+  "phase": "dedup-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-214"
+}

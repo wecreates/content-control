@@ -1,0 +1,24 @@
+{
+  "domain": "audio",
+  "executed_at": "2026-09-23T05:32:44.847121+00:00",
+  "payload": {
+    "dedup": {
+      "duplicate_removed": 1,
+      "input_entries": 21,
+      "result": "PASS",
+      "unique_entries": 20
+    },
+    "domain": "audio",
+    "phase": "dedup-integrity",
+    "previous_v6_output_sha256": "69c82cafa6c430c9ac8c8a21904de060c26c82c9ac2c858bbef182ffb0c2210c",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/audio.json",
+    "v5_bundle_sha256": "adc9159b6c6e3b32b1b7273b883f44e0fd2cda8318aea2789ff475ee48e02ab7",
+    "v5_input_count": 20
+  },
+  "phase": "dedup-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-074"
+}

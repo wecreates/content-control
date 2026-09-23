@@ -1,0 +1,23 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:32:44.881288+00:00",
+  "payload": {
+    "domain": "caption",
+    "phase": "receipt-binding-audit",
+    "previous_v6_output_sha256": "deaf7eb87367f15d5570986023417d55fc264c584df6a0e343c37f7005717a2e",
+    "publication_enabled": false,
+    "receipt_binding": {
+      "hash_bindings_verified": 20,
+      "receipts": 20,
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/caption.json",
+    "v5_bundle_sha256": "2c010b5b219a65cf94cd23840e28314291f23c71212949aa6b17b99411058633",
+    "v5_input_count": 20
+  },
+  "phase": "receipt-binding-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-084"
+}

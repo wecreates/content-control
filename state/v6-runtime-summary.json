@@ -1,0 +1,116 @@
+{
+  "all_400_runtime_verified_done": true,
+  "batch": "V6",
+  "domains": {
+    "artifact": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "assembly": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "audio": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "caption": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "metadata": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "observability": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "orchestration": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "packaging": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "performance": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "quality": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "release": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "reliability": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "render": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "repair": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "research": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "resolver": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "review": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "security": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "story": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    },
+    "thumbnail": {
+      "controls": 20,
+      "done": 20,
+      "verified": 20
+    }
+  },
+  "failure_count": 0,
+  "failures": [],
+  "first_watch_gate": "AWAITING_CHRIS_FIRST_WATCH",
+  "publication_enabled": false,
+  "registered": 400,
+  "remaining": 0,
+  "runtime_done": 400,
+  "runtime_verified": 400,
+  "schema_version": 1,
+  "verified_at": "2026-09-23T05:32:45.484936+00:00"
+}

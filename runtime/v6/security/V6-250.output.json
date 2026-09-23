@@ -1,0 +1,24 @@
+{
+  "domain": "security",
+  "executed_at": "2026-09-23T05:32:45.162774+00:00",
+  "payload": {
+    "domain": "security",
+    "idempotency": {
+      "replay_1": "b72ab26f38c678957f337bf45b257473cdb35547dbf987b87d7c690e44025c33",
+      "replay_2": "b72ab26f38c678957f337bf45b257473cdb35547dbf987b87d7c690e44025c33",
+      "result": "PASS",
+      "stable": true
+    },
+    "phase": "idempotency-replay",
+    "previous_v6_output_sha256": "1304b95981013669df08d7763e73ae4e801cf897c1cada61ba18fef4528db03d",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/security.json",
+    "v5_bundle_sha256": "cfb52157b0e6ee56f73738fb47b70bcb24c1175cf54f5adc16d871b7e6a21719",
+    "v5_input_count": 20
+  },
+  "phase": "idempotency-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-250"
+}

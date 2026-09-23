@@ -1,0 +1,23 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T05:32:45.232203+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "a59513890f5be6ac327f664cd8351669e7c3cc82994112e2f050d210e66ccf21",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "8eb04bf2d579a40aad3eaeccea3aa01978d7b7854745f4ba3e043587e7d1f743",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/performance.json",
+    "v5_bundle_sha256": "800d83ba5566493ee5d65a19dee9b48debf0c24efe7d5d558c018544cd8f27de",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-291"
+}

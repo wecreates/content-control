@@ -1,0 +1,24 @@
+{
+  "domain": "release",
+  "executed_at": "2026-09-23T05:32:45.266361+00:00",
+  "payload": {
+    "dedup": {
+      "duplicate_removed": 1,
+      "input_entries": 21,
+      "result": "PASS",
+      "unique_entries": 20
+    },
+    "domain": "release",
+    "phase": "dedup-integrity",
+    "previous_v6_output_sha256": "1f3954a146ec555673a56c8d409b2257b2a882b22c225bede68a1c0f726b92a5",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/release.json",
+    "v5_bundle_sha256": "f76699daf86f5d16b6793ce8d6ac15bb98b14265c15d8c1c8b3a9387e9968066",
+    "v5_input_count": 20
+  },
+  "phase": "dedup-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-314"
+}

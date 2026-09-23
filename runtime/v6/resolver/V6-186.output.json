@@ -1,0 +1,23 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T05:32:45.059414+00:00",
+  "payload": {
+    "domain": "resolver",
+    "downstream": {
+      "accepted": 20,
+      "rejected": 0,
+      "result": "PASS"
+    },
+    "phase": "downstream-acceptance-audit",
+    "previous_v6_output_sha256": "d11da72b63d4cc6db5e73adbae2737256b9594a2d1988e7a06a56660e1740cb7",
+    "publication_enabled": false,
+    "v5_bundle_path": "state/v6-bundles/resolver.json",
+    "v5_bundle_sha256": "47a90d7bcfeacd78a5336c221ee3038a300f4799f02f215f970da6617c4c438e",
+    "v5_input_count": 20
+  },
+  "phase": "downstream-acceptance-audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-186"
+}

@@ -1,0 +1,23 @@
+{
+  "domain": "review",
+  "executed_at": "2026-09-23T05:32:44.990961+00:00",
+  "payload": {
+    "domain": "review",
+    "phase": "rollback-integrity",
+    "previous_v6_output_sha256": "0a10a61cae7894b5fcde2810ed942137bebca38cd3649f3d135e019906081f44",
+    "publication_enabled": false,
+    "rollback": {
+      "mutation_detected": true,
+      "restored_sha256": "29e048156925ef9dde0d2bc0d545a140e11f3af31adc33843aba671f5f8265bd",
+      "result": "PASS"
+    },
+    "v5_bundle_path": "state/v6-bundles/review.json",
+    "v5_bundle_sha256": "9b004da2c1a3958b63298bb4af4593fec9a6fbd58da7cf549bda3d645e1ba6d6",
+    "v5_input_count": 20
+  },
+  "phase": "rollback-integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V6-151"
+}
