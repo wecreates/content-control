@@ -1,0 +1,69 @@
+{
+  "schema_version": 3,
+  "format": "continuous-motion-graphic",
+  "publication_enabled": false,
+  "uses_fullscreen_slide_cards": false,
+  "persistent_world": true,
+  "continuous_camera": true,
+  "beats_per_minute_visual": 32,
+  "target_duration_sec": 330,
+  "creative_influences": {
+    "fireship": [
+      "dense information compression",
+      "kinetic UI/text",
+      "hard comedic cuts",
+      "rapid pattern interrupts"
+    ],
+    "casually_explained": [
+      "dry narration",
+      "minimal line art",
+      "visual punchlines that undercut narration"
+    ],
+    "sam_onella": [
+      "absurd escalation",
+      "smash-cut drawings",
+      "intentionally simple character art used for jokes"
+    ],
+    "alan_becker": [
+      "physical cause-and-effect",
+      "stick figures manipulating the world",
+      "motion carries explanation"
+    ]
+  },
+  "originality_rules": [
+    "do not reproduce creator logos, characters, catchphrases, exact drawings, music, or shot sequences",
+    "use original Alex character and original finance-world metaphors",
+    "borrow pacing and storytelling mechanisms only"
+  ],
+  "world": {
+    "base": "dark infinite finance workspace",
+    "camera": "continuous pans, push-ins, whip transitions, parallax",
+    "recurring_objects": [
+      "metal card",
+      "annual-fee invoice",
+      "points balloon",
+      "interest monster",
+      "bonus carrot",
+      "fine-print creature",
+      "0% doors"
+    ],
+    "alex_behavior": "always acting, reacting, walking, grabbing, dodging, or manipulating objects"
+  },
+  "timing": {
+    "cold_open_sec": 2,
+    "promise_by_sec": 12,
+    "average_visual_beat_sec": 1.9,
+    "max_static_hold_sec": 2.5,
+    "retention_reset_sec": [
+      15,
+      28
+    ],
+    "end_callback": true
+  },
+  "sound": {
+    "narration": "crisp, dry, fast",
+    "music": "light rhythmic bed with chapter-energy changes",
+    "sfx_density": "2-5 meaningful cues per 10 seconds",
+    "rule": "sound must punctuate contact, reveals, reversals, and jokes"
+  }
+}
