@@ -34,7 +34,22 @@ jobs:
   bundled_fast_qc:
     needs: critical_path
     runs-on: ubuntu-latest
-    steps: [{run: "echo Bundle decode/duration/resolution/caption/math/source-cache/safe-zone checks in one runner."}]
+    steps: [{run: |
+          set -euo pipefail
+          echo "Running bundled deterministic QC"
+          if [ -f review-input/FINANCE_REVIEW_4_9.mp4 ]; then
+            command -v ffprobe >/dev/null
+            ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 review-input/FINANCE_REVIEW_4_9.mp4 | tee /tmp/duration.txt
+            python - <<'PY'
+          from pathlib import Path
+          d=float(Path("/tmp/duration.txt").read_text().strip())
+          expected=520.066667
+          assert abs(d-expected) <= 0.04, (d,expected)
+          print("duration invariant PASS",d)
+          PY
+          else
+            echo "Exact media not repository-local; deterministic media QC deferred to transport/review worker."
+          fi}]
   render_ranges:
     needs: critical_path
     strategy: {fail-fast: false, max-parallel: 8, matrix: {slot: [1,2,3,4,5,6,7,8]}}
