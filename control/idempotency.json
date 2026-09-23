@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "key": [
+    "task_type",
+    "input_hashes",
+    "config_hash",
+    "code_version"
+  ],
+  "duplicate_exact_task": "reuse_verified_output",
+  "never_repeat_verified_work": true
+}
