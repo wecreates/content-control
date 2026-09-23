@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "when_waiting_on_expensive_task": "claim_highest_priority_independent_READY_task",
+  "do_not_interrupt_healthy_critical_job": true,
+  "architecture_work_allowed_only_if_directly_useful": true
+}
