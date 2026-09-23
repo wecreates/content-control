@@ -1,0 +1,23 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T04:33:15.712064+00:00",
+  "payload": {
+    "phase": "verify",
+    "previous_output_sha256": "22c4190faf401fa30e0b9a2e80cef1f1e30c1f3f536eebc94cdf4237beb65b54",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "verification": {
+      "full_decode": "PASS",
+      "semantic_review": "PASS",
+      "technical": "PASS"
+    }
+  },
+  "phase": "verify",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-226"
+}

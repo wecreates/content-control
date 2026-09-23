@@ -1,0 +1,25 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T04:33:15.712064+00:00",
+  "payload": {
+    "phase": "output-contract",
+    "previous_output_sha256": "c2597c803ddfa4d9a8256a3755b02ad7aba15c43918f60fb73a3480820612f56",
+    "publication_enabled": false,
+    "report": {
+      "full_decode": "PASS",
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "release_blockers": 0,
+      "result": "PASS",
+      "review_verdict": "PASS"
+    },
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839
+  },
+  "phase": "output-contract",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-225"
+}

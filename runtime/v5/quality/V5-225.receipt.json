@@ -1,0 +1,20 @@
+{
+  "domain": "quality",
+  "downstream_consumer": "V5-226",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "c2597c803ddfa4d9a8256a3755b02ad7aba15c43918f60fb73a3480820612f56",
+  "output_path": "runtime/v5/quality/V5-225.output.json",
+  "output_sha256": "22c4190faf401fa30e0b9a2e80cef1f1e30c1f3f536eebc94cdf4237beb65b54",
+  "phase": "output-contract",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "source_artifact_id": 10731249485,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "source_workflow_run_id": 35818371839,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-225",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:33:15.712064+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T04:33:15.712064+00:00",
+  "payload": {
+    "binding": {
+      "decode_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "first_watch_sha256": "1af19b3119e175398df9f1b8f20d47839edd3ced0adecc1abc5c5803c3fc5dbb",
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "review_sha256": "0091fd9f96dbd1d7b6ce38a12b816c427a98f3befc7c9af75acaa215d9345dd7"
+    },
+    "phase": "receipt",
+    "previous_output_sha256": "319a83bacae207a2441ff17f2a8b07b9f5f652cd3307971f66dc4315188292a5",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839
+  },
+  "phase": "receipt",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-227"
+}

@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-234",
-  "domain": "quality",
-  "phase": "handoff",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,23 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "quality",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "handoff",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "1747a9099e3d3523069ee41caa5c91e7707f9ad0a75317373d3d0b90166f2f6c",
+    "output": "runtime/v5/quality/V5-234.output.json",
+    "output_sha256": "1adcb0235beb456e5aee3ce77756e4b0c430f2cb5e7f6d8b2a2f48924630569b",
+    "receipt": "runtime/v5/quality/V5-234.receipt.json",
+    "runtime_workflow_run_id": "35818747235",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-234"
 }

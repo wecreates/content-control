@@ -1,0 +1,22 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T04:33:15.712064+00:00",
+  "payload": {
+    "cache": {
+      "hit": true,
+      "roundtrip_sha256": "bf8222e272bedc87d9442503476782653e739ecd7fa184d39981c24725c4ea61"
+    },
+    "phase": "cache",
+    "previous_output_sha256": "f94d650699d3f25b8a7d80e1f2af04b3cd6fa2d39fd8ecbadd417cc53e198ee7",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839
+  },
+  "phase": "cache",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-228"
+}

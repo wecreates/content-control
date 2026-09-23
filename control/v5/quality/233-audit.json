@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-233",
-  "domain": "quality",
-  "phase": "audit",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,23 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "quality",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "audit",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "e01d31829131717c0bab041ee0ad03524af4db47206108c51555a5e9424a0a54",
+    "output": "runtime/v5/quality/V5-233.output.json",
+    "output_sha256": "1747a9099e3d3523069ee41caa5c91e7707f9ad0a75317373d3d0b90166f2f6c",
+    "receipt": "runtime/v5/quality/V5-233.receipt.json",
+    "runtime_workflow_run_id": "35818747235",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-233"
 }

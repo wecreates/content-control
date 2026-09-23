@@ -1,0 +1,22 @@
+{
+  "domain": "quality",
+  "executed_at": "2026-09-23T04:33:15.712064+00:00",
+  "payload": {
+    "phase": "timeout",
+    "previous_output_sha256": "e5b8e4f4e88c6e1b90280b27b38a293da60f5e7340d6c5957b0b3a364260925f",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "timeout": {
+      "limit_seconds": 5,
+      "probe_completed": true
+    }
+  },
+  "phase": "timeout",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818747235",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-238"
+}
