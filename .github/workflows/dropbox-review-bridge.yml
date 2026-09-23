@@ -31,7 +31,12 @@ jobs:
           req=urllib.request.Request(u,data=p.read_bytes(),headers={"Content-Length":str(p.stat().st_size),"X-Goog-Upload-Offset":"0","X-Goog-Upload-Command":"upload, finalize"})
           with urllib.request.urlopen(req,timeout=240) as r: f=json.loads(r.read())["file"]
           for _ in range(90):
-            with urllib.request.urlopen(urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/"+f["name"],headers={"x-goog-api-key":key}),timeout=30) as r: cur=json.loads(r.read())
+            with urllib.request.urlopen(urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/files?pageSize=100",headers={"x-goog-api-key":key}),timeout=30) as r:
+              listing=json.loads(r.read())
+            cur=next((x for x in listing.get("files",[]) if x.get("name")==f.get("name")),{})
+            if not cur:
+              time.sleep(5)
+              continue
             if cur.get("state")=="ACTIVE": f=cur; break
             if cur.get("state")=="FAILED": raise RuntimeError(cur)
             time.sleep(5)
