@@ -20,9 +20,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - name: Install media verifier
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffprobe -version | head -1
       - name: Download and bind exact PASS candidate
         env:
-          SOURCE_URL: "https://ucf063d7b56534f9b19ad680e377.dl.dropboxusercontent.com/cd/0/get/DIqF9VguMeUpVmqdKSHbmA1tW7GBMC31CGNOfFf8RFyREqP3CnsOS4iC6pAuU80Aj0QiTjeam85EMRjvXk9z5qyzsVt2nHxvEigJ4Ybk69lTxmNRenOVKPQa94Gl4DDyeVlFc5DpHnUY6IFznQuev6UywCNeRrb7-vl3TP2DZX8Egw/file?c_luid=a22ccd02"
+          SOURCE_URL: "https://uca6f45ff14f38e5d3ad43d891ca.dl.dropboxusercontent.com/cd/0/get/DIrpTJ9YFc-cSg_UXZF6xxGrLvf__NjsYWOlpNLH84_WMXE2BKLJ9HHPAR68kZD8oI7c8v6UewIrhYHNrfMoBi7nR3ntcOcS6S2b-X-UDNg0BhtvYqbXsGE4L3NsAZLH0AVPTYEeaS6XS4-EjnztcRmeVZcZGJTun9Md-V1Bjrpa_A/file?c_luid=a22ccd02"
         run: |
           set -euo pipefail
           curl --fail --location "$SOURCE_URL" -o EPISODE1_FIRST_WATCH.mp4
