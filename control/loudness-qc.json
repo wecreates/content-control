@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "check_consistency": true,
+  "reject_clipping": true,
+  "changed_segment_only": true
+}
