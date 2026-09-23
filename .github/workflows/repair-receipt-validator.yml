@@ -1,0 +1,34 @@
+name: Repair Receipt Validator
+on:
+  workflow_dispatch:
+    inputs:
+      receipt_path:
+        description: Repair receipt JSON path
+        required: true
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: bash
+        env:
+          RECEIPT_PATH: ${{ inputs.receipt_path }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,pathlib,re
+          p=pathlib.Path(os.environ["RECEIPT_PATH"]); assert p.exists(),p
+          r=json.loads(p.read_text())
+          req={"finding_id","input_hash","output_hash","changed_range","worker","qc_status"}
+          assert req<=set(r),req-set(r)
+          h=re.compile(r"^[0-9a-f]{64}$")
+          assert h.match(r["input_hash"]) and h.match(r["output_hash"])
+          assert r["input_hash"]!=r["output_hash"],"media repair did not change artifact"
+          a,b=map(float,r["changed_range"]); assert 0<=a<=b<=520.066667
+          assert r["qc_status"]=="VERIFIED"
+          print("repair receipt VERIFIED",r["finding_id"])
+          PY
