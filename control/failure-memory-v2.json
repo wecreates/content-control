@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "key": "normalized_signature",
+  "record": [
+    "root_cause",
+    "failed_remedies",
+    "successful_remedy",
+    "verification",
+    "last_seen"
+  ],
+  "repeat_signature_rule": "never repeat a failed remedy unchanged"
+}
