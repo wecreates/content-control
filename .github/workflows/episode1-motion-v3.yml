@@ -1,0 +1,87 @@
+name: Episode 1 Motion Graphic V3
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/**'
+      - 'production/episode1/rebuild-v3/**'
+      - 'tests/test_episode1_motion_graphic.py'
+      - 'package.json'
+      - '.github/workflows/episode1-motion-v3.yml'
+permissions:
+  contents: write
+concurrency:
+  group: episode1-motion-v3
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Validate continuous-motion contract
+        run: python -m unittest -v tests/test_episode1_motion_graphic.py
+      - name: Install render runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install
+      - name: Fetch rebuilt narration
+        run: |
+          mkdir -p public review-output
+          curl --fail --location --retry 3 "https://www.aidocmaker.com/g0/audio?name=bf9a38553af7403cae319a12fd81abb0" -o public/episode1-rebuild-voice.mp3
+          test -s public/episode1-rebuild-voice.mp3
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/episode1-rebuild-voice.mp3 | grep -q audio
+      - name: Render motion graphic
+        run: npm run render:episode1
+      - name: Verify runtime artifact
+        run: |
+          set -euo pipefail
+          test -s review-output/EPISODE1_MOTION_V3.mp4
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 review-output/EPISODE1_MOTION_V3.mp4 > /tmp/streams
+          grep -q video /tmp/streams
+          grep -q audio /tmp/streams
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path('review-output/EPISODE1_MOTION_V3.mp4')
+          duration=float(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration','-of','default=nw=1:nk=1',str(p)],text=True).strip())
+          assert duration > 290
+          state={
+            'schema_version':1,
+            'status':'MOTION_GRAPHIC_REVIEW_READY',
+            'rebuild':'V3-continuous-motion',
+            'candidate_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'duration_seconds':duration,
+            'publication_enabled':False,
+            'chris_first_watch_complete':False,
+            'format':'continuous-motion-graphic',
+            'uses_fullscreen_slide_cards':False,
+            'source':'production/episode1/rebuild-v3/motion-design.json'
+          }
+          pathlib.Path('state/episode1-motion-v3.json').write_text(json.dumps(state,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(state,sort_keys=True))
+          PY
+      - name: Persist verified motion state
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/episode1-motion-v3.json
+          git diff --cached --quiet || git commit -m 'Episode 1 V3 motion graphic review candidate ready'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-motion-v3-review
+          path: |
+            review-output/EPISODE1_MOTION_V3.mp4
+            state/episode1-motion-v3.json
+            production/episode1/rebuild-v3/motion-design.json
+          retention-days: 30
