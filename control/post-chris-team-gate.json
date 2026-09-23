@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "order": 2,
+  "requires": [
+    "chris_review_complete",
+    "requested_changes_resolved",
+    "complete_final_av_review",
+    "finance_compare",
+    "animation_compare",
+    "zero_critical_major"
+  ],
+  "release_lock_only_after_all": true
+}
