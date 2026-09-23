@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "seconds_before": 5,
+  "seconds_after": 5,
+  "required_for_delta_review": true
+}
