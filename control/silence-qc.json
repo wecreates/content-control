@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "detect_unintended_gaps": true,
+  "allow_intentional_pause_with_annotation": true
+}
