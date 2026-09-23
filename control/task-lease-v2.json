@@ -1,0 +1,12 @@
+{
+  "schema_version": 2,
+  "atomic": true,
+  "fields": [
+    "task_id",
+    "worker_id",
+    "leased_at",
+    "expires_at"
+  ],
+  "expired_lease": "requeue",
+  "duplicate_claim": "reject"
+}
