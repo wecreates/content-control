@@ -1,0 +1,22 @@
+{
+  "schema_version": 3,
+  "checked_at": "2026-09-23T00:27:09.886875+00:00",
+  "source": "Dropbox Exact Review Bridge",
+  "run_id": "35802061668",
+  "failures": [
+    {
+      "id": 106994415485,
+      "name": "exact_review",
+      "conclusion": "failure"
+    }
+  ],
+  "signatures": [],
+  "mode": "DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN_RESUME",
+  "publication_enabled": false,
+  "actions": [
+    {
+      "action": "bounded_retry_unknown_transient",
+      "ok": true
+    }
+  ]
+}
