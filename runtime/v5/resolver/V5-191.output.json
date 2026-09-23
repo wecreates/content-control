@@ -1,0 +1,31 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T04:29:42.645311+00:00",
+  "payload": {
+    "evidence_sha256": "ac6611ab617525beeed413ff806ad31654525247dc894375058eebef9c5ad3b2",
+    "failure_jobs": [
+      107044199668,
+      107044589957
+    ],
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "phase": "rollback",
+    "previous_output_sha256": "02128173bef28d9fdbb6c7ca4698ccbf1711501e3780efe5f11a30eb52ec8a30",
+    "publication_enabled": false,
+    "rollback": {
+      "publication_lock_preserved": true,
+      "verified": true
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_job": 107044723809,
+    "success_run": 35818371839
+  },
+  "phase": "rollback",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-191"
+}

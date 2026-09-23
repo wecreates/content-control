@@ -1,0 +1,33 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T04:29:42.645311+00:00",
+  "payload": {
+    "binding": {
+      "download_failure_sha256": "24d013610f47b8eb3bc85f4e66dec1cb34093d0cebea2077f8c0a3e322b25a62",
+      "ffprobe_failure_sha256": "442d0b6593ddfc42699c5a16c5830923922429c7f972e2b5682600f99b7e93d5",
+      "first_watch_state_sha256": "1af19b3119e175398df9f1b8f20d47839edd3ced0adecc1abc5c5803c3fc5dbb",
+      "success_log_sha256": "4ab3cc233c9390f44a6909ccf28771a3580d3c67e090df22774b466c1d916179"
+    },
+    "evidence_sha256": "ac6611ab617525beeed413ff806ad31654525247dc894375058eebef9c5ad3b2",
+    "failure_jobs": [
+      107044199668,
+      107044589957
+    ],
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "phase": "receipt",
+    "previous_output_sha256": "724140639cf021513ee8b84b9fb962f41fc8f9ffc6d6a670a5076125ed1a92fa",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_job": 107044723809,
+    "success_run": 35818371839
+  },
+  "phase": "receipt",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-187"
+}

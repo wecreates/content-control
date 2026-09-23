@@ -1,0 +1,33 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T04:29:42.645311+00:00",
+  "payload": {
+    "checks": [
+      "two-real-failures",
+      "current-fix-workflow",
+      "successful-downstream-run",
+      "persisted-first-watch-state"
+    ],
+    "evidence_sha256": "ac6611ab617525beeed413ff806ad31654525247dc894375058eebef9c5ad3b2",
+    "failure_jobs": [
+      107044199668,
+      107044589957
+    ],
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "phase": "input-contract",
+    "previous_output_sha256": "113fe71742be974f23624b08acae2e73cbfa621bcf9d7ca7a90781523b3df2c2",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_job": 107044723809,
+    "success_run": 35818371839
+  },
+  "phase": "input-contract",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-181"
+}

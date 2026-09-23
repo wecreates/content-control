@@ -1,0 +1,23 @@
+{
+  "domain": "resolver",
+  "downstream_consumer": "V5-193",
+  "downstream_consumer_accepts_output": true,
+  "failure_runs": [
+    35818198537,
+    35818328301
+  ],
+  "input_sha256": "d0684d3504842ee25d8d703ee9dfc14a95efa07cb652dd5e7e0993cb08e64a9b",
+  "output_path": "runtime/v5/resolver/V5-192.output.json",
+  "output_sha256": "0f72f4cfc18eef4bed5d0bc352538994bbdb4d8e2820ffbf3b98dd09f477d2bd",
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "success_run": 35818371839,
+  "task_id": "V5-192",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:29:42.645311+00:00"
+}

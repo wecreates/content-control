@@ -1,0 +1,28 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T04:29:42.645311+00:00",
+  "payload": {
+    "claim_token": "743811cbc79d38099e8a3122ad083f26bcdace2ab0931fe187ec0fb3f458d5f2",
+    "evidence_sha256": "ac6611ab617525beeed413ff806ad31654525247dc894375058eebef9c5ad3b2",
+    "failure_jobs": [
+      107044199668,
+      107044589957
+    ],
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "phase": "claim",
+    "previous_output_sha256": "4fc7ca08959e5a88b4afa3ed30772753f29bca2e31901c353ba87cdc35f84205",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_job": 107044723809,
+    "success_run": 35818371839
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-183"
+}

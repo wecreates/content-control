@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-181",
-  "domain": "resolver",
-  "phase": "input-contract",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,27 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "resolver",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "input-contract",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "input_sha256": "113fe71742be974f23624b08acae2e73cbfa621bcf9d7ca7a90781523b3df2c2",
+    "output": "runtime/v5/resolver/V5-181.output.json",
+    "output_sha256": "ff9cd8e4622e071611cd1b01ec59a3c89315187cf0bef92e9ea176afde84fdaf",
+    "receipt": "runtime/v5/resolver/V5-181.receipt.json",
+    "runtime_workflow_run_id": "35818542999",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_run": 35818371839,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-181"
 }

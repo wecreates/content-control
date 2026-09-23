@@ -1,0 +1,33 @@
+{
+  "domain": "resolver",
+  "executed_at": "2026-09-23T04:29:42.645311+00:00",
+  "payload": {
+    "evidence_sha256": "ac6611ab617525beeed413ff806ad31654525247dc894375058eebef9c5ad3b2",
+    "failure_jobs": [
+      107044199668,
+      107044589957
+    ],
+    "failure_runs": [
+      35818198537,
+      35818328301
+    ],
+    "phase": "telemetry",
+    "previous_output_sha256": "d0684d3504842ee25d8d703ee9dfc14a95efa07cb652dd5e7e0993cb08e64a9b",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "success_job": 107044723809,
+    "success_run": 35818371839,
+    "telemetry": {
+      "downstream_successes": 1,
+      "human_intervention_required_for_fixes": 0,
+      "machine_fixes_applied": 2,
+      "real_failures_observed": 2
+    }
+  },
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818542999",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-192"
+}
