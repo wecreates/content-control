@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:43:55.651278+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "cross-batch-lineage",
+    "previous_v7_output_sha256": "c17602f832a04d4bd022a8b517af417d30a684f4393858f90148d91cdf58a02a",
+    "publication_enabled": false,
+    "result": {
+      "entries": 20,
+      "lineage_sha256": "bc6b8b9e340a36ed596f7be3a116c1adc00093a1d51498004d546a5e40e831e5",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-001",
+      "V6-002",
+      "V6-003",
+      "V6-004",
+      "V6-005",
+      "V6-006",
+      "V6-007",
+      "V6-008",
+      "V6-009",
+      "V6-010",
+      "V6-011",
+      "V6-012",
+      "V6-013",
+      "V6-014",
+      "V6-015",
+      "V6-016",
+      "V6-017",
+      "V6-018",
+      "V6-019",
+      "V6-020"
+    ]
+  },
+  "phase": "cross-batch-lineage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-002"
+}

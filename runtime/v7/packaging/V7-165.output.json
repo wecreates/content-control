@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:43:55.964130+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "first-watch-lock",
+    "previous_v7_output_sha256": "9f63df5915727e1ddcade5f6fd70172c41f9782d04e057b1fbea6936867cb39e",
+    "publication_enabled": false,
+    "result": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_gate": "AWAITING_CHRIS_FIRST_WATCH",
+      "publication_enabled": false,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-321",
+      "V6-322",
+      "V6-323",
+      "V6-324",
+      "V6-325",
+      "V6-326",
+      "V6-327",
+      "V6-328",
+      "V6-329",
+      "V6-330",
+      "V6-331",
+      "V6-332",
+      "V6-333",
+      "V6-334",
+      "V6-335",
+      "V6-336",
+      "V6-337",
+      "V6-338",
+      "V6-339",
+      "V6-340"
+    ]
+  },
+  "phase": "first-watch-lock",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-165"
+}

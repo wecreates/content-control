@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "observability",
+  "executed_at": "2026-09-23T14:43:55.926235+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "evidence-inventory",
+    "previous_v7_output_sha256": "5a630b2ac3c727c23d8323b99109ef5bf43311339488ab665ddaec4f62125c8c",
+    "publication_enabled": false,
+    "result": {
+      "bytes": 51647,
+      "files": 60,
+      "nonempty": 60,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-261",
+      "V6-262",
+      "V6-263",
+      "V6-264",
+      "V6-265",
+      "V6-266",
+      "V6-267",
+      "V6-268",
+      "V6-269",
+      "V6-270",
+      "V6-271",
+      "V6-272",
+      "V6-273",
+      "V6-274",
+      "V6-275",
+      "V6-276",
+      "V6-277",
+      "V6-278",
+      "V6-279",
+      "V6-280"
+    ]
+  },
+  "phase": "evidence-inventory",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-131"
+}

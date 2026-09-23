@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T14:43:55.971766+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "done-gate",
+    "previous_v7_output_sha256": "61153369ea3b6a4b77a0c48dc2bac67b2eec980190baa6a4920b96a4c520a76b",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v7_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v6_runtime_verified": 20,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-341",
+      "V6-342",
+      "V6-343",
+      "V6-344",
+      "V6-345",
+      "V6-346",
+      "V6-347",
+      "V6-348",
+      "V6-349",
+      "V6-350",
+      "V6-351",
+      "V6-352",
+      "V6-353",
+      "V6-354",
+      "V6-355",
+      "V6-356",
+      "V6-357",
+      "V6-358",
+      "V6-359",
+      "V6-360"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-180"
+}

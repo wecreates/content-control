@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "render",
+  "executed_at": "2026-09-23T14:43:55.666429+00:00",
+  "payload": {
+    "domain": "render",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "ce9eeee17e04b1a2d5491965e79a0696701fc78fba1dc95efb8c70a56b9da1fb",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "ca99f1696d7388c3b9c5192fce5fbb291fb36943c32ef40add13f5ec893ad701",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-041",
+      "V6-042",
+      "V6-043",
+      "V6-044",
+      "V6-045",
+      "V6-046",
+      "V6-047",
+      "V6-048",
+      "V6-049",
+      "V6-050",
+      "V6-051",
+      "V6-052",
+      "V6-053",
+      "V6-054",
+      "V6-055",
+      "V6-056",
+      "V6-057",
+      "V6-058",
+      "V6-059",
+      "V6-060"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-029"
+}

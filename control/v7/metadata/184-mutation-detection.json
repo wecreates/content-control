@@ -1,0 +1,23 @@
+{
+  "batch": "V7",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real V6 runtime evidence exercised",
+    "expected V7 output exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "domain": "metadata",
+  "failure_route": "resolver",
+  "phase": "mutation-detection",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "output": "runtime/v7/metadata/V7-184.output.json",
+    "receipt": "runtime/v7/metadata/V7-184.receipt.json"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V7-184"
+}

@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "audio",
+  "executed_at": "2026-09-23T14:43:55.673807+00:00",
+  "payload": {
+    "domain": "audio",
+    "phase": "first-watch-lock",
+    "previous_v7_output_sha256": "21d9795d323f02e07db9d875391e7532ac405468ed67e6bf3864f8a66a3f3f90",
+    "publication_enabled": false,
+    "result": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_gate": "AWAITING_CHRIS_FIRST_WATCH",
+      "publication_enabled": false,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-061",
+      "V6-062",
+      "V6-063",
+      "V6-064",
+      "V6-065",
+      "V6-066",
+      "V6-067",
+      "V6-068",
+      "V6-069",
+      "V6-070",
+      "V6-071",
+      "V6-072",
+      "V6-073",
+      "V6-074",
+      "V6-075",
+      "V6-076",
+      "V6-077",
+      "V6-078",
+      "V6-079",
+      "V6-080"
+    ]
+  },
+  "phase": "first-watch-lock",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-035"
+}

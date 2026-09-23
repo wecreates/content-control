@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "story",
+  "executed_at": "2026-09-23T14:43:55.695833+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "6b7d050d91d96da794bc0ad98bfa1c4f2cee9f9db2709eefd71f1d66a49a6426",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-121",
+      "V6-122",
+      "V6-123",
+      "V6-124",
+      "V6-125",
+      "V6-126",
+      "V6-127",
+      "V6-128",
+      "V6-129",
+      "V6-130",
+      "V6-131",
+      "V6-132",
+      "V6-133",
+      "V6-134",
+      "V6-135",
+      "V6-136",
+      "V6-137",
+      "V6-138",
+      "V6-139",
+      "V6-140"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-066"
+}

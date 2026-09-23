@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "reliability",
+  "executed_at": "2026-09-23T14:43:55.986617+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "mutation-detection",
+    "previous_v7_output_sha256": "1dc0a1d2a91e4c138dfd46f565bfb88b7dc994fd874e7f5425d93d73a60397c6",
+    "publication_enabled": false,
+    "result": {
+      "baseline_sha256": "6c7143cb42b5d7c27882b890c7093558eb8bc4cf465275f4379bb2ee457d14e7",
+      "mutated_sha256": "6690f23e26cea9b029c5f7dfc8896d78bd6bb716cfaea30b0040c83435fb8ca9",
+      "mutation_detected": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-381",
+      "V6-382",
+      "V6-383",
+      "V6-384",
+      "V6-385",
+      "V6-386",
+      "V6-387",
+      "V6-388",
+      "V6-389",
+      "V6-390",
+      "V6-391",
+      "V6-392",
+      "V6-393",
+      "V6-394",
+      "V6-395",
+      "V6-396",
+      "V6-397",
+      "V6-398",
+      "V6-399",
+      "V6-400"
+    ]
+  },
+  "phase": "mutation-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-194"
+}

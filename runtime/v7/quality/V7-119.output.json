@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "quality",
+  "executed_at": "2026-09-23T14:43:55.810519+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "1ce47e1c80f809c31b39749ecc93c91a317e154e5600b5eeea08e4276784176b",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "ee179552bcbf4fbf66869c70641f8684ac52ba7e00f92d60aca24a97767b319c",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-221",
+      "V6-222",
+      "V6-223",
+      "V6-224",
+      "V6-225",
+      "V6-226",
+      "V6-227",
+      "V6-228",
+      "V6-229",
+      "V6-230",
+      "V6-231",
+      "V6-232",
+      "V6-233",
+      "V6-234",
+      "V6-235",
+      "V6-236",
+      "V6-237",
+      "V6-238",
+      "V6-239",
+      "V6-240"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-119"
+}

@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "render",
+  "executed_at": "2026-09-23T14:43:55.666429+00:00",
+  "payload": {
+    "domain": "render",
+    "phase": "downstream-chain",
+    "previous_v7_output_sha256": "1baa8e04929e5ec2bd464b57a14956cca029a23cf6ae7991bf22918e9c460ab5",
+    "publication_enabled": false,
+    "result": {
+      "accepted_source_receipts": 20,
+      "consumer": "audio",
+      "consumer_accepts": true,
+      "producer": "render",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-041",
+      "V6-042",
+      "V6-043",
+      "V6-044",
+      "V6-045",
+      "V6-046",
+      "V6-047",
+      "V6-048",
+      "V6-049",
+      "V6-050",
+      "V6-051",
+      "V6-052",
+      "V6-053",
+      "V6-054",
+      "V6-055",
+      "V6-056",
+      "V6-057",
+      "V6-058",
+      "V6-059",
+      "V6-060"
+    ]
+  },
+  "phase": "downstream-chain",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-028"
+}

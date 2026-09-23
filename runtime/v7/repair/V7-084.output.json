@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:43:55.710456+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "mutation-detection",
+    "previous_v7_output_sha256": "7b122a61c260a0b665c73174394f1d801b0503437f0cec1ef9fb898b743b82e8",
+    "publication_enabled": false,
+    "result": {
+      "baseline_sha256": "879e85330b60df766af40cea6c59d5637e614738af3666b4e54d06ccd9fc5990",
+      "mutated_sha256": "dc1c351789a540238541e21f9766e118fbd4c69c9e713cf7e6e2eecc6241ffc7",
+      "mutation_detected": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-161",
+      "V6-162",
+      "V6-163",
+      "V6-164",
+      "V6-165",
+      "V6-166",
+      "V6-167",
+      "V6-168",
+      "V6-169",
+      "V6-170",
+      "V6-171",
+      "V6-172",
+      "V6-173",
+      "V6-174",
+      "V6-175",
+      "V6-176",
+      "V6-177",
+      "V6-178",
+      "V6-179",
+      "V6-180"
+    ]
+  },
+  "phase": "mutation-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-084"
+}

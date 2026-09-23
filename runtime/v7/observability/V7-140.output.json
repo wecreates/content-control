@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "observability",
+  "executed_at": "2026-09-23T14:43:55.926235+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "done-gate",
+    "previous_v7_output_sha256": "6f22fd02d4ab7e71dfb742d19badb38a677b316decf6c45de022372671ab2626",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v7_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v6_runtime_verified": 20,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-261",
+      "V6-262",
+      "V6-263",
+      "V6-264",
+      "V6-265",
+      "V6-266",
+      "V6-267",
+      "V6-268",
+      "V6-269",
+      "V6-270",
+      "V6-271",
+      "V6-272",
+      "V6-273",
+      "V6-274",
+      "V6-275",
+      "V6-276",
+      "V6-277",
+      "V6-278",
+      "V6-279",
+      "V6-280"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-140"
+}

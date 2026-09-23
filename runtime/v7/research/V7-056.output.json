@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:43:55.688551+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "b4d505b889abb8c1cab3bc776ad2e62d0fea7d672f19f6403cbd690748c48902",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-101",
+      "V6-102",
+      "V6-103",
+      "V6-104",
+      "V6-105",
+      "V6-106",
+      "V6-107",
+      "V6-108",
+      "V6-109",
+      "V6-110",
+      "V6-111",
+      "V6-112",
+      "V6-113",
+      "V6-114",
+      "V6-115",
+      "V6-116",
+      "V6-117",
+      "V6-118",
+      "V6-119",
+      "V6-120"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-056"
+}

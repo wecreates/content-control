@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:43:55.964130+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "deterministic-replay",
+    "previous_v7_output_sha256": "37427288e10f280f23f691571732cc4e38ff0dbf66fbf141c0c9da3b38e1c619",
+    "publication_enabled": false,
+    "result": {
+      "replay_a": "4e82ffa1318dbbbab33de05f4ad91d2b7564f8a6d785541569f4a103897337c6",
+      "replay_b": "4e82ffa1318dbbbab33de05f4ad91d2b7564f8a6d785541569f4a103897337c6",
+      "stable": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-321",
+      "V6-322",
+      "V6-323",
+      "V6-324",
+      "V6-325",
+      "V6-326",
+      "V6-327",
+      "V6-328",
+      "V6-329",
+      "V6-330",
+      "V6-331",
+      "V6-332",
+      "V6-333",
+      "V6-334",
+      "V6-335",
+      "V6-336",
+      "V6-337",
+      "V6-338",
+      "V6-339",
+      "V6-340"
+    ]
+  },
+  "phase": "deterministic-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-163"
+}

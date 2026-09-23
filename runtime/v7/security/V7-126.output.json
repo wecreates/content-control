@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "security",
+  "executed_at": "2026-09-23T14:43:55.818110+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "9fc3acfc59a5d860154c4181530f35b2d5c15ffc55b24d3865456484a4bbe39b",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-241",
+      "V6-242",
+      "V6-243",
+      "V6-244",
+      "V6-245",
+      "V6-246",
+      "V6-247",
+      "V6-248",
+      "V6-249",
+      "V6-250",
+      "V6-251",
+      "V6-252",
+      "V6-253",
+      "V6-254",
+      "V6-255",
+      "V6-256",
+      "V6-257",
+      "V6-258",
+      "V6-259",
+      "V6-260"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-126"
+}

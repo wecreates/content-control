@@ -1,0 +1,43 @@
+{
+  "batch": "V7",
+  "domain": "quality",
+  "executed_at": "2026-09-23T14:43:55.810519+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "receipt-tamper-rejection",
+    "previous_v7_output_sha256": "bb5eeb3cfea35bd23e1b2c8b9fa07ae6df2a6c3d70eea28cf3c92b48163d668a",
+    "publication_enabled": false,
+    "result": {
+      "status": "PASS",
+      "tampered_receipt_rejected": true
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-221",
+      "V6-222",
+      "V6-223",
+      "V6-224",
+      "V6-225",
+      "V6-226",
+      "V6-227",
+      "V6-228",
+      "V6-229",
+      "V6-230",
+      "V6-231",
+      "V6-232",
+      "V6-233",
+      "V6-234",
+      "V6-235",
+      "V6-236",
+      "V6-237",
+      "V6-238",
+      "V6-239",
+      "V6-240"
+    ]
+  },
+  "phase": "receipt-tamper-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-117"
+}

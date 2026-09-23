@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "observability",
+  "executed_at": "2026-09-23T14:43:55.926235+00:00",
+  "payload": {
+    "domain": "observability",
+    "phase": "mutation-detection",
+    "previous_v7_output_sha256": "62950cc9522036e46be99abea41cbdb83189edf5d71aa968dd27ee34eaa8e71b",
+    "publication_enabled": false,
+    "result": {
+      "baseline_sha256": "e5b0ad8d775c77162f3316ed7f6e77ff75e41cd373682427562c990ce912baf1",
+      "mutated_sha256": "1b660a56cbb618e957321767f4fb79a193c62f9415cda930873ac33fc16a61dc",
+      "mutation_detected": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-261",
+      "V6-262",
+      "V6-263",
+      "V6-264",
+      "V6-265",
+      "V6-266",
+      "V6-267",
+      "V6-268",
+      "V6-269",
+      "V6-270",
+      "V6-271",
+      "V6-272",
+      "V6-273",
+      "V6-274",
+      "V6-275",
+      "V6-276",
+      "V6-277",
+      "V6-278",
+      "V6-279",
+      "V6-280"
+    ]
+  },
+  "phase": "mutation-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-134"
+}

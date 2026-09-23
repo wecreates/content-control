@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "resolver",
+  "executed_at": "2026-09-23T14:43:55.717779+00:00",
+  "payload": {
+    "domain": "resolver",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "1f276e8f053f5bbff13cab07777a0fc7c79f65b02006f4c6fd171e0f50f320ad",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-181",
+      "V6-182",
+      "V6-183",
+      "V6-184",
+      "V6-185",
+      "V6-186",
+      "V6-187",
+      "V6-188",
+      "V6-189",
+      "V6-190",
+      "V6-191",
+      "V6-192",
+      "V6-193",
+      "V6-194",
+      "V6-195",
+      "V6-196",
+      "V6-197",
+      "V6-198",
+      "V6-199",
+      "V6-200"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-096"
+}

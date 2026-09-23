@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:43:55.710456+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "deterministic-replay",
+    "previous_v7_output_sha256": "25e15b81c4d9da972e60726ec3056aef2a392e59269de43794ede5303d462954",
+    "publication_enabled": false,
+    "result": {
+      "replay_a": "53b32e5d8ebfcf57803f063f419617e52119343698c6c5ef6c38b3498f6f00cf",
+      "replay_b": "53b32e5d8ebfcf57803f063f419617e52119343698c6c5ef6c38b3498f6f00cf",
+      "stable": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-161",
+      "V6-162",
+      "V6-163",
+      "V6-164",
+      "V6-165",
+      "V6-166",
+      "V6-167",
+      "V6-168",
+      "V6-169",
+      "V6-170",
+      "V6-171",
+      "V6-172",
+      "V6-173",
+      "V6-174",
+      "V6-175",
+      "V6-176",
+      "V6-177",
+      "V6-178",
+      "V6-179",
+      "V6-180"
+    ]
+  },
+  "phase": "deterministic-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-083"
+}

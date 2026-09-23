@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:43:55.710456+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "b5782ac1f3d4b894637a267326dfb025144236900e5c4cd6c019cf791d2280c9",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "5bfa425b7c122c13d2dded8597701698673a6e0046315e9e3c25012304b58372",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-161",
+      "V6-162",
+      "V6-163",
+      "V6-164",
+      "V6-165",
+      "V6-166",
+      "V6-167",
+      "V6-168",
+      "V6-169",
+      "V6-170",
+      "V6-171",
+      "V6-172",
+      "V6-173",
+      "V6-174",
+      "V6-175",
+      "V6-176",
+      "V6-177",
+      "V6-178",
+      "V6-179",
+      "V6-180"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-089"
+}

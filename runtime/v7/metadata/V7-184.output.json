@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "metadata",
+  "executed_at": "2026-09-23T14:43:55.979177+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "mutation-detection",
+    "previous_v7_output_sha256": "6f1a3e563ead3eb19def4e5a3185ddf73d3ab00d0138105269bdd467fd35246e",
+    "publication_enabled": false,
+    "result": {
+      "baseline_sha256": "832a59ae8a547b443857339c24f2a4eba2f3630e2ffb32456bef4cb365e9dcc7",
+      "mutated_sha256": "f13e930d7323caba5b155532fe87d835b1e37e2e9db436232df79a601d8d5962",
+      "mutation_detected": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-361",
+      "V6-362",
+      "V6-363",
+      "V6-364",
+      "V6-365",
+      "V6-366",
+      "V6-367",
+      "V6-368",
+      "V6-369",
+      "V6-370",
+      "V6-371",
+      "V6-372",
+      "V6-373",
+      "V6-374",
+      "V6-375",
+      "V6-376",
+      "V6-377",
+      "V6-378",
+      "V6-379",
+      "V6-380"
+    ]
+  },
+  "phase": "mutation-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-184"
+}

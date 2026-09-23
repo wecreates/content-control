@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "performance",
+  "executed_at": "2026-09-23T14:43:55.934165+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "99d939e7e0347ba3eac554cc1a2bc2c2039ba405d74095e0aae756c5c397a250",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "8fffe12f2bf17f0676358f6e356a671d47c45f8ff2c36de4e8ca2b45b5790512",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-281",
+      "V6-282",
+      "V6-283",
+      "V6-284",
+      "V6-285",
+      "V6-286",
+      "V6-287",
+      "V6-288",
+      "V6-289",
+      "V6-290",
+      "V6-291",
+      "V6-292",
+      "V6-293",
+      "V6-294",
+      "V6-295",
+      "V6-296",
+      "V6-297",
+      "V6-298",
+      "V6-299",
+      "V6-300"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-149"
+}

@@ -1,0 +1,43 @@
+{
+  "batch": "V7",
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T14:43:55.651278+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "phase": "receipt-tamper-rejection",
+    "previous_v7_output_sha256": "ff4e43e5c3419ea98da57c63b279b3c5208228f3de14f6f70ecaf673e7617b55",
+    "publication_enabled": false,
+    "result": {
+      "status": "PASS",
+      "tampered_receipt_rejected": true
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-001",
+      "V6-002",
+      "V6-003",
+      "V6-004",
+      "V6-005",
+      "V6-006",
+      "V6-007",
+      "V6-008",
+      "V6-009",
+      "V6-010",
+      "V6-011",
+      "V6-012",
+      "V6-013",
+      "V6-014",
+      "V6-015",
+      "V6-016",
+      "V6-017",
+      "V6-018",
+      "V6-019",
+      "V6-020"
+    ]
+  },
+  "phase": "receipt-tamper-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-007"
+}

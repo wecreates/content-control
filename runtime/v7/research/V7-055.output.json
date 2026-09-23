@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:43:55.688551+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "first-watch-lock",
+    "previous_v7_output_sha256": "656e04b6375ae7037cefe20d49b5adeca8d8ea51be1fc65b0047170c0e00f22e",
+    "publication_enabled": false,
+    "result": {
+      "candidate_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "human_gate": "AWAITING_CHRIS_FIRST_WATCH",
+      "publication_enabled": false,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-101",
+      "V6-102",
+      "V6-103",
+      "V6-104",
+      "V6-105",
+      "V6-106",
+      "V6-107",
+      "V6-108",
+      "V6-109",
+      "V6-110",
+      "V6-111",
+      "V6-112",
+      "V6-113",
+      "V6-114",
+      "V6-115",
+      "V6-116",
+      "V6-117",
+      "V6-118",
+      "V6-119",
+      "V6-120"
+    ]
+  },
+  "phase": "first-watch-lock",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-055"
+}

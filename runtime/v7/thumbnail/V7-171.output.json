@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "thumbnail",
+  "executed_at": "2026-09-23T14:43:55.971766+00:00",
+  "payload": {
+    "domain": "thumbnail",
+    "phase": "evidence-inventory",
+    "previous_v7_output_sha256": "d59e0d08d92d381d0d5e4a66340eefc21e1636a78e1f1395916270d921d2ca65",
+    "publication_enabled": false,
+    "result": {
+      "bytes": 50995,
+      "files": 60,
+      "nonempty": 60,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-341",
+      "V6-342",
+      "V6-343",
+      "V6-344",
+      "V6-345",
+      "V6-346",
+      "V6-347",
+      "V6-348",
+      "V6-349",
+      "V6-350",
+      "V6-351",
+      "V6-352",
+      "V6-353",
+      "V6-354",
+      "V6-355",
+      "V6-356",
+      "V6-357",
+      "V6-358",
+      "V6-359",
+      "V6-360"
+    ]
+  },
+  "phase": "evidence-inventory",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-171"
+}

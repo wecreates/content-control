@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:43:55.710456+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "done-gate",
+    "previous_v7_output_sha256": "ceeb66f10c1c72bffc136d8080b0be226d461d8f34a0c02d8a33530a012eb7d9",
+    "publication_enabled": false,
+    "result": {
+      "downstream_acceptance": true,
+      "prior_v7_outputs_verified": 9,
+      "publication_performed": false,
+      "source_v6_runtime_verified": 20,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-161",
+      "V6-162",
+      "V6-163",
+      "V6-164",
+      "V6-165",
+      "V6-166",
+      "V6-167",
+      "V6-168",
+      "V6-169",
+      "V6-170",
+      "V6-171",
+      "V6-172",
+      "V6-173",
+      "V6-174",
+      "V6-175",
+      "V6-176",
+      "V6-177",
+      "V6-178",
+      "V6-179",
+      "V6-180"
+    ]
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-090"
+}

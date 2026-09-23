@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "artifact",
+  "executed_at": "2026-09-23T14:43:55.659112+00:00",
+  "payload": {
+    "domain": "artifact",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "c193678bb30efd63d3d5fac887975e77c076155ff2067fc549b74c196b27e69c",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-021",
+      "V6-022",
+      "V6-023",
+      "V6-024",
+      "V6-025",
+      "V6-026",
+      "V6-027",
+      "V6-028",
+      "V6-029",
+      "V6-030",
+      "V6-031",
+      "V6-032",
+      "V6-033",
+      "V6-034",
+      "V6-035",
+      "V6-036",
+      "V6-037",
+      "V6-038",
+      "V6-039",
+      "V6-040"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-016"
+}

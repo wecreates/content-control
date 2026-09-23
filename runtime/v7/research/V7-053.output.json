@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:43:55.688551+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "deterministic-replay",
+    "previous_v7_output_sha256": "bfe58be4ae7ec599ee9f3faec9238c836d1f0daa55b411558f30217043485cc5",
+    "publication_enabled": false,
+    "result": {
+      "replay_a": "dd2b2321812e29f3b4a420e13c54cf961699544bb632f429bf394247f8996831",
+      "replay_b": "dd2b2321812e29f3b4a420e13c54cf961699544bb632f429bf394247f8996831",
+      "stable": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-101",
+      "V6-102",
+      "V6-103",
+      "V6-104",
+      "V6-105",
+      "V6-106",
+      "V6-107",
+      "V6-108",
+      "V6-109",
+      "V6-110",
+      "V6-111",
+      "V6-112",
+      "V6-113",
+      "V6-114",
+      "V6-115",
+      "V6-116",
+      "V6-117",
+      "V6-118",
+      "V6-119",
+      "V6-120"
+    ]
+  },
+  "phase": "deterministic-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-053"
+}

@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "quality",
+  "executed_at": "2026-09-23T14:43:55.810519+00:00",
+  "payload": {
+    "domain": "quality",
+    "phase": "deterministic-replay",
+    "previous_v7_output_sha256": "524ef6953716555397f572aafc800f26187cd4cc2140ad2a8c4727c86e43f6e9",
+    "publication_enabled": false,
+    "result": {
+      "replay_a": "7a48c7a5097e612f42186dab90d1d52afec89aab48129478c0f808e04336ac2d",
+      "replay_b": "7a48c7a5097e612f42186dab90d1d52afec89aab48129478c0f808e04336ac2d",
+      "stable": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-221",
+      "V6-222",
+      "V6-223",
+      "V6-224",
+      "V6-225",
+      "V6-226",
+      "V6-227",
+      "V6-228",
+      "V6-229",
+      "V6-230",
+      "V6-231",
+      "V6-232",
+      "V6-233",
+      "V6-234",
+      "V6-235",
+      "V6-236",
+      "V6-237",
+      "V6-238",
+      "V6-239",
+      "V6-240"
+    ]
+  },
+  "phase": "deterministic-replay",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-113"
+}

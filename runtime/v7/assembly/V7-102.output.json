@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "assembly",
+  "executed_at": "2026-09-23T14:43:55.802882+00:00",
+  "payload": {
+    "domain": "assembly",
+    "phase": "cross-batch-lineage",
+    "previous_v7_output_sha256": "9d56071e5fe93f5d82a870ecb05b148b04be9fe8275d3ed70fa0000b762ca63c",
+    "publication_enabled": false,
+    "result": {
+      "entries": 20,
+      "lineage_sha256": "5c28f21bf0685dc9c6be1768b4c2ba14ea1174375672891c1574283755c620b4",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-201",
+      "V6-202",
+      "V6-203",
+      "V6-204",
+      "V6-205",
+      "V6-206",
+      "V6-207",
+      "V6-208",
+      "V6-209",
+      "V6-210",
+      "V6-211",
+      "V6-212",
+      "V6-213",
+      "V6-214",
+      "V6-215",
+      "V6-216",
+      "V6-217",
+      "V6-218",
+      "V6-219",
+      "V6-220"
+    ]
+  },
+  "phase": "cross-batch-lineage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-102"
+}

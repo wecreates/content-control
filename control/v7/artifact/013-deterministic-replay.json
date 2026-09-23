@@ -1,0 +1,23 @@
+{
+  "batch": "V7",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real V6 runtime evidence exercised",
+    "expected V7 output exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "domain": "artifact",
+  "failure_route": "resolver",
+  "phase": "deterministic-replay",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "output": "runtime/v7/artifact/V7-013.output.json",
+    "receipt": "runtime/v7/artifact/V7-013.receipt.json"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V7-013"
+}

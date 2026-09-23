@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "packaging",
+  "executed_at": "2026-09-23T14:43:55.964130+00:00",
+  "payload": {
+    "domain": "packaging",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "567da04ea9bfb938f8e3f59381eee8b085c6360b8190f34a12eb60d4eea2824b",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "78b8fcf2ec8ee46d99299c7b5bd23331e7e2bf1dc567dab1c9de703614b55ad5",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-321",
+      "V6-322",
+      "V6-323",
+      "V6-324",
+      "V6-325",
+      "V6-326",
+      "V6-327",
+      "V6-328",
+      "V6-329",
+      "V6-330",
+      "V6-331",
+      "V6-332",
+      "V6-333",
+      "V6-334",
+      "V6-335",
+      "V6-336",
+      "V6-337",
+      "V6-338",
+      "V6-339",
+      "V6-340"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-169"
+}

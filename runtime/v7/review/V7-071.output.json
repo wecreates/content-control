@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "review",
+  "executed_at": "2026-09-23T14:43:55.703055+00:00",
+  "payload": {
+    "domain": "review",
+    "phase": "evidence-inventory",
+    "previous_v7_output_sha256": "e4edcce75e2497cc65e03f1e2b01775a6b2868e38121a2741a146eacc9de3554",
+    "publication_enabled": false,
+    "result": {
+      "bytes": 50508,
+      "files": 60,
+      "nonempty": 60,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-141",
+      "V6-142",
+      "V6-143",
+      "V6-144",
+      "V6-145",
+      "V6-146",
+      "V6-147",
+      "V6-148",
+      "V6-149",
+      "V6-150",
+      "V6-151",
+      "V6-152",
+      "V6-153",
+      "V6-154",
+      "V6-155",
+      "V6-156",
+      "V6-157",
+      "V6-158",
+      "V6-159",
+      "V6-160"
+    ]
+  },
+  "phase": "evidence-inventory",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-071"
+}

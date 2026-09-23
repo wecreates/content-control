@@ -1,0 +1,43 @@
+{
+  "batch": "V7",
+  "domain": "repair",
+  "executed_at": "2026-09-23T14:43:55.710456+00:00",
+  "payload": {
+    "domain": "repair",
+    "phase": "receipt-tamper-rejection",
+    "previous_v7_output_sha256": "6da881cde6b7f194692829d3c9277811c360090ff334e8281ef5c6d5a8bff3ec",
+    "publication_enabled": false,
+    "result": {
+      "status": "PASS",
+      "tampered_receipt_rejected": true
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-161",
+      "V6-162",
+      "V6-163",
+      "V6-164",
+      "V6-165",
+      "V6-166",
+      "V6-167",
+      "V6-168",
+      "V6-169",
+      "V6-170",
+      "V6-171",
+      "V6-172",
+      "V6-173",
+      "V6-174",
+      "V6-175",
+      "V6-176",
+      "V6-177",
+      "V6-178",
+      "V6-179",
+      "V6-180"
+    ]
+  },
+  "phase": "receipt-tamper-rejection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-087"
+}

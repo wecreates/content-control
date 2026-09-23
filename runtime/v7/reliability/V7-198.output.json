@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "reliability",
+  "executed_at": "2026-09-23T14:43:55.986617+00:00",
+  "payload": {
+    "domain": "reliability",
+    "phase": "downstream-chain",
+    "previous_v7_output_sha256": "c35d6c3e8ec82a165b94fa6279e369fcda620e32dc9af8984368661f4ada8fe7",
+    "publication_enabled": false,
+    "result": {
+      "accepted_source_receipts": 20,
+      "consumer": "v7-reconciliation",
+      "consumer_accepts": true,
+      "producer": "reliability",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-381",
+      "V6-382",
+      "V6-383",
+      "V6-384",
+      "V6-385",
+      "V6-386",
+      "V6-387",
+      "V6-388",
+      "V6-389",
+      "V6-390",
+      "V6-391",
+      "V6-392",
+      "V6-393",
+      "V6-394",
+      "V6-395",
+      "V6-396",
+      "V6-397",
+      "V6-398",
+      "V6-399",
+      "V6-400"
+    ]
+  },
+  "phase": "downstream-chain",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-198"
+}

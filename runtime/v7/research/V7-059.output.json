@@ -1,0 +1,45 @@
+{
+  "batch": "V7",
+  "domain": "research",
+  "executed_at": "2026-09-23T14:43:55.688551+00:00",
+  "payload": {
+    "domain": "research",
+    "phase": "stale-evidence-detection",
+    "previous_v7_output_sha256": "c019587a056588fee94d7684fc4ee3cf7cd76aea0f06f3ec0ff12a507146ef24",
+    "publication_enabled": false,
+    "result": {
+      "freshness_fingerprint": "cc54dfbc3719ffbab7c47b7c7e5243701d2faa3a6330e8a38c2d8977a408854e",
+      "stale_or_missing": 0,
+      "status": "PASS",
+      "timestamps_present": 20
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-101",
+      "V6-102",
+      "V6-103",
+      "V6-104",
+      "V6-105",
+      "V6-106",
+      "V6-107",
+      "V6-108",
+      "V6-109",
+      "V6-110",
+      "V6-111",
+      "V6-112",
+      "V6-113",
+      "V6-114",
+      "V6-115",
+      "V6-116",
+      "V6-117",
+      "V6-118",
+      "V6-119",
+      "V6-120"
+    ]
+  },
+  "phase": "stale-evidence-detection",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-059"
+}

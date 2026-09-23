@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "performance",
+  "executed_at": "2026-09-23T14:43:55.934165+00:00",
+  "payload": {
+    "domain": "performance",
+    "phase": "failure-injection-recovery",
+    "previous_v7_output_sha256": "bdcdfb860ec7f8718961a592acdd4fe4de7cbc2be96f22fd249e75b361dcfc5e",
+    "publication_enabled": false,
+    "result": {
+      "attempts": 2,
+      "recovered": true,
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-281",
+      "V6-282",
+      "V6-283",
+      "V6-284",
+      "V6-285",
+      "V6-286",
+      "V6-287",
+      "V6-288",
+      "V6-289",
+      "V6-290",
+      "V6-291",
+      "V6-292",
+      "V6-293",
+      "V6-294",
+      "V6-295",
+      "V6-296",
+      "V6-297",
+      "V6-298",
+      "V6-299",
+      "V6-300"
+    ]
+  },
+  "phase": "failure-injection-recovery",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-146"
+}

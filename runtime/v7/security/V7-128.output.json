@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "security",
+  "executed_at": "2026-09-23T14:43:55.818110+00:00",
+  "payload": {
+    "domain": "security",
+    "phase": "downstream-chain",
+    "previous_v7_output_sha256": "ae4995cd817cb62369136b21b90a53a7c2af7e97dbad815f32665b72f698b717",
+    "publication_enabled": false,
+    "result": {
+      "accepted_source_receipts": 20,
+      "consumer": "observability",
+      "consumer_accepts": true,
+      "producer": "security",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-241",
+      "V6-242",
+      "V6-243",
+      "V6-244",
+      "V6-245",
+      "V6-246",
+      "V6-247",
+      "V6-248",
+      "V6-249",
+      "V6-250",
+      "V6-251",
+      "V6-252",
+      "V6-253",
+      "V6-254",
+      "V6-255",
+      "V6-256",
+      "V6-257",
+      "V6-258",
+      "V6-259",
+      "V6-260"
+    ]
+  },
+  "phase": "downstream-chain",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-128"
+}

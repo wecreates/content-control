@@ -1,0 +1,23 @@
+{
+  "batch": "V7",
+  "definition_of_done": [
+    "executable implementation exists",
+    "real V6 runtime evidence exercised",
+    "expected V7 output exists",
+    "verification passes",
+    "receipt binds input/output hashes",
+    "downstream consumer accepts output"
+  ],
+  "domain": "research",
+  "failure_route": "resolver",
+  "phase": "receipt-tamper-rejection",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "output": "runtime/v7/research/V7-057.output.json",
+    "receipt": "runtime/v7/research/V7-057.receipt.json"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V7-057"
+}

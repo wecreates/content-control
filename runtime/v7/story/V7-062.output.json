@@ -1,0 +1,44 @@
+{
+  "batch": "V7",
+  "domain": "story",
+  "executed_at": "2026-09-23T14:43:55.695833+00:00",
+  "payload": {
+    "domain": "story",
+    "phase": "cross-batch-lineage",
+    "previous_v7_output_sha256": "accc56b6594aefb95380d018eb40b752f850e31c8d7d7641c986119310c9678f",
+    "publication_enabled": false,
+    "result": {
+      "entries": 20,
+      "lineage_sha256": "547153b4592aec2611df2a88e8237159cf93ee4effee49029239fa7e5253814c",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-121",
+      "V6-122",
+      "V6-123",
+      "V6-124",
+      "V6-125",
+      "V6-126",
+      "V6-127",
+      "V6-128",
+      "V6-129",
+      "V6-130",
+      "V6-131",
+      "V6-132",
+      "V6-133",
+      "V6-134",
+      "V6-135",
+      "V6-136",
+      "V6-137",
+      "V6-138",
+      "V6-139",
+      "V6-140"
+    ]
+  },
+  "phase": "cross-batch-lineage",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-062"
+}

@@ -1,0 +1,46 @@
+{
+  "batch": "V7",
+  "domain": "metadata",
+  "executed_at": "2026-09-23T14:43:55.979177+00:00",
+  "payload": {
+    "domain": "metadata",
+    "phase": "downstream-chain",
+    "previous_v7_output_sha256": "f30b3011792378a62aaf1aab61d83b7e3c1e25e7c34582e78a34dcbae22b8306",
+    "publication_enabled": false,
+    "result": {
+      "accepted_source_receipts": 20,
+      "consumer": "reliability",
+      "consumer_accepts": true,
+      "producer": "metadata",
+      "status": "PASS"
+    },
+    "source_v6_count": 20,
+    "source_v6_tasks": [
+      "V6-361",
+      "V6-362",
+      "V6-363",
+      "V6-364",
+      "V6-365",
+      "V6-366",
+      "V6-367",
+      "V6-368",
+      "V6-369",
+      "V6-370",
+      "V6-371",
+      "V6-372",
+      "V6-373",
+      "V6-374",
+      "V6-375",
+      "V6-376",
+      "V6-377",
+      "V6-378",
+      "V6-379",
+      "V6-380"
+    ]
+  },
+  "phase": "downstream-chain",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V7-188"
+}
