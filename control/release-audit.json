@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "required_before_lock": [
+    "candidate_manifest",
+    "Chris_review_receipt",
+    "team_final_review",
+    "creator_comparisons",
+    "zero_blocker_receipt"
+  ],
+  "publication_not_implied": true
+}
