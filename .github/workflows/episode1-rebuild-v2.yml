@@ -1,0 +1,89 @@
+name: Episode 1 Rebuild V2 Render
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/episode1_rebuild_render.py'
+      - 'tests/test_episode1_rebuild_render.py'
+      - 'production/episode1/rebuild-v2/**'
+permissions:
+  contents: write
+concurrency:
+  group: episode1-rebuild-v2
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install renderer dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          python -m pip install --disable-pip-version-check pillow
+      - name: Run rebuild tests
+        run: python -m unittest -v tests/test_episode1_rebuild_render.py
+      - name: Download rebuilt narration
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 "https://www.aidocmaker.com/g0/audio?name=bf9a38553af7403cae319a12fd81abb0" -o /tmp/episode1-rebuild-voice.mp3
+          test -s /tmp/episode1-rebuild-voice.mp3
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 /tmp/episode1-rebuild-voice.mp3 | grep -q audio
+      - name: Render rebuilt review candidate
+        run: |
+          mkdir -p review-output
+          python scripts/episode1_rebuild_render.py --audio /tmp/episode1-rebuild-voice.mp3 --out review-output/EPISODE1_REBUILD_V2.mp4
+      - name: Runtime QC
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 review-output/EPISODE1_REBUILD_V2.mp4 > /tmp/streams.txt
+          grep -q video /tmp/streams.txt
+          grep -q audio /tmp/streams.txt
+          python - <<'PY'
+          import json,pathlib,hashlib
+          meta=json.load(open('review-output/EPISODE1_REBUILD_V2.json'))
+          p=pathlib.Path('review-output/EPISODE1_REBUILD_V2.mp4')
+          assert p.stat().st_size > 1_000_000
+          assert meta['status']=='REVIEW_CANDIDATE_RENDERED'
+          assert meta['scene_count'] >= 20
+          assert meta['publication_enabled'] is False
+          assert meta['sha256']==hashlib.sha256(p.read_bytes()).hexdigest()
+          state={
+            "schema_version":1,
+            "status":"REBUILT_REVIEW_CANDIDATE_READY",
+            "rebuild":"V2-entertainment-first",
+            "candidate_sha256":meta["sha256"],
+            "duration_seconds":meta["duration_seconds"],
+            "scene_count":meta["scene_count"],
+            "chris_first_watch_complete":False,
+            "publication_enabled":False,
+            "source_path":"production/episode1/rebuild-v2",
+            "review_artifact":"EPISODE1_REBUILD_V2.mp4"
+          }
+          pathlib.Path('state/episode1-rebuild-v2.json').write_text(json.dumps(state,indent=2,sort_keys=True)+'\n')
+          PY
+      - name: Persist rebuilt candidate state
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/episode1-rebuild-v2.json
+          git diff --cached --quiet || git commit -m 'Episode 1 rebuild V2: runtime candidate ready'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-rebuild-v2-review
+          path: |
+            review-output/EPISODE1_REBUILD_V2.mp4
+            review-output/EPISODE1_REBUILD_V2.json
+            state/episode1-rebuild-v2.json
+          retention-days: 30
