@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "each_material_claim_requires": [
+    "claim_id",
+    "script_range",
+    "source_receipt"
+  ],
+  "unsupported_claim": "BLOCKED",
+  "repair": "rewrite_or_source"
+}
