@@ -1,0 +1,20 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T04:31:48.959475+00:00",
+  "payload": {
+    "claim_token": "2ff8b6f61b9f1a1ebe48fb8ee6565e3a4228b1e8fa8c33fa413b0edeea781cef",
+    "package_sha256": "ea26347fb7dc02e899447f935e2030cdaf992b7f2731a5d5850757f8433fbf2d",
+    "phase": "claim",
+    "previous_output_sha256": "5860f46b7193e704ff66d53a9b31d9973806c37ee4a17afbb0c516775d8c0c67",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818647762",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-323"
+}

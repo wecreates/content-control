@@ -1,0 +1,25 @@
+{
+  "domain": "packaging",
+  "executed_at": "2026-09-23T04:31:48.959475+00:00",
+  "payload": {
+    "package_sha256": "ea26347fb7dc02e899447f935e2030cdaf992b7f2731a5d5850757f8433fbf2d",
+    "phase": "telemetry",
+    "previous_output_sha256": "f90ebdc028ad98ee4e6c4bef995e9c61881a5086bc055b99fbe39207d006b892",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "telemetry": {
+      "compression_ratio": 0.96713,
+      "entries": 2,
+      "media_bytes": 32525813,
+      "package_bytes": 31456703
+    }
+  },
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818647762",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-332"
+}

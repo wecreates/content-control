@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-321",
-  "domain": "packaging",
-  "phase": "input-contract",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,24 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "packaging",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "input-contract",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "ea26347fb7dc02e899447f935e2030cdaf992b7f2731a5d5850757f8433fbf2d",
+    "output": "runtime/v5/packaging/V5-321.output.json",
+    "output_sha256": "22c0e508f77d1831d1fe1c6c8cabdcd5fd9b862811e87abb9dc7143f0f7d29e4",
+    "receipt": "runtime/v5/packaging/V5-321.receipt.json",
+    "runtime_workflow_run_id": "35818647762",
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-321"
 }

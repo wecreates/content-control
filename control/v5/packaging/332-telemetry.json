@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-332",
-  "domain": "packaging",
-  "phase": "telemetry",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,24 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "packaging",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "telemetry",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "f90ebdc028ad98ee4e6c4bef995e9c61881a5086bc055b99fbe39207d006b892",
+    "output": "runtime/v5/packaging/V5-332.output.json",
+    "output_sha256": "070930c228d38c804a1e082edac32d31e8f11aac196d5f95401ca950610b2625",
+    "receipt": "runtime/v5/packaging/V5-332.receipt.json",
+    "runtime_workflow_run_id": "35818647762",
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35818371839,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-332"
 }

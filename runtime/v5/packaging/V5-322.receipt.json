@@ -1,0 +1,20 @@
+{
+  "domain": "packaging",
+  "downstream_consumer": "V5-323",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "22c0e508f77d1831d1fe1c6c8cabdcd5fd9b862811e87abb9dc7143f0f7d29e4",
+  "output_path": "runtime/v5/packaging/V5-322.output.json",
+  "output_sha256": "5860f46b7193e704ff66d53a9b31d9973806c37ee4a17afbb0c516775d8c0c67",
+  "phase": "dependency-check",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818647762",
+  "schema_version": 1,
+  "source_artifact_id": 10731249485,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "source_workflow_run_id": 35818371839,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-322",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:31:48.959475+00:00"
+}
