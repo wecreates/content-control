@@ -1,0 +1,23 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T04:36:16.552122+00:00",
+  "payload": {
+    "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+    "phase": "timeout",
+    "previous_output_sha256": "705a5d5d6ccd6278e7001d790d22bd97033381ec31e15cf50784513313acd9d1",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_run": 35818371839,
+    "timeout": {
+      "limit_seconds": 5,
+      "probe_completed": true
+    }
+  },
+  "phase": "timeout",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-298"
+}

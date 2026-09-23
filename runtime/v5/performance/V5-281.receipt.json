@@ -1,0 +1,19 @@
+{
+  "domain": "performance",
+  "downstream_consumer": "V5-282",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "21bf676375a1a948d41818f171621d42b2bac642a492404e228207d81e2b30cc",
+  "output_path": "runtime/v5/performance/V5-281.output.json",
+  "output_sha256": "8eb04bf2d579a40aad3eaeccea3aa01978d7b7854745f4ba3e043587e7d1f743",
+  "phase": "input-contract",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "source_run": 35818371839,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-281",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:36:16.552122+00:00"
+}

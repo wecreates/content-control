@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-296",
-  "domain": "performance",
-  "phase": "continuity",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,22 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "performance",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "continuity",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "88964768a104fe135a7f4430e8b5a371e647db75063a6700955896c3579d5925",
+    "output": "runtime/v5/performance/V5-296.output.json",
+    "output_sha256": "8bf7f871fdd25130826d6cdad2f57d8fd488bac214e50ed259536206d4220e8b",
+    "receipt": "runtime/v5/performance/V5-296.receipt.json",
+    "runtime_workflow_run_id": "35818971525",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-296"
 }

@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-299",
-  "domain": "performance",
-  "phase": "dedup",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,22 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "performance",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "dedup",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "c69b7c981ef63af0c7de63df99a3f601e775b4b4f9c44011e8e704a25f0766af",
+    "output": "runtime/v5/performance/V5-299.output.json",
+    "output_sha256": "9ce7e8ff2720d822b0888c7b3ebcc25b762e8578fa58fe3cae723675443c9d01",
+    "receipt": "runtime/v5/performance/V5-299.receipt.json",
+    "runtime_workflow_run_id": "35818971525",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-299"
 }

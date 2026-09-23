@@ -1,0 +1,25 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T04:36:16.552122+00:00",
+  "payload": {
+    "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+    "done_gate": {
+      "downstream_acceptance": true,
+      "real_baseline_persisted": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "9ce7e8ff2720d822b0888c7b3ebcc25b762e8578fa58fe3cae723675443c9d01",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_run": 35818371839
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-300"
+}

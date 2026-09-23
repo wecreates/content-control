@@ -1,0 +1,24 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T04:36:16.552122+00:00",
+  "payload": {
+    "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+    "binding": {
+      "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+      "first_watch_sha256": "1af19b3119e175398df9f1b8f20d47839edd3ced0adecc1abc5c5803c3fc5dbb",
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+    },
+    "phase": "receipt",
+    "previous_output_sha256": "801ee85aa8d1d40a97ca8b6a6130c78800eb11e42d4874284a113d175ac7e3f1",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_run": 35818371839
+  },
+  "phase": "receipt",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-287"
+}

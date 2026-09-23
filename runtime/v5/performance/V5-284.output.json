@@ -1,0 +1,39 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T04:36:16.552122+00:00",
+  "payload": {
+    "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+    "measured_baseline": {
+      "decode_30s_wall_seconds": 1.3950761480000011,
+      "ffprobe_median_seconds": 0.06393325799999872,
+      "ffprobe_seconds": [
+        0.294960973000002,
+        0.06077315800000349,
+        0.06152988299999862,
+        0.06393325799999872,
+        0.06398272100000213
+      ],
+      "media_bytes": 32525813,
+      "sha256_median_seconds": 0.024764107999999396,
+      "sha256_mib_per_second": 1252.5802455042303,
+      "sha256_seconds": [
+        0.024983618999996793,
+        0.024764107999999396,
+        0.02448939399999972
+      ],
+      "source_media_duration_seconds": 520.066667
+    },
+    "phase": "execute",
+    "previous_output_sha256": "0f2ac7b30ab21ea4ce38da671380d6b27a28a4bb4f1edb92fbdedbe4dacfebe7",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_run": 35818371839
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-284"
+}

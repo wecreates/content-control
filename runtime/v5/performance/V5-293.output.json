@@ -1,0 +1,25 @@
+{
+  "domain": "performance",
+  "executed_at": "2026-09-23T04:36:16.552122+00:00",
+  "payload": {
+    "audit": {
+      "baseline_file": "state/performance-baseline.json",
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "source_artifact": 10731249485,
+      "source_run": 35818371839
+    },
+    "baseline_sha256": "b2926af003559e62071bc88073e53561a4c2e06f38a8709e928b05c34999bc2a",
+    "phase": "audit",
+    "previous_output_sha256": "fab58e3faee8e6348d3c72546f838386a83e1f95d479ad3b3957d47ce7ebf57a",
+    "publication_enabled": false,
+    "source_artifact_id": 10731249485,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_run": 35818371839
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818971525",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-293"
+}
