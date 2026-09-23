@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "each_receipt_requires": [
+    "task_id",
+    "input_hashes",
+    "output_hashes",
+    "status",
+    "timestamp"
+  ],
+  "downstream_must_reference_upstream_receipts": true
+}
