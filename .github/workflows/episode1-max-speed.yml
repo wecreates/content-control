@@ -95,5 +95,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "Candidate -> Chris watches -> team final complete review + creator compare -> repairs -> team GREEN -> release lock."
-          echo "PUBLICATION_ENABLED=false"
+          python - <<'PY'
+          import json,pathlib
+          gates=["candidate_hash_bound","chris_first_watch","chris_changes_resolved","team_complete_av_review","finance_compare","animation_compare","zero_critical_major"]
+          out={"status":"LOCKED","required_gates":gates,"publication_enabled":False,"release_lock_created":False}
+          pathlib.Path("release-gate.json").write_text(json.dumps(out,indent=2))
+          print("release gate remains LOCKED until every required gate is evidenced")
+          PY
