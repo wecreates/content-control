@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "checks": [
+    "static_hold",
+    "robotic_motion",
+    "continuity",
+    "purposeful_camera_change"
+  ],
+  "routes_to": "render_farm"
+}
