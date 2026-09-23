@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "max_candidates": 5,
+  "no_clickbait_mismatch": true,
+  "selection_requires": "content_alignment"
+}
