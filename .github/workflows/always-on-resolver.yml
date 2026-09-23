@@ -4,6 +4,7 @@ on:
     workflows:
       - Episode 1 Max-Speed Execution
       - Exact AV Reviewer
+      - Dropbox Exact Review Bridge
       - Artifact Transport
       - Pinned Source Refresh
     types: [completed]
@@ -24,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Detect classify resolve verify learn
+      - name: Detect diagnose resolve verify learn
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -33,45 +34,47 @@ jobs:
         run: |
           mkdir -p resolver
           python - <<'PY'
-          import datetime,json,os,pathlib,subprocess
+          import datetime,json,os,pathlib,subprocess,re
           repo=os.environ["REPO"]; rid=os.environ.get("SOURCE_RUN_ID",""); name=os.environ.get("SOURCE_NAME","event")
-          def gh(*a):
-            return subprocess.run(["gh",*a],text=True,capture_output=True)
-          failures=[]
+          def gh(*a): return subprocess.run(["gh",*a],text=True,capture_output=True)
+          failures=[]; logs=""
           if rid:
             p=gh("api",f"repos/{repo}/actions/runs/{rid}/jobs")
             if p.returncode==0:
               for j in json.loads(p.stdout).get("jobs",[]):
                 if j.get("conclusion") in ("failure","cancelled","timed_out","action_required"):
                   failures.append({"id":j["id"],"name":j["name"],"conclusion":j["conclusion"]})
-          receipt={"schema_version":2,"checked_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"source":name,"run_id":rid,"failures":failures,"mode":"DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN","publication_enabled":False,"actions":[]}
-          # Resolve known transient workflow failures automatically, bounded to avoid loops.
-          if failures and rid:
+                  q=gh("api",f"repos/{repo}/actions/jobs/{j['id']}/logs")
+                  logs += q.stdout+"\n"+q.stderr
+          signatures=[]
+          if "HTTP Error 404" in logs and "generativelanguage.googleapis.com" in logs: signatures.append("gemini_file_status_404")
+          if "command not found" in logs: signatures.append("shell_command_not_found")
+          if "sha256sum" in logs and "FAILED" in logs: signatures.append("hash_mismatch")
+          if "HTTP Error 403" in logs: signatures.append("provider_403")
+          if "processing timeout" in logs.lower(): signatures.append("provider_timeout")
+          receipt={"schema_version":3,"checked_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"source":name,"run_id":rid,"failures":failures,"signatures":signatures,"mode":"DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN_RESUME","publication_enabled":False,"actions":[]}
+          # Known fixes are persisted in source; after a matching failure, trigger the corrected workflow rather than blind rerun.
+          if "gemini_file_status_404" in signatures and name=="Dropbox Exact Review Bridge":
+            p=gh("workflow","run","dropbox-review-bridge.yml","--repo",repo)
+            receipt["actions"].append({"action":"rerun_corrected_dropbox_review_bridge","ok":p.returncode==0})
+          elif failures and rid:
             run=gh("api",f"repos/{repo}/actions/runs/{rid}")
             attempt=json.loads(run.stdout).get("run_attempt",1) if run.returncode==0 else 1
-            if attempt < 2:
+            if attempt < 2 and not signatures:
               p=gh("api","--method","POST",f"repos/{repo}/actions/runs/{rid}/rerun-failed-jobs")
-              receipt["actions"].append({"action":"rerun_failed_jobs_once","ok":p.returncode==0})
+              receipt["actions"].append({"action":"bounded_retry_unknown_transient","ok":p.returncode==0})
             else:
-              receipt["actions"].append({"action":"root_cause_required","ok":True})
-          # Persistent known blocker probes.
-          exact=pathlib.Path("review-input/FINANCE_REVIEW_4_9.mp4")
-          receipt["probes"]={
-            "exact_artifact_in_execution_plane":exact.exists(),
-            "expected_sha256":"fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
-          }
-          if not exact.exists():
-            receipt["actions"].append({"action":"artifact_ingress_route","status":"required","route":"canonical library -> supported adapter -> artifact transport -> SHA verify"})
-          pathlib.Path("resolver/latest-v2.json").write_text(json.dumps(receipt,indent=2))
+              receipt["actions"].append({"action":"targeted_root_cause_route","status":"required","signatures":signatures})
+          pathlib.Path("resolver/latest-v3.json").write_text(json.dumps(receipt,indent=2))
           PY
       - uses: actions/upload-artifact@v4
         with:
           name: always-on-resolver-receipt
-          path: resolver/latest-v2.json
+          path: resolver/latest-v3.json
       - name: Persist learning receipt
         run: |
           git config user.name content-control-resolver
           git config user.email actions@users.noreply.github.com
-          git add resolver/latest-v2.json
-          git commit -m "Resolver: update detect-resolve-learn receipt" || exit 0
+          git add resolver/latest-v3.json
+          git commit -m "Resolver: persist diagnosed failure signature and action" || exit 0
           git push
