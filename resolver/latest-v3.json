@@ -1,8 +1,8 @@
 {
   "schema_version": 3,
-  "checked_at": "2026-09-23T20:25:57.814761+00:00",
+  "checked_at": "2026-09-23T20:26:18.290543+00:00",
   "source": "Episode 1 Max-Speed Execution",
-  "run_id": "35915833550",
+  "run_id": "35915869303",
   "failures": [],
   "signatures": [],
   "mode": "DETECT_DIAGNOSE_RESOLVE_VERIFY_LEARN_RESUME",
