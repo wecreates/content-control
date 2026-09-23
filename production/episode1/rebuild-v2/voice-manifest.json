@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "rebuild": "V2-entertainment-first",
+  "provider": "AI Voice Generator",
+  "status": "READY",
+  "voice_id": "crisp",
+  "context_id": "bf9a38553af7403cae319a12fd81abb0",
+  "audio_url": "https://www.aidocmaker.com/g0/audio?name=bf9a38553af7403cae319a12fd81abb0",
+  "preview_url": "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/f9f29c31-c129-4cc9-b542-f521faaaa551.mp3",
+  "source_script": "production/episode1/rebuild-v2/narration-script.txt",
+  "publication_enabled": false
+}
