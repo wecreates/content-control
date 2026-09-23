@@ -1,0 +1,769 @@
+{
+  "schema_version": 1,
+  "target_duration_sec": 482,
+  "publication_enabled": false,
+  "shot_count": 58,
+  "shots": [
+    {
+      "start": 0,
+      "end": 2,
+      "shot": "Extreme close-up: Alex's hand slams shiny metal card onto table; table visibly dents.",
+      "motion": [
+        "impact squash",
+        "camera shake",
+        "card sparkle"
+      ],
+      "sfx": [
+        "metal clang",
+        "bass hit"
+      ],
+      "retention": "cold-open impact"
+    },
+    {
+      "start": 2,
+      "end": 4,
+      "shot": "Alex heroic low-angle pose; card held like legendary weapon.",
+      "motion": [
+        "slow push-in",
+        "cape-like receipt flutter"
+      ],
+      "sfx": [
+        "mock choir"
+      ],
+      "retention": "absurd prestige"
+    },
+    {
+      "start": 4,
+      "end": 8,
+      "shot": "Tiny sparkle circles Alex's head; on-screen label FINANCIALLY DANGEROUS appears then glitches.",
+      "motion": [
+        "sparkle orbit",
+        "eyebrow raise",
+        "micro head tilt"
+      ],
+      "sfx": [
+        "sparkle ping"
+      ],
+      "retention": "character joke"
+    },
+    {
+      "start": 8,
+      "end": 12,
+      "shot": "Giant $200 ANNUAL FEE invoice drops from ceiling and flattens Alex.",
+      "motion": [
+        "vertical smash",
+        "impact frame",
+        "limbs pop out"
+      ],
+      "sfx": [
+        "fall whistle",
+        "cartoon bonk"
+      ],
+      "retention": "stakes"
+    },
+    {
+      "start": 12,
+      "end": 17,
+      "shot": "Alex crawls out; title card YOUR CREDIT CARD HAS DLC snaps in for 0.9 sec then disappears.",
+      "motion": [
+        "snap zoom",
+        "text recoil"
+      ],
+      "sfx": [
+        "game unlock sting"
+      ],
+      "retention": "channel identity sting"
+    },
+    {
+      "start": 17,
+      "end": 24,
+      "shot": "Four icons orbit Alex: trophy, red interest monster, green carrot, giant asterisk/zero door.",
+      "motion": [
+        "icons whip in one-by-one",
+        "Alex tracks each"
+      ],
+      "sfx": [
+        "four fast impacts"
+      ],
+      "retention": "viewer promise"
+    },
+    {
+      "start": 24,
+      "end": 31,
+      "shot": "Alex shops normally; green trail labels planned purchases while red ghost-items try to jump into cart and get swatted away.",
+      "motion": [
+        "walking loop",
+        "prop swats"
+      ],
+      "sfx": [
+        "cart wheel",
+        "swat"
+      ],
+      "retention": "rule visualization"
+    },
+    {
+      "start": 31,
+      "end": 39,
+      "shot": "Calendar-year montage: groceries, gas, utility bill, boring gray boxes; Alex gives thumbs-up.",
+      "motion": [
+        "rapid 1.5s cuts"
+      ],
+      "sfx": [
+        "receipt printer ticks"
+      ],
+      "retention": "pace reset"
+    },
+    {
+      "start": 39,
+      "end": 47,
+      "shot": "Split screen premium vs free card. Premium sprouts 3 POINTS/$ crown; free card calmly shows 2% CASH.",
+      "motion": [
+        "counter roll",
+        "crown bounce"
+      ],
+      "sfx": [
+        "bling",
+        "cash click"
+      ],
+      "retention": "comparison"
+    },
+    {
+      "start": 47,
+      "end": 54,
+      "shot": "30,000 points balloon inflates above Alex until it lifts him off floor.",
+      "motion": [
+        "number count-up",
+        "balloon lift",
+        "Alex kicks"
+      ],
+      "sfx": [
+        "rising whistle"
+      ],
+      "retention": "physical gag"
+    },
+    {
+      "start": 54,
+      "end": 62,
+      "shot": "Redemption screen punctures balloon; 0.7¢/POINT needle pops it.",
+      "motion": [
+        "screen swipe",
+        "balloon pop",
+        "Alex fall"
+      ],
+      "sfx": [
+        "pop",
+        "thud"
+      ],
+      "retention": "reversal"
+    },
+    {
+      "start": 62,
+      "end": 68,
+      "shot": "30,000 morphs into $210; yacht silhouette shrinks into grocery cart.",
+      "motion": [
+        "morph",
+        "scale collapse"
+      ],
+      "sfx": [
+        "deflate"
+      ],
+      "retention": "visual punchline"
+    },
+    {
+      "start": 68,
+      "end": 75,
+      "shot": "Premium app throws twelve $10 coupons like confetti.",
+      "motion": [
+        "coupon burst",
+        "Alex catches six, six burn away"
+      ],
+      "sfx": [
+        "coupon flutter"
+      ],
+      "retention": "credit setup"
+    },
+    {
+      "start": 75,
+      "end": 83,
+      "shot": "Calendar months light green/red; six usable, six forced. Alex physically blocks red shopping arrows.",
+      "motion": [
+        "month flips",
+        "arrow impacts"
+      ],
+      "sfx": [
+        "calendar flips"
+      ],
+      "retention": "meaningful motion"
+    },
+    {
+      "start": 83,
+      "end": 91,
+      "shot": "Phone app grows mouth and chants USE YOUR CREDIT while chasing Alex.",
+      "motion": [
+        "phone chase",
+        "Alex sprint"
+      ],
+      "sfx": [
+        "robot chant"
+      ],
+      "retention": "comedy escalation"
+    },
+    {
+      "start": 91,
+      "end": 99,
+      "shot": "Store shelf: absurd $15 novelty object glows like sacred artifact; coupon laser marks $10 OFF.",
+      "motion": [
+        "spotlight",
+        "Alex squint"
+      ],
+      "sfx": [
+        "angelic sting"
+      ],
+      "retention": "temptation"
+    },
+    {
+      "start": 99,
+      "end": 107,
+      "shot": "Math floats physically: $15 - $10 = $5; Alex opens wallet, moth flies out.",
+      "motion": [
+        "equation snap",
+        "moth flight"
+      ],
+      "sfx": [
+        "cash register fail"
+      ],
+      "retention": "math gag"
+    },
+    {
+      "start": 107,
+      "end": 114,
+      "shot": "Big red label SAVED -$5 slams onto screen; Alex recoils.",
+      "motion": [
+        "stamp hit"
+      ],
+      "sfx": [
+        "error buzzer"
+      ],
+      "retention": "punchline"
+    },
+    {
+      "start": 114,
+      "end": 122,
+      "shot": "Alex returns object; shelf hand grabs it back. Quick scoreboard forms.",
+      "motion": [
+        "hand retract",
+        "scoreboard build"
+      ],
+      "sfx": [
+        "reverse whoosh"
+      ],
+      "retention": "transition"
+    },
+    {
+      "start": 122,
+      "end": 134,
+      "shot": "Equation blocks animate without narration reading each number: 210 + 60 - 200 = 70.",
+      "motion": [
+        "blocks slide",
+        "green/red bars"
+      ],
+      "sfx": [
+        "calculator clicks"
+      ],
+      "retention": "compressed explanation"
+    },
+    {
+      "start": 134,
+      "end": 142,
+      "shot": "Free card silently slides $200 cash across table like poker chips.",
+      "motion": [
+        "cash slide",
+        "Alex double take"
+      ],
+      "sfx": [
+        "chip slide"
+      ],
+      "retention": "contrast joke"
+    },
+    {
+      "start": 142,
+      "end": 151,
+      "shot": "Premium card slowly looks away using two tiny drawn eyes.",
+      "motion": [
+        "eye dart",
+        "Alex stare"
+      ],
+      "sfx": [
+        "awkward cricket"
+      ],
+      "retention": "characterization"
+    },
+    {
+      "start": 151,
+      "end": 159,
+      "shot": "Score flashes FREE +$130 for this example; text DIFFERENT SPEND = DIFFERENT ANSWER underneath.",
+      "motion": [
+        "score punch",
+        "brief disclaimer tag"
+      ],
+      "sfx": [
+        "bell"
+      ],
+      "retention": "chapter payoff"
+    },
+    {
+      "start": 159,
+      "end": 165,
+      "shot": "Screen darkens. Word DEBT drops in red. Interest monster eyes open behind Alex.",
+      "motion": [
+        "lighting change",
+        "eye blink"
+      ],
+      "sfx": [
+        "low rumble"
+      ],
+      "retention": "retention reset"
+    },
+    {
+      "start": 165,
+      "end": 174,
+      "shot": "Alex earns $20 reward trophy on $1,000 purchase; tiny confetti cannon fires.",
+      "motion": [
+        "trophy pop",
+        "confetti"
+      ],
+      "sfx": [
+        "tiny fanfare"
+      ],
+      "retention": "false victory"
+    },
+    {
+      "start": 174,
+      "end": 184,
+      "shot": "Calendar spins 30 days while red meter labeled 24% APR creeps toward trophy.",
+      "motion": [
+        "calendar spin",
+        "meter creep"
+      ],
+      "sfx": [
+        "clock ticks"
+      ],
+      "retention": "tension"
+    },
+    {
+      "start": 184,
+      "end": 192,
+      "shot": "$19.73 appears as red invoice inches from $20 trophy.",
+      "motion": [
+        "numbers converge"
+      ],
+      "sfx": [
+        "heartbeat click"
+      ],
+      "retention": "near-collision"
+    },
+    {
+      "start": 192,
+      "end": 201,
+      "shot": "Interest monster strolls in, takes trophy, leaves invoice in Alex's hand.",
+      "motion": [
+        "monster walk",
+        "snatch",
+        "Alex slump"
+      ],
+      "sfx": [
+        "snatch",
+        "paper slap"
+      ],
+      "retention": "physical punchline"
+    },
+    {
+      "start": 201,
+      "end": 210,
+      "shot": "Reward icon appears once; interest invoices duplicate repeatedly behind it.",
+      "motion": [
+        "single green pop",
+        "red invoice cloning"
+      ],
+      "sfx": [
+        "one ding",
+        "repeating printer"
+      ],
+      "retention": "mechanism"
+    },
+    {
+      "start": 210,
+      "end": 220,
+      "shot": "Fine-print disclaimer shrinks to lower third while narrator stays conversational; statement components orbit.",
+      "motion": [
+        "icons orbit"
+      ],
+      "sfx": [
+        "soft UI ticks"
+      ],
+      "retention": "compliance without lecture"
+    },
+    {
+      "start": 220,
+      "end": 229,
+      "shot": "Autopay screen: MINIMUM and STATEMENT BALANCE buttons become two giant floor buttons.",
+      "motion": [
+        "Alex steps between buttons"
+      ],
+      "sfx": [
+        "button hover"
+      ],
+      "retention": "physical UI"
+    },
+    {
+      "start": 229,
+      "end": 238,
+      "shot": "Alex presses MINIMUM; robot arm stamps EXACTLY WHAT YOU ASKED.",
+      "motion": [
+        "robot arm stamp",
+        "Alex panic"
+      ],
+      "sfx": [
+        "stamp"
+      ],
+      "retention": "joke"
+    },
+    {
+      "start": 238,
+      "end": 246,
+      "shot": "Alex checks amount/date/cash; three green checkmarks appear, no confetti, Alex looks disappointed.",
+      "motion": [
+        "checkmarks",
+        "deadpan glance"
+      ],
+      "sfx": [
+        "three clicks",
+        "tiny sad trombone"
+      ],
+      "retention": "chapter payoff"
+    },
+    {
+      "start": 246,
+      "end": 252,
+      "shot": "Huge green $300 carrot swings into frame on fishing rod.",
+      "motion": [
+        "carrot pendulum"
+      ],
+      "sfx": [
+        "whoosh"
+      ],
+      "retention": "new chapter"
+    },
+    {
+      "start": 252,
+      "end": 261,
+      "shot": "Offer window becomes treadmill labeled SPEND $3,000; Alex jogs while planned purchases fill meter to $2,500.",
+      "motion": [
+        "treadmill",
+        "meter fill"
+      ],
+      "sfx": [
+        "treadmill clicks"
+      ],
+      "retention": "mechanism"
+    },
+    {
+      "start": 261,
+      "end": 268,
+      "shot": "Meter stops; $500 GAP appears as literal hole in floor.",
+      "motion": [
+        "floor opens",
+        "Alex stops short"
+      ],
+      "sfx": [
+        "record scratch"
+      ],
+      "retention": "visual metaphor"
+    },
+    {
+      "start": 268,
+      "end": 279,
+      "shot": "Shopping cart machine-guns absurd products in: luxury toaster, second blender, decorative ladder.",
+      "motion": [
+        "rapid item tosses",
+        "cart wobble"
+      ],
+      "sfx": [
+        "three impact pops"
+      ],
+      "retention": "comedy burst"
+    },
+    {
+      "start": 279,
+      "end": 288,
+      "shot": "Cart shows -$500; carrot shows +$300; scale tips hard toward loss.",
+      "motion": [
+        "scale drop"
+      ],
+      "sfx": [
+        "metal clank"
+      ],
+      "retention": "math without lecture"
+    },
+    {
+      "start": 288,
+      "end": 296,
+      "shot": "Text WINNING BACKWARDS appears while Alex walks backward into wall.",
+      "motion": [
+        "backward walk",
+        "wall squash"
+      ],
+      "sfx": [
+        "bonk"
+      ],
+      "retention": "punchline"
+    },
+    {
+      "start": 296,
+      "end": 304,
+      "shot": "Rapid delete sequence; ladder keeps reappearing once for callback then finally disappears.",
+      "motion": [
+        "delete taps",
+        "ladder pop-back"
+      ],
+      "sfx": [
+        "delete clicks",
+        "boing"
+      ],
+      "retention": "callback"
+    },
+    {
+      "start": 304,
+      "end": 314,
+      "shot": "Normal planned purchases naturally fill bonus meter; green check appears with NO EXTRA SPENDING.",
+      "motion": [
+        "meter fill"
+      ],
+      "sfx": [
+        "clean success tone"
+      ],
+      "retention": "balanced takeaway"
+    },
+    {
+      "start": 314,
+      "end": 326,
+      "shot": "Giant headline $300 zooms out to reveal tiny boring terms underneath. Alex uses magnifying glass.",
+      "motion": [
+        "zoom-out",
+        "magnifier track"
+      ],
+      "sfx": [
+        "camera pull"
+      ],
+      "retention": "terms reveal"
+    },
+    {
+      "start": 326,
+      "end": 338,
+      "shot": "Fine-print blob grows legs and follows Alex as recurring villain.",
+      "motion": [
+        "blob chase",
+        "Alex sigh"
+      ],
+      "sfx": [
+        "tiny footsteps"
+      ],
+      "retention": "recurring gag"
+    },
+    {
+      "start": 338,
+      "end": 345,
+      "shot": "Two giant doors enter. Both have huge glowing 0%.",
+      "motion": [
+        "doors slam down"
+      ],
+      "sfx": [
+        "double boom"
+      ],
+      "retention": "final chapter hook"
+    },
+    {
+      "start": 345,
+      "end": 353,
+      "shot": "Door labels animate: INTRO APR vs NO INTEREST IF PAID IN FULL.",
+      "motion": [
+        "label reveal",
+        "asterisk pulse"
+      ],
+      "sfx": [
+        "warning ping"
+      ],
+      "retention": "distinction"
+    },
+    {
+      "start": 353,
+      "end": 360,
+      "shot": "Alex shrugs at identical zeroes, reaches both hands toward doors.",
+      "motion": [
+        "double take"
+      ],
+      "sfx": [
+        "question sting"
+      ],
+      "retention": "setup"
+    },
+    {
+      "start": 360,
+      "end": 368,
+      "shot": "Door one opens to a normal countdown timer; no trapdoor.",
+      "motion": [
+        "door swing",
+        "timer start"
+      ],
+      "sfx": [
+        "timer beep"
+      ],
+      "retention": "contrast"
+    },
+    {
+      "start": 368,
+      "end": 378,
+      "shot": "Door two opens; deferred-interest trapdoor snaps open beneath Alex with old interest receipts rising from below.",
+      "motion": [
+        "trapdoor drop",
+        "receipt geyser"
+      ],
+      "sfx": [
+        "trapdoor crack",
+        "paper rush"
+      ],
+      "retention": "visual consequence"
+    },
+    {
+      "start": 378,
+      "end": 388,
+      "shot": "Same giant 0% floats above both while bottom halves show very different consequences.",
+      "motion": [
+        "split screen shake"
+      ],
+      "sfx": [
+        "contrast hit"
+      ],
+      "retention": "core takeaway"
+    },
+    {
+      "start": 388,
+      "end": 397,
+      "shot": "$1,200 divided across 12 calendar tiles; $100 hops onto each tile.",
+      "motion": [
+        "tile cascade",
+        "number hops"
+      ],
+      "sfx": [
+        "12 soft ticks"
+      ],
+      "retention": "planning visual"
+    },
+    {
+      "start": 397,
+      "end": 408,
+      "shot": "Alex marks promo end date separately from normal due date; two calendar alarms appear.",
+      "motion": [
+        "circle date",
+        "alarm pop"
+      ],
+      "sfx": [
+        "alarm chirp"
+      ],
+      "retention": "actionable takeaway"
+    },
+    {
+      "start": 408,
+      "end": 420,
+      "shot": "Three icons: reminder, balance check, allocation rules. Fine-print villain peeks in; Alex points 'I see you.'",
+      "motion": [
+        "icon ticks",
+        "villain retreat"
+      ],
+      "sfx": [
+        "three clicks"
+      ],
+      "retention": "callback"
+    },
+    {
+      "start": 420,
+      "end": 431,
+      "shot": "Four-rule rapid montage; each rule paired with prior gag callback in 2–3 second cuts.",
+      "motion": [
+        "yacht-to-cart",
+        "monster trophy theft",
+        "ladder delete",
+        "trapdoor"
+      ],
+      "sfx": [
+        "four rhythmic impacts"
+      ],
+      "retention": "memory consolidation"
+    },
+    {
+      "start": 431,
+      "end": 442,
+      "shot": "Alex picks up metal card; heroic lighting returns exactly like opening.",
+      "motion": [
+        "matching low-angle push-in"
+      ],
+      "sfx": [
+        "same choir"
+      ],
+      "retention": "ending callback"
+    },
+    {
+      "start": 442,
+      "end": 451,
+      "shot": "Alex smiles, places vegetables on card, uses it as tiny cutting board.",
+      "motion": [
+        "knife chop",
+        "card flex"
+      ],
+      "sfx": [
+        "three tiny chops"
+      ],
+      "retention": "final punchline"
+    },
+    {
+      "start": 451,
+      "end": 460,
+      "shot": "Text FINANCIAL EDUCATION COMPLETE appears; fee invoice from opening slowly lowers again.",
+      "motion": [
+        "text pop",
+        "invoice descend"
+      ],
+      "sfx": [
+        "achievement sting"
+      ],
+      "retention": "callback"
+    },
+    {
+      "start": 460,
+      "end": 470,
+      "shot": "Alex sees invoice, pushes it offscreen before it lands.",
+      "motion": [
+        "side shove"
+      ],
+      "sfx": [
+        "slide"
+      ],
+      "retention": "character agency"
+    },
+    {
+      "start": 470,
+      "end": 482,
+      "shot": "Teaser: minimum payment button in dark hallway; red eyes open behind it. NEXT: THE MINIMUM PAYMENT HORROR MOVIE.",
+      "motion": [
+        "slow push",
+        "button tremble",
+        "cut to black"
+      ],
+      "sfx": [
+        "horror sting",
+        "hard cut"
+      ],
+      "retention": "next-episode bridge"
+    }
+  ]
+}
