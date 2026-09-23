@@ -1,0 +1,68 @@
+name: V5 Reliability Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v5_reliability_runtime.py'
+      - '.github/workflows/v5-reliability-runtime.yml'
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-reliability-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exercise_and_close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch actual exact-review job log
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/${GITHUB_REPOSITORY}/actions/jobs/107038932305/logs > /tmp/exact-review-job.log
+          test -s /tmp/exact-review-job.log
+          grep -q 'transient inference HTTP 503' /tmp/exact-review-job.log
+          grep -q 'transient inference HTTP 429' /tmp/exact-review-job.log
+          grep -q 'Artifact exact-av-review-v49 has been successfully uploaded!' /tmp/exact-review-job.log
+      - name: Exercise all 20 reliability controls on real transient recovery evidence
+        env:
+          RELIABILITY_SOURCE_LOG: /tmp/exact-review-job.log
+        run: python scripts/v5_reliability_runtime.py
+      - name: Verify strict completion and persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['registered']==400 and s['runtime_done']>=60 and s['publication_enabled'] is False
+          assert s['actual_transient_http_503_count']>=1 and s['actual_transient_http_429_count']>=1 and s['eventual_recovery']=='PASS'
+          rs=sorted(pathlib.Path('runtime/v5/reliability').glob('V5-*.receipt.json')); assert len(rs)==20
+          for p in rs:
+              r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE'; assert r['real_input_exercised'] is True; assert r['verification']=='PASS'; assert r['downstream_consumer_accepts_output'] is True; assert r['publication_enabled'] is False
+          cs=sorted(pathlib.Path('control/v5/reliability').glob('*.json')); assert len(cs)==20 and all(json.load(open(p))['status']=='DONE' for p in cs)
+          print(json.dumps(s,sort_keys=True))
+          PY
+          git config user.name 'content-control-runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add control/v5/reliability runtime/v5/reliability state/v5-runtime-summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 reliability controls 381-400'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-reliability-runtime-receipts
+          path: |
+            runtime/v5/reliability/
+            state/v5-runtime-summary.json
