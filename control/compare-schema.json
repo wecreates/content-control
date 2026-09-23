@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "dimensions": [
+    "clarity",
+    "pacing",
+    "visual_variety",
+    "audio_quality",
+    "story_payoff"
+  ],
+  "no_copying": true
+}
