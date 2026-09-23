@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "categories": {
+    "motion": "render_farm",
+    "character": "render_farm",
+    "audio": "audio_farm",
+    "voice": "audio_farm",
+    "sfx": "audio_farm",
+    "factual": "factual",
+    "captions": "captions",
+    "text": "captions",
+    "pacing": "story",
+    "story": "story",
+    "packaging": "packaging",
+    "ending": "render_farm"
+  },
+  "required_fields": [
+    "start_sec",
+    "end_sec",
+    "severity",
+    "category",
+    "evidence",
+    "repair"
+  ],
+  "unknown_category": "resolver"
+}
