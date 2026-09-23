@@ -1,0 +1,12 @@
+{
+  "candidate_sha256": "5b8871878b86d3d7600c17289491d66cf15ba2680910d17db64af092a38aad47",
+  "chris_first_watch_complete": false,
+  "duration_seconds": 316.202667,
+  "format": "continuous-motion-graphic",
+  "publication_enabled": false,
+  "rebuild": "V3-continuous-motion",
+  "schema_version": 1,
+  "source": "production/episode1/rebuild-v3/motion-design.json",
+  "status": "MOTION_GRAPHIC_REVIEW_READY",
+  "uses_fullscreen_slide_cards": false
+}
