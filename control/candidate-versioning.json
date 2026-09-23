@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "format": "channel1-v{major}.{minor}",
+  "immutable_after_hash_lock": true,
+  "repair_increments_minor": true,
+  "gold_master_promotion_increments_major": true
+}
