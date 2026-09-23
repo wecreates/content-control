@@ -26,20 +26,31 @@ jobs:
       - name: Install renderer dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core espeak-ng
           python -m pip install --disable-pip-version-check pillow
       - name: Run rebuild tests
         run: python -m unittest -v tests/test_episode1_rebuild_render.py
-      - name: Download rebuilt narration
+      - name: Build local review narration
         run: |
           set -euo pipefail
-          curl --fail --location --retry 3 "https://www.aidocmaker.com/g0/audio?name=bf9a38553af7403cae319a12fd81abb0" -o /tmp/episode1-rebuild-voice.mp3
-          test -s /tmp/episode1-rebuild-voice.mp3
-          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 /tmp/episode1-rebuild-voice.mp3 | grep -q audio
+          python - <<'PY'
+          import pathlib,re
+          src=pathlib.Path('production/episode1/rebuild-v2/narration-script.txt').read_text()
+          lines=[]
+          for line in src.splitlines():
+            s=line.strip()
+            if not s or s.startswith('EPISODE 1') or re.match(r'^\[\d',s):
+              continue
+            lines.append(s)
+          pathlib.Path('/tmp/episode1-rebuild-clean.txt').write_text('\n'.join(lines))
+          PY
+          espeak-ng -v en-us -s 178 -p 48 -f /tmp/episode1-rebuild-clean.txt -w /tmp/episode1-rebuild-voice.wav
+          test -s /tmp/episode1-rebuild-voice.wav
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 /tmp/episode1-rebuild-voice.wav | grep -q audio
       - name: Render rebuilt review candidate
         run: |
           mkdir -p review-output
-          python scripts/episode1_rebuild_render.py --audio /tmp/episode1-rebuild-voice.mp3 --out review-output/EPISODE1_REBUILD_V2.mp4
+          python scripts/episode1_rebuild_render.py --audio /tmp/episode1-rebuild-voice.wav --out review-output/EPISODE1_REBUILD_V2.mp4
       - name: Runtime QC
         run: |
           set -euo pipefail
