@@ -1,0 +1,12 @@
+{
+  "candidate_sha256": "86f61d61e3545c53e8e3d93480c49d8d57a52dccfcffb4f02f40ffc199ffeb1c",
+  "chris_first_watch_complete": false,
+  "duration_seconds": 328.733333,
+  "publication_enabled": false,
+  "rebuild": "V2-entertainment-first",
+  "review_artifact": "EPISODE1_REBUILD_V2.mp4",
+  "scene_count": 24,
+  "schema_version": 1,
+  "source_path": "production/episode1/rebuild-v2",
+  "status": "REBUILT_REVIEW_CANDIDATE_READY"
+}
