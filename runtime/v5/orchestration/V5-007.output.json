@@ -1,0 +1,23 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:28:53.552221+00:00",
+  "payload": {
+    "binding": {
+      "analysis_sha256": "27c27cca8cf6a8eff4356fd45bfdde967601ce8dab2f2a353d13f34cab0c523a",
+      "artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+      "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+    },
+    "domain": "orchestration",
+    "domain_artifact": "state/episode1-orchestration-run.json",
+    "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+    "phase": "receipt",
+    "previous_output_sha256": "b7be6bba868a8b0397751c489d1f49c1fb706adcc2dffe91d905152a6f61b12b",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "receipt",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-007"
+}

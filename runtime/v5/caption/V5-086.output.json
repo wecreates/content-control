@@ -1,0 +1,19 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:28:53.811232+00:00",
+  "payload": {
+    "domain": "caption",
+    "domain_artifact": "state/episode1-caption-manifest.json",
+    "domain_artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+    "phase": "verify",
+    "previous_output_sha256": "1d839da5a333e3f858997f0d7d46c3e8380920bb973904d86aec262f68126333",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "phase": "verify",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-086"
+}

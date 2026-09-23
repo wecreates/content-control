@@ -1,0 +1,22 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:28:53.552221+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "domain_artifact": "state/episode1-orchestration-run.json",
+    "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+    "phase": "telemetry",
+    "previous_output_sha256": "c509eb2b1cd236c25397364a2679bac1d3effef0001ffa6546f90d33e371e572",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "telemetry": {
+      "analysis_bytes": 17924,
+      "artifact_bytes": 1490
+    }
+  },
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-012"
+}

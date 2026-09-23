@@ -1,0 +1,19 @@
+{
+  "domain": "story",
+  "domain_artifact_sha256": "455137bf2bffac1d7fd1c60fbc18773a6756ffcabc51e9d3a50b9d2de2f15a03",
+  "downstream_consumer": "V5-124",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "b7f2f03c1a89f642f30c3a508cb12be8eb7ba06beace244ab08098eefc3c347b",
+  "output_path": "runtime/v5/story/V5-123.output.json",
+  "output_sha256": "a790e0e0c31c7e643ddda3dcbf13188c3ad551250c9af5251dd5488cc716c987",
+  "phase": "claim",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-123",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.920073+00:00"
+}

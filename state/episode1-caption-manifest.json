@@ -1,0 +1,10 @@
+{
+  "caption_count": 82,
+  "provider_analysis_sha256": "27c27cca8cf6a8eff4356fd45bfdde967601ce8dab2f2a353d13f34cab0c523a",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS",
+  "vtt_path": "state/episode1-captions.vtt",
+  "vtt_sha256": "d060bae487d316e722056eee3a5d156e248d238e5d941e31f359a78f9a62a064"
+}

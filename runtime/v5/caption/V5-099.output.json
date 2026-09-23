@@ -1,0 +1,22 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:28:53.811232+00:00",
+  "payload": {
+    "dedup": {
+      "identity_sources": 3,
+      "unique_hashes": 1
+    },
+    "domain": "caption",
+    "domain_artifact": "state/episode1-caption-manifest.json",
+    "domain_artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+    "phase": "dedup",
+    "previous_output_sha256": "6b723a4a8ff11faeba116f41ed2ad6e38da48d9a1ffdb2ea5ed82f72bbe5421d",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "dedup",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-099"
+}

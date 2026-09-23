@@ -1,0 +1,26 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:28:53.552221+00:00",
+  "payload": {
+    "domain": "orchestration",
+    "domain_artifact": "state/episode1-orchestration-run.json",
+    "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+    "done_gate": {
+      "domain_artifact_verified": true,
+      "downstream_acceptance": true,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "a239e2c1750d88ce5ad7f7a82c4b1aa9beb17a30c7538c6f857280dda0a40c08",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-020"
+}

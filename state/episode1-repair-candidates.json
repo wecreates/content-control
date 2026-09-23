@@ -1,0 +1,26 @@
+{
+  "candidates": [
+    {
+      "finding_id": "F001",
+      "path": "/tmp/repair-runtime/F001-motion-candidate.mp4",
+      "promoted": false,
+      "sha256": "f07ea7d9b9b7f3b4fb386366457539ca7cad567564d92dff95d3d07def2c336f",
+      "status": "PATCH_CANDIDATE_READY"
+    },
+    {
+      "finding_id": "F002",
+      "path": "/tmp/repair-runtime/F002-pacing-candidate.mp4",
+      "promoted": false,
+      "sha256": "b706734f94768dd3b30a821a47c5e357a083ec5bc362e9c8457bb2a1abaa6f3b",
+      "status": "PATCH_CANDIDATE_READY"
+    }
+  ],
+  "delta_review_required": true,
+  "main_candidate_unchanged": true,
+  "publication_enabled": false,
+  "release_blockers": [],
+  "review_verdict": "PASS",
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS"
+}

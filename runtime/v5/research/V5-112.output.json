@@ -1,0 +1,22 @@
+{
+  "domain": "research",
+  "executed_at": "2026-09-23T05:28:53.662886+00:00",
+  "payload": {
+    "domain": "research",
+    "domain_artifact": "state/episode1-research-evidence.json",
+    "domain_artifact_sha256": "f7d33091025d7334c918a53af6df6784b6896d3e65d976944dc68843f557f92f",
+    "phase": "telemetry",
+    "previous_output_sha256": "e7608ed212418113375f650cdf6a18ad755587dc14694a3504d919a9d11428cd",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "telemetry": {
+      "analysis_bytes": 17924,
+      "artifact_bytes": 2020
+    }
+  },
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-112"
+}

@@ -1,0 +1,58 @@
+{
+  "nodes": [
+    {
+      "deps": [],
+      "name": "identity",
+      "output": {
+        "expected": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+        "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+      },
+      "output_sha256": "fddeee4656e280f401cbd06059893c2108793eedc74b1329223270e7594b709d",
+      "status": "PASS"
+    },
+    {
+      "deps": [
+        "identity"
+      ],
+      "name": "probe",
+      "output": {
+        "duration": 520.066667,
+        "stream_types": [
+          "video",
+          "audio"
+        ]
+      },
+      "output_sha256": "7274496ad5002bb2ce3e7655641de2ff8396f680919f08c4bd19d2d849250a39",
+      "status": "PASS"
+    },
+    {
+      "deps": [
+        "identity"
+      ],
+      "name": "review",
+      "output": {
+        "release_blockers": [],
+        "verdict": "PASS"
+      },
+      "output_sha256": "28c9d773e8a364041ecadca88349ff56bfbdc50595b6401d6d7d9d37ca11f15d",
+      "status": "PASS"
+    },
+    {
+      "deps": [
+        "probe",
+        "review"
+      ],
+      "name": "gate",
+      "output": {
+        "first_watch": "AWAITING_CHRIS_FIRST_WATCH",
+        "publication_enabled": false
+      },
+      "output_sha256": "4270d906b65619ee3d1093e25783bcfebe8adb84c062f467e0a3e5154ad21900",
+      "status": "PASS"
+    }
+  ],
+  "publication_enabled": false,
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS"
+}

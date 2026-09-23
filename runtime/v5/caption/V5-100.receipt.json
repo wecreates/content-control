@@ -1,0 +1,19 @@
+{
+  "domain": "caption",
+  "domain_artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+  "downstream_consumer": "story/render",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "3122764f371fbd9f9fc3858737568cdc91cfd39ad78f10bde1c7dfff97599756",
+  "output_path": "runtime/v5/caption/V5-100.output.json",
+  "output_sha256": "e34cbf01f1266718886a3242175e4ff0981c2c42d6e33053924ded401e7287eb",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-100",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.811232+00:00"
+}

@@ -1,0 +1,24 @@
+{
+  "domain": "caption",
+  "executed_at": "2026-09-23T05:28:53.811232+00:00",
+  "payload": {
+    "domain": "caption",
+    "domain_artifact": "state/episode1-caption-manifest.json",
+    "domain_artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+    "phase": "execute",
+    "previous_output_sha256": "22a33929eead37e1c89ac450e80742008de124ab8d6d683c386063b43a2c1f22",
+    "publication_enabled": false,
+    "real_operation": {
+      "artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+      "captions": 82,
+      "result": "PASS",
+      "vtt_sha256": "d060bae487d316e722056eee3a5d156e248d238e5d941e31f359a78f9a62a064"
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-084"
+}

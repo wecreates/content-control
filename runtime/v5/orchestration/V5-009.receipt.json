@@ -1,0 +1,19 @@
+{
+  "domain": "orchestration",
+  "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+  "downstream_consumer": "V5-010",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "a79e6521fbffa159a17aa0e94cbea50a2a83d6c3b31f277ec3e33291611f8d3e",
+  "output_path": "runtime/v5/orchestration/V5-009.output.json",
+  "output_sha256": "9ed9f515630af150d337a8df94f9a06c368012d695d732adc02cfb5d4f3eb6d6",
+  "phase": "failure-route",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-009",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.552221+00:00"
+}

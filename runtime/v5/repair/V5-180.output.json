@@ -1,0 +1,26 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:28:56.474444+00:00",
+  "payload": {
+    "domain": "repair",
+    "domain_artifact": "state/episode1-repair-candidates.json",
+    "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+    "done_gate": {
+      "domain_artifact_verified": true,
+      "downstream_acceptance": true,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "555541b1c95f32b76c3b56aa82db5ac75498d5edbadd609d78aa011e71da4fb8",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-180"
+}

@@ -1,0 +1,19 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:28:53.552221+00:00",
+  "payload": {
+    "claim_token": "3ed6f9c52a7d964548cd1377d8392ea0450bf6382164957cb075d5ebf9e8dead",
+    "domain": "orchestration",
+    "domain_artifact": "state/episode1-orchestration-run.json",
+    "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+    "phase": "claim",
+    "previous_output_sha256": "8bfbd23c3bbe23afb93d34e3029c3db4216bdb44aa23ccfd5d2cb7a7d3894f65",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-003"
+}

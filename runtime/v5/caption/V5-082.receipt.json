@@ -1,0 +1,19 @@
+{
+  "domain": "caption",
+  "domain_artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+  "downstream_consumer": "V5-083",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "6c6ec9a0a7a3f18e349a093c94d825300141d18d75f3a43296c06e0c0eead58e",
+  "output_path": "runtime/v5/caption/V5-082.output.json",
+  "output_sha256": "ba1ac8da8150a47c9395148412d46cd23a833e431a1ad6ba5ffff4585bfc61f0",
+  "phase": "dependency-check",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-082",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.811232+00:00"
+}

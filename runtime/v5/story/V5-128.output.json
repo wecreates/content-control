@@ -1,0 +1,19 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:28:53.920073+00:00",
+  "payload": {
+    "cache_roundtrip": "PASS",
+    "domain": "story",
+    "domain_artifact": "state/episode1-story-map.json",
+    "domain_artifact_sha256": "455137bf2bffac1d7fd1c60fbc18773a6756ffcabc51e9d3a50b9d2de2f15a03",
+    "phase": "cache",
+    "previous_output_sha256": "bbacfe67a8b314a7d569e640cbac45c069f31a14d3ebb7e13b1abb12a10bb7f2",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "cache",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-128"
+}

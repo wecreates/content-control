@@ -1,0 +1,43 @@
+{
+  "generated_from_exact_video_analysis": true,
+  "publication_enabled": false,
+  "research_claims": [
+    {
+      "claim": "A premium credit card with a $200 annual fee may be mathematically inferior to a 2% no-fee card for a $10,000/year spender.",
+      "risk_level": "low",
+      "start_sec": 7.167,
+      "verification_target": "Current market comparison of premium cards (e.g., Amex Gold, Chase Sapphire) vs. 2% cashback cards (e.g., Citi Double Cash)."
+    },
+    {
+      "claim": "Some credit card rewards programs offer redemption values as low as 0.7 cents per point for certain categories.",
+      "risk_level": "medium",
+      "start_sec": 54.0,
+      "verification_target": "Redemption tables for major credit card issuers like American Express, Chase, and Capital One."
+    },
+    {
+      "claim": "A $1,000 balance at a 24% APR generates approximately $19.73 in interest over 30 days.",
+      "risk_level": "low",
+      "start_sec": 190.567,
+      "verification_target": "Standard bank interest calculation formulas (Balance * APR * (Days/365))."
+    },
+    {
+      "claim": "Deferred interest promotions can retroactively charge interest for the entire promotional period if the balance is not paid in full by the deadline.",
+      "risk_level": "high",
+      "start_sec": 423.233,
+      "verification_target": "Consumer Financial Protection Bureau (CFPB) regulations and issuer terms for deferred interest products."
+    },
+    {
+      "claim": "Payment allocation rules in a credit card agreement determine which balance type (promotional vs. standard) a payment applies to first.",
+      "risk_level": "medium",
+      "start_sec": 511.433,
+      "verification_target": "The Credit Card Accountability Responsibility and Disclosure (CARD) Act of 2009 regarding payment allocation."
+    }
+  ],
+  "review_context": {
+    "release_blockers": [],
+    "verdict": "PASS"
+  },
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS"
+}

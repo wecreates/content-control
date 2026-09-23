@@ -1,0 +1,22 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:28:56.474444+00:00",
+  "payload": {
+    "domain": "repair",
+    "domain_artifact": "state/episode1-repair-candidates.json",
+    "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+    "handoff": {
+      "accepted": true,
+      "consumer": "quality delta-review"
+    },
+    "phase": "handoff",
+    "previous_output_sha256": "d117085a0818385e171c8880287dcd7eb60f5bf36627068b05b9ccf882f6855c",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "handoff",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-174"
+}

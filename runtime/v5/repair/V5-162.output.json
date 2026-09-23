@@ -1,0 +1,24 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:28:56.474444+00:00",
+  "payload": {
+    "dependencies": {
+      "content_analysis": "PASS",
+      "ffmpeg": true,
+      "ffprobe": true,
+      "review": "PASS"
+    },
+    "domain": "repair",
+    "domain_artifact": "state/episode1-repair-candidates.json",
+    "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+    "phase": "dependency-check",
+    "previous_output_sha256": "04d76406f193f3126db73a9693def909d91e3e96350b07418de207c12008c1dd",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "dependency-check",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-162"
+}

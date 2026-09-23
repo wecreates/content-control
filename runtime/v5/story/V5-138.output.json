@@ -1,0 +1,22 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:28:53.920073+00:00",
+  "payload": {
+    "domain": "story",
+    "domain_artifact": "state/episode1-story-map.json",
+    "domain_artifact_sha256": "455137bf2bffac1d7fd1c60fbc18773a6756ffcabc51e9d3a50b9d2de2f15a03",
+    "phase": "timeout",
+    "previous_output_sha256": "35b9337a10058436d73b7c764a4322024c2d1a107863b6945bdd013f9c55f5f5",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "timeout": {
+      "completed": true,
+      "limit_seconds": 5
+    }
+  },
+  "phase": "timeout",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-138"
+}

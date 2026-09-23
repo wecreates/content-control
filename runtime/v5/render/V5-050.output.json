@@ -1,0 +1,22 @@
+{
+  "domain": "render",
+  "executed_at": "2026-09-23T05:28:55.131478+00:00",
+  "payload": {
+    "domain": "render",
+    "domain_artifact": "state/episode1-render-runtime.json",
+    "domain_artifact_sha256": "41e36730ab7acaa440cc7e125ffe2f40729630d8ced323dd625d60bcd62ca15d",
+    "phase": "retry",
+    "previous_output_sha256": "7b37695ebe59d6883899693f49f67a0639bd72db3c9d8cab16ba63d93b7bf2ad",
+    "publication_enabled": false,
+    "retry": {
+      "attempts": 2,
+      "result": "PASS"
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "retry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-050"
+}

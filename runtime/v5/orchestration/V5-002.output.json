@@ -1,0 +1,24 @@
+{
+  "domain": "orchestration",
+  "executed_at": "2026-09-23T05:28:53.552221+00:00",
+  "payload": {
+    "dependencies": {
+      "content_analysis": "PASS",
+      "ffmpeg": true,
+      "ffprobe": true,
+      "review": "PASS"
+    },
+    "domain": "orchestration",
+    "domain_artifact": "state/episode1-orchestration-run.json",
+    "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+    "phase": "dependency-check",
+    "previous_output_sha256": "e472401eecbf219cce7a2454f65a317fbc53840c492895e3d13e1859e8cbe4e2",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "dependency-check",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-002"
+}

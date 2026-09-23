@@ -1,0 +1,19 @@
+{
+  "domain": "repair",
+  "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+  "downstream_consumer": "quality delta-review",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "555541b1c95f32b76c3b56aa82db5ac75498d5edbadd609d78aa011e71da4fb8",
+  "output_path": "runtime/v5/repair/V5-180.output.json",
+  "output_sha256": "ab4d358d5725084629d7504f4c195f1504b721b90946c0ded98c1ea2e31e2fae",
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-180",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:56.474444+00:00"
+}

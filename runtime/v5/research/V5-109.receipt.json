@@ -1,0 +1,19 @@
+{
+  "domain": "research",
+  "domain_artifact_sha256": "f7d33091025d7334c918a53af6df6784b6896d3e65d976944dc68843f557f92f",
+  "downstream_consumer": "V5-110",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "9c23be6c403eb344ff7db64c905e4748fb933062d5bed1aaf7eedbc95edc6a5f",
+  "output_path": "runtime/v5/research/V5-109.output.json",
+  "output_sha256": "a4ea8ab89154f1218627d6538a58711a8efd78437f07e1d6826be97c9fd77412",
+  "phase": "failure-route",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-109",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.662886+00:00"
+}

@@ -1,0 +1,10 @@
+{
+  "artifact_runtime_path": "/tmp/render-runtime/episode1-render-preview.mp4",
+  "duration_seconds": 12.0,
+  "publication_enabled": false,
+  "render_bytes": 419355,
+  "render_sha256": "6dde58afe9ffe0aaee186ba5ffe6dd85ae1f97a22b83ff265c139db8538f322e",
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS"
+}

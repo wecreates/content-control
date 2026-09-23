@@ -1,0 +1,19 @@
+{
+  "domain": "repair",
+  "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+  "downstream_consumer": "V5-179",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "cc668d5a8fee8edcce9ea12595884714f104b5c33fbb61809d252571414ae18d",
+  "output_path": "runtime/v5/repair/V5-178.output.json",
+  "output_sha256": "f00f4a744013ff74bf3ba4214956fdd0a0e653be026329c6e5c94e7fb88ecd1d",
+  "phase": "timeout",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-178",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:56.474444+00:00"
+}

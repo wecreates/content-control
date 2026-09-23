@@ -1,0 +1,38 @@
+{
+  "beat_count": 4,
+  "provider_analysis_sha256": "27c27cca8cf6a8eff4356fd45bfdde967601ce8dab2f2a353d13f34cab0c523a",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "source_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "PASS",
+  "story_beats": [
+    {
+      "end_sec": 147.667,
+      "purpose": "To debunk the perceived value of high-tier credit cards for average spenders by showing the impact of annual fees and redemption values.",
+      "start_sec": 0.0,
+      "summary": "The video starts with a mathematical comparison of premium 'metal' credit cards versus standard no-fee cashback cards. It demonstrates that for a spender with a $10,000 annual budget, the high annual fee of a premium card may negate its higher reward rate.",
+      "transition": "The narrator shifts from rewards math for full payers to the mechanics of credit card borrowing."
+    },
+    {
+      "end_sec": 269.0,
+      "purpose": "To highlight that credit card rewards are secondary to the high cost of interest when debt is incurred.",
+      "start_sec": 147.667,
+      "summary": "This section details the cost of carrying a balance, illustrating how quickly interest charges can eliminate any earned rewards. It emphasizes the importance of understanding statement balances and autopay settings.",
+      "transition": "The focus moves from ongoing interest to the allure and potential traps of sign-up bonuses."
+    },
+    {
+      "end_sec": 403.967,
+      "purpose": "To warn consumers against overspending to chase sign-up bonuses and to emphasize reading the specific terms of an offer.",
+      "start_sec": 269.0,
+      "summary": "Alex evaluates a fictional $300 bonus offer, uncovering the risk of 'manufactured' spending\u2014purchasing items one doesn't need just to meet a bonus threshold. It also covers technical rules like return policies and posting dates.",
+      "transition": "The narrative transitions into the final technical check: promotional interest rates."
+    },
+    {
+      "end_sec": 520.067,
+      "purpose": "To educate viewers on the nuances of 'interest-free' marketing and the necessity of independent payoff calculations.",
+      "start_sec": 403.967,
+      "summary": "The final test examines the difference between 0% introductory APR and deferred interest. It explains how small remaining balances or payment allocation rules can lead to significant retroactive interest charges.",
+      "transition": "The video concludes by summarizing the four key checks for any credit card decision."
+    }
+  ]
+}

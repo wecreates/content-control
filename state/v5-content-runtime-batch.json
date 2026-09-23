@@ -1,0 +1,52 @@
+{
+  "domains": [
+    {
+      "artifact": "state/episode1-orchestration-run.json",
+      "artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+      "domain": "orchestration",
+      "status": "DONE",
+      "tasks": 20
+    },
+    {
+      "artifact": "state/episode1-research-evidence.json",
+      "artifact_sha256": "f7d33091025d7334c918a53af6df6784b6896d3e65d976944dc68843f557f92f",
+      "domain": "research",
+      "status": "DONE",
+      "tasks": 20
+    },
+    {
+      "artifact": "state/episode1-caption-manifest.json",
+      "artifact_sha256": "8bfd2cc47b2beb76dad6f6eccf9d40cc2538f6762fa6ec29f64c2757d85d2db6",
+      "domain": "caption",
+      "status": "DONE",
+      "tasks": 20
+    },
+    {
+      "artifact": "state/episode1-story-map.json",
+      "artifact_sha256": "455137bf2bffac1d7fd1c60fbc18773a6756ffcabc51e9d3a50b9d2de2f15a03",
+      "domain": "story",
+      "status": "DONE",
+      "tasks": 20
+    },
+    {
+      "artifact": "state/episode1-render-runtime.json",
+      "artifact_sha256": "41e36730ab7acaa440cc7e125ffe2f40729630d8ced323dd625d60bcd62ca15d",
+      "domain": "render",
+      "status": "DONE",
+      "tasks": 20
+    },
+    {
+      "artifact": "state/episode1-repair-candidates.json",
+      "artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+      "domain": "repair",
+      "status": "DONE",
+      "tasks": 20
+    }
+  ],
+  "first_watch_gate": "AWAITING_CHRIS_FIRST_WATCH",
+  "generated_at": "2026-09-23T05:28:56.582725+00:00",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "tasks_completed_this_run": 120
+}

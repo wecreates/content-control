@@ -1,0 +1,26 @@
+{
+  "domain": "story",
+  "executed_at": "2026-09-23T05:28:53.920073+00:00",
+  "payload": {
+    "domain": "story",
+    "domain_artifact": "state/episode1-story-map.json",
+    "domain_artifact_sha256": "455137bf2bffac1d7fd1c60fbc18773a6756ffcabc51e9d3a50b9d2de2f15a03",
+    "done_gate": {
+      "domain_artifact_verified": true,
+      "downstream_acceptance": true,
+      "publication_performed": false,
+      "real_input_exercised": true,
+      "result": "PASS",
+      "upstream_outputs_verified": 19
+    },
+    "phase": "done-gate",
+    "previous_output_sha256": "710836a3292bb7d889647c8fdef27efe4cd464aa7cc91c3cc8f7c868b09e265a",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "done-gate",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-140"
+}

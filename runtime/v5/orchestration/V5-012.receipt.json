@@ -1,0 +1,19 @@
+{
+  "domain": "orchestration",
+  "domain_artifact_sha256": "2cea3c78f9282b88a5898d4e9484e5a2ca04ab8263924380e5c5ea027eecbb03",
+  "downstream_consumer": "V5-013",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "c509eb2b1cd236c25397364a2679bac1d3effef0001ffa6546f90d33e371e572",
+  "output_path": "runtime/v5/orchestration/V5-012.output.json",
+  "output_sha256": "4b74fc9d0bb744158cc538cbb5c37da474f56976c23fd2a64bdc0be0b8df8c76",
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35822514004",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-012",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T05:28:53.552221+00:00"
+}

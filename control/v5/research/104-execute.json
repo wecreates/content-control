@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-104",
-  "domain": "research",
-  "phase": "execute",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,21 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "research",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "execute",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "domain_artifact_sha256": "f7d33091025d7334c918a53af6df6784b6896d3e65d976944dc68843f557f92f",
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/research/V5-104.output.json",
+    "receipt": "runtime/v5/research/V5-104.receipt.json",
+    "runtime_workflow_run_id": "35822514004",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-104"
 }

@@ -1,0 +1,22 @@
+{
+  "domain": "repair",
+  "executed_at": "2026-09-23T05:28:56.474444+00:00",
+  "payload": {
+    "domain": "repair",
+    "domain_artifact": "state/episode1-repair-candidates.json",
+    "domain_artifact_sha256": "141ee2b5f2254fdd41f5cf5651a6676455e598fc9123168ff172e1597f66f8f1",
+    "phase": "telemetry",
+    "previous_output_sha256": "0b0bafbb5139421ff509b407f8aa9a5d276d11af8c44d569c5d49500bf5ac60c",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "telemetry": {
+      "analysis_bytes": 17924,
+      "artifact_bytes": 816
+    }
+  },
+  "phase": "telemetry",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-172"
+}

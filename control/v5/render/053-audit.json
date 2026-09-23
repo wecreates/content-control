@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-053",
-  "domain": "render",
-  "phase": "audit",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,21 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "render",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "audit",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "domain_artifact_sha256": "41e36730ab7acaa440cc7e125ffe2f40729630d8ced323dd625d60bcd62ca15d",
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/render/V5-053.output.json",
+    "receipt": "runtime/v5/render/V5-053.receipt.json",
+    "runtime_workflow_run_id": "35822514004",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-053"
 }
