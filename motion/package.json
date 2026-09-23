@@ -1,0 +1,15 @@
+{
+  "name": "content-control-episode1-motion",
+  "private": true,
+  "scripts": {
+    "test": "node tests/episode1-motion.test.mjs",
+    "compositions": "remotion compositions src/index.jsx",
+    "render": "remotion render src/index.jsx Episode1"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.390",
+    "remotion": "4.0.390",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  }
+}
