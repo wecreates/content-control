@@ -1,0 +1,20 @@
+name: V5 400 Task Verification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['scripts/verify_v5_controls.py','.github/workflows/v5-400-verification.yml']
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_v5_controls.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-400-verification-receipts
+          path: receipts/v5/
