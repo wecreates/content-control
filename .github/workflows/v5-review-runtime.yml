@@ -1,0 +1,67 @@
+name: V5 Review Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v5_review_runtime.py'
+      - '.github/workflows/v5-review-runtime.yml'
+      - 'receipts/EXACT_AV_REVIEW_v49.json'
+      - 'production/episode1/polish-plan.json'
+permissions:
+  contents: write
+concurrency:
+  group: v5-review-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exercise_and_close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Exercise all 20 review controls on exact real review evidence
+        run: python scripts/v5_review_runtime.py
+      - name: Verify no placeholder completion and persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('.')
+          summary=json.load(open('state/v5-runtime-summary.json'))
+          assert summary['registered']==400
+          assert summary['runtime_done']>=20
+          assert summary['publication_enabled'] is False
+          files=sorted(pathlib.Path('runtime/v5/review').glob('V5-*.receipt.json'))
+          assert len(files)==20
+          for p in files:
+              r=json.load(open(p))
+              assert r['status']=='RUNTIME_VERIFIED_DONE'
+              assert r['real_input_exercised'] is True
+              assert r['verification']=='PASS'
+              assert r['downstream_consumer_accepts_output'] is True
+              assert r['publication_enabled'] is False
+          controls=sorted(pathlib.Path('control/v5/review').glob('*.json'))
+          assert len(controls)==20 and all(json.load(open(p))['status']=='DONE' for p in controls)
+          print(json.dumps(summary,sort_keys=True))
+          PY
+          git config user.name 'content-control-runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add control/v5/review runtime/v5/review state/v5-runtime-summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 review controls 141-160'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-review-runtime-receipts
+          path: |
+            runtime/v5/review/
+            state/v5-runtime-summary.json
