@@ -1,0 +1,75 @@
+name: V5 Observability Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v5_observability_runtime.py'
+      - '.github/workflows/v5-observability-runtime.yml'
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-observability-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exercise_and_close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch real production and completion logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107038932305/logs > /tmp/review.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107044723809/logs > /tmp/first-watch.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107045243945/logs > /tmp/resolver.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107045555023/logs > /tmp/packaging.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107045854517/logs > /tmp/quality.log
+          for f in /tmp/review.log /tmp/first-watch.log /tmp/resolver.log /tmp/packaging.log /tmp/quality.log; do test -s "$f"; done
+      - name: Exercise all 20 observability controls on real logs and state
+        env:
+          OBS_REVIEW_LOG: /tmp/review.log
+          OBS_FIRST_WATCH_LOG: /tmp/first-watch.log
+          OBS_RESOLVER_LOG: /tmp/resolver.log
+          OBS_PACKAGING_LOG: /tmp/packaging.log
+          OBS_QUALITY_LOG: /tmp/quality.log
+        run: python scripts/v5_observability_runtime.py
+      - name: Verify strict completion and persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['registered']==400 and s['runtime_done']>=140 and s['publication_enabled'] is False
+          assert s['observed_real_runs']==5 and s['downstream_acceptance']=='PASS' and s['first_watch_gate']=='AWAITING_CHRIS_FIRST_WATCH'
+          snap=json.load(open('state/observability-snapshot.json')); assert snap['publication_enabled'] is False and len(snap['runs'])==5
+          rs=sorted(pathlib.Path('runtime/v5/observability').glob('V5-*.receipt.json')); assert len(rs)==20
+          for p in rs:
+              r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE'; assert r['real_input_exercised'] is True; assert r['verification']=='PASS'; assert r['downstream_consumer_accepts_output'] is True; assert r['publication_enabled'] is False
+          cs=sorted(pathlib.Path('control/v5/observability').glob('*.json')); assert len(cs)==20 and all(json.load(open(p))['status']=='DONE' for p in cs)
+          print(json.dumps(s,sort_keys=True))
+          PY
+          git config user.name 'content-control-runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add control/v5/observability runtime/v5/observability state/v5-runtime-summary.json state/observability-snapshot.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 observability controls 261-280'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-observability-runtime-receipts
+          path: |
+            runtime/v5/observability/
+            state/observability-snapshot.json
+            state/v5-runtime-summary.json
