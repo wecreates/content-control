@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "video": {
+    "width": 1920,
+    "height": 1080,
+    "duration_target_sec": 520.066667,
+    "duration_tolerance_sec": 0.04
+  },
+  "audio": {
+    "required": true,
+    "clipping_rejected": true
+  },
+  "decode_errors_allowed": 0
+}
