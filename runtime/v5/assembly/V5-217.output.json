@@ -1,0 +1,20 @@
+{
+  "domain": "assembly",
+  "executed_at": "2026-09-23T04:55:24.238250+00:00",
+  "payload": {
+    "assembled_media_sha256": "8f942396c42e1c08a88ce998600475161d449fb56159efb723e929c481faab86",
+    "integrity": {
+      "assembled": "PASS",
+      "source": "PASS"
+    },
+    "phase": "integrity",
+    "previous_output_sha256": "315a5ab8a2be35030bb7e38eb3ae519886bd90bdab52f9e5bc962e1f1eb7dd3d",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "integrity",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-217"
+}

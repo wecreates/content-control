@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-218",
-  "domain": "assembly",
-  "phase": "timeout",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,21 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "assembly",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "timeout",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "assembled_media_sha256": "8f942396c42e1c08a88ce998600475161d449fb56159efb723e929c481faab86",
+    "downstream_consumer_accepts_output": true,
+    "output": "runtime/v5/assembly/V5-218.output.json",
+    "receipt": "runtime/v5/assembly/V5-218.receipt.json",
+    "runtime_workflow_run_id": "35820219259",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-218"
 }

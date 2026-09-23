@@ -1,0 +1,19 @@
+{
+  "assembled_media_sha256": "8f942396c42e1c08a88ce998600475161d449fb56159efb723e929c481faab86",
+  "domain": "assembly",
+  "downstream_consumer": "V5-216",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "2637baf982c7edd36f8818632758023fb17ce18838a054fa6f0f5d1321ec0720",
+  "output_path": "runtime/v5/assembly/V5-215.output.json",
+  "output_sha256": "409def98cb48b619767c747cf9f570b66b8923305049f7ba41e4fbbd0575e859",
+  "phase": "regression",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35820219259",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-215",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:55:24.238250+00:00"
+}
