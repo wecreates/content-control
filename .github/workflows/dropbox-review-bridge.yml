@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Ingest exact candidate
         env:
-          SOURCE_URL: "https://uc9f8e99f09414ec1c190e61f9f9.dl.dropboxusercontent.com/cd/0/get/DIo2N4mY4aF1vlfUuBOv8h8EKZX7g30cgQWqqRGqFWiWvbL3_qXWg2OkeLpjiuvd_Rl27dbAhRgDMhSZTPATknozyKRhWxRusLTHzwlRKN2hq5pMGn4o2QIsjv-BtbT7oKbLokTjKScWNJkuxT2HYujRrndHU6-v0BV8Rjuebehn8g/file?c_luid=a22ccd02"
+          SOURCE_URL: "https://uc01a926528796681c374d183682.dl.dropboxusercontent.com/cd/0/get/DIoEvTvXCGay508js5JAyHkmZ8KsQpaSYDtietp0UMjrgJPdHcdjpXeExng72wYOURZqSBvTkoHhn4hp8AViyArBOsinZoTQT6CSjbyEMXyIhIoCWpMO4ofKoi8j5TtTSTbZ8AISxT6gfT-P4VkmZJpkhDa0NUZZpoyG8nRk4z884g/file?c_luid=a22ccd02"
         run: |
           curl --fail --location --retry 2 "$SOURCE_URL" -o FINANCE_REVIEW_4_9.mp4
           echo "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb  FINANCE_REVIEW_4_9.mp4" | sha256sum -c -
