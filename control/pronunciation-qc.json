@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "flag_terms": [
+    "acronyms",
+    "bank_names",
+    "legal_terms",
+    "numbers",
+    "percentages"
+  ],
+  "repair": "changed_line_only"
+}
