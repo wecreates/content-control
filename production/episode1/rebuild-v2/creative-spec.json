@@ -1,0 +1,90 @@
+{
+  "schema_version": 2,
+  "episode": 1,
+  "rebuild": "V2-entertainment-first",
+  "status": "SOURCE_REBUILT",
+  "publication_enabled": false,
+  "launch_candidate": false,
+  "target_duration_sec": 430,
+  "creative_contract": {
+    "cold_open_by_sec": 2,
+    "viewer_promise_by_sec": 15,
+    "max_seconds_without_meaningful_visual_change": 3,
+    "retention_reset_interval_sec": [
+      18,
+      35
+    ],
+    "max_consecutive_exposition_sec": 12,
+    "character_driven": true,
+    "visual_punchlines_required": true,
+    "narration_reads_equations": false,
+    "logo_intro_max_sec": 1.2,
+    "spoken_disclaimer_budget": 2,
+    "ending_callback_required": true
+  },
+  "style": {
+    "background": "deep charcoal/navy",
+    "line_art": "white",
+    "money_accent": "neon green",
+    "debt_accent": "neon red",
+    "typography": "bold condensed sans + large numeric callouts",
+    "character": "minimal stick figure with exaggerated poses, face reactions, prop comedy",
+    "motion": "snappy pose-to-pose with impact frames, quick zooms, physical UI interaction",
+    "references": [
+      "dense edutainment pacing",
+      "minimal stick-comedy storytelling",
+      "physical stick-figure cause-and-effect"
+    ],
+    "forbidden": [
+      "static talking-head stick pose",
+      "paragraph text walls",
+      "generic AI gradients",
+      "long logo intro",
+      "lecture chapter cards"
+    ]
+  },
+  "acts": [
+    {
+      "id": "cold-open",
+      "start": 0,
+      "end": 18,
+      "purpose": "Immediate conflict, joke, stakes, promise"
+    },
+    {
+      "id": "premium-card",
+      "start": 18,
+      "end": 122,
+      "purpose": "Premium-card fantasy becomes shopping trap"
+    },
+    {
+      "id": "interest-monster",
+      "start": 122,
+      "end": 222,
+      "purpose": "Rewards trophy gets eaten by borrowing costs"
+    },
+    {
+      "id": "bonus-carrot",
+      "start": 222,
+      "end": 318,
+      "purpose": "Bonus chase turns into absurd unnecessary shopping"
+    },
+    {
+      "id": "zero-percent-trap",
+      "start": 318,
+      "end": 408,
+      "purpose": "Two similar zero-percent doors hide different consequences"
+    },
+    {
+      "id": "payoff",
+      "start": 408,
+      "end": 430,
+      "purpose": "Four-rule callback and final joke"
+    }
+  ],
+  "launch_blockers": [
+    "new narration not yet synthesized and mixed",
+    "new full animation not yet rendered",
+    "new full candidate not yet human watched",
+    "new entertainment-retention review not yet passed"
+  ]
+}
