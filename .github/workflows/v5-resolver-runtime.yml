@@ -1,0 +1,74 @@
+name: V5 Resolver Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/v5_resolver_runtime.py'
+      - '.github/workflows/v5-resolver-runtime.yml'
+      - 'state/episode1-first-watch.json'
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-resolver-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  exercise_and_close:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Fetch real failure and downstream-success logs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107044199668/logs > /tmp/fail-download.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107044589957/logs > /tmp/fail-ffprobe.log
+          gh api --allow-escape-sequences repos/${GITHUB_REPOSITORY}/actions/jobs/107044723809/logs > /tmp/success-package.log
+          test -s /tmp/fail-download.log && test -s /tmp/fail-ffprobe.log && test -s /tmp/success-package.log
+          grep -Eqi '401|unauthorized' /tmp/fail-download.log
+          grep -qi 'ffprobe: command not found' /tmp/fail-ffprobe.log
+          grep -q 'EPISODE1_FIRST_WATCH.mp4: OK' /tmp/success-package.log
+      - name: Exercise all 20 resolver controls on real failures and verified repairs
+        env:
+          FAIL_DOWNLOAD_LOG: /tmp/fail-download.log
+          FAIL_FFPROBE_LOG: /tmp/fail-ffprobe.log
+          SUCCESS_LOG: /tmp/success-package.log
+        run: python scripts/v5_resolver_runtime.py
+      - name: Verify strict completion and persist evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['registered']==400 and s['runtime_done']>=80 and s['publication_enabled'] is False
+          assert s['real_failures_resolved']==2 and s['downstream_acceptance']=='PASS'
+          assert s['first_watch_gate']=='AWAITING_CHRIS_FIRST_WATCH'
+          rs=sorted(pathlib.Path('runtime/v5/resolver').glob('V5-*.receipt.json')); assert len(rs)==20
+          for p in rs:
+              r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE'; assert r['real_input_exercised'] is True; assert r['verification']=='PASS'; assert r['downstream_consumer_accepts_output'] is True; assert r['publication_enabled'] is False
+          cs=sorted(pathlib.Path('control/v5/resolver').glob('*.json')); assert len(cs)==20 and all(json.load(open(p))['status']=='DONE' for p in cs)
+          print(json.dumps(s,sort_keys=True))
+          PY
+          git config user.name 'content-control-runtime'
+          git config user.email 'actions@users.noreply.github.com'
+          git add control/v5/resolver runtime/v5/resolver state/v5-runtime-summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 resolver controls 181-200'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v5-resolver-runtime-receipts
+          path: |
+            runtime/v5/resolver/
+            state/v5-runtime-summary.json
