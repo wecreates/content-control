@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "verify_all_dependencies_before_claim": true,
+  "missing_dependency": "BLOCKED"
+}
