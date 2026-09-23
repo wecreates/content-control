@@ -1,0 +1,135 @@
+name: V5 Remaining Content Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/v5-content-runtime.yml']
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v5-content-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+  EXPECTED_SHA: fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install media runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Download durable exact Episode 1 first-watch artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: episode1-chris-first-watch
+          path: /tmp/content
+          repository: wecreates/content-control
+          run-id: 35818371839
+          github-token: ${{ github.token }}
+      - name: Verify exact Episode 1 candidate
+        run: |
+          set -euo pipefail
+          echo "$EXPECTED_SHA  /tmp/content/EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
+      - name: Generate exact-video transcript story and research evidence
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$GEMINI_API_KEY"
+          python - <<'PY'
+          import json,os,pathlib,random,time,urllib.error,urllib.request
+          media=pathlib.Path('/tmp/content/EPISODE1_FIRST_WATCH.mp4'); key=os.environ['GEMINI_API_KEY']; expected=os.environ['EXPECTED_SHA']
+          meta=json.dumps({'file':{'display_name':'EPISODE1_FIRST_WATCH.mp4'}}).encode()
+          req=urllib.request.Request('https://generativelanguage.googleapis.com/upload/v1beta/files?key='+key,data=meta,headers={'X-Goog-Upload-Protocol':'resumable','X-Goog-Upload-Command':'start','X-Goog-Upload-Header-Content-Length':str(media.stat().st_size),'X-Goog-Upload-Header-Content-Type':'video/mp4','Content-Type':'application/json'})
+          with urllib.request.urlopen(req,timeout=90) as r: upload_url=r.headers['X-Goog-Upload-URL']
+          req=urllib.request.Request(upload_url,data=media.read_bytes(),headers={'Content-Length':str(media.stat().st_size),'X-Goog-Upload-Offset':'0','X-Goog-Upload-Command':'upload, finalize'})
+          with urllib.request.urlopen(req,timeout=240) as r: f=json.loads(r.read())['file']
+          for _ in range(90):
+            with urllib.request.urlopen('https://generativelanguage.googleapis.com/v1beta/'+f['name']+'?key='+key,timeout=30) as r: cur=json.loads(r.read())
+            if cur.get('state')=='ACTIVE': f=cur; break
+            if cur.get('state')=='FAILED': raise RuntimeError(cur)
+            time.sleep(4)
+          else: raise RuntimeError('Gemini file processing timeout')
+          prompt=f'''Analyze the exact 520.066667-second consumer-finance video file. Return STRICT JSON only and bind the result to artifact_sha256 {expected}. Listen to the entire audio and inspect the whole video. Produce three operational artifacts, without inventing words or facts:\n1) captions: a time-ordered transcript of all spoken narration/dialogue using accurate start_sec, end_sec, and exact text. Use enough cues to cover all spoken content; normally at least 40 cues. Do not paraphrase spoken words.\n2) story_beats: 4 or more time-bounded narrative beats with start_sec, end_sec, summary, purpose, and transition.\n3) research_claims: 5 or more concrete financial/factual statements made in the video that merit verification, with start_sec, claim, verification_target, and risk_level (low|medium|high). This is a verification-target inventory, not a declaration that claims are true.\nSchema: {{"artifact_sha256":"{expected}","complete_end_to_end_analysis":true,"captions":[{{"start_sec":0.0,"end_sec":1.0,"text":""}}],"story_beats":[{{"start_sec":0.0,"end_sec":1.0,"summary":"","purpose":"","transition":""}}],"research_claims":[{{"start_sec":0.0,"claim":"","verification_target":"","risk_level":"low"}}]}}.'''
+          body={'contents':[{'parts':[{'file_data':{'mime_type':'video/mp4','file_uri':f['uri']}},{'text':prompt}]}],'generationConfig':{'responseMimeType':'application/json','temperature':0.0,'maxOutputTokens':32768}}
+          data=json.dumps(body).encode(); obj=None; errors=[]
+          for model in ['gemini-2.5-flash','gemini-2.5-pro']:
+            for attempt in range(6):
+              try:
+                req=urllib.request.Request(f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key='+key,data=data,headers={'Content-Type':'application/json'})
+                with urllib.request.urlopen(req,timeout=900) as r: raw=json.loads(r.read())
+                text=raw['candidates'][0]['content']['parts'][0]['text']; obj=json.loads(text); break
+              except urllib.error.HTTPError as e:
+                errors.append(f'{model}:{e.code}')
+                if e.code not in (429,500,502,503,504): raise
+                time.sleep(min(60,3*(2**attempt))+random.random()*2)
+              except (TimeoutError,urllib.error.URLError) as e:
+                errors.append(f'{model}:{type(e).__name__}'); time.sleep(min(60,3*(2**attempt))+random.random()*2)
+            if obj is not None: break
+          if obj is None: raise RuntimeError('Gemini analysis routes exhausted: '+','.join(errors[-8:]))
+          assert obj.get('artifact_sha256')==expected and obj.get('complete_end_to_end_analysis') is True
+          caps=obj.get('captions',[]); beats=obj.get('story_beats',[]); claims=obj.get('research_claims',[])
+          assert len(caps)>=40 and len(beats)>=4 and len(claims)>=5
+          pathlib.Path('state').mkdir(exist_ok=True)
+          pathlib.Path('state/episode1-content-analysis.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'captions':len(caps),'story_beats':len(beats),'research_claims':len(claims),'artifact_sha256':expected}))
+          PY
+      - name: Execute 120 real V5 content controls
+        env:
+          EPISODE1_MEDIA: /tmp/content/EPISODE1_FIRST_WATCH.mp4
+        run: |
+          set -euo pipefail
+          python scripts/v5_remaining_content_runtime.py
+          python - <<'PY'
+          import json,pathlib
+          domains=['orchestration','research','caption','story','render','repair']
+          total=0
+          for d in domains:
+            rs=sorted((pathlib.Path('runtime/v5')/d).glob('V5-*.receipt.json')); assert len(rs)==20; total+=len(rs)
+            for p in rs:
+              r=json.load(open(p)); assert r['status']=='RUNTIME_VERIFIED_DONE' and r['real_input_exercised'] is True and r['downstream_consumer_accepts_output'] is True and r['publication_enabled'] is False
+          assert total==120
+          batch=json.load(open('state/v5-content-runtime-batch.json')); assert batch['tasks_completed_this_run']==120 and batch['publication_enabled'] is False
+          watch=json.load(open('state/episode1-first-watch.json')); assert watch['publication_enabled'] is False and watch['chris_first_watch_complete'] is False
+          PY
+          mkdir -p runtime-artifacts
+          cp /tmp/render-runtime/*.mp4 runtime-artifacts/
+          cp /tmp/repair-runtime/*.mp4 runtime-artifacts/
+      - name: Persist runtime evidence and DONE controls
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add control/v5/orchestration control/v5/research control/v5/caption control/v5/story control/v5/render control/v5/repair
+          git add runtime/v5/orchestration runtime/v5/research runtime/v5/caption runtime/v5/story runtime/v5/render runtime/v5/repair
+          git add state/episode1-content-analysis.json state/episode1-orchestration-run.json state/episode1-research-evidence.json state/episode1-captions.vtt state/episode1-caption-manifest.json state/episode1-story-map.json state/episode1-render-runtime.json state/episode1-repair-candidates.json state/v5-content-runtime-batch.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete remaining V5 content controls 001-180'
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v5-content-runtime-evidence
+          path: |
+            runtime/v5/orchestration/
+            runtime/v5/research/
+            runtime/v5/caption/
+            runtime/v5/story/
+            runtime/v5/render/
+            runtime/v5/repair/
+            runtime-artifacts/
+            state/episode1-content-analysis.json
+            state/episode1-captions.vtt
+            state/v5-content-runtime-batch.json
+          retention-days: 30
