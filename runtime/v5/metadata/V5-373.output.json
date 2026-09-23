@@ -1,0 +1,21 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T04:38:01.497839+00:00",
+  "payload": {
+    "audit": {
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "metadata_file": "state/episode1-metadata.json",
+      "source_run": 35818371839
+    },
+    "metadata_sha256": "9238a5d46ac8fe126b854bd92df6a573d3624aeb005042c1ec013f0342dd5757",
+    "phase": "audit",
+    "previous_output_sha256": "63dc5e32ad148658c67d8f2fdadfaf857fcde076c2fb6050d4a9f0bbf1098eb8",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "audit",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-373"
+}

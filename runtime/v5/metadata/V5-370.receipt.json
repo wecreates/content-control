@@ -1,0 +1,18 @@
+{
+  "domain": "metadata",
+  "downstream_consumer": "V5-371",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "e2ba63763bf08fb2c36d3e287ec0770492050562de5bebee9358a1aa3fb1e961",
+  "output_path": "runtime/v5/metadata/V5-370.output.json",
+  "output_sha256": "6338819fea5a43ca92b8de263b439dec1d94019be523999191a4a4322213ed05",
+  "phase": "retry",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35819064273",
+  "schema_version": 1,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-370",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:38:01.497839+00:00"
+}

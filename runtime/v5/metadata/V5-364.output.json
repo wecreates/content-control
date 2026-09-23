@@ -1,0 +1,41 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T04:38:01.497839+00:00",
+  "payload": {
+    "metadata_sha256": "9238a5d46ac8fe126b854bd92df6a573d3624aeb005042c1ec013f0342dd5757",
+    "normalized_metadata": {
+      "bytes": 32525813,
+      "duration_seconds": 520.066667,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+      "publication_enabled": false,
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "height": 1080,
+          "index": 0,
+          "r_frame_rate": "30/1",
+          "width": 1920
+        },
+        {
+          "channels": 1,
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "index": 1,
+          "r_frame_rate": "0/0",
+          "sample_rate": "48000"
+        }
+      ]
+    },
+    "phase": "execute",
+    "previous_output_sha256": "087cfc3bf5fdb66d3f7615bd9017fd007bbe7e0b02b045a569d731c11c0eac6a",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "execute",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-364"
+}

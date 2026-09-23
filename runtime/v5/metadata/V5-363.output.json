@@ -1,0 +1,17 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T04:38:01.497839+00:00",
+  "payload": {
+    "claim_token": "e980fb0e6cf306e1ba065bbf4dd8dd25ae1c5e131aefd97b52d06b3ea0b7cb46",
+    "metadata_sha256": "9238a5d46ac8fe126b854bd92df6a573d3624aeb005042c1ec013f0342dd5757",
+    "phase": "claim",
+    "previous_output_sha256": "01b2fe88f5ee173ff6f8b0a3eaa6e35a6767b02a350f0fb381549f43135699c6",
+    "publication_enabled": false,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "claim",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-363"
+}

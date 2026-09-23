@@ -1,0 +1,19 @@
+{
+  "domain": "metadata",
+  "executed_at": "2026-09-23T04:38:01.497839+00:00",
+  "payload": {
+    "metadata_sha256": "9238a5d46ac8fe126b854bd92df6a573d3624aeb005042c1ec013f0342dd5757",
+    "phase": "rollback",
+    "previous_output_sha256": "6338819fea5a43ca92b8de263b439dec1d94019be523999191a4a4322213ed05",
+    "publication_enabled": false,
+    "rollback": {
+      "verified": true
+    },
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb"
+  },
+  "phase": "rollback",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-371"
+}
