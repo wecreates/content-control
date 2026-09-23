@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "review_prompt_version": "1.0",
+  "repair_prompt_version": "1.0",
+  "changes_require_regression": true
+}
