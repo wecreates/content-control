@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "control": "audio_mix_qc",
+  "completion_requires_verification": true,
+  "publication_enabled": false
+}
