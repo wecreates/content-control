@@ -1,0 +1,20 @@
+{
+  "domain": "reliability",
+  "downstream_consumer": "V5-399",
+  "downstream_consumer_accepts_output": true,
+  "input_sha256": "1c709fadbe5c9c13a1371910e318f66fdfaffcdbf81f735868abd546e4bd3f5d",
+  "output_path": "runtime/v5/reliability/V5-398.output.json",
+  "output_sha256": "53eb4f4160bb3144833d8ffa29e505399495360c2b1f12025a0fad2e38ad2774",
+  "phase": "timeout",
+  "publication_enabled": false,
+  "real_input_exercised": true,
+  "runtime_workflow_run_id": "35818093627",
+  "schema_version": 1,
+  "source_job_id": 107038932305,
+  "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+  "source_workflow_run_id": 35816461220,
+  "status": "RUNTIME_VERIFIED_DONE",
+  "task_id": "V5-398",
+  "verification": "PASS",
+  "verified_at": "2026-09-23T04:22:59.230594+00:00"
+}

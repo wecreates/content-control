@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-400",
-  "domain": "reliability",
-  "phase": "done-gate",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,24 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "reliability",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "done-gate",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "f0cf61c4054ab89ecfa112f4cb6bc3d72f6844ffe373136f60de0f26dbe0448b",
+    "output": "runtime/v5/reliability/V5-400.output.json",
+    "output_sha256": "8f16a1d5be1d827f8eaaccdb1ba68e545f3a8b059e832add8d6e4b640c30a2bd",
+    "receipt": "runtime/v5/reliability/V5-400.receipt.json",
+    "runtime_workflow_run_id": "35818093627",
+    "source_job_id": 107038932305,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35816461220,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-400"
 }

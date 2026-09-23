@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-396",
-  "domain": "reliability",
-  "phase": "continuity",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,24 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "reliability",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "continuity",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "93aa93d817353215bf08261d5683178ef08755671998c29afdb156e45de27a59",
+    "output": "runtime/v5/reliability/V5-396.output.json",
+    "output_sha256": "e062fb6f642bcabb85c9b5e4cd9d1ac0f20ebbefe5928b677f964e386e756072",
+    "receipt": "runtime/v5/reliability/V5-396.receipt.json",
+    "runtime_workflow_run_id": "35818093627",
+    "source_job_id": 107038932305,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35816461220,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-396"
 }

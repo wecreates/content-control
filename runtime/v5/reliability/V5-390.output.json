@@ -1,0 +1,50 @@
+{
+  "domain": "reliability",
+  "executed_at": "2026-09-23T04:22:59.230594+00:00",
+  "payload": {
+    "phase": "retry",
+    "previous_output_sha256": "e374672d9c235a14022510982e143c5bc7ef72734092862f482bc82e2469a051",
+    "publication_enabled": false,
+    "retry": {
+      "429_backoff_monotonic": true,
+      "actual_attempts": [
+        {
+          "code": 503,
+          "retry": 1,
+          "sleep_seconds": 3.1
+        },
+        {
+          "code": 429,
+          "retry": 2,
+          "sleep_seconds": 7.0
+        },
+        {
+          "code": 429,
+          "retry": 3,
+          "sleep_seconds": 13.3
+        },
+        {
+          "code": 429,
+          "retry": 4,
+          "sleep_seconds": 25.5
+        },
+        {
+          "code": 429,
+          "retry": 5,
+          "sleep_seconds": 49.4
+        }
+      ],
+      "eventual_result": "PASS"
+    },
+    "source_job_id": 107038932305,
+    "source_log_sha256": "2217cc7388d7a2aa495e08bd013ce862b96c56bc29d9cc6ce1022e191befaa6a",
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35816461220
+  },
+  "phase": "retry",
+  "publication_enabled": false,
+  "runtime_workflow_run_id": "35818093627",
+  "schema_version": 1,
+  "status": "PASS",
+  "task_id": "V5-390"
+}

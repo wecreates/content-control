@@ -1,9 +1,4 @@
 {
-  "schema_version": 1,
-  "task_id": "V5-381",
-  "domain": "reliability",
-  "phase": "input-contract",
-  "status": "IMPLEMENTATION_REQUIRED",
   "definition_of_done": [
     "executable implementation exists",
     "real input exercised",
@@ -12,7 +7,24 @@
     "receipt binds input/output hashes",
     "downstream consumer accepts output"
   ],
-  "placeholder_success_forbidden": true,
+  "domain": "reliability",
   "failure_route": "resolver",
-  "publication_enabled": false
+  "phase": "input-contract",
+  "placeholder_success_forbidden": true,
+  "publication_enabled": false,
+  "runtime_evidence": {
+    "downstream_consumer_accepts_output": true,
+    "input_sha256": "2217cc7388d7a2aa495e08bd013ce862b96c56bc29d9cc6ce1022e191befaa6a",
+    "output": "runtime/v5/reliability/V5-381.output.json",
+    "output_sha256": "245651081b164e6a6debe5a9fd4d76918f01e6552f6e14435dbf8941ced87eb8",
+    "receipt": "runtime/v5/reliability/V5-381.receipt.json",
+    "runtime_workflow_run_id": "35818093627",
+    "source_job_id": 107038932305,
+    "source_media_sha256": "fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb",
+    "source_workflow_run_id": 35816461220,
+    "verification": "PASS"
+  },
+  "schema_version": 1,
+  "status": "DONE",
+  "task_id": "V5-381"
 }
