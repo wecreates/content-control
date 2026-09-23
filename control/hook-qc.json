@@ -1,14 +1,24 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "range_sec": [
     0,
     45
   ],
+  "hard_launch_gate": true,
   "checks": [
-    "clarity",
-    "payoff_setup",
-    "visual_change",
-    "audio_energy",
+    "cold_open_by_2s",
+    "viewer_promise_by_15s",
+    "immediate_conflict_or_curiosity",
+    "character_action_not_exposition_only",
+    "meaningful_visual_change_max_3s",
+    "audio_energy_and_sound_punctuation",
     "no_false_promise"
-  ]
+  ],
+  "fail_if": [
+    "opening begins as lecture or chapter explanation",
+    "no stakes or conflict in first 15 seconds",
+    "logo/branding delays story",
+    "static explanatory visuals dominate first 30 seconds"
+  ],
+  "publication_enabled": false
 }
