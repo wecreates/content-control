@@ -1,0 +1,78 @@
+name: V5 Assembly Runtime Completion
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v5-assembly-runtime.yml'
+permissions:
+  contents: write
+concurrency:
+  group: v5-assembly-runtime
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+  EXPECTED_SHA: fe89b1243d1db07b94c43d97653c746f8a5cb9404554219e514a894061721bcb
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install ffmpeg runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+      - name: Download exact Episode 1 PASS candidate
+        env:
+          SOURCE_URL: "https://uca6f45ff14f38e5d3ad43d891ca.dl.dropboxusercontent.com/cd/0/get/DIrpTJ9YFc-cSg_UXZF6xxGrLvf__NjsYWOlpNLH84_WMXE2BKLJ9HHPAR68kZD8oI7c8v6UewIrhYHNrfMoBi7nR3ntcOcS6S2b-X-UDNg0BhtvYqbXsGE4L3NsAZLH0AVPTYEeaS6XS4-EjnztcRmeVZcZGJTun9Md-V1Bjrpa_A/file?c_luid=a22ccd02"
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/assembly
+          curl --fail --location --retry 4 --retry-all-errors "$SOURCE_URL" -o /tmp/assembly/EPISODE1_FIRST_WATCH.mp4
+          echo "$EXPECTED_SHA  /tmp/assembly/EPISODE1_FIRST_WATCH.mp4" | sha256sum -c -
+      - name: Execute real assembly controls
+        env:
+          ASSEMBLY_MEDIA: /tmp/assembly/EPISODE1_FIRST_WATCH.mp4
+        run: |
+          set -euo pipefail
+          python scripts/v5_assembly_runtime.py | tee /tmp/v5-assembly-summary.json
+          python - <<'PY'
+          import json,pathlib
+          s=json.load(open('state/v5-runtime-summary.json'))
+          assert s['just_completed_domain']=='assembly'
+          assert s['registered']==400
+          assert s['runtime_done']>=340
+          assert s['remaining']<=60
+          assert s['downstream_acceptance']=='PASS'
+          assert s['publication_enabled'] is False
+          r=list(pathlib.Path('runtime/v5/assembly').glob('V5-*.receipt.json'))
+          assert len(r)==20
+          for p in r:
+            x=json.load(open(p)); assert x['status']=='RUNTIME_VERIFIED_DONE' and x['real_input_exercised'] is True and x['downstream_consumer_accepts_output'] is True and x['publication_enabled'] is False
+          PY
+      - name: Persist runtime evidence and DONE controls
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add control/v5/assembly runtime/v5/assembly state/v5-runtime-summary.json
+          git diff --cached --quiet && exit 0
+          git commit -m 'Runtime-complete V5 assembly controls 201-220'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v5-assembly-runtime-evidence
+          path: |
+            runtime/v5/assembly/
+            state/v5-runtime-summary.json
+          retention-days: 30
