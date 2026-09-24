@@ -4,6 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {spawnSync} from 'node:child_process';
 import {chromium} from 'playwright';
+import ffprobePath from 'ffprobe-static';
 
 const args = process.argv.slice(2);
 const has = (name) => args.includes(name);
@@ -31,7 +32,7 @@ function canonicalReelUrl(raw) {
 }
 
 function ffprobe(file) {
-  const p = spawnSync('ffprobe', ['-v','error','-show_streams','-show_format','-of','json',file], {encoding:'utf8'});
+  const p = spawnSync(ffprobePath, ['-v','error','-show_streams','-show_format','-of','json',file], {encoding:'utf8'});
   if (p.status !== 0) throw new Error(`ffprobe failed for ${file}: ${p.stderr || p.stdout}`);
   const d = JSON.parse(p.stdout);
   const streams = d.streams || [];
