@@ -58,6 +58,16 @@ jobs:
               v=(math.sin(2*math.pi*80*t)+.45*math.sin(2*math.pi*150*t))*env*.55
               samples.append(v)
           write_wav(pathlib.Path('public/v5-slam.wav'),samples)
+          def tone(path,freq,dur=.35,amp=.35,decay=7):
+              arr=[]
+              for n in range(int(sr*dur)):
+                  t=n/sr
+                  env=math.exp(-t*decay)
+                  arr.append(math.sin(2*math.pi*freq*t)*env*amp)
+              write_wav(pathlib.Path(path),arr)
+          tone('public/v5-chime.wav',880,.5,.28,5)
+          tone('public/v5-hit.wav',120,.28,.5,10)
+          tone('public/v5-sting.wav',520,.65,.25,4)
           PY
       - name: Render V5 proof
         run: |
