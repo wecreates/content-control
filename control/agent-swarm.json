@@ -47,6 +47,16 @@
       ]
     },
     {
+      "id": "brand_asset_coordinator",
+      "parallelism": 2,
+      "owns": [
+        "corporate logo-head character protocol",
+        "logo asset alignment",
+        "head/neck transform QA",
+        "brand asset consistency"
+      ]
+    },
+    {
       "id": "visual_layout_director",
       "parallelism": 2,
       "owns": [
@@ -259,6 +269,9 @@
     "every produced scene requires explicit camera behavior",
     "every produced scene requires explicit lighting vectors",
     "every produced scene requires environmental audio bed plus timed foley",
-    "thumbnail-to-video promise parity is a release-gate requirement"
+    "thumbnail-to-video promise parity is a release-gate requirement",
+    "thumbnail spectacle establishes a minimum visual promise that the video opening must satisfy; QA rejects thumbnail-video expectation mismatch",
+    "all brand-fighter character heads use approved corporate logo assets instead of generic circle heads",
+    "every production scene must specify camera behavior, lighting vectors, environmental audio bed, and timed foley"
   ]
 }
