@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "candidate": "Episode 1 V4",
+  "status": "REJECTED_VISUAL_PARITY",
+  "publication_enabled": false,
+  "evidence_source": "rendered EPISODE1_V4.mp4 sampled at 20 timestamps",
+  "hard_failures": [
+    "characters too small relative to frame",
+    "large unused negative space",
+    "presentation-like headings and UI boxes dominate compositions",
+    "insufficient close-up and reaction-shot language",
+    "insufficient environmental staging",
+    "motion is object translation more than character performance",
+    "visuals often restate narration rather than create additional meaning",
+    "narrator track contains production-cue contamination reported by user"
+  ],
+  "required_repairs": [
+    "large acting characters as primary focal point",
+    "close/medium/wide shot rotation",
+    "real scene environments instead of abstract presentation space",
+    "physical anticipation, contact, recoil and secondary motion",
+    "minimal impact text only",
+    "fresh narrator-only VO with no SFX tokens",
+    "separate SFX/music tracks",
+    "short proof must pass visual comparison before full render"
+  ]
+}
