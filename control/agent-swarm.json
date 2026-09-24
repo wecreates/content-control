@@ -157,6 +157,19 @@
       ]
     },
     {
+      "id": "lead_comedy_retention_engineer",
+      "parallelism": 2,
+      "owns": [
+        "visual irony",
+        "relatable victim comedy",
+        "micro-expression timing",
+        "absurdist analogies",
+        "2-second pattern interrupts",
+        "comment engagement loops",
+        "chapter cliffhangers"
+      ]
+    },
+    {
       "id": "hyper_critical_qa_director",
       "parallelism": 2,
       "owns": [
@@ -189,6 +202,7 @@
     "voiceover text must never contain SFX or production directions",
     "SFX, music and narration are separate channels",
     "weak proof blocks full-episode expansion",
-    "hyper-critical QA must approve the rewritten production JSON before production handoff"
+    "hyper-critical QA must approve the rewritten production JSON before production handoff",
+    "comedy/retention script contract must pass before visual layout and hyper-critical QA"
   ]
 }
