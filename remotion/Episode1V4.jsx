@@ -114,7 +114,7 @@ export const RewardsArcade=({t})=>{
       {coins}
       <Stick x={alexX} y={445} pose={local*9} face={local>31?"smile":"neutral"} scale={.9}/>
       <g transform="translate(1010 190)">
-        <rect x="-145" y="-65" width="290" height="130" rx="20" fill=C.panel stroke={C.green} strokeWidth="6"/>
+        <rect x="-145" y="-65" width="290" height="130" rx="20" fill={C.panel} stroke={C.green} strokeWidth="6"/>
         <text x="0" y="-8" textAnchor="middle" fill={C.green} fontSize="48" fontWeight="1000">30,000</text>
         <text x="0" y="38" textAnchor="middle" fill={C.line} fontSize="22" fontWeight="900">POINTS</text>
       </g>
