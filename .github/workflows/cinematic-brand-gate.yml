@@ -1,0 +1,32 @@
+name: Cinematic Brand Parity Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/cinematic-brand-contract.json'
+      - 'control/agent-swarm.json'
+      - 'scripts/verify_cinematic_brand.py'
+      - '.github/workflows/cinematic-brand-gate.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_cinematic_brand.py
+      - name: Assert downstream fail-closed QA and publication lock
+        run: |
+          python - <<'PY'
+          import json
+          c=json.load(open('control/cinematic-brand-contract.json'))
+          q=json.load(open('control/hyper-critical-qa-director.json'))
+          p=json.load(open('control/cco-production-contract.json'))
+          assert c['thumbnail_parity']['required']
+          assert q['fail_closed'] is True
+          assert p['publication_enabled'] is False and p['first_video_publish'] is False
+          print('cinematic + thumbnail parity gate PASS; publication LOCKED')
+          PY
