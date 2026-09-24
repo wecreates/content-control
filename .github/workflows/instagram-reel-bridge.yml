@@ -1,0 +1,30 @@
+name: Instagram Reel Bridge Contract
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/instagram_reel_bridge.mjs'
+      - 'tools/instagram_reel_bridge.ps1'
+      - 'tests/test_instagram_reel_bridge.py'
+      - 'package.json'
+      - '.github/workflows/instagram-reel-bridge.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Contract tests
+        run: python -m unittest -v tests/test_instagram_reel_bridge.py
+      - name: Install bridge dependencies
+        run: npm install --no-audit --no-fund
+      - name: Syntax check
+        run: node --check tools/instagram_reel_bridge.mjs
