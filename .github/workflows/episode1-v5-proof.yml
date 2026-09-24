@@ -1,0 +1,86 @@
+name: Episode 1 V5 Visual Parity Proof
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/Episode1V5Proof.jsx'
+      - 'remotion/index.jsx'
+      - 'tests/test_episode1_v5_proof.py'
+      - '.github/workflows/episode1-v5-proof.yml'
+permissions:
+  contents: write
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate V5 proof source
+        run: python -m unittest -v tests/test_episode1_v5_proof.py
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install
+      - name: Fetch clean narrator-only VO
+        run: |
+          mkdir -p public review-output
+          curl --fail --location --retry 3 "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/f51b922f-23be-40ce-b3a7-92d0f277988c.mp3" -o public/v5-proof-voice.mp3
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/v5-proof-voice.mp3 | grep -q audio
+      - name: Generate separate beat and SFX tracks
+        run: |
+          python - <<'PY'
+          import math, wave, struct, pathlib
+          sr=44100
+          def write_wav(path, samples):
+              with wave.open(str(path),'w') as w:
+                  w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+                  w.writeframes(b''.join(struct.pack('<h', max(-32767,min(32767,int(x*32767)))) for x in samples))
+          # 30s subtle percussive pulse - deliberately separate from narration.
+          dur=30
+          samples=[]
+          for n in range(sr*dur):
+              t=n/sr
+              beat=t%0.5
+              env=math.exp(-beat*18)
+              kick=math.sin(2*math.pi*(72-20*beat)*beat)*env if beat<0.18 else 0
+              samples.append(kick*.23)
+          write_wav(pathlib.Path('public/v5-beat.wav'),samples)
+          # Short impact used only as SFX.
+          dur=.55
+          samples=[]
+          for n in range(int(sr*dur)):
+              t=n/sr
+              env=math.exp(-t*9)
+              v=(math.sin(2*math.pi*80*t)+.45*math.sin(2*math.pi*150*t))*env*.55
+              samples.append(v)
+          write_wav(pathlib.Path('public/v5-slam.wav'),samples)
+          PY
+      - name: Render V5 proof
+        run: |
+          npx remotion render remotion/index.jsx Episode1V5Proof review-output/EPISODE1_V5_PROOF.mp4 --codec h264 --crf 18 --concurrency 2
+      - name: Verify and sample proof
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 review-output/EPISODE1_V5_PROOF.mp4 > /tmp/streams
+          grep -q video /tmp/streams
+          grep -q audio /tmp/streams
+          DUR=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 review-output/EPISODE1_V5_PROOF.mp4)
+          python - "$DUR" <<'PY'
+          import sys
+          d=float(sys.argv[1]); assert 29.5<=d<=30.5,d
+          PY
+          mkdir -p review-output/stills
+          for s in 1 4 8 12 17 23 28; do
+            ffmpeg -loglevel error -y -ss "$s" -i review-output/EPISODE1_V5_PROOF.mp4 -frames:v 1 "review-output/stills/$s.jpg"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-v5-proof-review
+          path: |
+            review-output/EPISODE1_V5_PROOF.mp4
+            review-output/stills/*.jpg
+          retention-days: 30
