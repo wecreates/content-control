@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "gate": "episode1-entertainment-and-motion",
+  "status": "BLOCKED_PENDING_DEEP_COMPETITOR_REVIEW",
+  "publication_enabled": false,
+  "current_candidate_approved": false,
+  "hard_fail_if": [
+    "fullscreen slide-card grammar is primary visual language",
+    "narration carries explanation while visuals merely illustrate it",
+    "static or near-static holds exceed 2.5 seconds without intentional comedic purpose",
+    "character is not physically acting/reacting/manipulating the world",
+    "chapter transitions are title cards instead of changes in action/location/problem",
+    "opening lacks a physical conflict, reversal, surprise, or high-curiosity visual in first 3 seconds",
+    "first 15 seconds lack clear stakes or viewer promise",
+    "sound design does not punctuate impacts, reveals, reversals, and jokes",
+    "ending does not pay off an opening object/conflict/callback",
+    "deep competitor benchmark is incomplete"
+  ],
+  "required_competitor_evidence": {
+    "repository": "wecreates/youtube-video-review",
+    "workflow": "Deep Competitor Video Benchmark",
+    "minimum_creators": 5,
+    "minimum_full_av_videos": 7,
+    "interval_granularity_sec": 10,
+    "dense_second_pass_required": true,
+    "visual_access_required": true,
+    "audio_access_required": true,
+    "complete_end_to_end_required": true
+  },
+  "required_episode1_behavior": {
+    "presentation_mode": "continuous_motion_graphic",
+    "slideshow_allowed": false,
+    "lecture_structure_allowed": false,
+    "persistent_character_action": true,
+    "physical_cause_effect": true,
+    "visual_punchlines": true,
+    "continuous_or_motivated_camera_motion": true,
+    "retention_resets_required": true,
+    "callbacks_required": true,
+    "sound_design_required": true
+  }
+}
