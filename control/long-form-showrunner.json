@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "name": "Lead Executive Producer + Long-Form Showrunner",
+  "publication_enabled": false,
+  "minimum_runtime_sec": 510,
+  "target_runtime_sec": 510,
+  "act_max_without_structural_pivot_sec": 60,
+  "acts": [
+    {
+      "number": 1,
+      "title": "Financial Catastrophe Hook",
+      "range": "0:00-1:00"
+    },
+    {
+      "number": 2,
+      "title": "Deconstructing System Mechanics",
+      "range": "1:00-3:30"
+    },
+    {
+      "number": 3,
+      "title": "Multi-Card Comparison War",
+      "range": "3:30-6:00"
+    },
+    {
+      "number": 4,
+      "title": "Hidden Loophole/Trap",
+      "range": "6:00-7:30"
+    },
+    {
+      "number": 5,
+      "title": "Master Solution & Optimization Blueprint",
+      "range": "7:30-8:30+"
+    }
+  ],
+  "requested_midroll_markers": [
+    "2:00",
+    "4:30",
+    "7:00"
+  ],
+  "note": "Markers are editorial break candidates only; actual YouTube ad serving is platform-controlled.",
+  "factuality": {
+    "current_primary_sources_required_for_card_terms": true,
+    "comparison_claims_require_same_date_snapshot": true,
+    "unsupported_loophole_claims_rejected": true
+  },
+  "visual": {
+    "native_canvas": "16:9",
+    "reference_grammar": "white background, black stick figures, sparse props, large readable poses",
+    "anti_overlap": true,
+    "max_setting_sec": 60,
+    "pattern_interrupt_max_sec": 4
+  },
+  "audio": {
+    "narration_sfx_music_separate": true,
+    "narrator_reads_sfx": false
+  },
+  "output_schema": {
+    "long_form_meta": [
+      "video_title_concepts",
+      "total_target_run_time",
+      "target_mid_roll_timestamps",
+      "high_cpm_keyword_density"
+    ],
+    "episodes_timeline": [
+      "act_number",
+      "act_title",
+      "timestamp_range",
+      "scenes"
+    ],
+    "scene_fields": [
+      "scene_timestamp",
+      "voiceover_narration",
+      "comedic_beat_mechanic",
+      "sfx_audio_blueprint",
+      "layering_coordinates"
+    ]
+  },
+  "handoff_order": [
+    "long_form_showrunner",
+    "research_trend_agent",
+    "lead_comedy_retention_engineer",
+    "visual_layout_director",
+    "hyper_critical_qa_director",
+    "render_farm",
+    "review_farm",
+    "release_guard"
+  ]
+}
