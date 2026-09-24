@@ -157,6 +157,18 @@
       ]
     },
     {
+      "id": "long_form_showrunner",
+      "parallelism": 1,
+      "owns": [
+        "8+ minute episode architecture",
+        "60-second act pivots",
+        "mid-roll-safe story structure",
+        "multi-card comparison acts",
+        "trap/twist act",
+        "solution and end-screen cliffhanger"
+      ]
+    },
+    {
       "id": "autonomous_viral_content_engine",
       "parallelism": 2,
       "owns": [
@@ -216,6 +228,8 @@
     "weak proof blocks full-episode expansion",
     "hyper-critical QA must approve the rewritten production JSON before production handoff",
     "comedy/retention script contract must pass before visual layout and hyper-critical QA",
-    "VCE master blueprint must pass dual-pass Bored Scroller and Credit Card Nerd critique before downstream handoff"
+    "VCE master blueprint must pass dual-pass Bored Scroller and Credit Card Nerd critique before downstream handoff",
+    "long-form runtime must be at least 8 minutes 30 seconds before long-form handoff",
+    "no long-form explanation or narrative setting may exceed 60 seconds without a structural pivot"
   ]
 }
