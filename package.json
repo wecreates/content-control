@@ -1,7 +1,8 @@
 {
   "scripts": {
     "render:episode1": "remotion render remotion/index.jsx Episode1Motion review-output/EPISODE1_MOTION_V3.mp4 --codec h264 --crf 20 --concurrency 2",
-    "test:instagram-bridge": "python -m unittest -v tests/test_instagram_reel_bridge.py"
+    "test:instagram-bridge": "python -m unittest -v tests/test_instagram_reel_bridge.py",
+    "render:episode1:v4": "remotion render remotion/index.jsx Episode1V4 review-output/EPISODE1_V4.mp4 --codec h264 --crf 20 --concurrency 2"
   },
   "dependencies": {
     "@remotion/cli": "4.0.366",
