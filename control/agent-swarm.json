@@ -35,6 +35,18 @@
       ]
     },
     {
+      "id": "cinematic_director_lighting_engineer",
+      "parallelism": 2,
+      "owns": [
+        "camera matrix",
+        "2D light vectors",
+        "parallax depth",
+        "impact camera physics",
+        "environmental audio beds",
+        "foley sync"
+      ]
+    },
+    {
       "id": "visual_layout_director",
       "parallelism": 2,
       "owns": [
@@ -243,6 +255,10 @@
     "long-form runtime must be at least 8 minutes 30 seconds before long-form handoff",
     "no long-form explanation or narrative setting may exceed 60 seconds without a structural pivot",
     "long-form episodes must target >=510 seconds and pivot setting/subplot/analogy at least every 60 seconds",
-    "major finance comparisons use anime-battle metaphor unless a later explicit user direction overrides it"
+    "major finance comparisons use anime-battle metaphor unless a later explicit user direction overrides it",
+    "every produced scene requires explicit camera behavior",
+    "every produced scene requires explicit lighting vectors",
+    "every produced scene requires environmental audio bed plus timed foley",
+    "thumbnail-to-video promise parity is a release-gate requirement"
   ]
 }
