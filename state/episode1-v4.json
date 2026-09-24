@@ -1,0 +1,15 @@
+{
+  "benchmark": "control/viral-instagram-style-benchmark-v2.json",
+  "candidate_sha256": "ff7c9f04a8aa3312b86e841e093f858257185335b29bd674122c4011435399bb",
+  "chris_first_watch_complete": false,
+  "duration_seconds": 316.202667,
+  "file_size_bytes": 38619419,
+  "format": "multi-engine-continuous-animation",
+  "lecture_detected": false,
+  "publication_enabled": false,
+  "rebuild": "V4-multi-engine-entertainment",
+  "schema_version": 1,
+  "slideshow_detected": false,
+  "source": "production/episode1/rebuild-v4/creative-spec.json",
+  "status": "ENTERTAINMENT_V4_REVIEW_READY"
+}
