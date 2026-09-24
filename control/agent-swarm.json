@@ -157,6 +157,18 @@
       ]
     },
     {
+      "id": "autonomous_viral_content_engine",
+      "parallelism": 2,
+      "owns": [
+        "combined viral scripting",
+        "coordinate layout matrix",
+        "dual-pass internal critique",
+        "2-second visual interrupts",
+        "acoustic punchlines",
+        "SEO production blueprint"
+      ]
+    },
+    {
       "id": "lead_comedy_retention_engineer",
       "parallelism": 2,
       "owns": [
@@ -203,6 +215,7 @@
     "SFX, music and narration are separate channels",
     "weak proof blocks full-episode expansion",
     "hyper-critical QA must approve the rewritten production JSON before production handoff",
-    "comedy/retention script contract must pass before visual layout and hyper-critical QA"
+    "comedy/retention script contract must pass before visual layout and hyper-critical QA",
+    "VCE master blueprint must pass dual-pass Bored Scroller and Credit Card Nerd critique before downstream handoff"
   ]
 }
