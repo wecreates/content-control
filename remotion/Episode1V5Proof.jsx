@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, Audio, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, Audio, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from "remotion";
 
 const C={bg:"#0b1018",ink:"#f6f7fb",green:"#41ff66",red:"#ff4c5d",yellow:"#ffd84d",blue:"#58a6ff",muted:"#7e889b"};
 const clamp={extrapolateLeft:"clamp",extrapolateRight:"clamp"};
@@ -35,7 +35,7 @@ const Caption=({text,t,a,b,color=C.ink,size=38,y=620})=><div style={{
   textShadow:"0 6px 20px #000",letterSpacing:.2
 }}>{text}</div>;
 
-const StoreBg=()=> <svg width="1280" height="720" style={{position:"absolute",inset:0}}>
+const StoreBg=()=> <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:0}}>
   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#172030"/><stop offset="1" stopColor="#0b1018"/></linearGradient></defs>
   <rect width="1280" height="720" fill="url(#g)"/>
   <rect x="0" y="500" width="1280" height="220" fill="#101723"/>
@@ -50,7 +50,7 @@ const ShotPaid=({t,frame,fps})=>{
   const shake=local>2.25&&local<2.65?Math.sin(local*70)*12:0;
   return <AbsoluteFill style={{transform:`translateX(${shake}px)`}}>
     <StoreBg/>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <Stick x={400} y={430} s={1.55} pose={local*2} face={local<2.2?"smile":"panic"}/>
       <g transform="translate(890 310)">
         <rect x="-160" y="-260" width="320" height="520" rx="34" fill="#101722" stroke={C.green} strokeWidth="8"/>
@@ -73,7 +73,7 @@ const ShotBetrayal=({t})=>{
   const cardIn=lerp(local,0,.45,1450,875);
   return <AbsoluteFill>
     <StoreBg/>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <Stick x={340} y={430} s={1.55} pose={-1.2+local*.8} face="annoyed"/>
       <PersonifiedCard x={cardIn} y={345} s={1.15} face="smile" tilt={-5+Math.sin(local*5)*2}/>
       <line x1="590" y1="485" x2="690" y2="485" stroke="#34435c" strokeWidth="6"/>
@@ -94,7 +94,7 @@ const ShotReaction=({t})=>{
   return <AbsoluteFill style={{backgroundColor:C.bg}}>
     <div style={{position:"absolute",inset:0,transform:`scale(${zoom})`,transformOrigin:"30% 55%"}}>
       <StoreBg/>
-      <svg width="1280" height="720">
+      <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
         <Stick x={390} y={430} s={2.1} pose={Math.sin(local*4)*.4} face="annoyed"/>
         <g opacity={vis(local,.7,3.7)} transform="translate(820 250)">
           <text x="0" y="0" textAnchor="middle" fill={C.yellow} fontSize="64" fontWeight="1000">…SERIOUSLY?</text>
@@ -109,7 +109,7 @@ const ShotQuestion=({t,frame,fps})=>{
   const local=t-11;
   const s=.75+.25*bounce(frame,fps,11.2);
   return <AbsoluteFill style={{background:"radial-gradient(circle at 50% 45%,#16233a,#0b1018 65%)"}}>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <Stick x={300} y={430} s={1.25} pose={local*2} face="neutral"/>
       <PersonifiedCard x={975} y={360} s={.9} face="smile" tilt={Math.sin(local*3)*3}/>
       <g transform={`translate(640 320) scale(${s})`}>
@@ -127,7 +127,7 @@ const ShotMath=({t})=>{
   const fee=lerp(local,1,3,0,200);
   const net=Math.round(points-fee);
   return <AbsoluteFill style={{backgroundColor:"#0a0f16"}}>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <Stick x={180} y={445} s={1.0} pose={local*5} face={net>=0?"smile":"neutral"}/>
       {Array.from({length:12}).map((_,i)=>{
         const a=i*.18;
@@ -152,7 +152,7 @@ const ShotImpulse=({t})=>{
   const receiptX=lerp(local,.4,1.4,1400,720);
   const hit=local>2.1&&local<2.6?Math.sin(local*55)*14:0;
   return <AbsoluteFill style={{background:"linear-gradient(180deg,#161f2d,#0b1018)"}}>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <rect x="60" y="120" width="1160" height="360" rx="28" fill="#111925" stroke="#26364c" strokeWidth="5"/>
       <text x="120" y="190" fill={C.muted} fontSize="26" fontWeight="900">CHECKOUT</text>
       <Stick x={330+hit} y={430} s={1.3} pose={local*5} face={local>2?"panic":"smile"}/>
@@ -172,7 +172,7 @@ const ShotPunchline=({t})=>{
   const local=t-27;
   const couponY=lerp(local,0,.7,-220,300);
   return <AbsoluteFill style={{background:"radial-gradient(circle at 55% 45%,#1a2030,#0b1018 70%)"}}>
-    <svg width="1280" height="720">
+    <svg width="1280" height="720" style={{position:"absolute",inset:0,zIndex:1}}>
       <Stick x={350} y={445} s={1.45} pose={-local*2} face="annoyed"/>
       <g transform={`translate(820 ${couponY}) rotate(${Math.sin(local*6)*3})`}>
         <rect x="-235" y="-115" width="470" height="230" rx="24" fill="#16231a" stroke={C.green} strokeWidth="8" strokeDasharray="18 12"/>
@@ -193,7 +193,7 @@ export const Episode1V5Proof=()=>{
   return <AbsoluteFill style={{backgroundColor:C.bg,overflow:"hidden"}}>
     <Audio src={staticFile("v5-proof-voice.mp3")} volume={1}/>
     <Audio src={staticFile("v5-beat.wav")} volume={.16}/>
-    <Audio src={staticFile("v5-slam.wav")} startFrom={0} volume={.8}/>
+    <Sequence from={69}><Audio src={staticFile("v5-slam.wav")} volume={.8}/></Sequence>\n    <Sequence from={450}><Audio src={staticFile("v5-chime.wav")} volume={.6}/></Sequence>\n    <Sequence from={630}><Audio src={staticFile("v5-hit.wav")} volume={.72}/></Sequence>\n    <Sequence from={810}><Audio src={staticFile("v5-sting.wav")} volume={.55}/></Sequence>
     {t>=0&&t<3&&<ShotPaid t={t} frame={frame} fps={fps}/>}
     {t>=3&&t<7&&<ShotBetrayal t={t}/>}
     {t>=7&&t<11&&<ShotReaction t={t}/>}
