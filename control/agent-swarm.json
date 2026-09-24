@@ -157,6 +157,17 @@
       ]
     },
     {
+      "id": "hyper_critical_qa_director",
+      "parallelism": 2,
+      "owns": [
+        "Bored Scroller retention simulation",
+        "Finance Skeptic credibility simulation",
+        "timestamp friction log",
+        "collision audit",
+        "10X rewrite gate"
+      ]
+    },
+    {
       "id": "release_guard",
       "parallelism": 1,
       "owns": [
@@ -177,6 +188,7 @@
     "white background and black stick-figure reference grammar is default production style",
     "voiceover text must never contain SFX or production directions",
     "SFX, music and narration are separate channels",
-    "weak proof blocks full-episode expansion"
+    "weak proof blocks full-episode expansion",
+    "hyper-critical QA must approve the rewritten production JSON before production handoff"
   ]
 }
