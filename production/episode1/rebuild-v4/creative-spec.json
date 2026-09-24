@@ -1,0 +1,88 @@
+{
+  "schema_version": 4,
+  "title": "Your Credit Card Has DLC",
+  "format": "long",
+  "aspect": "16:9",
+  "publication_enabled": false,
+  "slideshow": false,
+  "lecture": false,
+  "continuous_motion": true,
+  "hook_sec": 0.4,
+  "promise_sec": 9,
+  "meaningful_visual_change_sec": 1.45,
+  "max_static_hold_sec": 1.8,
+  "retention_reset_sec": 22,
+  "physical_action_ratio": 0.78,
+  "visual_jokes": 18,
+  "callbacks": 7,
+  "sound_sync": true,
+  "loop_end": false,
+  "entertainment_engines": [
+    {
+      "start": 0,
+      "end": 22,
+      "name": "Dialogue Punchline + Physical Money Gag",
+      "mechanic": "annual fee physically crashes Alex's adulthood victory"
+    },
+    {
+      "start": 22,
+      "end": 60,
+      "name": "Rewards Arcade",
+      "mechanic": "points become collectible coins and cash-value targets"
+    },
+    {
+      "start": 60,
+      "end": 99,
+      "name": "Credit Card Chase",
+      "mechanic": "personified card chases Alex trying to manufacture spending"
+    },
+    {
+      "start": 99,
+      "end": 133,
+      "name": "Finance Game Show",
+      "mechanic": "premium and free cards race using the exact same spending"
+    },
+    {
+      "start": 133,
+      "end": 181,
+      "name": "Interest Boss Battle",
+      "mechanic": "interest monster eats rewards trophy and grows from carried balance"
+    },
+    {
+      "start": 181,
+      "end": 232,
+      "name": "Signup Bonus Heist",
+      "mechanic": "bonus carrot creates escalating fake chores and backward winning"
+    },
+    {
+      "start": 232,
+      "end": 281,
+      "name": "0% APR Game Show",
+      "mechanic": "host asks conditions while wrong answers open a deferred-interest trapdoor"
+    },
+    {
+      "start": 281,
+      "end": 316,
+      "name": "Finale Callback",
+      "mechanic": "Alex uses four rules as physical tools, then minimum-payment monster appears"
+    }
+  ],
+  "recurring_props": [
+    "metal card",
+    "$200 fee invoice",
+    "points coins",
+    "rewards trophy",
+    "interest monster",
+    "bonus carrot",
+    "0% trapdoor",
+    "minimum-payment monster"
+  ],
+  "style": {
+    "background": "dark charcoal/navy",
+    "money": "#39ff14",
+    "debt": "#ff4a4a",
+    "line": "#f5f7fa",
+    "behavior": "characters act continuously; text is impact-only; finance concepts become physical consequences"
+  },
+  "benchmark_source": "control/viral-instagram-style-benchmark-v2.json"
+}
