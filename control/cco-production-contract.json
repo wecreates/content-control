@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "name": "CCO production contract",
+  "publication_enabled": false,
+  "first_video_publish": false,
+  "formats": {
+    "shorts": {
+      "canvas": [
+        1080,
+        1920
+      ],
+      "aspect": "9:16"
+    },
+    "long_form": {
+      "canvas": [
+        1920,
+        1080
+      ],
+      "aspect": "16:9"
+    }
+  },
+  "required_agents": [
+    "research_trend_agent",
+    "script_retention_agent",
+    "visual_layout_director",
+    "seo_publishing_agent"
+  ],
+  "output_schema": {
+    "video_metadata": {
+      "target_format": "",
+      "primary_high_cpm_keywords": [],
+      "optimized_title": "",
+      "seo_description": "",
+      "tags": ""
+    },
+    "audio_narration": {
+      "voice_profile": "",
+      "full_voiceover_script": ""
+    },
+    "timeline_blueprint": [
+      {
+        "timestamp_start": "0.0",
+        "timestamp_end": "5.0",
+        "voiceover_chunk": "",
+        "sound_effect_cue": "",
+        "layout_layers": {
+          "layer_0_background": "",
+          "layer_1_static_props": "",
+          "layer_2_characters": "",
+          "layer_3_dynamic_props": "",
+          "layer_4_on_screen_text": ""
+        }
+      }
+    ]
+  },
+  "layout": {
+    "safe_inset_pct": 5,
+    "minimum_gap_px_short": 48,
+    "minimum_gap_px_long": 64,
+    "anti_overlap": true,
+    "intentional_contact_requires_flag": true,
+    "card_text_policy": "geometric/minimal only",
+    "reference_style": {
+      "background": "#FFFFFF",
+      "stick": "#111111",
+      "decorative_ui": "forbidden_by_default"
+    }
+  },
+  "retention": {
+    "hook_end_sec": 5,
+    "setup_end_sec": 30,
+    "pattern_interrupt_max_sec": 5,
+    "invisible_cta_final_sec": 5
+  },
+  "done_gate": [
+    "research evidence exists",
+    "script retention gate passes",
+    "layout collision test passes",
+    "rendered proof visually reviewed",
+    "audio channels verified separate",
+    "reference parity review passes",
+    "SEO package generated",
+    "publication remains locked"
+  ]
+}
