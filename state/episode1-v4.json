@@ -11,5 +11,7 @@
   "schema_version": 1,
   "slideshow_detected": false,
   "source": "production/episode1/rebuild-v4/creative-spec.json",
-  "status": "ENTERTAINMENT_V4_REVIEW_READY"
+  "status": "REJECTED_VISUAL_PARITY",
+  "review_verdict": "REJECT",
+  "review_reason": "Fails visual parity with supplied viral references; presentation-like composition and contaminated narration pipeline."
 }
