@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "name": "Viral Instagram Reel Benchmark V1",
+  "publication_enabled": false,
+  "source_requirement": "actual full video + audio inspection",
+  "metadata_only_counts_as_review": false,
+  "references": [
+    {
+      "id": "IG-01",
+      "url": "https://www.instagram.com/reel/DTVaGsojYnI/",
+      "known_caption": "How money laundering works in Monaco",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-02",
+      "url": "https://www.instagram.com/reel/DYzdCbPSQ5R/",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-03",
+      "url": "https://www.instagram.com/reel/DYxAGU7oaD0/",
+      "known_account_signal": "mrr.stickman",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-04",
+      "url": "https://www.instagram.com/reel/DbHbB41uOM_/",
+      "known_caption": "What is the gamblers fallacy?",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-05",
+      "url": "https://www.instagram.com/reel/DaWyBklowhv/",
+      "known_caption": "Good news or Bad news",
+      "known_account_signal": "stickylife3",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-06",
+      "url": "https://www.instagram.com/reel/Dcq9bbDMNxf/",
+      "status": "PENDING_FULL_AV"
+    },
+    {
+      "id": "IG-07",
+      "url": "https://www.instagram.com/reel/DcoZnxOuHB5/",
+      "status": "PENDING_FULL_AV"
+    }
+  ],
+  "per_reel_analysis": [
+    "first_1_second_hook",
+    "first_3_seconds",
+    "first_10_seconds",
+    "loop_structure",
+    "motion_style",
+    "character_design",
+    "character_acting",
+    "camera_motion",
+    "cuts_per_10_sec",
+    "meaningful_visual_change_frequency",
+    "background_design",
+    "color_system",
+    "line_weight",
+    "typography",
+    "caption_style",
+    "caption_timing",
+    "text_density",
+    "iconography",
+    "props",
+    "physical_cause_effect",
+    "transition_language",
+    "speed_ramps",
+    "zoom_behavior",
+    "camera_shake",
+    "sound_effect_density",
+    "music_role",
+    "voice_style",
+    "silence_usage",
+    "beat_sync",
+    "humor_type",
+    "surprise_type",
+    "pattern_interrupts",
+    "curiosity_gaps",
+    "escalation",
+    "payoff",
+    "ending_loop",
+    "comment_bait",
+    "shareability",
+    "relatability",
+    "novelty",
+    "rewatch_triggers",
+    "memeability",
+    "information_density",
+    "reading_load",
+    "dead_air",
+    "ai_slop_signals",
+    "template_repetition",
+    "distinctive_elements_not_to_copy",
+    "transferable_mechanics",
+    "short_form_adaptation",
+    "long_form_adaptation"
+  ],
+  "synthesis_outputs": [
+    "viral_short_form_motion_bible",
+    "long_form_motion_bible",
+    "episode1_required_changes",
+    "shorts_required_changes",
+    "forbidden_slideshow_patterns",
+    "flop_risk_library"
+  ],
+  "fail_closed": true
+}
