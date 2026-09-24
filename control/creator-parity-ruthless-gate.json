@@ -215,6 +215,8 @@
     "slideshow_detected_must_be": false,
     "lecture_detected_must_be": false,
     "human_first_watch_required": true,
-    "publication_separate": true
+    "publication_separate": true,
+    "minimum_competitor_full_av_videos": 7,
+    "minimum_competitor_creators": 5
   }
 }
