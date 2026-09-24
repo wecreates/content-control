@@ -1,18 +1,63 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "mode": "24x7_event_driven",
   "publication_enabled": false,
-  "coordinator": {
-    "id": "orchestrator",
-    "duties": [
-      "dependency graph",
-      "critical path",
-      "agent leases",
-      "receipts",
-      "downstream release"
-    ]
+  "cco": {
+    "id": "autonomous_cco",
+    "goal": [
+      "audience_retention",
+      "RPM",
+      "subscriber_growth"
+    ],
+    "first_video_publish": false
   },
   "agents": [
+    {
+      "id": "research_trend_agent",
+      "parallelism": 2,
+      "owns": [
+        "viral competitor AV evidence",
+        "credit-card trend research",
+        "high-CPM keyword gaps",
+        "issuer/regulator fact verification"
+      ]
+    },
+    {
+      "id": "script_retention_agent",
+      "parallelism": 2,
+      "owns": [
+        "hook",
+        "curiosity loops",
+        "pattern interrupts <=5s",
+        "simple language",
+        "story payoff",
+        "finance accuracy handoff"
+      ]
+    },
+    {
+      "id": "visual_layout_director",
+      "parallelism": 2,
+      "owns": [
+        "native 9:16 and 16:9 staging",
+        "anti-overlap bounding boxes",
+        "white-background black-stick reference grammar",
+        "prop scale",
+        "shot cadence",
+        "rendered-frame collision review"
+      ]
+    },
+    {
+      "id": "seo_publishing_agent",
+      "parallelism": 1,
+      "owns": [
+        "title variants",
+        "description",
+        "chapters",
+        "tags",
+        "upload package"
+      ],
+      "publish_permission": false
+    },
     {
       "id": "artifact_engineer",
       "parallelism": 2,
@@ -47,8 +92,10 @@
       "owns": [
         "voice",
         "SFX",
+        "music",
         "mix",
-        "alignment"
+        "alignment",
+        "voice isolation"
       ]
     },
     {
@@ -60,7 +107,8 @@
         "math",
         "sources",
         "motion",
-        "safe zones"
+        "safe zones",
+        "anti-overlap"
       ]
     },
     {
@@ -93,8 +141,9 @@
       "id": "benchmark_reviewer",
       "parallelism": 2,
       "owns": [
+        "supplied-Reel visual parity",
         "finance creator comparison",
-        "animation/explainer comparison"
+        "animation comparison"
       ]
     },
     {
@@ -112,16 +161,22 @@
       "parallelism": 1,
       "owns": [
         "exact hash lock",
-        "Chris approval requirement",
+        "user approval requirement",
         "publication lock"
       ]
     }
   ],
-  "rules": [
-    "agents never wait on unrelated work",
-    "highest critical-path READY task wins",
-    "same artifact hash is never recomputed unnecessarily",
-    "one blind retry maximum",
-    "human escalation only for security/payment/irreversible/publication boundaries"
+  "hard_rules": [
+    "preserve all existing working agents",
+    "publication remains disabled until explicit user approval",
+    "first video must never auto-publish",
+    "actual rendered media must be reviewed; source code or successful build is insufficient",
+    "reference review requires actual frames plus actual audio/transcript evidence",
+    "native 9:16 for Shorts and native 16:9 for long-form",
+    "zero overlapping foreground bounding boxes unless explicitly marked intentional_contact",
+    "white background and black stick-figure reference grammar is default production style",
+    "voiceover text must never contain SFX or production directions",
+    "SFX, music and narration are separate channels",
+    "weak proof blocks full-episode expansion"
   ]
 }
