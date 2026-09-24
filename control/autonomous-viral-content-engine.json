@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "name": "Autonomous Viral Content Engine",
+  "publication_enabled": false,
+  "niche": "Credit Card and Personal Finance",
+  "aesthetic": {
+    "background": "#FFFFFF",
+    "stick": "#111111",
+    "high_contrast": true,
+    "expressive_faces": true,
+    "geometric_financial_props": true
+  },
+  "layers": {
+    "layer_0": "background",
+    "layer_1": "static set props",
+    "layer_2": "stick figure character",
+    "layer_3": "handheld financial prop",
+    "layer_4": "kinetic typography/popups"
+  },
+  "zero_overlap": {
+    "required": true,
+    "bounding_boxes_must_not_collide": true,
+    "intentional_contact_requires_flag": true
+  },
+  "entertainment": {
+    "visual_irony": true,
+    "max_visual_hold_sec": 2,
+    "comment_bait_required": true,
+    "acoustic_punchline_for_movement_or_pause": true
+  },
+  "dual_pass_qa": {
+    "bored_scroller": [
+      "hook drag",
+      "dead air",
+      "visual pace"
+    ],
+    "credit_card_nerd": [
+      "point valuations",
+      "card rules",
+      "fees",
+      "credit mechanics",
+      "source specificity"
+    ]
+  },
+  "master_output_schema": {
+    "production_meta": [
+      "topic_target",
+      "target_pacing",
+      "high_cpm_keywords",
+      "click_bait_thumbnail_concept",
+      "optimized_title",
+      "seo_package"
+    ],
+    "autonomous_critique_log": [
+      "internal_qa_feedback",
+      "retention_insurance_trigger"
+    ],
+    "timeline_fields": [
+      "timestamp",
+      "pacing_speed",
+      "voiceover_narration",
+      "sfx_cue",
+      "visual_rendering_matrix"
+    ],
+    "visual_rendering_matrix": [
+      "layer_0_bg",
+      "layer_2_character",
+      "layer_3_props",
+      "layer_4_text_overlay"
+    ]
+  },
+  "handoff_order": [
+    "autonomous_viral_content_engine",
+    "lead_comedy_retention_engineer",
+    "visual_layout_director",
+    "hyper_critical_qa_director",
+    "render_farm",
+    "review_farm",
+    "release_guard"
+  ]
+}
