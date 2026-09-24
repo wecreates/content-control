@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "name": "Universal Video Playback Contract",
+  "publication_enabled": false,
+  "supported_platforms": [
+    "youtube",
+    "instagram",
+    "tiktok",
+    "x",
+    "vimeo",
+    "dropbox",
+    "direct_media",
+    "web_video_page"
+  ],
+  "watched_requires": {
+    "visual_access": true,
+    "audio_access": true,
+    "end_to_end_coverage": true,
+    "timestamped_evidence": true
+  },
+  "metadata_only_never_counts": true,
+  "transcript_only_never_counts": true,
+  "thumbnail_only_never_counts": true,
+  "browser_page_shell_never_counts": true,
+  "route_priority": [
+    "native_public_video_model_input",
+    "authenticated_browser",
+    "social_media_resolver",
+    "direct_media_av",
+    "public_mirror_av"
+  ],
+  "platform_routes": {
+    "youtube": [
+      "native_public_video_model_input",
+      "authenticated_browser",
+      "direct_media_av"
+    ],
+    "instagram": [
+      "authenticated_browser",
+      "social_media_resolver",
+      "public_mirror_av"
+    ],
+    "tiktok": [
+      "authenticated_browser",
+      "social_media_resolver",
+      "public_mirror_av"
+    ],
+    "x": [
+      "authenticated_browser",
+      "social_media_resolver",
+      "public_mirror_av"
+    ],
+    "vimeo": [
+      "native_public_video_model_input",
+      "direct_media_av",
+      "authenticated_browser"
+    ],
+    "dropbox": [
+      "direct_media_av",
+      "authenticated_browser"
+    ],
+    "direct_media": [
+      "direct_media_av",
+      "native_uploaded_media"
+    ],
+    "web_video_page": [
+      "authenticated_browser",
+      "direct_media_av",
+      "public_mirror_av"
+    ]
+  },
+  "hard_fail_states": [
+    "metadata_only",
+    "caption_only",
+    "comments_only",
+    "thumbnail_only",
+    "login_wall_without_video",
+    "page_loaded_but_media_not_playable",
+    "audio_missing",
+    "visual_missing",
+    "partial_duration_only"
+  ]
+}
