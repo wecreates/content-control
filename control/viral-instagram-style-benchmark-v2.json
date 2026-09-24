@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "name": "Viral Instagram Style Benchmark V2",
+  "purpose": "Use varied viral stick-animation mechanics to improve finance content without copying exact characters, jokes, layouts, or creator identity.",
+  "publication_enabled": false,
+  "source_requirement": "real_link_media",
+  "evidence": {
+    "method": [
+      "Transcriptor Whisper audio",
+      "timestamped real frame extraction"
+    ],
+    "metadata_only_counts_as_review": false,
+    "transcript_only_counts_as_review": false
+  },
+  "references": [
+    {
+      "id": "DcjbVcvzAXM",
+      "creator": "anim_001_",
+      "likes": 243058,
+      "comments": 1742,
+      "format": "ultra-short dialogue punchline",
+      "duration_sec_approx": 10,
+      "transferable": [
+        "question opens immediately",
+        "two-character conversational setup",
+        "delayed semantic punchline",
+        "minimal exposition",
+        "visual acting supports timing",
+        "end immediately after payoff"
+      ],
+      "use_for": [
+        "finance myth jokes",
+        "credit-card misconception punchlines",
+        "bank-fee jokes"
+      ]
+    },
+    {
+      "id": "C6l2C3SoEzM",
+      "creator": "mark_kacy",
+      "likes": 1246442,
+      "comments": 2437,
+      "format": "physical visual gag",
+      "duration_sec_approx": 4.2,
+      "transferable": [
+        "one instantly legible premise",
+        "body motion is the joke",
+        "extreme brevity",
+        "visual action begins immediately",
+        "no explanatory setup"
+      ],
+      "use_for": [
+        "APR physically crushes character",
+        "debt balance grows while character reacts",
+        "fees cause exaggerated body/prop response"
+      ]
+    },
+    {
+      "id": "DdJDtLexlEI",
+      "creator": "Jevon_animations",
+      "likes": 205389,
+      "comments": 1250,
+      "format": "motivational transformation short",
+      "duration_sec_approx": 15,
+      "transferable": [
+        "status contrast",
+        "visible progression",
+        "emotional reversal",
+        "simple readable staging",
+        "music/visual storytelling can carry story without dense narration"
+      ],
+      "use_for": [
+        "bad credit to rebuilt credit arc",
+        "broke-to-stable financial progression",
+        "mocked saver to successful outcome"
+      ]
+    },
+    {
+      "id": "Dabl-LTNTzO",
+      "creator": "Canyon Blade Law",
+      "likes": 426996,
+      "comments": 1054,
+      "format": "emotional visual metaphor",
+      "duration_sec_approx": 20,
+      "transferable": [
+        "single physical metaphor carries abstract idea",
+        "state visibly depletes over time",
+        "repetition with escalation",
+        "ending reverses depletion",
+        "emotion is communicated visually"
+      ],
+      "use_for": [
+        "interest draining paycheck",
+        "subscriptions slicing salary",
+        "minimum payments shrinking progress",
+        "compound growth refilling stack"
+      ]
+    },
+    {
+      "id": "DQwcWDvktgg",
+      "creator": "enemy.stickman",
+      "likes": 229655,
+      "comments": 11889,
+      "format": "provocative choice/comment bait",
+      "duration_sec_approx": 8,
+      "transferable": [
+        "viewer addressed directly",
+        "binary/social choice",
+        "clear stakes",
+        "money amount creates instant game mechanic",
+        "explicit comment participation"
+      ],
+      "use_for": [
+        "which fee would you delete",
+        "pick one debt to erase",
+        "choose one card perk",
+        "which money habit is costing your friend most"
+      ],
+      "safety_note": "Do not copy offensive premise; retain only participation mechanic."
+    },
+    {
+      "id": "DcZEgEBMcvV",
+      "creator": "StickmanStandup",
+      "likes": 69653,
+      "comments": 251,
+      "format": "Q&A stand-up punchline",
+      "duration_sec_approx": 9.2,
+      "transferable": [
+        "interviewer setup",
+        "short answer escalation",
+        "three-beat comedy structure",
+        "reaction timing",
+        "punchline reframes premise"
+      ],
+      "use_for": [
+        "financial-advice parody",
+        "bank/customer Q&A",
+        "credit-card support desk comedy"
+      ]
+    },
+    {
+      "id": "DTaSQbkE_1Y",
+      "creator": "Stick Giggles",
+      "likes": 186702,
+      "comments": 867,
+      "format": "relatable escalating rant",
+      "duration_sec_approx": 23,
+      "transferable": [
+        "familiar frustration",
+        "list escalation",
+        "rapid examples",
+        "one final ironic payoff",
+        "high relatability",
+        "topic naturally invites shares"
+      ],
+      "use_for": [
+        "things school never taught about money",
+        "hidden costs of adulthood",
+        "credit-card rules nobody explains",
+        "banking terms people learn too late"
+      ]
+    },
+    {
+      "id": "DYcfrMyyOHd",
+      "creator": "Lowkey Explain",
+      "likes": 1191,
+      "comments": 42,
+      "format": "stick-figure finance/social explainer",
+      "duration_sec_approx": 34,
+      "strategic_weight": "highest_niche_similarity",
+      "transferable": [
+        "contrarian question hook",
+        "concrete named concept introduced early",
+        "abstract finance/psychology shown with physical scenes",
+        "short narration clauses",
+        "frequent visual restaging",
+        "visual metaphors instead of lecture cards",
+        "claim-evidence-payoff structure"
+      ],
+      "use_for": [
+        "credit psychology",
+        "wealth behavior",
+        "fees and incentives",
+        "bank systems",
+        "tax/finance concepts"
+      ],
+      "note": "Closest structural reference to user's finance direction; use mechanics, not creator-specific assets or wording."
+    }
+  ],
+  "cross_style_rules": {
+    "required": [
+      "start with action, conflict, question, or consequence in first second",
+      "one dominant idea per short",
+      "character or object state must visibly change",
+      "visuals add information or humor instead of merely restating narration",
+      "use physical cause-and-effect for abstract finance concepts",
+      "payoff arrives before viewer fatigue",
+      "cut immediately after payoff unless a deliberate loop is stronger",
+      "every scene must have a reason to exist"
+    ],
+    "avoid": [
+      "slideshow lecture",
+      "static character while narration continues",
+      "title-card introductions",
+      "generic infographic cards replacing action",
+      "repeated pose with only caption changes",
+      "long context before conflict",
+      "summary outro after the joke/payoff",
+      "copying exact creator character design or signature joke"
+    ]
+  },
+  "finance_channel_style_system": {
+    "principle": "One channel, multiple proven story engines.",
+    "engines": [
+      "Dialogue Punchline",
+      "Physical Money Gag",
+      "Transformation Arc",
+      "Financial Metaphor Story",
+      "Audience Choice Challenge",
+      "Finance Q&A Comedy",
+      "Relatable Money Rant",
+      "Narrated Finance Explainer"
+    ],
+    "long_form_adaptation": "Rotate these engines inside one 8+ minute episode so chapters feel like changing entertainment modes, not slides.",
+    "short_form_adaptation": "Choose one engine per Short/Reel and optimize around a single payoff."
+  }
+}
