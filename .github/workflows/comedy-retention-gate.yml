@@ -1,0 +1,33 @@
+name: Comedy Retention Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/comedy-retention-engineer.json'
+      - 'control/agent-swarm.json'
+      - 'scripts/verify_comedy_retention.py'
+      - '.github/workflows/comedy-retention-gate.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_comedy_retention.py
+      - name: Verify downstream QA and publication lock
+        run: |
+          python - <<'PY'
+          import json
+          c=json.load(open('control/comedy-retention-engineer.json'))
+          q=json.load(open('control/hyper-critical-qa-director.json'))
+          p=json.load(open('control/cco-production-contract.json'))
+          assert c['handoff']==['visual_layout_director','hyper_critical_qa_director']
+          assert q['fail_closed'] is True
+          assert p['publication_enabled'] is False
+          assert p['first_video_publish'] is False
+          print('comedy -> layout -> QA handoff PASS; publication LOCKED')
+          PY
