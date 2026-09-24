@@ -1,0 +1,33 @@
+name: Long-Form Showrunner Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/long-form-showrunner.json'
+      - 'control/agent-swarm.json'
+      - 'scripts/verify_long_form_showrunner.py'
+      - '.github/workflows/long-form-showrunner-gate.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_long_form_showrunner.py
+      - name: Verify long-form downstream gates
+        run: |
+          python - <<'PY'
+          import json
+          l=json.load(open('control/long-form-showrunner.json'))
+          q=json.load(open('control/hyper-critical-qa-director.json'))
+          p=json.load(open('control/cco-production-contract.json'))
+          assert l['minimum_runtime_sec'] >= 510
+          assert l['act_max_without_structural_pivot_sec'] <= 60
+          assert q['fail_closed'] is True
+          assert p['publication_enabled'] is False and p['first_video_publish'] is False
+          print('Showrunner -> Research -> Comedy -> Layout -> QA -> Render -> Review -> ReleaseGuard PASS')
+          PY
