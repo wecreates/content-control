@@ -1,0 +1,57 @@
+name: Autonomous CCO Control Loop
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'control/agent-swarm.json'
+      - 'control/cco-production-contract.json'
+      - 'scripts/verify_cco_contract.py'
+      - '.github/workflows/autonomous-cco.yml'
+permissions:
+  contents: read
+concurrency:
+  group: autonomous-cco-control
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CCO contract and preserved swarm
+        run: python scripts/verify_cco_contract.py
+      - name: Verify publication hard lock
+        run: |
+          python - <<'PY'
+          import json
+          a=json.load(open('control/agent-swarm.json'))
+          c=json.load(open('control/cco-production-contract.json'))
+          assert a['publication_enabled'] is False
+          assert c['publication_enabled'] is False
+          assert c['first_video_publish'] is False
+          print('publication lock PASS')
+          PY
+      - name: Emit machine-readable cycle receipt
+        run: |
+          mkdir -p receipts
+          python - <<'PY'
+          import json,datetime,pathlib
+          r={
+            'status':'READY',
+            'cycle':'autonomous_cco',
+            'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            'agents':['research_trend_agent','script_retention_agent','visual_layout_director','seo_publishing_agent'],
+            'publication_enabled':False,
+            'first_video_publish':False
+          }
+          pathlib.Path('receipts/cco-cycle.json').write_text(json.dumps(r,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cco-cycle-receipt
+          path: receipts/cco-cycle.json
+          retention-days: 7
