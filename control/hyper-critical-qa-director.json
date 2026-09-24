@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "name": "Hyper-Critical QA Director + Human Audience Simulator",
+  "publication_enabled": false,
+  "fail_closed": true,
+  "personas": {
+    "bored_scroller": {
+      "attention_span_sec": 3,
+      "pattern_interrupt_max_sec": 4,
+      "reject_if_static_gt_sec": 3
+    },
+    "finance_skeptic": {
+      "requires_claim_specificity": true,
+      "requires_current_primary_source_for_time_sensitive_card_rules": true,
+      "reject_vague_finance_claims": true
+    }
+  },
+  "failure_codes": {
+    "visual_coma": "foreground character/meaningful visual state unchanged >3s while VO continues",
+    "visual_collision": "non-contact Layer 2/3 or typography bounding boxes intersect or violate safety gap",
+    "av_desync": "spoken named product/concept does not match active visual asset/label",
+    "flabby_hook": "first 3s lacks mid-action/mid-crisis/strong curiosity and uses generic greeting/setup"
+  },
+  "required_passes": [
+    "PASS 1: Human Friction Log",
+    "PASS 2: Spatial Layer & Collision Audit",
+    "PASS 3: 10X Rewrite & Optimization"
+  ],
+  "rewrite_output": "valid JSON production block",
+  "hard_requirements": [
+    "review draft before production",
+    "REJECT on any critical failure",
+    "repair all rejected flaws before production handoff",
+    "SFX cues are separate from VO",
+    "no publication before explicit user approval"
+  ]
+}
