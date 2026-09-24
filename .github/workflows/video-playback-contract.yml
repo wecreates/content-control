@@ -1,0 +1,33 @@
+name: Universal Video Playback Contract
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/video_playback_resolver.py'
+      - 'tests/test_video_playback_resolver.py'
+      - 'control/universal-video-playback-contract.json'
+      - '.github/workflows/video-playback-contract.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run universal playback routing tests
+        run: python -m unittest -v tests/test_video_playback_resolver.py
+      - name: Validate contract
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('control/universal-video-playback-contract.json'))
+          assert d['metadata_only_never_counts'] is True
+          assert d['watched_requires']['visual_access'] is True
+          assert d['watched_requires']['audio_access'] is True
+          assert d['watched_requires']['end_to_end_coverage'] is True
+          print({'status':'PASS','platforms':d['supported_platforms']})
+          PY
