@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "Lead Anime Showrunner + Creative Metaphor Architect",
+  "publication_enabled": false,
+  "framework": {
+    "points_perks": "named ultimate attacks",
+    "fees_restrictions": "damage/debuffs",
+    "visuals": [
+      "speed lines",
+      "charge-ups",
+      "impact craters",
+      "dramatic reaction closeups"
+    ],
+    "educational_layer": "Layer 4 displays verified mathematical reality while combat plays"
+  },
+  "factuality": {
+    "verified_2026_repairs": [
+      "Amex Gold: $325 annual fee; 4X restaurants worldwide up to $50k/year and U.S. supermarkets up to $25k/year, then 1X.",
+      "Amex Platinum: $895 annual fee, not $695.",
+      "Freedom Flex: $0 annual fee; 5% cash back on activated rotating categories up to $1,500 combined purchases per quarter.",
+      "Sapphire Preferred: $95 annual fee.",
+      "World of Hyatt transfer is not a universal 2.5 cpp floor; Chase currently documents 4:3 transfer for newer Sapphire Preferred accounts, with older qualifying accounts retaining 1:1 through Sep 30 2026."
+    ],
+    "prohibited_claims": [
+      "5/24 presented as an official current Chase published rule without a current primary-source citation",
+      "universal Hyatt 2.5 cents-per-point floor",
+      "$695 current U.S. consumer Platinum annual fee",
+      "Trifecta total fee stated as a range without defining exact card lineup"
+    ]
+  },
+  "anti_overlap": "combat contact is allowed only when marked intentional_contact; all explanatory text and non-contact props retain dedicated bounds",
+  "output_schema": "long_form_meta + episodes_timeline with combat metaphor and verified Layer-4 facts"
+}
