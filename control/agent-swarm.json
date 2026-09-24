@@ -169,6 +169,17 @@
       ]
     },
     {
+      "id": "anime_showrunner_metaphor_architect",
+      "parallelism": 2,
+      "owns": [
+        "shonen battle metaphor",
+        "named perk attacks",
+        "fee/restriction debuffs",
+        "anime impact choreography",
+        "educational combat subtitles"
+      ]
+    },
+    {
       "id": "autonomous_viral_content_engine",
       "parallelism": 2,
       "owns": [
@@ -231,6 +242,7 @@
     "VCE master blueprint must pass dual-pass Bored Scroller and Credit Card Nerd critique before downstream handoff",
     "long-form runtime must be at least 8 minutes 30 seconds before long-form handoff",
     "no long-form explanation or narrative setting may exceed 60 seconds without a structural pivot",
-    "long-form episodes must target >=510 seconds and pivot setting/subplot/analogy at least every 60 seconds"
+    "long-form episodes must target >=510 seconds and pivot setting/subplot/analogy at least every 60 seconds",
+    "major finance comparisons use anime-battle metaphor unless a later explicit user direction overrides it"
   ]
 }
