@@ -11,10 +11,6 @@ $repo = Resolve-Path "$PSScriptRoot\.."
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   throw "Node.js is required."
 }
-if (-not (Get-Command ffprobe -ErrorAction SilentlyContinue)) {
-  throw "FFmpeg/ffprobe is required."
-}
-
 Push-Location $repo
 try {
   if (-not (Test-Path "node_modules\playwright")) {
