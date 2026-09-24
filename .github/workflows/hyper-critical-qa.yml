@@ -1,0 +1,30 @@
+name: Hyper-Critical QA Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/hyper-critical-qa-director.json'
+      - 'scripts/verify_hyper_critical_qa.py'
+      - '.github/workflows/hyper-critical-qa.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  qa-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_hyper_critical_qa.py
+      - name: Assert CCO handoff remains publication locked
+        run: |
+          python - <<'PY'
+          import json
+          q=json.load(open('control/hyper-critical-qa-director.json'))
+          c=json.load(open('control/cco-production-contract.json'))
+          assert q['publication_enabled'] is False
+          assert c['publication_enabled'] is False
+          assert c['first_video_publish'] is False
+          print('QA -> production lock PASS')
+          PY
