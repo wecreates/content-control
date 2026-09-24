@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "name": "Cinematic Director + Chief Lighting Engineer",
+  "publication_enabled": false,
+  "thumbnail_parity": {
+    "required": true,
+    "rule": "video opening and overall production intensity must credibly deliver the visual promise of the approved thumbnail; otherwise reject as clickbait mismatch"
+  },
+  "camera_matrix": {
+    "required_every_scene": true,
+    "fields": [
+      "move",
+      "speed",
+      "focal_behavior",
+      "impact_shake_intensity"
+    ],
+    "examples": [
+      "dolly zoom",
+      "parallax pan",
+      "impact shake",
+      "snap close-up"
+    ]
+  },
+  "lighting": {
+    "required_every_scene": true,
+    "fields": [
+      "key_source",
+      "angle_deg",
+      "color_hex",
+      "rim_or_edge",
+      "intensity",
+      "shadow_behavior"
+    ],
+    "two_d_depth_required": true
+  },
+  "audio": {
+    "environmental_bed_required": true,
+    "foley_required": true,
+    "voice_music_sfx_separate_tracks": true,
+    "physical_motion_requires_sync_point": true
+  },
+  "anti_overlap": {
+    "still_required": true,
+    "lighting_and_camera_must_not_hide_or_clip_educational_layer": true
+  },
+  "handoff": [
+    "cinematic_director_lighting_engineer",
+    "visual_layout_director",
+    "hyper_critical_qa_director",
+    "render_farm",
+    "review_farm"
+  ]
+}
