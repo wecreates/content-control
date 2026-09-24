@@ -230,6 +230,7 @@
     "comedy/retention script contract must pass before visual layout and hyper-critical QA",
     "VCE master blueprint must pass dual-pass Bored Scroller and Credit Card Nerd critique before downstream handoff",
     "long-form runtime must be at least 8 minutes 30 seconds before long-form handoff",
-    "no long-form explanation or narrative setting may exceed 60 seconds without a structural pivot"
+    "no long-form explanation or narrative setting may exceed 60 seconds without a structural pivot",
+    "long-form episodes must target >=510 seconds and pivot setting/subplot/analogy at least every 60 seconds"
   ]
 }
