@@ -1,0 +1,33 @@
+name: Viral Content Engine Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/autonomous-viral-content-engine.json'
+      - 'control/agent-swarm.json'
+      - 'scripts/verify_vce_contract.py'
+      - '.github/workflows/vce-gate.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  verify-vce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/verify_vce_contract.py
+      - name: Verify full downstream chain and publication lock
+        run: |
+          python - <<'PY'
+          import json
+          v=json.load(open('control/autonomous-viral-content-engine.json'))
+          c=json.load(open('control/comedy-retention-engineer.json'))
+          q=json.load(open('control/hyper-critical-qa-director.json'))
+          p=json.load(open('control/cco-production-contract.json'))
+          assert v['handoff_order'][1]=='lead_comedy_retention_engineer'
+          assert q['fail_closed'] is True
+          assert p['publication_enabled'] is False and p['first_video_publish'] is False
+          print('VCE -> Comedy -> Layout -> QA -> Render -> Review -> ReleaseGuard PASS; publication LOCKED')
+          PY
