@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "name": "Lead Comedy Writer + Retention Engineer",
+  "publication_enabled": false,
+  "targets": {
+    "shorts_retention_gt": 0.85,
+    "long_form_retention_gt": 0.5
+  },
+  "required_devices": [
+    "visual_irony",
+    "relatable_victim",
+    "micro_expressions_and_timing",
+    "absurdist_analogies"
+  ],
+  "retention": {
+    "max_single_visual_sec": 2,
+    "pattern_interrupt_required_every_sec": 2,
+    "comment_bait_required": true,
+    "chapter_cliffhanger_required": true,
+    "no_intro": true,
+    "start_mid_action_or_crisis": true
+  },
+  "factuality": {
+    "exact_card_perks_fees_rules_required": true,
+    "current_primary_source_required_for_time_sensitive_claims": true,
+    "unsupported_claims_rejected": true
+  },
+  "audio": {
+    "sfx_separate_from_voiceover": true,
+    "sfx_as_punchline": true,
+    "narration_must_not_read_sfx": true
+  },
+  "required_output": [
+    "hook_analysis",
+    "engagement_strategy",
+    "timeline"
+  ],
+  "timeline_fields": [
+    "timestamp",
+    "pacing",
+    "voiceover_dialogue",
+    "comedic_beat",
+    "audio_sfx_cue",
+    "visual_layout_layers"
+  ],
+  "handoff": [
+    "visual_layout_director",
+    "hyper_critical_qa_director"
+  ]
+}
