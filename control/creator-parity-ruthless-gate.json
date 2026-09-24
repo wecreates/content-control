@@ -217,6 +217,9 @@
     "human_first_watch_required": true,
     "publication_separate": true,
     "minimum_competitor_full_av_videos": 7,
-    "minimum_competitor_creators": 5
+    "minimum_competitor_creators": 5,
+    "minimum_instagram_reel_full_av_reviews": 7,
+    "instagram_reel_benchmark_required": true,
+    "metadata_only_instagram_review_forbidden": true
   }
 }
