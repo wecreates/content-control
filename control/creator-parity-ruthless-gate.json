@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "name": "Episode 1 ruthless creator-parity gate",
+  "publication_enabled": false,
+  "philosophy": [
+    "technical correctness is necessary but never sufficient",
+    "every dimension is compared against observed competitor mechanics, not generic best practices",
+    "no aggregate score can hide a catastrophic weakness",
+    "human first-watch can veto any automated pass",
+    "success is not guaranteed; the gate only removes known flop risks and raises creative quality"
+  ],
+  "dimensions": [
+    {
+      "id": "first_3_seconds",
+      "weight": 10,
+      "hard_fail": true,
+      "check": "immediate visual conflict, surprise, motion, or curiosity before explanation"
+    },
+    {
+      "id": "first_15_seconds",
+      "weight": 10,
+      "hard_fail": true,
+      "check": "clear premise, stakes, entertainment promise, and momentum"
+    },
+    {
+      "id": "visual_change_frequency",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "meaningful visual evolution at competitive cadence; no decorative motion-only cheating"
+    },
+    {
+      "id": "continuous_motion",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "world/characters/objects move causally; no slideshow grammar"
+    },
+    {
+      "id": "character_acting",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "Alex reacts, initiates, fails, recovers, and physically interacts with concepts"
+    },
+    {
+      "id": "physical_cause_effect",
+      "weight": 7,
+      "hard_fail": true,
+      "check": "finance concepts visibly cause consequences instead of being narrated over icons"
+    },
+    {
+      "id": "story_escalation",
+      "weight": 7,
+      "hard_fail": true,
+      "check": "each beat raises tension, absurdity, stakes, or consequence"
+    },
+    {
+      "id": "retention_resets",
+      "weight": 7,
+      "hard_fail": true,
+      "check": "frequent genuine resets: reveal, reversal, new problem, visual gag, question, payoff"
+    },
+    {
+      "id": "humor_density",
+      "weight": 6,
+      "hard_fail": false,
+      "check": "jokes/punchlines/callbacks arrive often enough for entertainment-first identity"
+    },
+    {
+      "id": "visual_humor",
+      "weight": 6,
+      "hard_fail": true,
+      "check": "some jokes only work visually; narration is not doing all comedy"
+    },
+    {
+      "id": "narration_cadence",
+      "weight": 5,
+      "hard_fail": false,
+      "check": "human rhythm, phrase-length variety, pauses used intentionally, no monotonous lecture tone"
+    },
+    {
+      "id": "sound_design",
+      "weight": 6,
+      "hard_fail": true,
+      "check": "SFX/music/silence punctuate contact, reveals, reversals, tension, and jokes"
+    },
+    {
+      "id": "camera_edit_strategy",
+      "weight": 5,
+      "hard_fail": false,
+      "check": "cuts, pans, zooms, reframes, and transitions are motivated and varied"
+    },
+    {
+      "id": "kinetic_type",
+      "weight": 3,
+      "hard_fail": false,
+      "check": "text amplifies impact or clarity and never becomes presentation slides"
+    },
+    {
+      "id": "reading_load",
+      "weight": 4,
+      "hard_fail": true,
+      "check": "screen text is instantly readable and not duplicating narration in paragraphs"
+    },
+    {
+      "id": "chapter_transitions",
+      "weight": 5,
+      "hard_fail": true,
+      "check": "new chapters change action/location/problem/energy rather than title-card resets"
+    },
+    {
+      "id": "callbacks",
+      "weight": 4,
+      "hard_fail": false,
+      "check": "recurring objects/jokes create memory and cohesion"
+    },
+    {
+      "id": "ending_payoff",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "ending rewards full watch with callback, escalation payoff, or memorable final joke"
+    },
+    {
+      "id": "next_episode_bridge",
+      "weight": 2,
+      "hard_fail": false,
+      "check": "teaser creates curiosity without weakening current payoff"
+    },
+    {
+      "id": "originality",
+      "weight": 10,
+      "hard_fail": true,
+      "check": "borrows mechanics only; does not clone protected characters, jokes, dialogue, sequences, or brand assets"
+    },
+    {
+      "id": "finance_clarity",
+      "weight": 6,
+      "hard_fail": true,
+      "check": "financial mechanism is understandable without lecture pacing"
+    },
+    {
+      "id": "factual_safety",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "claims and caveats remain accurate and not misleading"
+    },
+    {
+      "id": "audience_accessibility",
+      "weight": 5,
+      "hard_fail": true,
+      "check": "average viewer can follow without prior finance knowledge"
+    },
+    {
+      "id": "emotional_variation",
+      "weight": 4,
+      "hard_fail": false,
+      "check": "surprise, tension, relief, embarrassment, victory, fear, absurdity rotate"
+    },
+    {
+      "id": "rewatch_share_moments",
+      "weight": 4,
+      "hard_fail": false,
+      "check": "contains memorable visual moments worth quoting, clipping, or sharing"
+    },
+    {
+      "id": "dead_air",
+      "weight": 7,
+      "hard_fail": true,
+      "check": "no unintentional low-energy stretches or passive explanatory holds"
+    },
+    {
+      "id": "ai_slop_risk",
+      "weight": 8,
+      "hard_fail": true,
+      "check": "no generic card grids, template transitions, over-clean iconography, repetitive poses, synthetic filler phrasing"
+    }
+  ],
+  "automatic_rejects": [
+    "any slideshow or card-deck sequence is the dominant grammar",
+    "three or more consecutive explanatory beats where narration advances but character/world does not",
+    "opening begins with context-setting before entertainment",
+    "static text or diagram holds longer than benchmark tolerance without intentional joke/tension",
+    "music/SFX function as wallpaper instead of timed storytelling",
+    "ending simply summarizes the lesson",
+    "visuals repeat narration rather than add meaning",
+    "chapter changes are only headings or color swaps",
+    "character poses repeat enough to feel templated",
+    "disclaimers repeatedly interrupt momentum instead of being visually integrated"
+  ],
+  "success_amplifiers": [
+    "cold-open consequence before premise",
+    "curiosity gap closed with satisfying payoff",
+    "physical metaphors for abstract finance mechanics",
+    "visual jokes that reward watching with sound off",
+    "recurring prop callbacks",
+    "micro-reactions during explanation",
+    "location and energy changes between chapters",
+    "unexpected but motivated transitions",
+    "short setup-to-payoff joke loops",
+    "strategic silence before punchlines",
+    "sound effects locked to visible contact",
+    "music energy changes at story turns",
+    "numbers transform physically rather than sit in tables",
+    "stakes become personal to Alex, not only mathematical",
+    "false victories followed by reversals",
+    "clear visual before/after states",
+    "chapter-end mini-payoffs",
+    "strong final callback",
+    "next-episode teaser after, not instead of, payoff"
+  ],
+  "pass_contract": {
+    "competitor_benchmark_required": true,
+    "full_candidate_av_review_required": true,
+    "every_hard_fail_dimension_must_pass": true,
+    "maximum_major_faults": 0,
+    "maximum_unresolved_medium_faults": 2,
+    "slideshow_detected_must_be": false,
+    "lecture_detected_must_be": false,
+    "human_first_watch_required": true,
+    "publication_separate": true
+  }
+}
