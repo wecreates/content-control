@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "name": "Cinematic Brand + Thumbnail Promise Contract",
+  "publication_enabled": false,
+  "thumbnail_parity": {
+    "required": true,
+    "rule": "video opening must visually fulfill the spectacle, brand conflict, energy, and polish promised by its thumbnail",
+    "reject_codes": [
+      "thumbnail_clickbait_gap",
+      "opening_spectacle_gap",
+      "brand_asset_mismatch"
+    ]
+  },
+  "logo_head_protocol": {
+    "generic_circle_heads_for_brand_fighters": false,
+    "head_plane": "approved corporate logo asset or simplified geometric brand mark",
+    "pin_to_neck_joint": true,
+    "preserve_aspect_ratio": true,
+    "transformations": [
+      "rotation",
+      "uniform squash/stretch <=8%",
+      "glow/aura modulation"
+    ],
+    "no_logo_text_distortion": true
+  },
+  "cinematic_scene_requirements": {
+    "camera_matrix_required": true,
+    "camera_fields": [
+      "shot_scale",
+      "move",
+      "speed",
+      "impact_shake_intensity",
+      "parallax_planes"
+    ],
+    "lighting_vectors_required": true,
+    "lighting_fields": [
+      "key_source",
+      "angle_deg",
+      "edge_light",
+      "ambient_fill",
+      "impact_flash"
+    ],
+    "audio_tracks_required": [
+      "narration",
+      "environment_bed",
+      "foley_sfx",
+      "music"
+    ],
+    "foley_sync_required": true
+  },
+  "layout": {
+    "anti_overlap": true,
+    "intentional_combat_contact_requires_flag": true,
+    "typography_must_remain_outside_combat_bounds": true
+  },
+  "handoff": [
+    "brand_asset_coordinator",
+    "cinematic_director_lighting_engineer",
+    "visual_layout_director",
+    "hyper_critical_qa_director",
+    "render_farm",
+    "review_farm",
+    "release_guard"
+  ]
+}
