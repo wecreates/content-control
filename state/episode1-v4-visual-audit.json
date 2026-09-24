@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "candidate": "EPISODE1_V4",
+  "verdict": "REJECT",
+  "publication_enabled": false,
+  "primary_reference": "https://www.instagram.com/reel/DYcfrMyyOHd/",
+  "review_method": [
+    "candidate full render sampled across timeline",
+    "reference real frames sampled across timeline via Transcriptor",
+    "audio/transcript reviewed separately",
+    "side-by-side visual-language comparison"
+  ],
+  "major_faults": [
+    {
+      "dimension": "character_scale",
+      "finding": "Characters are too small in most compositions; they read as diagram labels rather than performers.",
+      "repair": "Use close/medium shots; characters should often occupy 25-60% of frame height."
+    },
+    {
+      "dimension": "composition",
+      "finding": "Repeated centered boxes/panels create slide-deck/dashboard grammar.",
+      "repair": "Remove boxed UI as scene structure; build spatial scenes/environments."
+    },
+    {
+      "dimension": "acting",
+      "finding": "Stick figures have minimal pose/emotion changes and rarely drive the scene.",
+      "repair": "Every spoken beat needs visible intention, reaction, contact, failure, recovery, or movement."
+    },
+    {
+      "dimension": "backgrounds",
+      "finding": "Backgrounds are mostly empty dark fields with lines; little environmental storytelling.",
+      "repair": "Use scene-specific locations, depth layers, furniture/props, foreground occlusion, and contextual details."
+    },
+    {
+      "dimension": "camera_language",
+      "finding": "Framing is mostly static wide shots.",
+      "repair": "Use closeups, inserts, over-shoulders, push-ins, snap reframes, motivated cuts, and perspective changes."
+    },
+    {
+      "dimension": "text_dependence",
+      "finding": "Large headings/captions carry too much meaning and make scenes feel like presentation graphics.",
+      "repair": "Text becomes impact-only; visuals must communicate before text appears."
+    },
+    {
+      "dimension": "motion_quality",
+      "finding": "Objects change position, but motion rarely creates believable physical action.",
+      "repair": "Animate anticipation, acceleration, collision, recoil, secondary motion, recovery, and character reaction."
+    },
+    {
+      "dimension": "story_density",
+      "finding": "Long stretches repeat one visual setup while narration continues.",
+      "repair": "New staging/problem/reversal every few seconds, not just new labels."
+    },
+    {
+      "dimension": "creator_parity",
+      "finding": "Overall frame language is far from supplied viral references and top YouTube animation channels.",
+      "repair": "Require direct frame-by-frame parity review before full render."
+    },
+    {
+      "dimension": "audio_pipeline",
+      "finding": "Narration source contains non-dialogue production cues/SFX language.",
+      "repair": "Generate narration from dialogue-only script; keep SFX/music in separate tracks that never enter TTS."
+    }
+  ],
+  "hard_failures": [
+    "presentation_ui_dominates",
+    "characters_too_small",
+    "insufficient_acting",
+    "insufficient_camera_variety",
+    "text_carries_scene",
+    "audio_track_contamination"
+  ],
+  "next_gate": {
+    "name": "V5 opening proof",
+    "duration_sec": "30-45",
+    "must_pass_before_full_render": true,
+    "requirements": [
+      "clean narrator-only audio",
+      "separate SFX/music tracks",
+      "no boxed explainer layout",
+      "large acting characters",
+      "scene-specific environments",
+      "meaningful camera changes",
+      "visual cause-and-effect",
+      "reference comparison contact sheet",
+      "explicit PASS on every hard-fail dimension"
+    ]
+  }
+}
