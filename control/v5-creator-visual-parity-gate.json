@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "name": "V5 creator visual parity gate",
+  "publication_enabled": false,
+  "proof_first": true,
+  "proof_duration_sec_max": 45,
+  "required": [
+    "at least 6 distinct shot compositions in first 30 seconds",
+    "at least 3 shot scales: close, medium, wide",
+    "primary character occupies at least 20% frame height in reaction shots",
+    "at least 4 visible physical interactions with cause-and-effect",
+    "at least 3 facial/reaction state changes",
+    "at least 2 distinct environment/background arrangements",
+    "no full-frame title-card lecture sections",
+    "no generic dashboard/card-grid composition",
+    "no spoken production directions or SFX labels",
+    "voice, SFX and music are separate media tracks",
+    "reference comparison must be performed on rendered proof frames"
+  ],
+  "fail_closed": true,
+  "full_episode_allowed_only_after": "rendered proof passes visual parity review"
+}
