@@ -18,7 +18,7 @@ app.post("/render",(req,res)=>{
   const composition = req.body?.composition || "Episode1V5Proof";
   const jobId = safeId(req.body?.jobId || `render-${Date.now()}`);
   const output = path.join(OUT, `${jobId}.mp4`);
-  const args = ["remotion","render","remotion/index.jsx",composition,output,"--codec","h264","--crf","20","--concurrency","2"];
+  const args = ["remotion","render","remotion/index.jsx",composition,output,"--codec","h264","--crf","20","--concurrency","1"];
   const child = spawn("npx", args, {stdio:["ignore","pipe","pipe"], env:process.env});
   const job = {id:jobId,status:"rendering",output,composition,startedAt:new Date().toISOString(),logs:[]};
   jobs.set(jobId,job);
