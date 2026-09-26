@@ -1,0 +1,12 @@
+import express from "express";
+import {spawn} from "child_process";
+import fs from "fs";
+const app=express(),port=process.env.PORT||10000,dir="/tmp/review-v7",file=dir+"/proof.mp4";
+fs.mkdirSync(dir,{recursive:true});
+let status="rendering";
+const p=spawn("npx",["remotion","render","remotion/v7-index.jsx","Episode1V7VerticalProof",file,"--codec","h264","--crf","28","--concurrency","1","--video-bitrate","1M"],{env:process.env});
+p.on("close",code=>status=code===0&&fs.existsSync(file)?"ready":"failed");
+app.get("/health",(q,s)=>s.json({ok:true,status,publication:false,mediaReady:fs.existsSync(file)}));
+app.get("/watch",(q,s)=>s.send(status==="ready"?'<meta name="viewport" content="width=device-width"><style>body{margin:0;background:#111}video{width:100%;max-height:100vh}</style><video controls playsinline autoplay src="/proof.mp4"></video>':'<p>Rendering V7 proof...</p><script>setTimeout(()=>location.reload(),8000)</script>'));
+app.use(express.static(dir));
+app.listen(port);
