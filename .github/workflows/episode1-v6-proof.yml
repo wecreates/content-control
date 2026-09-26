@@ -1,0 +1,56 @@
+name: Episode 1 V6 Vertical Proof
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/Episode1V6VerticalProof.jsx'
+      - 'remotion/index.jsx'
+      - '.github/workflows/episode1-v6-proof.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install
+      - name: Render V6 vertical proof
+        run: |
+          mkdir -p review-output
+          npx remotion render remotion/index.jsx Episode1V6VerticalProof review-output/EPISODE1_V6_VERTICAL_PROOF.mp4 --codec h264 --crf 22 --concurrency 2
+      - name: Verify exact media and sample frames
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4 > /tmp/streams
+          grep -q video /tmp/streams
+          grep -q audio /tmp/streams
+          W=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
+          H=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
+          D=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
+          test "$W" = "540"
+          test "$H" = "960"
+          python - "$D" <<'PY'
+import sys
+d=float(sys.argv[1]); assert 29.5 <= d <= 30.5, d
+PY
+          mkdir -p review-output/stills
+          for s in 1 5 8 13 18 24 29; do
+            ffmpeg -loglevel error -y -ss "$s" -i review-output/EPISODE1_V6_VERTICAL_PROOF.mp4 -frames:v 1 "review-output/stills/$s.jpg"
+          done
+          ffmpeg -v error -i review-output/EPISODE1_V6_VERTICAL_PROOF.mp4 -af volumedetect -f null - 2> review-output/audio-levels.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-v6-vertical-proof
+          path: |
+            review-output/EPISODE1_V6_VERTICAL_PROOF.mp4
+            review-output/stills/*.jpg
+            review-output/audio-levels.txt
+          retention-days: 30
