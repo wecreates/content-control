@@ -1,9 +1,9 @@
 {
   "benchmark": "control/viral-instagram-style-benchmark-v2.json",
-  "candidate_sha256": "688d834316a3d3ace535feb990c0b0af22c15327190327e510091e1ae570ee8d",
+  "candidate_sha256": "13f59db3e2ed8b9cdf0ed798a4e214c745fcef15b6afcffdd094897a5172e539",
   "chris_first_watch_complete": false,
   "duration_seconds": 316.202667,
-  "file_size_bytes": 38620150,
+  "file_size_bytes": 38617900,
   "format": "multi-engine-continuous-animation",
   "lecture_detected": false,
   "publication_enabled": false,
