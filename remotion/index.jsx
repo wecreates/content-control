@@ -3,7 +3,7 @@ import {Composition, registerRoot} from "remotion";
 import {Episode1Motion} from "./Episode1Motion";
 import {Episode1V4} from "./Episode1V4";
 import {Episode1V5Proof} from "./Episode1V5Proof";
-import {Episode1V6VerticalProof} from "./Episode1V6VerticalProof";
+import {Episode1V7FinalProof} from "./Episode1V7FinalProof";
 
 const Root = () => (
   <>
@@ -27,7 +27,7 @@ const Root = () => (
     />
     <Composition
       id="Episode1V6VerticalProof"
-      component={Episode1V6VerticalProof}
+      component={Episode1V7FinalProof}
       durationInFrames={720}
       fps={24}
       width={720}
@@ -35,7 +35,7 @@ const Root = () => (
     />
     <Composition
       id="Episode1V5Proof"
-      component={Episode1V6VerticalProof}
+      component={Episode1V7FinalProof}
       durationInFrames={720}
       fps={24}
       width={720}
