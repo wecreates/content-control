@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "finding": "V6 composition is 540x960 while scene SVGs use an unscaled 720x1280 intrinsic canvas; use a 720x1280 viewBox fitted to 100% width/height before acceptance rendering."
+}
