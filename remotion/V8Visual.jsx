@@ -22,7 +22,7 @@ const Stick=({x,y,s=1,face="flat",armL=-60,armR=60,leg=0,label="",lean=0})=>{
   </g>;
 };
 
-const Card=({x,y,rot=0,scale=1,label="$695 / YEAR"})=><g transform={`translate(${x} ${y}) rotate(${rot}) scale(${scale})`}>
+const Card=({x,y,rot=0,scale=1,label="EXAMPLE $695"})=><g transform={`translate(${x} ${y}) rotate(${rot}) scale(${scale})`}>
   <rect x="-112" y="-68" width="224" height="136" rx="18" fill={W} stroke={K} strokeWidth="7"/>
   <rect x="-86" y="-38" width="42" height="28" rx="5" fill={P} stroke={K} strokeWidth="5"/>
   <Text x={0} y={35} size={25}>{label}</Text>
@@ -44,7 +44,7 @@ const Scene0=({p})=><>
   <g transform={`translate(${I(ease(p),0,1,80,0)} 0)`}>
     <rect x="95" y="410" width="180" height="200" rx="12" fill={W} stroke={K} strokeWidth="7"/>
     <path d="M95 440 L185 515 L275 440" fill="none" stroke={K} strokeWidth="7"/>
-    <Text x={185} y={575} size={28} color={R}>$695</Text>
+    <Text x={185} y={555} size={18}>EXAMPLE</Text><Text x={185} y={590} size={28} color={R}>$695</Text>
   </g>
   <Stick x={500} y={720} s={1.25} face={p>.35?"wow":"flat"} armL={-55} armR={I(p,0,1,45,100)} label="DAVE"/>
   <path d="M90 1010 H630" stroke={K} strokeWidth="7"/>
