@@ -12,8 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
-      - run: npm ci
+      - run: npm install
       - name: Render corrected proof
         run: npx remotion render remotion/v9-index.jsx Episode1V9VerticalProof review-output/episode1-v10-clean.mp4 --codec h264 --crf 24 --concurrency 2 --scale 0.75
       - name: Verify MP4
