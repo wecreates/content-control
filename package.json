@@ -13,5 +13,6 @@
     "playwright": "1.55.0",
     "ffprobe-static": "3.1.0",
     "express": "4.21.2"
-  }
+  },
+  "type": "module"
 }
