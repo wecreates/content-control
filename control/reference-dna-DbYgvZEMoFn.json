@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "source": {
+    "platform": "instagram",
+    "reel_id": "DbYgvZEMoFn",
+    "url": "https://www.instagram.com/reel/DbYgvZEMoFn/?stkn=Mnc0Y2x2YmJrNnRn",
+    "sampled_seconds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "pixel_sample_width": 1080,
+    "pixel_ingestion_verified": true,
+    "transcript": "Do you miss someone? Yes. Why don't you talk to them? Money don't talk."
+  },
+  "transferable_animation_grammar": {
+    "canvas": "native 9:16 portrait",
+    "background": "white/high-key",
+    "character_style": "minimal black-line stick figures",
+    "scene_density": "sparse props with generous negative space",
+    "staging": "one dominant action/reaction focus per beat",
+    "dialogue_pattern": "setup -> response -> sharper question -> punchline",
+    "pacing": "compact beat changes every few seconds",
+    "readability": "large high-contrast text kept outside character action zones",
+    "comedy": "literal visual reaction supports concise verbal punchline",
+    "motion": "pose/reaction changes carry meaning; avoid lecture-slide pacing"
+  },
+  "adaptation_rules": {
+    "copy_pixels_or_jokes": false,
+    "preserve_only": "timing, framing grammar, line-art simplicity, beat density, reaction cadence",
+    "content_domain": "credit cards and personal finance",
+    "characters": [
+      "Dave",
+      "Chad",
+      "Points Monk"
+    ],
+    "publication_enabled": false
+  }
+}
