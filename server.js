@@ -23,7 +23,8 @@ app.post("/render",(req,res)=>{
   const args = ["remotion","render","remotion/index.jsx",composition,output,"--codec","h264","--crf","20","--concurrency","1"];
   const child = spawn("npx", args, {stdio:["ignore","pipe","pipe"], env:process.env});
   const job = {id:jobId,status:"rendering",output,composition,startedAt:new Date().toISOString(),logs:[]};
-  jobs.set(jobId,job);\n  activeJobId = jobId;
+  jobs.set(jobId,job);
+  activeJobId = jobId;
   const push=(buf)=>{const s=buf.toString(); job.logs.push(s); if(job.logs.length>80) job.logs.shift();};
   child.stdout.on("data",push); child.stderr.on("data",push);
   child.on("close",(code)=>{
