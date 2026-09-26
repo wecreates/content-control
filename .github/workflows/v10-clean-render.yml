@@ -1,0 +1,29 @@
+name: V10 Clean Audio QA Render
+on:
+  push:
+    branches:
+      - fix-audio-mix-v10
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Render corrected proof
+        run: npx remotion render remotion/v9-index.jsx Episode1V9VerticalProof review-output/episode1-v10-clean.mp4 --codec h264 --crf 24 --concurrency 2 --scale 0.75
+      - name: Verify MP4
+        run: |
+          ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,height,r_frame_rate -of json review-output/episode1-v10-clean.mp4 | tee review-output/ffprobe.json
+          test -s review-output/episode1-v10-clean.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-v10-clean
+          path: |
+            review-output/episode1-v10-clean.mp4
+            review-output/ffprobe.json
+          retention-days: 7
