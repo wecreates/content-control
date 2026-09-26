@@ -4,6 +4,7 @@ import {Episode1Motion} from "./Episode1Motion";
 import {Episode1V4} from "./Episode1V4";
 import {Episode1V5Proof} from "./Episode1V5Proof";
 import {Episode1V6VerticalProof} from "./Episode1V6VerticalProof";
+import {Episode1V7VerticalProof} from "./Episode1V7VerticalProof";
 
 const Root = () => (
   <>
@@ -28,6 +29,14 @@ const Root = () => (
     <Composition
       id="Episode1V6VerticalProof"
       component={Episode1V6VerticalProof}
+      durationInFrames={720}
+      fps={24}
+      width={720}
+      height={1280}
+    />
+    <Composition
+      id="Episode1V7VerticalProof"
+      component={Episode1V7VerticalProof}
       durationInFrames={720}
       fps={24}
       width={720}
