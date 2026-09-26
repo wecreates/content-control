@@ -92,17 +92,17 @@ const Scene4=({t})=> {
 };
 
 export const Episode1V6VerticalProof=()=>{
-  const frame=useCurrentFrame(), t=frame/30;
+  const frame=useCurrentFrame(), t=frame/24;
   const s=t<6?1:t<12?2:t<20?3:4;
   const local=s===1?t:s===2?t-6:s===3?t-12:t-20;
   return <AbsoluteFill style={{backgroundColor:WHITE,overflow:"hidden"}}>
     <Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/2f8c3d65-763a-4b65-8f21-2d52c7bc92ed.mp3" volume={0.11}/>
-    <Sequence from={15}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/490e962a-a584-4652-9fe7-39b4c5df2028.mp3" volume={1}/></Sequence>
-    <Sequence from={190}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/d0ffce1f-92ee-4edf-b061-a11623b1dfb2.mp3" volume={1}/></Sequence>
-    <Sequence from={365}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/00bef0f9-0e36-4c48-9a09-d6c98c9fac47.mp3" volume={1}/></Sequence>
-    <Sequence from={4}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9690b9f5-bbd1-4728-b0e0-eea24b8ccceb.mp3" volume={0.72}/></Sequence>
-    <Sequence from={188}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9ed40957-df1a-4b57-a1fa-49905557cd0d.mp3" volume={0.58}/></Sequence>
-    <Sequence from={360}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9690b9f5-bbd1-4728-b0e0-eea24b8ccceb.mp3" volume={0.60}/></Sequence>
+    <Sequence from={12}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/490e962a-a584-4652-9fe7-39b4c5df2028.mp3" volume={1}/></Sequence>
+    <Sequence from={152}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/d0ffce1f-92ee-4edf-b061-a11623b1dfb2.mp3" volume={1}/></Sequence>
+    <Sequence from={292}><Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/00bef0f9-0e36-4c48-9a09-d6c98c9fac47.mp3" volume={1}/></Sequence>
+    <Sequence from={3}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9690b9f5-bbd1-4728-b0e0-eea24b8ccceb.mp3" volume={0.72}/></Sequence>
+    <Sequence from={150}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9ed40957-df1a-4b57-a1fa-49905557cd0d.mp3" volume={0.58}/></Sequence>
+    <Sequence from={288}><Audio src="https://cdn.creativeclaw.co/u/49971af6/audio/9690b9f5-bbd1-4728-b0e0-eea24b8ccceb.mp3" volume={0.60}/></Sequence>
     {s===1?<Scene1 t={local}/>:s===2?<Scene2 t={local}/>:s===3?<Scene3 t={local}/>:<Scene4 t={local}/>}
     <div style={{position:"absolute",left:24,top:20,fontFamily:"Arial",fontWeight:1000,fontSize:18,color:GRAY,letterSpacing:1}}>CONTENT CONTROL</div>
   </AbsoluteFill>;
