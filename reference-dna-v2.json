@@ -1,0 +1,59 @@
+{
+  "evidence": {
+    "exact_public_reel_covers": [
+      {
+        "id": "DcjbVcvzAXM",
+        "observed": "cream/sepia paper-like panel; two expressive hand-drawn line characters; backpacks and floor line establish setting; dialogue lives in a speech bubble; rounded vignette; generous negative space"
+      },
+      {
+        "id": "DdJDtLexlEI",
+        "observed": "environment is the visual metaphor: blue sky plus brown cliffs; character action carries story; sparse hand-lettered milestone labels are embedded into scenery; muted palette; rounded frame corners"
+      },
+      {
+        "id": "DYcfrMyyOHd",
+        "observed": "stark white background; black hand-drawn line characters; one dominant central money-pile prop; handwritten dialogue; many small reaction characters; high negative space"
+      }
+    ],
+    "timing": {
+      "DcjbVcvzAXM": [
+        2,
+        2,
+        4,
+        2
+      ],
+      "DYcfrMyyOHd": [
+        4.96,
+        3.2,
+        4.32,
+        4,
+        2.4,
+        3.2,
+        3.12,
+        3.28,
+        3.6
+      ]
+    }
+  },
+  "transferable_grammar": {
+    "aspect": "9:16",
+    "composition": "one visual premise per beat; environment/prop does explanatory work",
+    "character_style": "original simple line characters with bent joints, expressive faces, pose changes and prop contact",
+    "typography": "handwritten or speech-bubble copy integrated into scene; avoid corporate headline-card rhythm",
+    "pacing": "new meaningful pose, prop, camera move, gag or scene every 2-5 seconds",
+    "density": "large negative-space reserve; one dominant focal action and one support element",
+    "palette": "white/cream dominant with restrained muted accent colors",
+    "transitions": "action-led entrances, slides, falls, reveals and object transformations rather than slide-deck cuts",
+    "originality": "do not copy exact characters, backgrounds, poses or wording from references"
+  },
+  "finance_adaptation": {
+    "cast": [
+      "Dave",
+      "Chad",
+      "Points Monk"
+    ],
+    "premise": "annual-fee value math",
+    "example_math": "spend $80, receive $20 credit, net cash outlay $60",
+    "rule": "count only value you would buy anyway; compare that value with the fee actually paid",
+    "publication": false
+  }
+}
