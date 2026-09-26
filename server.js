@@ -8,7 +8,8 @@ app.use(express.json({limit:"1mb"}));
 const PORT = process.env.PORT || 10000;
 const OUT = path.resolve("review-output");
 fs.mkdirSync(OUT,{recursive:true});
-const jobs = new Map();\nlet activeJobId = null;
+const jobs = new Map();
+let activeJobId = null;
 
 function safeId(v="job"){ return String(v).replace(/[^a-zA-Z0-9_-]/g,"-").slice(0,80) || "job"; }
 
