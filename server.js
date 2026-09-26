@@ -8,11 +8,11 @@ app.use(express.json({limit:"1mb"}));
 const PORT = process.env.PORT || 10000;
 const OUT = path.resolve("review-output");
 fs.mkdirSync(OUT,{recursive:true});
-const jobs = new Map();
+const jobs = new Map();\nlet activeJobId = null;
 
 function safeId(v="job"){ return String(v).replace(/[^a-zA-Z0-9_-]/g,"-").slice(0,80) || "job"; }
 
-app.get("/health",(req,res)=>res.json({ok:true,engine:"remotion",publication:false}));
+app.get("/health",(req,res)=>res.json({ok:true,engine:"remotion",publication:false,activeJobId,readyForRender:activeJobId===null}));
 
 app.post("/render",(req,res)=>{
   const composition = req.body?.composition || "Episode1V5Proof";
@@ -21,7 +21,7 @@ app.post("/render",(req,res)=>{
   const args = ["remotion","render","remotion/index.jsx",composition,output,"--codec","h264","--crf","20","--concurrency","1"];
   const child = spawn("npx", args, {stdio:["ignore","pipe","pipe"], env:process.env});
   const job = {id:jobId,status:"rendering",output,composition,startedAt:new Date().toISOString(),logs:[]};
-  jobs.set(jobId,job);
+  jobs.set(jobId,job);\n  activeJobId = jobId;
   const push=(buf)=>{const s=buf.toString(); job.logs.push(s); if(job.logs.length>80) job.logs.shift();};
   child.stdout.on("data",push); child.stderr.on("data",push);
   child.on("close",(code)=>{
