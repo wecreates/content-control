@@ -35,11 +35,11 @@ const Root = () => (
     />
     <Composition
       id="Episode1V5Proof"
-      component={Episode1V5Proof}
-      durationInFrames={900}
-      fps={30}
-      width={1280}
-      height={720}
+      component={Episode1V6VerticalProof}
+      durationInFrames={720}
+      fps={24}
+      width={540}
+      height={960}
     />
   </>
 );
