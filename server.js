@@ -16,6 +16,7 @@ function safeId(v="job"){ return String(v).replace(/[^a-zA-Z0-9_-]/g,"-").slice(
 app.get("/health",(req,res)=>res.json({ok:true,engine:"remotion",publication:false,activeJobId,readyForRender:activeJobId===null}));
 
 app.post("/render",(req,res)=>{
+  if(activeJobId) return res.status(409).json({error:"render already active",activeJobId,publication:false});
   const composition = req.body?.composition || "Episode1V5Proof";
   const jobId = safeId(req.body?.jobId || `render-${Date.now()}`);
   const output = path.join(OUT, `${jobId}.mp4`);
@@ -29,6 +30,7 @@ app.post("/render",(req,res)=>{
     job.status = code===0 && fs.existsSync(output) ? "ready" : "failed";
     job.exitCode = code;
     job.finishedAt = new Date().toISOString();
+    activeJobId = null;
     if(job.status==="ready") job.watchUrl = `${req.protocol}://${req.get("host")}/watch/${jobId}`;
   });
   res.status(202).json({jobId,status:"rendering",watchUrl:`${req.protocol}://${req.get("host")}/watch/${jobId}`,publication:false});
