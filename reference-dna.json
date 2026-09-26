@@ -1,0 +1,49 @@
+{
+  "references": [
+    {
+      "reel": "DcjbVcvzAXM",
+      "source": "Instagram public Reel",
+      "observed_dialogue_beats_seconds": [
+        2,
+        2,
+        4,
+        2
+      ],
+      "role": "comedic dialogue timing"
+    },
+    {
+      "reel": "DYcfrMyyOHd",
+      "source": "Instagram public Reel",
+      "observed_clause_beats_seconds": [
+        4.96,
+        3.2,
+        4.32,
+        4,
+        2.4,
+        3.2,
+        3.12,
+        3.28,
+        3.6
+      ],
+      "role": "stick-figure explainer timing"
+    }
+  ],
+  "transferable_grammar": {
+    "canvas": "9:16 portrait",
+    "background": "predominantly white",
+    "line_art": "black stick-figure line art",
+    "focal_density": "one primary action plus at most one supporting prop/text cluster",
+    "beat_cadence": "roughly 2-5 seconds per semantic/comedic beat",
+    "motion": "pose change or prop movement at each beat; avoid static lecture framing",
+    "accent_color": "limited high-contrast accent for the active concept"
+  },
+  "adaptation": {
+    "characters": [
+      "Dave",
+      "Chad",
+      "Points Monk"
+    ],
+    "finance_topic": "annual-fee value math",
+    "publication": false
+  }
+}
