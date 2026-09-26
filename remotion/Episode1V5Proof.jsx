@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, Audio, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig} from "remotion";
 
 const C={bg:"#0b1018",ink:"#f6f7fb",green:"#41ff66",red:"#ff4c5d",yellow:"#ffd84d",blue:"#58a6ff",muted:"#7e889b"};
 const clamp={extrapolateLeft:"clamp",extrapolateRight:"clamp"};
@@ -191,9 +191,6 @@ export const Episode1V5Proof=()=>{
   const {fps}=useVideoConfig();
   const t=frame/fps;
   return <AbsoluteFill style={{backgroundColor:C.bg,overflow:"hidden"}}>
-    <Audio src={staticFile("v5-proof-voice.mp3")} volume={1}/>
-    <Audio src={staticFile("v5-beat.wav")} volume={.16}/>
-    <Sequence from={69}><Audio src={staticFile("v5-slam.wav")} volume={.8}/></Sequence>\n    <Sequence from={450}><Audio src={staticFile("v5-chime.wav")} volume={.6}/></Sequence>\n    <Sequence from={630}><Audio src={staticFile("v5-hit.wav")} volume={.72}/></Sequence>\n    <Sequence from={810}><Audio src={staticFile("v5-sting.wav")} volume={.55}/></Sequence>
     {t>=0&&t<3&&<ShotPaid t={t} frame={frame} fps={fps}/>}
     {t>=3&&t<7&&<ShotBetrayal t={t}/>}
     {t>=7&&t<11&&<ShotReaction t={t}/>}
