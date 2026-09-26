@@ -28,10 +28,10 @@ const Root = () => (
     <Composition
       id="Episode1V6VerticalProof"
       component={Episode1V6VerticalProof}
-      durationInFrames={900}
-      fps={30}
-      width={720}
-      height={1280}
+      durationInFrames={720}
+      fps={24}
+      width={540}
+      height={960}
     />
     <Composition
       id="Episode1V5Proof"
