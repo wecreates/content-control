@@ -30,16 +30,16 @@ const Root = () => (
       component={Episode1V6VerticalProof}
       durationInFrames={720}
       fps={24}
-      width={540}
-      height={960}
+      width={720}
+      height={1280}
     />
     <Composition
       id="Episode1V5Proof"
       component={Episode1V6VerticalProof}
       durationInFrames={720}
       fps={24}
-      width={540}
-      height={960}
+      width={720}
+      height={1280}
     />
   </>
 );
