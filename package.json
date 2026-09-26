@@ -6,11 +6,11 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.366",
-    "remotion": "4.0.366",
+    "@remotion/cli": "4.0.463",
+    "remotion": "4.0.463",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "express": "4.21.2"
+    "express": "4.22.1"
   },
   "type": "module"
 }
