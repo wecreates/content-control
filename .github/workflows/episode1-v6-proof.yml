@@ -35,8 +35,8 @@ jobs:
           W=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
           H=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
           D=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 review-output/EPISODE1_V6_VERTICAL_PROOF.mp4)
-          test "$W" = "540"
-          test "$H" = "960"
+          test "$W" = "720"
+          test "$H" = "1280"
           python - "$D" <<'PY'
 import sys
 d=float(sys.argv[1]); assert 29.5 <= d <= 30.5, d
