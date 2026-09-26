@@ -11,13 +11,17 @@ const Text=({x=360,y=110,size=42,color=K,children,anchor="middle"})=>
 
 const Stick=({x,y,s=1,face="flat",armL=-60,armR=60,leg=0,label="",lean=0})=>{
   const mouth=face==="wow"?"M-10 -55 a10 12 0 1 0 20 0 a10 12 0 1 0 -20 0":face==="smile"?"M-16 -64 Q0 -48 16 -64":face==="mad"?"M-16 -54 Q0 -68 16 -54":"M-12 -57 L12 -57";
+  const lEl=[armL*.52,14+Math.abs(armL)*.10], rEl=[armR*.52,8+Math.abs(armR)*.08];
+  const lK=[-26-leg*.42,124], rK=[26+leg*.42,124];
   return <g transform={`translate(${x} ${y}) scale(${s}) rotate(${lean})`} stroke={K} strokeWidth="7" fill="none" strokeLinecap="round" strokeLinejoin="round">
     <circle cy="-82" r="34" fill={W}/>
     <circle cx="-11" cy="-91" r="4" fill={K} stroke="none"/><circle cx="11" cy="-91" r="4" fill={K} stroke="none"/>
     <path d={mouth}/>
     <line y1="-48" y2="82"/>
-    <line y1="-4" x2={armL} y2="34"/><line y1="-4" x2={armR} y2="18"/>
-    <line y1="82" x2={-50-leg} y2="168"/><line y1="82" x2={50+leg} y2="168"/>
+    <polyline points={`0,-4 ${lEl[0]},${lEl[1]} ${armL},34`}/><polyline points={`0,-4 ${rEl[0]},${rEl[1]} ${armR},18`}/>
+    <polyline points={`0,82 ${lK[0]},${lK[1]} ${-50-leg},168`}/><polyline points={`0,82 ${rK[0]},${rK[1]} ${50+leg},168`}/>
+    <circle cx={lEl[0]} cy={lEl[1]} r="4.5" fill={W}/><circle cx={rEl[0]} cy={rEl[1]} r="4.5" fill={W}/>
+    <circle cx={lK[0]} cy={lK[1]} r="4.5" fill={W}/><circle cx={rK[0]} cy={rK[1]} r="4.5" fill={W}/>
     {label&&<text y="-135" textAnchor="middle" fill={K} stroke="none" fontFamily="Arial" fontWeight="900" fontSize="20">{label}</text>}
   </g>;
 };
