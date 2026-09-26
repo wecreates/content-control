@@ -10,7 +10,7 @@ const OUT = path.resolve("review-output");
 fs.mkdirSync(OUT,{recursive:true});
 const jobs = new Map();
 let activeJobId = null;
-const LATEST_ID = "episode1-v7-latest";
+const LATEST_ID = "episode1-v8-latest";
 const LATEST_OUTPUT = path.join(OUT, `${LATEST_ID}.mp4`);
 
 function safeId(v="job"){ return String(v).replace(/[^a-zA-Z0-9_-]/g,"-").slice(0,80) || "job"; }
@@ -19,7 +19,7 @@ function runRender({composition,jobId,entrypoint="remotion/index.jsx"}){
   if(activeJobId) return {started:false,activeJobId};
   const id=safeId(jobId || `render-${Date.now()}`);
   const output=path.join(OUT,`${id}.mp4`);
-  const args=["remotion","render",entrypoint,composition,output,"--codec","h264","--crf","28","--concurrency","1"];
+  const args=["remotion","render",entrypoint,composition,output,"--codec","h264","--crf","28","--concurrency","1",...(composition==="Episode1V8VerticalProof"?["--scale","0.75"]:[])];
   const child=spawn("npx",args,{stdio:["ignore","pipe","pipe"],env:process.env});
   const job={id,status:"rendering",output,composition,entrypoint,startedAt:new Date().toISOString(),logs:[]};
   jobs.set(id,job);
@@ -45,7 +45,7 @@ app.post("/render",(req,res)=>{
   if(activeJobId) return res.status(409).json({error:"render already active",activeJobId,publication:false});
   const composition=req.body?.composition || "Episode1V5Proof";
   const jobId=safeId(req.body?.jobId || `render-${Date.now()}`);
-  const entrypoint=composition==="Episode1V7VerticalProof" ? "remotion/v7-index.jsx" : "remotion/index.jsx";
+  const entrypoint=composition==="Episode1V8VerticalProof" ? "remotion/v8-index.jsx" : "remotion/index.jsx";
   const started=runRender({composition,jobId,entrypoint});
   res.status(202).json({jobId,status:"rendering",watchUrl:`${req.protocol}://${req.get("host")}/watch/${jobId}`,publication:false});
 });
@@ -53,7 +53,7 @@ app.post("/render",(req,res)=>{
 app.get("/status/:id",(req,res)=>{
   const job=jobs.get(req.params.id);
   if(!job){
-    if(req.params.id===LATEST_ID && fs.existsSync(LATEST_OUTPUT)) return res.json({id:LATEST_ID,status:"ready",composition:"Episode1V7VerticalProof",watchUrl:"/watch/latest",publication:false,logs:[]});
+    if(req.params.id===LATEST_ID && fs.existsSync(LATEST_OUTPUT)) return res.json({id:LATEST_ID,status:"ready",composition:"Episode1V8VerticalProof",watchUrl:"/watch/latest",publication:false,logs:[]});
     return res.status(404).json({error:"unknown job"});
   }
   res.json({id:job.id,status:job.status,composition:job.composition,watchUrl:job.watchUrl||null,publication:false,logs:job.logs.slice(-12),startedAt:job.startedAt,finishedAt:job.finishedAt||null,exitCode:job.exitCode??null});
@@ -91,8 +91,8 @@ app.listen(PORT,()=>{
   console.log(`Content Control render worker listening on ${PORT}`);
   setTimeout(()=>{
     if(!fs.existsSync(LATEST_OUTPUT) && !activeJobId){
-      console.log("Starting self-healing V7 review render");
-      runRender({composition:"Episode1V7VerticalProof",jobId:LATEST_ID,entrypoint:"remotion/v7-index.jsx"});
+      console.log("Starting self-healing V8 review render");
+      runRender({composition:"Episode1V8VerticalProof",jobId:LATEST_ID,entrypoint:"remotion/v8-index.jsx"});
     }
   },1500);
 });
