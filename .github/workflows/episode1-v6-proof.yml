@@ -2,7 +2,7 @@ name: Episode 1 V6 Vertical Proof
 on:
   workflow_dispatch:
   push:
-    branches: [main, v7-clean-acceptance]
+    branches: ["**"]
     paths:
       - 'remotion/Episode1V6VerticalProof.jsx'
       - 'remotion/index.jsx'
