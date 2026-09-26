@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, Audio, Sequence, interpolate, spring, useCurrentFrame, useVideoConfig} from "remotion";
 
 const C={bg:"#0b1018",ink:"#f6f7fb",green:"#41ff66",red:"#ff4c5d",yellow:"#ffd84d",blue:"#58a6ff",muted:"#7e889b"};
 const clamp={extrapolateLeft:"clamp",extrapolateRight:"clamp"};
@@ -191,6 +191,11 @@ export const Episode1V5Proof=()=>{
   const {fps}=useVideoConfig();
   const t=frame/fps;
   return <AbsoluteFill style={{backgroundColor:C.bg,overflow:"hidden"}}>
+    <Audio src="https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/9cf2017d-9d00-4c6a-a1c3-07c249c152b8.mp3" volume={1} />
+    <Sequence from={69}><Audio src="https://floot.com/_cdn/static/b387ced1-d6da-467f-b499-60ea198386f7-cc-slam.wav" volume={0.7}/></Sequence>
+    <Sequence from={450}><Audio src="https://floot.com/_cdn/static/7ac35d86-bf86-4e5e-8672-38fc24a5f878-cc-chime.wav" volume={0.5}/></Sequence>
+    <Sequence from={630}><Audio src="https://floot.com/_cdn/static/db1f13ac-1dd5-4ff5-b662-57e928cf2175-cc-hit.wav" volume={0.7}/></Sequence>
+    <Sequence from={810}><Audio src="https://floot.com/_cdn/static/ffbbd1e4-9ab6-4352-bcee-390be7f8726a-cc-sting.wav" volume={0.5}/></Sequence>
     {t>=0&&t<3&&<ShotPaid t={t} frame={frame} fps={fps}/>}
     {t>=3&&t<7&&<ShotBetrayal t={t}/>}
     {t>=7&&t<11&&<ShotReaction t={t}/>}
