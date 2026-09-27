@@ -1,10 +1,10 @@
 {
   "audio_source": "repository-local public/audio",
-  "candidate_sha256": "7870c3450fb7eb7e092e019a6c3001ae72485014ca427b3bbddc0ed181913179",
+  "candidate_sha256": "c29eed830428d044319145ab1ae43ef5155f779cd2b1746846a34e9f9325ae8e",
   "contact_sheet": "qa-output/free/contact.jpg",
   "credit_cost": 0,
   "deterministic": {
-    "candidate_sha256": "7870c3450fb7eb7e092e019a6c3001ae72485014ca427b3bbddc0ed181913179",
+    "candidate_sha256": "c29eed830428d044319145ab1ae43ef5155f779cd2b1746846a34e9f9325ae8e",
     "checks": {
       "duration_30s": true,
       "motion_activity": true,
@@ -13,9 +13,9 @@
       "reference_edge_density_ratio": true
     },
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5890464553222614,
+    "edge_density_ratio": 0.5891201669284372,
     "engine": "opencv-free-qa-v1",
-    "mean_candidate_edge_density": 0.011272352430555554,
+    "mean_candidate_edge_density": 0.01127376302083333,
     "mean_reference_edge_density": 0.019136610243055557,
     "motion_active_fraction": 1.0,
     "reference_frames": 10,
@@ -31,16 +31,16 @@
   "schema_version": 1,
   "semantic": {
     "best_reference_similarity_by_candidate": [
-      0.41620686650276184,
-      0.4577980637550354,
-      0.4016408920288086,
-      0.39787083864212036,
-      0.3814150094985962,
-      0.39773476123809814,
-      0.5085577368736267,
-      0.425534188747406,
-      0.401424765586853,
-      0.4226298928260803
+      0.41620704531669617,
+      0.4577986001968384,
+      0.40164071321487427,
+      0.39787065982818604,
+      0.3814103603363037,
+      0.39773470163345337,
+      0.5070976614952087,
+      0.4255340099334717,
+      0.4014248251914978,
+      0.42434990406036377
     ],
     "checks": {
       "florence_completed": true,
@@ -83,8 +83,8 @@
       "status": "PASS"
     },
     "florence_model": "florence-community/Florence-2-base",
-    "global_similarity": 0.3281596302986145,
-    "mean_best_frame_similarity": 0.4210813045501709,
+    "global_similarity": 0.32819828391075134,
+    "mean_best_frame_similarity": 0.42110687494277954,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "schema_version": 1,
     "verdict": "PASS"
