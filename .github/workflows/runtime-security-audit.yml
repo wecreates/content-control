@@ -1,0 +1,81 @@
+name: Runtime Dependency Security Audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements-free-qa.lock.txt'
+      - '.github/workflows/runtime-security-audit.yml'
+  schedule:
+    - cron: '29 11 * * 1'
+permissions:
+  contents: write
+concurrency:
+  group: runtime-security-audit
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit npm dependency graph
+        continue-on-error: true
+        run: |
+          npm ci --ignore-scripts
+          npm audit --json > /tmp/npm-audit.json || true
+      - name: Build normalized security report
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("/tmp/npm-audit.json")
+          raw=json.loads(p.read_text()) if p.exists() and p.stat().st_size else {}
+          meta=raw.get("metadata",{}).get("vulnerabilities",{})
+          vulns=[]
+          for name,v in raw.get("vulnerabilities",{}).items():
+              vulns.append({
+                  "name":name,
+                  "severity":v.get("severity"),
+                  "is_direct":v.get("isDirect"),
+                  "via":[x if isinstance(x,str) else {
+                      "source":x.get("source"),"name":x.get("name"),"severity":x.get("severity"),
+                      "title":x.get("title"),"range":x.get("range")
+                  } for x in v.get("via",[])],
+                  "range":v.get("range"),
+                  "fix_available":v.get("fixAvailable"),
+              })
+          report={
+              "schema_version":1,
+              "npm_counts":meta,
+              "vulnerabilities":vulns,
+              "critical_count":int(meta.get("critical",0)),
+              "high_count":int(meta.get("high",0)),
+              "publication_enabled":False,
+          }
+          pathlib.Path("state/runtime-security-audit.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          PY
+      - name: Persist audit evidence
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/runtime-security-audit.json
+          git diff --cached --quiet || git commit -m "Update runtime dependency security audit"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-security-audit
+          path: state/runtime-security-audit.json
+          retention-days: 30
