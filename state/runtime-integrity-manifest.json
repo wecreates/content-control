@@ -3,12 +3,12 @@
   "critical_file_count": 22,
   "entries": {
     "package-lock.json": {
-      "bytes": 168776,
-      "sha256": "334ce0f984e93798295c5be650ffa9e4e15cab1471f7362cce9aa66831a05b9a"
+      "bytes": 168244,
+      "sha256": "cfd062b5d4d8dadb0b845791b417f6acbbd2d965053d8ab5231e1b18358a369c"
     },
     "package.json": {
-      "bytes": 1006,
-      "sha256": "4485e7682ad3b3ed6cb152450944b2b40b4d0545348136b10d126dd4aa32a6e9"
+      "bytes": 1047,
+      "sha256": "712db2327e08f67f794c1a174e833e9f60207139ceef1402dd965c622421bd2f"
     },
     "public/audio/episode1-music.mp3": {
       "bytes": 940841,
