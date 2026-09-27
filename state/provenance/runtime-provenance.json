@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
+  "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "critical_file_count": 22,
   "critical_integrity_manifest_sha256": "41fcc631c5cbdb5b9103dd5793567a6895f33794f5ce78246abcb4cf38b65a3f",
   "locks": {
@@ -7,9 +7,9 @@
     "python_lock_sha256": "faa235983cddbd291f42667ed5ab7d17899b0f3d7a549837874f8c291d8f80c7"
   },
   "publication_enabled": false,
-  "qa_receipt_sha256": "55557898ea77ad73837b1e75797c2a874dafa460215babfa7c4437cb77ba3267",
-  "review_server_smoke_candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
-  "review_server_smoke_sha256": "129dc023996eeea8625f266be587f5ad26aab719758b92a06bbcf19191f15f27",
+  "qa_receipt_sha256": "1d38faf91213ae5de1b5cab1c11b569564ac88accb5dd212d975b20eef8264f8",
+  "review_server_smoke_candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "review_server_smoke_sha256": "1a999e31a5ea5f9c4f4f6ddc269b1d78a13ef725b07b91a8ee2e72efbd862aaf",
   "runtime": {
     "node": "22",
     "python": "3.12",
@@ -18,6 +18,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "ce57df46f0a6b39f752119018cfde90969053a0e",
+  "source_commit": "cc5a7a8ef1b36bfc2f2250a94fa0713017066834",
   "zero_credit_runtime": true
 }
