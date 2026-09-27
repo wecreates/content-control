@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "current_entry_present": true,
+    "current_git_blob_matches": true,
+    "current_matches_health": true,
+    "current_matches_media": true,
+    "entries_unique": true,
+    "ledger_exists": true,
+    "publication_disabled": true,
+    "rollback_entry_recoverable": true
+  },
+  "current_candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "entry_count": 1,
+  "failed_checks": [],
+  "publication_enabled": false,
+  "rollback_candidate_sha256": null,
+  "schema_version": 1,
+  "status": "PASS"
+}

@@ -1,0 +1,19 @@
+{
+  "current_candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "entries": [
+    {
+      "accepted": true,
+      "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+      "git_blob_sha1": "dbf4c1dbd0f01ab4126fc9600a5bbc1284f93bb7",
+      "health_sha256": "ed6503315018f0224add36d7aee2f7a43a1e3731815ff7e5acaaef755f29d0ad",
+      "media_path": "public-review/episode1-v10-free.mp4",
+      "publication_enabled": false,
+      "qa_receipt_sha256": "1d38faf91213ae5de1b5cab1c11b569564ac88accb5dd212d975b20eef8264f8",
+      "repository_commit": "a26f815f36d6941928903cebb2788748af3a0656"
+    }
+  ],
+  "max_entries": 20,
+  "publication_enabled": false,
+  "rollback_candidate_sha256": null,
+  "schema_version": 1
+}
