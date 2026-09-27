@@ -7,6 +7,7 @@ health=json.loads((ROOT/"state/content-control-health.json").read_text())
 receipt=json.loads((ROOT/"qa-output/free/final-receipt.json").read_text())
 owner=json.loads((ROOT/"control/publication-owner-gate.json").read_text())
 sep=json.loads((ROOT/"control/publication-separation.json").read_text())
+manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
 video=ROOT/"public-review/episode1-v10-free.mp4"
 source=(ROOT/"remotion/Episode1V10FinalProof.jsx").read_text()
 
@@ -36,6 +37,13 @@ checks["audio_assets_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_siz
     "public/audio/episode1-narration.mp3","public/audio/episode1-music.mp3",
     "public/audio/episode1-sfx-1.mp3","public/audio/episode1-sfx-2.mp3"])
 checks["reference_frames_present"]=len(list((ROOT/"reference/frames").glob("ref-*.jpg")))>=10
+manifest_failures=[]
+for rel,meta in manifest.get("entries",{}).items():
+    p=ROOT/rel
+    actual=sha256(p) if p.is_file() else None
+    if actual!=meta.get("sha256"):
+        manifest_failures.append({"path":rel,"expected":meta.get("sha256"),"actual":actual})
+checks["runtime_integrity_manifest"]=len(manifest_failures)==0 and manifest.get("critical_file_count")==len(manifest.get("entries",{}))
 history=ROOT/"qa-output/free/history"/(str(health.get("candidate_sha256"))+".json")
 checks["immutable_history_present"]=history.is_file()
 
@@ -47,6 +55,7 @@ report={
     "actual_video_sha256":actual_hash,
     "checks":checks,
     "failed_checks":[k for k,v in checks.items() if not v],
+    "integrity_failures":manifest_failures,
     "repair_action":"none" if status=="GREEN" else "dispatch_free_vision_qa",
     "publication_enabled":False,
 }
@@ -74,6 +83,7 @@ completion={
             checks["publication_owner_gate_off"],checks["publication_separation_off"]
         ]),
         "phone_review_artifact":checks["video_hash_bound"],
+        "runtime_integrity_manifest":checks["runtime_integrity_manifest"],
         "automatic_repair_watchdog":True,
         "bounded_failure_retry":True,
         "regression_lock":True
