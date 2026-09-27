@@ -1,4 +1,8 @@
 {
+  "name": "content-control",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
     "start": "node server-lowmem.js",
     "render:episode1": "remotion render remotion/v10-index.jsx Episode1V10FinalProof public-review/episode1-v10-free.mp4 --codec h264 --crf 25 --concurrency 2",
@@ -15,7 +19,6 @@
     "react-dom": "19.1.1",
     "remotion": "4.0.529"
   },
-  "type": "module",
   "overrides": {
     "qs": "6.16.0"
   }
