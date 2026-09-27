@@ -1,4 +1,5 @@
 name: Free Vision QA
+# Regression policy changes are acceptance-critical.
 on:
   workflow_dispatch:
   schedule:
@@ -10,6 +11,7 @@ on:
       - 'public/audio/**'
       - 'reference/frames/**'
       - 'scripts/free_*'
+      - 'scripts/enforce_free_qa_regression.py'
       - 'requirements-free-qa.txt'
       - 'requirements-free-qa.lock.txt'
       - 'package.json'
