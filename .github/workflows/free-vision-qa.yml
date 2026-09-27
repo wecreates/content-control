@@ -34,19 +34,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
           python -m pip install -r requirements-free-qa.txt
-          mkdir -p scripts
-          python - <<'PY'
-          import base64,json,urllib.request
-          blobs={
-            "scripts/free_vision_qa.py":"39b3f0f53807b68de945753d477eda3489d13a91",
-            "scripts/free_semantic_qa.py":"62310660604270da6e89a4549d9a60831f5cb360",
-          }
-          for path,sha in blobs.items():
-              with urllib.request.urlopen(f"https://api.github.com/repos/wecreates/content-control/git/blobs/{sha}") as r:
-                  data=json.load(r)
-              open(path,"wb").write(base64.b64decode(data["content"]))
-              print("materialized",path)
-          PY
+          test -s scripts/free_vision_qa.py
+          test -s scripts/free_semantic_qa.py
       - name: Cache free vision models
         uses: actions/cache@v4
         with:
@@ -103,7 +92,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f qa-output/free public-review/episode1-v10-free.mp4 scripts/free_vision_qa.py scripts/free_semantic_qa.py
+          git add -f qa-output/free public-review/episode1-v10-free.mp4
           git diff --cached --quiet || git commit -m "Persist zero credit V10 QA proof"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
