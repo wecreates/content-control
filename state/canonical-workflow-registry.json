@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "canonical_generation_workflow": ".github/workflows/free-vision-qa.yml",
+  "allowed_automatic": [
+    ".github/workflows/free-vision-qa.yml",
+    ".github/workflows/free-production-watchdog.yml",
+    ".github/workflows/free-qa-failure-router.yml",
+    ".github/workflows/runtime-integrity-manifest.yml",
+    ".github/workflows/generate-runtime-locks.yml",
+    ".github/workflows/autonomous-cco.yml"
+  ],
+  "manual_only": [
+    ".github/workflows/episode1-motion-v3.yml",
+    ".github/workflows/episode1-v4.yml",
+    ".github/workflows/instagram-reel-bridge.yml"
+  ],
+  "publication_enabled": false,
+  "policy": {
+    "manual_only_must_not_contain_push": true,
+    "manual_only_must_not_contain_schedule": true,
+    "manual_only_must_not_contain_workflow_run": true
+  }
+}
