@@ -26,7 +26,7 @@ m={
   "audio_sample_rate_hz": int(r["audio"]["sample_rate_hz"]),
   "audio_channels": int(r["audio"]["channels"]),
 }
-policy=prev.get("regression_policy",{
+policy_defaults={
   "max_relative_similarity_drop":0.15,
   "max_motion_drop":0.20,
   "min_duration_seconds":29.5,
@@ -36,7 +36,8 @@ policy=prev.get("regression_policy",{
   "max_audio_mean_delta_db":6.0,
   "max_audio_peak_delta_db":6.0,
   "max_long_silence_seconds":5.0,
-})
+}
+policy={**policy_defaults,**prev.get("regression_policy",{})}
 assert policy["min_duration_seconds"] <= m["duration_seconds"] <= policy["max_duration_seconds"]
 
 pm=prev.get("metrics",{})
