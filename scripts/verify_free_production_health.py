@@ -10,6 +10,7 @@ sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
 security=json.loads((ROOT/"state/runtime-security-audit.json").read_text())
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
+factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if (ROOT/"state/factual-compliance-health.json").exists() else {"status":"MISSING"}
 smoke=json.loads((ROOT/"state/review-server-smoke.json").read_text()) if (ROOT/"state/review-server-smoke.json").exists() else {"status":"MISSING"}
 provenance=json.loads((ROOT/"state/provenance/runtime-provenance.json").read_text()) if (ROOT/"state/provenance/runtime-provenance.json").exists() else {}
 sbom=json.loads((ROOT/"state/provenance/npm-sbom.cdx.json").read_text()) if (ROOT/"state/provenance/npm-sbom.cdx.json").exists() else {}
@@ -52,6 +53,7 @@ for rel,meta in manifest.get("entries",{}).items():
 checks["runtime_integrity_manifest"]=len(manifest_failures)==0 and manifest.get("critical_file_count")==len(manifest.get("entries",{}))
 checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,0))==0 for k in ["critical","high","moderate","low"])
 checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
+checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual.get("checks",{}).values())
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 checks["review_server_smoke_green"]=all([
     smoke.get("status")=="PASS",
@@ -117,6 +119,7 @@ completion={
         "runtime_integrity_manifest":checks["runtime_integrity_manifest"],
         "dependency_security_clean":checks["dependency_security_clean"],
         "workflow_control_quarantine":checks["workflow_control_green"],
+        "factual_compliance_gate":checks["factual_compliance_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
         "live_review_server_smoke":checks["review_server_smoke_green"],
         "hash_bound_provenance":checks["provenance_candidate_match"] and checks["provenance_inputs_current"],
