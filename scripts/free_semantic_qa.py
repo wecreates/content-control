@@ -40,10 +40,10 @@ def main():
 
     florence={"status":"PARTIAL","captions":{"reference":[],"candidate":[]},"error":None}
     try:
-        from transformers import AutoProcessor, AutoModelForMultimodalLM
+        from transformers import AutoProcessor, Florence2ForConditionalGeneration
         mid="florence-community/Florence-2-base"
         processor=AutoProcessor.from_pretrained(mid)
-        fm=AutoModelForMultimodalLM.from_pretrained(mid).to(device)
+        fm=Florence2ForConditionalGeneration.from_pretrained(mid).to(device)
         fm.eval()
         def caption(p):
             im=Image.open(p).convert("RGB")
