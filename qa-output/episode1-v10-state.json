@@ -1,0 +1,11 @@
+{
+  "audio_stream_present": true,
+  "candidate_sha256": "f127aef7f7bc679777dfd367914248f7c035e01334a8f7b0a0f0e29348651502",
+  "contact_sheet": "qa-output/episode1-v10-contact.jpg",
+  "duration_seconds": 30.058667,
+  "phone_watch_path": "public-review/episode1-v10.mp4",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "V10_EXACT_PIXEL_QA_READY",
+  "video_stream_present": true
+}
