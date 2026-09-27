@@ -1,0 +1,76 @@
+name: Free QA Failure Router
+on:
+  workflow_run:
+    workflows: ["Free Vision QA"]
+    types: [completed]
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: free-qa-failure-router-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  route:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Classify failed stage
+        run: |
+          set -euo pipefail
+          mkdir -p state
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs" > /tmp/jobs.json
+          python - <<'PY'
+          import json,os,pathlib
+          jobs=json.load(open("/tmp/jobs.json")).get("jobs",[])
+          failed=[]
+          for job in jobs:
+              for step in job.get("steps",[]):
+                  if step.get("conclusion")=="failure":
+                      failed.append({"job":job.get("name"),"step":step.get("name"),"number":step.get("number")})
+          attempt=int(os.environ.get("RUN_ATTEMPT","1"))
+          report={
+              "schema_version":1,
+              "status":"TRANSIENT_RETRY_PENDING" if attempt<2 else "PERSISTENT_FAILURE",
+              "workflow":"Free Vision QA",
+              "run_id":int(os.environ["RUN_ID"]),
+              "run_attempt":attempt,
+              "head_sha":os.environ.get("HEAD_SHA"),
+              "failed_stages":failed,
+              "retry_budget":1,
+              "will_retry":attempt<2,
+              "publication_enabled":False,
+          }
+          pathlib.Path("state/free-qa-last-failure.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(report,sort_keys=True))
+          PY
+      - name: Persist failure evidence
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/free-qa-last-failure.json
+          git diff --cached --quiet || git commit -m "Record free QA failure routing evidence"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Retry failed jobs once
+        if: ${{ github.event.workflow_run.run_attempt < 2 }}
+        run: |
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/rerun-failed-jobs"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-qa-failure-route
+          path: state/free-qa-last-failure.json
+          retention-days: 30
