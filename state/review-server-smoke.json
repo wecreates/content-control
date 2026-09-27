@@ -1,0 +1,8 @@
+{
+  "accepted_route_verified": true,
+  "candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
+  "fail_closed_corruption_verified": true,
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
