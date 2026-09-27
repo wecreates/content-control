@@ -1,0 +1,65 @@
+name: Free Production Watchdog
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'state/content-control-health.json'
+      - 'qa-output/free/final-receipt.json'
+      - 'qa-output/free/history/**'
+      - 'public-review/episode1-v10-free.mp4'
+      - 'public/audio/**'
+      - 'reference/frames/**'
+      - 'remotion/Episode1V10FinalProof.jsx'
+      - 'control/publication-owner-gate.json'
+      - 'control/publication-separation.json'
+      - 'scripts/verify_free_production_health.py'
+      - '.github/workflows/free-production-watchdog.yml'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: free-production-watchdog
+  cancel-in-progress: true
+jobs:
+  verify-and-repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Verify accepted production state
+        id: verify
+        continue-on-error: true
+        run: python scripts/verify_free_production_health.py
+      - name: Persist watchdog evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/free-production-watchdog.json
+          git diff --cached --quiet || git commit -m "Update free production watchdog evidence"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Trigger zero-credit repair pipeline
+        if: steps.verify.outcome == 'failure'
+        run: |
+          gh workflow run free-vision-qa.yml --ref main
+      - name: Fail watchdog when repair is required
+        if: steps.verify.outcome == 'failure'
+        run: exit 2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: free-production-watchdog
+          path: state/free-production-watchdog.json
+          retention-days: 30
