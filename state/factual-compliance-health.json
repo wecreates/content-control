@@ -1,0 +1,28 @@
+{
+  "arithmetic": [
+    {
+      "computed": 60,
+      "expected": 60,
+      "expression": "80-20",
+      "pass": true
+    }
+  ],
+  "candidate_contract": "state/episode1-factual-contract.json",
+  "checks": {
+    "arithmetic_correct": true,
+    "decision_rule_present": true,
+    "educational_example": true,
+    "narration_exists": true,
+    "narration_hash_bound": true,
+    "net_spend_claim_matches": true,
+    "no_named_product_claims": true,
+    "no_risky_language": true,
+    "publication_disabled": true,
+    "required_visual_math_present": true
+  },
+  "failed_checks": [],
+  "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
