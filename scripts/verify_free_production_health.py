@@ -8,6 +8,8 @@ receipt=json.loads((ROOT/"qa-output/free/final-receipt.json").read_text())
 owner=json.loads((ROOT/"control/publication-owner-gate.json").read_text())
 sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
+security=json.loads((ROOT/"state/runtime-security-audit.json").read_text())
+workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
 video=ROOT/"public-review/episode1-v10-free.mp4"
 source=(ROOT/"remotion/Episode1V10FinalProof.jsx").read_text()
 
@@ -44,6 +46,9 @@ for rel,meta in manifest.get("entries",{}).items():
     if actual!=meta.get("sha256"):
         manifest_failures.append({"path":rel,"expected":meta.get("sha256"),"actual":actual})
 checks["runtime_integrity_manifest"]=len(manifest_failures)==0 and manifest.get("critical_file_count")==len(manifest.get("entries",{}))
+checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,0))==0 for k in ["critical","high","moderate","low"])
+checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
+checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 history=ROOT/"qa-output/free/history"/(str(health.get("candidate_sha256"))+".json")
 checks["immutable_history_present"]=history.is_file()
 
@@ -84,6 +89,9 @@ completion={
         ]),
         "phone_review_artifact":checks["video_hash_bound"],
         "runtime_integrity_manifest":checks["runtime_integrity_manifest"],
+        "dependency_security_clean":checks["dependency_security_clean"],
+        "workflow_control_quarantine":checks["workflow_control_green"],
+        "reproducible_runtime_locks":checks["runtime_locks_present"],
         "automatic_repair_watchdog":True,
         "bounded_failure_retry":True,
         "regression_lock":True
