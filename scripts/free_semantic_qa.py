@@ -40,10 +40,10 @@ def main():
 
     florence={"status":"PARTIAL","captions":{"reference":[],"candidate":[]},"error":None}
     try:
-        from transformers import AutoProcessor, AutoModelForMultimodalLM
-        mid="florence-community/Florence-2-base"
-        processor=AutoProcessor.from_pretrained(mid)
-        fm=AutoModelForMultimodalLM.from_pretrained(mid).to(device)
+        from transformers import AutoProcessor, AutoModelForCausalLM
+        mid="microsoft/Florence-2-base"
+        processor=AutoProcessor.from_pretrained(mid,trust_remote_code=True)
+        fm=AutoModelForCausalLM.from_pretrained(mid,trust_remote_code=True).to(device)
         fm.eval()
         def caption(p):
             im=Image.open(p).convert("RGB")
@@ -78,7 +78,7 @@ def main():
         "schema_version":1,
         "engine":"openclip-florence-free-qa-v1",
         "openclip_model":"ViT-B-32/laion2b_s34b_b79k",
-        "florence_model":"florence-community/Florence-2-base",
+        "florence_model":"microsoft/Florence-2-base",
         "mean_best_frame_similarity":mean_best,
         "global_similarity":global_similarity,
         "best_reference_similarity_by_candidate":[float(x) for x in best],
