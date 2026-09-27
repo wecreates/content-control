@@ -7,6 +7,9 @@ on:
       - '.github/workflows/apply-runtime-security-fixes.yml'
 permissions:
   contents: write
+  actions: write
+env:
+  GH_TOKEN: ${{ github.token }}
 jobs:
   patch:
     runs-on: ubuntu-latest
@@ -46,3 +49,8 @@ jobs:
             sleep $((attempt*5))
           done
           exit 1
+      - name: Dispatch downstream verification
+        run: |
+          gh workflow run free-vision-qa.yml --ref main
+          gh workflow run runtime-security-audit.yml --ref main
+          gh workflow run runtime-integrity-manifest.yml --ref main
