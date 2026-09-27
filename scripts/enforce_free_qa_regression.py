@@ -12,6 +12,7 @@ assert r.get("publication_enabled") is False
 assert r.get("paid_vision_dependency") is False
 assert r.get("credit_cost")==0
 assert r["semantic"]["checks"].get("florence_completed") is True
+assert r["audio"]["verdict"]=="PASS"
 
 m={
   "duration_seconds": float(r["duration_seconds"]),
@@ -19,6 +20,11 @@ m={
   "motion_active_fraction": float(r["deterministic"]["motion_active_fraction"]),
   "openclip_global_similarity": float(r["semantic"]["global_similarity"]),
   "openclip_mean_best_similarity": float(r["semantic"]["mean_best_frame_similarity"]),
+  "audio_mean_volume_db": float(r["audio"]["mean_volume_db"]),
+  "audio_max_volume_db": float(r["audio"]["max_volume_db"]),
+  "audio_max_long_silence_seconds": float(r["audio"]["max_long_silence_seconds"]),
+  "audio_sample_rate_hz": int(r["audio"]["sample_rate_hz"]),
+  "audio_channels": int(r["audio"]["channels"]),
 }
 policy=prev.get("regression_policy",{
   "max_relative_similarity_drop":0.15,
@@ -27,6 +33,9 @@ policy=prev.get("regression_policy",{
   "max_duration_seconds":30.5,
   "require_florence_pass":True,
   "require_publication_disabled":True,
+  "max_audio_mean_delta_db":6.0,
+  "max_audio_peak_delta_db":6.0,
+  "max_long_silence_seconds":5.0,
 })
 assert policy["min_duration_seconds"] <= m["duration_seconds"] <= policy["max_duration_seconds"]
 
@@ -36,6 +45,11 @@ if pm:
   assert m["openclip_global_similarity"] >= float(pm["openclip_global_similarity"])*floor, (m,pm)
   assert m["openclip_mean_best_similarity"] >= float(pm["openclip_mean_best_similarity"])*floor, (m,pm)
   assert m["motion_active_fraction"] >= float(pm["motion_active_fraction"])-float(policy["max_motion_drop"]), (m,pm)
+  if "audio_mean_volume_db" in pm:
+    assert abs(m["audio_mean_volume_db"]-float(pm["audio_mean_volume_db"])) <= float(policy["max_audio_mean_delta_db"]), (m,pm)
+  if "audio_max_volume_db" in pm:
+    assert abs(m["audio_max_volume_db"]-float(pm["audio_max_volume_db"])) <= float(policy["max_audio_peak_delta_db"]), (m,pm)
+assert m["audio_max_long_silence_seconds"] <= float(policy["max_long_silence_seconds"]), m
 
 health={
   "schema_version":1,
@@ -45,7 +59,7 @@ health={
   "publication_enabled":False,
   "paid_vision_dependency":False,
   "credit_cost":0,
-  "gates":{**r["deterministic"]["checks"],**r["semantic"]["checks"]},
+  "gates":{**r["deterministic"]["checks"],**r["semantic"]["checks"],**{f"audio_{k}":v for k,v in r["audio"]["checks"].items()}},
   "metrics":m,
   "regression_policy":policy,
 }
