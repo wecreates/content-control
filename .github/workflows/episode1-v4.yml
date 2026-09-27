@@ -1,15 +1,6 @@
-name: Episode 1 Entertainment V4
+name: Episode 1 Entertainment V4 [ARCHIVED]
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/Episode1V4.jsx'
-      - 'remotion/index.jsx'
-      - 'production/episode1/rebuild-v4/**'
-      - 'tests/test_episode1_v4_entertainment.py'
-      - 'package.json'
-      - '.github/workflows/episode1-v4.yml'
 permissions:
   contents: write
 concurrency:
