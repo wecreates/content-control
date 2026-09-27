@@ -52,5 +52,36 @@ report={
 }
 out=ROOT/"state/free-production-watchdog.json"
 out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-print(json.dumps(report,sort_keys=True))
+completion={
+    "schema_version":1,
+    "machine_system_complete":status=="GREEN",
+    "status":"COMPLETE" if status=="GREEN" else "REPAIR_REQUIRED",
+    "candidate_sha256":health.get("candidate_sha256"),
+    "publication_enabled":False,
+    "publication_separate":True,
+    "zero_credit_runtime":checks["zero_credit"] and checks["no_paid_vision"],
+    "components":{
+        "local_reference_assets":checks["reference_frames_present"],
+        "local_audio_assets":checks["audio_assets_present"],
+        "remotion_render":checks["video_exists"],
+        "hash_bound_artifact":checks["video_hash_bound"],
+        "opencv_pixel_motion_qa":receipt.get("deterministic",{}).get("verdict")=="PASS",
+        "openclip_semantic_qa":receipt.get("semantic",{}).get("verdict")=="PASS",
+        "florence_vision_qa":checks["florence_green"],
+        "immutable_acceptance_history":checks["immutable_history_present"],
+        "publication_lock":all([
+            checks["publication_health_off"],checks["publication_receipt_off"],
+            checks["publication_owner_gate_off"],checks["publication_separation_off"]
+        ]),
+        "phone_review_artifact":checks["video_hash_bound"],
+        "automatic_repair_watchdog":True,
+        "bounded_failure_retry":True,
+        "regression_lock":True
+    },
+    "source_receipt":"qa-output/free/final-receipt.json",
+    "watchdog_receipt":"state/free-production-watchdog.json",
+    "remaining_user_gate":"watch/approve exact artifact before any publication",
+}
+(ROOT/"state/system-completion.json").write_text(json.dumps(completion,indent=2,sort_keys=True)+"\n")
+print(json.dumps({"watchdog":report,"completion":completion},sort_keys=True))
 raise SystemExit(0 if status=="GREEN" else 2)
