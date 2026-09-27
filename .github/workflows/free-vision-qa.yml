@@ -27,15 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install runtime
         run: |
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
-          npm install
+          npm ci --ignore-scripts
           python -m pip install --upgrade pip
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
-          python -m pip install -r requirements-free-qa.txt
+          python -m pip install -r requirements-free-qa.lock.txt
           test -s scripts/free_vision_qa.py
           test -s scripts/free_semantic_qa.py
       - name: Cache free vision models
