@@ -21,26 +21,43 @@ jobs:
           set -euo pipefail
           npm install --package-lock-only --ignore-scripts
           test -s package-lock.json
-      - name: Generate exact Python lock
+      - name: Validate curated Python runtime lock
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
-          python -m pip install -r requirements-free-qa.txt
-          python -m pip freeze | sort > requirements-free-qa.lock.txt
           test -s requirements-free-qa.lock.txt
+          python -m venv .venv-lockcheck
+          . .venv-lockcheck/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-free-qa.lock.txt
           python - <<'PY'
           from importlib.metadata import version
-          required=["torch","opencv-python-headless","open-clip-torch","transformers"]
+          required=["torch","torchvision","opencv-python-headless","open-clip-torch","transformers","accelerate","timm","sentencepiece","einops"]
           for name in required:
               print(name,version(name))
+          PY
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          requested=[]
+          for line in Path("requirements-free-qa.txt").read_text().splitlines():
+              line=line.strip()
+              if not line or line.startswith("#"): continue
+              requested.append(re.split(r"[<>=!~ ]",line,1)[0].lower().replace("_","-"))
+          locked=[]
+          for line in Path("requirements-free-qa.lock.txt").read_text().splitlines():
+              line=line.strip()
+              if not line or line.startswith("-") or line.startswith("#"): continue
+              locked.append(re.split(r"[<>=!~ ]",line,1)[0].lower().replace("_","-"))
+          missing=[x for x in requested if x not in locked]
+          assert not missing,missing
+          print({"requested":requested,"locked":locked})
           PY
       - name: Persist locks
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add package-lock.json requirements-free-qa.lock.txt
+          git add package-lock.json
           git diff --cached --quiet || git commit -m "Lock zero credit runtime dependencies"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
