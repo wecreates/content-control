@@ -17,6 +17,7 @@ on:
       - 'control/publication-separation.json'
       - 'scripts/verify_free_production_health.py'
       - 'server-lowmem.js'
+      - 'server.js'
       - '.github/workflows/free-production-watchdog.yml'
 permissions:
   contents: write
@@ -50,7 +51,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add state/free-production-watchdog.json
+          git add state/free-production-watchdog.json state/system-completion.json
           git diff --cached --quiet || git commit -m "Update free production watchdog evidence"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -69,5 +70,7 @@ jobs:
         if: always()
         with:
           name: free-production-watchdog
-          path: state/free-production-watchdog.json
+          path: |
+            state/free-production-watchdog.json
+            state/system-completion.json
           retention-days: 30
