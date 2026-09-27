@@ -1,0 +1,52 @@
+name: V10 Branch Proof
+on:
+  push:
+    branches: ['automation/v10-final-worker']
+    paths:
+      - '.github/workflows/v10-branch-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/v10-final-worker
+      - name: Install
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install
+      - name: Render
+        run: |
+          mkdir -p review-output/v10/stills
+          npx remotion render remotion/v10-index.jsx Episode1V10FinalProof review-output/v10/EPISODE1_V10_FINAL_PROOF.mp4 --codec h264 --crf 22 --concurrency 2
+      - name: Verify
+        run: |
+          set -euo pipefail
+          F=review-output/v10/EPISODE1_V10_FINAL_PROOF.mp4
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$F" > /tmp/streams
+          grep -q video /tmp/streams
+          grep -q audio /tmp/streams
+          W=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of default=nw=1:nk=1 "$F")
+          H=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 "$F")
+          D=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "$F")
+          test "$W" = "720"
+          test "$H" = "1280"
+          python - "$D" <<'PY'
+          import sys
+          d=float(sys.argv[1]); assert 29.5 <= d <= 30.5, d
+          PY
+          for s in 1 4 8 12 17 23 28; do ffmpeg -loglevel error -y -ss "$s" -i "$F" -frames:v 1 "review-output/v10/stills/$s.jpg"; done
+          ffmpeg -v error -i "$F" -af volumedetect -f null - 2> review-output/v10/audio-levels.txt || true
+          sha256sum "$F" > review-output/v10/sha256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-v10-final-proof
+          path: review-output/v10
+          retention-days: 30
