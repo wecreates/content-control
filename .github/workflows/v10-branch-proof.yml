@@ -1,8 +1,11 @@
-name: V10 Branch Proof
+name: V11 Reference-Grammar Proof
 on:
   push:
     branches: ['automation/v10-final-worker']
     paths:
+      - 'remotion/V11ReferenceVisual.jsx'
+      - 'remotion/Episode1V11FinalProof.jsx'
+      - 'remotion/v11-index.jsx'
       - '.github/workflows/v10-branch-proof.yml'
   workflow_dispatch:
 permissions:
@@ -24,12 +27,12 @@ jobs:
           npm install
       - name: Render
         run: |
-          mkdir -p review-output/v10/stills
-          npx remotion render remotion/v10-index.jsx Episode1V10FinalProof review-output/v10/EPISODE1_V10_FINAL_PROOF.mp4 --codec h264 --crf 22 --concurrency 2
+          mkdir -p review-output/v11/stills
+          npx remotion render remotion/v11-index.jsx Episode1V11FinalProof review-output/v11/EPISODE1_V11_FINAL_PROOF.mp4 --codec h264 --crf 22 --concurrency 2
       - name: Verify
         run: |
           set -euo pipefail
-          F=review-output/v10/EPISODE1_V10_FINAL_PROOF.mp4
+          F=review-output/v11/EPISODE1_V11_FINAL_PROOF.mp4
           ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$F" > /tmp/streams
           grep -q video /tmp/streams
           grep -q audio /tmp/streams
@@ -40,13 +43,14 @@ jobs:
           test "$H" = "1280"
           python - "$D" <<'PY'
           import sys
-          d=float(sys.argv[1]); assert 29.5 <= d <= 30.5, d
+          d=float(sys.argv[1]); assert 23.8 <= d <= 24.5, d
           PY
-          for s in 1 4 8 12 17 23 28; do ffmpeg -loglevel error -y -ss "$s" -i "$F" -frames:v 1 "review-output/v10/stills/$s.jpg"; done
-          ffmpeg -v error -i "$F" -af volumedetect -f null - 2> review-output/v10/audio-levels.txt || true
-          sha256sum "$F" > review-output/v10/sha256.txt
+          for s in 1 3 6 9 12 15 18 21 23; do ffmpeg -loglevel error -y -ss "$s" -i "$F" -frames:v 1 "review-output/v11/stills/$s.jpg"; done
+          ffmpeg -hide_banner -i "$F" -af volumedetect -f null - 2> review-output/v11/audio-levels.txt || true
+          ffmpeg -hide_banner -i "$F" -af silencedetect=n=-45dB:d=0.7 -f null - 2> review-output/v11/silence.txt || true
+          sha256sum "$F" > review-output/v11/sha256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: episode1-v10-final-proof
-          path: review-output/v10
+          name: episode1-v11-reference-proof
+          path: review-output/v11
           retention-days: 30
