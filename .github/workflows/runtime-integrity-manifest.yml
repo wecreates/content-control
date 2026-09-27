@@ -1,0 +1,85 @@
+name: Runtime Integrity Manifest
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public/audio/**'
+      - 'reference/frames/**'
+      - 'remotion/Episode1V10FinalProof.jsx'
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - 'remotion/v10-index.jsx'
+      - 'server-lowmem.js'
+      - 'server.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements-free-qa.lock.txt'
+      - '.github/workflows/runtime-integrity-manifest.yml'
+permissions:
+  contents: write
+concurrency:
+  group: runtime-integrity-manifest
+  cancel-in-progress: true
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Generate SHA256 manifest
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          files=[
+            "public/audio/episode1-narration.mp3",
+            "public/audio/episode1-music.mp3",
+            "public/audio/episode1-sfx-1.mp3",
+            "public/audio/episode1-sfx-2.mp3",
+            *[f"reference/frames/ref-{i:02d}.jpg" for i in range(1,11)],
+            "remotion/Episode1V10FinalProof.jsx",
+            "remotion/V9ArticulatedVisual.jsx",
+            "remotion/v10-index.jsx",
+            "server-lowmem.js",
+            "server.js",
+            "package.json",
+            "package-lock.json",
+            "requirements-free-qa.lock.txt",
+          ]
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for chunk in iter(lambda:f.read(1024*1024),b""):
+                      h.update(chunk)
+              return h.hexdigest()
+          entries={}
+          for rel in files:
+              p=root/rel
+              if not p.is_file():
+                  raise SystemExit(f"missing critical runtime file: {rel}")
+              entries[rel]={"sha256":sha(p),"bytes":p.stat().st_size}
+          out={
+              "schema_version":1,
+              "algorithm":"sha256",
+              "critical_file_count":len(entries),
+              "entries":entries,
+              "publication_enabled":False,
+          }
+          path=root/"state/runtime-integrity-manifest.json"
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"critical_file_count":len(entries)},sort_keys=True))
+          PY
+      - name: Persist manifest
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/runtime-integrity-manifest.json
+          git diff --cached --quiet || git commit -m "Update runtime integrity manifest"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
