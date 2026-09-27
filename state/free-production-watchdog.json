@@ -16,17 +16,30 @@
     "publication_separation_off": true,
     "receipt_green": true,
     "reference_frames_present": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "db5272a9e06d8b365dfd0555d8a24122e1f3ae69eff8d127b6c2e5db47b2906b",
+      "expected": "cfd062b5d4d8dadb0b845791b417f6acbbd2d965053d8ab5231e1b18358a369c",
+      "path": "package-lock.json"
+    },
+    {
+      "actual": "ca9570d5bcdba7ce03590584115a82466d7bd4c1bc476c7083218f0d6a86c9c3",
+      "expected": "faa235983cddbd291f42667ed5ab7d17899b0f3d7a549837874f8c291d8f80c7",
+      "path": "requirements-free-qa.lock.txt"
+    }
+  ],
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "dispatch_free_vision_qa",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "REPAIR_REQUIRED"
 }
