@@ -24,8 +24,11 @@ jobs:
         run: |
           set -euo pipefail
           npm install --save-exact @remotion/cli@4.0.529 remotion@4.0.529
-          npm audit fix --package-lock-only || true
+          npm pkg set overrides.qs=6.16.0
+          npm install --package-lock-only
           npm ci --ignore-scripts
+          node --check server-lowmem.js
+          node --check server.js
           node -e 'const p=require("./package.json"); if(p.dependencies["@remotion/cli"]!=="4.0.529"||p.dependencies.remotion!=="4.0.529") process.exit(2)'
           npm audit --json > /tmp/npm-audit-after.json || true
           python - <<'PY'
@@ -33,7 +36,7 @@ jobs:
           d=json.load(open("/tmp/npm-audit-after.json"))
           v=d.get("metadata",{}).get("vulnerabilities",{})
           print(v)
-          if int(v.get("critical",0))>0 or int(v.get("high",0))>0:
+          if int(v.get("critical",0))>0 or int(v.get("high",0))>0 or int(v.get("moderate",0))>0:
               raise SystemExit(3)
           PY
       - name: Persist safe dependency patch
