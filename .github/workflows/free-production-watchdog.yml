@@ -16,6 +16,7 @@ on:
       - 'control/publication-owner-gate.json'
       - 'control/publication-separation.json'
       - 'scripts/verify_free_production_health.py'
+      - 'server-lowmem.js'
       - '.github/workflows/free-production-watchdog.yml'
 permissions:
   contents: write
@@ -32,6 +33,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - name: Verify hash-bound watch server contract
+        run: |
+          node --check server-lowmem.js
+          grep -q 'episode1-v10-free.mp4' server-lowmem.js
+          grep -q 'actual===expected' server-lowmem.js
+          ! grep -q 'Episode1V8VerticalProof' server-lowmem.js
+          ! grep -q 'Episode1V9VerticalProof' server-lowmem.js
       - name: Verify accepted production state
         id: verify
         continue-on-error: true
