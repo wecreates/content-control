@@ -28,10 +28,13 @@ jobs:
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
           python -m pip install -r requirements-free-qa.txt
           python -m pip freeze | sort > requirements-free-qa.lock.txt
-          grep -q '^torch==' requirements-free-qa.lock.txt
-          grep -q '^opencv-python-headless==' requirements-free-qa.lock.txt
-          grep -q '^open-clip-torch==' requirements-free-qa.lock.txt
-          grep -q '^transformers==' requirements-free-qa.lock.txt
+          test -s requirements-free-qa.lock.txt
+          python - <<'PY'
+          from importlib.metadata import version
+          required=["torch","opencv-python-headless","open-clip-torch","transformers"]
+          for name in required:
+              print(name,version(name))
+          PY
       - name: Persist locks
         run: |
           set -euo pipefail
