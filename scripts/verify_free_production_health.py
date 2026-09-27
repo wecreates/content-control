@@ -10,6 +10,9 @@ sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
 security=json.loads((ROOT/"state/runtime-security-audit.json").read_text())
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
+smoke=json.loads((ROOT/"state/review-server-smoke.json").read_text()) if (ROOT/"state/review-server-smoke.json").exists() else {"status":"MISSING"}
+provenance=json.loads((ROOT/"state/provenance/runtime-provenance.json").read_text()) if (ROOT/"state/provenance/runtime-provenance.json").exists() else {}
+sbom=json.loads((ROOT/"state/provenance/npm-sbom.cdx.json").read_text()) if (ROOT/"state/provenance/npm-sbom.cdx.json").exists() else {}
 video=ROOT/"public-review/episode1-v10-free.mp4"
 source=(ROOT/"remotion/Episode1V10FinalProof.jsx").read_text()
 
@@ -49,6 +52,27 @@ checks["runtime_integrity_manifest"]=len(manifest_failures)==0 and manifest.get(
 checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,0))==0 for k in ["critical","high","moderate","low"])
 checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
+checks["review_server_smoke_green"]=all([
+    smoke.get("status")=="PASS",
+    smoke.get("candidate_sha256")==health.get("candidate_sha256"),
+    smoke.get("accepted_route_verified") is True,
+    smoke.get("fail_closed_corruption_verified") is True,
+    smoke.get("publication_enabled") is False,
+])
+checks["provenance_candidate_match"]=all([
+    provenance.get("candidate_sha256")==health.get("candidate_sha256"),
+    provenance.get("review_server_smoke_candidate_sha256")==health.get("candidate_sha256"),
+    provenance.get("zero_credit_runtime") is True,
+    provenance.get("publication_enabled") is False,
+])
+checks["provenance_inputs_current"]=all([
+    provenance.get("locks",{}).get("package_lock_sha256")==sha256(ROOT/"package-lock.json"),
+    provenance.get("locks",{}).get("python_lock_sha256")==sha256(ROOT/"requirements-free-qa.lock.txt"),
+    provenance.get("critical_integrity_manifest_sha256")==sha256(ROOT/"state/runtime-integrity-manifest.json"),
+    provenance.get("qa_receipt_sha256")==sha256(ROOT/"qa-output/free/final-receipt.json"),
+    provenance.get("review_server_smoke_sha256")==sha256(ROOT/"state/review-server-smoke.json"),
+])
+checks["sbom_valid"]=sbom.get("bomFormat")=="CycloneDX" and bool(sbom.get("components"))
 history=ROOT/"qa-output/free/history"/(str(health.get("candidate_sha256"))+".json")
 checks["immutable_history_present"]=history.is_file()
 
@@ -92,6 +116,9 @@ completion={
         "dependency_security_clean":checks["dependency_security_clean"],
         "workflow_control_quarantine":checks["workflow_control_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
+        "live_review_server_smoke":checks["review_server_smoke_green"],
+        "hash_bound_provenance":checks["provenance_candidate_match"] and checks["provenance_inputs_current"],
+        "cyclonedx_sbom":checks["sbom_valid"],
         "automatic_repair_watchdog":True,
         "bounded_failure_retry":True,
         "regression_lock":True
