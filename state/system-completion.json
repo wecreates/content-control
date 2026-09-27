@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
+  "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "components": {
     "automatic_repair_watchdog": true,
     "bounded_failure_retry": true,
