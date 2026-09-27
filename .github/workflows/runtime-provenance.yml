@@ -1,0 +1,97 @@
+name: Runtime Provenance and SBOM
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements-free-qa.lock.txt'
+      - 'public/audio/**'
+      - 'reference/frames/**'
+      - 'remotion/**'
+      - 'qa-output/free/final-receipt.json'
+      - 'state/runtime-integrity-manifest.json'
+      - '.github/workflows/runtime-provenance.yml'
+permissions:
+  contents: write
+concurrency:
+  group: runtime-provenance
+  cancel-in-progress: true
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact JS graph
+        run: npm ci --ignore-scripts
+      - name: Generate CycloneDX npm SBOM
+        run: |
+          set -euo pipefail
+          mkdir -p state/provenance
+          npm sbom --sbom-format cyclonedx > state/provenance/npm-sbom.cdx.json
+          python -m json.tool state/provenance/npm-sbom.cdx.json >/dev/null
+      - name: Generate hash-bound provenance
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path(".")
+          def sha(p):
+              h=hashlib.sha256()
+              with open(p,"rb") as f:
+                  for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
+              return h.hexdigest()
+          receipt=json.loads((root/"qa-output/free/final-receipt.json").read_text())
+          integrity=json.loads((root/"state/runtime-integrity-manifest.json").read_text())
+          pkg=json.loads((root/"package.json").read_text())
+          commit=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
+          provenance={
+              "schema_version":1,
+              "candidate_sha256":receipt["candidate_sha256"],
+              "source_commit":commit,
+              "publication_enabled":False,
+              "zero_credit_runtime":receipt.get("credit_cost")==0 and receipt.get("paid_vision_dependency") is False,
+              "runtime":{
+                  "node":"22",
+                  "remotion":pkg["dependencies"]["remotion"],
+                  "remotion_cli":pkg["dependencies"]["@remotion/cli"],
+                  "python":"3.12",
+              },
+              "locks":{
+                  "package_lock_sha256":sha(root/"package-lock.json"),
+                  "python_lock_sha256":sha(root/"requirements-free-qa.lock.txt"),
+              },
+              "critical_integrity_manifest_sha256":sha(root/"state/runtime-integrity-manifest.json"),
+              "qa_receipt_sha256":sha(root/"qa-output/free/final-receipt.json"),
+              "critical_file_count":integrity["critical_file_count"],
+              "sbom":"state/provenance/npm-sbom.cdx.json",
+          }
+          out=root/"state/provenance/runtime-provenance.json"
+          out.write_text(json.dumps(provenance,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(provenance,sort_keys=True))
+          PY
+      - name: Persist provenance
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/provenance/npm-sbom.cdx.json state/provenance/runtime-provenance.json
+          git diff --cached --quiet || git commit -m "Update hash-bound runtime provenance and SBOM"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-provenance
+          path: state/provenance/
+          retention-days: 30
