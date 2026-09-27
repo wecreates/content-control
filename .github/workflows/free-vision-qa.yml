@@ -87,12 +87,15 @@ jobs:
           print(json.dumps({"status":r["status"],"sha":r["candidate_sha256"]},sort_keys=True))
           if not ok: raise SystemExit(4)
           PY
+      - name: Enforce regression lock and update canonical health
+        run: |
+          python scripts/enforce_free_qa_regression.py qa-output/free/final-receipt.json state/content-control-health.json
       - name: Persist free QA proof
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f qa-output/free public-review/episode1-v10-free.mp4
+          git add -f qa-output/free public-review/episode1-v10-free.mp4 state/content-control-health.json
           git diff --cached --quiet || git commit -m "Persist zero credit V10 QA proof"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
