@@ -1,0 +1,18 @@
+{
+  "failed_stages": [
+    {
+      "job": "qa",
+      "number": 4,
+      "step": "Install runtime"
+    }
+  ],
+  "head_sha": "167381ce58ef59c0bb8b76e5b7e9a5c07d403ebb",
+  "publication_enabled": false,
+  "retry_budget": 1,
+  "run_attempt": 1,
+  "run_id": 36324015722,
+  "schema_version": 1,
+  "status": "TRANSIENT_RETRY_PENDING",
+  "will_retry": true,
+  "workflow": "Free Vision QA"
+}
