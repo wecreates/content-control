@@ -1,32 +1,59 @@
 {
   "best_reference_similarity_by_candidate": [
-    0.41620704531669617,
-    0.4577986001968384,
+    0.41620686650276184,
+    0.4577978849411011,
     0.40164071321487427,
-    0.39787065982818604,
-    0.3814103603363037,
-    0.39773470163345337,
-    0.5070976614952087,
-    0.4255340099334717,
-    0.4014248251914978,
-    0.42434990406036377
+    0.3978707790374756,
+    0.3814148008823395,
+    0.3977345824241638,
+    0.509778618812561,
+    0.42553389072418213,
+    0.40142473578453064,
+    0.42262959480285645
   ],
   "checks": {
+    "florence_completed": true,
     "openclip_global_similarity": true,
     "openclip_mean_best_similarity": true
   },
   "engine": "openclip-florence-free-qa-v1",
   "florence": {
     "captions": {
-      "candidate": [],
-      "reference": []
+      "candidate": [
+        {
+          "caption": "The image is a simple illustration of a stick figure with a sad expression on its face. The stick figure is standing on its hind legs with its arms stretched out to the sides. Next to the stick figure, there is an envelope with the text \"$695\" written on it. The text above the envelope reads \"The fee shows up.\" Below the",
+          "file": "cand-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure with a price tag that reads \"$80 - $20 $60\". The stick figure is standing on four legs and has a round head and arms. The price tag is rectangular in shape and has the words \"Points Monk\" written above it. The background is white. The text above the stick figure",
+          "file": "cand-06.jpg"
+        },
+        {
+          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style. The background is white and the text \"One rule",
+          "file": "cand-10.jpg"
+        }
+      ],
+      "reference": [
+        {
+          "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+          "file": "ref-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
+          "file": "ref-06.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+          "file": "ref-10.jpg"
+        }
+      ]
     },
-    "error": "AttributeError: 'Florence2ForConditionalGeneration' object has no attribute '_supports_sdpa'",
-    "status": "PARTIAL"
+    "error": null,
+    "status": "PASS"
   },
-  "florence_model": "microsoft/Florence-2-base",
-  "global_similarity": 0.32819828391075134,
-  "mean_best_frame_similarity": 0.42110687494277954,
+  "florence_model": "florence-community/Florence-2-base",
+  "global_similarity": 0.32822930812835693,
+  "mean_best_frame_similarity": 0.42120322585105896,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "schema_version": 1,
   "verdict": "PASS"
