@@ -79,8 +79,8 @@
       "sha256": "1a709f31a504b2514eac01e54dfde60f5831855ca64039eaf125c7db7cbcaaf2"
     },
     "requirements-free-qa.lock.txt": {
-      "bytes": 402,
-      "sha256": "c3b8c90c79334b506963c5033e8f77067003a3cdb050945612728fa925d40591"
+      "bytes": 1897,
+      "sha256": "ca9570d5bcdba7ce03590584115a82466d7bd4c1bc476c7083218f0d6a86c9c3"
     },
     "server-lowmem.js": {
       "bytes": 4036,
