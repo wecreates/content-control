@@ -1,0 +1,95 @@
+name: Episode 1 V10 Final Proof
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - 'remotion/Episode1V10FinalProof.jsx'
+      - 'remotion/v10-index.jsx'
+      - '.github/workflows/episode1-v10-final-proof.yml'
+permissions:
+  contents: write
+concurrency:
+  group: episode1-v10-final-proof
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render-verify-persist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm install
+      - name: Render exact V10 proof
+        run: |
+          set -euo pipefail
+          mkdir -p public-review qa-output
+          npx remotion render remotion/v10-index.jsx Episode1V10FinalProof public-review/episode1-v10.mp4 --codec h264 --crf 25 --concurrency 2
+      - name: Verify audiovisual artifact
+        run: |
+          set -euo pipefail
+          test -s public-review/episode1-v10.mp4
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public-review/episode1-v10.mp4 > qa-output/streams.txt
+          grep -q video qa-output/streams.txt
+          grep -q audio qa-output/streams.txt
+          DURATION=$(ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 public-review/episode1-v10.mp4)
+          python - "$DURATION" <<'PY'
+          import sys
+          d=float(sys.argv[1])
+          assert 29.5 <= d <= 30.5, d
+          print({"duration_seconds":d})
+          PY
+      - name: Extract exact-pixel QA contact sheet
+        run: |
+          set -euo pipefail
+          ffmpeg -y -i public-review/episode1-v10.mp4 -vf "fps=1/3,scale=216:384,tile=5x2:padding=8:margin=8" -frames:v 1 qa-output/episode1-v10-contact.jpg
+          test -s qa-output/episode1-v10-contact.jpg
+      - name: Write hash-bound QA state
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path("public-review/episode1-v10.mp4")
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=nw=1:nk=1",str(p)],text=True).strip())
+          s={
+            "schema_version":1,
+            "status":"V10_EXACT_PIXEL_QA_READY",
+            "candidate_sha256":h,
+            "duration_seconds":d,
+            "publication_enabled":False,
+            "audio_stream_present":True,
+            "video_stream_present":True,
+            "contact_sheet":"qa-output/episode1-v10-contact.jpg",
+            "phone_watch_path":"public-review/episode1-v10.mp4"
+          }
+          pathlib.Path("qa-output/episode1-v10-state.json").write_text(json.dumps(s,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(s,sort_keys=True))
+          PY
+      - name: Persist verified review media
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public-review/episode1-v10.mp4 qa-output/episode1-v10-contact.jpg qa-output/episode1-v10-state.json qa-output/streams.txt
+          git diff --cached --quiet || git commit -m "Persist Episode 1 V10 exact review artifact"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode1-v10-final-proof
+          path: |
+            public-review/episode1-v10.mp4
+            qa-output/episode1-v10-contact.jpg
+            qa-output/episode1-v10-state.json
+          retention-days: 30
