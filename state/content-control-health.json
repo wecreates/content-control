@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "status": "GREEN",
+  "candidate_sha256": "69ba0558ce78293361ad8c52c1301dd715a62d1061f50e1aa29d57aa4bf9a715",
+  "source_of_truth": "qa-output/free/final-receipt.json",
+  "publication_enabled": false,
+  "paid_vision_dependency": false,
+  "credit_cost": 0,
+  "gates": {
+    "duration_30s": true,
+    "motion_activity": true,
+    "no_black_frames": true,
+    "portrait_9_16": true,
+    "reference_edge_density_ratio": true,
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true,
+    "florence_completed": true
+  },
+  "metrics": {
+    "duration_seconds": 30,
+    "edge_density_ratio": 0.5891711980404052,
+    "motion_active_fraction": 1,
+    "openclip_global_similarity": 0.32822930812835693,
+    "openclip_mean_best_similarity": 0.42120322585105896
+  },
+  "regression_policy": {
+    "max_relative_similarity_drop": 0.15,
+    "max_motion_drop": 0.2,
+    "min_duration_seconds": 29.5,
+    "max_duration_seconds": 30.5,
+    "require_florence_pass": true,
+    "require_publication_disabled": true
+  }
+}
