@@ -1,143 +1,17 @@
 {
   "critical_count": 0,
-  "high_count": 2,
+  "high_count": 0,
   "npm_counts": {
     "critical": 0,
-    "high": 2,
+    "high": 0,
     "info": 0,
-    "low": 1,
-    "moderate": 6,
-    "total": 9
+    "low": 0,
+    "moderate": 1,
+    "total": 1
   },
   "publication_enabled": false,
   "schema_version": 1,
   "vulnerabilities": [
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "@remotion/bundler",
-      "range": "4.0.90 - 4.0.476",
-      "severity": "moderate",
-      "via": [
-        "@remotion/studio",
-        "esbuild",
-        "postcss"
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": true,
-      "name": "@remotion/cli",
-      "range": "3.0.24 - 4.0.476 || >=4.1.0-alpha1",
-      "severity": "moderate",
-      "via": [
-        "@remotion/bundler",
-        "@remotion/renderer",
-        "@remotion/studio",
-        "@remotion/studio-server"
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "@remotion/renderer",
-      "range": "3.0.24 - 4.0.463 || >=4.1.0-alpha1",
-      "severity": "moderate",
-      "via": [
-        "ws"
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "@remotion/studio",
-      "range": "<=4.0.463",
-      "severity": "moderate",
-      "via": [
-        "@remotion/renderer"
-      ]
-    },
-    {
-      "fix_available": true,
-      "is_direct": false,
-      "name": "@remotion/studio-server",
-      "range": "<=4.0.476",
-      "severity": "moderate",
-      "via": [
-        "@remotion/bundler",
-        "@remotion/renderer"
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "esbuild",
-      "range": "0.27.3 - 0.28.0",
-      "severity": "low",
-      "via": [
-        {
-          "name": "esbuild",
-          "range": ">=0.27.3 <0.28.1",
-          "severity": "low",
-          "source": 1120680,
-          "title": "esbuild allows arbitrary file read when running the development server on Windows"
-        }
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "postcss",
-      "range": "<=8.5.22",
-      "severity": "high",
-      "via": [
-        {
-          "name": "postcss",
-          "range": "<=8.5.11",
-          "severity": "high",
-          "source": 1124252,
-          "title": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments"
-        },
-        {
-          "name": "postcss",
-          "range": "<=8.5.22",
-          "severity": "moderate",
-          "source": 1130709,
-          "title": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q \u2014 attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset"
-        },
-        {
-          "name": "postcss",
-          "range": "<=8.5.17",
-          "severity": "high",
-          "source": 1139510,
-          "title": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure"
-        }
-      ]
-    },
     {
       "fix_available": true,
       "is_direct": false,
@@ -165,33 +39,6 @@
           "severity": "moderate",
           "source": 1158507,
           "title": "qs: Denial of Service via Attacker Controlled isBuffer"
-        }
-      ]
-    },
-    {
-      "fix_available": {
-        "isSemVerMajor": false,
-        "name": "@remotion/cli",
-        "version": "4.0.529"
-      },
-      "is_direct": false,
-      "name": "ws",
-      "range": "8.0.0 - 8.20.1",
-      "severity": "high",
-      "via": [
-        {
-          "name": "ws",
-          "range": ">=8.0.0 <8.20.1",
-          "severity": "moderate",
-          "source": 1119108,
-          "title": "ws: Uninitialized memory disclosure"
-        },
-        {
-          "name": "ws",
-          "range": ">=8.0.0 <8.21.0",
-          "severity": "high",
-          "source": 1123259,
-          "title": "ws: Memory exhaustion DoS from tiny fragments and data chunks"
         }
       ]
     }
