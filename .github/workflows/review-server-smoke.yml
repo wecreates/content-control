@@ -1,0 +1,112 @@
+name: Hash-Bound Review Server Smoke Test
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'server-lowmem.js'
+      - 'server.js'
+      - 'state/content-control-health.json'
+      - 'public-review/episode1-v10-free.mp4'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/review-server-smoke.yml'
+  schedule:
+    - cron: '11 12 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: review-server-smoke
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact runtime
+        run: npm ci --ignore-scripts
+      - name: Start canonical review server
+        run: |
+          set -euo pipefail
+          PORT=10000 node server-lowmem.js > /tmp/review-server.log 2>&1 &
+          echo $! > /tmp/review-server.pid
+          for i in {1..30}; do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health || true)
+            if [ "$code" = "200" ]; then break; fi
+            sleep 1
+          done
+          test "$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health)" = "200"
+      - name: Verify accepted hash-bound routes
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          h=json.load(open("/tmp/health.json"))
+          assert h["ok"] is True
+          assert h["engine"]=="remotion-v10-free"
+          assert h["publication"] is False
+          assert h["hashBound"] is True
+          assert h["expectedSha256"]==h["actualSha256"]
+          print(h)
+          PY
+          test "$(curl -s -o /tmp/watch.html -w "%{http_code}" http://127.0.0.1:10000/watch)" = "200"
+          grep -q 'FREE_QA' /tmp/watch.html
+          grep -q 'publication disabled' /tmp/watch.html
+          test "$(curl -s -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
+          python - <<'PY'
+          import hashlib,json
+          expected=json.load(open("state/content-control-health.json"))["candidate_sha256"]
+          actual=hashlib.sha256(open("/tmp/served.mp4","rb").read()).hexdigest()
+          assert actual==expected,(actual,expected)
+          print({"served_sha256":actual})
+          PY
+      - name: Prove fail-closed behavior on corruption
+        run: |
+          set -euo pipefail
+          kill $(cat /tmp/review-server.pid) || true
+          cp public-review/episode1-v10-free.mp4 /tmp/good.mp4
+          printf X >> public-review/episode1-v10-free.mp4
+          PORT=10001 node server-lowmem.js > /tmp/review-server-corrupt.log 2>&1 &
+          echo $! > /tmp/review-server-corrupt.pid
+          sleep 2
+          test "$(curl -s -o /tmp/badhealth.json -w "%{http_code}" http://127.0.0.1:10001/health)" = "503"
+          test "$(curl -s -o /tmp/badmedia.json -w "%{http_code}" http://127.0.0.1:10001/media)" = "409"
+          python - <<'PY'
+          import json
+          h=json.load(open("/tmp/badhealth.json"))
+          assert h["ok"] is False
+          assert h["hashBound"] is False
+          assert h["publication"] is False
+          print(h)
+          PY
+          kill $(cat /tmp/review-server-corrupt.pid) || true
+          mv /tmp/good.mp4 public-review/episode1-v10-free.mp4
+      - name: Emit smoke receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          ok=pathlib.Path("/tmp/served.mp4").exists() and pathlib.Path("/tmp/badhealth.json").exists()
+          r={
+            "schema_version":1,
+            "status":"PASS" if ok else "INCOMPLETE",
+            "accepted_route_verified":ok,
+            "fail_closed_corruption_verified":ok,
+            "publication_enabled":False
+          }
+          pathlib.Path("state/review-server-smoke.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: review-server-smoke
+          path: |
+            state/review-server-smoke.json
+            /tmp/review-server.log
+            /tmp/review-server-corrupt.log
+          retention-days: 30
