@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "status": "MACHINE_ACCEPTANCE_GREEN",
+  "candidate_sha256": "88ec3983f93d53e126734c9dd8c456e08ae98546751f3c7797daa5a9af2e4cd2",
+  "duration_seconds": 30.058667,
+  "publication_enabled": false,
+  "exact_artifact": "public-review/episode1-v10.mp4",
+  "exact_pixel_contact_sheet": "qa-output/episode1-v10-contact.jpg",
+  "source_commit": "a84fef6f1d4ad824cad5ac051e88c0d0b54d4ede",
+  "artifact_commit": "08e54e6dbfd9c1d3d5d8bb3c1c808e6898960090",
+  "visual_qa": {
+    "reference_grammar": [
+      "warm off-white paper field",
+      "bold mixed-case headline language",
+      "teal accent emphasis",
+      "central stick-figure storytelling",
+      "large negative space",
+      "prop-led visual beats",
+      "frequent scene resets"
+    ],
+    "candidate_checks": [
+      "no clipping observed in 10-frame contact sheet",
+      "no text overlap observed",
+      "characters remain inside 9:16 safe area",
+      "props remain legible",
+      "scene changes represented across proof",
+      "corrected formal/serif-like typography from first QA pass"
+    ],
+    "verdict": "PASS"
+  },
+  "audio_qa": {
+    "real_voice": true,
+    "music_bed": true,
+    "sfx": true,
+    "audio_stream_present": true,
+    "composition_source": "remotion/Episode1V10FinalProof.jsx",
+    "verdict": "PASS"
+  },
+  "factual_qa": {
+    "checked_claims": [
+      "$80 minus $20 equals $60",
+      "annual-fee/value comparison is presented as general educational math rather than a named-card factual claim"
+    ],
+    "arithmetic_pass": true,
+    "named_product_claims": false,
+    "verdict": "PASS"
+  },
+  "persistence_qa": {
+    "repository": "wecreates/content-control",
+    "durable_public_path": "https://raw.githubusercontent.com/wecreates/content-control/main/public-review/episode1-v10.mp4",
+    "bytes": 3468018,
+    "verdict": "PASS"
+  },
+  "human_publication_gate": {
+    "publication_disabled": true,
+    "user_watch_link_ready": true,
+    "public_publish_performed": false
+  }
+}
