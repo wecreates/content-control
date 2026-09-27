@@ -11,6 +11,9 @@ on:
       - 'reference/frames/**'
       - 'scripts/free_*'
       - 'requirements-free-qa.txt'
+      - 'requirements-free-qa.lock.txt'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/free-vision-qa.yml'
 permissions:
   contents: write
