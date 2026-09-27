@@ -1,34 +1,34 @@
 {
-  "schema_version": 1,
-  "status": "GREEN",
-  "candidate_sha256": "69ba0558ce78293361ad8c52c1301dd715a62d1061f50e1aa29d57aa4bf9a715",
-  "source_of_truth": "qa-output/free/final-receipt.json",
-  "publication_enabled": false,
-  "paid_vision_dependency": false,
+  "candidate_sha256": "e7c520856f5bf08c88e2f32379e07d8b125fe7f0e115094b6eff1e1493fe00a9",
   "credit_cost": 0,
   "gates": {
     "duration_30s": true,
+    "florence_completed": true,
     "motion_activity": true,
     "no_black_frames": true,
-    "portrait_9_16": true,
-    "reference_edge_density_ratio": true,
     "openclip_global_similarity": true,
     "openclip_mean_best_similarity": true,
-    "florence_completed": true
+    "portrait_9_16": true,
+    "reference_edge_density_ratio": true
   },
   "metrics": {
-    "duration_seconds": 30,
-    "edge_density_ratio": 0.5891711980404052,
-    "motion_active_fraction": 1,
-    "openclip_global_similarity": 0.32822930812835693,
-    "openclip_mean_best_similarity": 0.42120322585105896
+    "duration_seconds": 30.0,
+    "edge_density_ratio": 0.5890748059400214,
+    "motion_active_fraction": 1.0,
+    "openclip_global_similarity": 0.32820379734039307,
+    "openclip_mean_best_similarity": 0.421145498752594
   },
+  "paid_vision_dependency": false,
+  "publication_enabled": false,
   "regression_policy": {
-    "max_relative_similarity_drop": 0.15,
-    "max_motion_drop": 0.2,
-    "min_duration_seconds": 29.5,
     "max_duration_seconds": 30.5,
+    "max_motion_drop": 0.2,
+    "max_relative_similarity_drop": 0.15,
+    "min_duration_seconds": 29.5,
     "require_florence_pass": true,
     "require_publication_disabled": true
-  }
+  },
+  "schema_version": 1,
+  "source_of_truth": "qa-output/free/final-receipt.json",
+  "status": "GREEN"
 }
