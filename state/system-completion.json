@@ -1,0 +1,27 @@
+{
+  "candidate_sha256": "36ba2f066591e135b360fcedcf26d40f5c19ceca4ba9b5716a3fc0259c052f34",
+  "components": {
+    "automatic_repair_watchdog": true,
+    "bounded_failure_retry": true,
+    "florence_vision_qa": true,
+    "hash_bound_artifact": true,
+    "immutable_acceptance_history": true,
+    "local_audio_assets": true,
+    "local_reference_assets": true,
+    "openclip_semantic_qa": true,
+    "opencv_pixel_motion_qa": true,
+    "phone_review_artifact": true,
+    "publication_lock": true,
+    "regression_lock": true,
+    "remotion_render": true
+  },
+  "machine_system_complete": true,
+  "publication_enabled": false,
+  "publication_separate": true,
+  "remaining_user_gate": "watch/approve exact artifact before any publication",
+  "schema_version": 1,
+  "source_receipt": "qa-output/free/final-receipt.json",
+  "status": "COMPLETE",
+  "watchdog_receipt": "state/free-production-watchdog.json",
+  "zero_credit_runtime": true
+}
