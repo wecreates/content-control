@@ -45,6 +45,7 @@ jobs:
           python -m pip install -r requirements-free-qa.lock.txt
           test -s scripts/free_vision_qa.py
           test -s scripts/free_semantic_qa.py
+          test -s scripts/free_audio_qa.py
       - name: Cache free vision models
         uses: actions/cache@v4
         with:
@@ -63,6 +64,9 @@ jobs:
           grep -q audio qa-output/free/streams.txt
           ffmpeg -y -i public-review/episode1-v10-free.mp4 -vf "fps=1/3" -q:v 2 qa-output/free/candidate-frames/cand-%02d.jpg
           ffmpeg -y -i public-review/episode1-v10-free.mp4 -vf "fps=1/3,scale=216:384,tile=5x2:padding=8:margin=8" -frames:v 1 qa-output/free/contact.jpg
+      - name: Audio loudness clipping and silence QA
+        run: |
+          python scripts/free_audio_qa.py --video public-review/episode1-v10-free.mp4 --output qa-output/free/audio.json
       - name: Deterministic pixel and motion QA
         run: |
           python scripts/free_vision_qa.py --reference-dir reference/frames --candidate-video public-review/episode1-v10-free.mp4 --candidate-dir qa-output/free/candidate-frames --output qa-output/free/deterministic.json
@@ -76,7 +80,8 @@ jobs:
           from pathlib import Path
           d=json.loads(Path("qa-output/free/deterministic.json").read_text())
           s=json.loads(Path("qa-output/free/semantic.json").read_text())
-          ok=d["verdict"]=="PASS" and s["verdict"]=="PASS"
+          a=json.loads(Path("qa-output/free/audio.json").read_text())
+          ok=d["verdict"]=="PASS" and s["verdict"]=="PASS" and a["verdict"]=="PASS"
           r={
             "schema_version":1,
             "status":"FREE_QA_GREEN" if ok else "FREE_QA_FAIL",
@@ -89,6 +94,7 @@ jobs:
             "audio_source":"repository-local public/audio",
             "deterministic":d,
             "semantic":s,
+            "audio":a,
             "phone_watch_path":"public-review/episode1-v10-free.mp4",
             "contact_sheet":"qa-output/free/contact.jpg",
           }
@@ -124,5 +130,6 @@ jobs:
             qa-output/free/contact.jpg
             qa-output/free/deterministic.json
             qa-output/free/semantic.json
+            qa-output/free/audio.json
             qa-output/free/final-receipt.json
           retention-days: 30
