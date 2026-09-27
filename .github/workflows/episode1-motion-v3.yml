@@ -1,14 +1,6 @@
-name: Episode 1 Motion Graphic V3
+name: Episode 1 Motion Graphic V3 [ARCHIVED]
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/**'
-      - 'production/episode1/rebuild-v3/**'
-      - 'tests/test_episode1_motion_graphic.py'
-      - 'package.json'
-      - '.github/workflows/episode1-motion-v3.yml'
 permissions:
   contents: write
 concurrency:
