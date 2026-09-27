@@ -37,6 +37,7 @@ checks["publication_separation_off"]=sep.get("publication_enabled") is False
 checks["zero_credit"]=receipt.get("credit_cost")==0 and health.get("credit_cost")==0
 checks["no_paid_vision"]=receipt.get("paid_vision_dependency") is False and health.get("paid_vision_dependency") is False
 checks["florence_green"]=receipt.get("semantic",{}).get("checks",{}).get("florence_completed") is True
+checks["audio_green"]=receipt.get("audio",{}).get("verdict")=="PASS" and all(receipt.get("audio",{}).get("checks",{}).values())
 checks["local_audio_runtime"]="staticFile(" in source and "creativeclaw" not in source.lower() and "storage.googleapis.com" not in source.lower()
 checks["audio_assets_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>1000 for p in [
     "public/audio/episode1-narration.mp3","public/audio/episode1-music.mp3",
@@ -106,6 +107,7 @@ completion={
         "opencv_pixel_motion_qa":receipt.get("deterministic",{}).get("verdict")=="PASS",
         "openclip_semantic_qa":receipt.get("semantic",{}).get("verdict")=="PASS",
         "florence_vision_qa":checks["florence_green"],
+        "audio_loudness_clipping_silence_qa":checks["audio_green"],
         "immutable_acceptance_history":checks["immutable_history_present"],
         "publication_lock":all([
             checks["publication_health_off"],checks["publication_receipt_off"],
