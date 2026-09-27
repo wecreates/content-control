@@ -16,7 +16,7 @@
     "edge_density_ratio": 0.5890974864342292,
     "motion_active_fraction": 1.0,
     "openclip_global_similarity": 0.32799196243286133,
-    "openclip_mean_best_similarity": 0.4209353029727936
+    "openclip_mean_best_similarity": 0.42093515396118164
   },
   "paid_vision_dependency": false,
   "publication_enabled": false,
