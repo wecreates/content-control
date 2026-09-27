@@ -18,6 +18,8 @@ on:
       - 'scripts/verify_free_production_health.py'
       - 'scripts/verify_workflow_control.py'
       - 'state/canonical-workflow-registry.json'
+      - 'state/runtime-integrity-manifest.json'
+      - '.github/workflows/runtime-integrity-manifest.yml'
       - '.github/workflows/episode1-motion-v3.yml'
       - '.github/workflows/episode1-v4.yml'
       - '.github/workflows/instagram-reel-bridge.yml'
@@ -66,10 +68,24 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
-      - name: Trigger zero-credit repair pipeline
+      - name: Route repair by failed invariant
         if: steps.verify.outcome == 'failure'
         run: |
-          gh workflow run free-vision-qa.yml --ref main
+          python - <<'PY' > /tmp/repair-route
+          import json
+          r=json.load(open("state/free-production-watchdog.json"))
+          failed=set(r.get("failed_checks",[]))
+          if failed and failed <= {"runtime_integrity_manifest"}:
+              print("integrity")
+          else:
+              print("full")
+          PY
+          route=$(cat /tmp/repair-route)
+          if [ "$route" = "integrity" ]; then
+            gh workflow run runtime-integrity-manifest.yml --ref main
+          else
+            gh workflow run free-vision-qa.yml --ref main
+          fi
       - name: Fail watchdog when repair is required
         if: steps.verify.outcome == 'failure'
         run: exit 2
