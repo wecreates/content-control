@@ -1,0 +1,33 @@
+{
+  "best_reference_similarity_by_candidate": [
+    0.41620704531669617,
+    0.4577986001968384,
+    0.40164071321487427,
+    0.39787065982818604,
+    0.3814103603363037,
+    0.39773470163345337,
+    0.5070976614952087,
+    0.4255340099334717,
+    0.4014248251914978,
+    0.42434990406036377
+  ],
+  "checks": {
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true
+  },
+  "engine": "openclip-florence-free-qa-v1",
+  "florence": {
+    "captions": {
+      "candidate": [],
+      "reference": []
+    },
+    "error": "AttributeError: 'Florence2LanguageConfig' object has no attribute 'forced_bos_token_id'",
+    "status": "PARTIAL"
+  },
+  "florence_model": "microsoft/Florence-2-base",
+  "global_similarity": 0.32819828391075134,
+  "mean_best_frame_similarity": 0.42110687494277954,
+  "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+  "schema_version": 1,
+  "verdict": "PASS"
+}

@@ -1,0 +1,66 @@
+{
+  "audio_source": "repository-local public/audio",
+  "candidate_sha256": "c29eed830428d044319145ab1ae43ef5155f779cd2b1746846a34e9f9325ae8e",
+  "contact_sheet": "qa-output/free/contact.jpg",
+  "credit_cost": 0,
+  "deterministic": {
+    "candidate_sha256": "c29eed830428d044319145ab1ae43ef5155f779cd2b1746846a34e9f9325ae8e",
+    "checks": {
+      "duration_30s": true,
+      "motion_activity": true,
+      "no_black_frames": true,
+      "portrait_9_16": true,
+      "reference_edge_density_ratio": true
+    },
+    "duration_seconds": 30.0,
+    "edge_density_ratio": 0.5891201669284372,
+    "engine": "opencv-free-qa-v1",
+    "mean_candidate_edge_density": 0.01127376302083333,
+    "mean_reference_edge_density": 0.019136610243055557,
+    "motion_active_fraction": 1.0,
+    "reference_frames": 10,
+    "sampled_candidate_frames": 10,
+    "schema_version": 1,
+    "verdict": "PASS"
+  },
+  "duration_seconds": 30.0,
+  "paid_vision_dependency": false,
+  "phone_watch_path": "public-review/episode1-v10-free.mp4",
+  "publication_enabled": false,
+  "reference_source": "repository-local reference/frames",
+  "schema_version": 1,
+  "semantic": {
+    "best_reference_similarity_by_candidate": [
+      0.41620704531669617,
+      0.4577986001968384,
+      0.40164071321487427,
+      0.39787065982818604,
+      0.3814103603363037,
+      0.39773470163345337,
+      0.5070976614952087,
+      0.4255340099334717,
+      0.4014248251914978,
+      0.42434990406036377
+    ],
+    "checks": {
+      "openclip_global_similarity": true,
+      "openclip_mean_best_similarity": true
+    },
+    "engine": "openclip-florence-free-qa-v1",
+    "florence": {
+      "captions": {
+        "candidate": [],
+        "reference": []
+      },
+      "error": "AttributeError: 'Florence2LanguageConfig' object has no attribute 'forced_bos_token_id'",
+      "status": "PARTIAL"
+    },
+    "florence_model": "microsoft/Florence-2-base",
+    "global_similarity": 0.32819828391075134,
+    "mean_best_frame_similarity": 0.42110687494277954,
+    "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+    "schema_version": 1,
+    "verdict": "PASS"
+  },
+  "status": "FREE_QA_GREEN"
+}
