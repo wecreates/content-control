@@ -112,9 +112,9 @@ jobs:
             sleep $((attempt*5))
           done
           exit 1
-      - name: Refresh canonical completion state
+      - name: Start post-acceptance verification chain
         if: success()
-        run: gh workflow run free-production-watchdog.yml --ref main
+        run: gh workflow run review-server-smoke.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
