@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "c29eed830428d044319145ab1ae43ef5155f779cd2b1746846a34e9f9325ae8e",
+  "candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
   "credit_cost": 0,
   "gates": {
     "duration_30s": true,
@@ -13,10 +13,10 @@
   },
   "metrics": {
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5891201669284372,
+    "edge_density_ratio": 0.5890974864342292,
     "motion_active_fraction": 1.0,
-    "openclip_global_similarity": 0.32819828391075134,
-    "openclip_mean_best_similarity": 0.42110687494277954
+    "openclip_global_similarity": 0.32799196243286133,
+    "openclip_mean_best_similarity": 0.4209353029727936
   },
   "paid_vision_dependency": false,
   "publication_enabled": false,
