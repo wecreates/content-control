@@ -7,7 +7,7 @@ const app=express();
 const PORT=process.env.PORT||10000;
 const outDir=path.resolve("review-output");
 fs.mkdirSync(outDir,{recursive:true});
-const id="episode1-v9-latest";
+const id="episode1-v10-latest";
 const output=path.join(outDir,id+".mp4");
 let state={status:fs.existsSync(output)?"ready":"starting",startedAt:null,finishedAt:null,exitCode:null,logs:[]};
 
@@ -15,7 +15,7 @@ function push(x){state.logs.push(String(x));if(state.logs.length>100)state.logs.
 function render(){
   if(state.status==="rendering") return;
   state={status:"rendering",startedAt:new Date().toISOString(),finishedAt:null,exitCode:null,logs:[]};
-  const args=["remotion","render","remotion/v9-index.jsx","Episode1V9VerticalProof",output,"--codec","h264","--crf","28","--concurrency","1","--scale","0.5"];
+  const args=["remotion","render","remotion/v10-index.jsx","Episode1V10FinalProof",output,"--codec","h264","--crf","28","--concurrency","1","--scale","0.5"];
   const child=spawn("npx",args,{stdio:["ignore","pipe","pipe"],env:process.env});
   child.stdout.on("data",b=>push(b.toString()));
   child.stderr.on("data",b=>push(b.toString()));
