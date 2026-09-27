@@ -16,6 +16,11 @@ on:
       - 'control/publication-owner-gate.json'
       - 'control/publication-separation.json'
       - 'scripts/verify_free_production_health.py'
+      - 'scripts/verify_workflow_control.py'
+      - 'state/canonical-workflow-registry.json'
+      - '.github/workflows/episode1-motion-v3.yml'
+      - '.github/workflows/episode1-v4.yml'
+      - '.github/workflows/instagram-reel-bridge.yml'
       - 'server-lowmem.js'
       - 'server.js'
       - '.github/workflows/free-production-watchdog.yml'
@@ -34,6 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - name: Verify workflow trigger quarantine
+        run: python scripts/verify_workflow_control.py
       - name: Verify hash-bound watch server contract
         run: |
           node --check server-lowmem.js
@@ -51,7 +58,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add state/free-production-watchdog.json state/system-completion.json
+          git add state/free-production-watchdog.json state/system-completion.json state/workflow-control-health.json
           git diff --cached --quiet || git commit -m "Update free production watchdog evidence"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -73,4 +80,5 @@ jobs:
           path: |
             state/free-production-watchdog.json
             state/system-completion.json
+            state/workflow-control-health.json
           retention-days: 30
