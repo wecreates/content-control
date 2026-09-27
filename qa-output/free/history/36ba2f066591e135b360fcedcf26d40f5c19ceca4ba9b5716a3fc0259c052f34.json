@@ -1,0 +1,15 @@
+{
+  "accepted": true,
+  "candidate_sha256": "36ba2f066591e135b360fcedcf26d40f5c19ceca4ba9b5716a3fc0259c052f34",
+  "credit_cost": 0,
+  "metrics": {
+    "duration_seconds": 30.0,
+    "edge_density_ratio": 0.5891201669284372,
+    "motion_active_fraction": 1.0,
+    "openclip_global_similarity": 0.32819828391075134,
+    "openclip_mean_best_similarity": 0.42110687494277954
+  },
+  "publication_enabled": false,
+  "receipt_path": "qa-output/free/final-receipt.json",
+  "schema_version": 1
+}
