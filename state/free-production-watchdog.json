@@ -1,0 +1,27 @@
+{
+  "actual_video_sha256": "36ba2f066591e135b360fcedcf26d40f5c19ceca4ba9b5716a3fc0259c052f34",
+  "candidate_sha256": "36ba2f066591e135b360fcedcf26d40f5c19ceca4ba9b5716a3fc0259c052f34",
+  "checks": {
+    "audio_assets_present": true,
+    "florence_green": true,
+    "health_green": true,
+    "health_receipt_hash_match": true,
+    "immutable_history_present": true,
+    "local_audio_runtime": true,
+    "no_paid_vision": true,
+    "publication_health_off": true,
+    "publication_owner_gate_off": true,
+    "publication_receipt_off": true,
+    "publication_separation_off": true,
+    "receipt_green": true,
+    "reference_frames_present": true,
+    "video_exists": true,
+    "video_hash_bound": true,
+    "zero_credit": true
+  },
+  "failed_checks": [],
+  "publication_enabled": false,
+  "repair_action": "none",
+  "schema_version": 1,
+  "status": "GREEN"
+}
