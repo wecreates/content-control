@@ -17,11 +17,13 @@ on:
       - '.github/workflows/free-vision-qa.yml'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: free-vision-qa
   cancel-in-progress: true
 env:
   PUBLICATION_ENABLED: "false"
+  GH_TOKEN: ${{ github.token }}
   HF_HOME: ~/.cache/huggingface
 jobs:
   qa:
@@ -110,6 +112,9 @@ jobs:
             sleep $((attempt*5))
           done
           exit 1
+      - name: Refresh canonical completion state
+        if: success()
+        run: gh workflow run free-production-watchdog.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
