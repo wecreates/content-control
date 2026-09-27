@@ -3,6 +3,7 @@
   "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "checks": {
     "audio_assets_present": true,
+    "audio_green": true,
     "dependency_security_clean": true,
     "florence_green": true,
     "health_green": true,
