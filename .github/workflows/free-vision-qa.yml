@@ -34,15 +34,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-free-qa.lock.txt
       - name: Install runtime
         run: |
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
-          npm ci --ignore-scripts
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
           python -m pip install --upgrade pip
           python -m pip install -r requirements-free-qa.lock.txt
           test -s scripts/free_vision_qa.py
@@ -114,6 +120,23 @@ jobs:
           git config user.email actions@users.noreply.github.com
           git add -f qa-output/free public-review/episode1-v10-free.mp4 state/content-control-health.json
           git diff --cached --quiet || git commit -m "Persist zero credit V10 QA proof"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - name: Update and verify accepted candidate rollback ledger
+        run: |
+          python scripts/update_acceptance_ledger.py qa-output/free/final-receipt.json public-review/episode1-v10-free.mp4 state/accepted-candidate-ledger.json
+          python scripts/verify_acceptance_ledger.py
+      - name: Persist rollback ledger
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/accepted-candidate-ledger.json state/acceptance-ledger-health.json
+          git diff --cached --quiet || git commit -m "Update accepted candidate rollback ledger"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort || true
