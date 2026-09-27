@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "publication_enabled": false,
+  "educational_example": true,
+  "narration_path": "public/audio/episode1-narration.mp3",
+  "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
+  "narration_text": "Dave's premium card just came back with a six-hundred-ninety-five-dollar annual fee. Chad says the fix is simple: spend eighty dollars to unlock a twenty-dollar credit. Points Monk has a less glamorous answer. If you wouldn't buy the thing anyway, that credit isn't saving you money. Count only value you'd purchase without the card, subtract the fee you actually pay, and keep the card only when the math still wins.",
+  "claims": {
+    "annual_fee_example_usd": 695,
+    "spend_example_usd": 80,
+    "credit_example_usd": 20,
+    "net_spend_example_usd": 60,
+    "decision_rule": "REAL VALUE > FEE"
+  },
+  "arithmetic": [
+    {
+      "expression": "80-20",
+      "expected": 60
+    }
+  ],
+  "required_visual_tokens": [
+    "$80 − $20",
+    "$60",
+    "REAL VALUE > FEE"
+  ],
+  "prohibited_named_products": [
+    "American Express",
+    "Amex",
+    "Chase",
+    "Citi",
+    "Capital One",
+    "Discover",
+    "Wells Fargo",
+    "Bank of America"
+  ],
+  "prohibited_risky_phrases": [
+    "guaranteed return",
+    "risk-free",
+    "apply now",
+    "you must get this card",
+    "free money",
+    "guaranteed savings"
+  ],
+  "notes": [
+    "$695 is an unnamed educational example, not a claim about a currently named product."
+  ]
+}
