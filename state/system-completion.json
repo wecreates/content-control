@@ -6,6 +6,7 @@
     "bounded_failure_retry": true,
     "cyclonedx_sbom": true,
     "dependency_security_clean": true,
+    "factual_compliance_gate": true,
     "florence_vision_qa": true,
     "hash_bound_artifact": true,
     "hash_bound_provenance": true,

@@ -5,6 +5,7 @@
     "audio_assets_present": true,
     "audio_green": true,
     "dependency_security_clean": true,
+    "factual_compliance_green": true,
     "florence_green": true,
     "health_green": true,
     "health_receipt_hash_match": true,
