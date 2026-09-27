@@ -1,23 +1,16 @@
 name: Runtime Provenance and SBOM
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
-      - 'requirements-free-qa.lock.txt'
-      - 'public/audio/**'
-      - 'reference/frames/**'
-      - 'remotion/**'
-      - 'qa-output/free/final-receipt.json'
-      - 'state/runtime-integrity-manifest.json'
-      - '.github/workflows/runtime-provenance.yml'
+  schedule:
+    - cron: '41 12 * * *'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: runtime-provenance
   cancel-in-progress: true
+env:
+  GH_TOKEN: ${{ github.token }}
 jobs:
   provenance:
     runs-on: ubuntu-latest
@@ -48,7 +41,10 @@ jobs:
                   for c in iter(lambda:f.read(1024*1024),b""): h.update(c)
               return h.hexdigest()
           receipt=json.loads((root/"qa-output/free/final-receipt.json").read_text())
+          smoke=json.loads((root/"state/review-server-smoke.json").read_text())
           integrity=json.loads((root/"state/runtime-integrity-manifest.json").read_text())
+          assert smoke.get("status")=="PASS",smoke
+          assert smoke.get("candidate_sha256")==receipt.get("candidate_sha256"),(smoke.get("candidate_sha256"),receipt.get("candidate_sha256"))
           pkg=json.loads((root/"package.json").read_text())
           commit=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
           provenance={
@@ -69,6 +65,8 @@ jobs:
               },
               "critical_integrity_manifest_sha256":sha(root/"state/runtime-integrity-manifest.json"),
               "qa_receipt_sha256":sha(root/"qa-output/free/final-receipt.json"),
+              "review_server_smoke_sha256":sha(root/"state/review-server-smoke.json"),
+              "review_server_smoke_candidate_sha256":smoke["candidate_sha256"],
               "critical_file_count":integrity["critical_file_count"],
               "sbom":"state/provenance/npm-sbom.cdx.json",
           }
@@ -89,6 +87,9 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Complete post-acceptance chain
+        if: success()
+        run: gh workflow run free-production-watchdog.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
