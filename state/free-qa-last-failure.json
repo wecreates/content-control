@@ -9,10 +9,10 @@
   "head_sha": "fe59ffb34fc3b3adfb4e8bd7267868744191d347",
   "publication_enabled": false,
   "retry_budget": 1,
-  "run_attempt": 1,
+  "run_attempt": 2,
   "run_id": 36327318637,
   "schema_version": 1,
-  "status": "TRANSIENT_RETRY_PENDING",
-  "will_retry": true,
+  "status": "PERSISTENT_FAILURE",
+  "will_retry": false,
   "workflow": "Free Vision QA"
 }
