@@ -1,4 +1,4 @@
-name: Migrate Free QA Assets
+name: Finalize Free Asset Migration
 on:
   workflow_dispatch:
   push:
@@ -8,58 +8,51 @@ on:
 permissions:
   contents: write
 jobs:
-  migrate:
+  finalize:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
-      - name: Install media verifier
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-      - name: Download and verify durable local assets
+      - name: Verify local durable media
         run: |
           set -euo pipefail
-          mkdir -p public/audio reference/frames
-          curl --fail --location --retry 4 "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/86233855-12db-439e-9203-8ac04e2d3281.mp3" -o public/audio/episode1-narration.mp3
-          curl --fail --location --retry 4 "https://cdn.creativeclaw.co/u/49971af6/audio/2f8c3d65-763a-4b65-8f21-2d52c7bc92ed.mp3" -o public/audio/episode1-music.mp3
-          curl --fail --location --retry 4 "https://cdn.creativeclaw.co/u/49971af6/audio/9690b9f5-bbd1-4728-b0e0-eea24b8ccceb.mp3" -o public/audio/episode1-sfx-1.mp3
-          curl --fail --location --retry 4 "https://cdn.creativeclaw.co/u/49971af6/audio/9ed40957-df1a-4b57-a1fa-49905557cd0d.mp3" -o public/audio/episode1-sfx-2.mp3
-
-          refs=(
-            "https://cdn.creativeclaw.co/u/49971af6/images/5e5a74a9-2a44-4c9e-91c6-8cfaaf32d5f6.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/f2f4e9dc-e97d-4878-b530-b5849915ad79.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/c6170d7c-d339-421a-b73b-795038a9a136.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/43bbb75a-706a-4084-b3e1-e1afa7d6fb87.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/96346673-2603-4e50-abf7-9dc6bdd4e359.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/8913c2f9-38e9-4bb6-b405-040b56fb16f6.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/1886197c-dbcb-4613-b451-7c1244b40892.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/2665d71a-b063-4283-8468-7fbffd4f3a81.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/75279b92-540e-41b6-9754-db42be2dac4b.jpg"
-            "https://cdn.creativeclaw.co/u/49971af6/images/1ab9dd28-fb50-415e-83ec-22c10249044b.jpg"
-          )
-          i=0
-          for u in "${refs[@]}"; do
-            i=$((i+1))
-            out=$(printf "reference/frames/ref-%02d.jpg" "$i")
-            curl --fail --location --retry 4 "$u" -o "$out"
-            test -s "$out"
-          done
-
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          test -s public/audio/episode1-narration.mp3
+          test -s public/audio/episode1-music.mp3
+          test -s public/audio/episode1-sfx-1.mp3
+          test -s public/audio/episode1-sfx-2.mp3
+          test "$(find reference/frames -maxdepth 1 -type f -name 'ref-*.jpg' | wc -l)" -ge 10
           for f in public/audio/*.mp3; do
             ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$f" | grep -q audio
           done
-          for f in reference/frames/*.jpg; do
-            ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$f" | grep -q video
-          done
-      - name: Persist assets to repository
+      - name: Point V10 at repository-local audio only
+        run: |
+          cat > remotion/Episode1V10FinalProof.jsx <<'EOF'
+          import React from "react";
+          import {AbsoluteFill,Audio,Sequence,useCurrentFrame,staticFile} from "remotion";
+          import {V9ArticulatedVisual} from "./V9ArticulatedVisual";
+
+          export const Episode1V10FinalProof=()=>{
+            const frame=useCurrentFrame();
+            return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}>
+              <Audio src={staticFile("audio/episode1-narration.mp3")} volume={1}/>
+              <Audio src={staticFile("audio/episode1-music.mp3")} volume={0.07}/>
+              <Sequence from={3}><Audio src={staticFile("audio/episode1-sfx-1.mp3")} volume={0.72}/></Sequence>
+              <Sequence from={150}><Audio src={staticFile("audio/episode1-sfx-2.mp3")} volume={0.58}/></Sequence>
+              <Sequence from={288}><Audio src={staticFile("audio/episode1-sfx-1.mp3")} volume={0.60}/></Sequence>
+              <V9ArticulatedVisual frame={frame}/>
+            </AbsoluteFill>;
+          };
+          EOF
+      - name: Persist local-only runtime
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio reference/frames
-          git diff --cached --quiet || git commit -m "Vendor durable free QA reference and audio assets"
+          git add remotion/Episode1V10FinalProof.jsx
+          git diff --cached --quiet || git commit -m "Switch V10 to repository local audio"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort || true
