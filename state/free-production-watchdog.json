@@ -1,8 +1,9 @@
 {
-  "actual_video_sha256": "7870c3450fb7eb7e092e019a6c3001ae72485014ca427b3bbddc0ed181913179",
-  "candidate_sha256": "7870c3450fb7eb7e092e019a6c3001ae72485014ca427b3bbddc0ed181913179",
+  "actual_video_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
+  "candidate_sha256": "7368810c53ad3c76818bf0ccabe3438be6cf1cbaed09099a4147bf3421b00988",
   "checks": {
     "audio_assets_present": true,
+    "dependency_security_clean": true,
     "florence_green": true,
     "health_green": true,
     "health_receipt_hash_match": true,
@@ -15,23 +16,17 @@
     "publication_separation_off": true,
     "receipt_green": true,
     "reference_frames_present": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
+    "runtime_locks_present": true,
     "video_exists": true,
     "video_hash_bound": true,
+    "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [
-    "runtime_integrity_manifest"
-  ],
-  "integrity_failures": [
-    {
-      "actual": "ca9570d5bcdba7ce03590584115a82466d7bd4c1bc476c7083218f0d6a86c9c3",
-      "expected": "c3b8c90c79334b506963c5033e8f77067003a3cdb050945612728fa925d40591",
-      "path": "requirements-free-qa.lock.txt"
-    }
-  ],
+  "failed_checks": [],
+  "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "dispatch_free_vision_qa",
+  "repair_action": "none",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED"
+  "status": "GREEN"
 }
