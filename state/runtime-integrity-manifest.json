@@ -3,8 +3,8 @@
   "critical_file_count": 22,
   "entries": {
     "package-lock.json": {
-      "bytes": 168244,
-      "sha256": "cfd062b5d4d8dadb0b845791b417f6acbbd2d965053d8ab5231e1b18358a369c"
+      "bytes": 168325,
+      "sha256": "db5272a9e06d8b365dfd0555d8a24122e1f3ae69eff8d127b6c2e5db47b2906b"
     },
     "package.json": {
       "bytes": 1117,
@@ -79,8 +79,8 @@
       "sha256": "1a709f31a504b2514eac01e54dfde60f5831855ca64039eaf125c7db7cbcaaf2"
     },
     "requirements-free-qa.lock.txt": {
-      "bytes": 424,
-      "sha256": "faa235983cddbd291f42667ed5ab7d17899b0f3d7a549837874f8c291d8f80c7"
+      "bytes": 1897,
+      "sha256": "ca9570d5bcdba7ce03590584115a82466d7bd4c1bc476c7083218f0d6a86c9c3"
     },
     "server-lowmem.js": {
       "bytes": 4036,
