@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import hashlib,json,re
+import hashlib,json,re,html
 from pathlib import Path
 
 ROOT=Path(".")
 c=json.loads((ROOT/"state/episode1-factual-contract.json").read_text())
-visual=(ROOT/"remotion/V9ArticulatedVisual.jsx").read_text()
+visual_raw=(ROOT/"remotion/V9ArticulatedVisual.jsx").read_text()
+visual=html.unescape(visual_raw)
 audio=ROOT/c["narration_path"]
 
 def sha256(p):
@@ -36,7 +37,10 @@ checks["required_visual_math_present"]=all(tok in visual for tok in c.get("requi
 
 text=c.get("narration_text","")
 lower=text.lower()
-checks["no_named_product_claims"]=all(x.lower() not in lower for x in c.get("prohibited_named_products",[]))
+def phrase_present(phrase,text):
+    pattern=r"(?<![A-Za-z0-9])"+re.escape(phrase)+r"(?![A-Za-z0-9])"
+    return re.search(pattern,text,re.IGNORECASE) is not None
+checks["no_named_product_claims"]=all(not phrase_present(x,text) for x in c.get("prohibited_named_products",[]))
 checks["no_risky_language"]=all(x.lower() not in lower for x in c.get("prohibited_risky_phrases",[]))
 checks["decision_rule_present"]=claims["decision_rule"] in visual
 
