@@ -1,0 +1,19 @@
+{
+  "checks": {
+    ".github/workflows/autonomous-cco.yml": true,
+    ".github/workflows/episode1-motion-v3.yml": true,
+    ".github/workflows/episode1-v4.yml": true,
+    ".github/workflows/free-production-watchdog.yml": true,
+    ".github/workflows/free-qa-failure-router.yml": true,
+    ".github/workflows/free-vision-qa.yml": true,
+    ".github/workflows/generate-runtime-locks.yml": true,
+    ".github/workflows/instagram-reel-bridge.yml": true,
+    ".github/workflows/runtime-integrity-manifest.yml": true,
+    "canonical_generation_exists": true,
+    "publication_disabled": true
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "violations": []
+}
