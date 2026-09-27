@@ -3,10 +3,13 @@
   "components": {
     "automatic_repair_watchdog": true,
     "bounded_failure_retry": true,
+    "cyclonedx_sbom": true,
     "dependency_security_clean": true,
     "florence_vision_qa": true,
     "hash_bound_artifact": true,
+    "hash_bound_provenance": true,
     "immutable_acceptance_history": true,
+    "live_review_server_smoke": true,
     "local_audio_assets": true,
     "local_reference_assets": true,
     "openclip_semantic_qa": true,
