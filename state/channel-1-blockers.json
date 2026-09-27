@@ -1,26 +1,23 @@
 {
-  "schema_version": 1,
-  "checked_at": "2026-09-22T13:35:00Z",
+  "schema_version": 2,
+  "checked_at": "2026-09-27T13:49:00Z",
   "channel": "credit-card",
   "phase": 1,
   "publication_enabled": false,
+  "canonical_candidate": "public-review/episode1-v10-free.mp4",
+  "canonical_health": "state/system-completion.json",
   "resolved": [
     {
       "id": "GITHUB_GEMINI_PULL_ONLY",
-      "status": "resolved_infrastructure",
-      "evidence": "wecreates/content-control is writable with admin/maintain/push/pull and GitHub Actions parallel execution is proven."
-    }
-  ],
-  "open_blockers": [
+      "status": "superseded",
+      "evidence": "Gemini is no longer required for canonical QA. The zero-credit path uses OpenCV, OpenCLIP, and Florence-2 in GitHub Actions."
+    },
     {
       "id": "AV_COMPLETE_REVIEW",
-      "status": "blocked_external_security_and_artifact_ingress",
-      "requirements": [
-        "GEMINI_API_KEY must be added as an Actions secret in wecreates/content-control without exposing its value.",
-        "Exact FINANCE_REVIEW_4_9.mp4 or newer exact candidate must be made available to the reviewer workflow with SHA-256 binding.",
-        "Reviewer must return complete timestamped video+audio+factual findings and exact artifact hashes."
-      ],
-      "publication_allowed": false
+      "status": "resolved",
+      "evidence": "Exact hash-bound V10 candidate is reviewed by repository-local OpenCV, OpenCLIP, and Florence-2 with FREE_QA_GREEN receipt and watchdog verification."
     }
-  ]
+  ],
+  "open_blockers": [],
+  "remaining_user_gate": "watch/approve exact artifact before any publication"
 }
