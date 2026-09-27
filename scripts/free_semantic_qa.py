@@ -40,23 +40,17 @@ def main():
 
     florence={"status":"PARTIAL","captions":{"reference":[],"candidate":[]},"error":None}
     try:
-        from transformers import AutoProcessor, AutoModelForCausalLM
-        mid="microsoft/Florence-2-base"
-        processor=AutoProcessor.from_pretrained(mid,trust_remote_code=True)
-        fm=AutoModelForCausalLM.from_pretrained(mid,trust_remote_code=True).to(device)
+        from transformers import AutoProcessor, AutoModelForMultimodalLM
+        mid="florence-community/Florence-2-base"
+        processor=AutoProcessor.from_pretrained(mid)
+        fm=AutoModelForMultimodalLM.from_pretrained(mid).to(device)
         fm.eval()
         def caption(p):
             im=Image.open(p).convert("RGB")
             prompt="<MORE_DETAILED_CAPTION>"
             inp=processor(text=prompt,images=im,return_tensors="pt")
             with torch.no_grad():
-                out=fm.generate(
-                    input_ids=inp["input_ids"].to(device),
-                    pixel_values=inp["pixel_values"].to(device),
-                    max_new_tokens=72,
-                    num_beams=2,
-                    do_sample=False,
-                )
+                out=fm.generate(**{k:v.to(device) for k,v in inp.items()},max_new_tokens=72,num_beams=2,do_sample=False)
             raw=processor.batch_decode(out,skip_special_tokens=False)[0]
             parsed=processor.post_process_generation(
                 raw,task=prompt,image_size=(im.width,im.height)
@@ -73,12 +67,13 @@ def main():
     checks={
         "openclip_mean_best_similarity":mean_best>=0.20,
         "openclip_global_similarity":global_similarity>=0.18,
+        "florence_completed":florence["status"]=="PASS",
     }
     report={
         "schema_version":1,
         "engine":"openclip-florence-free-qa-v1",
         "openclip_model":"ViT-B-32/laion2b_s34b_b79k",
-        "florence_model":"microsoft/Florence-2-base",
+        "florence_model":"florence-community/Florence-2-base",
         "mean_best_frame_similarity":mean_best,
         "global_similarity":global_similarity,
         "best_reference_similarity_by_candidate":[float(x) for x in best],
