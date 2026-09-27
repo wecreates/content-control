@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "36ba2f066591e135b360fcedcf26d40f5c19ceca4ba9b5716a3fc0259c052f34",
+  "candidate_sha256": "7870c3450fb7eb7e092e019a6c3001ae72485014ca427b3bbddc0ed181913179",
   "components": {
     "automatic_repair_watchdog": true,
     "bounded_failure_retry": true,
@@ -13,7 +13,8 @@
     "phone_review_artifact": true,
     "publication_lock": true,
     "regression_lock": true,
-    "remotion_render": true
+    "remotion_render": true,
+    "runtime_integrity_manifest": true
   },
   "machine_system_complete": true,
   "publication_enabled": false,
