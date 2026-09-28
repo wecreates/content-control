@@ -129,6 +129,20 @@ jobs:
           if [ -s state/reference-clone-findings.json ]; then
             python scripts/generate_repair_plan.py --findings state/reference-clone-findings.json --out state/reference-clone-repair-plan.json
           fi
+      - name: Persist failed clone diagnostics
+        if: failure()
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f qa-output/reference-clone state/reference-clone-findings.json state/reference-clone-repair-plan.json || true
+          git diff --cached --quiet || git commit -m "Persist reference clone failure diagnostics"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
       - name: Trigger targeted repair
         if: failure()
         env:
