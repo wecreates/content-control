@@ -51,6 +51,7 @@ def build_choreography(scene):
     ref_intensity=max(0.0,min(1.0,float(reference.get("motion_intensity",0) or 0)*8))
     ref_flow_direction=str(reference.get("flow_direction","stable"))
     ref_flow_speed=max(0.0,float(reference.get("flow_speed",0) or 0))
+    ref_structure=reference.get("structure") or {}
     object_actions=[]
     for i,p in enumerate(scene.get("props",[])):
         pid=p.get("id","prop")
@@ -82,7 +83,9 @@ def build_choreography(scene):
     text=scene.get("text") or {}
     text_actions=[]
     if text.get("content"):
-        motion=TEXT_MOTIONS[abs(hash(text.get("content")))%len(TEXT_MOTIONS)]
+        text_density=float(ref_structure.get("text_region_count",0) or 0)
+        preferred=["type","highlight","track_subject"] if text_density>1.2 else TEXT_MOTIONS
+        motion=preferred[abs(hash(text.get("content")))%len(preferred)]
         text_actions.append({
           "content":text.get("content"),"zone":text.get("zone","upper_third"),
           "motion":motion,"entry_frame":2,"emphasis":"numeric" if re.search(r"[$%\d]",text.get("content","")) else "keyword",
@@ -103,15 +106,15 @@ def build_choreography(scene):
       "text_actions":text_actions,
       "overlays":overlays,
       "camera_events":camera_events,
-      "transition_in":{"type":TRANSITIONS[int(float(scene.get("start",0))*10)%len(TRANSITIONS)],"frames":6},
-      "transition_out":{"type":TRANSITIONS[(int(float(scene.get("start",0))*10)+3)%len(TRANSITIONS)],"frames":6},
+      "transition_in":{"type":"match_cut" if ref_structure.get("transition") else TRANSITIONS[int(float(scene.get("start",0))*10)%len(TRANSITIONS)],"frames":6},
+      "transition_out":{"type":"prop_collision" if int(ref_structure.get("contact_count",0) or 0)>0 else TRANSITIONS[(int(float(scene.get("start",0))*10)+3)%len(TRANSITIONS)],"frames":6},
       "contact_events":contacts,
       "physics":{"enabled":True,"gravity":980,"restitution":.42,"drag":.08,"spring":170,"damping":18},
       "animation_curves":CURVES,
       "visual_gags":[{"type":"reaction_or_prop_misbehavior","frame":max(4,round(duration*24*.7)),"silent":True}],
       "depth_layers":[{"id":"foreground","z":3,"parallax":1.25},{"id":"midground","z":2,"parallax":1.0},{"id":"background","z":1,"parallax":.55}],
       "visual_metaphor":metaphor_for(scene),
-      "reference_transfer":{"character_action":ref_char,"prop_action":ref_prop,"motion_intensity":round(ref_intensity,3),"flow_direction":ref_flow_direction,"flow_speed":round(ref_flow_speed,5),"retention_reason":reference.get("retention_reason","")},
+      "reference_transfer":{"character_action":ref_char,"prop_action":ref_prop,"motion_intensity":round(ref_intensity,3),"flow_direction":ref_flow_direction,"flow_speed":round(ref_flow_speed,5),"structure":ref_structure,"retention_reason":reference.get("retention_reason","")},
       "continuous_motion":{"required":True,"minimum_sources":2},
       "publication_enabled":False
     }
