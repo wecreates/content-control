@@ -114,7 +114,9 @@ jobs:
               "factual_compliance_green","sync_retention_green","narration_transcription_green",
               "caption_health_green","dependency_security_clean","runtime_locks_present",
               "provenance_candidate_match","provenance_inputs_current","sbom_valid",
-              "workflow_control_green","deployment_contract_green"
+              "workflow_control_green","deployment_contract_green",
+              "acceptance_ledger_candidate_match","caption_candidate_match",
+              "review_server_smoke_candidate_match","candidate_identity_consistent"
           }
           if failed-auxiliary:
               routes.add("free-vision-qa.yml")
