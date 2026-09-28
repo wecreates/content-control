@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "name": "Reference Decomposition Contract",
+  "required_fields": [
+    "source_url",
+    "source_type",
+    "duration_seconds",
+    "hook_first_second",
+    "characters",
+    "shot_timeline",
+    "motion_verbs",
+    "camera_verbs",
+    "comedy_engine",
+    "payoff_timestamp",
+    "audio_punctuation",
+    "transferable_mechanics"
+  ],
+  "shot_timeline_fields": [
+    "start",
+    "end",
+    "shot_scale",
+    "camera",
+    "character_action",
+    "prop_action",
+    "state_change",
+    "why_it_retains"
+  ],
+  "rule": "Store mechanics and measurements, not copied frames or exact character geometry.",
+  "publication_enabled": false
+}
