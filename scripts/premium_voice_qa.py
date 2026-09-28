@@ -4,6 +4,8 @@ from pathlib import Path
 def validate(receipt,assignments):
     if receipt.get("status")=="NOT_CONFIGURED":
         return {"schema_version":1,"status":"READY_NO_CREDENTIALS","checks":{"fallback_allowed":True},"publication_enabled":False}
+    if receipt.get("status")=="EMPTY":
+        return {"schema_version":1,"status":"NO_DIALOGUE","checks":{"nothing_to_generate":True},"publication_enabled":False}
     rows=receipt.get("segments",[]);assigned=assignments.get("assignments",{})
     checks={}
     checks["provider_cartesia"]=receipt.get("provider")=="cartesia" and receipt.get("model_id")=="sonic-3.6"
@@ -17,5 +19,5 @@ def validate(receipt,assignments):
     return {"schema_version":1,"status":"PASS" if not failed else "FAIL","checks":checks,"failed_checks":failed,"publication_enabled":False}
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--receipt",required=True);ap.add_argument("--assignments",required=True);ap.add_argument("--out",required=True);a=ap.parse_args()
-    r=validate(json.loads(Path(a.receipt).read_text()),json.loads(Path(a.assignments).read_text()));Path(a.out).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n");print(json.dumps(r,sort_keys=True));raise SystemExit(0 if r["status"] in ["PASS","READY_NO_CREDENTIALS"] else 2)
+    r=validate(json.loads(Path(a.receipt).read_text()),json.loads(Path(a.assignments).read_text()));Path(a.out).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n");print(json.dumps(r,sort_keys=True));raise SystemExit(0 if r["status"] in ["PASS","READY_NO_CREDENTIALS","NO_DIALOGUE"] else 2)
 if __name__=="__main__":main()
