@@ -17,6 +17,7 @@ live_deployment=json.loads((ROOT/"state/live-deployment-health.json").read_text(
 sync_health=json.loads((ROOT/"state/sync-retention-health.json").read_text()) if (ROOT/"state/sync-retention-health.json").exists() else {"status":"MISSING"}
 transcription=json.loads((ROOT/"state/narration-transcription-health.json").read_text()) if (ROOT/"state/narration-transcription-health.json").exists() else {"status":"MISSING"}
 caption_health=json.loads((ROOT/"state/caption-health.json").read_text()) if (ROOT/"state/caption-health.json").exists() else {"status":"MISSING"}
+mobile_health=json.loads((ROOT/"state/mobile-playback-health.json").read_text()) if (ROOT/"state/mobile-playback-health.json").exists() else {"status":"MISSING"}
 smoke=json.loads((ROOT/"state/review-server-smoke.json").read_text()) if (ROOT/"state/review-server-smoke.json").exists() else {"status":"MISSING"}
 provenance=json.loads((ROOT/"state/provenance/runtime-provenance.json").read_text()) if (ROOT/"state/provenance/runtime-provenance.json").exists() else {}
 sbom=json.loads((ROOT/"state/provenance/npm-sbom.cdx.json").read_text()) if (ROOT/"state/provenance/npm-sbom.cdx.json").exists() else {}
@@ -66,6 +67,7 @@ checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(li
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
 caption_file=ROOT/"public-review/episode1-v10-free.vtt"
+checks["mobile_playback_green"]=mobile_health.get("status")=="PASS" and all(mobile_health.get("checks",{}).values())
 checks["caption_health_green"]=all([
     caption_health.get("status")=="PASS",
     all(caption_health.get("checks",{}).values()),
@@ -156,6 +158,7 @@ completion={
         "sync_retention_gate":checks["sync_retention_green"],
         "narration_transcription_gate":checks["narration_transcription_green"],
         "verified_caption_track":checks["caption_health_green"],
+        "mobile_playback_compatibility":checks["mobile_playback_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
         "live_review_server_smoke":checks["review_server_smoke_green"],
         "phone_range_streaming":smoke.get("range_streaming_verified") is True,
@@ -190,6 +193,7 @@ ops={
     "sync_retention_status":sync_health.get("status"),
     "narration_transcription_status":transcription.get("status"),
     "caption_status":caption_health.get("status"),
+    "mobile_playback_status":mobile_health.get("status"),
     "caption_sha256":caption_health.get("caption_sha256"),
     "review_server_smoke_status":smoke.get("status"),
     "failed_checks":report["failed_checks"],
