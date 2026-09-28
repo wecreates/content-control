@@ -54,6 +54,29 @@ def motion_samples(path,duration,step=.5):
     cap.release()
     return vals
 
+def visual_fingerprint(path,duration):
+    import cv2,numpy as np
+    cap=cv2.VideoCapture(str(path))
+    times=[duration*x for x in (.08,.28,.5,.72,.92) if duration>0]
+    lumas=[];sats=[];edges=[];whites=[];rgbs=[];thirds=[]
+    for t in times:
+        cap.set(cv2.CAP_PROP_POS_MSEC,t*1000);ok,frame=cap.read()
+        if not ok: continue
+        small=cv2.resize(frame,(180,320))
+        hsv=cv2.cvtColor(small,cv2.COLOR_BGR2HSV)
+        gray=cv2.cvtColor(small,cv2.COLOR_BGR2GRAY)
+        edge=cv2.Canny(gray,80,160)>0
+        lumas.append(float(gray.mean()/255));sats.append(float(hsv[:,:,1].mean()/255))
+        edges.append(float(edge.mean()));whites.append(float((gray>235).mean()))
+        b,g,r=cv2.mean(small)[:3];rgbs.append([r/255,g/255,b/255])
+        w=edge.shape[1]//3
+        thirds.append([float(edge[:,:w].mean()),float(edge[:,w:2*w].mean()),float(edge[:,2*w:].mean())])
+    cap.release()
+    mean=lambda xs: sum(xs)/len(xs) if xs else 0
+    rgb=[round(mean([x[i] for x in rgbs]),4) for i in range(3)] if rgbs else [1,1,1]
+    tri=[round(mean([x[i] for x in thirds]),6) for i in range(3)] if thirds else [0,0,0]
+    return {"mean_luma":round(mean(lumas),6),"mean_saturation":round(mean(sats),6),"edge_density":round(mean(edges),6),"white_background_fraction":round(mean(whites),6),"mean_rgb":rgb,"edge_density_thirds":tri}
+
 def infer_scale(index):
     return ["close","medium","wide"][index%3]
 
@@ -97,6 +120,7 @@ def main():
       "transferable_mechanics":["measured cut timing","measured motion density","camera intensity curve","silence timing"],
       "distinctive_creator_elements_not_to_copy":["exact character identity","dialogue wording","signature jokes","logos","shot-for-shot composition"],
       "motion_curve":motion,
+      "visual_style_fingerprint":visual_fingerprint(video,duration),
       "publication_enabled":False
     }
     out=Path(args.out);out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
