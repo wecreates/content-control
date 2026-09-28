@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "dimensions": [
+    "shot-scale diversity",
+    "transition diversity",
+    "static fraction",
+    "composition repetition",
+    "visual-gag density",
+    "visual-metaphor density"
+  ],
+  "minimum_score": 0.62,
+  "authority": "may reject technically valid renders",
+  "rule": "technical PASS is insufficient when final cut remains repetitive, static, visually literal, or low-taste"
+}
