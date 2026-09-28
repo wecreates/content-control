@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "overlays": [
+    "tracked_callout",
+    "arrow",
+    "underline",
+    "circle",
+    "zoom_window",
+    "document_highlight",
+    "math_annotation",
+    "dynamic_label"
+  ],
+  "rules": [
+    "overlay must improve comprehension, punchline, or attention direction",
+    "max simultaneous overlays 2",
+    "track moving target when attached",
+    "auto-expire when purpose is complete"
+  ]
+}
