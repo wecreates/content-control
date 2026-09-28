@@ -7,9 +7,9 @@
     "ledger": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "ledger_health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "live_deployment": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-    "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+    "provenance": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "receipt": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-    "smoke": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127"
+    "smoke": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e"
   },
   "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "checks": {
@@ -33,8 +33,8 @@
     "mobile_playback_green": true,
     "narration_transcription_green": true,
     "no_paid_vision": true,
-    "provenance_candidate_match": false,
-    "provenance_inputs_current": false,
+    "provenance_candidate_match": true,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -42,9 +42,9 @@
     "python_dependency_security_clean": true,
     "receipt_green": true,
     "reference_frames_present": true,
-    "review_server_smoke_candidate_match": false,
-    "review_server_smoke_green": false,
-    "runtime_integrity_manifest": true,
+    "review_server_smoke_candidate_match": true,
+    "review_server_smoke_green": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,15 +54,18 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "live_deployment_green",
-    "review_server_smoke_candidate_match",
-    "review_server_smoke_green",
-    "provenance_candidate_match",
-    "provenance_inputs_current",
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "05e7c715cca92be6db18714e67ffe544ddd739eac651a390f7830a18e996d140",
+      "expected": "77775ca691b624fdf8a8afc7b9e5796afd5a3028652c1b2ea35d8a77df16c497",
+      "path": "server-lowmem.js"
+    }
+  ],
   "publication_enabled": false,
   "repair_action": "dispatch_free_vision_qa",
   "schema_version": 1,
