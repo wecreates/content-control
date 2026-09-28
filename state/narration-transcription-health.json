@@ -1,8 +1,9 @@
 {
-  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math. And we'll be back in just one minute. Thank you. Thank you. Thank you. Thank you. I'm really happy to be here today. I appreciate the time. Thank you. Thank you, Dave. Thank you. Thank you. Thank you. Thank you. Thank you. Thank you. I appreciate it. Thank you.",
+  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase. But the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "checks": {
     "content_token_recall_ok": true,
     "duration_plausible": true,
+    "no_post_narration_hallucination": true,
     "publication_disabled": true,
     "semantic_recall_ok": true,
     "sequence_similarity_ok": true,
@@ -29,12 +30,12 @@
     {
       "end": 8.04,
       "start": 3.84,
-      "text": "Chad points to a $20 credit after an $80 purchase,"
+      "text": "Chad points to a $20 credit after an $80 purchase."
     },
     {
       "end": 9.56,
       "start": 8.04,
-      "text": "but the math is simple."
+      "text": "But the math is simple."
     },
     {
       "end": 11.84,
@@ -65,91 +66,6 @@
       "end": 26.12,
       "start": 23.96,
       "text": "Ignore the flex and keep the math."
-    },
-    {
-      "end": 29.12,
-      "start": 26.12,
-      "text": "And we'll be back in just one minute."
-    },
-    {
-      "end": 30.12,
-      "start": 29.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 31.12,
-      "start": 30.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 32.12,
-      "start": 31.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 33.12,
-      "start": 32.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 37.12,
-      "start": 33.12,
-      "text": "I'm really happy to be here today."
-    },
-    {
-      "end": 41.12,
-      "start": 37.12,
-      "text": "I appreciate the time."
-    },
-    {
-      "end": 42.12,
-      "start": 41.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 44.12,
-      "start": 42.12,
-      "text": "Thank you, Dave."
-    },
-    {
-      "end": 45.12,
-      "start": 44.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 46.12,
-      "start": 45.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 47.12,
-      "start": 46.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 48.12,
-      "start": 47.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 49.12,
-      "start": 48.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 50.12,
-      "start": 49.12,
-      "text": "Thank you."
-    },
-    {
-      "end": 51.12,
-      "start": 50.12,
-      "text": "I appreciate it."
-    },
-    {
-      "end": 52.12,
-      "start": 51.12,
-      "text": "Thank you."
     }
   ],
   "semantic_hits": [
@@ -234,8 +150,8 @@
     }
   ],
   "semantic_recall": 0.909091,
-  "sequence_similarity": 0.742072,
+  "sequence_similarity": 1.0,
   "status": "PASS",
-  "transcribed_duration_seconds": 52.12,
-  "transcript_coverage_ratio": 1.990529
+  "transcribed_duration_seconds": 26.12,
+  "transcript_coverage_ratio": 0.997556
 }

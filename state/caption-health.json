@@ -6,22 +6,19 @@
   "checks": {
     "candidate_health_green": true,
     "caption_file_exists": true,
-    "covers_spoken_audio": false,
+    "covers_spoken_audio": true,
     "ends_within_media": true,
     "monotonic": true,
     "narration_asset_present": true,
-    "segment_count_matches": false,
+    "segment_count_matches": true,
     "starts_near_zero": true,
     "transcription_source_green": true
   },
-  "failed_checks": [
-    "segment_count_matches",
-    "covers_spoken_audio"
-  ],
+  "failed_checks": [],
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "publication_enabled": false,
   "schema_version": 1,
   "segment_count": 9,
-  "status": "FAIL",
-  "transcription_receipt_sha256": "1b03c547b98e05643a3a1d297f3f2195baf7b10818fa25d8403275d5bfa9290b"
+  "status": "PASS",
+  "transcription_receipt_sha256": "0141d8438f47891e4e1bf9265980601ab6392f44447128d6bcd8d23f715c069a"
 }
