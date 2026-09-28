@@ -137,6 +137,17 @@ candidate_converged=all(candidate_hashes.values()) and len(set(candidate_hashes.
 checks["candidate_converged"]=candidate_converged
 
 status="GREEN" if all(checks.values()) else "REPAIR_REQUIRED"
+failed_checks=[k for k,v in checks.items() if not v]
+if status=="GREEN":
+    repair_action="none"
+elif "system_wiring_green" in failed_checks:
+    repair_action="audit_system_wiring"
+elif "live_deployment_green" in failed_checks or "candidate_converged" in failed_checks:
+    repair_action="reconcile_or_refresh_live_deployment"
+elif "review_server_smoke_green" in failed_checks:
+    repair_action="refresh_review_server_smoke"
+else:
+    repair_action="route_smallest_failed_invariant"
 report={
     "schema_version":1,
     "status":status,
@@ -145,9 +156,9 @@ report={
     "candidate_hashes":candidate_hashes,
     "actual_video_sha256":actual_hash,
     "checks":checks,
-    "failed_checks":[k for k,v in checks.items() if not v],
+    "failed_checks":failed_checks,
     "integrity_failures":manifest_failures,
-    "repair_action":"none" if status=="GREEN" else "dispatch_free_vision_qa",
+    "repair_action":repair_action,
     "publication_enabled":False,
 }
 out=ROOT/"state/free-production-watchdog.json"
