@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "targets": {
+    "safe_inset_pct": 5,
+    "negative_space_target": 0.34,
+    "silhouette_separation_min": 0.12,
+    "max_border_activity": 0.12,
+    "max_edge_density": 0.24,
+    "min_white_fraction": 0.42
+  },
+  "priority": [
+    "character",
+    "primary_prop",
+    "kinetic_text",
+    "overlay",
+    "background"
+  ],
+  "rules": [
+    "preserve focal hierarchy",
+    "keep action/text/CTA zones separate",
+    "screen direction continuity",
+    "foreground may occlude only intentionally"
+  ]
+}
