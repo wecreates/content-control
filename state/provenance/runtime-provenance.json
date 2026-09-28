@@ -21,6 +21,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "ad70ad1415add8a0483a0463e90d70871cfb35a8",
+  "source_commit": "caecb94d2337443cec44599eea3fc214d939825a",
   "zero_credit_runtime": true
 }
