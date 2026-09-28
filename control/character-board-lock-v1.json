@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "canonical_board": "reference/characters/content-control-character-board.svg",
+  "character_system": "remotion/CharacterSystem.jsx",
+  "bible": "control/character-bible-v1.json",
+  "lock_policy": "board + renderer + bible hashes must be recorded in every accepted candidate",
+  "characters": [
+    "dave",
+    "points_monk",
+    "cashback_goblin"
+  ],
+  "tolerance": {
+    "proportion_drift_pct": 0,
+    "line_weight_drift_px": 0,
+    "accent_color_drift": false
+  },
+  "required_qa": "scripts/character_identity_qa.py"
+}
