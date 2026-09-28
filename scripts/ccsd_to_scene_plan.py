@@ -10,7 +10,7 @@ def build(ccsd,original):
         if not c: continue
         cam=c.get("camera") or {};chars=c.get("characters") or [];audio=c.get("audio") or {}
         if chars:
-            ch=chars[0];s["character"]=ch.get("id",s.get("character"));s["pose"]=ch.get("motion_clip",ch.get("pose",s.get("pose")));s["facial_performance"]=ch.get("face_track")
+            ch=chars[0];s["character"]=ch.get("id",s.get("character"));s["pose"]=ch.get("motion_clip",ch.get("pose",s.get("pose")));s["facial_performance"]=ch.get("face_track");s["acting"]=ch.get("acting");s["characters"]=chars
         s["camera"]=cam.get("move",s.get("camera"));s["shot_scale"]=cam.get("shot_scale",s.get("shot_scale"))
         s["lighting"]=c.get("lighting");s["fx"]=c.get("fx",[]);s["simulation"]=c.get("simulation");s["editorial"]=c.get("editorial")
         s["audio_design"]={"sfx":audio.get("sfx",[]),"music":audio.get("music",{}),"room_tone":audio.get("room_tone")}
