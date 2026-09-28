@@ -48,19 +48,19 @@ jobs:
             mc=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/ep3/media.headers -o /tmp/ep3/range.bin -w "%{http_code}" "$BASE/episode3/media" || true)
             if [ "$hc" = "200" ] && [ "$wc" = "200" ] && [ "$cc" = "200" ] && [ "$mc" = "206" ]; then
               if python - "$EXPECTED" "$EXPECTED_CAPTION" <<'PY'
-import json,sys,pathlib
-h=json.load(open("/tmp/ep3/health.json"))
-e=sys.argv[1]; c=sys.argv[2]
-assert h.get("ok") is True
-assert h.get("publication") is False
-assert h.get("hashBound") is True
-assert h.get("expectedSha256")==e
-assert h.get("actualSha256")==e
-assert h.get("captionReady") is True
-assert h.get("captionSha256")==c
-assert pathlib.Path("/tmp/ep3/captions.vtt").read_text(errors="ignore").startswith("WEBVTT")
-assert pathlib.Path("/tmp/ep3/range.bin").stat().st_size==1024
-PY
+          import json,sys,pathlib
+          h=json.load(open("/tmp/ep3/health.json"))
+          e=sys.argv[1]; c=sys.argv[2]
+          assert h.get("ok") is True
+          assert h.get("publication") is False
+          assert h.get("hashBound") is True
+          assert h.get("expectedSha256")==e
+          assert h.get("actualSha256")==e
+          assert h.get("captionReady") is True
+          assert h.get("captionSha256")==c
+          assert pathlib.Path("/tmp/ep3/captions.vtt").read_text(errors="ignore").startswith("WEBVTT")
+          assert pathlib.Path("/tmp/ep3/range.bin").stat().st_size==1024
+          PY
               then ok=1; break; fi
             fi
             sleep $((attempt*8))
