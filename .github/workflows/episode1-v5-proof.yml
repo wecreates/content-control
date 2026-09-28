@@ -1,13 +1,6 @@
 name: Episode 1 V5 Visual Parity Proof
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/Episode1V5Proof.jsx'
-      - 'remotion/index.jsx'
-      - 'tests/test_episode1_v5_proof.py'
-      - '.github/workflows/episode1-v5-proof.yml'
 permissions:
   contents: write
 env:
