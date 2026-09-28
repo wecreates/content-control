@@ -28,18 +28,18 @@
     "reproducible_runtime_locks": true,
     "review_server_cache_policy": true,
     "review_server_security_headers": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "sync_retention_gate": true,
     "verified_caption_track": true,
     "workflow_control_quarantine": true
   },
-  "machine_system_complete": false,
+  "machine_system_complete": true,
   "publication_enabled": false,
   "publication_separate": true,
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "schema_version": 1,
   "source_receipt": "qa-output/free/final-receipt.json",
-  "status": "REPAIR_REQUIRED",
+  "status": "COMPLETE",
   "watchdog_receipt": "state/free-production-watchdog.json",
   "zero_credit_runtime": true
 }
