@@ -89,14 +89,8 @@ jobs:
 
           mapping={
               "runtime_integrity_manifest":"runtime-integrity-manifest.yml",
-              "live_deployment_green":"live-render-deployment-smoke.yml",
-              "review_server_smoke_green":"review-server-smoke.yml",
               "factual_compliance_green":"factual-compliance-gate.yml",
               "sync_retention_green":"sync-retention-gate.yml",
-              "narration_transcription_green":"narration-transcription-gate.yml",
-              "caption_health_green":"narration-transcription-gate.yml",
-              "mobile_playback_green":"free-vision-qa.yml",
-              "python_dependency_security_clean":"python-security-audit.yml",
               "dependency_security_clean":"runtime-security-audit.yml",
               "runtime_locks_present":"generate-runtime-locks.yml",
           }
@@ -104,13 +98,22 @@ jobs:
               if check in failed:
                   routes.add(wf)
 
-          if failed & {"provenance_candidate_match","provenance_inputs_current","sbom_valid"}:
+          # Promotion repairs are dependency ordered. Dispatch only the earliest
+          # stale stage; each successful stage explicitly chains the next one.
+          if failed & {"narration_transcription_green","caption_health_green"}:
+              routes.add("narration-transcription-gate.yml")
+          elif "review_server_smoke_green" in failed:
+              routes.add("review-server-smoke.yml")
+          elif failed & {"provenance_candidate_match","provenance_inputs_current","sbom_valid"}:
               routes.add("runtime-provenance.yml")
+          elif "live_deployment_green" in failed:
+              routes.add("live-render-deployment-smoke.yml")
 
           auxiliary={
               "runtime_integrity_manifest","live_deployment_green","review_server_smoke_green",
-              "factual_compliance_green","sync_retention_green","narration_transcription_green","caption_health_green","dependency_security_clean",
-              "runtime_locks_present","provenance_candidate_match","provenance_inputs_current","sbom_valid",
+              "factual_compliance_green","sync_retention_green","narration_transcription_green",
+              "caption_health_green","dependency_security_clean","runtime_locks_present",
+              "provenance_candidate_match","provenance_inputs_current","sbom_valid",
               "workflow_control_green","deployment_contract_green"
           }
           if failed-auxiliary:
