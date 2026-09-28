@@ -401,6 +401,64 @@ def audit_root(root: Path):
         "composition_frame_qa.py","motion_choreography_qa.py","composition.json","motion.json"
     ])
     checks["visual_choreography_tests_exposed"]="test:choreography" in scripts and "test_visual_choreography.py" in scripts.get("test:choreography","")
+    quality_depth_files=[
+        "control/quality-depth-v1.json",
+        "control/acting-depth-v1.json",
+        "control/audio-depth-v1.json",
+        "control/taste-director-v1.json",
+        "scripts/story_room_v2.py",
+        "scripts/story_room_critic.py",
+        "scripts/apply_story_strategy.py",
+        "scripts/storyboard_generator_v2.py",
+        "scripts/visual_dailies_v2.py",
+        "scripts/audience_panel_v2.py",
+        "scripts/acting_director.py",
+        "scripts/contact_physics_pass.py",
+        "scripts/visual_development_v2.py",
+        "scripts/longform_visual_director.py",
+        "scripts/soundscape_director.py",
+        "scripts/adaptive_score_v2.py",
+        "scripts/soundscape_render.py",
+        "scripts/reference_optical_flow.py",
+        "scripts/reference_motion_v2.py",
+        "scripts/reference_clone_enrich.py",
+        "scripts/analytics_learning_v2.py",
+        "scripts/production_scheduler.py",
+        "scripts/typography_director.py",
+        "scripts/typography_pass.py",
+        "scripts/taste_features.py",
+        "scripts/taste_director.py",
+        "remotion/ArticulatedRig.jsx",
+        "remotion/Physics2D.jsx",
+        "tests/test_quality_depth.py",
+    ]
+    checks["quality_depth_stack_connected"]=all((root/p).is_file() for p in quality_depth_files)
+    checks["quality_depth_studio_connected"]=all(x in studio_text for x in [
+        "story_room_v2.py","story_room_critic.py","apply_story_strategy.py",
+        "storyboard_generator_v2.py","visual_dailies_v2.py","audience_panel_v2.py",
+        "acting_director.py","contact_physics_pass.py","visual_development_v2.py",
+        "longform_visual_director.py","soundscape_director.py","adaptive_score_v2.py",
+        "soundscape_render.py","production_scheduler.py","typography_pass.py","18-master-ccsd.json"
+    ])
+    ingest=(root/"scripts/ingest_reference_video.py").read_text() if (root/"scripts/ingest_reference_video.py").is_file() else ""
+    checks["reference_optical_flow_connected"]=all(x in ingest for x in [
+        "reference_optical_flow.py","reference_motion_v2.py","reference_clone_enrich.py","optical-flow.json"
+    ]) and all(x in (root/"scripts/reference_clone_compiler.py").read_text() for x in [
+        "reference_flow_direction","reference_flow_speed"
+    ])
+    char_src=(root/"remotion/CharacterSystem.jsx").read_text() if (root/"remotion/CharacterSystem.jsx").is_file() else ""
+    checks["articulated_character_runtime_connected"]=all(x in char_src for x in [
+        "elbowPoint","kneePoint","leftHandTarget","rightHandTarget","armBend","legBend"
+    ]) and "performanceTargets" in ((root/"remotion/ChoreographyRuntime.jsx").read_text() if (root/"remotion/ChoreographyRuntime.jsx").is_file() else "")
+    checks["adaptive_soundscape_connected"]="studio-soundscape.wav" in studio_text and "inject_soundscape_path.py" in studio_text and "soundscape_path" in short_comp and "soundscape_path" in long_comp
+    checks["taste_director_render_gate"]=all(x in clone_render_text for x in [
+        "taste_features.py","taste_director.py","taste.json"
+    ]) and all(x in long_wf_text for x in [
+        "taste_features.py","taste_director.py","taste.json"
+    ])
+    analytics_wf2=(root/".github/workflows/analytics-feedback.yml").read_text() if (root/".github/workflows/analytics-feedback.yml").is_file() else ""
+    checks["analytics_learning_v2_connected"]="analytics_learning_v2.py" in analytics_wf2 and "18-master-ccsd.json" in analytics_wf2 and "creative-learning-memory.json" in analytics_wf2
+    checks["quality_depth_tests_exposed"]="test:quality-depth" in scripts and "test_quality_depth.py" in scripts.get("test:quality-depth","")
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
