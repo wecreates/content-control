@@ -66,6 +66,14 @@ checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual
 checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values()) and ledger_health.get("current_candidate_sha256")==health.get("candidate_sha256") and ledger.get("current_candidate_sha256")==health.get("candidate_sha256")
 checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(deployment.get("checks",{}).values())
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
+checks["candidate_identity_consistent"]=all([
+    checks["health_receipt_hash_match"],
+    checks["acceptance_ledger_candidate_match"],
+    checks["caption_candidate_match"],
+    checks["review_server_smoke_candidate_match"],
+    checks["provenance_candidate_match"],
+    checks["live_deployment_green"],
+])
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
 caption_file=ROOT/"public-review/episode1-v10-free.vtt"
@@ -80,6 +88,7 @@ checks["caption_health_green"]=all([
     caption_health.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
 ])
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
+checks["review_server_smoke_candidate_match"]=smoke.get("candidate_sha256")==health.get("candidate_sha256")
 checks["review_server_smoke_green"]=all([
     smoke.get("status")=="PASS",
     smoke.get("candidate_sha256")==health.get("candidate_sha256"),
@@ -155,7 +164,8 @@ completion={
         "python_dependency_security_clean":checks["python_dependency_security_clean"],
         "workflow_control_quarantine":checks["workflow_control_green"],
         "factual_compliance_gate":checks["factual_compliance_green"],
-        "accepted_candidate_rollback_ledger":checks["acceptance_ledger_green"],
+        "accepted_candidate_rollback_ledger":checks["acceptance_ledger_green"] and checks["acceptance_ledger_candidate_match"],
+        "candidate_identity_consistency":checks["candidate_identity_consistent"],
         "deployment_contract":checks["deployment_contract_green"],
         "live_public_deployment":checks["live_deployment_green"],
         "sync_retention_gate":checks["sync_retention_green"],
