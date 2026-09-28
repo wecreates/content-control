@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "quality": 0.82,
+  "character_consistency": 0.95,
+  "latency_ms": 1000,
+  "cost": 0,
+  "engine": "deterministic_remotion_zero_credit",
+  "publication_enabled": false
+}
