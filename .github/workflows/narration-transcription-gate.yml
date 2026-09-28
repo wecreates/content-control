@@ -16,6 +16,7 @@ on:
 permissions:
   contents: write
   actions: write
+  actions: write
 concurrency:
   group: narration-transcription-gate
   cancel-in-progress: true
@@ -78,6 +79,9 @@ jobs:
               raise SystemExit(2)
           PY
       - name: Continue caption acceptance chain
+        if: success()
+        run: gh workflow run review-server-smoke.yml --ref main
+      - name: Continue candidate promotion after caption binding
         if: success()
         run: gh workflow run review-server-smoke.yml --ref main
       - uses: actions/upload-artifact@v4
