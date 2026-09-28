@@ -47,6 +47,8 @@ jobs:
           for f in reference.json clone-blueprint.json scene-plan.json activation.json; do test -s "production/reference-clones/active/$f"; done
           python scripts/validate_reference_clone.py --reference production/reference-clones/active/reference.json
           python scripts/validate_reference_clone.py --clone production/reference-clones/active/clone-blueprint.json
+      - name: Verify renderer-backed character board lock
+        run: python scripts/verify_character_board_lock.py --out state/character-board-lock-health.json
       - name: Render exact character board from production components
         run: |
           mkdir -p qa-output/reference-clone/character-board qa-output/reference-clone/candidate-frames public-review
@@ -93,9 +95,10 @@ jobs:
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           keys=["parity","character-identity","audio","mobile","deterministic","semantic"]
           parts={k:json.load(open(f"qa-output/reference-clone/{k}.json")) for k in keys}
-          ok=parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS"
+          board_lock=json.load(open("state/character-board-lock-health.json"))
+          ok=board_lock["status"]=="PASS" and parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS"
           active=json.load(open("production/reference-clones/active/activation.json"))
-          r={"schema_version":1,"status":"CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"character_board_sha256":parts["character-identity"]["board_sha256"],"character_system_sha256":parts["character-identity"]["character_system_sha256"],"parts":parts,"video_path":"public-review/reference-clone-proof.mp4","publication_enabled":False}
+          r={"schema_version":1,"status":"CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"character_board_sha256":parts["character-identity"]["board_sha256"],"character_system_sha256":parts["character-identity"]["character_system_sha256"],"parts":parts,"character_board_lock":board_lock,"video_path":"public-review/reference-clone-proof.mp4","publication_enabled":False}
           pathlib.Path("state/reference-clone-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           if not ok:
               failed=[]
@@ -112,7 +115,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public-review/reference-clone-proof.mp4 qa-output/reference-clone state/reference-clone-health.json
+          git add -f public-review/reference-clone-proof.mp4 qa-output/reference-clone state/reference-clone-health.json state/character-board-lock-health.json
           git diff --cached --quiet || git commit -m "Persist reference clone proof"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
