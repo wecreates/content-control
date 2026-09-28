@@ -17,7 +17,7 @@
     "test:clone": "python -m unittest -v tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py",
     "test:characters": "python -m unittest -v tests/test_character_lock.py",
     "test:studio": "python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py",
-    "test:voice": "python -m unittest -v tests/test_voice_manifest.py"
+    "test:voice": "python -m unittest -v tests/test_voice_provider.py tests/test_voice_manifest.py"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
