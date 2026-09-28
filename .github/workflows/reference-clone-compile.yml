@@ -1,0 +1,56 @@
+name: Reference Clone Compile
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'production/reference-clones/**/reference.json'
+      - 'control/chat-drop-clone-contract.json'
+      - 'scripts/reference_clone_compiler.py'
+      - 'scripts/validate_reference_clone.py'
+      - '.github/workflows/reference-clone-compile.yml'
+permissions:
+  contents: write
+concurrency:
+  group: reference-clone-compile
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run clone-system tests
+        run: python -m unittest -v tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py
+      - name: Compile all durable reference packages
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r ref; do
+            found=1
+            dir=$(dirname "$ref")
+            python scripts/validate_reference_clone.py --reference "$ref"
+            python scripts/reference_clone_compiler.py               --reference "$ref"               --characters dave,points_monk,cashback_goblin               --out "$dir/clone-blueprint.json"
+            python scripts/validate_reference_clone.py --clone "$dir/clone-blueprint.json"
+          done < <(find production/reference-clones -type f -name reference.json -print 2>/dev/null | sort)
+          if [ "$found" = "0" ]; then
+            echo "No reference packages yet; compiler is ready."
+          fi
+      - name: Persist compiled blueprints
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add production/reference-clones || true
+          git diff --cached --quiet || git commit -m "Compile durable reference clone blueprints"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
