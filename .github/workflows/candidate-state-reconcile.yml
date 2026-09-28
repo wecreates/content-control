@@ -1,0 +1,61 @@
+name: Candidate State Reconcile
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: candidate-state-reconcile
+  cancel-in-progress: true
+env:
+  GH_TOKEN: ${{ github.token }}
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify canonical candidate inputs agree
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          health=json.load(open("state/content-control-health.json"))
+          receipt=json.load(open("qa-output/free/final-receipt.json"))
+          media=pathlib.Path("public-review/episode1-v10-free.mp4")
+          h=hashlib.sha256(media.read_bytes()).hexdigest()
+          expected=health["candidate_sha256"]
+          assert health["status"]=="GREEN"
+          assert receipt["status"]=="FREE_QA_GREEN"
+          assert receipt["candidate_sha256"]==expected
+          assert h==expected
+          assert health["publication_enabled"] is False
+          assert receipt["publication_enabled"] is False
+          print({"candidate_sha256":expected})
+          PY
+      - name: Reconcile ledger and captions without rerender
+        run: |
+          set -euo pipefail
+          python scripts/update_acceptance_ledger.py qa-output/free/final-receipt.json public-review/episode1-v10-free.mp4 state/accepted-candidate-ledger.json
+          python scripts/verify_acceptance_ledger.py
+          python scripts/build_verified_captions.py state/narration-transcription-health.json public-review/episode1-v10-free.vtt
+          python scripts/verify_captions.py public-review/episode1-v10-free.vtt state/narration-transcription-health.json state/caption-health.json
+      - name: Persist reconciled candidate state
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/accepted-candidate-ledger.json state/acceptance-ledger-health.json state/caption-health.json
+          git add -f public-review/episode1-v10-free.vtt
+          git diff --cached --quiet || git commit -m "Reconcile candidate ledger and captions"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Resume promotion chain
+        run: gh workflow run review-server-smoke.yml --ref main
