@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse,json
 from pathlib import Path
-ROUTES={"character_identity":"rerender_changed_scene_with_locked_character","timing_parity":"retime_changed_scene_only","camera_parity":"patch_camera_transform_only","audio_sync":"remix_changed_audio_segment","caption_sync":"rebuild_captions_only","layout":"reposition_changed_scene_only","factual":"rewrite_claim_and_rerender_affected_scene"}
+ROUTES={"character_identity":"rerender_changed_scene_with_locked_character","timing_parity":"retime_changed_scene_only","camera_parity":"patch_camera_transform_only","audio_sync":"remix_changed_audio_segment","caption_sync":"rebuild_captions_only","layout":"reposition_changed_scene_only","composition":"recompose_changed_scene_only","motion":"increase_choreography_motion_changed_scene_only","overlay":"retime_or_remove_overlay_changed_scene_only","transition":"replace_transition_changed_scene_only","factual":"rewrite_claim_and_rerender_affected_scene"}
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--findings",required=True);ap.add_argument("--out",required=True);a=ap.parse_args();f=json.loads(Path(a.findings).read_text());rep=[]
     for item in f.get("findings",f.get("failed_checks",[])):
