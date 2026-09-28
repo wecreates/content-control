@@ -1,0 +1,55 @@
+name: Quarantine Legacy Workflows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/quarantine-legacy-workflows.yml'
+permissions:
+  contents: write
+  actions: write
+env:
+  GH_TOKEN: ${{ github.token }}
+jobs:
+  quarantine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Rewrite legacy workflows to manual-only
+        run: |
+          python - <<'PY'
+          import pathlib,re,json
+          paths=json.loads(r'''[".github/workflows/always-on-resolver.yml",".github/workflows/bottleneck-resolver.yml",".github/workflows/competitor-intelligence.yml",".github/workflows/dropbox-review-bridge.yml",".github/workflows/episode1-first-watch-package.yml",".github/workflows/episode1-max-speed.yml",".github/workflows/episode1-polish.yml",".github/workflows/episode1-rebuild-v2.yml",".github/workflows/episode1-v10-final-proof.yml",".github/workflows/episode1-v5-proof.yml",".github/workflows/episode1-v6-proof.yml",".github/workflows/exact-av-review.yml",".github/workflows/migrate-free-assets.yml",".github/workflows/source-refresh.yml",".github/workflows/v5-400-verification.yml",".github/workflows/v5-artifact-runtime.yml",".github/workflows/v5-assembly-runtime.yml",".github/workflows/v5-audio-runtime.yml",".github/workflows/v5-content-runtime.yml",".github/workflows/v5-metadata-runtime.yml",".github/workflows/v5-observability-runtime.yml",".github/workflows/v5-packaging-runtime.yml",".github/workflows/v5-performance-runtime.yml",".github/workflows/v5-quality-runtime.yml",".github/workflows/v5-release-runtime.yml",".github/workflows/v5-reliability-runtime.yml",".github/workflows/v5-resolver-runtime.yml",".github/workflows/v5-review-runtime.yml",".github/workflows/v5-runtime-reconcile.yml",".github/workflows/v5-security-runtime.yml",".github/workflows/v5-thumbnail-runtime.yml",".github/workflows/v6-400-hardening.yml",".github/workflows/v7-200-runtime.yml",".github/workflows/v8-200-runtime.yml"]''')
+          changed=[]
+          for rel in paths:
+              p=pathlib.Path(rel)
+              if not p.is_file():
+                  continue
+              text=p.read_text()
+              m=re.search(r'(?ms)^on:\n.*?(?=^(?:permissions|env|concurrency|jobs):)',text)
+              if not m:
+                  raise SystemExit(f"unable to locate trigger block in {rel}")
+              replacement="on:\n  workflow_dispatch:\n"
+              new=text[:m.start()]+replacement+text[m.end():]
+              if new!=text:
+                  p.write_text(new)
+                  changed.append(rel)
+          print(json.dumps({"changed":changed,"count":len(changed)},sort_keys=True))
+          PY
+      - name: Persist quarantine
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add .github/workflows
+          git diff --cached --quiet || git commit -m "Quarantine legacy automatic workflows"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - name: Re-run workflow control watchdog
+        run: gh workflow run free-production-watchdog.yml --ref main
