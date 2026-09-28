@@ -230,9 +230,19 @@ app.get("/episode3/media",(req,res)=>{
 app.get("/episode3/watch",(req,res)=>{
   const a=episode3Acceptance();
   const short=(a.expected||"unverified").slice(0,12);
-  const body=a.ready?'<video controls playsinline preload="metadata" src="/episode3/media"></video>':'<p>Episode 3 is rendering or in QA.</p><script>setTimeout(()=>location.reload(),5000)</script>';
-  res.setHeader("Cache-Control","no-store");
-  res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control — Cashback Casino</title><style>body{margin:0;background:#090b0f;color:#f4f1e9;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:90vh;background:#000;border-radius:14px}small{color:#8fa0b2}</style><main><h2>2% Cashback Turned Dave's Brain Into a Casino</h2>${body}<p><small>ENTERTAINMENT-FIRST • hash ${short} • publication disabled</small></p></main>`);
+  const ready=Boolean(a.ready);
+  const body=ready
+    ? '<video id="player" controls playsinline preload="metadata" poster="" src="/episode3/media"></video><p id="status">Ready to play.</p>'
+    : '<section class="pending"><div class="spinner"></div><h3>Video is not ready yet.</h3><p>The review page is working, but the Episode 3 render has not passed hash-bound QA yet.</p><p><a href="/watch">Open the last verified video</a></p></section>';
+  res.setHeader("Cache-Control","no-store, max-age=0");
+  res.setHeader("Pragma","no-cache");
+  res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control — Cashback Casino</title><style>
+  html,body{min-height:100%;background:#090b0f;color:#f4f1e9}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;box-sizing:border-box}main{max-width:560px;margin:0 auto}h2{font-size:22px;line-height:1.2;margin:8px 0 14px}video{display:block;width:100%;aspect-ratio:9/16;max-height:82vh;background:#000;border-radius:14px}.pending{min-height:58vh;border:1px solid #252a33;border-radius:14px;padding:28px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:#11151b}.pending p{max-width:36ch;color:#c9d0da}.spinner{width:38px;height:38px;border:4px solid #343b46;border-top-color:#f4f1e9;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}a{color:#8ed8ff}small{color:#8fa0b2}#status{color:#9eabb9;font-size:14px}
+  </style></head><body><main><h2>2% Cashback Turned Dave's Brain Into a Casino</h2>${body}<p><small>ENTERTAINMENT-FIRST • hash ${short} • publication disabled</small></p></main>
+  <script>
+  const v=document.getElementById('player'),s=document.getElementById('status');
+  if(v&&s){v.addEventListener('error',()=>{s.textContent='Video failed to load. Refresh once; the server will fail closed rather than show a blank player.'});v.addEventListener('playing',()=>{s.textContent='Playing verified candidate.'});}
+  </script></body></html>`);
 });
 app.get("/watch",(req,res)=>{
   const a=acceptance();
