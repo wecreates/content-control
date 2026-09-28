@@ -18,6 +18,15 @@ def norm(s):
 def tokens(s):
     return [x for x in norm(s).split() if x not in STOP and len(x)>1]
 
+def ordered_word_similarity(expected,actual):
+    # Compare ordered normalized words rather than raw characters. Character-level
+    # SequenceMatcher produces pathological scores on long repetitive English text
+    # and heavily penalizes equivalent ASR numeric formatting such as 2% vs
+    # "two percent" or $80 vs "eighty dollars".
+    ew=norm(expected).split()
+    aw=norm(actual).split()
+    return difflib.SequenceMatcher(None,ew,aw,autojunk=False).ratio()
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
@@ -56,7 +65,7 @@ def main():
     actual=" ".join(actual_parts).strip()
 
     ne,na=norm(expected),norm(actual)
-    sequence_ratio=difflib.SequenceMatcher(None,ne,na).ratio()
+    sequence_ratio=ordered_word_similarity(expected,actual)
 
     et=tokens(expected); at=tokens(actual)
     ec,ac=Counter(et),Counter(at)
