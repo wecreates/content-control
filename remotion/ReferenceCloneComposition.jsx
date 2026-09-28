@@ -29,7 +29,8 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const rgb=fp.mean_rgb||[1,1,1];
   const light=(fp.mean_luma??1)>.62;
   const bg=light?`rgb(${Math.round(rgb[0]*255)},${Math.round(rgb[1]*255)},${Math.round(rgb[2]*255)})`:"#fff";
-  return <AbsoluteFill style={{background:bg,overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>
+  const voiceover=scenePlan?.voiceover_path||null;
+  return <AbsoluteFill style={{background:bg,overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>{voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
     <div style={{position:"absolute",inset:0,transform:camTransform(s.camera,p),transformOrigin:"center"}}>
       <svg width="720" height="1280" viewBox="0 0 720 1280">
         <text x="360" y="115" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="48" fill="#111">REFERENCE-DRIVEN BEAT {s.index+1}</text>
