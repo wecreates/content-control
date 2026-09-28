@@ -9,6 +9,8 @@ const output=path.resolve("public-review/episode1-v10-free.mp4");
 const healthPath=path.resolve("state/content-control-health.json");
 const captionHealthPath=path.resolve("state/caption-health.json");
 const captionsPath=path.resolve("public-review/episode1-v10-free.vtt");
+const episode2Output=path.resolve("public-review/episode2-coupon-book.mp4");
+const episode2HealthPath=path.resolve("state/episode2-health.json");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
 const renderState={status:"repository-artifact-only"};
@@ -25,6 +27,13 @@ function fileHash(p){
     while((n=fs.readSync(fd,buf,0,buf.length,null))>0) h.update(buf.subarray(0,n));
   }finally{fs.closeSync(fd);}
   return h.digest("hex");
+}
+function episode2Acceptance(){
+  const h=readJson(episode2HealthPath);
+  const actual=fileHash(episode2Output);
+  const expected=h?.candidate_sha256||null;
+  const ready=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
+  return {health:h,actual,expected,ready};
 }
 function acceptance(){
   const h=readHealth();
@@ -136,6 +145,67 @@ app.get("/captions",(req,res)=>{
   res.setHeader("Cache-Control","public, max-age=31536000, immutable");
   res.setHeader("ETag",`"${tag}"`);
   fs.createReadStream(captionsPath).pipe(res);
+});
+
+
+function streamMp4(req,res,file,etag){
+  const stat=fs.statSync(file);
+  const total=stat.size;
+  const range=req.headers.range;
+  res.setHeader("Accept-Ranges","bytes");
+  res.setHeader("ETag",`"${etag}"`);
+  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("Content-Type","video/mp4");
+  if(range){
+    const m=/bytes=(\d*)-(\d*)/.exec(String(range));
+    if(!m) return res.status(416).setHeader("Content-Range",`bytes */${total}`).end();
+    let start=m[1]?Number(m[1]):0;
+    let end=m[2]?Number(m[2]):total-1;
+    if(!m[1]&&m[2]){const suffix=Number(m[2]);start=Math.max(0,total-suffix);end=total-1;}
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<start||start>=total){
+      return res.status(416).setHeader("Content-Range",`bytes */${total}`).end();
+    }
+    end=Math.min(end,total-1);
+    res.status(206);
+    res.setHeader("Content-Range",`bytes ${start}-${end}/${total}`);
+    res.setHeader("Content-Length",String(end-start+1));
+    return fs.createReadStream(file,{start,end}).pipe(res);
+  }
+  res.setHeader("Content-Length",String(total));
+  fs.createReadStream(file).pipe(res);
+}
+
+app.get("/episode2/health",(req,res)=>{
+  const a=episode2Acceptance();
+  res.setHeader("Cache-Control","no-store");
+  res.status(a.ready?200:503).json({
+    ok:a.ready,
+    id:"episode2-coupon-book",
+    publication:false,
+    qaStatus:a.health?.status||"missing",
+    expectedSha256:a.expected,
+    actualSha256:a.actual,
+    hashBound:a.actual!==null&&a.actual===a.expected
+  });
+});
+
+app.get("/episode2/media",(req,res)=>{
+  const a=episode2Acceptance();
+  if(!a.ready){
+    res.setHeader("Cache-Control","no-store");
+    return res.status(409).json({error:"Episode 2 accepted artifact unavailable or hash mismatch",publication:false});
+  }
+  return streamMp4(req,res,episode2Output,a.expected);
+});
+
+app.get("/episode2/watch",(req,res)=>{
+  const a=episode2Acceptance();
+  const short=(a.expected||"unverified").slice(0,12);
+  const body=a.ready
+    ? '<video controls playsinline preload="metadata" src="/episode2/media"></video>'
+    : '<p>Episode 2 is still in QA. This page will activate only after the exact artifact is accepted.</p><script>setTimeout(()=>location.reload(),5000)</script>';
+  res.setHeader("Cache-Control","no-store");
+  res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control — Episode 2</title><style>body{margin:0;background:#090b0f;color:#f4f1e9;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:90vh;background:#000;border-radius:14px}small{color:#8fa0b2}</style><main><h2>Your Credit Card Became a Coupon Book</h2>${body}<p><small>EPISODE 2 • hash ${short} • publication disabled</small></p></main>`);
 });
 
 app.get("/watch",(req,res)=>{
