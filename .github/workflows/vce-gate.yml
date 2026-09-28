@@ -6,7 +6,13 @@ on:
     paths:
       - 'control/autonomous-viral-content-engine.json'
       - 'control/agent-swarm.json'
+      - 'control/character-bible-v1.json'
+      - 'control/style-dna-v3.json'
+      - 'control/creative-director-v3.json'
+      - 'control/reference-decomposition-contract.json'
       - 'scripts/verify_vce_contract.py'
+      - 'scripts/validate_creative_blueprint.py'
+      - 'tests/test_creative_blueprint.py'
       - '.github/workflows/vce-gate.yml'
 permissions:
   contents: read
@@ -18,6 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python scripts/verify_vce_contract.py
+      - name: Verify creative blueprint validator tests
+        run: python -m unittest -v tests/test_creative_blueprint.py
       - name: Verify full downstream chain and publication lock
         run: |
           python - <<'PY'
