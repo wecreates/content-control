@@ -12,7 +12,7 @@
     },
     "public-review/episode1-v10-free.vtt": {
       "bytes": 670,
-      "sha256": "0b7fd3e5154beef9d584336f0bd41c1cde41e7db032e1878899ef2185eaa4989"
+      "sha256": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9"
     },
     "public/audio/episode1-music.mp3": {
       "bytes": 940841,
@@ -95,8 +95,8 @@
       "sha256": "a0e33d44fb0f6e7b348f475f40b9395baa4f2c9739a6bdba663835169f600c84"
     },
     "scripts/build_verified_captions.py": {
-      "bytes": 1052,
-      "sha256": "00eae4d3b1e1fd7338fc4228bbd8e096e714bf9cde5f8859d92ba4fcc8dc4011"
+      "bytes": 1169,
+      "sha256": "10cf021e8564ad1b8d9deb6cecdbce613d8cf05255738091c480d4b5abf916ab"
     },
     "scripts/free_mobile_compat_qa.py": {
       "bytes": 2816,
