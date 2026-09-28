@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
@@ -11,10 +11,10 @@
     "factual_compliance_gate": true,
     "florence_vision_qa": true,
     "hash_bound_artifact": true,
-    "hash_bound_provenance": true,
+    "hash_bound_provenance": false,
     "immutable_acceptance_history": true,
     "live_public_deployment": false,
-    "live_review_server_smoke": true,
+    "live_review_server_smoke": false,
     "local_audio_assets": true,
     "local_reference_assets": true,
     "mobile_playback_compatibility": false,
@@ -31,7 +31,7 @@
     "review_server_security_headers": true,
     "runtime_integrity_manifest": true,
     "sync_retention_gate": true,
-    "verified_caption_track": true,
+    "verified_caption_track": false,
     "workflow_control_quarantine": true
   },
   "machine_system_complete": false,
