@@ -11,7 +11,9 @@
     "watchdog": "python scripts/verify_free_production_health.py",
     "build:review": "node build-review.mjs",
     "test:instagram-bridge": "python -m unittest -v tests/test_instagram_reel_bridge.py",
-    "test:creative": "python -m unittest -v tests/test_creative_blueprint.py && python scripts/verify_vce_contract.py"
+    "test:creative": "python -m unittest -v tests/test_creative_blueprint.py && python scripts/verify_vce_contract.py",
+    "test:wiring": "python -m unittest -v tests/test_system_wiring.py && python scripts/audit_system_wiring.py",
+    "test:system": "python -m unittest -v tests/test_creative_blueprint.py tests/test_system_wiring.py tests/test_instagram_reel_bridge.py && python scripts/verify_workflow_control.py"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
