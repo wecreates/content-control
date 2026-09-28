@@ -18,6 +18,7 @@
     ".github/workflows/long-form-showrunner-gate.yml",
     ".github/workflows/mobile-playback-compat.yml",
     ".github/workflows/narration-transcription-gate.yml",
+    ".github/workflows/python-security-audit.yml",
     ".github/workflows/quarantine-legacy-workflows.yml",
     ".github/workflows/review-server-smoke.yml",
     ".github/workflows/runtime-integrity-manifest.yml",
