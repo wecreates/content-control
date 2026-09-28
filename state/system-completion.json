@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,

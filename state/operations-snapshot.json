@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "caption_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
   "caption_status": "PASS",
   "checks": {
@@ -65,7 +65,7 @@
   "python_security_status": "PASS",
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "schema_version": 1,
   "status": "COMPLETE",
   "sync_retention_status": "PASS",
