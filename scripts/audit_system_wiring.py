@@ -113,6 +113,26 @@ def audit_root(root: Path):
         "/episode3/health","/episode3/captions","Range: bytes=0-1023","Candidate preflight"
     ]) and ".github/workflows/episode3-live-smoke.yml" in reg_allowed
 
+    latest_health=_read_json(root/"state/episode3-health.json",{"status":"MISSING"})
+    latest_live=_read_json(root/"state/episode3-live-health.json",{"status":"MISSING"})
+    latest_video=root/"public-review/episode3-cashback-casino.mp4"
+    latest_captions=root/"public-review/episode3-cashback-casino.vtt"
+    checks["latest_candidate_accepted"]=all([
+        latest_health.get("status")=="GREEN",
+        latest_health.get("publication_enabled") is False,
+        bool(latest_health.get("candidate_sha256")),
+        bool(latest_health.get("caption_sha256")),
+        latest_video.is_file(),
+        latest_captions.is_file(),
+    ])
+    checks["latest_candidate_live_verified"]=all([
+        latest_live.get("status")=="PASS",
+        latest_live.get("publication_enabled") is False,
+        latest_live.get("candidate_sha256")==latest_health.get("candidate_sha256"),
+        latest_live.get("caption_sha256")==latest_health.get("caption_sha256"),
+    ])
+    checks["latest_path_end_to_end"]=checks["latest_candidate_accepted"] and checks["latest_candidate_live_verified"]
+
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
