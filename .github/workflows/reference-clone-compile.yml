@@ -11,6 +11,7 @@ on:
       - '.github/workflows/reference-clone-compile.yml'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: reference-clone-compile
   cancel-in-progress: true
@@ -37,16 +38,26 @@ jobs:
             python scripts/validate_reference_clone.py --reference "$ref"
             python scripts/reference_clone_compiler.py               --reference "$ref"               --characters dave,points_monk,cashback_goblin               --out "$dir/clone-blueprint.json"
             python scripts/validate_reference_clone.py --clone "$dir/clone-blueprint.json"
+            python scripts/generate_clone_scene_plan.py --blueprint "$dir/clone-blueprint.json" --out "$dir/scene-plan.json"
           done < <(find production/reference-clones -type f -name reference.json -print 2>/dev/null | sort)
           if [ "$found" = "0" ]; then
             echo "No reference packages yet; compiler is ready."
+          fi
+      - name: Refresh style memory and select active reference
+        run: |
+          set -euo pipefail
+          python scripts/style_memory.py --root production/reference-clones --out state/style-memory.json
+          python scripts/select_reference_candidate.py --root production/reference-clones --out state/reference-selection.json
+          if [ "$(python -c 'import json; print((json.load(open("state/reference-selection.json")).get("selected") or {}).get("path",""))')" != "" ]; then
+            pkg=$(dirname "$(python -c 'import json; print(json.load(open("state/reference-selection.json"))["selected"]["path"])')")
+            python scripts/activate_reference_clone.py --package "$pkg"
           fi
       - name: Persist compiled blueprints
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add production/reference-clones || true
+          git add production/reference-clones state/style-memory.json state/reference-selection.json || true
           git diff --cached --quiet || git commit -m "Compile durable reference clone blueprints"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -54,3 +65,11 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Trigger universal clone proof
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s production/reference-clones/active/scene-plan.json ]; then
+            gh workflow run reference-clone-render.yml --ref main
+          fi
