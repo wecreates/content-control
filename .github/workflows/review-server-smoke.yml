@@ -69,6 +69,19 @@ jobs:
           assert h["expectedSha256"]==h["actualSha256"]
           print(h)
           PY
+          test "$(curl -s -D /tmp/root.headers -o /tmp/root.html -w "%{http_code}" http://127.0.0.1:10000/)" = "200"
+          grep -q 'background:#fff' /tmp/root.html
+          grep -q 'Publication is disabled' /tmp/root.html
+          test "$(curl -s -o /tmp/status.json -w "%{http_code}" http://127.0.0.1:10000/status)" = "200"
+          python - <<'PY'
+          import json
+          s=json.load(open("/tmp/status.json"))
+          assert isinstance(s.get("logs"),list),s
+          assert s.get("publication") is False,s
+          PY
+          latest_code=$(curl -s -o /tmp/latest.html -D /tmp/latest.headers -w "%{http_code}" http://127.0.0.1:10000/latest)
+          test "$latest_code" = "302"
+          grep -qi '^location: /watch' /tmp/latest.headers
           test "$(curl -s -D /tmp/watch.headers -o /tmp/watch.html -w "%{http_code}" http://127.0.0.1:10000/watch)" = "200"
           grep -qi '^cache-control: no-store' /tmp/watch.headers
           grep -qi '^x-content-type-options: nosniff' /tmp/watch.headers
