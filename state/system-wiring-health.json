@@ -6,6 +6,7 @@
     "creative_tests_exposed": true,
     "episode3_blueprint_present": true,
     "episode3_caption_pipeline": true,
+    "episode3_chain_connected": true,
     "episode3_character_system_connected": true,
     "episode3_hash_bound_captions": true,
     "episode3_live_smoke_connected": true,
