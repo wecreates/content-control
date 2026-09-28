@@ -7,6 +7,11 @@ on:
       - 'production/reference-clones/**/reference.json'
       - 'control/chat-drop-clone-contract.json'
       - 'scripts/reference_clone_compiler.py'
+      - 'scripts/reference_clone_enrich.py'
+      - 'scripts/reference_structure_v2.py'
+      - 'scripts/reference_motion_v2.py'
+      - 'scripts/reference_optical_flow.py'
+      - 'scripts/ingest_reference_video.py'
       - 'scripts/validate_reference_clone.py'
       - 'scripts/generate_clone_scene_plan.py'
       - 'scripts/generate_concept_selection.py'
@@ -35,7 +40,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: Run clone-system tests
-        run: python -m unittest -v tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py
+        run: python -m unittest -v tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py tests/test_quality_depth.py
       - name: Compile all durable reference packages
         run: |
           set -euo pipefail
