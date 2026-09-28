@@ -63,7 +63,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
