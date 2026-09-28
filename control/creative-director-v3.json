@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "name": "Creative Director V3",
+  "publication_enabled": false,
+  "objective": "Entertainment-first financial education with original recurring characters and reference-derived motion grammar.",
+  "pipeline": [
+    {
+      "stage": "reference_decomposition",
+      "output": [
+        "hook mechanism",
+        "character count",
+        "shot cadence",
+        "motion verbs",
+        "camera verbs",
+        "visual metaphor",
+        "payoff timing",
+        "audio punctuation"
+      ]
+    },
+    {
+      "stage": "idea_mutation",
+      "rule": "Generate at least 5 materially different story engines before selecting one."
+    },
+    {
+      "stage": "character_assignment",
+      "rule": "Assign each beat to a character role; never use a character as decoration."
+    },
+    {
+      "stage": "physicalize_finance",
+      "rule": "Convert every abstract finance concept into a visible action, object, spatial relationship, or consequence."
+    },
+    {
+      "stage": "comedy_escalation",
+      "rule": "Escalate at least twice before the educational reveal."
+    },
+    {
+      "stage": "visual_first_script",
+      "rule": "A beat fails if the voiceover is doing all the explanatory work."
+    },
+    {
+      "stage": "bored_scroller_simulation",
+      "rule": "Reject any 2-second interval without new information, motion, or comedic tension."
+    },
+    {
+      "stage": "finance_skeptic_simulation",
+      "rule": "Reject unsupported claims, ambiguous math, or advice framed as guaranteed outcome."
+    },
+    {
+      "stage": "originality_check",
+      "rule": "Preserve mechanics; mutate identity, staging, wording, joke, props, and shot arrangement."
+    },
+    {
+      "stage": "rendered_proof_review",
+      "rule": "Source code is never sufficient. Review real rendered frames and audio before promotion."
+    }
+  ],
+  "selection_dimensions": [
+    "instant readability",
+    "character conflict",
+    "visual consequence",
+    "surprise",
+    "math clarity",
+    "loopability",
+    "commentability",
+    "reference-mechanics fidelity",
+    "original identity"
+  ],
+  "hard_failures": [
+    "slide lecture",
+    "generic stickman identity drift",
+    "exact reference character copy",
+    "static talking head",
+    "caption-only scene progression",
+    "voice reads SFX",
+    "education arrives before entertainment hook",
+    "no physical payoff"
+  ]
+}
