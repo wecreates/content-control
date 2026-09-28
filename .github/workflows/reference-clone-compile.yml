@@ -38,7 +38,17 @@ jobs:
             python scripts/validate_reference_clone.py --reference "$ref"
             python scripts/reference_clone_compiler.py               --reference "$ref"               --characters dave,points_monk,cashback_goblin               --out "$dir/clone-blueprint.json"
             python scripts/validate_reference_clone.py --clone "$dir/clone-blueprint.json"
+            id=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["source"]["id"])' "$ref")
+            python scripts/generate_concept_selection.py --topic "$id reference adaptation" --out "$dir/concept-selection.json"
             python scripts/generate_clone_scene_plan.py --blueprint "$dir/clone-blueprint.json" --out "$dir/scene-plan.json"
+            dur=$(python -c 'import json,sys; print(float(json.load(open(sys.argv[1]))["source"]["duration_seconds"]))' "$ref")
+            if python - "$dur" <<'PY'
+import sys
+raise SystemExit(0 if float(sys.argv[1]) >= 300 else 1)
+PY
+            then
+              python scripts/longform_clone_architect.py --reference "$ref" --out "$dir/longform-plan.json"
+            fi
           done < <(find production/reference-clones -type f -name reference.json -print 2>/dev/null | sort)
           if [ "$found" = "0" ]; then
             echo "No reference packages yet; compiler is ready."
