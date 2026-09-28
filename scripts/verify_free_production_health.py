@@ -16,6 +16,7 @@ deployment=json.loads((ROOT/"state/deployment-health.json").read_text()) if (ROO
 live_deployment=json.loads((ROOT/"state/live-deployment-health.json").read_text()) if (ROOT/"state/live-deployment-health.json").exists() else {"status":"MISSING"}
 sync_health=json.loads((ROOT/"state/sync-retention-health.json").read_text()) if (ROOT/"state/sync-retention-health.json").exists() else {"status":"MISSING"}
 transcription=json.loads((ROOT/"state/narration-transcription-health.json").read_text()) if (ROOT/"state/narration-transcription-health.json").exists() else {"status":"MISSING"}
+caption_health=json.loads((ROOT/"state/caption-health.json").read_text()) if (ROOT/"state/caption-health.json").exists() else {"status":"MISSING"}
 smoke=json.loads((ROOT/"state/review-server-smoke.json").read_text()) if (ROOT/"state/review-server-smoke.json").exists() else {"status":"MISSING"}
 provenance=json.loads((ROOT/"state/provenance/runtime-provenance.json").read_text()) if (ROOT/"state/provenance/runtime-provenance.json").exists() else {}
 sbom=json.loads((ROOT/"state/provenance/npm-sbom.cdx.json").read_text()) if (ROOT/"state/provenance/npm-sbom.cdx.json").exists() else {}
@@ -64,6 +65,7 @@ checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(dep
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
+checks["caption_health_green"]=caption_health.get("status")=="PASS" and all(caption_health.get("checks",{}).values()) and (ROOT/"public-review/episode1-v10-free.vtt").is_file()
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 checks["review_server_smoke_green"]=all([
     smoke.get("status")=="PASS",
@@ -73,6 +75,7 @@ checks["review_server_smoke_green"]=all([
     smoke.get("range_streaming_verified") is True,
     smoke.get("security_headers_verified") is True,
     smoke.get("cache_policy_verified") is True,
+    smoke.get("captions_verified") is True,
     smoke.get("publication_enabled") is False,
 ])
 checks["provenance_candidate_match"]=all([
@@ -138,6 +141,7 @@ completion={
         "live_public_deployment":checks["live_deployment_green"],
         "sync_retention_gate":checks["sync_retention_green"],
         "narration_transcription_gate":checks["narration_transcription_green"],
+        "verified_caption_track":checks["caption_health_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
         "live_review_server_smoke":checks["review_server_smoke_green"],
         "phone_range_streaming":smoke.get("range_streaming_verified") is True,
