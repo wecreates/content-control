@@ -29,7 +29,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Capture candidate identity
+        run: |
+          echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
       - name: Probe live hosted review service
         run: |
           set -euo pipefail
@@ -119,6 +124,16 @@ jobs:
           pathlib.Path("state/live-deployment-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           print(json.dumps(r,sort_keys=True))
           PY
+      - name: Refuse stale candidate persist
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          LATEST=$(git show origin/main:state/content-control-health.json | python -c 'import json,sys; print(json.load(sys.stdin)["candidate_sha256"])')
+          if [ "$LATEST" != "$CANDIDATE_SHA" ]; then
+            echo "candidate advanced from $CANDIDATE_SHA to $LATEST; refusing stale persist"
+            gh workflow run candidate-state-reconcile.yml --ref main || true
+            exit 1
+          fi
       - name: Persist live deployment evidence
         if: always()
         run: |
