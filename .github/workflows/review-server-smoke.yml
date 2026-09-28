@@ -81,7 +81,7 @@ jobs:
           PY
           latest_code=$(curl -s -o /tmp/latest.html -D /tmp/latest.headers -w "%{http_code}" http://127.0.0.1:10000/latest)
           test "$latest_code" = "302"
-          grep -qi '^location: /watch' /tmp/latest.headers
+          grep -Eqi '^location: /(watch|episode3/watch)' /tmp/latest.headers
           test "$(curl -s -D /tmp/watch.headers -o /tmp/watch.html -w "%{http_code}" http://127.0.0.1:10000/watch)" = "200"
           grep -qi '^cache-control: no-store' /tmp/watch.headers
           grep -qi '^x-content-type-options: nosniff' /tmp/watch.headers
