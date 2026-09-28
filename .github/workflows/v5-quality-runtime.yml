@@ -1,13 +1,6 @@
 name: V5 Quality Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_quality_runtime.py'
-      - '.github/workflows/v5-quality-runtime.yml'
-      - 'state/episode1-first-watch.json'
-      - 'receipts/EXACT_AV_REVIEW_v49.json'
 permissions:
   actions: read
   contents: write
