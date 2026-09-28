@@ -4,7 +4,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "caption_health_green": true,
+    "caption_health_green": false,
     "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -17,7 +17,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -25,7 +25,7 @@
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -45,7 +45,8 @@
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "runtime_integrity_manifest"
+    "caption_health_green",
+    "provenance_inputs_current"
   ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
