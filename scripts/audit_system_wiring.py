@@ -362,6 +362,44 @@ def audit_root(root: Path):
     ])
     checks["voice_v3_render_path"]="studio-dialogue.wav" in clone_render_text and "studio-dialogue.wav" in long_wf_text
     checks["voice_v3_tests"]="test:voice" in scripts
+    choreography_files=[
+        "control/visual-choreography-v1.json",
+        "control/object-behavior-library-v1.json",
+        "control/kinetic-text-v1.json",
+        "control/overlay-policy-v1.json",
+        "control/transition-grammar-v1.json",
+        "control/composition-policy-v1.json",
+        "scripts/visual_choreography.py",
+        "scripts/choreography_qa.py",
+        "scripts/composition_director.py",
+        "scripts/composition_frame_qa.py",
+        "scripts/motion_choreography_qa.py",
+        "remotion/ChoreographyRuntime.jsx",
+        "remotion/PropSystem.jsx",
+        "remotion/EnvironmentSystem.jsx",
+        "tests/test_visual_choreography.py",
+    ]
+    checks["visual_choreography_stack_connected"]=all((root/p).is_file() for p in choreography_files)
+    checks["visual_choreography_studio_gate"]=all(x in studio_text for x in [
+        "composition_director.py",
+        "visual_choreography.py",
+        "choreography_qa.py",
+        "15-choreography.json",
+        "choreography-health.json"
+    ])
+    short_comp=(root/"remotion/ReferenceCloneComposition.jsx").read_text() if (root/"remotion/ReferenceCloneComposition.jsx").is_file() else ""
+    long_comp=(root/"remotion/ReferenceCloneLongComposition.jsx").read_text() if (root/"remotion/ReferenceCloneLongComposition.jsx").is_file() else ""
+    checks["visual_choreography_renderer_connected"]=all(x in short_comp for x in [
+        "ChoreographyRuntime","EnvironmentSystem","ObjectChoreography","KineticText","OverlayChoreography","MicroGags","ContactCue"
+    ]) and all(x in long_comp for x in [
+        "ChoreographyRuntime","EnvironmentSystem","ObjectChoreography","KineticText","OverlayChoreography","MicroGags","ContactCue"
+    ])
+    checks["visual_choreography_render_qa"]=all(x in clone_render_text for x in [
+        "composition_frame_qa.py","motion_choreography_qa.py","composition.json","motion.json"
+    ]) and all(x in long_wf_text for x in [
+        "composition_frame_qa.py","motion_choreography_qa.py","composition.json","motion.json"
+    ])
+    checks["visual_choreography_tests_exposed"]="test:choreography" in scripts and "test_visual_choreography.py" in scripts.get("test:choreography","")
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
