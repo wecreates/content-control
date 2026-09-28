@@ -49,7 +49,7 @@
       "media_path": "public-review/episode1-v10-free.mp4",
       "publication_enabled": false,
       "qa_receipt_sha256": "933d9d1e66c7340c003be66497ce3df1133e52aa13c4199fe0438d606acf924b",
-      "repository_commit": "a185db6e6c7521ecc980c3e37c27ec016a21b72c"
+      "repository_commit": "9f5629ed146dc47a8ada3371e710185a16abe524"
     }
   ],
   "max_entries": 20,
