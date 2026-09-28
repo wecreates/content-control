@@ -35,10 +35,17 @@ function acceptance(){
   const c=readCaptionHealth();
   const actual=fileHash(output);
   const expected=h?.candidate_sha256||null;
-  const captionReady=Boolean(c?.status==="PASS"&&c?.publication_enabled===false&&fs.existsSync(captionsPath));
+  const captionHash=fs.existsSync(captionsPath)?fileHash(captionsPath):null;
+  const captionReady=Boolean(
+    c?.status==="PASS" &&
+    c?.publication_enabled===false &&
+    c?.candidate_sha256===expected &&
+    c?.caption_sha256===captionHash &&
+    fs.existsSync(captionsPath)
+  );
   const videoReady=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
   const ready=videoReady&&captionReady;
-  return {health:h,captionHealth:c,actual,expected,videoReady,captionReady,ready};
+  return {health:h,captionHealth:c,captionHash,actual,expected,videoReady,captionReady,ready};
 }
 function render(){
   if(renderState.status==="rendering") return;
@@ -77,6 +84,7 @@ app.get("/health",(req,res)=>{
     actualSha256:a.actual,
     hashBound:a.actual!==null&&a.actual===a.expected,
     captionReady:a.captionReady,
+    captionSha256:a.captionHash,
     renderStatus:renderState.status
   });
 });
@@ -141,7 +149,7 @@ app.get("/captions",(req,res)=>{
     res.setHeader("Cache-Control","no-store");
     return res.status(409).json({error:"verified captions unavailable",publication:false});
   }
-  const tag=fileHash(captionsPath);
+  const tag=a.captionHash;
   res.setHeader("Content-Type","text/vtt; charset=utf-8");
   res.setHeader("Cache-Control","public, max-age=31536000, immutable");
   res.setHeader("ETag",`"${tag}"`);
