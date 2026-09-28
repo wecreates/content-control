@@ -40,6 +40,8 @@ jobs:
             python scripts/validate_reference_clone.py --clone "$dir/clone-blueprint.json"
             id=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["source"]["id"])' "$ref")
             python scripts/generate_concept_selection.py --topic "$id reference adaptation" --out "$dir/concept-selection.json"
+            python scripts/generate_voice_assignments.py --blueprint "$dir/clone-blueprint.json" --out "$dir/voice-assignments.json"
+            python scripts/voice_lock_qa.py --manifest "$dir/voice-assignments.json" --out "$dir/voice-lock-health.json"
             python scripts/generate_clone_scene_plan.py --blueprint "$dir/clone-blueprint.json" --out "$dir/scene-plan.json"
             dur=$(python -c 'import json,sys; print(float(json.load(open(sys.argv[1]))["source"]["duration_seconds"]))' "$ref")
             if python - "$dur" <<'PY'
