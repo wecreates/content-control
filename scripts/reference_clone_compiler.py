@@ -4,6 +4,27 @@ from pathlib import Path
 
 ALLOWED_CHARACTERS={"dave","points_monk","cashback_goblin"}
 
+def structure_for_window(ref,start,end):
+    st=(ref.get("reference_structure") or {})
+    frames=[x for x in st.get("frames",[]) if start <= float(x.get("time",0)) < end]
+    transitions=[x for x in st.get("transition_candidates",[]) if start <= float(x.get("time",0)) < end]
+    contacts=[x for x in st.get("contact_candidates",[]) if start <= float(x.get("time",0)) < end]
+    if not frames:
+        return {"text_region_count":0,"composition_thirds":[0,0,0],"track_count":0,"transition":None,"contact_count":0}
+    thirds=[0.0,0.0,0.0]
+    for fr in frames:
+        vals=(fr.get("composition_heatmap") or {}).get("thirds",[0,0,0])
+        for i in range(min(3,len(vals))): thirds[i]+=float(vals[i])
+    thirds=[round(x/len(frames),5) for x in thirds]
+    return {
+      "text_region_count":round(sum(len(fr.get("text_regions",[])) for fr in frames)/len(frames),3),
+      "composition_thirds":thirds,
+      "track_count":max([len(fr.get("object_tracks",[])) for fr in frames] or [0]),
+      "transition":transitions[0].get("type") if transitions else None,
+      "contact_count":len(contacts),
+      "mean_motion_speed":round(sum(float(fr.get("motion_speed",0)) for fr in frames)/len(frames),5)
+    }
+
 def flow_for_window(ref,start,end):
     curve=((ref.get("optical_flow") or {}).get("camera_curve") or [])
     rows=[x for x in curve if start <= float(x.get("time",0)) < end]
@@ -23,7 +44,7 @@ def compile_clone(ref, selected_characters):
     timeline=ref.get("shot_timeline") or []
     beats=[]
     for i,row in enumerate(timeline):
-        start=float(row["start"]);end=float(row["end"]);flow=flow_for_window(ref,start,end)
+        start=float(row["start"]);end=float(row["end"]);flow=flow_for_window(ref,start,end);structure=structure_for_window(ref,start,end)
         beats.append({
             "index":i,
             "start":start,
@@ -35,6 +56,7 @@ def compile_clone(ref, selected_characters):
             "motion_activity":float(row.get("motion_activity",0) or 0),
             "reference_flow_direction":flow["direction"],
             "reference_flow_speed":flow["speed"],
+            "reference_structure":structure,
             "state_change":bool(row.get("state_change")),
             "retention_reason":row.get("why_it_retains",""),
             "content_control_character":selected[i%len(selected)],
@@ -61,6 +83,7 @@ def compile_clone(ref, selected_characters):
         "visual_style_fingerprint":ref.get("visual_style_fingerprint",{}),
         "optical_flow_summary":ref.get("optical_flow",{}),
         "motion_summary":ref.get("motion_summary",{}),
+        "reference_structure_summary":ref.get("reference_structure",{}),
         "beats":beats,
         "originality":{
             "reference_mechanics_only":True,
