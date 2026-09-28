@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "name": "Content Control Character Bible V1",
+  "publication_enabled": false,
+  "identity_rule": "Capture reference mechanics and animation grammar, never reproduce another creator's exact character identity, signature costume, face, logo, or unique design.",
+  "global_design": {
+    "canvas": [
+      "9:16",
+      "16:9"
+    ],
+    "background": "#FFFFFF",
+    "line": "#111111",
+    "stroke_px_shortform": [
+      5,
+      7
+    ],
+    "head_to_body_ratio": 0.23,
+    "limb_style": "two-segment jointed limbs with visible elbows/knees on action poses",
+    "eyes": "small black dots; widen/separate only for shock",
+    "mouth_states": [
+      "flat",
+      "smile",
+      "shock",
+      "grit",
+      "deadpan",
+      "panic"
+    ],
+    "accent_palette": {
+      "good_math": "#11A7A7",
+      "danger": "#EF3E36",
+      "reward": "#F4C542"
+    },
+    "max_simultaneous_accents": 3
+  },
+  "characters": {
+    "dave": {
+      "role": "audience surrogate / relatable victim",
+      "silhouette": "round head, slightly forward shoulders, medium limbs",
+      "baseline_expression": "uncertain half-smile",
+      "signature_expressions": [
+        "panic oval mouth",
+        "side-eye regret",
+        "tiny relieved smile"
+      ],
+      "signature_poses": [
+        "recoil",
+        "wallet_clutch",
+        "frozen_mid_reach",
+        "knees_inward_regret"
+      ],
+      "motion_signature": "fast anticipation, oversized recoil, two-beat recovery",
+      "comedy_function": "makes the financially tempting mistake the viewer recognizes",
+      "voice": "slightly faster and more emotional than narrator",
+      "forbidden_drift": [
+        "muscular hero silhouette",
+        "glasses unless story prop",
+        "corporate logo head"
+      ]
+    },
+    "points_monk": {
+      "role": "truth teller / deadpan interrupter",
+      "silhouette": "upright spine, slightly taller than Dave, economical limbs",
+      "baseline_expression": "deadpan",
+      "signature_expressions": [
+        "one-brow skepticism",
+        "flat mouth",
+        "micro-smirk after reveal"
+      ],
+      "signature_poses": [
+        "deadpan_point",
+        "door_kick",
+        "calculator_drop",
+        "ankle_yank"
+      ],
+      "motion_signature": "minimal anticipation followed by one decisive exaggerated action",
+      "comedy_function": "physically interrupts bad financial logic",
+      "voice": "low, calm, sparse",
+      "forbidden_drift": [
+        "hyperactive bouncing",
+        "constant smile",
+        "same anxious posture as Dave"
+      ]
+    },
+    "cashback_goblin": {
+      "role": "temptation mascot / chaos gremlin",
+      "silhouette": "small body, oversized head, short bent limbs",
+      "baseline_expression": "wide mischievous grin",
+      "signature_expressions": [
+        "coin-eyes",
+        "greedy grin",
+        "caught-red-handed freeze"
+      ],
+      "signature_poses": [
+        "coin_scamper",
+        "ankle_drag",
+        "card_hug",
+        "sale_sign_point"
+      ],
+      "motion_signature": "rapid 3-5 frame pops, zig-zag travel, squash on impacts",
+      "comedy_function": "turns incentives into a visible antagonist",
+      "voice": "optional chirps only; never narrator voice",
+      "forbidden_drift": [
+        "human-proportioned body",
+        "calm walking",
+        "serious explainer role"
+      ]
+    }
+  },
+  "continuity_requirements": [
+    "same character proportions across episodes",
+    "same core expression vocabulary across episodes",
+    "signature pose appears before inventing a new pose when equivalent emotion exists",
+    "new costume/prop does not alter base silhouette",
+    "character role and voice remain stable",
+    "rendered-frame QA compares identity against character reference frames"
+  ]
+}
