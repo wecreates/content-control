@@ -8,7 +8,12 @@ on:
     paths:
       - 'control/agent-swarm.json'
       - 'control/cco-production-contract.json'
+      - 'control/character-bible-v1.json'
+      - 'control/style-dna-v3.json'
+      - 'control/creative-director-v3.json'
+      - 'control/reference-decomposition-contract.json'
       - 'scripts/verify_cco_contract.py'
+      - 'scripts/validate_creative_blueprint.py'
       - '.github/workflows/autonomous-cco.yml'
 permissions:
   contents: read
@@ -44,7 +49,7 @@ jobs:
             'status':'READY',
             'cycle':'autonomous_cco',
             'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            'agents':['research_trend_agent','script_retention_agent','visual_layout_director','seo_publishing_agent'],
+            'agents':json.load(open('control/cco-production-contract.json'))['required_agents'],
             'publication_enabled':False,
             'first_video_publish':False
           }
