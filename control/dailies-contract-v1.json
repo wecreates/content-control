@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "departments": [
+    "story",
+    "animation",
+    "layout",
+    "editorial",
+    "sound",
+    "lighting",
+    "continuity",
+    "bored_viewer"
+  ],
+  "required_output": [
+    "timestamped notes",
+    "blocking status",
+    "scene id",
+    "repair owner"
+  ],
+  "rule": "actual animatic or rendered proof is reviewed; source code alone never counts"
+}
