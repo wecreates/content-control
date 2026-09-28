@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "profiles": {
+    "narrator": {
+      "pace": 1,
+      "tone": "dry_confident",
+      "breath": "minimal"
+    },
+    "dave": {
+      "pace": 1.08,
+      "tone": "anxious_excited",
+      "breath": "natural"
+    },
+    "points_monk": {
+      "pace": 0.88,
+      "tone": "calm_deadpan",
+      "breath": "sparse"
+    },
+    "cashback_goblin": {
+      "pace": 1.18,
+      "tone": "mischievous_chirp",
+      "breath": "none"
+    }
+  },
+  "rules": [
+    "sentence-level direction",
+    "character voice never leaks",
+    "narrator never reads SFX",
+    "dialogue pauses support reactions"
+  ]
+}
