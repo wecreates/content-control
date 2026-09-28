@@ -64,6 +64,8 @@ jobs:
 
       - name: Studio contract tests
         run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py
+      - name: Verify studio department map
+        run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
       - name: Initialize studio state
         run: |
@@ -222,7 +224,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f production/reference-clones/active state/studio state/continuity-memory.json
+          git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json
           git diff --cached --quiet || git commit -m "Run full AI studio department pipeline"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
