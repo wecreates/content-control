@@ -1,11 +1,6 @@
 name: V5 Metadata Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_metadata_runtime.py'
-      - '.github/workflows/v5-metadata-runtime.yml'
 permissions:
   actions: read
   contents: write
