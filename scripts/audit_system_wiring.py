@@ -109,7 +109,8 @@ def audit_root(root: Path):
     live=root/".github/workflows/episode3-live-smoke.yml"
     live_text=live.read_text() if live.is_file() else ""
     checks["episode3_live_smoke_connected"]=all(x in live_text for x in [
-        "Episode 3 Cashback Casino Build","/episode3/health","/episode3/captions","Range: bytes=0-1023"
+        "state/episode3-health.json","public-review/episode3-cashback-casino.mp4",
+        "/episode3/health","/episode3/captions","Range: bytes=0-1023","Candidate preflight"
     ]) and ".github/workflows/episode3-live-smoke.yml" in reg_allowed
 
     failed=[k for k,v in checks.items() if not v]
