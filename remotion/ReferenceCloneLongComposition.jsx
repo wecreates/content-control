@@ -30,10 +30,11 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
   const camera=ch.camera_events?.length?choreographyCamera(ch,localFrame):fallback;
   const transition={...transitionStyle(ch.transition_in,localFrame,totalFrames,false),...transitionStyle(ch.transition_out,localFrame,totalFrames,true)};
   const voiceover=scenePlan?.voiceover_path||null;
+  const soundscape=scenePlan?.soundscape_path||null;
   const chars=(s.characters?.length?s.characters:[{id:s.character,pose:s.pose,acting:s.acting,face_track:s.facial_performance}]).slice(0,4);
 
   return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}>
-    <Audio src={staticFile("audio/episode1-music.mp3")} volume={0.035}/>
+    {soundscape?<Audio src={staticFile(soundscape)} volume={0.72}/>:<Audio src={staticFile("audio/episode1-music.mp3")} volume={0.035}/>}
     {voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
     <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center",...transition}}>
       <svg width="1920" height="1080" viewBox="0 0 1920 1080">
