@@ -345,6 +345,23 @@ def audit_root(root: Path):
         "test_voice_provider.py","selected_strategy","sonic-3.6","eleven_v3","voiceover_path"
     ]) and ".github/workflows/premium-voice-runtime-smoke.yml" in reg_allowed
     checks["premium_voice_tests_exposed"]="test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
+    voice_v3=_read_json(root/"control/voice-engine-v3.json")
+    checks["voice_v3_connected"]=all((root/p).is_file() for p in [
+        "control/voice-engine-v3.json",
+        "requirements-voice.lock.txt",
+        "scripts/cartesia_voice_engine.py",
+        "scripts/premium_voice_qa.py",
+        "scripts/ccsd_voice_manifest.py",
+        "scripts/mix_voice_tracks.py"
+    ]) and voice_v3.get("production_default",{}).get("model_id")=="sonic-3.6"
+    checks["voice_v3_studio_path"]=all(x in studio_text for x in [
+        "Generate premium studio voices",
+        "cartesia_voice_engine.py",
+        "mix_voice_tracks.py",
+        "studio-dialogue.wav"
+    ])
+    checks["voice_v3_render_path"]="studio-dialogue.wav" in clone_render_text and "studio-dialogue.wav" in long_wf_text
+    checks["voice_v3_tests"]="test:voice" in scripts
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
