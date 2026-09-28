@@ -8,13 +8,17 @@ const app=express();
 const PORT=Number(process.env.PORT||10000);
 const output=path.resolve("public-review/episode1-v10-free.mp4");
 const healthPath=path.resolve("state/content-control-health.json");
+const captionHealthPath=path.resolve("state/caption-health.json");
+const captionsPath=path.resolve("public-review/episode1-v10-free.vtt");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
 let renderState={status:"idle",startedAt:null,finishedAt:null,exitCode:null,logs:[]};
 let renderChild=null;
 
 function push(x){renderState.logs.push(String(x));if(renderState.logs.length>100)renderState.logs.shift();}
-function readHealth(){try{return JSON.parse(fs.readFileSync(healthPath,"utf8"));}catch{return null;}}
+function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
+function readHealth(){return readJson(healthPath);}
+function readCaptionHealth(){return readJson(captionHealthPath);}
 function fileHash(p){
   if(!fs.existsSync(p)) return null;
   const h=crypto.createHash("sha256");
@@ -28,10 +32,13 @@ function fileHash(p){
 }
 function acceptance(){
   const h=readHealth();
+  const c=readCaptionHealth();
   const actual=fileHash(output);
   const expected=h?.candidate_sha256||null;
-  const ready=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
-  return {health:h,actual,expected,ready};
+  const captionReady=Boolean(c?.status==="PASS"&&c?.publication_enabled===false&&fs.existsSync(captionsPath));
+  const videoReady=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
+  const ready=videoReady&&captionReady;
+  return {health:h,captionHealth:c,actual,expected,videoReady,captionReady,ready};
 }
 function render(){
   if(renderState.status==="rendering") return;
@@ -69,6 +76,7 @@ app.get("/health",(req,res)=>{
     expectedSha256:a.expected,
     actualSha256:a.actual,
     hashBound:a.actual!==null&&a.actual===a.expected,
+    captionReady:a.captionReady,
     renderStatus:renderState.status
   });
 });
@@ -84,6 +92,7 @@ app.get("/status",(req,res)=>{
     expectedSha256:a.expected,
     actualSha256:a.actual,
     watchUrl:a.ready?"/watch":null,
+    captionsUrl:a.captionReady?"/captions":null,
     renderStatus:renderState.status,
     logs:renderState.logs.slice(-20)
   });
@@ -126,11 +135,24 @@ app.get("/media",(req,res)=>{
   fs.createReadStream(output).pipe(res);
 });
 
+app.get("/captions",(req,res)=>{
+  const a=acceptance();
+  if(!a.captionReady){
+    res.setHeader("Cache-Control","no-store");
+    return res.status(409).json({error:"verified captions unavailable",publication:false});
+  }
+  const tag=fileHash(captionsPath);
+  res.setHeader("Content-Type","text/vtt; charset=utf-8");
+  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("ETag",`"${tag}"`);
+  fs.createReadStream(captionsPath).pipe(res);
+});
+
 app.get("/watch",(req,res)=>{
   const a=acceptance();
   const short=(a.expected||"unverified").slice(0,12);
   const body=a.ready
-    ? '<video controls playsinline preload="metadata" src="/media"></video>'
+    ? '<video controls playsinline preload="metadata" src="/media"><track kind="captions" src="/captions" srclang="en" label="English" default></video>'
     : '<p>Accepted artifact is not ready. Repair pipeline required.</p><script>setTimeout(()=>location.reload(),5000)</script>';
   res.setHeader("Cache-Control","no-store");
   res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control Review</title><style>body{margin:0;background:#090b0f;color:#f4f1e9;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:90vh;background:#000;border-radius:14px}small{color:#8fa0b2}</style><main><h2>Content Control Review</h2>${body}<p><small>FREE_QA • hash ${short} • publication disabled</small></p></main>`);
