@@ -1,0 +1,156 @@
+{
+  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "checks": {
+    "content_token_recall_ok": false,
+    "duration_plausible": true,
+    "publication_disabled": true,
+    "semantic_recall_ok": true,
+    "sequence_similarity_ok": false,
+    "transcript_nonempty": true
+  },
+  "content_token_recall": 0.313725,
+  "engine": "faster-whisper",
+  "expected_text": "Dave's premium card just came back with a six-hundred-ninety-five-dollar annual fee. Chad says the fix is simple: spend eighty dollars to unlock a twenty-dollar credit. Points Monk has a less glamorous answer. If you wouldn't buy the thing anyway, that credit isn't saving you money. Count only value you'd purchase without the card, subtract the fee you actually pay, and keep the card only when the math still wins.",
+  "failed_checks": [
+    "sequence_similarity_ok",
+    "content_token_recall_ok"
+  ],
+  "faster_whisper_version": "1.2.1",
+  "language": "en",
+  "language_probability": 1,
+  "model": "base.en",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "segments": [
+    {
+      "end": 3.84,
+      "start": 0.0,
+      "text": "Dave's card charged him $695 again."
+    },
+    {
+      "end": 8.04,
+      "start": 3.84,
+      "text": "Chad points to a $20 credit after an $80 purchase,"
+    },
+    {
+      "end": 9.56,
+      "start": 8.04,
+      "text": "but the math is simple."
+    },
+    {
+      "end": 11.84,
+      "start": 9.56,
+      "text": "80 minus 20 is 60."
+    },
+    {
+      "end": 15.2,
+      "start": 11.84,
+      "text": "Points-monk counts only benefits Dave would have bought anyway."
+    },
+    {
+      "end": 18.12,
+      "start": 15.2,
+      "text": "Then he compares that real value with the annual fee."
+    },
+    {
+      "end": 21.36,
+      "start": 18.12,
+      "text": "If the value is higher, the card may make sense."
+    },
+    {
+      "end": 23.96,
+      "start": 21.36,
+      "text": "If the fee is higher, rethink it."
+    },
+    {
+      "end": 26.12,
+      "start": 23.96,
+      "text": "Ignore the flex and keep the math."
+    }
+  ],
+  "semantic_hits": [
+    {
+      "pass": true,
+      "terms": [
+        "dave",
+        "premium",
+        "card"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "annual",
+        "fee"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "chad"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "eighty",
+        "80"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "twenty",
+        "20",
+        "credit"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "points",
+        "monk"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "buy",
+        "thing",
+        "anyway"
+      ]
+    },
+    {
+      "pass": false,
+      "terms": [
+        "saving",
+        "money"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "value",
+        "purchase"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "subtract",
+        "fee"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "math",
+        "wins"
+      ]
+    }
+  ],
+  "semantic_recall": 0.909091,
+  "sequence_similarity": 0.073781,
+  "status": "FAIL",
+  "transcribed_duration_seconds": 26.12
+}
