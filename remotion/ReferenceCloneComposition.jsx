@@ -27,7 +27,8 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const Ch=C[s.character]||Dave;
   const scale=s.shot_scale==="close"?1.65:s.shot_scale==="wide"?1.05:1.35;
   const intensity=Math.max(0,Math.min(1,(s.motion_intensity||0)*8*(s.repair_boost?1.35:1)));
-  const x=360+(s.index%2===0?-70:70), y=840;
+  const focal=s.composition?.focal_point||[.5,.58];
+  const x=720*focal[0]+(s.index%2===0?-28:28), y=1280*focal[1]+110;
   const m=resolveMotion(s.character,s.pose,p,.5+intensity);
   const props=["$","%","CARD","FEE"];
   const fp=scenePlan?.visual_style_fingerprint||{};
