@@ -41,6 +41,11 @@ jobs:
         continue-on-error: true
         run: |
           python scripts/free_transcription_qa.py             --audio public/audio/episode1-narration.mp3             --contract state/episode1-factual-contract.json             --output state/narration-transcription-health.json             --model base.en
+      - name: Build and verify synchronized VTT captions
+        if: steps.transcribe.outcome == 'success'
+        run: |
+          python scripts/build_verified_captions.py state/narration-transcription-health.json public-review/episode1-v10-free.vtt
+          python scripts/verify_captions.py public-review/episode1-v10-free.vtt state/narration-transcription-health.json state/caption-health.json
       - name: Persist narration transcript evidence
         if: always()
         run: |
@@ -48,6 +53,8 @@ jobs:
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
           git add state/narration-transcription-health.json
+          if [ -f public-review/episode1-v10-free.vtt ]; then git add -f public-review/episode1-v10-free.vtt; fi
+          if [ -f state/caption-health.json ]; then git add state/caption-health.json; fi
           git diff --cached --quiet || git commit -m "Update narration transcription health"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -69,5 +76,8 @@ jobs:
         if: always()
         with:
           name: narration-transcription-health
-          path: state/narration-transcription-health.json
+          path: |
+            state/narration-transcription-health.json
+            state/caption-health.json
+            public-review/episode1-v10-free.vtt
           retention-days: 30
