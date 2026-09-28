@@ -35,12 +35,14 @@ jobs:
         run: python -m unittest -v tests/test_system_wiring.py tests/test_creative_blueprint.py
       - name: Audit complete production graph
         run: python scripts/audit_system_wiring.py
+      - name: Verify workflow control
+        run: python scripts/verify_workflow_control.py
       - name: Persist wiring health
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add state/system-wiring-health.json
+          git add state/system-wiring-health.json state/workflow-control-health.json
           git diff --cached --quiet || git commit -m "Update system wiring health"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
