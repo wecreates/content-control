@@ -92,6 +92,9 @@ def main():
     ap.add_argument("--id",required=True)
     ap.add_argument("--source-type",default="chat_upload")
     ap.add_argument("--out",required=True)
+    ap.add_argument("--views",type=float,default=0)
+    ap.add_argument("--likes",type=float,default=0)
+    ap.add_argument("--comments",type=float,default=0)
     args=ap.parse_args()
     video=Path(args.video)
     meta=probe(video)
@@ -109,6 +112,7 @@ def main():
     result={
       "schema_version":1,
       "source":{"id":args.id,"type":args.source_type,"duration_seconds":round(duration,3),"sha256":sha256(video)},
+      "performance":{"views":args.views,"likes":args.likes,"comments":args.comments},
       "hook_first_second":{"mechanism":"measured_visual_change","motion_activity":round(activity(0,min(1,duration)),6)},
       "characters":{"count_estimate":None,"identity_not_copied":True},
       "shot_timeline":shots,
