@@ -8,6 +8,14 @@ on:
       - 'control/chat-drop-clone-contract.json'
       - 'scripts/reference_clone_compiler.py'
       - 'scripts/validate_reference_clone.py'
+      - 'scripts/generate_clone_scene_plan.py'
+      - 'scripts/generate_concept_selection.py'
+      - 'scripts/generate_voice_assignments.py'
+      - 'scripts/voice_lock_qa.py'
+      - 'scripts/style_memory.py'
+      - 'scripts/select_reference_candidate.py'
+      - 'scripts/activate_reference_clone.py'
+      - 'scripts/longform_clone_architect.py'
       - '.github/workflows/reference-clone-compile.yml'
 permissions:
   contents: write
