@@ -47,6 +47,11 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
           const motion=resolveMotion(id,char.motion_clip||char.pose||s.pose,p,intensity);
           const contact=performanceTargets(ch,localFrame,id);
           const acting=char.acting||{};
+          const blink=((localFrame+i*17)%72)<3?.14:1;
+          const gazeWave=Math.sin((localFrame+i*13)/18);
+          const gazeX=String(acting.gaze||"").includes("camera")?0:gazeWave*3.2;
+          const gazeY=id==="cashback_goblin"?-1.5:Math.cos((localFrame+i*9)/27)*1.2;
+          const browLift=id==="dave"?2+Math.sin(localFrame/20)*1.5:id==="points_monk"?.3:1;
           const spread=(i-(chars.length-1)/2)*270;
           const charScale=scale*(chars.length>2?.74:chars.length>1?.86:1);
           return <X key={id+"-"+i}
@@ -61,6 +66,10 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
             legBend={acting.weight_shift==="unstable"?18:12}
             leftHandTarget={contact.leftHandTarget}
             rightHandTarget={contact.rightHandTarget}
+            gazeX={gazeX}
+            gazeY={gazeY}
+            blink={blink}
+            browLift={browLift}
           />;
         })}
         <ContactCue choreography={ch} localFrame={localFrame} width={1920} height={1080}/>
