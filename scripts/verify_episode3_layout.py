@@ -9,7 +9,8 @@ def prop(attrs,name,default):
     m=re.search(rf'\b{name}=\{{?(-?\d+(?:\.\d+)?)\}}?',attrs)
     return float(m.group(1)) if m else float(default)
 
-for m in pattern.finditer(src):
+scene_src=src.split("const scenes=",1)[1] if "const scenes=" in src else src
+for m in pattern.finditer(scene_src):
     attrs=m.group("attrs"); text=" ".join(m.group("text").split())
     x=prop(attrs,"x",360); y=prop(attrs,"y",100); size=prop(attrs,"size",48)
     # Arial Black uppercase averages roughly 0.56em; add 5% punch-zoom safety.
