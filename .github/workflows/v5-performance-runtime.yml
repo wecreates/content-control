@@ -1,11 +1,6 @@
 name: V5 Performance Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_performance_runtime.py'
-      - '.github/workflows/v5-performance-runtime.yml'
 permissions:
   actions: read
   contents: write
