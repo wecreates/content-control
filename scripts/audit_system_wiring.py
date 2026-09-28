@@ -355,12 +355,13 @@ def audit_root(root: Path):
         "scripts/mix_voice_tracks.py"
     ]) and voice_v3.get("production_default",{}).get("model_id")=="sonic-3.6"
     checks["voice_v3_studio_path"]=all(x in studio_text for x in [
-        "Generate premium studio voices",
-        "cartesia_voice_engine.py",
-        "mix_voice_tracks.py",
-        "studio-dialogue.wav"
+        "Build premium voice candidates",
+        "cartesia_sonic_generate.py",
+        "voice_take_selector.py",
+        "reference-clone-voice.mp3",
+        "inject_voiceover_path.py"
     ])
-    checks["voice_v3_render_path"]="studio-dialogue.wav" in clone_render_text and "studio-dialogue.wav" in long_wf_text
+    checks["voice_v3_render_path"]="voiceover_path" in short_comp and "voiceover_path" in long_comp
     checks["voice_v3_tests"]="test:voice" in scripts
     choreography_files=[
         "control/visual-choreography-v1.json",
