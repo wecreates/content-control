@@ -43,8 +43,9 @@ function episode3Acceptance(){
   const actual=fileHash(episode3Output);
   const expected=h?.candidate_sha256||null;
   const captionHash=fs.existsSync(episode3CaptionsPath)?fileHash(episode3CaptionsPath):null;
-  const captionReady=Boolean(h?.caption_sha256&&captionHash===h.caption_sha256&&fs.existsSync(episode3CaptionsPath));
-  const videoReady=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
+  const publicationLocked=h?.publication_enabled===false;
+  const captionReady=Boolean(publicationLocked&&h?.status==="GREEN"&&expected&&h?.caption_sha256&&captionHash===h.caption_sha256&&fs.existsSync(episode3CaptionsPath));
+  const videoReady=Boolean(h?.status==="GREEN"&&publicationLocked&&actual&&expected&&actual===expected);
   const ready=videoReady&&captionReady;
   return {health:h,actual,expected,captionHash,captionReady,videoReady,ready};
 }
