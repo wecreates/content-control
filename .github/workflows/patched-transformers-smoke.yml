@@ -25,6 +25,7 @@ jobs:
           from pathlib import Path
           src=Path("requirements-free-qa.lock.txt").read_text()
           src=src.replace("transformers==4.56.1","transformers==5.10.0")
+          src=src.replace("huggingface_hub==0.36.2","huggingface_hub==1.33.0")
           Path("/tmp/requirements-patched.txt").write_text(src)
           print(src)
           PY
