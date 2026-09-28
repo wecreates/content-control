@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name": "Creative Director V3",
   "publication_enabled": false,
   "objective": "Entertainment-first financial education with original recurring characters and reference-derived motion grammar.",
@@ -50,6 +50,22 @@
       "rule": "Preserve mechanics; mutate identity, staging, wording, joke, props, and shot arrangement."
     },
     {
+      "stage": "story_room_critique",
+      "rule": "Generate at least 12 structurally distinct arcs; critique distinctness and visuality; selected pitch must annotate CCSD turns and callbacks."
+    },
+    {
+      "stage": "animatic_semantic_dailies",
+      "rule": "Review actual rendered animatic frames for motion/layout and semantic match to expected scene intent before spline promotion."
+    },
+    {
+      "stage": "acting_direction",
+      "rule": "Every speaking/featured character gets posture, gaze, micro-expression, anticipation, weight shift and contact targets."
+    },
+    {
+      "stage": "taste_director",
+      "rule": "After final render, reject technically valid cuts that are repetitive, static, low-metaphor, low-gag, or visually generic."
+    },
+    {
       "stage": "rendered_proof_review",
       "rule": "Source code is never sufficient. Review real rendered frames and audio before promotion."
     }
@@ -63,7 +79,11 @@
     "loopability",
     "commentability",
     "reference-mechanics fidelity",
-    "original identity"
+    "original identity",
+    "acting specificity",
+    "shot grammar diversity",
+    "semantic animatic readability",
+    "final taste"
   ],
   "hard_failures": [
     "slide lecture",
@@ -73,6 +93,10 @@
     "caption-only scene progression",
     "voice reads SFX",
     "education arrives before entertainment hook",
-    "no physical payoff"
+    "no physical payoff",
+    "technically valid but boring final cut",
+    "story pitches differ only superficially",
+    "long-form repeated location/shot grammar",
+    "unreadable animatic staging"
   ]
 }
