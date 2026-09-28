@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "name": "Content Control AI Studio Pipeline",
+  "canonical_scene_format": "CCSD",
+  "departments": [
+    "story_room",
+    "storyboard",
+    "animatic",
+    "visual_development",
+    "layout_cinematography",
+    "rigging_animation",
+    "simulation_fx",
+    "crowds",
+    "lighting",
+    "editorial",
+    "sound_editorial",
+    "music",
+    "facial_performance",
+    "finishing",
+    "continuity",
+    "asset_management",
+    "production_management",
+    "synthetic_audience",
+    "ab_development",
+    "accessibility",
+    "localization",
+    "analytics_feedback",
+    "rd_quarantine"
+  ],
+  "promotion": [
+    "blocking",
+    "preview",
+    "polish",
+    "final"
+  ],
+  "hard_rules": [
+    "all departments operate on one versioned CCSD scene graph",
+    "no final render before studio gate passes",
+    "shot approval progresses blocking to spline to polish to final",
+    "experimental models remain quarantined until benchmarked",
+    "publication remains disabled until explicit user approval"
+  ]
+}
