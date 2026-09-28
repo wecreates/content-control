@@ -55,6 +55,10 @@ jobs:
         run: python scripts/composition_frame_qa.py --frames qa-output/reference-clone-long/candidate-frames --out qa-output/reference-clone-long/composition.json
       - name: Motion choreography QA
         run: python scripts/motion_choreography_qa.py --video public-review/reference-clone-long-proof.mp4 --out qa-output/reference-clone-long/motion.json
+      - name: Extract taste features
+        run: python scripts/taste_features.py --video public-review/reference-clone-long-proof.mp4 --scene-plan production/reference-clones/active/scene-plan.json --out qa-output/reference-clone-long/taste-features.json
+      - name: Taste Director QA
+        run: python scripts/taste_director.py --features qa-output/reference-clone-long/taste-features.json --out qa-output/reference-clone-long/taste.json
       - name: Bind long-form proof
         run: |
           python - <<'PY'
@@ -63,10 +67,11 @@ jobs:
           tech=json.load(open("qa-output/reference-clone-long/technical.json"))
           composition=json.load(open("qa-output/reference-clone-long/composition.json"))
           motion=json.load(open("qa-output/reference-clone-long/motion.json"))
+          taste=json.load(open("qa-output/reference-clone-long/taste.json"))
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           active=json.load(open("production/reference-clones/active/activation.json"))
-          ok=tech["status"]=="PASS" and composition["status"]=="PASS" and motion["status"]=="PASS"
-          r={"schema_version":1,"status":"LONG_CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"technical":tech,"composition":composition,"motion":motion,"publication_enabled":False}
+          ok=tech["status"]=="PASS" and composition["status"]=="PASS" and motion["status"]=="PASS" and taste["status"]=="PASS"
+          r={"schema_version":1,"status":"LONG_CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"technical":tech,"composition":composition,"motion":motion,"taste":taste,"publication_enabled":False}
           pathlib.Path("state/reference-clone-long-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           if r["status"]!="LONG_CLONE_PROOF_GREEN": raise SystemExit(3)
           PY
