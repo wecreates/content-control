@@ -38,6 +38,15 @@ jobs:
           python scripts/validate_reference_clone.py --clone production/reference-clones/active/clone-blueprint.json
       - name: Verify renderer-backed character board lock
         run: python scripts/verify_character_board_lock.py --out state/character-board-lock-health.json
+      - name: Build runtime props
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          scene=json.load(open("production/reference-clones/active/scene-plan.json"))
+          p=pathlib.Path("qa-output/reference-clone/props.json")
+          p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_text(json.dumps({"scenePlan":scene},indent=2,sort_keys=True)+"\n")
+          PY
       - name: Render exact character board from production components
         run: |
           mkdir -p qa-output/reference-clone/character-board qa-output/reference-clone/candidate-frames public-review
@@ -45,7 +54,7 @@ jobs:
       - name: Render clone proof
         run: |
           set -euo pipefail
-          npx remotion render remotion/reference-clone-index.jsx ReferenceClone public-review/reference-clone-proof.raw.mp4 --codec h264 --crf 23 --concurrency 2
+          npx remotion render remotion/reference-clone-index.jsx ReferenceClone public-review/reference-clone-proof.raw.mp4 --props=qa-output/reference-clone/props.json --codec h264 --crf 23 --concurrency 2
           ffmpeg -y -i public-review/reference-clone-proof.raw.mp4 -c:v libx264 -pix_fmt yuv420p -crf 20 -preset medium -c:a aac -b:a 160k -movflags +faststart public-review/reference-clone-proof.mp4
           rm public-review/reference-clone-proof.raw.mp4
           ffmpeg -y -i public-review/reference-clone-proof.mp4 -vf "fps=1/2" -q:v 2 qa-output/reference-clone/candidate-frames/cand-%03d.jpg
