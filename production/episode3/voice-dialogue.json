@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "performance_profiles": {
+    "narrator": {
+      "tone": "dry_confident",
+      "pace": 1
+    },
+    "dave": {
+      "tone": "anxious_excited",
+      "pace": 1.08
+    },
+    "points_monk": {
+      "tone": "calm_deadpan",
+      "pace": 0.88
+    }
+  },
+  "segments": [
+    {
+      "speaker": "narrator",
+      "text": "Dave found two percent cashback. His brain immediately became a casino. He almost bought an eighty-dollar gadget he did not need.",
+      "performance": {
+        "tone": "dry_confident"
+      }
+    },
+    {
+      "speaker": "dave",
+      "text": "But I get money back!",
+      "performance": {
+        "tone": "anxious_excited"
+      }
+    },
+    {
+      "speaker": "narrator",
+      "text": "Yes. One dollar and sixty cents. Congratulations, Dave. You spent eighty dollars to summon this.",
+      "performance": {
+        "tone": "dry_confident"
+      }
+    },
+    {
+      "speaker": "points_monk",
+      "text": "Would you buy it without the reward?",
+      "performance": {
+        "tone": "calm_deadpan"
+      }
+    },
+    {
+      "speaker": "narrator",
+      "text": "If no, the reward won. Cashback only wins when the purchase already made sense. Buy first. Reward second.",
+      "performance": {
+        "tone": "dry_confident"
+      }
+    }
+  ]
+}
