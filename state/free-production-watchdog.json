@@ -13,12 +13,12 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": false,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
     "no_paid_vision": true,
-    "provenance_candidate_match": false,
+    "provenance_candidate_match": true,
     "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
@@ -27,7 +27,7 @@
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -37,18 +37,9 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
-    "live_deployment_green",
-    "provenance_candidate_match",
     "provenance_inputs_current"
   ],
-  "integrity_failures": [
-    {
-      "actual": "0b7fd3e5154beef9d584336f0bd41c1cde41e7db032e1878899ef2185eaa4989",
-      "expected": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9",
-      "path": "public-review/episode1-v10-free.vtt"
-    }
-  ],
+  "integrity_failures": [],
   "publication_enabled": false,
   "repair_action": "dispatch_free_vision_qa",
   "schema_version": 1,

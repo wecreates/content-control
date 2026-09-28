@@ -13,7 +13,7 @@
     "hash_bound_artifact": true,
     "hash_bound_provenance": false,
     "immutable_acceptance_history": true,
-    "live_public_deployment": false,
+    "live_public_deployment": true,
     "live_review_server_smoke": true,
     "local_audio_assets": true,
     "local_reference_assets": true,
@@ -29,7 +29,7 @@
     "reproducible_runtime_locks": true,
     "review_server_cache_policy": true,
     "review_server_security_headers": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "sync_retention_gate": true,
     "verified_caption_track": true,
     "workflow_control_quarantine": true
