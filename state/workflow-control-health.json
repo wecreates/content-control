@@ -1,20 +1,62 @@
 {
   "checks": {
+    ".github/workflows/always-on-resolver.yml": false,
     ".github/workflows/apply-runtime-security-fixes.yml": true,
     ".github/workflows/autonomous-cco.yml": true,
+    ".github/workflows/bottleneck-resolver.yml": false,
+    ".github/workflows/cinematic-brand-gate.yml": true,
+    ".github/workflows/cinematic-gate.yml": true,
+    ".github/workflows/comedy-retention-gate.yml": true,
+    ".github/workflows/competitor-intelligence.yml": false,
+    ".github/workflows/dropbox-review-bridge.yml": false,
+    ".github/workflows/episode1-first-watch-package.yml": false,
+    ".github/workflows/episode1-max-speed.yml": false,
     ".github/workflows/episode1-motion-v3.yml": true,
+    ".github/workflows/episode1-polish.yml": false,
+    ".github/workflows/episode1-rebuild-v2.yml": false,
+    ".github/workflows/episode1-v10-final-proof.yml": false,
     ".github/workflows/episode1-v4.yml": true,
+    ".github/workflows/episode1-v5-proof.yml": false,
+    ".github/workflows/episode1-v6-proof.yml": false,
+    ".github/workflows/exact-av-review.yml": false,
     ".github/workflows/factual-compliance-gate.yml": true,
     ".github/workflows/free-production-watchdog.yml": true,
     ".github/workflows/free-qa-failure-router.yml": true,
     ".github/workflows/free-vision-qa.yml": true,
     ".github/workflows/generate-runtime-locks.yml": true,
+    ".github/workflows/hyper-critical-qa.yml": true,
     ".github/workflows/instagram-reel-bridge.yml": true,
     ".github/workflows/live-render-deployment-smoke.yml": true,
+    ".github/workflows/long-form-showrunner-gate.yml": true,
+    ".github/workflows/migrate-free-assets.yml": false,
+    ".github/workflows/quarantine-legacy-workflows.yml": false,
     ".github/workflows/review-server-smoke.yml": true,
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,
     ".github/workflows/runtime-security-audit.yml": true,
+    ".github/workflows/source-refresh.yml": false,
+    ".github/workflows/v5-400-verification.yml": false,
+    ".github/workflows/v5-artifact-runtime.yml": false,
+    ".github/workflows/v5-assembly-runtime.yml": false,
+    ".github/workflows/v5-audio-runtime.yml": false,
+    ".github/workflows/v5-content-runtime.yml": false,
+    ".github/workflows/v5-metadata-runtime.yml": false,
+    ".github/workflows/v5-observability-runtime.yml": false,
+    ".github/workflows/v5-packaging-runtime.yml": false,
+    ".github/workflows/v5-performance-runtime.yml": false,
+    ".github/workflows/v5-quality-runtime.yml": false,
+    ".github/workflows/v5-release-runtime.yml": false,
+    ".github/workflows/v5-reliability-runtime.yml": false,
+    ".github/workflows/v5-resolver-runtime.yml": false,
+    ".github/workflows/v5-review-runtime.yml": false,
+    ".github/workflows/v5-runtime-reconcile.yml": false,
+    ".github/workflows/v5-security-runtime.yml": false,
+    ".github/workflows/v5-thumbnail-runtime.yml": false,
+    ".github/workflows/v6-400-hardening.yml": false,
+    ".github/workflows/v7-200-runtime.yml": false,
+    ".github/workflows/v8-200-runtime.yml": false,
+    ".github/workflows/vce-gate.yml": true,
+    ".github/workflows/video-playback-contract.yml": true,
     "canonical_generation_exists": true,
     "deny_unlisted_automatic_workflows": false,
     "publication_disabled": true
@@ -24,9 +66,258 @@
   "status": "FAIL",
   "violations": [
     {
+      "exists": true,
+      "path": ".github/workflows/always-on-resolver.yml",
+      "push": false,
+      "schedule": false,
+      "workflow_run": true
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/bottleneck-resolver.yml",
+      "push": false,
+      "schedule": false,
+      "workflow_run": true
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/competitor-intelligence.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/dropbox-review-bridge.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-first-watch-package.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-max-speed.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-polish.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-rebuild-v2.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-v10-final-proof.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-v5-proof.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/episode1-v6-proof.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/exact-av-review.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/migrate-free-assets.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/source-refresh.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-400-verification.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-artifact-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-assembly-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-audio-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-content-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-metadata-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-observability-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-packaging-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-performance-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-quality-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-release-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-reliability-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-resolver-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-review-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-runtime-reconcile.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-security-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v5-thumbnail-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v6-400-hardening.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v7-200-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": true,
+      "path": ".github/workflows/v8-200-runtime.yml",
+      "push": true,
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "exists": false,
+      "path": ".github/workflows/quarantine-legacy-workflows.yml"
+    },
+    {
       "path": ".github/workflows/always-on-resolver.yml",
       "push": false,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": true
+    },
+    {
+      "path": ".github/workflows/always-on-resolver.yml",
+      "push": false,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": true
     },
@@ -38,21 +329,14 @@
       "workflow_run": true
     },
     {
-      "path": ".github/workflows/cinematic-brand-gate.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
+      "path": ".github/workflows/bottleneck-resolver.yml",
+      "push": false,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
-      "workflow_run": false
+      "workflow_run": true
     },
     {
-      "path": ".github/workflows/cinematic-gate.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/comedy-retention-gate.yml",
+      "path": ".github/workflows/competitor-intelligence.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
       "schedule": false,
@@ -61,7 +345,7 @@
     {
       "path": ".github/workflows/competitor-intelligence.yml",
       "push": true,
-      "reason": "unlisted_automatic_workflow",
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -73,9 +357,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/dropbox-review-bridge.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/episode1-first-watch-package.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/episode1-first-watch-package.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -87,9 +385,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/episode1-max-speed.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/episode1-polish.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/episode1-polish.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -101,9 +413,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/episode1-rebuild-v2.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/episode1-v10-final-proof.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/episode1-v10-final-proof.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -115,9 +441,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/episode1-v5-proof.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/episode1-v6-proof.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/episode1-v6-proof.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -129,16 +469,9 @@
       "workflow_run": false
     },
     {
-      "path": ".github/workflows/hyper-critical-qa.yml",
+      "path": ".github/workflows/exact-av-review.yml",
       "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/long-form-showrunner-gate.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -150,9 +483,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/migrate-free-assets.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/source-refresh.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/source-refresh.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -164,9 +511,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-400-verification.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-artifact-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-artifact-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -178,9 +539,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-assembly-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-audio-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-audio-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -192,9 +567,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-content-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-metadata-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-metadata-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -206,9 +595,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-observability-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-packaging-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-packaging-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -220,9 +623,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-performance-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-quality-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-quality-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -234,9 +651,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-release-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-reliability-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-reliability-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -248,9 +679,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-resolver-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-review-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-review-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -262,9 +707,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-runtime-reconcile.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v5-security-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v5-security-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -276,9 +735,23 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v5-thumbnail-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v6-400-hardening.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/v6-400-hardening.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     },
@@ -290,6 +763,13 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/v7-200-runtime.yml",
+      "push": true,
+      "reason": "manual_workflow_has_automatic_trigger",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/v8-200-runtime.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
@@ -297,16 +777,9 @@
       "workflow_run": false
     },
     {
-      "path": ".github/workflows/vce-gate.yml",
+      "path": ".github/workflows/v8-200-runtime.yml",
       "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/video-playback-contract.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
+      "reason": "manual_workflow_has_automatic_trigger",
       "schedule": false,
       "workflow_run": false
     }
