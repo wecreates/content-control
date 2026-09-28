@@ -1,9 +1,6 @@
 name: V5 Audio Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/v5-audio-runtime.yml']
 permissions:
   actions: read
   contents: write
