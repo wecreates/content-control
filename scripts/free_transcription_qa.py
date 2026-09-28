@@ -2,6 +2,7 @@
 import argparse,json,re,difflib
 from collections import Counter
 from pathlib import Path
+import av
 
 STOP={
   "the","a","an","and","or","to","of","in","on","for","with","that","this","it",
@@ -76,13 +77,17 @@ def main():
         semantic_hits.append({"terms":group,"pass":hit})
     semantic_recall=sum(x["pass"] for x in semantic_hits)/len(semantic_hits)
 
-    duration=max((s["end"] for s in segs),default=0.0)
+    segment_end=max((s["end"] for s in segs),default=0.0)
+    with av.open(a.audio) as container:
+        media_duration=float(container.duration/1_000_000) if container.duration is not None else segment_end
+    coverage_ratio=segment_end/media_duration if media_duration>0 else 0.0
     checks={
       "transcript_nonempty":len(actual.split())>=40,
       "sequence_similarity_ok":sequence_ratio>=0.62,
       "content_token_recall_ok":token_recall>=0.68,
       "semantic_recall_ok":semantic_recall>=0.82,
-      "duration_plausible":20.0<=duration<=31.0,
+      "duration_plausible":20.0<=media_duration<=40.0,
+      "transcript_coverage_ok":coverage_ratio>=0.70,
       "publication_disabled":contract.get("publication_enabled") is False,
     }
     status="PASS" if all(checks.values()) else "FAIL"
@@ -101,7 +106,9 @@ def main():
       "content_token_recall":round(token_recall,6),
       "semantic_recall":round(semantic_recall,6),
       "semantic_hits":semantic_hits,
-      "transcribed_duration_seconds":round(duration,3),
+      "transcribed_duration_seconds":round(segment_end,3),
+      "media_duration_seconds":round(media_duration,3),
+      "transcript_coverage_ratio":round(coverage_ratio,6),
       "checks":checks,
       "failed_checks":[k for k,v in checks.items() if not v],
       "publication_enabled":False,
