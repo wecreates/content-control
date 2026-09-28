@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "status": "MATERIAL_IMPROVEMENT_FOUND",
+  "scan_timestamp_utc": "2026-09-28T18:15:00Z",
+  "publication_enabled": false,
+  "references": [
+    {
+      "platform": "YouTube",
+      "title": "Animation vs. Geometry Dash",
+      "creator": "Alan Becker",
+      "url": "https://www.youtube.com/watch?v=C637UcpHfNY",
+      "upload_date": "2026-07-18",
+      "duration_seconds": 143,
+      "view_count": 14195749,
+      "like_count": 282333,
+      "comment_count": 20000,
+      "approx_views_per_day_since_upload": 197163,
+      "evidence": "StickNodes community discussion recorded about 66k views roughly 20 minutes after release."
+    },
+    {
+      "platform": "YouTube",
+      "title": "School Bops In 2026",
+      "creator": "ChainsFR",
+      "url": "https://www.youtube.com/watch?v=iLBfE_kE7JA",
+      "upload_date": "2026-07-11",
+      "view_count": 6113918,
+      "like_count": 154529,
+      "comment_count": 9000,
+      "approx_views_per_day_since_upload": 77391,
+      "evidence": "Transcript verified through Transcriptor; opening uses a broad exaggerated historical setup before narrowing into a personal story."
+    }
+  ],
+  "production_upgrade": {
+    "name": "rule-world macro-to-micro grammar",
+    "extends": "hybrid continuity-reset grammar",
+    "rules": [
+      "Open on a visible finance rule or state instead of an explanation.",
+      "Keep at least one persistent numeric or physical state across scene resets.",
+      "Every 2-3 second reset must transform the rule, obstacle, object, or character state.",
+      "High-concept hooks should show at least three distinct mechanic transformations before payoff.",
+      "When useful, start with a brief exaggerated big-picture framing, then snap into Dave, Chad, or Points Monk facing the concrete consequence.",
+      "Character action demonstrates the rule first; text labels or quantifies it second.",
+      "Resolve the rule physically on-screen instead of ending on a static summary card."
+    ],
+    "original_characters_only": [
+      "Dave",
+      "Chad",
+      "Points Monk"
+    ],
+    "do_not_copy": [
+      "creator characters",
+      "creator dialogue",
+      "exact scenes",
+      "distinctive branded worlds",
+      "specific game layouts"
+    ]
+  },
+  "screened_but_not_promoted": [
+    {
+      "title": "FEAR OF DARKNESS!",
+      "creator": "Rico Animations",
+      "upload_date": "2026-09-13",
+      "view_count": 101604,
+      "like_count": 2833,
+      "comment_count": 203,
+      "reason": "Recent, but signal is not strong enough to change the production standard."
+    }
+  ]
+}
