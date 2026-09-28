@@ -65,7 +65,16 @@ checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(dep
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
-checks["caption_health_green"]=caption_health.get("status")=="PASS" and all(caption_health.get("checks",{}).values()) and (ROOT/"public-review/episode1-v10-free.vtt").is_file()
+caption_file=ROOT/"public-review/episode1-v10-free.vtt"
+checks["caption_health_green"]=all([
+    caption_health.get("status")=="PASS",
+    all(caption_health.get("checks",{}).values()),
+    caption_file.is_file(),
+    caption_health.get("candidate_sha256")==health.get("candidate_sha256"),
+    caption_health.get("caption_sha256")==sha256(caption_file) if caption_file.is_file() else False,
+    caption_health.get("transcription_receipt_sha256")==sha256(ROOT/"state/narration-transcription-health.json"),
+    caption_health.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
+])
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 checks["review_server_smoke_green"]=all([
     smoke.get("status")=="PASS",
@@ -90,6 +99,11 @@ checks["provenance_inputs_current"]=all([
     provenance.get("critical_integrity_manifest_sha256")==sha256(ROOT/"state/runtime-integrity-manifest.json"),
     provenance.get("qa_receipt_sha256")==sha256(ROOT/"qa-output/free/final-receipt.json"),
     provenance.get("review_server_smoke_sha256")==sha256(ROOT/"state/review-server-smoke.json"),
+    provenance.get("caption_health_sha256")==sha256(ROOT/"state/caption-health.json"),
+    provenance.get("caption_file_sha256")==sha256(ROOT/"public-review/episode1-v10-free.vtt"),
+    provenance.get("caption_candidate_sha256")==health.get("candidate_sha256"),
+    provenance.get("narration_transcription_health_sha256")==sha256(ROOT/"state/narration-transcription-health.json"),
+    provenance.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
 ])
 checks["sbom_valid"]=sbom.get("bomFormat")=="CycloneDX" and bool(sbom.get("components"))
 history=ROOT/"qa-output/free/history"/(str(health.get("candidate_sha256"))+".json")
