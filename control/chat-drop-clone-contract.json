@@ -1,0 +1,65 @@
+{
+  "schema_version": 2,
+  "name": "Chat-Drop Reference Clone Contract",
+  "publication_enabled": false,
+  "purpose": "Convert an uploaded/reference video into a durable production package that preserves measurable editing/animation grammar while rebuilding with Content Control characters and original scene content.",
+  "ingest_sources": [
+    "chat_upload",
+    "public_video_url",
+    "instagram_reel",
+    "youtube_video"
+  ],
+  "required_reference_fields": [
+    "source",
+    "hook_first_second",
+    "shot_timeline",
+    "motion_verbs",
+    "camera_verbs",
+    "comedy_engine",
+    "payoff_timestamp",
+    "audio_punctuation",
+    "transferable_mechanics",
+    "distinctive_creator_elements_not_to_copy"
+  ],
+  "source_fields": [
+    "id",
+    "type",
+    "duration_seconds",
+    "sha256"
+  ],
+  "shot_timeline_fields": [
+    "start",
+    "end",
+    "shot_scale",
+    "camera",
+    "character_action",
+    "prop_action",
+    "state_change",
+    "why_it_retains"
+  ],
+  "extraction_targets": {
+    "timing": "cut times, semantic beat boundaries, static holds, payoff timing",
+    "motion": "pose changes, anticipation, recoil, squash/stretch, object choreography",
+    "camera": "shot scale, zooms, pans, shakes, tracking, framing changes",
+    "composition": "subject placement, negative space, text zones, prop zones",
+    "typography": "placement, density, entry/exit rhythm, emphasis timing",
+    "audio": "dialogue cadence, silence, music energy, SFX timing and function",
+    "humor": "setup/escalation/reversal/callback mechanics",
+    "retention": "pattern interrupts, state changes, visual resets"
+  },
+  "output_package": {
+    "reference_decomposition": "production/reference-clones/<id>/reference.json",
+    "clone_blueprint": "production/reference-clones/<id>/clone-blueprint.json",
+    "scene_plan": "production/reference-clones/<id>/scene-plan.json",
+    "character_source": "control/character-bible-v1.json",
+    "style_source": "control/style-dna-v3.json"
+  },
+  "hard_rules": [
+    "preserve measured timing and motion function when useful",
+    "use locked Content Control characters, not reference creator characters",
+    "rewrite dialogue, jokes, staging, props, and distinctive creator identity",
+    "do not trace or recreate source frames shot-for-shot",
+    "rendered output must pass visual, audio, factual, caption, and live review QA",
+    "publication stays disabled"
+  ]
+}
