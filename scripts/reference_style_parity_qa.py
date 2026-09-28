@@ -24,6 +24,14 @@ def qa(ref,clone):
         checks["motion_density_parity"]=abs(cavg-ravg)<=max(.025,ravg*.55)
     else:
         checks["motion_density_parity"]=True
+    rf=ref.get("visual_style_fingerprint",{}); cf=clone.get("visual_style_fingerprint",{})
+    if rf and cf:
+        deltas=[]
+        for k,tol in [("mean_luma",.22),("mean_saturation",.22),("edge_density",.06),("white_background_fraction",.30)]:
+            if k in rf and k in cf: deltas.append(abs(float(rf[k])-float(cf[k]))<=tol)
+        checks["visual_style_parity"]=all(deltas) if deltas else True
+    else:
+        checks["visual_style_parity"]=True
     checks["publication_disabled"]=clone.get("publication_enabled") is False
     failed=[k for k,v in checks.items() if not v]
     return {"schema_version":1,"status":"PASS" if not failed else "FAIL","checks":checks,"failed_checks":failed,"publication_enabled":False}
