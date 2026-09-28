@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "status": "ACTIVE",
+  "publication_enabled": false,
+  "fps": 24,
+  "duration_seconds": 30,
+  "cuts": [
+    0,
+    2,
+    4.5,
+    7,
+    9.5,
+    12,
+    14.5,
+    17,
+    19.5,
+    22,
+    24.5,
+    27,
+    30
+  ],
+  "max_scene_duration_seconds": 2.5,
+  "expected_scene_count": 12,
+  "ordered_scene_headlines": [
+    "The fee shows up.",
+    "Again?",
+    "Chad has a “hack.”",
+    "Here’s the catch.",
+    "The receipt doesn’t care.",
+    "Points Monk interrupts.",
+    "Do the actual math.",
+    "Dave checks his wallet.",
+    "Now compare real value.",
+    "Value wins?",
+    "Value loses?",
+    "One rule."
+  ],
+  "required_visual_tokens": [
+    "$695",
+    "SPEND $80",
+    "“SAVE” $20",
+    "$80 − $20",
+    "$60",
+    "REAL VALUE",
+    "ANNUAL FEE",
+    "REAL VALUE > FEE"
+  ],
+  "narration_semantic_order": [
+    "annual fee",
+    "spend eighty dollars",
+    "twenty-dollar credit",
+    "Points Monk",
+    "wouldn't buy the thing anyway",
+    "Count only value you'd purchase without the card",
+    "subtract the fee you actually pay",
+    "keep the card only when the math still wins"
+  ],
+  "goals": {
+    "pattern_interrupt_max_seconds": 2.5,
+    "no_fullscreen_lecture_slides": true,
+    "finance_math_visible": true,
+    "final_decision_rule_visible": true
+  }
+}
