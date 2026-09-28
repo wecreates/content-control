@@ -1,9 +1,6 @@
 name: Episode 1 First-Watch Package
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/episode1-first-watch-package.yml']
 permissions:
   contents: write
 concurrency:
