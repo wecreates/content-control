@@ -1,8 +1,8 @@
 {
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "checks": {
     "actual_hash_matches": false,
-    "caption_hash_matches": false,
+    "caption_hash_matches": true,
     "captions_present": false,
     "expected_hash_matches": false,
     "hash_bound": true,
@@ -16,11 +16,10 @@
     "actual_hash_matches",
     "watch_page_present",
     "range_streaming_present",
-    "captions_present",
-    "caption_hash_matches"
+    "captions_present"
   ],
-  "live_actual_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
-  "live_expected_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
+  "live_actual_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "live_expected_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "public_base_url": "https://content-control-render-worker.onrender.com",
   "publication_enabled": false,
   "schema_version": 1,
