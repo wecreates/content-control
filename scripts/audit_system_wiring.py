@@ -271,7 +271,6 @@ def audit_root(root: Path):
     checks["storyboard_animatic_dailies_connected"]=all((root/p).is_file() for p in [
         "scripts/storyboard_generator.py","scripts/animatic_plan.py","scripts/dailies_review.py"
     ]) and all(x in studio_text for x in ["storyboard-manifest.json","animatic.json","dailies.json"])
-    checks["rig_motion_library_connected"]=(root/"remotion/MotionLibrary.jsx").is_file() and 'from "./MotionLibrary"' in clone_render_text if False else True
     ref_comp=(root/"remotion/ReferenceCloneComposition.jsx").read_text() if (root/"remotion/ReferenceCloneComposition.jsx").is_file() else ""
     checks["rig_motion_library_connected"]=(root/"remotion/MotionLibrary.jsx").is_file() and 'from "./MotionLibrary"' in ref_comp and "rig_motion_pass.py" in studio_text
     checks["progressive_approval_connected"]=all(x in studio_text for x in [
