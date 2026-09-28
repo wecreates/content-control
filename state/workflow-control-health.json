@@ -1,6 +1,7 @@
 {
   "checks": {
     ".github/workflows/always-on-resolver.yml": true,
+    ".github/workflows/analytics-feedback.yml": true,
     ".github/workflows/apply-runtime-security-fixes.yml": true,
     ".github/workflows/autonomous-cco.yml": true,
     ".github/workflows/bottleneck-resolver.yml": true,
@@ -38,6 +39,7 @@
     ".github/workflows/patched-transformers-smoke.yml": true,
     ".github/workflows/python-security-audit.yml": true,
     ".github/workflows/quarantine-legacy-workflows.yml": true,
+    ".github/workflows/rd-quarantine.yml": true,
     ".github/workflows/reference-clone-compile.yml": true,
     ".github/workflows/reference-clone-live-smoke.yml": true,
     ".github/workflows/reference-clone-long-render.yml": true,
