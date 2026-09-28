@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "name": "CCSD - Content Control Scene Description",
+  "publication_enabled": false,
+  "required_scene_layers": [
+    "story",
+    "camera",
+    "characters",
+    "environment",
+    "props",
+    "lighting",
+    "audio",
+    "text",
+    "fx",
+    "continuity",
+    "editorial"
+  ],
+  "shared_by": [
+    "story",
+    "storyboard",
+    "animatic",
+    "layout",
+    "animation",
+    "simulation",
+    "lighting",
+    "editorial",
+    "sound",
+    "music",
+    "qa",
+    "repair"
+  ],
+  "principle": "all departments mutate versioned layers of the same canonical scene object"
+}
