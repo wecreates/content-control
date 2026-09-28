@@ -12,6 +12,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
