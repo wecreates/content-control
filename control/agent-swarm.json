@@ -308,6 +308,196 @@
         "scene-only repair planning",
         "minimal rerender scope"
       ]
+    },
+    {
+      "id": "story_room_director",
+      "parallelism": 4,
+      "owns": [
+        "multi-pitch story development",
+        "theme",
+        "setup/payoff",
+        "character motivation",
+        "rewrite passes"
+      ]
+    },
+    {
+      "id": "storyboard_director",
+      "parallelism": 3,
+      "owns": [
+        "shot boards",
+        "staging readability",
+        "visual storytelling",
+        "board continuity"
+      ]
+    },
+    {
+      "id": "animatic_editor",
+      "parallelism": 2,
+      "owns": [
+        "board timing",
+        "temp dialogue",
+        "temp SFX",
+        "pre-animation pacing"
+      ]
+    },
+    {
+      "id": "visual_development_director",
+      "parallelism": 2,
+      "owns": [
+        "environment bible",
+        "prop bible",
+        "palette",
+        "typography",
+        "look development"
+      ]
+    },
+    {
+      "id": "rigging_animation_director",
+      "parallelism": 3,
+      "owns": [
+        "IK",
+        "pose library",
+        "motion clips",
+        "facial controls",
+        "performance continuity"
+      ]
+    },
+    {
+      "id": "cinematography_director",
+      "parallelism": 2,
+      "owns": [
+        "lens",
+        "framing",
+        "screen direction",
+        "eyeline",
+        "camera motivation"
+      ]
+    },
+    {
+      "id": "simulation_fx_director",
+      "parallelism": 2,
+      "owns": [
+        "2D physics",
+        "secondary motion",
+        "impacts",
+        "particles",
+        "crowd motion"
+      ]
+    },
+    {
+      "id": "lighting_color_director",
+      "parallelism": 2,
+      "owns": [
+        "color script",
+        "key/fill/rim",
+        "story lighting",
+        "final color consistency"
+      ]
+    },
+    {
+      "id": "editorial_director",
+      "parallelism": 2,
+      "owns": [
+        "cuts",
+        "J/L transitions",
+        "pacing",
+        "retention resets",
+        "continuity edits"
+      ]
+    },
+    {
+      "id": "sound_music_director",
+      "parallelism": 2,
+      "owns": [
+        "foley",
+        "SFX motifs",
+        "room tone",
+        "adaptive score",
+        "ducking"
+      ]
+    },
+    {
+      "id": "dialogue_performance_director",
+      "parallelism": 2,
+      "owns": [
+        "voice performance",
+        "emotion",
+        "pace",
+        "breath",
+        "facial sync"
+      ]
+    },
+    {
+      "id": "continuity_asset_director",
+      "parallelism": 2,
+      "owns": [
+        "asset library",
+        "prop continuity",
+        "location continuity",
+        "callback memory",
+        "versioned assets"
+      ]
+    },
+    {
+      "id": "production_manager_agent",
+      "parallelism": 1,
+      "owns": [
+        "shot status",
+        "dependencies",
+        "render priority",
+        "blockers",
+        "version lineage"
+      ]
+    },
+    {
+      "id": "synthetic_audience_director",
+      "parallelism": 4,
+      "owns": [
+        "focus-group personas",
+        "silent-view comprehension",
+        "shareability",
+        "confusion detection"
+      ]
+    },
+    {
+      "id": "ab_development_director",
+      "parallelism": 3,
+      "owns": [
+        "hook variants",
+        "ending variants",
+        "thumbnail variants",
+        "pre-render selection"
+      ]
+    },
+    {
+      "id": "accessibility_localization_director",
+      "parallelism": 2,
+      "owns": [
+        "captions",
+        "audio description",
+        "flash safety",
+        "translation",
+        "localized layout"
+      ]
+    },
+    {
+      "id": "analytics_learning_agent",
+      "parallelism": 1,
+      "owns": [
+        "retention-to-scene mapping",
+        "creative learning memory",
+        "successful pattern reinforcement"
+      ]
+    },
+    {
+      "id": "rd_quarantine_agent",
+      "parallelism": 1,
+      "owns": [
+        "new model benchmarks",
+        "production quarantine",
+        "baseline comparison",
+        "promotion receipts"
+      ]
     }
   ],
   "hard_rules": [
@@ -344,7 +534,15 @@
     "uploaded reference videos must be decomposed into durable reference.json before production",
     "reference clone builds must preserve measured timing/camera/motion grammar where useful",
     "reference clone builds must use Content Control locked characters rather than source creator characters",
-    "generic text-to-video generation is not the primary clone path"
+    "generic text-to-video generation is not the primary clone path",
+    "all production departments operate on the same versioned CCSD scene graph",
+    "storyboards and animatics must exist before final animation handoff",
+    "AI dailies review actual boards/animatics or rendered media before promotion",
+    "shot state progresses BLOCKING -> SPLINE -> POLISH -> FINAL",
+    "render level progresses blocking -> preview -> polish -> final",
+    "analytics map to exact CCSD scene IDs before becoming future creative rules",
+    "experimental models remain quarantined until R&D benchmark passes",
+    "assets, environments, props, callbacks, and character states are versioned in durable memory"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -368,6 +566,22 @@
     "reference_selector": "scripts/select_reference_candidate.py",
     "style_parity_qa": "scripts/reference_style_parity_qa.py",
     "character_identity_qa": "scripts/character_identity_qa.py",
-    "repair_planner": "scripts/generate_repair_plan.py"
+    "repair_planner": "scripts/generate_repair_plan.py",
+    "ccsd_schema": "control/studio-scene-schema-v1.json",
+    "studio_pipeline": "control/studio-pipeline-v1.json",
+    "dailies": "control/dailies-contract-v1.json",
+    "asset_catalog": "control/asset-catalog-v1.json",
+    "render_levels": "control/render-levels-v1.json",
+    "voice_performance": "control/voice-performance-v1.json",
+    "analytics_learning": "control/analytics-learning-v1.json",
+    "rd_quarantine": "control/rd-quarantine-v1.json",
+    "ccsd_validator": "scripts/ccsd_validate.py",
+    "storyboard_generator": "scripts/storyboard_generator.py",
+    "animatic_plan": "scripts/animatic_plan.py",
+    "dailies_review": "scripts/dailies_review.py",
+    "motion_library": "remotion/MotionLibrary.jsx",
+    "production_tracker": "scripts/production_tracker.py",
+    "audience_panel": "scripts/audience_panel.py",
+    "analytics_feedback": "scripts/analytics_feedback.py"
   }
 }
