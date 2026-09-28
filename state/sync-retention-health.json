@@ -1,0 +1,121 @@
+{
+  "checks": {
+    "cuts_match_contract": true,
+    "ends_at_duration": true,
+    "final_rule_visible": true,
+    "finance_math_visible": true,
+    "max_scene_duration_ok": true,
+    "narration_semantics_present_and_ordered": true,
+    "no_fullscreen_slide_marker": true,
+    "positive_scene_durations": true,
+    "publication_disabled": true,
+    "required_visual_tokens_present": true,
+    "scene_count_matches": true,
+    "scene_headlines_present_and_ordered": true,
+    "starts_at_zero": true
+  },
+  "failed_checks": [],
+  "max_scene_duration_seconds": 2.5,
+  "narration_positions": [
+    {
+      "phrase": "annual fee",
+      "position": 73
+    },
+    {
+      "phrase": "spend eighty dollars",
+      "position": 114
+    },
+    {
+      "phrase": "twenty-dollar credit",
+      "position": 147
+    },
+    {
+      "phrase": "Points Monk",
+      "position": 169
+    },
+    {
+      "phrase": "wouldn't buy the thing anyway",
+      "position": 217
+    },
+    {
+      "phrase": "Count only value you'd purchase without the card",
+      "position": 284
+    },
+    {
+      "phrase": "subtract the fee you actually pay",
+      "position": 334
+    },
+    {
+      "phrase": "keep the card only when the math still wins",
+      "position": 373
+    }
+  ],
+  "publication_enabled": false,
+  "scene_count": 12,
+  "scene_durations_seconds": [
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5,
+    2.5
+  ],
+  "scene_positions": [
+    {
+      "phrase": "The fee shows up.",
+      "position": 2585
+    },
+    {
+      "phrase": "Again?",
+      "position": 3096
+    },
+    {
+      "phrase": "Chad has a \u201chack.\u201d",
+      "position": 3430
+    },
+    {
+      "phrase": "Here\u2019s the catch.",
+      "position": 3963
+    },
+    {
+      "phrase": "The receipt doesn\u2019t care.",
+      "position": 4489
+    },
+    {
+      "phrase": "Points Monk interrupts.",
+      "position": 5000
+    },
+    {
+      "phrase": "Do the actual math.",
+      "position": 5540
+    },
+    {
+      "phrase": "Dave checks his wallet.",
+      "position": 5993
+    },
+    {
+      "phrase": "Now compare real value.",
+      "position": 6503
+    },
+    {
+      "phrase": "Value wins?",
+      "position": 7062
+    },
+    {
+      "phrase": "Value loses?",
+      "position": 7358
+    },
+    {
+      "phrase": "One rule.",
+      "position": 7676
+    }
+  ],
+  "schema_version": 1,
+  "status": "PASS"
+}
