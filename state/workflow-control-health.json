@@ -4,6 +4,7 @@
     ".github/workflows/apply-runtime-security-fixes.yml": true,
     ".github/workflows/autonomous-cco.yml": true,
     ".github/workflows/bottleneck-resolver.yml": true,
+    ".github/workflows/candidate-state-reconcile.yml": true,
     ".github/workflows/cinematic-brand-gate.yml": true,
     ".github/workflows/cinematic-gate.yml": true,
     ".github/workflows/comedy-retention-gate.yml": true,
