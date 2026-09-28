@@ -82,6 +82,8 @@ PY
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -s production/reference-clones/active/scene-plan.json ]; then
+          if [ -s production/reference-clones/active/longform-plan.json ]; then
+            gh workflow run reference-clone-long-render.yml --ref main
+          elif [ -s production/reference-clones/active/scene-plan.json ]; then
             gh workflow run reference-clone-render.yml --ref main
           fi
