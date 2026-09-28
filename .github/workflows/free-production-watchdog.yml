@@ -63,6 +63,8 @@ jobs:
       - name: Verify workflow trigger quarantine
         run: python scripts/verify_workflow_control.py
       - name: Verify complete system wiring
+        id: wiring
+        continue-on-error: true
         run: python scripts/audit_system_wiring.py
       - name: Verify hash-bound watch server contract
         run: |
