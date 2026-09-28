@@ -171,8 +171,8 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           python scripts/composition_director.py --ccsd "$S/13-final-ccsd.json" --out "$S/14-composition.json"
-          python scripts/visual_choreography.py --ccsd "$S/14-composition.json" --out "$S/18-master-ccsd.json"
-          python scripts/contact_physics_pass.py --ccsd "$S/18-master-ccsd.json" --out "$S/16-contact.json"
+          python scripts/visual_choreography.py --ccsd "$S/14-composition.json" --out "$S/15-choreography.json"
+          python scripts/contact_physics_pass.py --ccsd "$S/15-choreography.json" --out "$S/16-contact.json"
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
           python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-master-ccsd.json"
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
