@@ -1,5 +1,6 @@
 name: Live Render Deployment Smoke
 # Full-surface probe retries through Render propagation and validates the canonical candidate.
+# Promotion probe: current candidate only; no media regeneration.
 on:
   workflow_dispatch:
   schedule:
