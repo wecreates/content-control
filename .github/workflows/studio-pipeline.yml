@@ -154,6 +154,27 @@ jobs:
           python scripts/finishing_pass.py --ccsd "$S/12-face.json" --out "$S/13-final-ccsd.json"
           python scripts/ccsd_validate.py --input "$S/13-final-ccsd.json" --out state/studio/final-ccsd-health.json
 
+      - name: Generate premium studio voices
+        if: steps.active.outputs.ready == 'yes'
+        env:
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
+          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
+          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
+          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          mkdir -p qa-output/studio-voice public/audio
+          python -m pip install -r requirements-voice.lock.txt
+          python scripts/ccsd_voice_manifest.py --ccsd "$S/13-final-ccsd.json" --out "$S/voice-manifest.json"
+          python scripts/cartesia_voice_engine.py --manifest "$S/voice-manifest.json" --out-dir qa-output/studio-voice/segments --receipt qa-output/studio-voice/receipt.json
+          python scripts/premium_voice_qa.py --receipt qa-output/studio-voice/receipt.json --assignments production/reference-clones/active/voice-assignments.json --out qa-output/studio-voice/qa.json
+          STATUS=$(python -c 'import json; print(json.load(open("qa-output/studio-voice/receipt.json"))["status"])')
+          if [ "$STATUS" = "PASS" ]; then
+            DUR=$(python -c 'import json; print(max(float(s["end"]) for s in json.load(open("production/reference-clones/active/studio/13-final-ccsd.json"))["scenes"]))')
+            python scripts/mix_voice_tracks.py --receipt qa-output/studio-voice/receipt.json --duration "$DUR" --out public/audio/studio-dialogue.wav
+          fi
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
         run: |
@@ -286,7 +307,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json qa-output/studio-voice public/audio/reference-clone-voice.mp3 || true
+          git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json qa-output/studio-voice public/audio/studio-dialogue.wav || true qa-output/studio-voice public/audio/reference-clone-voice.mp3 || true
           git diff --cached --quiet || git commit -m "Run full AI studio department pipeline"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
