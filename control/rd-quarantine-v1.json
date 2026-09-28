@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "baseline": "current zero-credit deterministic Remotion pipeline",
+  "candidate_requirements": [
+    "quality >= baseline",
+    "character consistency >= 0.90",
+    "latency <= 1.5x baseline",
+    "cost <= baseline unless explicitly approved"
+  ],
+  "production_default": "QUARANTINE",
+  "promotion_receipt": "state/rd-quarantine-health.json"
+}
