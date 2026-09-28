@@ -218,19 +218,12 @@ jobs:
               if [ "$ESTAT" = "PASS" ]; then
                 python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/eleven.mp3 --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/eleven.json --model base.en || true
               fi
-              python - <<'PY'
-import json,pathlib
-takes=[]
-for provider,path,audio in [
-    ("cartesia","qa-output/studio-voice/cartesia.json","qa-output/studio-voice/cartesia.wav"),
-    ("elevenlabs","qa-output/studio-voice/eleven.json","qa-output/studio-voice/eleven.mp3"),
-]:
-    p=pathlib.Path(path)
-    if p.exists():
-        r=json.load(open(p));r["path"]=audio;r["provider"]=provider;r.setdefault("duration_error_ratio",0)
-        takes.append(r)
-pathlib.Path("qa-output/studio-voice/takes.json").write_text(json.dumps({"takes":takes},indent=2,sort_keys=True)+"\n")
-PY
+              python scripts/build_voice_takes.py \
+                --cartesia-report qa-output/studio-voice/cartesia.json \
+                --cartesia-audio qa-output/studio-voice/cartesia.wav \
+                --eleven-report qa-output/studio-voice/eleven.json \
+                --eleven-audio qa-output/studio-voice/eleven.mp3 \
+                --out qa-output/studio-voice/takes.json
               if python scripts/voice_take_selector.py --takes qa-output/studio-voice/takes.json --out state/studio/premium-voice.json; then
                 BEST=$(python -c 'import json; print(json.load(open("state/studio/premium-voice.json"))["best"]["path"])')
                 if [[ "$BEST" == *.wav ]]; then
@@ -252,16 +245,11 @@ PY
         run: |
           S=production/reference-clones/active/studio
           python scripts/ccsd_to_scene_plan.py --ccsd "$S/13-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
-          python - <<'PY'
-import json,pathlib
-p=pathlib.Path("production/reference-clones/active/studio/scene-plan-studio.json")
-d=json.load(open(p))
-voice=pathlib.Path("public/audio/reference-clone-voice.mp3")
-if voice.is_file() and voice.stat().st_size>0:
-    d["voiceover_path"]="audio/reference-clone-voice.mp3"
-    d["voice_receipt"]="state/studio/premium-voice.json"
-p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
-PY
+          python scripts/inject_voiceover_path.py \
+            --scene-plan "$S/scene-plan-studio.json" \
+            --voice-file public/audio/reference-clone-voice.mp3 \
+            --voice-public-path audio/reference-clone-voice.mp3 \
+            --receipt state/studio/premium-voice.json
           cp "$S/scene-plan-studio.json" production/reference-clones/active/scene-plan.json
 
       - name: Final studio gate
