@@ -48,16 +48,18 @@
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": true,
+    "system_wiring_green": false,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
+  "failed_checks": [
+    "system_wiring_green"
+  ],
   "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "audit_system_wiring",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "REPAIR_REQUIRED"
 }

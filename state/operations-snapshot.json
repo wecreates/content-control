@@ -38,7 +38,7 @@
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": true,
+    "system_wiring_green": false,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
@@ -54,9 +54,11 @@
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [],
+  "failed_checks": [
+    "system_wiring_green"
+  ],
   "live_deployment_status": "PASS",
-  "machine_system_complete": true,
+  "machine_system_complete": false,
   "mobile_playback_status": "PASS",
   "narration_transcription_status": "PASS",
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
@@ -68,9 +70,9 @@
   "review_server_smoke_status": "PASS",
   "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "schema_version": 1,
-  "status": "COMPLETE",
+  "status": "REPAIR_REQUIRED",
   "sync_retention_status": "PASS",
-  "system_wiring_status": "PASS",
+  "system_wiring_status": "FAIL",
   "workflow_control_status": "PASS",
   "zero_credit_runtime": true
 }
