@@ -13,9 +13,12 @@ on:
       - '.github/workflows/live-render-deployment-smoke.yml'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: live-render-deployment-smoke
   cancel-in-progress: true
+env:
+  GH_TOKEN: ${{ github.token }}
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -111,6 +114,9 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Refresh canonical completion after live deployment passes
+        if: success()
+        run: gh workflow run free-production-watchdog.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
