@@ -21,25 +21,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {ref: main, fetch-depth: 0}
-      - name: Route smallest repair
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Bound repair attempts
+        id: attempts
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          active=json.load(open("production/reference-clones/active/activation.json"))
+          rid=active["reference_id"]
+          p=pathlib.Path("state/reference-clone-repair-attempts.json")
+          prev={}
+          if p.exists():
+              try: prev=json.load(open(p))
+              except Exception: prev={}
+          count=int(prev.get("count",0)) if prev.get("reference_id")==rid else 0
+          allowed=count<3
+          r={"schema_version":1,"reference_id":rid,"count":count,"allowed":allowed,"publication_enabled":False}
+          p.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          with open(pathlib.Path.home()/".attempt-output","w") as fh: fh.write("allowed=yes\n" if allowed else "allowed=no\n")
+          print(r)
+          PY
+          cat "$HOME/.attempt-output" >> "$GITHUB_OUTPUT"
+      - name: Apply scene-targeted repair
+        if: steps.attempts.outputs.allowed == 'yes'
         run: |
           set -euo pipefail
-          test -s state/reference-clone-repair-plan.json
-          python - <<'PY' > /tmp/routes
-          import json
-          p=json.load(open("state/reference-clone-repair-plan.json"))
-          routes=set()
-          for r in p.get("repairs",[]):
-              a=r.get("repair","")
-              if "character" in a or "scene" in a or "camera" in a or "retime" in a:
-                  routes.add("reference-clone-render.yml")
-              elif "audio" in a:
-                  routes.add("reference-clone-render.yml")
-              elif "caption" in a:
-                  routes.add("reference-clone-render.yml")
-          for x in sorted(routes): print(x)
+          test -s qa-output/reference-clone/parity.json
+          python scripts/apply_clone_repairs.py             --reference production/reference-clones/active/reference.json             --scene-plan production/reference-clones/active/scene-plan.json             --parity qa-output/reference-clone/parity.json             --out production/reference-clones/active/scene-plan.json
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path("state/reference-clone-repair-attempts.json")
+          r=json.load(open(p));r["count"]=int(r.get("count",0))+1
+          p.write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
-          while IFS= read -r workflow; do
-            [ -n "$workflow" ] || continue
-            gh workflow run "$workflow" --ref main
-          done < /tmp/routes
+      - name: Persist targeted patch
+        if: steps.attempts.outputs.allowed == 'yes'
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add production/reference-clones/active/scene-plan.json state/reference-clone-repair-attempts.json
+          git diff --cached --quiet || git commit -m "Apply scene-targeted reference clone repair"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Re-run repaired clone proof
+        if: steps.attempts.outputs.allowed == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run reference-clone-render.yml --ref main
+      - name: Stop after bounded retries
+        if: steps.attempts.outputs.allowed != 'yes'
+        run: |
+          echo "Reference clone repair budget exhausted; retaining diagnostics for human review."
