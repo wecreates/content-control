@@ -1,0 +1,22 @@
+{
+  "channels": 2,
+  "checks": {
+    "channels_ok": true,
+    "clipping_headroom_ok": true,
+    "duration_match": true,
+    "no_excessive_long_silence": true,
+    "not_too_quiet": true,
+    "sample_rate_ok": true,
+    "volume_metrics_present": true
+  },
+  "codec": "aac",
+  "duration_seconds": 30.058,
+  "engine": "ffmpeg-free-audio-qa-v1",
+  "long_silence_durations_seconds": [],
+  "max_long_silence_seconds": 0.0,
+  "max_volume_db": -3.2,
+  "mean_volume_db": -28.8,
+  "sample_rate_hz": 48000,
+  "schema_version": 1,
+  "verdict": "PASS"
+}

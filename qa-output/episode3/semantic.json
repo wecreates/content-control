@@ -1,0 +1,60 @@
+{
+  "best_reference_similarity_by_candidate": [
+    0.43111366033554077,
+    0.4904671609401703,
+    0.3808647394180298,
+    0.3217710256576538,
+    0.46643155813217163,
+    0.39208143949508667,
+    0.36467444896698,
+    0.4500733017921448,
+    0.40674370527267456,
+    0.3696197271347046
+  ],
+  "checks": {
+    "florence_completed": true,
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true
+  },
+  "engine": "openclip-florence-free-qa-v1",
+  "florence": {
+    "captions": {
+      "candidate": [
+        {
+          "caption": "The image is a graphic design with a white background. In the center, there is a black credit card with the text \"Dave Found 2% Cashback\" written above it. Below the credit card, there are two lines of text that read \"Dave\" and \"2% BACK\". On the right side of the image, there appears to be",
+          "file": "cand-01.jpg"
+        },
+        {
+          "caption": "The image is a black and white illustration of a stick figure with a sad expression on its face. The stick figure is standing with its arms stretched out to the sides and its head tilted slightly to the side. Above the stick figure, there is a text that reads \"Points Monk: \"Would you buy it without the reward?\" The text is written",
+          "file": "cand-06.jpg"
+        },
+        {
+          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Above them, there is a yellow circle with a dollar sign on it. Below the circle, there are two lines",
+          "file": "cand-10.jpg"
+        }
+      ],
+      "reference": [
+        {
+          "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+          "file": "ref-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
+          "file": "ref-06.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+          "file": "ref-10.jpg"
+        }
+      ]
+    },
+    "error": null,
+    "status": "PASS"
+  },
+  "florence_model": "florence-community/Florence-2-base",
+  "global_similarity": 0.32503461837768555,
+  "mean_best_frame_similarity": 0.40738406777381897,
+  "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+  "schema_version": 1,
+  "verdict": "PASS"
+}

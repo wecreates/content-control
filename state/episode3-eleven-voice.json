@@ -1,0 +1,10 @@
+{
+  "error": "missing ELEVENLABS_API_KEY",
+  "fallback_required": true,
+  "model_id": "eleven_v3",
+  "provider": "elevenlabs",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "selected_provider": "fallback",
+  "status": "FALLBACK_REQUIRED"
+}

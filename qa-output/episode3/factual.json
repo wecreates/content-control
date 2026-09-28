@@ -1,0 +1,25 @@
+{
+  "arithmetic": [
+    {
+      "computed": 1.6,
+      "expected": 1.6,
+      "expression": "80*0.02",
+      "pass": true
+    },
+    {
+      "computed": 78.4,
+      "expected": 78.4,
+      "expression": "80-1.6",
+      "pass": true
+    }
+  ],
+  "checks": {
+    "arithmetic": true,
+    "educational_example": true,
+    "no_risky_phrases": true,
+    "publication_disabled": true
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}

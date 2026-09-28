@@ -1,0 +1,10 @@
+{
+  "error": "missing CARTESIA_API_KEY",
+  "fallback_required": true,
+  "model_id": "sonic-3.6",
+  "provider": "cartesia",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "selected_provider": "fallback",
+  "status": "FALLBACK_REQUIRED"
+}

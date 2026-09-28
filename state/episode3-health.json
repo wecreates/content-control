@@ -1,0 +1,413 @@
+{
+  "candidate_sha256": "f2cbef50b52d7b0775901d927d26d8629dc62e0363bb5e70a57a26f97a7397d6",
+  "caption_path": "public-review/episode3-cashback-casino.vtt",
+  "caption_sha256": "a9486b44c1d15a9f47a83ef898c225be3010832337e915e5f193dac3dde534d3",
+  "contact_sheet": "qa-output/episode3/contact.jpg",
+  "credit_cost": 0,
+  "parts": {
+    "audio": {
+      "channels": 2,
+      "checks": {
+        "channels_ok": true,
+        "clipping_headroom_ok": true,
+        "duration_match": true,
+        "no_excessive_long_silence": true,
+        "not_too_quiet": true,
+        "sample_rate_ok": true,
+        "volume_metrics_present": true
+      },
+      "codec": "aac",
+      "duration_seconds": 30.058,
+      "engine": "ffmpeg-free-audio-qa-v1",
+      "long_silence_durations_seconds": [],
+      "max_long_silence_seconds": 0.0,
+      "max_volume_db": -3.2,
+      "mean_volume_db": -28.8,
+      "sample_rate_hz": 48000,
+      "schema_version": 1,
+      "verdict": "PASS"
+    },
+    "deterministic": {
+      "candidate_sha256": "f2cbef50b52d7b0775901d927d26d8629dc62e0363bb5e70a57a26f97a7397d6",
+      "checks": {
+        "duration_30s": true,
+        "motion_activity": true,
+        "no_black_frames": true,
+        "portrait_9_16": true,
+        "reference_edge_density_ratio": true
+      },
+      "duration_seconds": 30.0,
+      "edge_density_ratio": 0.6389095218384808,
+      "engine": "opencv-free-qa-v1",
+      "mean_candidate_edge_density": 0.0122265625,
+      "mean_reference_edge_density": 0.019136610243055557,
+      "motion_active_fraction": 1.0,
+      "reference_frames": 10,
+      "sampled_candidate_frames": 10,
+      "schema_version": 1,
+      "verdict": "PASS"
+    },
+    "factual": {
+      "arithmetic": [
+        {
+          "computed": 1.6,
+          "expected": 1.6,
+          "expression": "80*0.02",
+          "pass": true
+        },
+        {
+          "computed": 78.4,
+          "expected": 78.4,
+          "expression": "80-1.6",
+          "pass": true
+        }
+      ],
+      "checks": {
+        "arithmetic": true,
+        "educational_example": true,
+        "no_risky_phrases": true,
+        "publication_disabled": true
+      },
+      "publication_enabled": false,
+      "schema_version": 1,
+      "status": "PASS"
+    },
+    "mobile": {
+      "atoms": [
+        {
+          "offset": 0,
+          "size": 32,
+          "type": "ftyp"
+        },
+        {
+          "offset": 32,
+          "size": 22651,
+          "type": "moov"
+        },
+        {
+          "offset": 22683,
+          "size": 8,
+          "type": "free"
+        },
+        {
+          "offset": 22691,
+          "size": 3680312,
+          "type": "mdat"
+        }
+      ],
+      "audio": {
+        "channel_layout": "stereo",
+        "channels": 2,
+        "codec": "aac",
+        "sample_rate": "48000"
+      },
+      "checks": {
+        "audio_48khz": true,
+        "audio_codec_aac": true,
+        "faststart_moov_before_mdat": true,
+        "fps_24": true,
+        "mp4_container": true,
+        "pixel_format_yuv420p": true,
+        "resolution_720x1280": true,
+        "stereo_audio": true,
+        "video_codec_h264": true
+      },
+      "failed_checks": [],
+      "publication_enabled": false,
+      "schema_version": 1,
+      "status": "PASS",
+      "video": {
+        "codec": "h264",
+        "fps": 24.0,
+        "height": 1280,
+        "pix_fmt": "yuv420p",
+        "profile": "High",
+        "width": 720
+      }
+    },
+    "semantic": {
+      "best_reference_similarity_by_candidate": [
+        0.43111366033554077,
+        0.4904671609401703,
+        0.3808647394180298,
+        0.3217710256576538,
+        0.46643155813217163,
+        0.39208143949508667,
+        0.36467444896698,
+        0.4500733017921448,
+        0.40674370527267456,
+        0.3696197271347046
+      ],
+      "checks": {
+        "florence_completed": true,
+        "openclip_global_similarity": true,
+        "openclip_mean_best_similarity": true
+      },
+      "engine": "openclip-florence-free-qa-v1",
+      "florence": {
+        "captions": {
+          "candidate": [
+            {
+              "caption": "The image is a graphic design with a white background. In the center, there is a black credit card with the text \"Dave Found 2% Cashback\" written above it. Below the credit card, there are two lines of text that read \"Dave\" and \"2% BACK\". On the right side of the image, there appears to be",
+              "file": "cand-01.jpg"
+            },
+            {
+              "caption": "The image is a black and white illustration of a stick figure with a sad expression on its face. The stick figure is standing with its arms stretched out to the sides and its head tilted slightly to the side. Above the stick figure, there is a text that reads \"Points Monk: \"Would you buy it without the reward?\" The text is written",
+              "file": "cand-06.jpg"
+            },
+            {
+              "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Above them, there is a yellow circle with a dollar sign on it. Below the circle, there are two lines",
+              "file": "cand-10.jpg"
+            }
+          ],
+          "reference": [
+            {
+              "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+              "file": "ref-01.jpg"
+            },
+            {
+              "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
+              "file": "ref-06.jpg"
+            },
+            {
+              "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+              "file": "ref-10.jpg"
+            }
+          ]
+        },
+        "error": null,
+        "status": "PASS"
+      },
+      "florence_model": "florence-community/Florence-2-base",
+      "global_similarity": 0.32503461837768555,
+      "mean_best_frame_similarity": 0.40738406777381897,
+      "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+      "schema_version": 1,
+      "verdict": "PASS"
+    }
+  },
+  "premium_voice": {
+    "provider": "content_control_zero_credit",
+    "publication_enabled": false,
+    "status": "FALLBACK"
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "GREEN",
+  "title": "2% Cashback Turned Dave's Brain Into a Casino",
+  "transcription": {
+    "actual_transcript": "Dave found two percent cashback. His brain immediately became a casino. He almost bought an $80 gadget he did not need, but I get money back. Yes, $1.60. Congratulations, Dave. You spent $80 to summon this. Would you buy it without the reward? If no, the reward won. Cashback only wins when the purchase already made sense. Buy first, reward second.",
+    "checks": {
+      "content_token_recall_ok": true,
+      "duration_plausible": true,
+      "no_post_narration_hallucination": true,
+      "publication_disabled": true,
+      "semantic_recall_ok": true,
+      "sequence_similarity_ok": true,
+      "transcript_coverage_ok": true,
+      "transcript_nonempty": true
+    },
+    "content_token_recall": 0.84,
+    "engine": "faster-whisper",
+    "expected_text": "Dave found two percent cashback. His brain immediately became a casino. He almost bought an eighty-dollar gadget he did not need. But I get money back! Yes. One dollar and sixty cents. Congratulations, Dave. You spent eighty dollars to summon this. Would you buy it without the reward? If no, the reward won. Cashback only wins when the purchase already made sense. Buy first. Reward second.",
+    "failed_checks": [],
+    "faster_whisper_version": "1.2.1",
+    "language": "en",
+    "language_probability": 1,
+    "media_duration_seconds": 24.048,
+    "model": "base.en",
+    "publication_enabled": false,
+    "schema_version": 1,
+    "segments": [
+      {
+        "end": 2.12,
+        "start": 0.0,
+        "text": "Dave found two percent cashback."
+      },
+      {
+        "end": 4.56,
+        "start": 2.12,
+        "text": "His brain immediately became a casino."
+      },
+      {
+        "end": 7.6,
+        "start": 4.56,
+        "text": "He almost bought an $80 gadget he did not need,"
+      },
+      {
+        "end": 8.8,
+        "start": 7.6,
+        "text": "but I get money back."
+      },
+      {
+        "end": 10.68,
+        "start": 8.8,
+        "text": "Yes, $1.60."
+      },
+      {
+        "end": 12.24,
+        "start": 10.68,
+        "text": "Congratulations, Dave."
+      },
+      {
+        "end": 14.16,
+        "start": 12.24,
+        "text": "You spent $80 to summon this."
+      },
+      {
+        "end": 16.24,
+        "start": 14.16,
+        "text": "Would you buy it without the reward?"
+      },
+      {
+        "end": 18.24,
+        "start": 16.24,
+        "text": "If no, the reward won."
+      },
+      {
+        "end": 21.6,
+        "start": 18.24,
+        "text": "Cashback only wins when the purchase already made sense."
+      },
+      {
+        "end": 24.08,
+        "start": 21.6,
+        "text": "Buy first, reward second."
+      }
+    ],
+    "semantic_hits": [
+      {
+        "pass": true,
+        "terms": [
+          "dave"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "cashback",
+          "percent"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "casino"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "eighty",
+          "80"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "gadget"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "money",
+          "back"
+        ]
+      },
+      {
+        "pass": false,
+        "terms": [
+          "one",
+          "dollar",
+          "sixty"
+        ]
+      },
+      {
+        "pass": false,
+        "terms": [
+          "points",
+          "monk"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "reward"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "purchase"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "buy"
+        ]
+      },
+      {
+        "pass": true,
+        "terms": [
+          "second"
+        ]
+      }
+    ],
+    "semantic_recall": 0.833333,
+    "sequence_similarity": 0.899225,
+    "status": "PASS",
+    "transcribed_duration_seconds": 24.08,
+    "transcript_coverage_ratio": 1.001331
+  },
+  "video_path": "public-review/episode3-cashback-casino.mp4",
+  "voice_provider": {
+    "dialogue_specialist": {
+      "mode": "offline_cinematic_dialogue",
+      "model_id": "eleven_v3",
+      "output_format": "mp3_44100_128",
+      "provider": "elevenlabs",
+      "ready": false,
+      "seed_policy": "locked_per_character_plus_variant"
+    },
+    "fallback": {
+      "enabled": true,
+      "provider": "content_control_zero_credit",
+      "reason": "used when premium providers are unavailable or generation QA fails"
+    },
+    "primary": {
+      "mode": "offline_quality",
+      "model_id": "sonic-3.6",
+      "output_format": "wav_pcm_s16le_44100",
+      "provider": "cartesia",
+      "ready": false
+    },
+    "publication_enabled": false,
+    "schema_version": 2,
+    "selected_provider": "fallback",
+    "selected_strategy": "fallback",
+    "voices": {
+      "cashback_goblin": {
+        "cartesia_voice_id": null,
+        "elevenlabs_voice_id": null,
+        "voice_profile": "chirps_or_nonverbal"
+      },
+      "dave": {
+        "cartesia_voice_id": null,
+        "elevenlabs_voice_id": null,
+        "voice_profile": "medium-fast-anxious"
+      },
+      "narrator": {
+        "cartesia_voice_id": null,
+        "elevenlabs_voice_id": null,
+        "voice_profile": "deep-neutral"
+      },
+      "points_monk": {
+        "cartesia_voice_id": null,
+        "elevenlabs_voice_id": null,
+        "voice_profile": "low-calm-deadpan"
+      }
+    }
+  }
+}
