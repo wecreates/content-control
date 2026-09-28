@@ -8,6 +8,8 @@ on:
       - 'server.js'
       - 'state/content-control-health.json'
       - 'public-review/episode1-v10-free.mp4'
+      - 'public-review/episode1-v10-free.vtt'
+      - 'state/caption-health.json'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/review-server-smoke.yml'
@@ -54,6 +56,7 @@ jobs:
           assert h["engine"]=="remotion-v10-free"
           assert h["publication"] is False
           assert h["hashBound"] is True
+          assert h["captionReady"] is True
           assert h["expectedSha256"]==h["actualSha256"]
           print(h)
           PY
@@ -64,6 +67,11 @@ jobs:
           grep -qi '^referrer-policy: no-referrer' /tmp/watch.headers
           grep -q 'FREE_QA' /tmp/watch.html
           grep -q 'publication disabled' /tmp/watch.html
+          grep -q 'src="/captions"' /tmp/watch.html
+          test "$(curl -s -D /tmp/captions.headers -o /tmp/captions.vtt -w "%{http_code}" http://127.0.0.1:10000/captions)" = "200"
+          grep -qi '^content-type: text/vtt' /tmp/captions.headers
+          grep -q '^WEBVTT' /tmp/captions.vtt
+          grep -q 'Ignore the flex and keep the math.' /tmp/captions.vtt
           test "$(curl -s -D /tmp/media.headers -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
           grep -qi '^accept-ranges: bytes' /tmp/media.headers
           grep -qi '^cache-control: public, max-age=31536000, immutable' /tmp/media.headers
@@ -115,6 +123,7 @@ jobs:
             "range_streaming_verified":ok,
             "security_headers_verified":ok,
             "cache_policy_verified":ok,
+            "captions_verified":ok,
             "publication_enabled":False
           }
           pathlib.Path("state/review-server-smoke.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
