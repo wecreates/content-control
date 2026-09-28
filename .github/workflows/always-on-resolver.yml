@@ -1,15 +1,5 @@
 name: Always-On Bottleneck Resolver
 on:
-  workflow_run:
-    workflows:
-      - Episode 1 Max-Speed Execution
-      - Exact AV Reviewer
-      - Dropbox Exact Review Bridge
-      - Artifact Transport
-      - Pinned Source Refresh
-    types: [completed]
-  repository_dispatch:
-    types: [bottleneck-found, artifact-ready, repair-ready, review-findings, component-verified]
   workflow_dispatch:
 permissions:
   actions: write
