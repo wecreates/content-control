@@ -22,11 +22,11 @@
     "verdict": "PASS"
   },
   "audio_source": "repository-local public/audio",
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "contact_sheet": "qa-output/free/contact.jpg",
   "credit_cost": 0,
   "deterministic": {
-    "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+    "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "checks": {
       "duration_30s": true,
       "motion_activity": true,
@@ -35,9 +35,9 @@
       "reference_edge_density_ratio": true
     },
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5935938944109591,
+    "edge_density_ratio": 0.5938150292294868,
     "engine": "opencv-free-qa-v1",
-    "mean_candidate_edge_density": 0.011359375,
+    "mean_candidate_edge_density": 0.011363606770833333,
     "mean_reference_edge_density": 0.019136610243055557,
     "motion_active_fraction": 1.0,
     "reference_frames": 10,
@@ -46,6 +46,59 @@
     "verdict": "PASS"
   },
   "duration_seconds": 30.0,
+  "mobile": {
+    "atoms": [
+      {
+        "offset": 0,
+        "size": 32,
+        "type": "ftyp"
+      },
+      {
+        "offset": 32,
+        "size": 22636,
+        "type": "moov"
+      },
+      {
+        "offset": 22668,
+        "size": 8,
+        "type": "free"
+      },
+      {
+        "offset": 22676,
+        "size": 4029848,
+        "type": "mdat"
+      }
+    ],
+    "audio": {
+      "channel_layout": "stereo",
+      "channels": 2,
+      "codec": "aac",
+      "sample_rate": "48000"
+    },
+    "checks": {
+      "audio_48khz": true,
+      "audio_codec_aac": true,
+      "faststart_moov_before_mdat": true,
+      "fps_24": true,
+      "mp4_container": true,
+      "pixel_format_yuv420p": true,
+      "resolution_720x1280": true,
+      "stereo_audio": true,
+      "video_codec_h264": true
+    },
+    "failed_checks": [],
+    "publication_enabled": false,
+    "schema_version": 1,
+    "status": "PASS",
+    "video": {
+      "codec": "h264",
+      "fps": 24.0,
+      "height": 1280,
+      "pix_fmt": "yuv420p",
+      "profile": "High",
+      "width": 720
+    }
+  },
   "paid_vision_dependency": false,
   "phone_watch_path": "public-review/episode1-v10-free.mp4",
   "publication_enabled": false,
@@ -53,16 +106,16 @@
   "schema_version": 1,
   "semantic": {
     "best_reference_similarity_by_candidate": [
-      0.42578354477882385,
-      0.4365079998970032,
-      0.39532843232154846,
-      0.4359605610370636,
-      0.38653552532196045,
-      0.3822339177131653,
-      0.4759610891342163,
-      0.3950626254081726,
-      0.4039769172668457,
-      0.40263527631759644
+      0.42704081535339355,
+      0.4501335620880127,
+      0.39411085844039917,
+      0.4375590682029724,
+      0.38390153646469116,
+      0.3808640241622925,
+      0.47470101714134216,
+      0.3992648720741272,
+      0.402826189994812,
+      0.3972346782684326
     ],
     "checks": {
       "florence_completed": true,
@@ -105,8 +158,8 @@
       "status": "PASS"
     },
     "florence_model": "florence-community/Florence-2-base",
-    "global_similarity": 0.3317713141441345,
-    "mean_best_frame_similarity": 0.4139986038208008,
+    "global_similarity": 0.3325476348400116,
+    "mean_best_frame_similarity": 0.4147636294364929,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "schema_version": 1,
     "verdict": "PASS"
