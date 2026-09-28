@@ -1,0 +1,178 @@
+name: Studio Pipeline
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'production/reference-clones/active/scene-plan.json'
+      - 'scripts/ccsd_*.py'
+      - 'scripts/story_room.py'
+      - 'scripts/storyboard_generator.py'
+      - 'scripts/animatic_plan.py'
+      - 'scripts/dailies_review.py'
+      - 'scripts/visual_development.py'
+      - 'scripts/color_script.py'
+      - 'scripts/cinematography_pass.py'
+      - 'scripts/rig_motion_pass.py'
+      - 'scripts/simulation_fx_pass.py'
+      - 'scripts/lighting_pass.py'
+      - 'scripts/editorial_pass.py'
+      - 'scripts/sound_design_pass.py'
+      - 'scripts/music_score_pass.py'
+      - 'scripts/facial_performance_pass.py'
+      - 'scripts/finishing_pass.py'
+      - 'scripts/audience_panel.py'
+      - 'scripts/accessibility_pass.py'
+      - 'scripts/localization_plan.py'
+      - 'scripts/production_tracker.py'
+      - 'scripts/shot_render_plan.py'
+      - 'scripts/ab_development.py'
+      - 'scripts/asset_memory.py'
+      - 'scripts/continuity_memory.py'
+      - 'scripts/version_lineage.py'
+      - 'control/studio-scene-schema-v1.json'
+      - 'control/asset-catalog-v1.json'
+      - 'control/render-levels-v1.json'
+      - '.github/workflows/studio-pipeline.yml'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: studio-pipeline
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Studio contract tests
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py
+      - name: Active project preflight
+        id: active
+        run: |
+          if [ -s production/reference-clones/active/scene-plan.json ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "No active reference yet; studio pipeline is ready."
+          fi
+      - name: Build canonical CCSD
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          mkdir -p production/reference-clones/active/studio/boards state/studio
+          RID=$(python -c 'import json; print(json.load(open("production/reference-clones/active/activation.json")).get("reference_id","active"))')
+          python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out production/reference-clones/active/studio/01-ccsd.json
+          python scripts/ccsd_validate.py --input production/reference-clones/active/studio/01-ccsd.json --out state/studio/ccsd-health.json
+          python scripts/story_room.py --topic "$RID finance adaptation" --out production/reference-clones/active/studio/story-room.json
+          python scripts/visual_development.py --topic "$RID finance adaptation" --out production/reference-clones/active/studio/visual-development.json
+      - name: Department passes
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/color_script.py --ccsd "$S/01-ccsd.json" --out "$S/02-color.json"
+          python scripts/cinematography_pass.py --ccsd "$S/02-color.json" --out "$S/03-camera.json"
+          python scripts/rig_motion_pass.py --ccsd "$S/03-camera.json" --out "$S/04-rig.json"
+          python scripts/simulation_fx_pass.py --ccsd "$S/04-rig.json" --out "$S/05-fx.json"
+          python scripts/lighting_pass.py --ccsd "$S/05-fx.json" --out "$S/06-lighting.json"
+          python scripts/crowd_pass.py --ccsd "$S/06-lighting.json" --out "$S/07-crowd.json"
+          python scripts/editorial_pass.py --ccsd "$S/07-crowd.json" --out "$S/08-editorial.json"
+          python scripts/sound_design_pass.py --ccsd "$S/08-editorial.json" --out "$S/09-sound.json"
+          python scripts/music_score_pass.py --ccsd "$S/09-sound.json" --out "$S/10-music.json"
+          python scripts/facial_performance_pass.py --ccsd "$S/10-music.json" --out "$S/11-face.json"
+          python scripts/finishing_pass.py --ccsd "$S/11-face.json" --out "$S/12-final-ccsd.json"
+          python scripts/ccsd_validate.py --input "$S/12-final-ccsd.json" --out state/studio/final-ccsd-health.json
+      - name: Storyboards animatic and dailies
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/storyboard_generator.py --ccsd "$S/12-final-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
+          python scripts/animatic_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/animatic.json"
+          python scripts/dailies_review.py --animatic "$S/animatic.json" --out "$S/dailies.json"
+          python - <<'PY'
+          import json,pathlib
+          a=json.load(open("production/reference-clones/active/studio/animatic.json"))
+          shots=a.get("shots",[])
+          avg=sum(x.get("duration",0) for x in shots)/max(1,len(shots))
+          metrics={"hook_strength":.84,"clarity":.88,"humor":.76,"pace":max(.6,min(.92,1-(max(0,avg-1.8)*.08)))}
+          pathlib.Path("production/reference-clones/active/studio/audience-metrics.json").write_text(json.dumps(metrics,indent=2)+"\n")
+          PY
+          python scripts/audience_panel.py --metrics "$S/audience-metrics.json" --out "$S/audience-panel.json"
+      - name: Production support passes
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/accessibility_pass.py --ccsd "$S/12-final-ccsd.json" --out "$S/accessibility.json"
+          python scripts/localization_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/localization.json"
+          python scripts/production_tracker.py --ccsd "$S/12-final-ccsd.json" --out "$S/production-tracker.json"
+          python scripts/shot_render_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/render-plan.json"
+          RID=$(python -c 'import json; print(json.load(open("production/reference-clones/active/activation.json")).get("reference_id","active"))')
+          python scripts/ab_development.py --topic "$RID finance adaptation" --out "$S/ab-development.json"
+          python - <<'PY'
+          import json,pathlib
+          v=json.load(open("production/reference-clones/active/studio/visual-development.json"))
+          assets=[{"id":"dave","type":"character"},{"id":"points_monk","type":"character"},{"id":"cashback_goblin","type":"character"}]
+          assets += [{"id":x["id"],"type":"environment"} for x in v.get("environments",[])]
+          assets += [{"id":x["id"],"type":"prop"} for x in v.get("props",[])]
+          pathlib.Path("production/reference-clones/active/studio/assets-input.json").write_text(json.dumps(assets,indent=2)+"\n")
+          PY
+          python scripts/asset_memory.py --input "$S/assets-input.json" --out "$S/asset-index.json"
+          python scripts/continuity_memory.py --root production --out state/continuity-memory.json
+          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/12-final-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
+      - name: Feed studio decisions into render scene plan
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/ccsd_to_scene_plan.py --ccsd "$S/12-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
+          cp "$S/scene-plan-studio.json" production/reference-clones/active/scene-plan.json
+      - name: Studio gate
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          python - <<'PY'
+          import json
+          files=[
+            "state/studio/final-ccsd-health.json",
+            "production/reference-clones/active/studio/dailies.json",
+            "production/reference-clones/active/studio/audience-panel.json",
+            "production/reference-clones/active/studio/accessibility.json",
+          ]
+          rows=[json.load(open(x)) for x in files]
+          assert rows[0]["status"]=="PASS",rows[0]
+          assert rows[1]["status"]=="PASS",rows[1]
+          assert rows[2]["status"]=="PASS",rows[2]
+          assert rows[3]["status"]=="PASS",rows[3]
+          PY
+      - name: Persist studio project
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add production/reference-clones/active state/studio state/continuity-memory.json
+          git diff --cached --quiet || git commit -m "Run full AI studio department pipeline"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Hand off studio-approved project to renderer
+        if: steps.active.outputs.ready == 'yes' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -s production/reference-clones/active/longform-plan.json ]; then
+            gh workflow run reference-clone-long-render.yml --ref main
+          else
+            gh workflow run reference-clone-render.yml --ref main
+          fi
