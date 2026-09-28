@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "title": "2% Cashback Turned Dave's Brain Into a Casino",
+  "publication_enabled": false,
+  "educational_example": true,
+  "narration_text": "Dave found two percent cashback. His brain immediately became a casino. He almost bought an eighty-dollar gadget he did not need. But I get money back. Yes. One dollar and sixty cents. Congratulations, Dave. You spent eighty dollars to summon a sad vending-machine snack. Then Points Monk kicks in the door. Cashback only wins when the purchase already made sense. Buy nonsense for rewards, and the bank still wins. The best cashback purchase is the one you were already going to make.",
+  "claims": {
+    "purchase_usd": 80,
+    "cashback_rate": 0.02,
+    "cashback_usd": 1.6,
+    "net_outflow_usd": 78.4
+  },
+  "arithmetic": [
+    {
+      "expression": "80*0.02",
+      "expected": 1.6
+    },
+    {
+      "expression": "80-1.6",
+      "expected": 78.4
+    }
+  ],
+  "topic_basis": "Short-form finance comedy using a generic cashback example. No issuer/product claims.",
+  "prohibited_risky_phrases": [
+    "guaranteed return",
+    "risk-free",
+    "apply now",
+    "must get this card"
+  ]
+}
