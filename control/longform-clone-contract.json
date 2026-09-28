@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "publication_enabled": false,
   "min_runtime_seconds": 510,
   "max_act_seconds": 45,
@@ -9,7 +9,16 @@
     "energy curve",
     "location or subplot pivots",
     "chapter-level reference grammar",
-    "locked character continuity"
+    "locked character continuity",
+    "multi-character conversations",
+    "recurring props and visual callbacks",
+    "quiet beats between high-energy sequences",
+    "visual chapter identity",
+    "environment changes before rigging",
+    "character interplay and subplots",
+    "no repeated visual grammar across consecutive acts"
   ],
-  "architect": "scripts/longform_clone_architect.py"
+  "architect": "scripts/longform_clone_architect.py",
+  "visual_director": "scripts/longform_visual_director.py",
+  "renderer": "remotion/ReferenceCloneLongComposition.jsx"
 }
