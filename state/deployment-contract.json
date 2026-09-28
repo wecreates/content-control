@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "provider": "render",
+  "manifest": "render.yaml",
+  "service_name": "content-control-render-worker",
+  "runtime": "node",
+  "build_command": "npm ci --ignore-scripts",
+  "start_command": "npm start",
+  "health_check_path": "/health",
+  "canonical_server": "server-lowmem.js",
+  "canonical_media": "public-review/episode1-v10-free.mp4",
+  "publication_enabled": false,
+  "required_env": {
+    "NODE_ENV": "production",
+    "PUBLICATION_ENABLED": "false"
+  }
+}
