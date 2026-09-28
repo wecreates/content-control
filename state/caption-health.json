@@ -1,8 +1,8 @@
 {
   "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-  "caption_end_seconds": 26.12,
+  "caption_end_seconds": 26.16,
   "caption_path": "public-review/episode1-v10-free.vtt",
-  "caption_sha256": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9",
+  "caption_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
   "checks": {
     "candidate_health_green": true,
     "caption_file_exists": true,
