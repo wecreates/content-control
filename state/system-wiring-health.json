@@ -10,6 +10,9 @@
     "episode3_hash_bound_captions": true,
     "episode3_live_smoke_connected": true,
     "episode3_pre_render_creative_gate": true,
+    "latest_candidate_accepted": false,
+    "latest_candidate_live_verified": false,
+    "latest_path_end_to_end": false,
     "publication_locked": true,
     "publication_owner_separation_locked": true,
     "render_autodeploy_and_publication_lock": true,
@@ -33,8 +36,12 @@
     "workflow_registry_duplicates": [],
     "workflow_violations": []
   },
-  "failed_checks": [],
+  "failed_checks": [
+    "latest_candidate_accepted",
+    "latest_candidate_live_verified",
+    "latest_path_end_to_end"
+  ],
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "PASS"
+  "status": "FAIL"
 }
