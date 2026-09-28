@@ -2,7 +2,7 @@
   "checks": {
     "ab_audience_accessibility_connected": true,
     "adaptive_soundscape_connected": true,
-    "analytics_learning_connected": false,
+    "analytics_learning_connected": true,
     "analytics_learning_v2_connected": true,
     "articulated_character_runtime_connected": true,
     "asset_continuity_memory_connected": true,
@@ -175,8 +175,7 @@
   "failed_checks": [
     "latest_candidate_accepted",
     "latest_candidate_live_verified",
-    "latest_path_end_to_end",
-    "analytics_learning_connected"
+    "latest_path_end_to_end"
   ],
   "publication_enabled": false,
   "schema_version": 1,
