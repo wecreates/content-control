@@ -49,6 +49,8 @@ def build_choreography(scene):
     ref_prop=str(reference.get("prop_action","")).lower()
     ref_char=str(reference.get("character_action","")).lower()
     ref_intensity=max(0.0,min(1.0,float(reference.get("motion_intensity",0) or 0)*8))
+    ref_flow_direction=str(reference.get("flow_direction","stable"))
+    ref_flow_speed=max(0.0,float(reference.get("flow_speed",0) or 0))
     object_actions=[]
     for i,p in enumerate(scene.get("props",[])):
         pid=p.get("id","prop")
@@ -91,7 +93,7 @@ def build_choreography(scene):
     if scene.get("props"):
         overlays.append({"type":"tracked_callout","target":scene["props"][0].get("id"),"purpose":"attention_direction","opacity":.88,"max_frames":36})
     cam=(scene.get("camera") or {}).get("move","tracking")
-    camera_events=[{"type":cam,"start_frame":0,"impact_frame":max(1,round(duration*24*.55)),"micro_shake":bool(object_actions),"parallax":True}]
+    camera_events=[{"type":cam,"start_frame":0,"impact_frame":max(1,round(duration*24*.55)),"micro_shake":bool(object_actions),"parallax":True,"reference_direction":ref_flow_direction,"reference_speed":round(ref_flow_speed,5)}]
     contacts=[]
     if scene.get("characters") and scene.get("props"):
         contacts.append({"actor":scene["characters"][0].get("id"),"target":scene["props"][0].get("id"),"type":"grab_or_block","contact_frame":max(3,round(duration*24*.45)),"release_frame":max(5,round(duration*24*.72)),"ik":True})
@@ -109,7 +111,7 @@ def build_choreography(scene):
       "visual_gags":[{"type":"reaction_or_prop_misbehavior","frame":max(4,round(duration*24*.7)),"silent":True}],
       "depth_layers":[{"id":"foreground","z":3,"parallax":1.25},{"id":"midground","z":2,"parallax":1.0},{"id":"background","z":1,"parallax":.55}],
       "visual_metaphor":metaphor_for(scene),
-      "reference_transfer":{"character_action":ref_char,"prop_action":ref_prop,"motion_intensity":round(ref_intensity,3),"retention_reason":reference.get("retention_reason","")},
+      "reference_transfer":{"character_action":ref_char,"prop_action":ref_prop,"motion_intensity":round(ref_intensity,3),"flow_direction":ref_flow_direction,"flow_speed":round(ref_flow_speed,5),"retention_reason":reference.get("retention_reason","")},
       "continuous_motion":{"required":True,"minimum_sources":2},
       "publication_enabled":False
     }
