@@ -52,6 +52,16 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Enforce transcription gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("state/narration-transcription-health.json"))
+          print({"status":d["status"],"actual_transcript":d["actual_transcript"]})
+          if d["status"]!="PASS":
+              raise SystemExit(2)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
