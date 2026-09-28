@@ -79,8 +79,14 @@ export const KineticText=({choreography,localFrame,width=720})=>{
     if(t.motion==="stamp"){scale=2.2-1.2*clamp(p*1.4)}
     if(t.motion==="stretch"){scale=.7+.3*p}
     if(t.motion==="type"){opacity=1}
-    const content=t.motion==="type"?String(t.content).slice(0,Math.max(1,Math.floor(String(t.content).length*p))):t.content;
-    return <text key={i} x={width/2} y={y} textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="44" fill="#111" opacity={opacity} transform={`rotate(${rot} ${width/2} ${y}) scale(${scale})`} transformOrigin={`${width/2}px ${y}px`}>{content}</text>;
+    const design=t.design||{};
+    const raw=t.motion==="type"?String(t.content).slice(0,Math.max(1,Math.floor(String(t.content).length*p))):String(t.content||"");
+    const lines=(design.lines?.length?design.lines:[raw]).slice(0,3);
+    const fontSize=design.font_size||44,lineHeight=(design.line_height||1.05)*fontSize;
+    const fill=t.emphasis==="numeric"?"#EF3E36":"#111";
+    return <text key={i} x={width/2} y={y} textAnchor="middle" fontFamily="Arial Black,Arial" fontWeight={design.weight||900} fontSize={fontSize} letterSpacing={design.tracking?design.tracking*fontSize:0} fill={fill} opacity={opacity} transform={`rotate(${rot} ${width/2} ${y}) scale(${scale})`} transformOrigin={`${width/2}px ${y}px`}>
+      {lines.map((line,li)=><tspan key={li} x={width/2} dy={li===0?0:lineHeight}>{line}</tspan>)}
+    </text>;
   })}</g>;
 };
 
