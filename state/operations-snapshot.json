@@ -7,8 +7,8 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
-    "candidate_identity_consistent": false,
+    "candidate_converged": true,
+    "candidate_identity_consistent": true,
     "caption_candidate_match": true,
     "caption_health_green": true,
     "dependency_security_clean": true,
@@ -18,7 +18,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": false,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -55,10 +55,7 @@
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "system_wiring_green",
-    "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "system_wiring_green"
   ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
