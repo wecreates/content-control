@@ -4,6 +4,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
+    "caption_health_green": true,
     "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -11,7 +12,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
     "narration_transcription_green": true,
     "no_paid_vision": true,
@@ -24,7 +25,7 @@
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -44,9 +45,9 @@
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "runtime_integrity_manifest"
+    "live_deployment_green"
   ],
-  "live_deployment_status": "PASS",
+  "live_deployment_status": "FAIL",
   "machine_system_complete": false,
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
