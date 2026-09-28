@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "objects": {
+    "card": [
+      "flick_in",
+      "bend",
+      "swipe",
+      "slam",
+      "spin",
+      "hover",
+      "magnetize",
+      "multiply",
+      "shatter"
+    ],
+    "coin": [
+      "toss",
+      "bounce",
+      "orbit",
+      "rain",
+      "ricochet",
+      "stack",
+      "roll"
+    ],
+    "receipt": [
+      "print",
+      "unroll",
+      "tear",
+      "whip",
+      "wrap",
+      "accordion_fold"
+    ],
+    "calculator": [
+      "drop",
+      "slam",
+      "counter_pop"
+    ],
+    "phone": [
+      "buzz",
+      "slide",
+      "tilt",
+      "notification_pop"
+    ],
+    "price_tag": [
+      "swing",
+      "snap",
+      "inflate"
+    ],
+    "fee_meter": [
+      "pressure_rise",
+      "needle_snap"
+    ],
+    "wallet": [
+      "open",
+      "clutch",
+      "empty_drop"
+    ]
+  },
+  "rule": "props are persistent assets with entrance, anticipation, action, impact, secondary motion, and exit behavior"
+}
