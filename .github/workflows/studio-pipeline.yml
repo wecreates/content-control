@@ -91,16 +91,17 @@ jobs:
           python scripts/editorial_pass.py --ccsd "$S/07-crowd.json" --out "$S/08-editorial.json"
           python scripts/sound_design_pass.py --ccsd "$S/08-editorial.json" --out "$S/09-sound.json"
           python scripts/music_score_pass.py --ccsd "$S/09-sound.json" --out "$S/10-music.json"
-          python scripts/facial_performance_pass.py --ccsd "$S/10-music.json" --out "$S/11-face.json"
-          python scripts/finishing_pass.py --ccsd "$S/11-face.json" --out "$S/12-final-ccsd.json"
-          python scripts/ccsd_validate.py --input "$S/12-final-ccsd.json" --out state/studio/final-ccsd-health.json
+          python scripts/dialogue_direction.py --ccsd "$S/10-music.json" --out "$S/11-dialogue.json"
+          python scripts/facial_performance_pass.py --ccsd "$S/11-dialogue.json" --out "$S/12-face.json"
+          python scripts/finishing_pass.py --ccsd "$S/12-face.json" --out "$S/13-final-ccsd.json"
+          python scripts/ccsd_validate.py --input "$S/13-final-ccsd.json" --out state/studio/final-ccsd-health.json
       - name: Storyboards animatic and dailies
         if: steps.active.outputs.ready == 'yes'
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/storyboard_generator.py --ccsd "$S/12-final-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
-          python scripts/animatic_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/animatic.json"
+          python scripts/storyboard_generator.py --ccsd "$S/13-final-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
+          python scripts/animatic_plan.py --ccsd "$S/13-final-ccsd.json" --out "$S/animatic.json"
           python scripts/dailies_review.py --animatic "$S/animatic.json" --out "$S/dailies.json"
           python - <<'PY'
           import json,pathlib
@@ -123,10 +124,10 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/accessibility_pass.py --ccsd "$S/12-final-ccsd.json" --out "$S/accessibility.json"
-          python scripts/localization_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/localization.json"
-          python scripts/production_tracker.py --ccsd "$S/12-final-ccsd.json" --out "$S/production-tracker.json"
-          python scripts/shot_render_plan.py --ccsd "$S/12-final-ccsd.json" --out "$S/render-plan.json"
+          python scripts/accessibility_pass.py --ccsd "$S/13-final-ccsd.json" --out "$S/accessibility.json"
+          python scripts/localization_plan.py --ccsd "$S/13-final-ccsd.json" --out "$S/localization.json"
+          python scripts/production_tracker.py --ccsd "$S/13-final-ccsd.json" --out "$S/production-tracker.json"
+          python scripts/shot_render_plan.py --ccsd "$S/13-final-ccsd.json" --out "$S/render-plan.json"
           RID=$(python -c 'import json; print(json.load(open("production/reference-clones/active/activation.json")).get("reference_id","active"))')
           python scripts/ab_development.py --topic "$RID finance adaptation" --out "$S/ab-development.json"
           python - <<'PY'
@@ -139,7 +140,7 @@ jobs:
           PY
           python scripts/asset_memory.py --input "$S/assets-input.json" --out "$S/asset-index.json"
           python scripts/continuity_memory.py --root production --out state/continuity-memory.json
-          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/12-final-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
+          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/13-final-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
       - name: Promote to polish after department passes
         if: steps.active.outputs.ready == 'yes'
         run: |
@@ -152,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/ccsd_to_scene_plan.py --ccsd "$S/12-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
+          python scripts/ccsd_to_scene_plan.py --ccsd "$S/13-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
           cp "$S/scene-plan-studio.json" production/reference-clones/active/scene-plan.json
       - name: Studio gate
         if: steps.active.outputs.ready == 'yes'
