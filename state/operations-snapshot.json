@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "caption_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
   "caption_status": "PASS",
   "checks": {
@@ -7,8 +7,8 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": true,
-    "candidate_identity_consistent": true,
+    "candidate_converged": false,
+    "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
     "dependency_security_clean": true,
@@ -18,7 +18,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -55,7 +55,10 @@
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "system_wiring_green"
+    "system_wiring_green",
+    "live_deployment_green",
+    "candidate_identity_consistent",
+    "candidate_converged"
   ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
@@ -68,7 +71,7 @@
   "python_security_status": "PASS",
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "rollback_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "sync_retention_status": "PASS",
