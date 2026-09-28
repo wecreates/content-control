@@ -18,36 +18,52 @@
   "max_scene_duration_seconds": 2.5,
   "narration_positions": [
     {
-      "phrase": "annual fee",
+      "phrase": "card charged him $695 again",
+      "position": 7
+    },
+    {
+      "phrase": "Chad points to a $20 credit",
+      "position": 36
+    },
+    {
+      "phrase": "$80 purchase",
       "position": 73
     },
     {
-      "phrase": "spend eighty dollars",
-      "position": 114
+      "phrase": "math is simple",
+      "position": 95
     },
     {
-      "phrase": "twenty-dollar credit",
-      "position": 147
+      "phrase": "$80 minus $20 is $60",
+      "position": 111
     },
     {
       "phrase": "Points Monk",
-      "position": 169
+      "position": 133
     },
     {
-      "phrase": "wouldn't buy the thing anyway",
-      "position": 217
+      "phrase": "benefits Dave would have bought anyway",
+      "position": 157
     },
     {
-      "phrase": "Count only value you'd purchase without the card",
-      "position": 284
+      "phrase": "real value",
+      "position": 219
     },
     {
-      "phrase": "subtract the fee you actually pay",
+      "phrase": "annual fee",
+      "position": 239
+    },
+    {
+      "phrase": "value is higher",
+      "position": 258
+    },
+    {
+      "phrase": "fee is higher",
+      "position": 307
+    },
+    {
+      "phrase": "Ignore the flex and keep the math",
       "position": 334
-    },
-    {
-      "phrase": "keep the card only when the math still wins",
-      "position": 373
     }
   ],
   "publication_enabled": false,
