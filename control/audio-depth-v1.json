@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "layers": [
+    "dialogue",
+    "foley",
+    "character_signatures",
+    "environment_bed",
+    "adaptive_score",
+    "comedic_silence"
+  ],
+  "requirements": [
+    "frame-locked contact SFX",
+    "dialogue ducking",
+    "punchline silence windows",
+    "environment-specific room tone",
+    "adaptive energy by scene",
+    "separate tracks before final mix"
+  ],
+  "renderer": "scripts/soundscape_render.py"
+}
