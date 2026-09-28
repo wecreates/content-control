@@ -11,9 +11,12 @@ on:
     - cron: '29 13 * * *'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: mobile-playback-compat
   cancel-in-progress: true
+env:
+  GH_TOKEN: ${{ github.token }}
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -49,6 +52,9 @@ jobs:
           d=json.load(open("state/mobile-playback-health.json"))
           if d["status"]!="PASS": raise SystemExit(2)
           PY
+      - name: Refresh completion after compatibility passes
+        if: success()
+        run: gh workflow run free-production-watchdog.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
