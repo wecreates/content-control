@@ -71,7 +71,7 @@ jobs:
           if ! ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 public/audio/episode3-cashback.mp3 >/dev/null 2>&1; then
             rm -f public/audio/episode3-cashback.mp3
             curl --fail --location --retry 5 --retry-all-errors \
-              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/966d9b58-1f7a-4e9c-8153-1cd69b783051.mp3" \
+              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
               -o public/audio/episode3-cashback.mp3
           fi
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
