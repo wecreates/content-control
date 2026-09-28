@@ -511,6 +511,24 @@
         "transcript QA",
         "winning-take selection"
       ]
+    },
+    {
+      "id": "visual_choreography_director",
+      "parallelism": 3,
+      "owns": [
+        "object behaviors",
+        "kinetic typography",
+        "context overlays",
+        "motivated transitions",
+        "camera performance",
+        "2D physics",
+        "character-prop contact",
+        "motion curves",
+        "visual metaphors",
+        "micro-gags",
+        "depth staging",
+        "continuous motion"
+      ]
     }
   ],
   "hard_rules": [
@@ -561,7 +579,14 @@
     "premium voice candidates must pass transcript fidelity before render selection",
     "speaker voice IDs are secret-backed and locked per recurring character",
     "spoken dialogue may never silently disappear when a CCSD project contains speech",
-    "Cartesia Sonic 3.6 is the production-default TTS engine when configured"
+    "Cartesia Sonic 3.6 is the production-default TTS engine when configured",
+    "every final scene has a choreography layer before render",
+    "static-caption scene progression is rejected",
+    "every scene uses at least two meaningful motion sources",
+    "finance concepts are physicalized into visual metaphors",
+    "props use persistent assets and behavior vocabularies",
+    "transitions are motivated by scene action instead of generic fades",
+    "rendered proofs must pass composition and motion choreography QA"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -613,6 +638,20 @@
     "ccsd_voice_manifest": "scripts/ccsd_voice_manifest.py",
     "voice_engine": "control/voice-engine-v3.json",
     "voice_runtime": "scripts/cartesia_voice_engine.py",
-    "voice_qa": "scripts/premium_voice_qa.py"
+    "voice_qa": "scripts/premium_voice_qa.py",
+    "visual_choreography": "control/visual-choreography-v1.json",
+    "object_behaviors": "control/object-behavior-library-v1.json",
+    "kinetic_text": "control/kinetic-text-v1.json",
+    "overlay_policy": "control/overlay-policy-v1.json",
+    "transition_grammar": "control/transition-grammar-v1.json",
+    "composition_policy": "control/composition-policy-v1.json",
+    "choreography_builder": "scripts/visual_choreography.py",
+    "choreography_qa": "scripts/choreography_qa.py",
+    "composition_director": "scripts/composition_director.py",
+    "composition_frame_qa": "scripts/composition_frame_qa.py",
+    "motion_choreography_qa": "scripts/motion_choreography_qa.py",
+    "choreography_runtime": "remotion/ChoreographyRuntime.jsx",
+    "prop_system": "remotion/PropSystem.jsx",
+    "environment_system": "remotion/EnvironmentSystem.jsx"
   }
 }
