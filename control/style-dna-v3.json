@@ -1,9 +1,9 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "name": "Reference-Derived Stick Animation DNA V3",
   "publication_enabled": false,
   "reference_policy": {
-    "allowed": "extract transferable pacing, composition, motion, joke structure, camera grammar, prop logic, and scene mechanics",
+    "allowed": "extract transferable pacing, composition, optical flow, object/text tracks, motion, joke structure, camera grammar, prop logic, easing, contact timing, and scene mechanics",
     "disallowed": "copy exact creator characters, trace frames, reuse logos/signature costume details, duplicate signature jokes, or recreate a source shot-for-shot",
     "output_requirement": "original Content Control character identity with reference-derived mechanics"
   },
@@ -69,5 +69,32 @@
     "no generic card grids",
     "no title card intro",
     "no summary outro after payoff"
-  ]
+  ],
+  "character_performance": {
+    "requirements": [
+      "articulated elbows/knees",
+      "gaze shifts",
+      "blinks",
+      "brow response",
+      "anticipation",
+      "overshoot",
+      "settle",
+      "foot planting",
+      "contact-driven hands",
+      "posture and weight shift"
+    ],
+    "static_pose_forbidden": "characters may not remain in one pose while the scene advances"
+  },
+  "final_taste_gate": {
+    "authority": "may reject technically valid video",
+    "checks": [
+      "shot diversity",
+      "transition diversity",
+      "static fraction",
+      "composition repetition",
+      "visual gag density",
+      "visual metaphor density"
+    ],
+    "contract": "control/taste-director-v1.json"
+  }
 }
