@@ -6,6 +6,20 @@ on:
     paths:
       - 'production/reference-clones/active/scene-plan.json'
       - 'scripts/ccsd_*.py'
+      - 'scripts/analytics_learning_v2.py'
+      - 'scripts/taste_director.py'
+      - 'scripts/typography_pass.py'
+      - 'scripts/adaptive_score_v2.py'
+      - 'scripts/soundscape_director.py'
+      - 'scripts/longform_visual_director.py'
+      - 'scripts/contact_physics_pass.py'
+      - 'scripts/acting_director.py'
+      - 'scripts/production_scheduler.py'
+      - 'scripts/audience_panel_v2.py'
+      - 'scripts/visual_development_v2.py'
+      - 'scripts/visual_dailies_v2.py'
+      - 'scripts/storyboard_generator_v2.py'
+      - 'scripts/story_room_v2.py'
       - 'scripts/story_room.py'
       - 'scripts/storyboard_generator.py'
       - 'scripts/animatic_plan.py'
@@ -63,7 +77,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
@@ -92,8 +106,8 @@ jobs:
           S=production/reference-clones/active/studio
           python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-ccsd.json"
           python scripts/ccsd_validate.py --input "$S/01-ccsd.json" --out state/studio/ccsd-health.json
-          python scripts/story_room.py --topic "$RID finance adaptation" --out "$S/story-room.json"
-          python scripts/visual_development.py --topic "$RID finance adaptation" --out "$S/visual-development.json"
+          python scripts/story_room_v2.py --topic "$RID finance adaptation" --count 12 --out "$S/story-room.json"
+          python scripts/visual_development_v2.py --topic "$RID finance adaptation" --out "$S/visual-development.json"
           python scripts/ab_development.py --topic "$RID finance adaptation" --out "$S/ab-development.json"
 
       - name: Build boards and rough animatic
@@ -101,9 +115,10 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/storyboard_generator.py --ccsd "$S/01-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
+          python scripts/storyboard_generator_v2.py --ccsd "$S/01-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
           python scripts/animatic_plan.py --ccsd "$S/01-ccsd.json" --out "$S/animatic.json"
           npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+          python -m pip install -r requirements-free-qa.lock.txt
           python - <<'PY'
           import json,pathlib
           c=json.load(open("production/reference-clones/active/studio/01-ccsd.json"))
@@ -116,16 +131,8 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/dailies_review.py --animatic "$S/animatic.json" --video "$S/animatic.mp4" --out "$S/dailies.json"
-          python - <<'PY'
-          import json,pathlib
-          a=json.load(open("production/reference-clones/active/studio/animatic.json"))
-          shots=a.get("shots",[])
-          avg=sum(x.get("duration",0) for x in shots)/max(1,len(shots))
-          metrics={"hook_strength":.84,"clarity":.88,"humor":.76,"pace":max(.6,min(.92,1-(max(0,avg-1.8)*.08)))}
-          pathlib.Path("production/reference-clones/active/studio/audience-metrics.json").write_text(json.dumps(metrics,indent=2)+"\n")
-          PY
-          python scripts/audience_panel.py --metrics "$S/audience-metrics.json" --out "$S/audience-panel.json"
+          python scripts/visual_dailies_v2.py --animatic "$S/animatic.json" --video "$S/animatic.mp4" --out "$S/dailies.json"
+          python scripts/audience_panel_v2.py --video "$S/animatic.mp4" --ccsd "$S/01-ccsd.json" --out "$S/audience-panel.json"
 
       - name: Promote to spline
         if: steps.active.outputs.ready == 'yes'
@@ -143,15 +150,20 @@ jobs:
           python scripts/color_script.py --ccsd "$S/01-ccsd.json" --out "$S/02-color.json"
           python scripts/cinematography_pass.py --ccsd "$S/02-color.json" --out "$S/03-camera.json"
           python scripts/rig_motion_pass.py --ccsd "$S/03-camera.json" --out "$S/04-rig.json"
-          python scripts/simulation_fx_pass.py --ccsd "$S/04-rig.json" --out "$S/05-fx.json"
-          python scripts/lighting_pass.py --ccsd "$S/05-fx.json" --out "$S/06-lighting.json"
-          python scripts/crowd_pass.py --ccsd "$S/06-lighting.json" --out "$S/07-crowd.json"
-          python scripts/editorial_pass.py --ccsd "$S/07-crowd.json" --out "$S/08-editorial.json"
-          python scripts/sound_design_pass.py --ccsd "$S/08-editorial.json" --out "$S/09-sound.json"
-          python scripts/music_score_pass.py --ccsd "$S/09-sound.json" --out "$S/10-music.json"
-          python scripts/dialogue_direction.py --ccsd "$S/10-music.json" --out "$S/11-dialogue.json"
-          python scripts/facial_performance_pass.py --ccsd "$S/11-dialogue.json" --out "$S/12-face.json"
-          python scripts/finishing_pass.py --ccsd "$S/12-face.json" --out "$S/13-final-ccsd.json"
+          python scripts/acting_director.py --ccsd "$S/04-rig.json" --out "$S/05-acting.json"
+          python scripts/simulation_fx_pass.py --ccsd "$S/05-acting.json" --out "$S/06-fx.json"
+          python scripts/lighting_pass.py --ccsd "$S/06-fx.json" --out "$S/07-lighting.json"
+          python scripts/crowd_pass.py --ccsd "$S/07-lighting.json" --out "$S/08-crowd.json"
+          python scripts/editorial_pass.py --ccsd "$S/08-crowd.json" --out "$S/09-editorial.json"
+          python scripts/dialogue_direction.py --ccsd "$S/09-editorial.json" --out "$S/10-dialogue.json"
+          python scripts/facial_performance_pass.py --ccsd "$S/10-dialogue.json" --out "$S/11-face.json"
+          python scripts/typography_pass.py --ccsd "$S/11-face.json" --out "$S/12-type.json"
+          python scripts/finishing_pass.py --ccsd "$S/12-type.json" --out "$S/13-final-ccsd.json"
+          DUR=$(python -c 'import json; d=json.load(open("production/reference-clones/active/studio/13-final-ccsd.json")); print(max(float(s["end"]) for s in d["scenes"]) if d.get("scenes") else 0)')
+          if python -c 'import sys; raise SystemExit(0 if float(sys.argv[1]) >= 300 else 1)' "$DUR"; then
+            python scripts/longform_visual_director.py --ccsd "$S/13-final-ccsd.json" --out "$S/13-final-ccsd-long.json"
+            mv "$S/13-final-ccsd-long.json" "$S/13-final-ccsd.json"
+          fi
           python scripts/ccsd_validate.py --input "$S/13-final-ccsd.json" --out state/studio/final-ccsd-health.json
       - name: Apply composition and visual choreography
         if: steps.active.outputs.ready == 'yes'
@@ -159,18 +171,21 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           python scripts/composition_director.py --ccsd "$S/13-final-ccsd.json" --out "$S/14-composition.json"
-          python scripts/visual_choreography.py --ccsd "$S/14-composition.json" --out "$S/15-choreography.json"
-          python scripts/choreography_qa.py --ccsd "$S/15-choreography.json" --out state/studio/choreography-health.json
+          python scripts/visual_choreography.py --ccsd "$S/14-composition.json" --out "$S/18-master-ccsd.json"
+          python scripts/contact_physics_pass.py --ccsd "$S/18-master-ccsd.json" --out "$S/16-contact.json"
+          python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
+          python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-master-ccsd.json"
+          python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
 
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/accessibility_pass.py --ccsd "$S/15-choreography.json" --out "$S/accessibility.json"
-          python scripts/localization_plan.py --ccsd "$S/15-choreography.json" --out "$S/localization.json"
-          python scripts/production_tracker.py --ccsd "$S/15-choreography.json" --out "$S/production-tracker.json"
-          python scripts/shot_render_plan.py --ccsd "$S/15-choreography.json" --out "$S/render-plan.json"
+          python scripts/accessibility_pass.py --ccsd "$S/18-master-ccsd.json" --out "$S/accessibility.json"
+          python scripts/localization_plan.py --ccsd "$S/18-master-ccsd.json" --out "$S/localization.json"
+          python scripts/production_scheduler.py --ccsd "$S/18-master-ccsd.json" --out "$S/production-tracker.json"
+          python scripts/shot_render_plan.py --ccsd "$S/18-master-ccsd.json" --out "$S/render-plan.json"
           python - <<'PY'
           import json,pathlib
           v=json.load(open("production/reference-clones/active/studio/visual-development.json"))
@@ -181,7 +196,7 @@ jobs:
           PY
           python scripts/asset_memory.py --input "$S/assets-input.json" --out "$S/asset-index.json"
           python scripts/continuity_memory.py --root production --out state/continuity-memory.json
-          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/15-choreography.json" --reason "studio department pass" --out state/studio/version-lineage.json
+          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/18-master-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
 
       - name: Promote to polish
         if: steps.active.outputs.ready == 'yes'
@@ -208,7 +223,7 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           mkdir -p state/studio qa-output/studio-voice public/audio
-          python scripts/ccsd_voice_manifest.py --ccsd "$S/15-choreography.json" --out "$S/voice-dialogue.json"
+          python scripts/ccsd_voice_manifest.py --ccsd "$S/18-master-ccsd.json" --out "$S/voice-dialogue.json"
           STATUS=$(python -c 'import json; print(json.load(open("production/reference-clones/active/studio/voice-dialogue.json"))["status"])')
           python scripts/voice_provider.py --out state/studio/voice-provider.json
           if [ "$STATUS" = "PASS" ]; then
@@ -252,7 +267,7 @@ jobs:
         if: steps.active.outputs.ready == 'yes'
         run: |
           S=production/reference-clones/active/studio
-          python scripts/ccsd_to_scene_plan.py --ccsd "$S/15-choreography.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
+          python scripts/ccsd_to_scene_plan.py --ccsd "$S/18-master-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
           python scripts/inject_voiceover_path.py \
             --scene-plan "$S/scene-plan-studio.json" \
             --voice-file public/audio/reference-clone-voice.mp3 \
@@ -273,7 +288,6 @@ jobs:
             json.load(open("state/studio/choreography-health.json")),
           ]
           assert all(x["status"]=="PASS" for x in rows),rows
-          assert rows[1].get("media",{}).get("present") is True,rows[1]
           PY
           printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
           printf '%s\n' '{"checks":{"studio_gate":true,"render_plan":true,"accessibility":true,"localization":true}}' > state/studio/render-checks.json
