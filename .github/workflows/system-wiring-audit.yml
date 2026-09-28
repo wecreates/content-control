@@ -1,6 +1,20 @@
 name: System Wiring Audit
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '29 11 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'control/**'
+      - 'remotion/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'server-lowmem.js'
+      - 'render.yaml'
+      - 'package.json'
+      - 'state/canonical-workflow-registry.json'
+      - '.github/workflows/**'
 permissions:
   contents: write
 concurrency:
