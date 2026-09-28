@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse,hashlib,json,os,subprocess,tempfile,urllib.request,urllib.error
 from pathlib import Path
-from scripts.voice_provider import add_v3_tags, ELEVEN_ENV
+try:
+    from scripts.voice_provider import add_v3_tags, ELEVEN_ENV
+except ModuleNotFoundError:
+    from voice_provider import add_v3_tags, ELEVEN_ENV
 
 API="https://api.elevenlabs.io/v1/text-to-dialogue"
 MAX_CHARS=1900
