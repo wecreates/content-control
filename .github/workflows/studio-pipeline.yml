@@ -53,6 +53,11 @@ jobs:
         with: {python-version: '3.12'}
       - name: Studio contract tests
         run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py
+      - name: Initialize approval and render-level state
+        run: |
+          mkdir -p state/studio
+          printf '%s\n' '{"stage":"BLOCKING","publication_enabled":false}' > state/studio/shot-approval.json
+          printf '%s\n' '{"level":"blocking","publication_enabled":false}' > state/studio/render-level.json
       - name: Active project preflight
         id: active
         run: |
@@ -106,6 +111,13 @@ jobs:
           pathlib.Path("production/reference-clones/active/studio/audience-metrics.json").write_text(json.dumps(metrics,indent=2)+"\n")
           PY
           python scripts/audience_panel.py --metrics "$S/audience-metrics.json" --out "$S/audience-panel.json"
+      - name: Promote to spline after animatic
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
+          python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
+          printf '%s\n' '{"checks":{"animatic":true,"dailies":true}}' > state/studio/render-checks.json
+          python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
       - name: Production support passes
         if: steps.active.outputs.ready == 'yes'
         run: |
@@ -128,6 +140,13 @@ jobs:
           python scripts/asset_memory.py --input "$S/assets-input.json" --out "$S/asset-index.json"
           python scripts/continuity_memory.py --root production --out state/continuity-memory.json
           python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/12-final-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
+      - name: Promote to polish after department passes
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
+          python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
+          printf '%s\n' '{"checks":{"layout":true,"animation":true,"lighting":true,"sound":true,"continuity":true}}' > state/studio/render-checks.json
+          python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
       - name: Feed studio decisions into render scene plan
         if: steps.active.outputs.ready == 'yes'
         run: |
@@ -151,6 +170,22 @@ jobs:
           assert rows[1]["status"]=="PASS",rows[1]
           assert rows[2]["status"]=="PASS",rows[2]
           assert rows[3]["status"]=="PASS",rows[3]
+          PY
+      - name: Final studio approval
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
+          python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
+          printf '%s\n' '{"checks":{"studio_gate":true,"audience":true,"accessibility":true,"render_plan":true}}' > state/studio/render-checks.json
+          python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
+          python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
+          python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
+          python - <<'PY'
+          import json
+          a=json.load(open("state/studio/shot-approval.json"))
+          r=json.load(open("state/studio/render-level.json"))
+          assert a["stage"]=="FINAL" and a["approved"] is True,a
+          assert r["level"]=="final",r
           PY
       - name: Persist studio project
         if: steps.active.outputs.ready == 'yes'
