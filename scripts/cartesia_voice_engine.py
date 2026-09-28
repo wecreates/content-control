@@ -25,7 +25,7 @@ def generate(manifest,config,outdir):
         response.write_to_file(str(path))
         probe=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_streams","-show_format","-of","json",str(path)],text=True))
         dur=float(probe["format"]["duration"])
-        rows.append({"index":i,"speaker":speaker,"text":text,"voice_id":vid,"path":str(path),"duration_seconds":round(dur,3),"sha256":sha(path)})
+        rows.append({"index":i,"speaker":speaker,"text":text,"start":float(seg.get("start",0) or 0),"voice_id":vid,"path":str(path),"duration_seconds":round(dur,3),"sha256":sha(path)})
     return {"schema_version":1,"status":"PASS" if rows else "EMPTY","provider":"cartesia","model_id":config["production_default"]["model_id"],"segments":rows,"publication_enabled":False}
 
 def main():
