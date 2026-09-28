@@ -34,10 +34,15 @@ jobs:
       - name: Run wiring unit tests
         run: python -m unittest -v tests/test_system_wiring.py tests/test_creative_blueprint.py
       - name: Audit complete production graph
+        id: audit
+        continue-on-error: true
         run: python scripts/audit_system_wiring.py
       - name: Verify workflow control
+        id: workflow_control
+        continue-on-error: true
         run: python scripts/verify_workflow_control.py
       - name: Persist wiring health
+        if: always()
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
@@ -50,12 +55,13 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
-      - name: Enforce wiring audit
+      - name: Enforce wiring and workflow-control audits
         if: always()
         run: |
           python - <<'PY'
           import json
-          d=json.load(open("state/system-wiring-health.json"))
-          if d.get("status")!="PASS":
+          wiring=json.load(open("state/system-wiring-health.json"))
+          control=json.load(open("state/workflow-control-health.json"))
+          if wiring.get("status")!="PASS" or control.get("status")!="PASS":
               raise SystemExit(2)
           PY
