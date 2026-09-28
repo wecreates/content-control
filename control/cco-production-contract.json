@@ -131,7 +131,8 @@
     "asset and continuity memory updated",
     "A/B development receipt exists",
     "R&D technology is quarantined unless benchmark promoted",
-    "analytics feedback maps to scene IDs when analytics are available"
+    "analytics feedback maps to scene IDs when analytics are available",
+    "studio department map verifies all implementations exist"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -154,6 +155,8 @@
     "render_levels": "control/render-levels-v1.json",
     "voice_performance": "control/voice-performance-v1.json",
     "analytics_learning": "control/analytics-learning-v1.json",
-    "rd_quarantine": "control/rd-quarantine-v1.json"
+    "rd_quarantine": "control/rd-quarantine-v1.json",
+    "studio_department_map": "control/studio-department-map-v1.json",
+    "studio_department_verifier": "scripts/verify_studio_department_map.py"
   }
 }
