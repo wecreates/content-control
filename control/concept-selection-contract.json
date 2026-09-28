@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "minimum_concepts": 5,
+  "required_dimensions": [
+    "hook",
+    "story_engine",
+    "physical_metaphor",
+    "character_conflict",
+    "payoff",
+    "finance_clarity"
+  ],
+  "selection_receipt": "state/concept-selection-health.json",
+  "hard_fail": "production may not begin without at least five materially different concept candidates"
+}
