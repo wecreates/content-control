@@ -1,0 +1,48 @@
+name: Episode 1 Sync Retention Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'state/episode1-sync-contract.json'
+      - 'state/episode1-factual-contract.json'
+      - 'scripts/verify_episode1_sync.py'
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - '.github/workflows/sync-retention-gate.yml'
+  schedule:
+    - cron: '19 13 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: sync-retention-gate
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Verify V10 synchronization and retention cadence
+        run: python scripts/verify_episode1_sync.py
+      - name: Persist synchronization health
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/sync-retention-health.json
+          git diff --cached --quiet || git commit -m "Update V10 sync retention health"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode1-sync-retention
+          path: |
+            state/episode1-sync-contract.json
+            state/sync-retention-health.json
+          retention-days: 30
