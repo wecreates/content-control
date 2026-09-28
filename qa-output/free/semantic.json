@@ -1,15 +1,15 @@
 {
   "best_reference_similarity_by_candidate": [
-    0.41620704531669617,
-    0.4577986001968384,
-    0.40164071321487427,
-    0.39787065982818604,
-    0.3814103603363037,
-    0.39773470163345337,
-    0.5070976614952087,
-    0.4255340099334717,
-    0.4014248251914978,
-    0.42434990406036377
+    0.42578357458114624,
+    0.43650802969932556,
+    0.3953285813331604,
+    0.43596112728118896,
+    0.3865356743335724,
+    0.3822339177131653,
+    0.4759616255760193,
+    0.3950629234313965,
+    0.4039768576622009,
+    0.4026353061199188
   ],
   "checks": {
     "florence_completed": true,
@@ -21,11 +21,11 @@
     "captions": {
       "candidate": [
         {
-          "caption": "The image is a simple illustration of a stick figure with a sad expression on its face. The stick figure is standing on its hind legs with its arms stretched out to the sides. Next to the stick figure, there is an envelope with the text \"$695\" written on it. The text above the envelope reads \"The fee shows up.\" Below the",
+          "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head that reads \"The fee shows up.\" Below the stick figure, there is a text that says \"MAILBOX: 1 - JOY: 0\". On the left side of the image, there are two icons - an envelope with a price tag of $695",
           "file": "cand-01.jpg"
         },
         {
-          "caption": "The image is a simple illustration of a stick figure with a price tag that reads \"$80 - $20 $60\". The stick figure is standing on four legs and has a round head and arms. The price tag is rectangular in shape and has the words \"Points Monk\" written above it. The background is white. The text above the stick figure",
+          "caption": "The image is a simple illustration of a stick figure with a speech bubble above it. The speech bubble has the text \"Do the actual math.\" Below the speech bubble, there is a text that reads \"$80 - $20 $60\". The stick figure is drawn in a simple, cartoon-like style with two arms and two legs. The background",
           "file": "cand-06.jpg"
         },
         {
@@ -52,8 +52,8 @@
     "status": "PASS"
   },
   "florence_model": "florence-community/Florence-2-base",
-  "global_similarity": 0.32819828391075134,
-  "mean_best_frame_similarity": 0.42110687494277954,
+  "global_similarity": 0.3317713141441345,
+  "mean_best_frame_similarity": 0.4139987528324127,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "schema_version": 1,
   "verdict": "PASS"
