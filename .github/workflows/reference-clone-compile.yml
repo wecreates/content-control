@@ -44,11 +44,7 @@ jobs:
             python scripts/voice_lock_qa.py --manifest "$dir/voice-assignments.json" --out "$dir/voice-lock-health.json"
             python scripts/generate_clone_scene_plan.py --blueprint "$dir/clone-blueprint.json" --out "$dir/scene-plan.json"
             dur=$(python -c 'import json,sys; print(float(json.load(open(sys.argv[1]))["source"]["duration_seconds"]))' "$ref")
-            if python - "$dur" <<'PY'
-import sys
-raise SystemExit(0 if float(sys.argv[1]) >= 300 else 1)
-PY
-            then
+            if python -c 'import sys; raise SystemExit(0 if float(sys.argv[1]) >= 300 else 1)' "$dur"; then
               python scripts/longform_clone_architect.py --reference "$ref" --out "$dir/longform-plan.json"
             fi
           done < <(find production/reference-clones -type f -name reference.json -print 2>/dev/null | sort)
