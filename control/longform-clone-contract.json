@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "min_runtime_seconds": 510,
+  "max_act_seconds": 45,
+  "requirements": [
+    "act-level decomposition",
+    "recurring callbacks",
+    "energy curve",
+    "location or subplot pivots",
+    "chapter-level reference grammar",
+    "locked character continuity"
+  ],
+  "architect": "scripts/longform_clone_architect.py"
+}
