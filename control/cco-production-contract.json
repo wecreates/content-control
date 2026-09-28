@@ -23,7 +23,11 @@
     "research_trend_agent",
     "script_retention_agent",
     "visual_layout_director",
-    "seo_publishing_agent"
+    "seo_publishing_agent",
+    "character_continuity_director",
+    "reference_decomposition_agent",
+    "autonomous_viral_content_engine",
+    "lead_comedy_retention_engineer"
   ],
   "output_schema": {
     "video_metadata": {
@@ -74,12 +78,22 @@
   },
   "done_gate": [
     "research evidence exists",
+    "reference decomposition contains real AV evidence and transferable mechanics",
     "script retention gate passes",
+    "creative blueprint validator passes",
+    "character continuity gate passes",
     "layout collision test passes",
     "rendered proof visually reviewed",
     "audio channels verified separate",
     "reference parity review passes",
     "SEO package generated",
     "publication remains locked"
-  ]
+  ],
+  "creative_contracts": {
+    "character_bible": "control/character-bible-v1.json",
+    "style_dna": "control/style-dna-v3.json",
+    "creative_director": "control/creative-director-v3.json",
+    "reference_decomposition": "control/reference-decomposition-contract.json",
+    "blueprint_validator": "scripts/validate_creative_blueprint.py"
+  }
 }
