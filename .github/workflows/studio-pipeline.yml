@@ -6,6 +6,11 @@ on:
     paths:
       - 'production/reference-clones/active/scene-plan.json'
       - 'scripts/ccsd_*.py'
+      - 'scripts/reference_motion_v2.py'
+      - 'scripts/taste_features.py'
+      - 'scripts/inject_soundscape_path.py'
+      - 'scripts/soundscape_render.py'
+      - 'scripts/story_room_critic.py'
       - 'scripts/analytics_learning_v2.py'
       - 'scripts/taste_director.py'
       - 'scripts/typography_pass.py'
@@ -77,7 +82,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
@@ -107,6 +112,7 @@ jobs:
           python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-ccsd.json"
           python scripts/ccsd_validate.py --input "$S/01-ccsd.json" --out state/studio/ccsd-health.json
           python scripts/story_room_v2.py --topic "$RID finance adaptation" --count 12 --out "$S/story-room.json"
+          python scripts/story_room_critic.py --room "$S/story-room.json" --out "$S/story-room-critique.json"
           python scripts/visual_development_v2.py --topic "$RID finance adaptation" --out "$S/visual-development.json"
           python scripts/ab_development.py --topic "$RID finance adaptation" --out "$S/ab-development.json"
 
@@ -176,6 +182,7 @@ jobs:
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
           python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-master-ccsd.json"
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
+          python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
 
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
@@ -311,6 +318,7 @@ jobs:
           git config user.email actions@users.noreply.github.com
           git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json qa-output/studio-voice || true
           [ ! -s public/audio/reference-clone-voice.mp3 ] || git add -f public/audio/reference-clone-voice.mp3
+          [ ! -s public/audio/studio-soundscape.wav ] || git add -f public/audio/studio-soundscape.wav
           git diff --cached --quiet || git commit -m "Run full AI studio department pipeline"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
