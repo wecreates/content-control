@@ -4,28 +4,44 @@
   "narrator": {
     "voice_profile": "deep-neutral",
     "role": "narration_only",
-    "leakage_forbidden": true
+    "leakage_forbidden": true,
+    "provider": "elevenlabs",
+    "model_id": "eleven_v3",
+    "voice_id_env": "ELEVENLABS_VOICE_NARRATOR"
   },
   "characters": {
     "dave": {
       "voice_profile": "medium-fast-anxious",
       "allowed": "dialogue_only",
-      "leakage_forbidden": true
+      "leakage_forbidden": true,
+      "provider": "elevenlabs",
+      "model_id": "eleven_v3",
+      "voice_id_env": "ELEVENLABS_VOICE_DAVE"
     },
     "points_monk": {
       "voice_profile": "low-calm-deadpan",
       "allowed": "dialogue_only",
-      "leakage_forbidden": true
+      "leakage_forbidden": true,
+      "provider": "elevenlabs",
+      "model_id": "eleven_v3",
+      "voice_id_env": "ELEVENLABS_VOICE_POINTS_MONK"
     },
     "cashback_goblin": {
       "voice_profile": "chirps_or_nonverbal",
       "allowed": "non_narrator",
-      "leakage_forbidden": true
+      "leakage_forbidden": true,
+      "provider": "elevenlabs",
+      "model_id": "eleven_v3",
+      "voice_id_env": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
     }
   },
   "checks": [
     "speaker segments map to assigned character",
     "narrator never reads SFX",
-    "character voices do not cross roles"
-  ]
+    "character voices do not cross roles",
+    "premium voice IDs are environment-locked and never guessed",
+    "Eleven v3 is primary for final cinematic speech; fallback is allowed only on provider unavailability or QA failure",
+    "multi-speaker dialogue uses Eleven v3 text-to-dialogue"
+  ],
+  "provider_contract": "control/voice-provider-routing-v2.json"
 }
