@@ -64,6 +64,14 @@ jobs:
           ffmpeg -y -i public-review/reference-clone-proof.mp4 -vf "fps=1/2" -q:v 2 qa-output/reference-clone/candidate-frames/cand-%03d.jpg
       - name: Measure rendered candidate
         run: python scripts/decompose_reference_video.py --video public-review/reference-clone-proof.mp4 --id rendered-candidate --source-type generated_clone --out qa-output/reference-clone/candidate-measured.json
+      - name: Composition frame QA
+        id: composition
+        continue-on-error: true
+        run: python scripts/composition_frame_qa.py --frames qa-output/reference-clone/candidate-frames --out qa-output/reference-clone/composition.json
+      - name: Motion choreography QA
+        id: motion
+        continue-on-error: true
+        run: python scripts/motion_choreography_qa.py --video public-review/reference-clone-proof.mp4 --out qa-output/reference-clone/motion.json
       - name: Reference timing and style parity QA
         id: parity
         continue-on-error: true
@@ -95,10 +103,10 @@ jobs:
           import hashlib,json,pathlib
           p=pathlib.Path("public-review/reference-clone-proof.mp4")
           h=hashlib.sha256(p.read_bytes()).hexdigest()
-          keys=["parity","character-identity","audio","mobile","deterministic","semantic"]
+          keys=["parity","character-identity","audio","mobile","deterministic","semantic","composition","motion"]
           parts={k:json.load(open(f"qa-output/reference-clone/{k}.json")) for k in keys}
           board_lock=json.load(open("state/character-board-lock-health.json"))
-          ok=board_lock["status"]=="PASS" and parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS"
+          ok=board_lock["status"]=="PASS" and parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["composition"]["status"]=="PASS" and parts["motion"]["status"]=="PASS"
           active=json.load(open("production/reference-clones/active/activation.json"))
           r={"schema_version":1,"status":"CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"character_board_sha256":parts["character-identity"]["board_sha256"],"character_system_sha256":parts["character-identity"]["character_system_sha256"],"parts":parts,"character_board_lock":board_lock,"video_path":"public-review/reference-clone-proof.mp4","publication_enabled":False}
           pathlib.Path("state/reference-clone-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
