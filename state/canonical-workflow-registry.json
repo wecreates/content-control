@@ -9,6 +9,7 @@
     ".github/workflows/cinematic-brand-gate.yml",
     ".github/workflows/cinematic-gate.yml",
     ".github/workflows/comedy-retention-gate.yml",
+    ".github/workflows/episode3-cashback-casino.yml",
     ".github/workflows/factual-compliance-gate.yml",
     ".github/workflows/free-production-watchdog.yml",
     ".github/workflows/free-qa-failure-router.yml",
