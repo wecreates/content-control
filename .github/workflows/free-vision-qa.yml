@@ -13,6 +13,7 @@ on:
       - 'scripts/free_vision_qa.py'
       - 'scripts/free_semantic_qa.py'
       - 'scripts/free_audio_qa.py'
+      - 'scripts/free_mobile_compat_qa.py'
       - 'scripts/enforce_free_qa_regression.py'
       - 'requirements-free-qa.txt'
       - 'requirements-free-qa.lock.txt'
@@ -68,12 +69,17 @@ jobs:
           set -euo pipefail
           rm -rf qa-output/free
           mkdir -p qa-output/free/candidate-frames public-review
-          npx remotion render remotion/v10-index.jsx Episode1V10FinalProof public-review/episode1-v10-free.mp4 --codec h264 --crf 25 --concurrency 2
+          npx remotion render remotion/v10-index.jsx Episode1V10FinalProof /tmp/episode1-v10-raw.mp4 --codec h264 --crf 25 --concurrency 2
+          ffmpeg -y -i /tmp/episode1-v10-raw.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -profile:v high -level 4.1 -c:a copy -movflags +faststart public-review/episode1-v10-free.mp4
+          rm -f /tmp/episode1-v10-raw.mp4
           ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public-review/episode1-v10-free.mp4 > qa-output/free/streams.txt
           grep -q video qa-output/free/streams.txt
           grep -q audio qa-output/free/streams.txt
           ffmpeg -y -i public-review/episode1-v10-free.mp4 -vf "fps=1/3" -q:v 2 qa-output/free/candidate-frames/cand-%02d.jpg
           ffmpeg -y -i public-review/episode1-v10-free.mp4 -vf "fps=1/3,scale=216:384,tile=5x2:padding=8:margin=8" -frames:v 1 qa-output/free/contact.jpg
+      - name: Verify mobile MP4 compatibility
+        run: |
+          python scripts/free_mobile_compat_qa.py --video public-review/episode1-v10-free.mp4 --output qa-output/free/mobile.json
       - name: Audio loudness clipping and silence QA
         run: |
           python scripts/free_audio_qa.py --video public-review/episode1-v10-free.mp4 --output qa-output/free/audio.json
@@ -91,7 +97,8 @@ jobs:
           d=json.loads(Path("qa-output/free/deterministic.json").read_text())
           s=json.loads(Path("qa-output/free/semantic.json").read_text())
           a=json.loads(Path("qa-output/free/audio.json").read_text())
-          ok=d["verdict"]=="PASS" and s["verdict"]=="PASS" and a["verdict"]=="PASS"
+          m=json.loads(Path("qa-output/free/mobile.json").read_text())
+          ok=d["verdict"]=="PASS" and s["verdict"]=="PASS" and a["verdict"]=="PASS" and m["status"]=="PASS"
           r={
             "schema_version":1,
             "status":"FREE_QA_GREEN" if ok else "FREE_QA_FAIL",
@@ -105,6 +112,7 @@ jobs:
             "deterministic":d,
             "semantic":s,
             "audio":a,
+            "mobile":m,
             "phone_watch_path":"public-review/episode1-v10-free.mp4",
             "contact_sheet":"qa-output/free/contact.jpg",
           }
@@ -158,5 +166,6 @@ jobs:
             qa-output/free/deterministic.json
             qa-output/free/semantic.json
             qa-output/free/audio.json
+            qa-output/free/mobile.json
             qa-output/free/final-receipt.json
           retention-days: 30
