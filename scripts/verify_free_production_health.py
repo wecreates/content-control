@@ -15,6 +15,7 @@ ledger_health=json.loads((ROOT/"state/acceptance-ledger-health.json").read_text(
 deployment=json.loads((ROOT/"state/deployment-health.json").read_text()) if (ROOT/"state/deployment-health.json").exists() else {"status":"MISSING"}
 live_deployment=json.loads((ROOT/"state/live-deployment-health.json").read_text()) if (ROOT/"state/live-deployment-health.json").exists() else {"status":"MISSING"}
 sync_health=json.loads((ROOT/"state/sync-retention-health.json").read_text()) if (ROOT/"state/sync-retention-health.json").exists() else {"status":"MISSING"}
+transcription=json.loads((ROOT/"state/narration-transcription-health.json").read_text()) if (ROOT/"state/narration-transcription-health.json").exists() else {"status":"MISSING"}
 smoke=json.loads((ROOT/"state/review-server-smoke.json").read_text()) if (ROOT/"state/review-server-smoke.json").exists() else {"status":"MISSING"}
 provenance=json.loads((ROOT/"state/provenance/runtime-provenance.json").read_text()) if (ROOT/"state/provenance/runtime-provenance.json").exists() else {}
 sbom=json.loads((ROOT/"state/provenance/npm-sbom.cdx.json").read_text()) if (ROOT/"state/provenance/npm-sbom.cdx.json").exists() else {}
@@ -62,6 +63,7 @@ checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(le
 checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(deployment.get("checks",{}).values())
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
+checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 checks["review_server_smoke_green"]=all([
     smoke.get("status")=="PASS",
@@ -135,6 +137,7 @@ completion={
         "deployment_contract":checks["deployment_contract_green"],
         "live_public_deployment":checks["live_deployment_green"],
         "sync_retention_gate":checks["sync_retention_green"],
+        "narration_transcription_gate":checks["narration_transcription_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
         "live_review_server_smoke":checks["review_server_smoke_green"],
         "phone_range_streaming":smoke.get("range_streaming_verified") is True,
