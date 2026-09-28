@@ -1,12 +1,12 @@
 {
   "actual_video_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "candidate_converged": false,
+  "candidate_converged": true,
   "candidate_hashes": {
     "captions": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "ledger": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "ledger_health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-    "live_deployment": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+    "live_deployment": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "provenance": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "receipt": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "smoke": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e"
@@ -17,8 +17,8 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
-    "candidate_identity_consistent": false,
+    "candidate_converged": true,
+    "candidate_identity_consistent": true,
     "caption_candidate_match": true,
     "caption_health_green": true,
     "dependency_security_clean": true,
@@ -28,13 +28,13 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": false,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": false,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -53,15 +53,10 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [
-    "live_deployment_green",
-    "provenance_inputs_current",
-    "candidate_identity_consistent",
-    "candidate_converged"
-  ],
+  "failed_checks": [],
   "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "dispatch_free_vision_qa",
+  "repair_action": "none",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED"
+  "status": "GREEN"
 }
