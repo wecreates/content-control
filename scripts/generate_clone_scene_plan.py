@@ -16,6 +16,8 @@ def build(bp):
           "reference_character_action":b.get("reference_character_action",""),
           "reference_prop_action":b.get("reference_prop_action",""),
           "reference_retention_reason":b.get("retention_reason",""),
+          "reference_flow_direction":b.get("reference_flow_direction","stable"),
+          "reference_flow_speed":float(b.get("reference_flow_speed",0) or 0),
           "audio_events":[x for x in bp.get("audio_punctuation",[]) if b["start"]<=float(x.get("time",x.get("start",-1)))<b["end"]],
           "adaptation":"original staging using locked Content Control character"
         })
