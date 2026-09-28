@@ -14,6 +14,8 @@ on:
       - 'control/style-dna-v3.json'
       - 'control/creative-director-v3.json'
       - 'scripts/validate_creative_blueprint.py'
+      - 'scripts/verify_episode3_layout.py'
+      - 'scripts/free_transcription_qa.py'
       - '.github/workflows/episode3-cashback-casino.yml'
 permissions:
   contents: write
@@ -58,6 +60,8 @@ jobs:
           grep -q 'export const Dave' remotion/CharacterSystem.jsx
           grep -q 'export const PointsMonk' remotion/CharacterSystem.jsx
           grep -q 'export const CashbackGoblin' remotion/CharacterSystem.jsx
+      - name: Verify Episode 3 layout safe zones
+        run: python scripts/verify_episode3_layout.py remotion/CashbackCasinoVisual.jsx
       - name: Bundle composition preflight
         run: npx remotion compositions remotion/episode3-index.jsx
       - name: Vendor narration
@@ -120,7 +124,8 @@ jobs:
           PY
       - name: Transcription QA
         run: |
-          python scripts/free_transcription_qa.py             --audio public/audio/episode3-cashback.mp3             --contract state/episode3-factual-contract.json             --output state/episode3-transcription-health.json
+          python scripts/free_transcription_qa.py             --audio public/audio/episode3-cashback.mp3             --contract state/episode3-factual-contract.json             --output state/episode3-transcription-health.json \
+            --model base.en
       - name: Build verified captions
         run: |
           python - <<'PY'
@@ -212,4 +217,11 @@ jobs:
             public-review/episode3-cashback-casino.vtt
             qa-output/episode3/contact.jpg
             state/episode3-health.json
+            state/episode3-transcription-health.json
+            qa-output/episode3/audio.json
+            qa-output/episode3/deterministic.json
+            qa-output/episode3/semantic.json
+            qa-output/episode3/mobile.json
+            qa-output/episode3/factual.json
+            qa-output/episode3/voice-probe.json
           retention-days: 30
