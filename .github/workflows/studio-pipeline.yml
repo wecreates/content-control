@@ -134,7 +134,7 @@ jobs:
           python -m pip install -r requirements-free-qa.lock.txt
           python - <<'PY'
           import json,pathlib
-          c=json.load(open("production/reference-clones/active/studio/01-story-ccsd.json"))
+          c=json.load(open("production/reference-clones/active/studio/01-directed-ccsd.json"))
           pathlib.Path("production/reference-clones/active/studio/animatic-props.json").write_text(json.dumps({"ccsd":c},indent=2,sort_keys=True)+"\n")
           PY
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic "$S/animatic.mp4" --props="$S/animatic-props.json" --scale=0.5 --codec h264 --crf 28 --concurrency 2
@@ -297,6 +297,8 @@ jobs:
             json.load(open("state/studio/choreography-health.json")),
           ]
           assert all(x["status"]=="PASS" for x in rows),rows
+          tracker=json.load(open("production/reference-clones/active/studio/production-tracker.json"))
+          assert not tracker.get("blocked_scene_ids"),tracker
           PY
           printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
           printf '%s\n' '{"checks":{"studio_gate":true,"render_plan":true,"accessibility":true,"localization":true}}' > state/studio/render-checks.json
