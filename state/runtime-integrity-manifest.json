@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "critical_file_count": 22,
+  "critical_file_count": 30,
   "entries": {
     "package-lock.json": {
       "bytes": 168325,
@@ -9,6 +9,10 @@
     "package.json": {
       "bytes": 1021,
       "sha256": "1a4e8e5e5bb0ed4a6f213c6f41b08136e3f5d2246649de6c939bfe8b38843797"
+    },
+    "public-review/episode1-v10-free.vtt": {
+      "bytes": 670,
+      "sha256": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9"
     },
     "public/audio/episode1-music.mp3": {
       "bytes": 940841,
@@ -78,9 +82,37 @@
       "bytes": 312,
       "sha256": "1a709f31a504b2514eac01e54dfde60f5831855ca64039eaf125c7db7cbcaaf2"
     },
+    "render.yaml": {
+      "bytes": 319,
+      "sha256": "2f92cd3f0599eabe328aa099bb3b2e4ef5f9d7e83dde23dff3308e4aa22484b3"
+    },
     "requirements-free-qa.lock.txt": {
       "bytes": 424,
       "sha256": "faa235983cddbd291f42667ed5ab7d17899b0f3d7a549837874f8c291d8f80c7"
+    },
+    "requirements-transcription.txt": {
+      "bytes": 22,
+      "sha256": "a0e33d44fb0f6e7b348f475f40b9395baa4f2c9739a6bdba663835169f600c84"
+    },
+    "scripts/build_verified_captions.py": {
+      "bytes": 1052,
+      "sha256": "00eae4d3b1e1fd7338fc4228bbd8e096e714bf9cde5f8859d92ba4fcc8dc4011"
+    },
+    "scripts/free_mobile_compat_qa.py": {
+      "bytes": 2816,
+      "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
+    },
+    "scripts/free_transcription_qa.py": {
+      "bytes": 4387,
+      "sha256": "85be36062900ca4f127eef79cd1e757c144e95b32441ba5c3a26c26896987c9b"
+    },
+    "scripts/render_episode1_mobile.sh": {
+      "bytes": 557,
+      "sha256": "50be46e1f9c50eff4f7bb89a9cbabd6495094a94e86bea83de079f685d8823e4"
+    },
+    "scripts/verify_captions.py": {
+      "bytes": 2322,
+      "sha256": "a86a5fc38fa2ab2bcc305821cd47a713c5f678281a75d24ba1d99621429b8bf8"
     },
     "server-lowmem.js": {
       "bytes": 6680,
