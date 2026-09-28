@@ -2,6 +2,8 @@
   "checks": {
     "canonical_generation_exists": true,
     "cco_agents_connected": true,
+    "chat_drop_clone_system_connected": true,
+    "chat_drop_clone_tests_exposed": true,
     "creative_contract_paths_exist": true,
     "creative_tests_exposed": true,
     "episode3_blueprint_present": true,
@@ -31,7 +33,10 @@
     "creative_contract_paths": {
       "blueprint_validator": "scripts/validate_creative_blueprint.py",
       "character_bible": "control/character-bible-v1.json",
+      "chat_drop_clone": "control/chat-drop-clone-contract.json",
       "creative_director": "control/creative-director-v3.json",
+      "reference_clone_compiler": "scripts/reference_clone_compiler.py",
+      "reference_clone_validator": "scripts/validate_reference_clone.py",
       "reference_decomposition": "control/reference-decomposition-contract.json",
       "reusable_character_renderer": "remotion/CharacterSystem.jsx",
       "style_dna": "control/style-dna-v3.json"
