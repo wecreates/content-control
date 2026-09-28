@@ -1,0 +1,19 @@
+{
+  "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "checks": {
+    "actual_hash_matches": true,
+    "expected_hash_matches": true,
+    "hash_bound": true,
+    "health_200_and_green": true,
+    "publication_disabled": true,
+    "range_streaming_present": true,
+    "watch_page_present": true
+  },
+  "failed_checks": [],
+  "live_actual_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "live_expected_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "public_base_url": "https://content-control-render-worker.onrender.com",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
