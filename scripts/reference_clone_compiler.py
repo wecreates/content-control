@@ -19,6 +19,7 @@ def compile_clone(ref, selected_characters):
             "camera":row.get("camera","static"),
             "reference_character_action":row.get("character_action",""),
             "reference_prop_action":row.get("prop_action",""),
+            "motion_activity":float(row.get("motion_activity",0) or 0),
             "state_change":bool(row.get("state_change")),
             "retention_reason":row.get("why_it_retains",""),
             "content_control_character":selected[i%len(selected)],
@@ -42,6 +43,7 @@ def compile_clone(ref, selected_characters):
         "payoff_timestamp":ref.get("payoff_timestamp"),
         "audio_punctuation":ref.get("audio_punctuation",[]),
         "transferable_mechanics":ref.get("transferable_mechanics",[]),
+        "visual_style_fingerprint":ref.get("visual_style_fingerprint",{}),
         "beats":beats,
         "originality":{
             "reference_mechanics_only":True,
