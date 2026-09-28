@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "title": "Your Premium Card Is a Coupon Book",
+  "topic": "premium credit card coupon-book fatigue",
+  "format": "9:16 short-form stick-figure finance snippet",
+  "duration_target_seconds": 36,
+  "publication_enabled": false,
+  "source_strategy": "current community discussion + generic educational math, no named-card claims",
+  "script": "Your premium credit card isn't a flex. It's a coupon book with airport-lounge lighting. Hotel credit. Dining credit. Streaming credit. Points everywhere. The trick is not asking, \"How much value is listed?\" Ask, \"How much would I buy anyway?\" If you spend money just to unlock a credit, that credit did not save you money. Dave calls it premium. Points Monk calls it math. Count only the value you'd naturally use. Subtract the annual fee. If what's left is negative, the metal card is just an expensive rectangle.",
+  "visual_rules": [
+    "warm off-white paper",
+    "black stick figures",
+    "teal/red/yellow accents",
+    "2.5 second visual resets",
+    "prop-led scenes",
+    "large negative space",
+    "no named products",
+    "publication disabled"
+  ]
+}
