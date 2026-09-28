@@ -7,6 +7,7 @@
     ".github/workflows/candidate-state-reconcile.yml": true,
     ".github/workflows/cinematic-brand-gate.yml": true,
     ".github/workflows/cinematic-gate.yml": true,
+    ".github/workflows/clone-runtime-smoke.yml": true,
     ".github/workflows/comedy-retention-gate.yml": true,
     ".github/workflows/competitor-intelligence.yml": true,
     ".github/workflows/dropbox-review-bridge.yml": true,
