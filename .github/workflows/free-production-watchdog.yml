@@ -119,6 +119,11 @@ jobs:
           PY
           while IFS= read -r workflow; do
             [ -n "$workflow" ] || continue
+            active=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/$workflow/runs?branch=main&per_page=20" --jq '[.workflow_runs[] | select(.status=="in_progress" or .status=="queued" or .status=="pending")] | length')
+            if [ "$active" -gt 0 ]; then
+              echo "repair already active, skipping duplicate dispatch: $workflow"
+              continue
+            fi
             echo "dispatching repair: $workflow"
             gh workflow run "$workflow" --ref main
           done < /tmp/repair-workflows
