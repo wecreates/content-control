@@ -16,7 +16,7 @@
     "local_audio_runtime": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -32,10 +32,12 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
+  "failed_checks": [
+    "provenance_inputs_current"
+  ],
   "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "dispatch_free_vision_qa",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "REPAIR_REQUIRED"
 }
