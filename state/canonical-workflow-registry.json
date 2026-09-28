@@ -16,6 +16,7 @@
     ".github/workflows/hyper-critical-qa.yml",
     ".github/workflows/live-render-deployment-smoke.yml",
     ".github/workflows/long-form-showrunner-gate.yml",
+    ".github/workflows/mobile-playback-compat.yml",
     ".github/workflows/narration-transcription-gate.yml",
     ".github/workflows/quarantine-legacy-workflows.yml",
     ".github/workflows/review-server-smoke.yml",
