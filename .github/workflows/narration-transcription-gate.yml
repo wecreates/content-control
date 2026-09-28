@@ -16,7 +16,6 @@ on:
 permissions:
   contents: write
   actions: write
-  actions: write
 concurrency:
   group: narration-transcription-gate
   cancel-in-progress: true
@@ -46,7 +45,11 @@ jobs:
         id: transcribe
         continue-on-error: true
         run: |
-          python scripts/free_transcription_qa.py             --audio public/audio/episode1-narration.mp3             --contract state/episode1-factual-contract.json             --output state/narration-transcription-health.json             --model base.en
+          python scripts/free_transcription_qa.py \
+            --audio public/audio/episode1-narration.mp3 \
+            --contract state/episode1-factual-contract.json \
+            --output state/narration-transcription-health.json \
+            --model base.en
       - name: Build and verify synchronized VTT captions
         if: steps.transcribe.outcome == 'success'
         run: |
@@ -78,9 +81,6 @@ jobs:
           if d["status"]!="PASS":
               raise SystemExit(2)
           PY
-      - name: Continue caption acceptance chain
-        if: success()
-        run: gh workflow run review-server-smoke.yml --ref main
       - name: Continue candidate promotion after caption binding
         if: success()
         run: gh workflow run review-server-smoke.yml --ref main
