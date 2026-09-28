@@ -26,6 +26,7 @@
     ".github/workflows/quarantine-legacy-workflows.yml",
     ".github/workflows/reference-clone-compile.yml",
     ".github/workflows/reference-clone-live-smoke.yml",
+    ".github/workflows/reference-clone-long-render.yml",
     ".github/workflows/reference-clone-render.yml",
     ".github/workflows/reference-clone-repair.yml",
     ".github/workflows/review-server-smoke.yml",
