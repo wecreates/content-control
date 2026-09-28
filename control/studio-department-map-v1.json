@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "departments": [
+    {
+      "id": "story",
+      "agent": "story_room_director",
+      "impl": "scripts/story_room.py",
+      "output": "story-room.json",
+      "gate": "minimum 10 pitches"
+    },
+    {
+      "id": "storyboard",
+      "agent": "storyboard_director",
+      "impl": "scripts/storyboard_generator.py",
+      "output": "storyboard-manifest.json",
+      "gate": "board per scene"
+    },
+    {
+      "id": "animatic",
+      "agent": "animatic_editor",
+      "impl": "remotion/StudioAnimaticComposition.jsx",
+      "output": "animatic.mp4",
+      "gate": "media-present dailies"
+    },
+    {
+      "id": "visual_development",
+      "agent": "visual_development_director",
+      "impl": "scripts/visual_development.py",
+      "output": "visual-development.json",
+      "gate": "style/environments/props"
+    },
+    {
+      "id": "color_script",
+      "agent": "lighting_color_director",
+      "impl": "scripts/color_script.py",
+      "output": "02-color.json",
+      "gate": "palette per scene"
+    },
+    {
+      "id": "rigging_animation",
+      "agent": "rigging_animation_director",
+      "impl": "remotion/MotionLibrary.jsx",
+      "output": "04-rig.json",
+      "gate": "locked rig and motion clip"
+    },
+    {
+      "id": "cinematography",
+      "agent": "cinematography_director",
+      "impl": "scripts/cinematography_pass.py",
+      "output": "03-camera.json",
+      "gate": "lens/framing/direction"
+    },
+    {
+      "id": "simulation_fx",
+      "agent": "simulation_fx_director",
+      "impl": "scripts/simulation_fx_pass.py",
+      "output": "05-fx.json",
+      "gate": "deterministic physics"
+    },
+    {
+      "id": "crowds",
+      "agent": "simulation_fx_director",
+      "impl": "scripts/crowd_pass.py",
+      "output": "07-crowd.json",
+      "gate": "environment-dependent crowd state"
+    },
+    {
+      "id": "lighting",
+      "agent": "lighting_color_director",
+      "impl": "scripts/lighting_pass.py",
+      "output": "06-lighting.json",
+      "gate": "story-motivated key/fill/rim"
+    },
+    {
+      "id": "editorial",
+      "agent": "editorial_director",
+      "impl": "scripts/editorial_pass.py",
+      "output": "08-editorial.json",
+      "gate": "retention reset and continuity"
+    },
+    {
+      "id": "sound",
+      "agent": "sound_music_director",
+      "impl": "scripts/sound_design_pass.py",
+      "output": "09-sound.json",
+      "gate": "foley/signature/ducking"
+    },
+    {
+      "id": "music",
+      "agent": "sound_music_director",
+      "impl": "scripts/music_score_pass.py",
+      "output": "10-music.json",
+      "gate": "adaptive scene energy"
+    },
+    {
+      "id": "dialogue",
+      "agent": "dialogue_performance_director",
+      "impl": "scripts/dialogue_direction.py",
+      "output": "11-dialogue.json",
+      "gate": "speaker performance lock"
+    },
+    {
+      "id": "facial_performance",
+      "agent": "dialogue_performance_director",
+      "impl": "scripts/facial_performance_pass.py",
+      "output": "12-face.json",
+      "gate": "eye/mouth/brow track"
+    },
+    {
+      "id": "finishing",
+      "agent": "lighting_color_director",
+      "impl": "scripts/finishing_pass.py",
+      "output": "13-final-ccsd.json",
+      "gate": "color/mobile/compression"
+    },
+    {
+      "id": "continuity_assets",
+      "agent": "continuity_asset_director",
+      "impl": "scripts/continuity_memory.py",
+      "output": "continuity-memory.json",
+      "gate": "durable continuity"
+    },
+    {
+      "id": "production",
+      "agent": "production_manager_agent",
+      "impl": "scripts/production_tracker.py",
+      "output": "production-tracker.json",
+      "gate": "shot status/blockers"
+    },
+    {
+      "id": "dailies",
+      "agent": "hyper_critical_qa_director",
+      "impl": "scripts/dailies_review.py",
+      "output": "dailies.json",
+      "gate": "actual animatic reviewed"
+    },
+    {
+      "id": "audience",
+      "agent": "synthetic_audience_director",
+      "impl": "scripts/audience_panel.py",
+      "output": "audience-panel.json",
+      "gate": "6+ persona passes"
+    },
+    {
+      "id": "ab_development",
+      "agent": "ab_development_director",
+      "impl": "scripts/ab_development.py",
+      "output": "ab-development.json",
+      "gate": "multiple hooks/endings/thumbs"
+    },
+    {
+      "id": "accessibility",
+      "agent": "accessibility_localization_director",
+      "impl": "scripts/accessibility_pass.py",
+      "output": "accessibility.json",
+      "gate": "silent/caption/flash safety"
+    },
+    {
+      "id": "localization",
+      "agent": "accessibility_localization_director",
+      "impl": "scripts/localization_plan.py",
+      "output": "localization.json",
+      "gate": "localized layout/voice plan"
+    },
+    {
+      "id": "analytics_learning",
+      "agent": "analytics_learning_agent",
+      "impl": "scripts/analytics_feedback.py",
+      "output": "analytics-feedback.json",
+      "gate": "timestamp to scene mapping"
+    },
+    {
+      "id": "rd_quarantine",
+      "agent": "rd_quarantine_agent",
+      "impl": "scripts/rd_quarantine.py",
+      "output": "rd-quarantine-health.json",
+      "gate": "candidate beats baseline"
+    },
+    {
+      "id": "render_farm",
+      "agent": "render_farm",
+      "impl": ".github/workflows/shot-render-farm.yml",
+      "output": "shot-render-farm-health.json",
+      "gate": "all shards succeed"
+    },
+    {
+      "id": "scene_graph",
+      "agent": "autonomous_cco",
+      "impl": "scripts/ccsd_validate.py",
+      "output": "ccsd-health.json",
+      "gate": "CCSD valid"
+    },
+    {
+      "id": "version_lineage",
+      "agent": "production_manager_agent",
+      "impl": "scripts/version_lineage.py",
+      "output": "version-lineage.json",
+      "gate": "reasoned revision history"
+    }
+  ]
+}
