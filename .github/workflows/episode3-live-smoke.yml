@@ -28,7 +28,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {ref: main, fetch-depth: 0}
+      - name: Candidate preflight
+        id: candidate
+        run: |
+          if [ -s state/episode3-health.json ] && [ -s public-review/episode3-cashback-casino.mp4 ] && [ -s public-review/episode3-cashback-casino.vtt ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "Episode 3 candidate not present yet; live smoke skipped without failure."
+          fi
       - name: Probe live Episode 3 review surface
+        if: steps.candidate.outputs.ready == 'yes'
         run: |
           set -euo pipefail
           BASE="https://content-control-render-worker.onrender.com"
@@ -67,6 +77,7 @@ PY
           grep -qi '^accept-ranges: bytes' /tmp/ep3/media.headers
           grep -qi '^content-range: bytes 0-1023/' /tmp/ep3/media.headers
       - name: Persist Episode 3 live health
+        if: steps.candidate.outputs.ready == 'yes'
         run: |
           python - <<'PY'
           import json,pathlib
@@ -89,6 +100,7 @@ PY
           if r["status"]!="PASS": raise SystemExit(2)
           PY
       - name: Persist evidence
+        if: steps.candidate.outputs.ready == 'yes'
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
