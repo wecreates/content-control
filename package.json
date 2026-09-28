@@ -13,10 +13,11 @@
     "test:instagram-bridge": "python -m unittest -v tests/test_instagram_reel_bridge.py",
     "test:creative": "python -m unittest -v tests/test_creative_blueprint.py && python scripts/verify_vce_contract.py",
     "test:wiring": "python -m unittest -v tests/test_system_wiring.py && python scripts/audit_system_wiring.py",
-    "test:system": "python -m unittest -v tests/test_creative_blueprint.py tests/test_system_wiring.py tests/test_instagram_reel_bridge.py tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py tests/test_character_lock.py tests/test_studio_stack.py && python scripts/verify_workflow_control.py",
+    "test:system": "python -m unittest -v tests/test_creative_blueprint.py tests/test_system_wiring.py tests/test_instagram_reel_bridge.py tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py tests/test_character_lock.py tests/test_studio_stack.py tests/test_voice_provider.py tests/test_eleven_v3_generate.py tests/test_cartesia_sonic_generate.py tests/test_voice_take_selector.py tests/test_voice_candidate_qa.py tests/test_ccsd_voice_manifest.py tests/test_voice_render_wiring.py && python scripts/verify_workflow_control.py",
     "test:clone": "python -m unittest -v tests/test_reference_clone_compiler.py tests/test_reference_clone_validation.py tests/test_clone_system_v2.py",
     "test:characters": "python -m unittest -v tests/test_character_lock.py",
-    "test:studio": "python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py"
+    "test:studio": "python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py",
+    "test:voice": "python -m unittest -v tests/test_voice_provider.py tests/test_eleven_v3_generate.py tests/test_cartesia_sonic_generate.py tests/test_voice_take_selector.py tests/test_voice_candidate_qa.py tests/test_ccsd_voice_manifest.py tests/test_voice_render_wiring.py"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
