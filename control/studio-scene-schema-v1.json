@@ -27,7 +27,12 @@
     "sound",
     "music",
     "qa",
-    "repair"
+    "repair",
+    "visual_choreography"
   ],
-  "principle": "all departments mutate versioned layers of the same canonical scene object"
+  "principle": "all departments mutate versioned layers of the same canonical scene object",
+  "final_required_scene_layers": [
+    "composition",
+    "choreography"
+  ]
 }
