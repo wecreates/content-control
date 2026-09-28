@@ -20,7 +20,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": false,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -49,12 +49,11 @@
   "factual_compliance_status": "PASS",
   "failed_checks": [
     "live_deployment_green",
-    "mobile_playback_green",
-    "provenance_inputs_current"
+    "mobile_playback_green"
   ],
   "live_deployment_status": "FAIL",
   "machine_system_complete": false,
-  "mobile_playback_status": "MISSING",
+  "mobile_playback_status": "FAIL",
   "narration_transcription_status": "PASS",
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
