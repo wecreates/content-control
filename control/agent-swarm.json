@@ -529,6 +529,17 @@
         "depth staging",
         "continuous motion"
       ]
+    },
+    {
+      "id": "taste_director",
+      "parallelism": 2,
+      "owns": [
+        "final visual taste",
+        "repetition rejection",
+        "static-cut rejection",
+        "visual-metaphor density",
+        "creative-quality veto"
+      ]
     }
   ],
   "hard_rules": [
@@ -586,7 +597,13 @@
     "finance concepts are physicalized into visual metaphors",
     "props use persistent assets and behavior vocabularies",
     "transitions are motivated by scene action instead of generic fades",
-    "rendered proofs must pass composition and motion choreography QA"
+    "rendered proofs must pass composition and motion choreography QA",
+    "final rendered proof must pass Taste Director in addition to technical QA",
+    "reference ingest must capture optical-flow direction and motion bursts",
+    "character acting uses articulated joints, gaze, posture, and contact targets",
+    "long-form scenes must vary locations, subplots, recurring characters, and callbacks",
+    "actual animatic frames drive dailies and synthetic audience review",
+    "sound design produces a rendered synchronized soundscape, not metadata only"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -652,6 +669,17 @@
     "motion_choreography_qa": "scripts/motion_choreography_qa.py",
     "choreography_runtime": "remotion/ChoreographyRuntime.jsx",
     "prop_system": "remotion/PropSystem.jsx",
-    "environment_system": "remotion/EnvironmentSystem.jsx"
+    "environment_system": "remotion/EnvironmentSystem.jsx",
+    "quality_depth": "control/quality-depth-v1.json",
+    "acting_depth": "control/acting-depth-v1.json",
+    "audio_depth": "control/audio-depth-v1.json",
+    "taste_director": "control/taste-director-v1.json",
+    "story_room_v2": "scripts/story_room_v2.py",
+    "story_room_critic": "scripts/story_room_critic.py",
+    "visual_dailies_v2": "scripts/visual_dailies_v2.py",
+    "audience_panel_v2": "scripts/audience_panel_v2.py",
+    "reference_optical_flow": "scripts/reference_optical_flow.py",
+    "production_scheduler": "scripts/production_scheduler.py",
+    "typography_director": "scripts/typography_director.py"
   }
 }
