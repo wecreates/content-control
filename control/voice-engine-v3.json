@@ -1,0 +1,57 @@
+{
+  "schema_version": 3,
+  "publication_enabled": false,
+  "production_default": {
+    "provider": "cartesia",
+    "model_id": "sonic-3.6",
+    "sdk": "cartesia==4.2.0",
+    "quality_basis": "Artificial Analysis Provider Voice Arena point-estimate leader, Sep 2026"
+  },
+  "output": {
+    "container": "wav",
+    "encoding": "pcm_s16le",
+    "sample_rate": 44100
+  },
+  "roles": {
+    "narrator": {
+      "voice_id_default": "e07c00bc-4134-4eae-9ea4-1a55fb45746b",
+      "voice_id_env": "CARTESIA_VOICE_NARRATOR",
+      "language": "en",
+      "profile": "deep-neutral"
+    },
+    "dave": {
+      "voice_id_default": "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
+      "voice_id_env": "CARTESIA_VOICE_DAVE",
+      "language": "en",
+      "profile": "medium-fast-anxious"
+    },
+    "points_monk": {
+      "voice_id_default": "ef191366-f52f-447a-a398-ed8c0f2943a1",
+      "voice_id_env": "CARTESIA_VOICE_POINTS_MONK",
+      "language": "en",
+      "profile": "low-calm-deadpan"
+    },
+    "cashback_goblin": {
+      "voice_id_default": "86e30c1d-714b-4074-a1f2-1cb6b552fb49",
+      "voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN",
+      "language": "en",
+      "profile": "mischievous-chirp"
+    }
+  },
+  "credentials": {
+    "api_key_env": "CARTESIA_API_KEY"
+  },
+  "fallback": {
+    "enabled": true,
+    "provider": "verified_local_voice_assets",
+    "rule": "Only use pinned locally verified assets when Cartesia is unavailable or fails QA; never silently swap character identities."
+  },
+  "acceptance": [
+    "exact speaker-to-voice mapping",
+    "WAV PCM 44.1kHz",
+    "transcript fidelity",
+    "no SFX text",
+    "duration plausible",
+    "publication disabled"
+  ]
+}
