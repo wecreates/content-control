@@ -3,6 +3,7 @@
   "status": "ACTIVE",
   "canonical_generation_workflow": ".github/workflows/free-vision-qa.yml",
   "allowed_automatic": [
+    ".github/workflows/analytics-feedback.yml",
     ".github/workflows/apply-runtime-security-fixes.yml",
     ".github/workflows/autonomous-cco.yml",
     ".github/workflows/candidate-state-reconcile.yml",
@@ -25,6 +26,7 @@
     ".github/workflows/patched-transformers-smoke.yml",
     ".github/workflows/python-security-audit.yml",
     ".github/workflows/quarantine-legacy-workflows.yml",
+    ".github/workflows/rd-quarantine.yml",
     ".github/workflows/reference-clone-compile.yml",
     ".github/workflows/reference-clone-live-smoke.yml",
     ".github/workflows/reference-clone-long-render.yml",
