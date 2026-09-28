@@ -11,8 +11,8 @@
       "sha256": "1a4e8e5e5bb0ed4a6f213c6f41b08136e3f5d2246649de6c939bfe8b38843797"
     },
     "public-review/episode1-v10-free.vtt": {
-      "bytes": 670,
-      "sha256": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9"
+      "bytes": 673,
+      "sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548"
     },
     "public/audio/episode1-music.mp3": {
       "bytes": 940841,
@@ -103,8 +103,8 @@
       "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
     },
     "scripts/free_transcription_qa.py": {
-      "bytes": 4387,
-      "sha256": "85be36062900ca4f127eef79cd1e757c144e95b32441ba5c3a26c26896987c9b"
+      "bytes": 4820,
+      "sha256": "19c8d7fa43557cf9f8ea21a6054964d7893c3de2182b5edd8bc8eae775933107"
     },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
