@@ -185,6 +185,9 @@ def audit_root(root: Path):
         "scripts/generate_concept_selection.py",
         "scripts/generate_repair_plan.py",
         "scripts/longform_clone_architect.py",
+        "remotion/ReferenceCloneLongComposition.jsx",
+        "remotion/reference-clone-long-index.jsx",
+        "scripts/longform_media_qa.py",
         "control/voice-lock-v1.json",
         "control/character-board-lock-v1.json",
         "control/concept-selection-contract.json",
@@ -206,7 +209,14 @@ def audit_root(root: Path):
     checks["voice_lock_connected"]=(root/"control/voice-lock-v1.json").is_file() and (root/"scripts/voice_lock_qa.py").is_file()
     checks["concept_selection_enforced"]=all(x in clone_wf_text for x in ["generate_concept_selection.py","concept-selection.json"])
     checks["style_memory_connected"]=all(x in clone_wf_text for x in ["style_memory.py","state/style-memory.json","select_reference_candidate.py"])
-    checks["longform_clone_connected"]=(root/"scripts/longform_clone_architect.py").is_file() and "longform_clone_architect.py" in clone_wf_text
+    long_wf=root/".github/workflows/reference-clone-long-render.yml"
+    long_wf_text=long_wf.read_text() if long_wf.is_file() else ""
+    checks["longform_clone_connected"]=all((root/p).is_file() for p in [
+        "scripts/longform_clone_architect.py","remotion/ReferenceCloneLongComposition.jsx",
+        "remotion/reference-clone-long-index.jsx","scripts/longform_media_qa.py"
+    ]) and "longform_clone_architect.py" in clone_wf_text and all(x in long_wf_text for x in [
+        "ReferenceCloneLong","longform_media_qa.py","state/reference-clone-long-health.json"
+    ]) and ".github/workflows/reference-clone-long-render.yml" in reg_allowed
     clone_render=root/".github/workflows/reference-clone-render.yml"
     clone_render_text=clone_render.read_text() if clone_render.is_file() else ""
     checks["clone_render_qa_connected"]=all(x in clone_render_text for x in [
