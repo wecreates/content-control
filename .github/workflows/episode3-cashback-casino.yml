@@ -139,6 +139,36 @@ jobs:
           print(json.dumps({"status":r["status"],"candidate_sha256":h}))
           if not ok: raise SystemExit(3)
           PY
+      - name: Local hash-bound review smoke
+        run: |
+          set -euo pipefail
+          PORT=10003 node server-lowmem.js > /tmp/episode3-server.log 2>&1 &
+          pid=$!
+          trap 'kill $pid 2>/dev/null || true' EXIT
+          ok=0
+          for i in {1..20}; do
+            code=$(curl -sS -o /tmp/ep3-health.json -w "%{http_code}" http://127.0.0.1:10003/episode3/health || true)
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 1
+          done
+          test "$ok" = "1"
+          python - <<'PY'
+          import json
+          h=json.load(open("/tmp/ep3-health.json"))
+          assert h["ok"] is True,h
+          assert h["publication"] is False,h
+          assert h["hashBound"] is True,h
+          assert h["captionReady"] is True,h
+          PY
+          test "$(curl -sS -o /tmp/ep3-watch.html -w "%{http_code}" http://127.0.0.1:10003/episode3/watch)" = "200"
+          grep -q 'src="/episode3/captions"' /tmp/ep3-watch.html
+          grep -q 'background:#fff' /tmp/ep3-watch.html
+          test "$(curl -sS -o /tmp/ep3-captions.vtt -w "%{http_code}" http://127.0.0.1:10003/episode3/captions)" = "200"
+          grep -q '^WEBVTT' /tmp/ep3-captions.vtt
+          test "$(curl -sS -H 'Range: bytes=0-1023' -o /tmp/ep3-range.bin -w "%{http_code}" http://127.0.0.1:10003/episode3/media)" = "206"
+          test "$(wc -c < /tmp/ep3-range.bin)" = "1024"
+          kill "$pid" 2>/dev/null || true
+          trap - EXIT
       - name: Persist candidate
         run: |
           set -euo pipefail
