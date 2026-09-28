@@ -7,8 +7,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'remotion/**'
-      - 'public/audio/**'
+      - 'remotion/v10-index.jsx'
+      - 'remotion/Episode1V10FinalProof.jsx'
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - 'public/audio/episode1-narration.mp3'
+      - 'public/audio/episode1-music.mp3'
+      - 'public/audio/episode1-sfx-1.mp3'
+      - 'public/audio/episode1-sfx-2.mp3'
       - 'reference/frames/**'
       - 'scripts/free_vision_qa.py'
       - 'scripts/free_semantic_qa.py'
