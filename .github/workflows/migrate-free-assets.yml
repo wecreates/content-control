@@ -1,10 +1,6 @@
 name: Finalize Free Asset Migration
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/migrate-free-assets.yml'
 permissions:
   contents: write
 jobs:
