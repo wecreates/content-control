@@ -1,13 +1,6 @@
 name: Episode 2 Live Smoke
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'server-lowmem.js'
-      - 'state/episode2-health.json'
-      - 'public-review/episode2-coupon-book.mp4'
-      - '.github/workflows/episode2-live-smoke.yml'
 permissions:
   contents: write
 concurrency:
