@@ -115,7 +115,7 @@ jobs:
           PY
       - name: Transcription QA
         run: |
-          python scripts/free_transcription_qa.py             --audio public/audio/episode3-cashback.mp3             --expected-text state/episode3-factual-contract.json             --output state/episode3-transcription-health.json
+          python scripts/free_transcription_qa.py             --audio public/audio/episode3-cashback.mp3             --contract state/episode3-factual-contract.json             --output state/episode3-transcription-health.json
       - name: Build verified captions
         run: |
           python - <<'PY'
