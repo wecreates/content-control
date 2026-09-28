@@ -1,15 +1,6 @@
 name: Episode 2 Coupon Book Build
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/Episode2CouponBookVisual.jsx'
-      - 'remotion/Episode2CouponBook.jsx'
-      - 'remotion/episode2-index.jsx'
-      - 'state/episode2-factual-contract.json'
-      - 'state/episode2-viral-scout.json'
-      - '.github/workflows/episode2-coupon-book.yml'
 permissions:
   contents: write
 concurrency:
