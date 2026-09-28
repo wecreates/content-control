@@ -11,7 +11,7 @@
     "factual_compliance_gate": true,
     "florence_vision_qa": true,
     "hash_bound_artifact": true,
-    "hash_bound_provenance": false,
+    "hash_bound_provenance": true,
     "immutable_acceptance_history": true,
     "live_public_deployment": false,
     "live_review_server_smoke": true,
