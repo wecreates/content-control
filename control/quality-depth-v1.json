@@ -16,7 +16,12 @@
     "analytics_learning_v2",
     "production_scheduler",
     "typography_director",
-    "taste_director"
+    "taste_director",
+    "semantic_dailies_v2",
+    "reference_structure_v2",
+    "story_room_critic",
+    "rendered_soundscape",
+    "micro_acting"
   ],
-  "rule": "department existence is insufficient; depth implementations must feed the active CCSD and final rendered proof"
+  "rule": "Depth implementations must alter active CCSD/rendered media and pass real-media QA; metadata-only upgrades do not count."
 }
