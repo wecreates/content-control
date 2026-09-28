@@ -21,6 +21,7 @@
     "latest_path_end_to_end": false,
     "publication_locked": true,
     "publication_owner_separation_locked": true,
+    "reference_clone_workflow_connected": true,
     "render_autodeploy_and_publication_lock": true,
     "review_server_nonblank_shell": true,
     "review_server_status_safe": true,

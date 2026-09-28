@@ -37,6 +37,7 @@
     ".github/workflows/patched-transformers-smoke.yml": true,
     ".github/workflows/python-security-audit.yml": true,
     ".github/workflows/quarantine-legacy-workflows.yml": true,
+    ".github/workflows/reference-clone-compile.yml": true,
     ".github/workflows/review-server-smoke.yml": true,
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,
