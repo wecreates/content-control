@@ -119,24 +119,15 @@ jobs:
       - name: Build verified captions
         run: |
           python - <<'PY'
-          import hashlib,pathlib
-          cues=[
-            (0.0,3.3,"Dave found two percent cashback. His brain immediately became a casino."),
-            (3.3,7.0,"He almost bought an eighty-dollar gadget he did not need."),
-            (7.0,9.0,"But I get money back!"),
-            (9.0,12.4,"Yes. One dollar and sixty cents. Congratulations, Dave."),
-            (12.4,15.7,"You spent eighty dollars to summon this."),
-            (15.7,19.6,"Would you buy it without the reward?"),
-            (19.6,22.1,"If no, the reward won."),
-            (22.1,27.5,"Cashback only wins when the purchase already made sense."),
-            (27.5,30.0,"Buy first. Reward second.")
-          ]
+          import hashlib,json,pathlib
+          contract=json.load(open("state/episode3-factual-contract.json"))
+          cues=contract["caption_cues"]
           def ts(v):
-              ms=round(v*1000); h=ms//3600000; ms%=3600000; m=ms//60000; ms%=60000; s=ms//1000; ms%=1000
+              ms=round(float(v)*1000); h=ms//3600000; ms%=3600000; m=ms//60000; ms%=60000; s=ms//1000; ms%=1000
               return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
           out=["WEBVTT",""]
-          for i,(a,b,t) in enumerate(cues,1):
-              out += [str(i),f"{ts(a)} --> {ts(b)}",t,""]
+          for i,cue in enumerate(cues,1):
+              out += [str(i),f"{ts(cue['start'])} --> {ts(cue['end'])}",cue["text"],""]
           p=pathlib.Path("public-review/episode3-cashback-casino.vtt")
           p.write_text("\n".join(out),encoding="utf-8")
           assert p.read_text().startswith("WEBVTT")
