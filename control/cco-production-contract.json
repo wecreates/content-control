@@ -51,7 +51,8 @@
     "analytics_learning_agent",
     "rd_quarantine_agent",
     "premium_voice_director",
-    "visual_choreography_director"
+    "visual_choreography_director",
+    "taste_director"
   ],
   "output_schema": {
     "video_metadata": {
@@ -147,7 +148,19 @@
     "choreography QA passes before render planning",
     "rendered frame composition QA passes",
     "rendered motion choreography QA passes",
-    "persistent prop and environment systems are used by clone renderers"
+    "persistent prop and environment systems are used by clone renderers",
+    "selected story-room pitch drives CCSD turns and callbacks",
+    "storyboards depict actual planned composition rather than text-only cards",
+    "animatic dailies analyze real rendered frames",
+    "synthetic audience panel uses actual video evidence",
+    "articulated character acting and contact physics are applied",
+    "long-form scenes vary locations subplots callbacks and character interplay",
+    "adaptive soundscape WAV is rendered and injected",
+    "reference optical-flow evidence feeds clone choreography",
+    "dependency-aware production schedule exists",
+    "typography director pass is applied",
+    "final rendered proof passes Taste Director",
+    "analytics learning stores scene-feature examples and reinforcement rules"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -183,6 +196,10 @@
     "kinetic_text": "control/kinetic-text-v1.json",
     "overlay_policy": "control/overlay-policy-v1.json",
     "transition_grammar": "control/transition-grammar-v1.json",
-    "composition_policy": "control/composition-policy-v1.json"
+    "composition_policy": "control/composition-policy-v1.json",
+    "quality_depth": "control/quality-depth-v1.json",
+    "acting_depth": "control/acting-depth-v1.json",
+    "audio_depth": "control/audio-depth-v1.json",
+    "taste_director": "control/taste-director-v1.json"
   }
 }
