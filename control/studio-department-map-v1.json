@@ -5,14 +5,14 @@
     {
       "id": "story",
       "agent": "story_room_director",
-      "impl": "scripts/story_room.py",
+      "impl": "scripts/story_room_v2.py",
       "output": "story-room.json",
-      "gate": "minimum 10 pitches"
+      "gate": "12+ structurally distinct pitches plus story-room critique"
     },
     {
       "id": "storyboard",
       "agent": "storyboard_director",
-      "impl": "scripts/storyboard_generator.py",
+      "impl": "scripts/storyboard_generator_v2.py",
       "output": "storyboard-manifest.json",
       "gate": "board per scene"
     },
@@ -26,7 +26,7 @@
     {
       "id": "visual_development",
       "agent": "visual_development_director",
-      "impl": "scripts/visual_development.py",
+      "impl": "scripts/visual_development_v2.py",
       "output": "visual-development.json",
       "gate": "style/environments/props"
     },
@@ -124,23 +124,23 @@
     {
       "id": "production",
       "agent": "production_manager_agent",
-      "impl": "scripts/production_tracker.py",
+      "impl": "scripts/production_scheduler.py",
       "output": "production-tracker.json",
       "gate": "shot status/blockers"
     },
     {
       "id": "dailies",
       "agent": "hyper_critical_qa_director",
-      "impl": "scripts/dailies_review.py",
+      "impl": "scripts/visual_dailies_v2.py",
       "output": "dailies.json",
-      "gate": "actual animatic reviewed"
+      "gate": "actual animatic frame analysis with blocking notes"
     },
     {
       "id": "audience",
       "agent": "synthetic_audience_director",
-      "impl": "scripts/audience_panel.py",
+      "impl": "scripts/audience_panel_v2.py",
       "output": "audience-panel.json",
-      "gate": "6+ persona passes"
+      "gate": "actual-video evidence across 8 viewer personas"
     },
     {
       "id": "ab_development",
@@ -204,6 +204,62 @@
       "impl": "scripts/visual_choreography.py",
       "output": "15-choreography.json",
       "gate": "choreography QA plus rendered composition/motion QA"
+    },
+    {
+      "id": "acting_depth",
+      "agent": "rigging_animation_director",
+      "impl": "scripts/acting_director.py",
+      "output": "05-acting.json",
+      "gate": "posture gaze micro-expression and contact-driven acting"
+    },
+    {
+      "id": "contact_physics",
+      "agent": "simulation_fx_director",
+      "impl": "scripts/contact_physics_pass.py",
+      "output": "16-contact.json",
+      "gate": "IK contact constraints and physical attachment"
+    },
+    {
+      "id": "typography_direction",
+      "agent": "visual_layout_director",
+      "impl": "scripts/typography_pass.py",
+      "output": "12-type.json",
+      "gate": "width-aware hierarchy and collision-safe type"
+    },
+    {
+      "id": "longform_visual_story",
+      "agent": "long_form_showrunner",
+      "impl": "scripts/longform_visual_director.py",
+      "output": "longform enriched CCSD",
+      "gate": "locations subplots callbacks and character interplay"
+    },
+    {
+      "id": "deep_soundscape",
+      "agent": "sound_music_director",
+      "impl": "scripts/soundscape_director.py",
+      "output": "17-soundscape.json",
+      "gate": "foley environment beds silence windows"
+    },
+    {
+      "id": "adaptive_score_v2",
+      "agent": "sound_music_director",
+      "impl": "scripts/adaptive_score_v2.py",
+      "output": "18-master-ccsd.json",
+      "gate": "scene-energy score and punchline silence"
+    },
+    {
+      "id": "taste_director",
+      "agent": "taste_director",
+      "impl": "scripts/taste_director.py",
+      "output": "taste.json",
+      "gate": "may reject technically valid render"
+    },
+    {
+      "id": "reference_motion_v2",
+      "agent": "reference_decomposition_agent",
+      "impl": "scripts/reference_optical_flow.py",
+      "output": "optical-flow.json",
+      "gate": "directional motion and camera-flow evidence"
     }
   ]
 }
