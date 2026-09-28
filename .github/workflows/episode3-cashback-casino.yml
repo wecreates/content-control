@@ -101,19 +101,12 @@ jobs:
             if [ "$ESTAT" = "PASS" ]; then
               python scripts/voice_candidate_qa.py --audio public/audio/episode3-eleven.mp3 --manifest production/episode3/voice-dialogue.json --out qa-output/episode3/voice-candidates/eleven.json --model base.en || true
             fi
-            python - <<'PY'
-import json,pathlib
-takes=[]
-for provider,path,audio in [
-    ("cartesia","qa-output/episode3/voice-candidates/cartesia.json","public/audio/episode3-cartesia.wav"),
-    ("elevenlabs","qa-output/episode3/voice-candidates/eleven.json","public/audio/episode3-eleven.mp3"),
-]:
-    p=pathlib.Path(path)
-    if p.exists():
-        r=json.load(open(p));r["path"]=audio;r["provider"]=provider;r.setdefault("duration_error_ratio",0)
-        takes.append(r)
-pathlib.Path("qa-output/episode3/voice-candidates/takes.json").write_text(json.dumps({"takes":takes},indent=2,sort_keys=True)+"\n")
-PY
+            python scripts/build_voice_takes.py \
+              --cartesia-report qa-output/episode3/voice-candidates/cartesia.json \
+              --cartesia-audio public/audio/episode3-cartesia.wav \
+              --eleven-report qa-output/episode3/voice-candidates/eleven.json \
+              --eleven-audio public/audio/episode3-eleven.mp3 \
+              --out qa-output/episode3/voice-candidates/takes.json
             if python scripts/voice_take_selector.py --takes qa-output/episode3/voice-candidates/takes.json --out state/episode3-premium-voice.json; then
               BEST=$(python -c 'import json; print(json.load(open("state/episode3-premium-voice.json"))["best"]["path"])')
               if [[ "$BEST" == *.wav ]]; then
