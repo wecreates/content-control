@@ -119,6 +119,8 @@ report={
     "schema_version":1,
     "status":status,
     "candidate_sha256":health.get("candidate_sha256"),
+    "candidate_converged":candidate_converged,
+    "candidate_hashes":candidate_hashes,
     "actual_video_sha256":actual_hash,
     "checks":checks,
     "failed_checks":[k for k,v in checks.items() if not v],
@@ -179,6 +181,17 @@ completion={
     "remaining_user_gate":"watch/approve exact artifact before any publication",
 }
 (ROOT/"state/system-completion.json").write_text(json.dumps(completion,indent=2,sort_keys=True)+"\n")
+candidate_hashes={
+    "health":health.get("candidate_sha256"),
+    "receipt":receipt.get("candidate_sha256"),
+    "ledger":ledger.get("current_candidate_sha256"),
+    "ledger_health":ledger_health.get("current_candidate_sha256"),
+    "captions":caption_health.get("candidate_sha256"),
+    "smoke":smoke.get("candidate_sha256"),
+    "provenance":provenance.get("candidate_sha256"),
+    "live_deployment":live_deployment.get("candidate_sha256"),
+}
+candidate_converged=len({v for v in candidate_hashes.values() if v})==1 and all(candidate_hashes.values())
 ops={
     "schema_version":1,
     "status":completion["status"],
