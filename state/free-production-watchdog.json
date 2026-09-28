@@ -27,6 +27,7 @@
     "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
+    "sync_retention_green": true,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
