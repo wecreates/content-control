@@ -1,17 +1,6 @@
 name: Reference Clone Render
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'production/reference-clones/active/**'
-      - 'remotion/ReferenceCloneComposition.jsx'
-      - 'remotion/reference-clone-index.jsx'
-      - 'remotion/CharacterSystem.jsx'
-      - 'remotion/CharacterBoardComposition.jsx'
-      - 'scripts/reference_style_parity_qa.py'
-      - 'scripts/character_identity_qa.py'
-      - '.github/workflows/reference-clone-render.yml'
 permissions:
   contents: write
   actions: write
