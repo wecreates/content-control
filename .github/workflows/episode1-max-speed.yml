@@ -1,11 +1,6 @@
 name: Episode 1 Max-Speed Execution
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [artifact-ready, repair-ready, review-findings, component-verified, bottleneck-resolved]
-  push:
-    branches: [main]
-    paths: ['production/**','review-input/**','state/canonical-ledger.json','.github/workflows/episode1-max-speed.yml']
 permissions:
   actions: write
   contents: read
