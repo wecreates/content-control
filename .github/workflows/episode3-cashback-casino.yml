@@ -1,6 +1,20 @@
 name: Episode 3 Cashback Casino Build
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/CashbackCasinoVisual.jsx'
+      - 'remotion/CashbackCasino.jsx'
+      - 'remotion/CharacterSystem.jsx'
+      - 'remotion/episode3-index.jsx'
+      - 'state/episode3-factual-contract.json'
+      - 'production/episode3/creative-blueprint.json'
+      - 'control/character-bible-v1.json'
+      - 'control/style-dna-v3.json'
+      - 'control/creative-director-v3.json'
+      - 'scripts/validate_creative_blueprint.py'
+      - '.github/workflows/episode3-cashback-casino.yml'
 permissions:
   contents: write
 concurrency:
@@ -32,12 +46,22 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
           npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
           python -m pip install -r requirements-free-qa.lock.txt
+      - name: Validate creative blueprint
+        run: python scripts/validate_creative_blueprint.py production/episode3/creative-blueprint.json
       - name: Vendor narration
         run: |
           set -euo pipefail
           mkdir -p public/audio qa-output/episode3 public-review
           curl --fail --location --retry 5 --retry-all-errors             "https://www.aidocmaker.com/g0/audio?name=41f8f697e1324f099b3922e819181686"             -o public/audio/episode3-cashback.mp3
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
+          python - <<'PY'
+          import json
+          d=json.load(open("qa-output/episode3/voice-probe.json"))
+          dur=float(d["format"]["duration"])
+          assert dur <= 30.25, f"narration would be truncated by 30s composition: {dur:.3f}s"
+          assert d.get("streams"), d
+          print({"narration_duration_seconds":dur})
+          PY
       - name: Render
         run: |
           set -euo pipefail
@@ -73,6 +97,32 @@ jobs:
           pathlib.Path("qa-output/episode3/factual.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           if r["status"]!="PASS": raise SystemExit(2)
           PY
+      - name: Build verified captions
+        run: |
+          python - <<'PY'
+          import hashlib,pathlib
+          cues=[
+            (0.0,3.3,"Dave found two percent cashback. His brain immediately became a casino."),
+            (3.3,7.0,"He almost bought an eighty-dollar gadget he did not need."),
+            (7.0,9.0,"But I get money back!"),
+            (9.0,12.4,"Yes. One dollar and sixty cents. Congratulations, Dave."),
+            (12.4,15.7,"You spent eighty dollars to summon this."),
+            (15.7,19.6,"Would you buy it without the reward?"),
+            (19.6,22.1,"If no, the reward won."),
+            (22.1,27.5,"Cashback only wins when the purchase already made sense."),
+            (27.5,30.0,"Buy first. Reward second.")
+          ]
+          def ts(v):
+              ms=round(v*1000); h=ms//3600000; ms%=3600000; m=ms//60000; ms%=60000; s=ms//1000; ms%=1000
+              return f"{h:02d}:{m:02d}:{s:02d}.{ms:03d}"
+          out=["WEBVTT",""]
+          for i,(a,b,t) in enumerate(cues,1):
+              out += [str(i),f"{ts(a)} --> {ts(b)}",t,""]
+          p=pathlib.Path("public-review/episode3-cashback-casino.vtt")
+          p.write_text("\n".join(out),encoding="utf-8")
+          assert p.read_text().startswith("WEBVTT")
+          print(hashlib.sha256(p.read_bytes()).hexdigest())
+          PY
       - name: Bind receipt
         run: |
           python - <<'PY'
@@ -81,7 +131,10 @@ jobs:
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           parts={k:json.load(open(f"qa-output/episode3/{k}.json")) for k in ["audio","deterministic","semantic","mobile","factual"]}
           ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS"
-          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts}
+          captions=pathlib.Path("public-review/episode3-cashback-casino.vtt")
+          caption_sha=hashlib.sha256(captions.read_bytes()).hexdigest()
+          ok=ok and captions.is_file() and captions.read_text().startswith("WEBVTT")
+          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts}
           pathlib.Path("state/episode3-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           print(json.dumps({"status":r["status"],"candidate_sha256":h}))
           if not ok: raise SystemExit(3)
@@ -91,7 +144,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 qa-output/episode3 state/episode3-health.json
+          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json
           git diff --cached --quiet || git commit -m "Persist entertainment-first cashback casino candidate"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -105,6 +158,7 @@ jobs:
           name: episode3-cashback-casino
           path: |
             public-review/episode3-cashback-casino.mp4
+            public-review/episode3-cashback-casino.vtt
             qa-output/episode3/contact.jpg
             state/episode3-health.json
           retention-days: 30
