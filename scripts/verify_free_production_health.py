@@ -9,6 +9,7 @@ owner=json.loads((ROOT/"control/publication-owner-gate.json").read_text())
 sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
 security=json.loads((ROOT/"state/runtime-security-audit.json").read_text())
+python_security=json.loads((ROOT/"state/python-security-audit.json").read_text()) if (ROOT/"state/python-security-audit.json").exists() else {"status":"MISSING"}
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
 factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if (ROOT/"state/factual-compliance-health.json").exists() else {"status":"MISSING"}
 ledger_health=json.loads((ROOT/"state/acceptance-ledger-health.json").read_text()) if (ROOT/"state/acceptance-ledger-health.json").exists() else {"status":"MISSING"}
@@ -58,6 +59,7 @@ for rel,meta in manifest.get("entries",{}).items():
         manifest_failures.append({"path":rel,"expected":meta.get("sha256"),"actual":actual})
 checks["runtime_integrity_manifest"]=len(manifest_failures)==0 and manifest.get("critical_file_count")==len(manifest.get("entries",{}))
 checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,0))==0 for k in ["critical","high","moderate","low"])
+checks["python_dependency_security_clean"]=python_security.get("status")=="PASS" and int(python_security.get("total_vulnerabilities",1))==0
 checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
 checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual.get("checks",{}).values())
 checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values())
@@ -150,6 +152,7 @@ completion={
         "phone_review_artifact":checks["video_hash_bound"],
         "runtime_integrity_manifest":checks["runtime_integrity_manifest"],
         "dependency_security_clean":checks["dependency_security_clean"],
+        "python_dependency_security_clean":checks["python_dependency_security_clean"],
         "workflow_control_quarantine":checks["workflow_control_green"],
         "factual_compliance_gate":checks["factual_compliance_green"],
         "accepted_candidate_rollback_ledger":checks["acceptance_ledger_green"],
@@ -186,6 +189,8 @@ ops={
     "public_health_url":"https://content-control-render-worker.onrender.com/health",
     "live_deployment_status":live_deployment.get("status"),
     "dependency_vulnerabilities":security.get("npm_counts",{}),
+    "python_dependency_vulnerabilities":python_security.get("total_vulnerabilities"),
+    "python_security_status":python_security.get("status"),
     "rollback_candidate_sha256":ledger_health.get("rollback_candidate_sha256"),
     "workflow_control_status":workflow_health.get("status"),
     "deployment_contract_status":deployment.get("status"),
