@@ -1,0 +1,2 @@
+import React from "react";import {Composition,registerRoot} from "remotion";import {ReferenceCloneComposition} from "./ReferenceCloneComposition";import scenePlan from "../production/reference-clones/active/scene-plan.json";
+const fps=24,d=Math.max(1,Math.ceil((scenePlan.duration_seconds||30)*fps));const Root=()=> <Composition id="ReferenceClone" component={ReferenceCloneComposition} defaultProps={{scenePlan}} durationInFrames={d} fps={fps} width={720} height={1280}/>;registerRoot(Root);
