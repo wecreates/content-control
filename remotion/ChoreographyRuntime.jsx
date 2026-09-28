@@ -1,4 +1,5 @@
 import React from "react";
+import {PropIcon} from "./PropSystem";
 
 const clamp=v=>Math.max(0,Math.min(1,v));
 const easeOutBack=p=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
@@ -50,9 +51,8 @@ export const ObjectChoreography=({choreography,localFrame,width=720,height=1280}
       const y=height*.38+(1-p)*-140;
       const rot=(1-p)*(i%2?18:-18);
       const sy=1-(Math.sin(p*Math.PI)*.09);
-      return <g key={a.target+"-"+i} transform={`translate(${x} ${y}) rotate(${rot}) scale(${1+.06*p} ${sy})`}>
-        <rect x="-78" y="-48" width="156" height="96" rx="18" fill="#fff" stroke="#111" strokeWidth="5"/>
-        <text x="0" y="10" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="24" fill="#111">{objectGlyph(a.target)}</text>
+      return <g key={a.target+"-"+i} transform={`translate(${x} ${y}) scale(${1+.06*p} ${sy})`}>
+        <PropIcon id={a.target} x={0} y={0} s={1} rotation={rot}/>
       </g>;
     })}
   </g>;
