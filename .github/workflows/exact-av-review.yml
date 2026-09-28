@@ -1,11 +1,6 @@
 name: Exact AV Reviewer
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'review-input/**'
-      - '.github/workflows/exact-av-review.yml'
 permissions:
   contents: read
 jobs:
