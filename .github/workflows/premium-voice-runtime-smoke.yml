@@ -1,0 +1,72 @@
+name: Premium Voice Runtime Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'control/voice-provider-routing-v2.json'
+      - 'control/voice-lock-v1.json'
+      - 'scripts/voice_provider.py'
+      - 'scripts/cartesia_sonic_generate.py'
+      - 'scripts/eleven_v3_generate.py'
+      - 'scripts/voice_candidate_qa.py'
+      - 'scripts/voice_take_selector.py'
+      - 'scripts/ccsd_voice_manifest.py'
+      - 'remotion/ReferenceCloneComposition.jsx'
+      - 'remotion/ReferenceCloneLongComposition.jsx'
+      - 'tests/test_voice_*.py'
+      - 'tests/test_cartesia_sonic_generate.py'
+      - 'tests/test_eleven_v3_generate.py'
+      - 'tests/test_ccsd_voice_manifest.py'
+      - '.github/workflows/premium-voice-runtime-smoke.yml'
+permissions:
+  contents: write
+concurrency:
+  group: premium-voice-runtime-smoke
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run premium voice regression suite
+        run: python -m unittest -v tests/test_voice_provider.py tests/test_eleven_v3_generate.py tests/test_cartesia_sonic_generate.py tests/test_voice_take_selector.py tests/test_voice_candidate_qa.py tests/test_ccsd_voice_manifest.py tests/test_voice_render_wiring.py
+      - name: Verify no-credential fallback route
+        run: |
+          unset CARTESIA_API_KEY ELEVENLABS_API_KEY || true
+          unset CARTESIA_VOICE_NARRATOR CARTESIA_VOICE_DAVE CARTESIA_VOICE_POINTS_MONK CARTESIA_VOICE_CASHBACK_GOBLIN || true
+          unset ELEVENLABS_VOICE_NARRATOR ELEVENLABS_VOICE_DAVE ELEVENLABS_VOICE_POINTS_MONK ELEVENLABS_VOICE_CASHBACK_GOBLIN || true
+          python scripts/voice_provider.py --out state/premium-voice-runtime-smoke.json
+          python - <<'PY'
+          import json
+          r=json.load(open("state/premium-voice-runtime-smoke.json"))
+          assert r["selected_strategy"]=="fallback",r
+          assert r["primary"]["provider"]=="cartesia" and r["primary"]["model_id"]=="sonic-3.6",r
+          assert r["dialogue_specialist"]["provider"]=="elevenlabs" and r["dialogue_specialist"]["model_id"]=="eleven_v3",r
+          assert r["publication_enabled"] is False,r
+          PY
+      - name: Verify renderer premium audio wiring
+        run: |
+          grep -q 'voiceover_path' remotion/ReferenceCloneComposition.jsx
+          grep -q 'voiceover_path' remotion/ReferenceCloneLongComposition.jsx
+          grep -q 'cartesia_sonic_generate.py' .github/workflows/studio-pipeline.yml
+          grep -q 'eleven_v3_generate.py' .github/workflows/studio-pipeline.yml
+          grep -q 'voice_take_selector.py' .github/workflows/studio-pipeline.yml
+      - name: Persist premium voice smoke
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/premium-voice-runtime-smoke.json
+          git diff --cached --quiet || git commit -m "Update premium voice runtime smoke"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
