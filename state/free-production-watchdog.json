@@ -2,6 +2,7 @@
   "actual_video_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "checks": {
+    "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
     "dependency_security_clean": true,

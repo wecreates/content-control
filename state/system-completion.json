@@ -1,6 +1,7 @@
 {
   "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "components": {
+    "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
     "automatic_repair_watchdog": true,
     "bounded_failure_retry": true,
