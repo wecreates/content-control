@@ -83,7 +83,7 @@ jobs:
           PY
       - name: Continue candidate promotion after caption binding
         if: success()
-        run: gh workflow run review-server-smoke.yml --ref main
+        run: gh workflow run candidate-state-reconcile.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
