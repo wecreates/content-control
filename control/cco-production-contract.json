@@ -27,7 +27,8 @@
     "character_continuity_director",
     "reference_decomposition_agent",
     "autonomous_viral_content_engine",
-    "lead_comedy_retention_engineer"
+    "lead_comedy_retention_engineer",
+    "chat_drop_clone_director"
   ],
   "output_schema": {
     "video_metadata": {
@@ -94,6 +95,9 @@
     "style_dna": "control/style-dna-v3.json",
     "creative_director": "control/creative-director-v3.json",
     "reference_decomposition": "control/reference-decomposition-contract.json",
-    "blueprint_validator": "scripts/validate_creative_blueprint.py"
+    "blueprint_validator": "scripts/validate_creative_blueprint.py",
+    "chat_drop_clone": "control/chat-drop-clone-contract.json",
+    "reference_clone_compiler": "scripts/reference_clone_compiler.py",
+    "reference_clone_validator": "scripts/validate_reference_clone.py"
   }
 }
