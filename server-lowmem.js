@@ -1,5 +1,4 @@
 import express from "express";
-import {spawn} from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -12,10 +11,7 @@ const captionHealthPath=path.resolve("state/caption-health.json");
 const captionsPath=path.resolve("public-review/episode1-v10-free.vtt");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
-let renderState={status:"idle",startedAt:null,finishedAt:null,exitCode:null,logs:[]};
-let renderChild=null;
-
-function push(x){renderState.logs.push(String(x));if(renderState.logs.length>100)renderState.logs.shift();}
+const renderState={status:"repository-artifact-only"};
 function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
 function readHealth(){return readJson(healthPath);}
 function readCaptionHealth(){return readJson(captionHealthPath);}
@@ -47,21 +43,6 @@ function acceptance(){
   const ready=videoReady&&captionReady;
   return {health:h,captionHealth:c,captionHash,actual,expected,videoReady,captionReady,ready};
 }
-function render(){
-  if(renderState.status==="rendering") return;
-  renderState={status:"rendering",startedAt:new Date().toISOString(),finishedAt:null,exitCode:null,logs:[]};
-  const args=["remotion","render","remotion/v10-index.jsx","Episode1V10FinalProof",output,"--codec","h264","--crf","25","--concurrency","1"];
-  renderChild=spawn("npx",args,{stdio:["ignore","pipe","pipe"],env:process.env});
-  renderChild.stdout.on("data",b=>push(b.toString()));
-  renderChild.stderr.on("data",b=>push(b.toString()));
-  renderChild.on("close",code=>{
-    renderState.status=code===0&&fs.existsSync(output)?"rendered":"failed";
-    renderState.exitCode=code;
-    renderState.finishedAt=new Date().toISOString();
-    renderChild=null;
-  });
-}
-
 app.disable("x-powered-by");
 app.use((req,res,next)=>{
   res.setHeader("X-Content-Type-Options","nosniff");
@@ -173,8 +154,7 @@ const server=app.listen(PORT,()=>{
   console.log("hash-bound V10 free review worker listening",PORT);
   const a=acceptance();
   if(!fs.existsSync(output)){
-    console.log("Canonical review artifact missing; starting local V10 render");
-    setTimeout(render,1000);
+    console.error("Canonical review artifact missing; fail-closed until CI restores an accepted artifact");
   }else if(!a.ready){
     console.error("Review artifact exists but is not accepted by canonical health state");
   }
@@ -182,7 +162,6 @@ const server=app.listen(PORT,()=>{
 
 function shutdown(signal){
   console.log("shutdown",signal);
-  if(renderChild && !renderChild.killed) renderChild.kill("SIGTERM");
   server.close(()=>process.exit(0));
   setTimeout(()=>process.exit(1),8000).unref();
 }
