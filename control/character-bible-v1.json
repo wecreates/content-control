@@ -113,5 +113,9 @@
     "new costume/prop does not alter base silhouette",
     "character role and voice remain stable",
     "rendered-frame QA compares identity against character reference frames"
-  ]
+  ],
+  "canonical_board": "reference/characters/content-control-character-board.svg",
+  "renderer_backed_board_component": "remotion/CharacterBoardComposition.jsx",
+  "renderer_component": "remotion/CharacterSystem.jsx",
+  "voice_lock": "control/voice-lock-v1.json"
 }
