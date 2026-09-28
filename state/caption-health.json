@@ -1,18 +1,24 @@
 {
-  "caption_end_seconds": 26.16,
+  "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
+  "caption_end_seconds": 26.12,
   "caption_path": "public-review/episode1-v10-free.vtt",
+  "caption_sha256": "0b7fd3e5154beef9d584336f0bd41c1cde41e7db032e1878899ef2185eaa4989",
   "checks": {
+    "candidate_health_green": true,
     "caption_file_exists": true,
     "covers_spoken_audio": true,
     "ends_within_media": true,
     "monotonic": true,
+    "narration_asset_present": true,
     "segment_count_matches": true,
     "starts_near_zero": true,
     "transcription_source_green": true
   },
   "failed_checks": [],
+  "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "publication_enabled": false,
   "schema_version": 1,
   "segment_count": 9,
-  "status": "PASS"
+  "status": "PASS",
+  "transcription_receipt_sha256": "7b37b96180aad3aec4283eacfe1742fce917886050e3794f7b383fa1daef893a"
 }
