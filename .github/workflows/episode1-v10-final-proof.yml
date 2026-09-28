@@ -1,13 +1,6 @@
 name: Episode 1 V10 Final Proof
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/V9ArticulatedVisual.jsx'
-      - 'remotion/Episode1V10FinalProof.jsx'
-      - 'remotion/v10-index.jsx'
-      - '.github/workflows/episode1-v10-final-proof.yml'
 permissions:
   contents: write
 concurrency:
