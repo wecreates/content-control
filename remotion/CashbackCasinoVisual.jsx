@@ -1,5 +1,6 @@
 import React from "react";
 import {interpolate,spring} from "remotion";
+import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 const K="#111",W="#fff",R="#ef3e36",Y="#f4c542",T="#11a7a7",G="#dff7ef";
 const C={extrapolateLeft:"clamp",extrapolateRight:"clamp"};
 const I=(v,a,b,x,y)=>interpolate(v,[a,b],[x,y],C);
