@@ -26,5 +26,96 @@
     "risk-free",
     "apply now",
     "must get this card"
+  ],
+  "caption_cues": [
+    {
+      "start": 0,
+      "end": 3.3,
+      "text": "Dave found two percent cashback. His brain immediately became a casino."
+    },
+    {
+      "start": 3.3,
+      "end": 7,
+      "text": "He almost bought an eighty-dollar gadget he did not need."
+    },
+    {
+      "start": 7,
+      "end": 9,
+      "text": "But I get money back!"
+    },
+    {
+      "start": 9,
+      "end": 12.4,
+      "text": "Yes. One dollar and sixty cents. Congratulations, Dave."
+    },
+    {
+      "start": 12.4,
+      "end": 15.7,
+      "text": "You spent eighty dollars to summon this."
+    },
+    {
+      "start": 15.7,
+      "end": 19.6,
+      "text": "Would you buy it without the reward?"
+    },
+    {
+      "start": 19.6,
+      "end": 22.1,
+      "text": "If no, the reward won."
+    },
+    {
+      "start": 22.1,
+      "end": 27.5,
+      "text": "Cashback only wins when the purchase already made sense."
+    },
+    {
+      "start": 27.5,
+      "end": 30,
+      "text": "Buy first. Reward second."
+    }
+  ],
+  "transcription_semantic_groups": [
+    [
+      "dave"
+    ],
+    [
+      "cashback",
+      "percent"
+    ],
+    [
+      "casino"
+    ],
+    [
+      "eighty",
+      "80"
+    ],
+    [
+      "gadget"
+    ],
+    [
+      "money",
+      "back"
+    ],
+    [
+      "one",
+      "dollar",
+      "sixty"
+    ],
+    [
+      "points",
+      "monk"
+    ],
+    [
+      "reward"
+    ],
+    [
+      "purchase"
+    ],
+    [
+      "buy"
+    ],
+    [
+      "second"
+    ]
   ]
 }
