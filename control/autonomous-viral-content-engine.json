@@ -24,9 +24,12 @@
   },
   "entertainment": {
     "visual_irony": true,
-    "max_visual_hold_sec": 2,
+    "max_visual_hold_sec": 1,
     "comment_bait_required": true,
-    "acoustic_punchline_for_movement_or_pause": true
+    "acoustic_punchline_for_movement_or_pause": true,
+    "character_conflict_required": true,
+    "physicalized_finance_required": true,
+    "min_story_engines_considered": 5
   },
   "dual_pass_qa": {
     "bored_scroller": [
@@ -89,5 +92,19 @@
     "points_transfer": "Do not say points vanish on a name mismatch; state that linking/transfers can be rejected when account identity requirements are not met.",
     "points_value": "Do not hard-code a universal Membership Rewards or SkyMiles cents-per-point value; value varies by redemption and availability.",
     "centurion_debt": "Do not invent a 29% APR, maxed balance, or installment plan for a fictional cardholder; use documented card terms or frame debt as an explicit hypothetical."
-  }
+  },
+  "character_system": {
+    "bible": "control/character-bible-v1.json",
+    "renderer": "remotion/CharacterSystem.jsx",
+    "continuity_required": true,
+    "recurring_roles": [
+      "dave",
+      "points_monk",
+      "cashback_goblin"
+    ]
+  },
+  "creative_director": "control/creative-director-v3.json",
+  "style_dna": "control/style-dna-v3.json",
+  "reference_decomposition_contract": "control/reference-decomposition-contract.json",
+  "pre_render_gate": "python scripts/validate_creative_blueprint.py <blueprint.json>"
 }
