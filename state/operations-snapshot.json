@@ -25,7 +25,7 @@
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -44,9 +44,11 @@
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
   "live_deployment_status": "PASS",
-  "machine_system_complete": true,
+  "machine_system_complete": false,
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
   "publication_enabled": false,
@@ -54,7 +56,7 @@
   "review_server_smoke_status": "PASS",
   "rollback_candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "schema_version": 1,
-  "status": "COMPLETE",
+  "status": "REPAIR_REQUIRED",
   "sync_retention_status": "PASS",
   "workflow_control_status": "PASS",
   "zero_credit_runtime": true
