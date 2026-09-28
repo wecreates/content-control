@@ -31,7 +31,25 @@
     "chat_drop_clone_director",
     "style_memory_agent",
     "reference_selector_agent",
-    "clone_repair_director"
+    "clone_repair_director",
+    "story_room_director",
+    "storyboard_director",
+    "animatic_editor",
+    "visual_development_director",
+    "rigging_animation_director",
+    "cinematography_director",
+    "simulation_fx_director",
+    "lighting_color_director",
+    "editorial_director",
+    "sound_music_director",
+    "dialogue_performance_director",
+    "continuity_asset_director",
+    "production_manager_agent",
+    "synthetic_audience_director",
+    "ab_development_director",
+    "accessibility_localization_director",
+    "analytics_learning_agent",
+    "rd_quarantine_agent"
   ],
   "output_schema": {
     "video_metadata": {
@@ -97,7 +115,23 @@
     "voice assignment lock passes for speaking characters",
     "rendered clone parity is measured against source reference",
     "cross-reference style memory updated",
-    "targeted repair plan exists for failed clone proof"
+    "targeted repair plan exists for failed clone proof",
+    "canonical CCSD validates",
+    "story room receipt contains at least ten pitches",
+    "storyboards generated for every scene",
+    "animatic and AI dailies pass",
+    "visual development and color script exist",
+    "rig/motion/cinematography/simulation/lighting passes applied",
+    "editorial sound music and dialogue performance passes applied",
+    "synthetic audience panel passes",
+    "accessibility and localization plans exist",
+    "shot approval reaches FINAL",
+    "render level reaches final",
+    "production tracker and shot render plan exist",
+    "asset and continuity memory updated",
+    "A/B development receipt exists",
+    "R&D technology is quarantined unless benchmark promoted",
+    "analytics feedback maps to scene IDs when analytics are available"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -112,6 +146,14 @@
     "character_board_lock": "control/character-board-lock-v1.json",
     "voice_lock": "control/voice-lock-v1.json",
     "concept_selection": "control/concept-selection-contract.json",
-    "longform_clone": "control/longform-clone-contract.json"
+    "longform_clone": "control/longform-clone-contract.json",
+    "ccsd_schema": "control/studio-scene-schema-v1.json",
+    "studio_pipeline": "control/studio-pipeline-v1.json",
+    "dailies": "control/dailies-contract-v1.json",
+    "asset_catalog": "control/asset-catalog-v1.json",
+    "render_levels": "control/render-levels-v1.json",
+    "voice_performance": "control/voice-performance-v1.json",
+    "analytics_learning": "control/analytics-learning-v1.json",
+    "rd_quarantine": "control/rd-quarantine-v1.json"
   }
 }
