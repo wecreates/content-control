@@ -160,7 +160,11 @@
     "dependency-aware production schedule exists",
     "typography director pass is applied",
     "final rendered proof passes Taste Director",
-    "analytics learning stores scene-feature examples and reinforcement rules"
+    "analytics learning stores scene-feature examples and reinforcement rules",
+    "semantic animatic dailies review actual shot frames",
+    "reference structure includes object text composition transition and contact evidence",
+    "micro-acting gaze blink and brow controls render in final characters",
+    "rendered adaptive soundscape is present in final scene plan"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -200,6 +204,11 @@
     "quality_depth": "control/quality-depth-v1.json",
     "acting_depth": "control/acting-depth-v1.json",
     "audio_depth": "control/audio-depth-v1.json",
-    "taste_director": "control/taste-director-v1.json"
+    "taste_director": "control/taste-director-v1.json",
+    "semantic_dailies": "scripts/semantic_dailies_v2.py",
+    "reference_structure_v2": "scripts/reference_structure_v2.py",
+    "story_strategy": "scripts/apply_story_strategy.py",
+    "rendered_soundscape": "scripts/soundscape_render.py",
+    "analytics_learning_v2": "scripts/analytics_learning_v2.py"
   }
 }
