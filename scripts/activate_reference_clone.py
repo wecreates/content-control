@@ -9,6 +9,9 @@ def main():
         p=src/name
         if not p.is_file(): raise SystemExit(f"missing {p}")
         shutil.copy2(p,dst/name)
+    for name in ["concept-selection.json","voice-assignments.json","voice-lock-health.json","longform-plan.json"]:
+        p=src/name
+        if p.is_file(): shutil.copy2(p,dst/name)
     manifest={"schema_version":1,"source_package":src.as_posix(),"reference_id":json.loads((src/"reference.json").read_text())["source"]["id"],"publication_enabled":False}
     (dst/"activation.json").write_text(json.dumps(manifest,indent=2,sort_keys=True)+"\n")
     print(json.dumps({"status":"PASS",**manifest},sort_keys=True))
