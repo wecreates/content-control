@@ -46,14 +46,18 @@
     "REAL VALUE > FEE"
   ],
   "narration_semantic_order": [
-    "annual fee",
-    "spend eighty dollars",
-    "twenty-dollar credit",
+    "card charged him $695 again",
+    "Chad points to a $20 credit",
+    "$80 purchase",
+    "math is simple",
+    "$80 minus $20 is $60",
     "Points Monk",
-    "wouldn't buy the thing anyway",
-    "Count only value you'd purchase without the card",
-    "subtract the fee you actually pay",
-    "keep the card only when the math still wins"
+    "benefits Dave would have bought anyway",
+    "real value",
+    "annual fee",
+    "value is higher",
+    "fee is higher",
+    "Ignore the flex and keep the math"
   ],
   "goals": {
     "pattern_interrupt_max_seconds": 2.5,
