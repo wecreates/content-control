@@ -45,5 +45,52 @@
   "notes": [
     "$695 is an unnamed educational example, not a claim about a currently named product.",
     "narration_text is bound to the actual repository narration MP3 and independently verified by local transcription."
+  ],
+  "caption_cues": [
+    {
+      "start": 0,
+      "end": 3.84,
+      "text": "Dave's card charged him $695 again."
+    },
+    {
+      "start": 3.84,
+      "end": 8.04,
+      "text": "Chad points to a $20 credit after an $80 purchase."
+    },
+    {
+      "start": 8.04,
+      "end": 9.56,
+      "text": "But the math is simple."
+    },
+    {
+      "start": 9.56,
+      "end": 11.84,
+      "text": "$80 minus $20 is $60."
+    },
+    {
+      "start": 11.84,
+      "end": 15.2,
+      "text": "Points Monk counts only benefits Dave would have bought anyway."
+    },
+    {
+      "start": 15.2,
+      "end": 18.12,
+      "text": "Then he compares that real value with the annual fee."
+    },
+    {
+      "start": 18.12,
+      "end": 21.36,
+      "text": "If the value is higher, the card may make sense."
+    },
+    {
+      "start": 21.36,
+      "end": 23.96,
+      "text": "If the fee is higher, rethink it."
+    },
+    {
+      "start": 23.96,
+      "end": 26.16,
+      "text": "Ignore the flex and keep the math."
+    }
   ]
 }
