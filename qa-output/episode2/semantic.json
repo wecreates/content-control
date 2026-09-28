@@ -1,0 +1,60 @@
+{
+  "best_reference_similarity_by_candidate": [
+    0.3298346698284149,
+    0.4105111360549927,
+    0.4107849597930908,
+    0.3380696773529053,
+    0.3861110806465149,
+    0.4993753731250763,
+    0.4121611714363098,
+    0.4221918284893036,
+    0.38665199279785156,
+    0.36278969049453735
+  ],
+  "checks": {
+    "florence_completed": true,
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true
+  },
+  "engine": "openclip-florence-free-qa-v1",
+  "florence": {
+    "captions": {
+      "candidate": [
+        {
+          "caption": "The image is a simple illustration of a stick figure with the text \"Your card has homework. Premium\" above it. Below the stick figure, there is a text that reads \"DAVE\" in red letters. The stick figure is drawn in a simple, cartoon-like style with a round head and arms. The background is plain white.",
+          "file": "cand-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure with a credit calendar next to it. The stick figure is standing on its hind legs with its arms stretched out to the sides. The credit calendar is rectangular in shape and has a grid of yellow circles on it. Above the credit calendar, there is text that reads \"Points Monk arrives.\" Below the",
+          "file": "cand-06.jpg"
+        },
+        {
+          "caption": "The image is a graphic with two stick figures, Dave and Points Monk, standing side by side with their arms stretched out. They are both smiling and appear to be happy. The background is white and the text above them reads \"One rule. Real value first. Credits second. Flex last. You do not have to finish the coupon book.\"",
+          "file": "cand-10.jpg"
+        }
+      ],
+      "reference": [
+        {
+          "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+          "file": "ref-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
+          "file": "ref-06.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+          "file": "ref-10.jpg"
+        }
+      ]
+    },
+    "error": null,
+    "status": "PASS"
+  },
+  "florence_model": "florence-community/Florence-2-base",
+  "global_similarity": 0.32210612297058105,
+  "mean_best_frame_similarity": 0.3958481550216675,
+  "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+  "schema_version": 1,
+  "verdict": "PASS"
+}

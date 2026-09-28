@@ -1,0 +1,21 @@
+{
+  "arithmetic": [
+    {
+      "computed": 45,
+      "expected": 45,
+      "expression": "15+20+10",
+      "pass": true
+    }
+  ],
+  "checks": {
+    "arithmetic": true,
+    "educational_example": true,
+    "no_named_products": true,
+    "no_risky_phrases": true,
+    "publication_disabled": true,
+    "required_visual_tokens": true
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
