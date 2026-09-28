@@ -45,6 +45,10 @@ def curve_for_character(cid):
 
 def build_choreography(scene):
     duration=max(.1,float(scene.get("end",0))-float(scene.get("start",0)))
+    reference=scene.get("reference_mechanics") or {}
+    ref_prop=str(reference.get("prop_action","")).lower()
+    ref_char=str(reference.get("character_action","")).lower()
+    ref_intensity=max(0.0,min(1.0,float(reference.get("motion_intensity",0) or 0)*8))
     object_actions=[]
     for i,p in enumerate(scene.get("props",[])):
         pid=p.get("id","prop")
@@ -57,7 +61,9 @@ def build_choreography(scene):
           "start":round(min(duration*.12+i*.08,duration*.35),3),
           "impact":round(min(duration*.55+i*.06,duration*.82),3),
           "secondary_motion":True,
-          "curve":"heavy_drop" if any(x in pid for x in ["fee","calculator"]) else "comedic_pop"
+          "curve":"heavy_drop" if any(x in pid for x in ["fee","calculator"]) else "comedic_pop",
+          "reference_action":ref_prop,
+          "intensity":round(max(.45,ref_intensity),3)
         })
     character_actions=[]
     for i,ch in enumerate(scene.get("characters",[])):
@@ -67,7 +73,9 @@ def build_choreography(scene):
           "anticipation_frames":4 if cid!="points_monk" else 2,
           "overshoot_frames":5,"settle_frames":7,
           "eye_target":(scene.get("props") or [{}])[0].get("id","camera"),
-          "curve":curve_for_character(cid)
+          "curve":curve_for_character(cid),
+          "reference_action":ref_char,
+          "intensity":round(max(.5,ref_intensity),3)
         })
     text=scene.get("text") or {}
     text_actions=[]
@@ -101,6 +109,7 @@ def build_choreography(scene):
       "visual_gags":[{"type":"reaction_or_prop_misbehavior","frame":max(4,round(duration*24*.7)),"silent":True}],
       "depth_layers":[{"id":"foreground","z":3,"parallax":1.25},{"id":"midground","z":2,"parallax":1.0},{"id":"background","z":1,"parallax":.55}],
       "visual_metaphor":metaphor_for(scene),
+      "reference_transfer":{"character_action":ref_char,"prop_action":ref_prop,"motion_intensity":round(ref_intensity,3),"retention_reason":reference.get("retention_reason","")},
       "continuous_motion":{"required":True,"minimum_sources":2},
       "publication_enabled":False
     }
