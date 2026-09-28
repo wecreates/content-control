@@ -5,4 +5,4 @@ jobs:
   redirect:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Legacy workflow retained for diagnostics only. Canonical production orchestrator is episode1-max-speed.yml."
+      - run: echo "Legacy workflow retained for diagnostics only. Canonical accepted-candidate generation is defined by state/canonical-workflow-registry.json (currently free-vision-qa.yml). Creative proof production uses registered workflows such as episode3-cashback-casino.yml."
