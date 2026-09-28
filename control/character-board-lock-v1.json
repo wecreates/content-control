@@ -4,7 +4,7 @@
   "canonical_board": "reference/characters/content-control-character-board.svg",
   "character_system": "remotion/CharacterSystem.jsx",
   "bible": "control/character-bible-v1.json",
-  "lock_policy": "board + renderer + bible hashes must be recorded in every accepted candidate",
+  "lock_policy": "Character board and all video characters share remotion/CharacterSystem.jsx; accepted candidates bind board, component, and CharacterSystem hashes.",
   "characters": [
     "dave",
     "points_monk",
@@ -15,5 +15,8 @@
     "line_weight_drift_px": 0,
     "accent_color_drift": false
   },
-  "required_qa": "scripts/character_identity_qa.py"
+  "required_qa": "scripts/character_identity_qa.py",
+  "renderer_backed_board_component": "remotion/CharacterBoardComposition.jsx",
+  "renderer_backed_board_entrypoint": "remotion/character-board-index.jsx",
+  "rendered_board_receipt": "state/character-board-lock-health.json"
 }
