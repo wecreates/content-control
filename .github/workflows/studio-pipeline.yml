@@ -109,10 +109,11 @@ jobs:
           mkdir -p production/reference-clones/active/studio/boards state/studio
           RID=$(python -c 'import json; print(json.load(open("production/reference-clones/active/activation.json")).get("reference_id","active"))')
           S=production/reference-clones/active/studio
-          python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-ccsd.json"
+          python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-story-ccsd.json"
           python scripts/ccsd_validate.py --input "$S/01-ccsd.json" --out state/studio/ccsd-health.json
           python scripts/story_room_v2.py --topic "$RID finance adaptation" --count 12 --out "$S/story-room.json"
           python scripts/story_room_critic.py --room "$S/story-room.json" --out "$S/story-room-critique.json"
+          python scripts/apply_story_strategy.py --ccsd "$S/01-ccsd.json" --room "$S/story-room.json" --critique "$S/story-room-critique.json" --out "$S/01-story-ccsd.json"
           python scripts/visual_development_v2.py --topic "$RID finance adaptation" --out "$S/visual-development.json"
           python scripts/ab_development.py --topic "$RID finance adaptation" --out "$S/ab-development.json"
 
@@ -121,13 +122,13 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/storyboard_generator_v2.py --ccsd "$S/01-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
-          python scripts/animatic_plan.py --ccsd "$S/01-ccsd.json" --out "$S/animatic.json"
+          python scripts/storyboard_generator_v2.py --ccsd "$S/01-story-ccsd.json" --out-dir "$S/boards" --manifest "$S/storyboard-manifest.json"
+          python scripts/animatic_plan.py --ccsd "$S/01-story-ccsd.json" --out "$S/animatic.json"
           npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
           python -m pip install -r requirements-free-qa.lock.txt
           python - <<'PY'
           import json,pathlib
-          c=json.load(open("production/reference-clones/active/studio/01-ccsd.json"))
+          c=json.load(open("production/reference-clones/active/studio/01-story-ccsd.json"))
           pathlib.Path("production/reference-clones/active/studio/animatic-props.json").write_text(json.dumps({"ccsd":c},indent=2,sort_keys=True)+"\n")
           PY
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic "$S/animatic.mp4" --props="$S/animatic-props.json" --scale=0.5 --codec h264 --crf 28 --concurrency 2
@@ -138,7 +139,7 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           python scripts/visual_dailies_v2.py --animatic "$S/animatic.json" --video "$S/animatic.mp4" --out "$S/dailies.json"
-          python scripts/audience_panel_v2.py --video "$S/animatic.mp4" --ccsd "$S/01-ccsd.json" --out "$S/audience-panel.json"
+          python scripts/audience_panel_v2.py --video "$S/animatic.mp4" --ccsd "$S/01-story-ccsd.json" --out "$S/audience-panel.json"
 
       - name: Promote to spline
         if: steps.active.outputs.ready == 'yes'
@@ -153,7 +154,7 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/color_script.py --ccsd "$S/01-ccsd.json" --out "$S/02-color.json"
+          python scripts/color_script.py --ccsd "$S/01-story-ccsd.json" --out "$S/02-color.json"
           python scripts/cinematography_pass.py --ccsd "$S/02-color.json" --out "$S/03-camera.json"
           python scripts/rig_motion_pass.py --ccsd "$S/03-camera.json" --out "$S/04-rig.json"
           python scripts/acting_director.py --ccsd "$S/04-rig.json" --out "$S/05-acting.json"
