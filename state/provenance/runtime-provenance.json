@@ -4,10 +4,10 @@
   "caption_file_sha256": "0b7fd3e5154beef9d584336f0bd41c1cde41e7db032e1878899ef2185eaa4989",
   "caption_health_sha256": "d14f12ab327b98706d3e05d1951df7d2cbd543bbca074a43cf4ab9e4514bbaf6",
   "critical_file_count": 30,
-  "critical_integrity_manifest_sha256": "a8654a8b671cc5d1498bf3551a5e566ab1f95a609bc42164550511f899ac456e",
+  "critical_integrity_manifest_sha256": "7d5654c6be6c993f397f76edd64de7a870384fa4ca2a333aa3ce18c988a37bd8",
   "locks": {
     "package_lock_sha256": "db5272a9e06d8b365dfd0555d8a24122e1f3ae69eff8d127b6c2e5db47b2906b",
-    "python_lock_sha256": "faa235983cddbd291f42667ed5ab7d17899b0f3d7a549837874f8c291d8f80c7"
+    "python_lock_sha256": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6"
   },
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "narration_transcription_health_sha256": "7b37b96180aad3aec4283eacfe1742fce917886050e3794f7b383fa1daef893a",
@@ -23,6 +23,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "c3bb666d6356f716c37aa4e96c5417957e7cd756",
+  "source_commit": "971cead499f7c5687a64f43d119581f9bfd7cf52",
   "zero_credit_runtime": true
 }
