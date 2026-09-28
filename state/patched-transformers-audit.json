@@ -1,0 +1,8 @@
+{
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "total_vulnerabilities": 0,
+  "transformers_target": "5.10.0",
+  "vulnerabilities": []
+}

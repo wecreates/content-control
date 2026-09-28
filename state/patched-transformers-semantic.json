@@ -1,0 +1,60 @@
+{
+  "best_reference_similarity_by_candidate": [
+    0.4270407557487488,
+    0.450133740901947,
+    0.39411044120788574,
+    0.4375590980052948,
+    0.38390159606933594,
+    0.3808640241622925,
+    0.47470104694366455,
+    0.39926469326019287,
+    0.4028262495994568,
+    0.397234708070755
+  ],
+  "checks": {
+    "florence_completed": true,
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true
+  },
+  "engine": "openclip-florence-free-qa-v1",
+  "florence": {
+    "captions": {
+      "candidate": [
+        {
+          "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head that reads \"The fee shows up.\" Below the stick figure, there is a text that says \"MAILBOX: 1 - JOY: 0\". On the left side of the image, there are two icons - an envelope with a price tag of $695",
+          "file": "cand-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure with a speech bubble above it. The speech bubble has the text \"Do the actual math.\" Below the speech bubble, there is a text that reads \"$80 - $20 $60\". The stick figure is drawn in a simple, cartoon-like style with two arms and two legs. The background",
+          "file": "cand-06.jpg"
+        },
+        {
+          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style. The background is white and the text \"One rule",
+          "file": "cand-10.jpg"
+        }
+      ],
+      "reference": [
+        {
+          "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+          "file": "ref-01.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
+          "file": "ref-06.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+          "file": "ref-10.jpg"
+        }
+      ]
+    },
+    "error": null,
+    "status": "PASS"
+  },
+  "florence_model": "florence-community/Florence-2-base",
+  "global_similarity": 0.3325476348400116,
+  "mean_best_frame_similarity": 0.4147636294364929,
+  "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+  "schema_version": 1,
+  "verdict": "PASS"
+}
