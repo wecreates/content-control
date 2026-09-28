@@ -1,0 +1,46 @@
+name: Mobile Playback Compatibility Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public-review/episode1-v10-free.mp4'
+      - 'scripts/free_mobile_compat_qa.py'
+      - '.github/workflows/mobile-playback-compat.yml'
+  schedule:
+    - cron: '29 13 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: mobile-playback-compat
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install media tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Verify phone playback compatibility
+        run: python scripts/free_mobile_compat_qa.py --video public-review/episode1-v10-free.mp4 --output state/mobile-playback-health.json
+      - name: Persist compatibility receipt
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/mobile-playback-health.json
+          git diff --cached --quiet || git commit -m "Update mobile playback compatibility health"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-playback-health
+          path: state/mobile-playback-health.json
+          retention-days: 30
