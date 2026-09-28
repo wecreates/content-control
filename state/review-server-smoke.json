@@ -2,6 +2,7 @@
   "accepted_route_verified": true,
   "cache_policy_verified": true,
   "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
+  "captions_verified": true,
   "fail_closed_corruption_verified": true,
   "publication_enabled": false,
   "range_streaming_verified": true,
