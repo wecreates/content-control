@@ -1,11 +1,6 @@
 name: V5 Reliability Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_reliability_runtime.py'
-      - '.github/workflows/v5-reliability-runtime.yml'
 permissions:
   actions: read
   contents: write
