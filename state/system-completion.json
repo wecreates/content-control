@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
@@ -13,7 +13,7 @@
     "hash_bound_artifact": true,
     "hash_bound_provenance": true,
     "immutable_acceptance_history": true,
-    "live_public_deployment": true,
+    "live_public_deployment": false,
     "live_review_server_smoke": true,
     "local_audio_assets": true,
     "local_reference_assets": true,
@@ -31,13 +31,13 @@
     "sync_retention_gate": true,
     "workflow_control_quarantine": true
   },
-  "machine_system_complete": true,
+  "machine_system_complete": false,
   "publication_enabled": false,
   "publication_separate": true,
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "schema_version": 1,
   "source_receipt": "qa-output/free/final-receipt.json",
-  "status": "COMPLETE",
+  "status": "REPAIR_REQUIRED",
   "watchdog_receipt": "state/free-production-watchdog.json",
   "zero_credit_runtime": true
 }
