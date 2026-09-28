@@ -1,0 +1,123 @@
+name: Live Render Deployment Smoke
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'state/deployment-contract.json'
+      - 'state/content-control-health.json'
+      - 'server-lowmem.js'
+      - 'render.yaml'
+      - '.github/workflows/live-render-deployment-smoke.yml'
+permissions:
+  contents: write
+concurrency:
+  group: live-render-deployment-smoke
+  cancel-in-progress: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Probe live hosted review service
+        run: |
+          set -euo pipefail
+          BASE=$(python - <<'PY'
+          import json
+          print(json.load(open("state/deployment-contract.json"))["public_base_url"].rstrip("/"))
+          PY
+          )
+          EXPECTED=$(python - <<'PY'
+          import json
+          print(json.load(open("state/content-control-health.json"))["candidate_sha256"])
+          PY
+          )
+          mkdir -p /tmp/live-probe
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/health.headers -o /tmp/live-probe/health.json -w "%{http_code}" "$BASE/health" || true)
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep $((attempt*8))
+          done
+          test "$ok" = "1"
+          python - "$EXPECTED" <<'PY'
+          import json,sys
+          h=json.load(open("/tmp/live-probe/health.json"))
+          expected=sys.argv[1]
+          assert h.get("ok") is True,h
+          assert h.get("publication") is False,h
+          assert h.get("hashBound") is True,h
+          assert h.get("expectedSha256")==expected,(h.get("expectedSha256"),expected)
+          assert h.get("actualSha256")==expected,(h.get("actualSha256"),expected)
+          print(h)
+          PY
+          test "$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/watch.headers -o /tmp/live-probe/watch.html -w "%{http_code}" "$BASE/watch")" = "200"
+          grep -q 'FREE_QA' /tmp/live-probe/watch.html
+          grep -q 'publication disabled' /tmp/live-probe/watch.html
+          test "$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/live-probe/media.headers -o /tmp/live-probe/range.bin -w "%{http_code}" "$BASE/media")" = "206"
+          test "$(wc -c < /tmp/live-probe/range.bin)" = "1024"
+          grep -qi '^accept-ranges: bytes' /tmp/live-probe/media.headers
+          grep -qi '^content-range: bytes 0-1023/' /tmp/live-probe/media.headers
+      - name: Write live deployment receipt
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          contract=json.load(open("state/deployment-contract.json"))
+          health=json.load(open("state/content-control-health.json"))
+          hp=pathlib.Path("/tmp/live-probe/health.json")
+          live={}
+          if hp.exists():
+              try: live=json.loads(hp.read_text())
+              except Exception: pass
+          checks={
+              "health_200_and_green":live.get("ok") is True,
+              "publication_disabled":live.get("publication") is False,
+              "hash_bound":live.get("hashBound") is True,
+              "expected_hash_matches":live.get("expectedSha256")==health.get("candidate_sha256"),
+              "actual_hash_matches":live.get("actualSha256")==health.get("candidate_sha256"),
+              "watch_page_present":pathlib.Path("/tmp/live-probe/watch.html").exists(),
+              "range_streaming_present":pathlib.Path("/tmp/live-probe/range.bin").exists() and pathlib.Path("/tmp/live-probe/range.bin").stat().st_size==1024,
+          }
+          r={
+              "schema_version":1,
+              "status":"PASS" if all(checks.values()) else "FAIL",
+              "public_base_url":contract["public_base_url"],
+              "candidate_sha256":health["candidate_sha256"],
+              "live_expected_sha256":live.get("expectedSha256"),
+              "live_actual_sha256":live.get("actualSha256"),
+              "checks":checks,
+              "failed_checks":[k for k,v in checks.items() if not v],
+              "publication_enabled":False,
+          }
+          pathlib.Path("state/live-deployment-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          PY
+      - name: Persist live deployment evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/live-deployment-health.json
+          git diff --cached --quiet || git commit -m "Update live Render deployment health"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-render-deployment-smoke
+          path: |
+            state/live-deployment-health.json
+            /tmp/live-probe/health.json
+            /tmp/live-probe/watch.html
+            /tmp/live-probe/media.headers
+          retention-days: 30
