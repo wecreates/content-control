@@ -1,12 +1,6 @@
 name: Episode 1 V6 Vertical Proof
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/Episode1V6VerticalProof.jsx'
-      - 'remotion/index.jsx'
-      - '.github/workflows/episode1-v6-proof.yml'
 permissions:
   contents: read
 env:
