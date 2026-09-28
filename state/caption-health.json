@@ -1,0 +1,18 @@
+{
+  "caption_end_seconds": 26.16,
+  "caption_path": "public-review/episode1-v10-free.vtt",
+  "checks": {
+    "caption_file_exists": true,
+    "covers_spoken_audio": true,
+    "ends_within_media": true,
+    "monotonic": true,
+    "segment_count_matches": true,
+    "starts_near_zero": true,
+    "transcription_source_green": true
+  },
+  "failed_checks": [],
+  "publication_enabled": false,
+  "schema_version": 1,
+  "segment_count": 9,
+  "status": "PASS"
+}
