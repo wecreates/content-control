@@ -49,7 +49,8 @@
     "ab_development_director",
     "accessibility_localization_director",
     "analytics_learning_agent",
-    "rd_quarantine_agent"
+    "rd_quarantine_agent",
+    "premium_voice_director"
   ],
   "output_schema": {
     "video_metadata": {
@@ -132,7 +133,11 @@
     "A/B development receipt exists",
     "R&D technology is quarantined unless benchmark promoted",
     "analytics feedback maps to scene IDs when analytics are available",
-    "studio department map verifies all implementations exist"
+    "studio department map verifies all implementations exist",
+    "premium voice routing receipt exists when spoken dialogue exists",
+    "voice candidate transcript fidelity passes",
+    "character voice IDs remain locked by speaker",
+    "winning premium voice take is injected into final render scene plan"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -157,6 +162,8 @@
     "analytics_learning": "control/analytics-learning-v1.json",
     "rd_quarantine": "control/rd-quarantine-v1.json",
     "studio_department_map": "control/studio-department-map-v1.json",
-    "studio_department_verifier": "scripts/verify_studio_department_map.py"
+    "studio_department_verifier": "scripts/verify_studio_department_map.py",
+    "premium_voice_routing": "control/voice-provider-routing-v2.json",
+    "premium_voice_lock": "control/voice-lock-v1.json"
   }
 }
