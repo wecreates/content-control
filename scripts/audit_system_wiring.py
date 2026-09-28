@@ -58,7 +58,7 @@ def audit_root(root: Path):
     visual=root/"remotion/CashbackCasinoVisual.jsx"
     visual_text=visual.read_text() if visual.is_file() else ""
     checks["episode3_character_system_connected"]=all(x in visual_text for x in [
-        'from "./CharacterSystem"',"Dave","PointsMonk","CashbackGoblin"
+        'from "./CharacterSystem"','<Dave ','<PointsMonk ','<CashbackGoblin '
     ])
 
     reg_allowed=set(registry.get("allowed_automatic",[]))
