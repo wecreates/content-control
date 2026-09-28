@@ -103,8 +103,8 @@
       "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
     },
     "scripts/free_transcription_qa.py": {
-      "bytes": 4885,
-      "sha256": "55994b85e9467407190d508c421d569df0df881600495fb1dd7910201550ad47"
+      "bytes": 5347,
+      "sha256": "5d10b377c3e233e631a398a1b0443c63aeb6319f2f0121ac64cce5b1a67e1bd0"
     },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
