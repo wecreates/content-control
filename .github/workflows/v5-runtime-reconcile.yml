@@ -1,13 +1,6 @@
 name: V5 Strict Runtime Reconciliation
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/v5-runtime-reconcile.yml'
-      - 'scripts/v5_reconcile.py'
-      - 'control/v5/**'
-      - 'runtime/v5/**'
 permissions:
   contents: write
 concurrency:
