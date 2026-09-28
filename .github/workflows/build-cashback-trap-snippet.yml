@@ -1,0 +1,117 @@
+name: Build Cashback Trap Snippet
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/CashbackTrapSnippet.jsx'
+      - 'remotion/snippet-index.jsx'
+      - '.github/workflows/build-cashback-trap-snippet.yml'
+permissions:
+  contents: write
+concurrency:
+  group: cashback-trap-snippet
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+      - name: Materialize voiceover locally
+        run: |
+          set -euo pipefail
+          mkdir -p public/audio
+          curl --fail --location --retry 4 "https://www.aidocmaker.com/g0/audio?name=f3bb620ebe0b4715b0eddd31213df6bf" -o public/audio/cashback-trap-voice.mp3
+          test -s public/audio/cashback-trap-voice.mp3
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/audio/cashback-trap-voice.mp3 | grep -q audio
+      - name: Render snippet
+        run: |
+          set -euo pipefail
+          mkdir -p public-review qa-output/snippet
+          npx remotion render remotion/snippet-index.jsx CashbackTrapSnippet public-review/cashback-trap-snippet.mp4 --codec h264 --crf 24 --concurrency 2
+          test -s public-review/cashback-trap-snippet.mp4
+      - name: Verify mobile playback and audio
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=index,codec_name,codec_type,width,height,pix_fmt,r_frame_rate,sample_rate,channels -of json public-review/cashback-trap-snippet.mp4 > qa-output/snippet/streams.json
+          python - <<'PY'
+          import json,subprocess,pathlib
+          p=pathlib.Path("public-review/cashback-trap-snippet.mp4")
+          d=json.load(open("qa-output/snippet/streams.json"))
+          vs=[x for x in d["streams"] if x.get("codec_type")=="video"]
+          au=[x for x in d["streams"] if x.get("codec_type")=="audio"]
+          assert len(vs)==1 and len(au)>=1,d
+          v=vs[0]; a=au[0]
+          checks={
+            "h264":v.get("codec_name")=="h264",
+            "vertical_720x1280":v.get("width")==720 and v.get("height")==1280,
+            "yuv420p":v.get("pix_fmt")=="yuv420p",
+            "aac_audio":a.get("codec_name")=="aac",
+            "audio_present":True,
+            "publication_disabled":True,
+          }
+          assert all(checks.values()),checks
+          pathlib.Path("qa-output/snippet/technical.json").write_text(json.dumps({"status":"PASS","checks":checks},indent=2)+"\n")
+          PY
+      - name: Extract visual QA contact sheet
+        run: |
+          ffmpeg -y -i public-review/cashback-trap-snippet.mp4 -vf "fps=1/3,scale=216:384,tile=3x2:padding=8:margin=8" -frames:v 1 qa-output/snippet/contact.jpg
+      - name: Bind snippet receipt
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          p=pathlib.Path("public-review/cashback-trap-snippet.mp4")
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          dur=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=nw=1:nk=1",str(p)],text=True).strip())
+          r={
+            "schema_version":1,
+            "status":"SNIPPET_READY",
+            "topic":"Why 2% cashback can make an unnecessary $80 purchase worse",
+            "candidate_sha256":h,
+            "duration_seconds":dur,
+            "publication_enabled":False,
+            "voice":"deep",
+            "format":"9:16",
+            "video_path":"public-review/cashback-trap-snippet.mp4",
+            "contact_sheet":"qa-output/snippet/contact.jpg",
+            "technical_receipt":"qa-output/snippet/technical.json",
+          }
+          pathlib.Path("qa-output/snippet/final-receipt.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          PY
+      - name: Persist review artifact
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public/audio/cashback-trap-voice.mp3 public-review/cashback-trap-snippet.mp4 qa-output/snippet
+          git diff --cached --quiet || git commit -m "Persist cashback trap snippet proof"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cashback-trap-snippet
+          path: |
+            public-review/cashback-trap-snippet.mp4
+            qa-output/snippet/contact.jpg
+            qa-output/snippet/final-receipt.json
+          retention-days: 30
