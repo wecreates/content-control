@@ -1,11 +1,6 @@
 name: Reference Clone Repair
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'state/reference-clone-repair-plan.json'
-      - '.github/workflows/reference-clone-repair.yml'
 permissions:
   contents: write
   actions: write
