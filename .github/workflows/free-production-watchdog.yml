@@ -24,6 +24,7 @@ on:
       - 'state/runtime-integrity-manifest.json'
       - 'state/narration-transcription-health.json'
       - 'state/mobile-playback-health.json'
+      - 'state/python-security-audit.json'
       - 'state/caption-health.json'
       - 'public-review/episode1-v10-free.vtt'
       - '.github/workflows/runtime-integrity-manifest.yml'
@@ -95,6 +96,7 @@ jobs:
               "narration_transcription_green":"narration-transcription-gate.yml",
               "caption_health_green":"narration-transcription-gate.yml",
               "mobile_playback_green":"free-vision-qa.yml",
+              "python_dependency_security_clean":"python-security-audit.yml",
               "dependency_security_clean":"runtime-security-audit.yml",
               "runtime_locks_present":"generate-runtime-locks.yml",
           }
