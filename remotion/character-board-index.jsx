@@ -1,0 +1,1 @@
+import React from "react";import {Composition,registerRoot} from "remotion";import {CharacterBoardComposition} from "./CharacterBoardComposition";const Root=()=> <Composition id="CharacterBoard" component={CharacterBoardComposition} durationInFrames={1} fps={24} width={1600} height={1000}/>;registerRoot(Root);
