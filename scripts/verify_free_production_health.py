@@ -62,6 +62,9 @@ checks["review_server_smoke_green"]=all([
     smoke.get("candidate_sha256")==health.get("candidate_sha256"),
     smoke.get("accepted_route_verified") is True,
     smoke.get("fail_closed_corruption_verified") is True,
+    smoke.get("range_streaming_verified") is True,
+    smoke.get("security_headers_verified") is True,
+    smoke.get("cache_policy_verified") is True,
     smoke.get("publication_enabled") is False,
 ])
 checks["provenance_candidate_match"]=all([
@@ -125,6 +128,9 @@ completion={
         "accepted_candidate_rollback_ledger":checks["acceptance_ledger_green"],
         "reproducible_runtime_locks":checks["runtime_locks_present"],
         "live_review_server_smoke":checks["review_server_smoke_green"],
+        "phone_range_streaming":smoke.get("range_streaming_verified") is True,
+        "review_server_security_headers":smoke.get("security_headers_verified") is True,
+        "review_server_cache_policy":smoke.get("cache_policy_verified") is True,
         "hash_bound_provenance":checks["provenance_candidate_match"] and checks["provenance_inputs_current"],
         "cyclonedx_sbom":checks["sbom_valid"],
         "automatic_repair_watchdog":True,
