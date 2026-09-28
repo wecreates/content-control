@@ -1,0 +1,82 @@
+name: Clone Runtime Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/CharacterSystem.jsx'
+      - 'remotion/CharacterBoardComposition.jsx'
+      - 'remotion/character-board-index.jsx'
+      - 'remotion/ReferenceCloneComposition.jsx'
+      - 'remotion/reference-clone-index.jsx'
+      - 'remotion/ReferenceCloneLongComposition.jsx'
+      - 'remotion/reference-clone-long-index.jsx'
+      - '.github/workflows/clone-runtime-smoke.yml'
+permissions:
+  contents: write
+concurrency:
+  group: clone-runtime-smoke
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - name: Install render runtime
+        run: npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+      - name: Bundle all clone compositions without active reference
+        run: |
+          set -euo pipefail
+          npx remotion compositions remotion/character-board-index.jsx | tee /tmp/board.txt
+          npx remotion compositions remotion/reference-clone-index.jsx | tee /tmp/short.txt
+          npx remotion compositions remotion/reference-clone-long-index.jsx | tee /tmp/long.txt
+          grep -q 'CharacterBoard' /tmp/board.txt
+          grep -q 'ReferenceClone' /tmp/short.txt
+          grep -q 'ReferenceCloneLong' /tmp/long.txt
+      - name: Render fallback proof frames
+        run: |
+          set -euo pipefail
+          mkdir -p qa-output/clone-runtime-smoke
+          npx remotion still remotion/character-board-index.jsx CharacterBoard qa-output/clone-runtime-smoke/character-board.png
+          npx remotion still remotion/reference-clone-index.jsx ReferenceClone qa-output/clone-runtime-smoke/short.png --frame=24
+          npx remotion still remotion/reference-clone-long-index.jsx ReferenceCloneLong qa-output/clone-runtime-smoke/long.png --frame=24
+          test -s qa-output/clone-runtime-smoke/character-board.png
+          test -s qa-output/clone-runtime-smoke/short.png
+          test -s qa-output/clone-runtime-smoke/long.png
+      - name: Persist runtime health
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          files={
+            "character_board":"qa-output/clone-runtime-smoke/character-board.png",
+            "short_clone":"qa-output/clone-runtime-smoke/short.png",
+            "long_clone":"qa-output/clone-runtime-smoke/long.png",
+          }
+          hashes={k:hashlib.sha256(pathlib.Path(v).read_bytes()).hexdigest() for k,v in files.items()}
+          checks={k:pathlib.Path(v).is_file() and pathlib.Path(v).stat().st_size>500 for k,v in files.items()}
+          r={"schema_version":1,"status":"PASS" if all(checks.values()) else "FAIL","checks":checks,"hashes":hashes,"publication_enabled":False}
+          pathlib.Path("state/clone-runtime-smoke.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if r["status"]!="PASS": raise SystemExit(2)
+          PY
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/clone-runtime-smoke.json
+          git diff --cached --quiet || git commit -m "Update clone runtime smoke"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clone-runtime-smoke
+          path: qa-output/clone-runtime-smoke
+          retention-days: 14
