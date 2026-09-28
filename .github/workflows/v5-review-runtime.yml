@@ -1,13 +1,6 @@
 name: V5 Review Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_review_runtime.py'
-      - '.github/workflows/v5-review-runtime.yml'
-      - 'receipts/EXACT_AV_REVIEW_v49.json'
-      - 'production/episode1/polish-plan.json'
 permissions:
   contents: write
 concurrency:
