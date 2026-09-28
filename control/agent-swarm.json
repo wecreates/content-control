@@ -560,7 +560,8 @@
     "Cartesia Sonic 3.6 is the quality-primary provider and Eleven v3 is the dramatic dialogue specialist",
     "premium voice candidates must pass transcript fidelity before render selection",
     "speaker voice IDs are secret-backed and locked per recurring character",
-    "spoken dialogue may never silently disappear when a CCSD project contains speech"
+    "spoken dialogue may never silently disappear when a CCSD project contains speech",
+    "Cartesia Sonic 3.6 is the production-default TTS engine when configured"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -609,6 +610,9 @@
     "eleven_v3_generator": "scripts/eleven_v3_generate.py",
     "voice_candidate_qa": "scripts/voice_candidate_qa.py",
     "voice_take_selector": "scripts/voice_take_selector.py",
-    "ccsd_voice_manifest": "scripts/ccsd_voice_manifest.py"
+    "ccsd_voice_manifest": "scripts/ccsd_voice_manifest.py",
+    "voice_engine": "control/voice-engine-v3.json",
+    "voice_runtime": "scripts/cartesia_voice_engine.py",
+    "voice_qa": "scripts/premium_voice_qa.py"
   }
 }
