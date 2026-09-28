@@ -90,6 +90,7 @@ def build_choreography(scene):
           "content":text.get("content"),"zone":text.get("zone","upper_third"),
           "motion":motion,"entry_frame":2,"emphasis":"numeric" if re.search(r"[$%\d]",text.get("content","")) else "keyword",
           "interaction_target":(scene.get("props") or [{}])[0].get("id"),
+          "design":text.get("design",{}),
           "exit":"impact_cut"
         })
     overlays=[]
