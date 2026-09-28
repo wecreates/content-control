@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "transitions": [
+    "foreground_object_wipe",
+    "character_run_through",
+    "match_cut_object",
+    "number_morph",
+    "smash_cut",
+    "whip_pan",
+    "parallax_slide",
+    "prop_collision",
+    "zoom_through",
+    "mask_reveal",
+    "receipt_roll",
+    "card_flip",
+    "coin_iris",
+    "hand_cover",
+    "shadow_wipe",
+    "camera_crash",
+    "motion_blur_cut"
+  ],
+  "rules": [
+    "motivate transition from story action",
+    "generic fade forbidden by default",
+    "reuse reference timing mechanics without copying source frames"
+  ]
+}
