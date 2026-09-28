@@ -361,6 +361,8 @@ def audit_root(root: Path):
         "reference-clone-voice.mp3",
         "inject_voiceover_path.py"
     ])
+    short_comp=ref_comp
+    long_comp=(root/"remotion/ReferenceCloneLongComposition.jsx").read_text() if (root/"remotion/ReferenceCloneLongComposition.jsx").is_file() else ""
     checks["voice_v3_render_path"]="voiceover_path" in short_comp and "voiceover_path" in long_comp
     checks["voice_v3_tests"]="test:voice" in scripts
     choreography_files=[
