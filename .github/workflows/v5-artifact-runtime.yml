@@ -1,12 +1,6 @@
 name: V5 Artifact Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_artifact_runtime.py'
-      - '.github/workflows/v5-artifact-runtime.yml'
-      - 'receipts/EXACT_AV_REVIEW_v49.json'
 permissions:
   contents: write
 concurrency:
