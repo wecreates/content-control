@@ -3,7 +3,7 @@ import argparse,json,math
 from pathlib import Path
 
 def score_take(t):
-    if not t.get("audio_pass"): return -999.0
+    if not t.get("audio_pass") or t.get("status","PASS")!="PASS": return -999.0
     sim=float(t.get("transcript_similarity",0) or 0)
     sem=float(t.get("semantic_recall",0) or 0)
     err=float(t.get("duration_error_ratio",1) or 1)
