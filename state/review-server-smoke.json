@@ -1,7 +1,7 @@
 {
   "accepted_route_verified": true,
   "cache_policy_verified": true,
-  "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "fail_closed_corruption_verified": true,
   "publication_enabled": false,
   "range_streaming_verified": true,
