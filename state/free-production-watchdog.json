@@ -6,6 +6,7 @@
     "audio_assets_present": true,
     "audio_green": true,
     "dependency_security_clean": true,
+    "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
     "health_green": true,

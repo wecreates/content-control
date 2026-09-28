@@ -1,0 +1,19 @@
+{
+  "checks": {
+    "build_command": true,
+    "canonical_media_exists": true,
+    "canonical_server_exists": true,
+    "health_check": true,
+    "manifest_exists": true,
+    "package_start_canonical": true,
+    "publication_lock": true,
+    "runtime_node": true,
+    "service_name": true,
+    "start_command": true
+  },
+  "failed_checks": [],
+  "provider": "render",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
