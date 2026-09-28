@@ -1,8 +1,6 @@
 name: Dropbox Exact Review Bridge
 on:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/dropbox-review-bridge.yml']
+  workflow_dispatch:
 permissions:
   contents: read
 env:
