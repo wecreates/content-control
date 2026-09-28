@@ -63,19 +63,15 @@ def main():
     matched=sum(min(n,ac[t]) for t,n in ec.items())
     token_recall=matched/max(1,sum(ec.values()))
 
-    semantic_groups=[
-      ["dave","premium","card"],
-      ["annual","fee"],
-      ["chad"],
-      ["eighty","80"],
-      ["twenty","20","credit"],
-      ["points","monk"],
-      ["buy","thing","anyway"],
-      ["saving","money"],
-      ["value","purchase"],
-      ["subtract","fee"],
-      ["math","wins"]
-    ]
+    semantic_groups=contract.get("transcription_semantic_groups")
+    if not semantic_groups:
+        key=[x for x in tokens(expected) if len(x)>=4]
+        # Deterministic contract-derived anchors avoid coupling QA to one episode.
+        seen=[]
+        for x in key:
+            if x not in seen:
+                seen.append(x)
+        semantic_groups=[[x] for x in seen[:12]]
     alow=na
     semantic_hits=[]
     for group in semantic_groups:
