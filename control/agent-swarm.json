@@ -269,6 +269,18 @@
         "payoff timing",
         "transferable mechanics only"
       ]
+    },
+    {
+      "id": "chat_drop_clone_director",
+      "parallelism": 2,
+      "owns": [
+        "chat-upload reference ingestion",
+        "reference shot decomposition",
+        "clone blueprint compilation",
+        "locked-character substitution",
+        "timing/camera/motion fidelity",
+        "originality boundary enforcement"
+      ]
     }
   ],
   "hard_rules": [
@@ -301,7 +313,11 @@
     "recurring characters must use remotion/CharacterSystem.jsx or an explicitly versioned successor",
     "reference analysis extracts motion/comedy/camera grammar but never exact creator character identity or shot-for-shot staging",
     "every abstract finance claim must be physicalized into a visible action, prop transformation, or spatial consequence before render",
-    "creative director must generate at least five materially different story engines before selecting a concept"
+    "creative director must generate at least five materially different story engines before selecting a concept",
+    "uploaded reference videos must be decomposed into durable reference.json before production",
+    "reference clone builds must preserve measured timing/camera/motion grammar where useful",
+    "reference clone builds must use Content Control locked characters rather than source creator characters",
+    "generic text-to-video generation is not the primary clone path"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -309,6 +325,9 @@
     "creative_director": "control/creative-director-v3.json",
     "reference_decomposition": "control/reference-decomposition-contract.json",
     "blueprint_validator": "scripts/validate_creative_blueprint.py",
-    "reusable_character_renderer": "remotion/CharacterSystem.jsx"
+    "reusable_character_renderer": "remotion/CharacterSystem.jsx",
+    "chat_drop_clone": "control/chat-drop-clone-contract.json",
+    "reference_clone_compiler": "scripts/reference_clone_compiler.py",
+    "reference_clone_validator": "scripts/validate_reference_clone.py"
   }
 }
