@@ -52,6 +52,7 @@
     "shot_render_farm_connected": true,
     "storyboard_animatic_dailies_connected": true,
     "studio_capability_files_complete": true,
+    "studio_department_map_connected": true,
     "studio_pipeline_connected": true,
     "studio_tests_exposed": true,
     "style_memory_connected": true,
