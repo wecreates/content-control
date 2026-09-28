@@ -1,0 +1,19 @@
+{
+  "candidate_sha256": "f2cbef50b52d7b0775901d927d26d8629dc62e0363bb5e70a57a26f97a7397d6",
+  "caption_sha256": "a9486b44c1d15a9f47a83ef898c225be3010832337e915e5f193dac3dde534d3",
+  "checks": {
+    "candidate_matches": true,
+    "caption_matches": true,
+    "caption_ready": true,
+    "captions_present": true,
+    "hash_bound": true,
+    "health_green": true,
+    "publication_disabled": true,
+    "range_streaming": true,
+    "watch_page_present": true
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "watch_url": "https://content-control-render-worker.onrender.com/episode3/watch"
+}
