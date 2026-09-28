@@ -40,7 +40,11 @@ jobs:
         run: |
           mkdir -p public-review qa-output/reference-clone-long
           npx remotion render remotion/reference-clone-long-index.jsx ReferenceCloneLong public-review/reference-clone-long-proof.raw.mp4 --props=qa-output/reference-clone-long/props.json --codec h264 --crf 25 --concurrency 2
-          ffmpeg -y -i public-review/reference-clone-long-proof.raw.mp4 -c:v libx264 -pix_fmt yuv420p -crf 22 -preset medium -c:a aac -b:a 160k -movflags +faststart public-review/reference-clone-long-proof.mp4
+          if [ -s public/audio/studio-dialogue.wav ]; then
+            ffmpeg -y -i public-review/reference-clone-long-proof.raw.mp4 -i public/audio/studio-dialogue.wav -filter_complex "[0:a][1:a]amix=inputs=2:duration=first:normalize=0[a]" -map 0:v -map "[a]" -c:v libx264 -pix_fmt yuv420p -crf 22 -preset medium -c:a aac -b:a 192k -movflags +faststart public-review/reference-clone-long-proof.mp4
+          else
+            ffmpeg -y -i public-review/reference-clone-long-proof.raw.mp4 -c:v libx264 -pix_fmt yuv420p -crf 22 -preset medium -c:a aac -b:a 160k -movflags +faststart public-review/reference-clone-long-proof.mp4
+          fi
           rm public-review/reference-clone-long-proof.raw.mp4
       - name: Long-form technical QA
         run: python scripts/longform_media_qa.py --video public-review/reference-clone-long-proof.mp4 --out qa-output/reference-clone-long/technical.json
