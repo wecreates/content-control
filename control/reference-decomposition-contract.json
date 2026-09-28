@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name": "Reference Decomposition Contract",
   "required_fields": [
     "source_url",
@@ -13,7 +13,10 @@
     "comedy_engine",
     "payoff_timestamp",
     "audio_punctuation",
-    "transferable_mechanics"
+    "transferable_mechanics",
+    "optical_flow",
+    "motion_summary",
+    "reference_structure"
   ],
   "shot_timeline_fields": [
     "start",
@@ -25,6 +28,15 @@
     "state_change",
     "why_it_retains"
   ],
-  "rule": "Store mechanics and measurements, not copied frames or exact character geometry.",
-  "publication_enabled": false
+  "rule": "Store transferable mechanics and measurements only; include optical flow, tracks, composition, text timing, transition/contact evidence, and easing while never copying exact creator identity or tracing frames.",
+  "publication_enabled": false,
+  "deep_structure_fields": [
+    "object_tracks",
+    "text_regions",
+    "composition_heatmap",
+    "transition_candidates",
+    "contact_candidates",
+    "easing_curve",
+    "camera_curve"
+  ]
 }
