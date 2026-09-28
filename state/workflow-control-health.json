@@ -31,6 +31,7 @@
     ".github/workflows/migrate-free-assets.yml": true,
     ".github/workflows/mobile-playback-compat.yml": true,
     ".github/workflows/narration-transcription-gate.yml": true,
+    ".github/workflows/python-security-audit.yml": true,
     ".github/workflows/quarantine-legacy-workflows.yml": true,
     ".github/workflows/review-server-smoke.yml": true,
     ".github/workflows/runtime-integrity-manifest.yml": true,
