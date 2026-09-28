@@ -1,0 +1,130 @@
+name: Reference Clone Render
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'production/reference-clones/active/**'
+      - 'remotion/ReferenceCloneComposition.jsx'
+      - 'remotion/reference-clone-index.jsx'
+      - 'remotion/CharacterSystem.jsx'
+      - 'remotion/CharacterBoardComposition.jsx'
+      - 'scripts/reference_style_parity_qa.py'
+      - 'scripts/character_identity_qa.py'
+      - '.github/workflows/reference-clone-render.yml'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: reference-clone-render
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-free-qa.lock.txt
+      - name: Install runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+          python -m pip install -r requirements-free-qa.lock.txt
+      - name: Preflight active package
+        run: |
+          set -euo pipefail
+          for f in reference.json clone-blueprint.json scene-plan.json activation.json; do test -s "production/reference-clones/active/$f"; done
+          python scripts/validate_reference_clone.py --reference production/reference-clones/active/reference.json
+          python scripts/validate_reference_clone.py --clone production/reference-clones/active/clone-blueprint.json
+      - name: Render exact character board from production components
+        run: |
+          mkdir -p qa-output/reference-clone/character-board qa-output/reference-clone/candidate-frames public-review
+          npx remotion still remotion/character-board-index.jsx CharacterBoard qa-output/reference-clone/character-board/board.png
+      - name: Render clone proof
+        run: |
+          set -euo pipefail
+          npx remotion render remotion/reference-clone-index.jsx ReferenceClone public-review/reference-clone-proof.raw.mp4 --codec h264 --crf 23 --concurrency 2
+          ffmpeg -y -i public-review/reference-clone-proof.raw.mp4 -c:v libx264 -pix_fmt yuv420p -crf 20 -preset medium -c:a aac -b:a 160k -movflags +faststart public-review/reference-clone-proof.mp4
+          rm public-review/reference-clone-proof.raw.mp4
+          ffmpeg -y -i public-review/reference-clone-proof.mp4 -vf "fps=1/2" -q:v 2 qa-output/reference-clone/candidate-frames/cand-%03d.jpg
+      - name: Build candidate timeline
+        run: python scripts/build_clone_candidate_timeline.py --scene-plan production/reference-clones/active/scene-plan.json --out qa-output/reference-clone/candidate-timeline.json
+      - name: Reference timing and style parity QA
+        run: python scripts/reference_style_parity_qa.py --reference production/reference-clones/active/reference.json --candidate-timeline qa-output/reference-clone/candidate-timeline.json --out qa-output/reference-clone/parity.json
+      - name: Character identity lock QA
+        run: python scripts/character_identity_qa.py --visual-source remotion/ReferenceCloneComposition.jsx --character-system remotion/CharacterSystem.jsx --board reference/characters/content-control-character-board.svg --out qa-output/reference-clone/character-identity.json
+      - name: Audio QA
+        run: python scripts/free_audio_qa.py --video public-review/reference-clone-proof.mp4 --output qa-output/reference-clone/audio.json
+      - name: Mobile QA
+        run: python scripts/free_mobile_compat_qa.py --video public-review/reference-clone-proof.mp4 --output qa-output/reference-clone/mobile.json
+      - name: Visual QA
+        run: |
+          python scripts/free_vision_qa.py --reference-dir reference/frames --candidate-video public-review/reference-clone-proof.mp4 --candidate-dir qa-output/reference-clone/candidate-frames --output qa-output/reference-clone/deterministic.json
+          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir qa-output/reference-clone/candidate-frames --output qa-output/reference-clone/semantic.json
+      - name: Bind clone proof receipt
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path("public-review/reference-clone-proof.mp4")
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          keys=["parity","character-identity","audio","mobile","deterministic","semantic"]
+          parts={k:json.load(open(f"qa-output/reference-clone/{k}.json")) for k in keys}
+          ok=parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS"
+          active=json.load(open("production/reference-clones/active/activation.json"))
+          r={"schema_version":1,"status":"CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"character_board_sha256":parts["character-identity"]["board_sha256"],"character_system_sha256":parts["character-identity"]["character_system_sha256"],"parts":parts,"video_path":"public-review/reference-clone-proof.mp4","publication_enabled":False}
+          pathlib.Path("state/reference-clone-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if not ok:
+              failed=[]
+              for k,v in parts.items():
+                  if (v.get("status") not in (None,"PASS") and v.get("status")!="PASS") or (v.get("verdict") not in (None,"PASS") and v.get("verdict")!="PASS"):
+                      failed.append(k)
+              pathlib.Path("state/reference-clone-findings.json").write_text(json.dumps({"schema_version":1,"findings":failed,"publication_enabled":False},indent=2)+"\n")
+              raise SystemExit(3)
+          print(json.dumps({"status":r["status"],"candidate_sha256":h,"reference_id":r["reference_id"]},sort_keys=True))
+          PY
+      - name: Persist accepted proof
+        if: success()
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public-review/reference-clone-proof.mp4 qa-output/reference-clone state/reference-clone-health.json
+          git diff --cached --quiet || git commit -m "Persist reference clone proof"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Build smallest repair plan
+        if: failure()
+        run: |
+          if [ -s state/reference-clone-findings.json ]; then
+            python scripts/generate_repair_plan.py --findings state/reference-clone-findings.json --out state/reference-clone-repair-plan.json
+          fi
+      - name: Trigger live clone smoke
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run reference-clone-live-smoke.yml --ref main
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-clone-proof
+          path: |
+            public-review/reference-clone-proof.mp4
+            qa-output/reference-clone
+            state/reference-clone-health.json
+            state/reference-clone-repair-plan.json
+          retention-days: 30
