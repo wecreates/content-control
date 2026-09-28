@@ -41,12 +41,13 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const light=(fp.mean_luma??1)>.62;
   const bg=light?`rgb(${Math.round(rgb[0]*255)},${Math.round(rgb[1]*255)},${Math.round(rgb[2]*255)})`:"#fff";
   const voiceover=scenePlan?.voiceover_path||null;
+  const soundscape=scenePlan?.soundscape_path||null;
   const camera=ch.camera_events?.length?choreographyCamera(ch,localFrame):fallbackCamera(s.camera,p);
   const transition={...transitionStyle(ch.transition_in,localFrame,totalFrames,false),...transitionStyle(ch.transition_out,localFrame,totalFrames,true)};
   const chars=(s.characters?.length?s.characters:[{id:s.character,pose:s.pose,acting:s.acting,face_track:s.facial_performance}]).slice(0,3);
 
   return <AbsoluteFill style={{background:bg,overflow:"hidden"}}>
-    <Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>
+    {soundscape?<Audio src={staticFile(soundscape)} volume={0.72}/>:<Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>}
     {voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
     <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center",...transition}}>
       <svg width="720" height="1280" viewBox="0 0 720 1280">
