@@ -6,7 +6,9 @@ src=Path(sys.argv[1] if len(sys.argv)>1 else "state/narration-transcription-heal
 out=Path(sys.argv[2] if len(sys.argv)>2 else "public-review/episode1-v10-free.vtt")
 d=json.loads(src.read_text())
 assert d.get("status")=="PASS"
-segments=d.get("segments",[])
+contract_path=Path("state/episode1-factual-contract.json")
+contract=json.loads(contract_path.read_text())
+segments=contract.get("caption_cues",[])
 assert segments
 
 def ts(x):
