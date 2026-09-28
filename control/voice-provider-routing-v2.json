@@ -1,24 +1,26 @@
 {
   "schema_version": 2,
   "publication_enabled": false,
-  "selection_basis": "Highest-priority offline cinematic voice quality for Content Control as of 2026-09-28.",
+  "selection_basis": "Independent September 2026 blind-listener benchmarks place Cartesia Sonic 3.6 at or near the top for perceived TTS quality; Eleven v3 remains the cinematic multi-speaker/dialogue specialist.",
   "primary": {
-    "provider": "ElevenLabs",
-    "model_id": "eleven_v3",
-    "mode": "text_to_dialogue",
-    "endpoint": "https://api.elevenlabs.io/v1/text-to-dialogue",
-    "output_format": "mp3_44100_128",
-    "max_reliable_chars_per_request": 1900,
+    "provider": "Cartesia",
+    "model_id": "sonic-3.6",
+    "mode": "offline_quality",
+    "endpoint": "https://api.cartesia.ai/tts/bytes",
+    "api_version": "2026-08-14",
+    "output_format": {
+      "container": "wav",
+      "encoding": "pcm_s16le",
+      "sample_rate": 44100
+    },
     "variants_per_take": 3,
-    "use_audio_tags": true,
-    "seed_locked": true,
     "credentials": {
-      "api_key_env": "ELEVENLABS_API_KEY",
+      "api_key_env": "CARTESIA_API_KEY",
       "voice_envs": {
-        "narrator": "ELEVENLABS_VOICE_NARRATOR",
-        "dave": "ELEVENLABS_VOICE_DAVE",
-        "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
-        "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
+        "narrator": "CARTESIA_VOICE_NARRATOR",
+        "dave": "CARTESIA_VOICE_DAVE",
+        "points_monk": "CARTESIA_VOICE_POINTS_MONK",
+        "cashback_goblin": "CARTESIA_VOICE_CASHBACK_GOBLIN"
       }
     }
   },
@@ -34,6 +36,32 @@
     "semantic recall passes",
     "duration fits composition",
     "no SFX or production directions appear in spoken text",
+    "best QA-scored premium take wins when multiple providers are available",
     "publication remains disabled"
+  ],
+  "dialogue_specialist": {
+    "provider": "ElevenLabs",
+    "model_id": "eleven_v3",
+    "mode": "text_to_dialogue",
+    "endpoint": "https://api.elevenlabs.io/v1/text-to-dialogue",
+    "output_format": "mp3_44100_128",
+    "max_reliable_chars_per_request": 1900,
+    "use_audio_tags": true,
+    "seed_locked": true,
+    "credentials": {
+      "api_key_env": "ELEVENLABS_API_KEY",
+      "voice_envs": {
+        "narrator": "ELEVENLABS_VOICE_NARRATOR",
+        "dave": "ELEVENLABS_VOICE_DAVE",
+        "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
+        "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
+      }
+    }
+  },
+  "routing": [
+    "If both premium providers are configured: generate both and let transcript/audio QA select the take.",
+    "If only Cartesia is configured: use Sonic 3.6.",
+    "If only ElevenLabs is configured: use Eleven v3.",
+    "If neither premium provider passes readiness/QA: use the verified zero-credit fallback."
   ]
 }
