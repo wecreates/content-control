@@ -12,5 +12,10 @@ class VoiceTakeSelectorTests(unittest.TestCase):
         bad={"path":"bad.mp3","transcript_similarity":.99,"semantic_recall":.99,"duration_error_ratio":.0,"audio_pass":False}
         self.assertGreater(score_take(good),score_take(bad))
 
+    def test_failed_transcript_take_cannot_win(self):
+        good={"path":"good.mp3","status":"PASS","transcript_similarity":.85,"semantic_recall":.85,"duration_error_ratio":.02,"audio_pass":True}
+        failed={"path":"failed.mp3","status":"FAIL","transcript_similarity":.99,"semantic_recall":.99,"duration_error_ratio":0,"audio_pass":True}
+        self.assertEqual(choose_take([good,failed])["path"],"good.mp3")
+
 if __name__=="__main__":
     unittest.main()
