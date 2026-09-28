@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "name": "Visual Choreography Engine",
+  "owns": [
+    "objects",
+    "kinetic_typography",
+    "overlays",
+    "transitions",
+    "camera",
+    "physics",
+    "character_contact",
+    "motion_curves",
+    "visual_metaphors",
+    "micro_gags",
+    "depth_staging",
+    "continuous_motion"
+  ],
+  "requirements": {
+    "meaningful_motion_sources_min": 2,
+    "state_change_density_per_second_min": 1.5,
+    "generic_fades_forbidden": true,
+    "static_caption_progression_forbidden": true,
+    "finance_concepts_physicalized": true,
+    "character_prop_contact_uses_ik": true,
+    "depth_layers_min": 3
+  },
+  "source_of_truth": "CCSD scene.choreography",
+  "qa": "scripts/choreography_qa.py"
+}
