@@ -113,6 +113,9 @@ jobs:
           pathlib.Path("qa-output/episode3/factual.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           if r["status"]!="PASS": raise SystemExit(2)
           PY
+      - name: Transcription QA
+        run: |
+          python scripts/free_transcription_qa.py             --audio public/audio/episode3-cashback.mp3             --expected-text state/episode3-factual-contract.json             --output state/episode3-transcription-health.json
       - name: Build verified captions
         run: |
           python - <<'PY'
@@ -190,7 +193,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json
+          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json
           git diff --cached --quiet || git commit -m "Persist entertainment-first cashback casino candidate"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
