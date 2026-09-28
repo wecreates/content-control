@@ -13,9 +13,10 @@ const episode2Output=path.resolve("public-review/episode2-coupon-book.mp4");
 const episode2HealthPath=path.resolve("state/episode2-health.json");
 const episode3Output=path.resolve("public-review/episode3-cashback-casino.mp4");
 const episode3HealthPath=path.resolve("state/episode3-health.json");
+const episode3CaptionsPath=path.resolve("public-review/episode3-cashback-casino.vtt");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
-const renderState={status:"repository-artifact-only"};
+const renderState={status:"repository-artifact-only",logs:[]};
 function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
 function readHealth(){return readJson(healthPath);}
 function readCaptionHealth(){return readJson(captionHealthPath);}
@@ -41,8 +42,11 @@ function episode3Acceptance(){
   const h=readJson(episode3HealthPath);
   const actual=fileHash(episode3Output);
   const expected=h?.candidate_sha256||null;
-  const ready=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
-  return {health:h,actual,expected,ready};
+  const captionHash=fs.existsSync(episode3CaptionsPath)?fileHash(episode3CaptionsPath):null;
+  const captionReady=Boolean(h?.caption_sha256&&captionHash===h.caption_sha256&&fs.existsSync(episode3CaptionsPath));
+  const videoReady=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
+  const ready=videoReady&&captionReady;
+  return {health:h,actual,expected,captionHash,captionReady,videoReady,ready};
 }
 function acceptance(){
   const h=readHealth();
@@ -220,19 +224,27 @@ app.get("/episode2/watch",(req,res)=>{
 app.get("/episode3/health",(req,res)=>{
   const a=episode3Acceptance();
   res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"episode3-cashback-casino",publication:false,qaStatus:a.health?.status||"missing",expectedSha256:a.expected,actualSha256:a.actual,hashBound:a.actual!==null&&a.actual===a.expected});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"episode3-cashback-casino",publication:false,qaStatus:a.health?.status||"missing",expectedSha256:a.expected,actualSha256:a.actual,hashBound:a.actual!==null&&a.actual===a.expected,captionReady:a.captionReady,captionSha256:a.captionHash});
 });
 app.get("/episode3/media",(req,res)=>{
   const a=episode3Acceptance();
-  if(!a.ready){res.setHeader("Cache-Control","no-store");return res.status(409).json({error:"Episode 3 accepted artifact unavailable or hash mismatch",publication:false});}
+  if(!a.videoReady){res.setHeader("Cache-Control","no-store");return res.status(409).json({error:"Episode 3 accepted artifact unavailable or hash mismatch",publication:false});}
   return streamMp4(req,res,episode3Output,a.expected);
+});
+app.get("/episode3/captions",(req,res)=>{
+  const a=episode3Acceptance();
+  if(!a.captionReady){res.setHeader("Cache-Control","no-store");return res.status(409).json({error:"Episode 3 verified captions unavailable",publication:false});}
+  res.setHeader("Content-Type","text/vtt; charset=utf-8");
+  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("ETag",`"${a.captionHash}"`);
+  fs.createReadStream(episode3CaptionsPath).pipe(res);
 });
 app.get("/episode3/watch",(req,res)=>{
   const a=episode3Acceptance();
   const short=(a.expected||"unverified").slice(0,12);
   const ready=Boolean(a.ready);
   const body=ready
-    ? '<div class="player-wrap"><div id="loadingCard" class="loading-card"><div class="spinner"></div><strong>Loading verified video…</strong><span style="margin-top:8px;color:#666">The page will stay visible while media buffers.</span></div><video id="player" controls playsinline preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%221280%22%3E%3Crect width=%22720%22 height=%221280%22 fill=%22%23f5f5f5%22/%3E%3Ctext x=%22360%22 y=%22640%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22%23666%22%3ELoading video…%3C/text%3E%3C/svg%3E" src="/episode3/media"></video></div><p id="status">Checking media…</p>'
+    ? '<div class="player-wrap"><div id="loadingCard" class="loading-card"><div class="spinner"></div><strong>Loading verified video…</strong><span style="margin-top:8px;color:#666">The page will stay visible while media buffers.</span></div><video id="player" controls playsinline preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%221280%22%3E%3Crect width=%22720%22 height=%221280%22 fill=%22%23f5f5f5%22/%3E%3Ctext x=%22360%22 y=%22640%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22%23666%22%3ELoading video…%3C/text%3E%3C/svg%3E" src="/episode3/media"><track kind="captions" src="/episode3/captions" srclang="en" label="English" default></video></div><p id="status">Checking media…</p>'
     : '<section class="pending"><div class="spinner"></div><h3>Video is not ready yet.</h3><p>The review page is working, but the Episode 3 render has not passed hash-bound QA yet.</p><p><a href="/watch">Open the last verified video</a></p></section>';
   res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("Pragma","no-cache");
