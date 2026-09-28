@@ -1,12 +1,6 @@
 name: V5 Packaging Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_packaging_runtime.py'
-      - '.github/workflows/v5-packaging-runtime.yml'
-      - 'state/episode1-first-watch.json'
 permissions:
   actions: read
   contents: write
