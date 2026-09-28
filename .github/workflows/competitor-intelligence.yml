@@ -1,12 +1,6 @@
 name: Competitor Intelligence Full-Video Watch
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'control/competitor-intelligence-v1.json'
-      - 'scripts/competitor_intelligence.py'
-      - '.github/workflows/competitor-intelligence.yml'
 permissions:
   contents: write
 concurrency:
