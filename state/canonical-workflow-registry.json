@@ -8,6 +8,7 @@
     ".github/workflows/candidate-state-reconcile.yml",
     ".github/workflows/cinematic-brand-gate.yml",
     ".github/workflows/cinematic-gate.yml",
+    ".github/workflows/clone-runtime-smoke.yml",
     ".github/workflows/comedy-retention-gate.yml",
     ".github/workflows/episode3-cashback-casino.yml",
     ".github/workflows/episode3-live-smoke.yml",
