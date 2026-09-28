@@ -202,13 +202,8 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
-      - name: Hand off studio-approved project to renderer
+      - name: Hand off studio-approved project to render farm
         if: steps.active.outputs.ready == 'yes' && success()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -s production/reference-clones/active/longform-plan.json ]; then
-            gh workflow run reference-clone-long-render.yml --ref main
-          else
-            gh workflow run reference-clone-render.yml --ref main
-          fi
+        run: gh workflow run shot-render-farm.yml --ref main
