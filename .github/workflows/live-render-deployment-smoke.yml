@@ -61,17 +61,18 @@ jobs:
           assert h.get("actualSha256")==expected,(h.get("actualSha256"),expected)
           print(h)
           PY
-          test "$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/watch.headers -o /tmp/live-probe/watch.html -w "%{http_code}" "$BASE/watch")" = "200"
-          grep -q 'FREE_QA' /tmp/live-probe/watch.html
-          grep -q 'publication disabled' /tmp/live-probe/watch.html
-          grep -q 'src="/captions"' /tmp/live-probe/watch.html
-          test "$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/captions.headers -o /tmp/live-probe/captions.vtt -w "%{http_code}" "$BASE/captions")" = "200"
-          grep -qi '^content-type: text/vtt' /tmp/live-probe/captions.headers
-          grep -q '^WEBVTT' /tmp/live-probe/captions.vtt
-          test "$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/live-probe/media.headers -o /tmp/live-probe/range.bin -w "%{http_code}" "$BASE/media")" = "206"
-          test "$(wc -c < /tmp/live-probe/range.bin)" = "1024"
-          grep -qi '^accept-ranges: bytes' /tmp/live-probe/media.headers
-          grep -qi '^content-range: bytes 0-1023/' /tmp/live-probe/media.headers
+          surface_ok=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            watch_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/watch.headers -o /tmp/live-probe/watch.html -w "%{http_code}" "$BASE/watch" || true)
+            caption_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/captions.headers -o /tmp/live-probe/captions.vtt -w "%{http_code}" "$BASE/captions" || true)
+            media_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/live-probe/media.headers -o /tmp/live-probe/range.bin -w "%{http_code}" "$BASE/media" || true)
+            if [ "$watch_code" = "200" ] && [ "$caption_code" = "200" ] && [ "$media_code" = "206" ]               && grep -q 'FREE_QA' /tmp/live-probe/watch.html               && grep -q 'publication disabled' /tmp/live-probe/watch.html               && grep -q 'src="/captions"' /tmp/live-probe/watch.html               && grep -qi '^content-type: text/vtt' /tmp/live-probe/captions.headers               && grep -q '^WEBVTT' /tmp/live-probe/captions.vtt               && [ "$(wc -c < /tmp/live-probe/range.bin)" = "1024" ]               && grep -qi '^accept-ranges: bytes' /tmp/live-probe/media.headers               && grep -qi '^content-range: bytes 0-1023/' /tmp/live-probe/media.headers; then
+              surface_ok=1
+              break
+            fi
+            sleep $((attempt*10))
+          done
+          test "$surface_ok" = "1"
       - name: Write live deployment receipt
         if: always()
         run: |
