@@ -76,21 +76,45 @@ jobs:
       - name: Route repair by failed invariant
         if: steps.verify.outcome == 'failure'
         run: |
-          python - <<'PY' > /tmp/repair-route
+          python - <<'PY' > /tmp/repair-workflows
           import json
           r=json.load(open("state/free-production-watchdog.json"))
           failed=set(r.get("failed_checks",[]))
-          if failed and failed <= {"runtime_integrity_manifest"}:
-              print("integrity")
-          else:
-              print("full")
+          routes=set()
+
+          mapping={
+              "runtime_integrity_manifest":"runtime-integrity-manifest.yml",
+              "live_deployment_green":"live-render-deployment-smoke.yml",
+              "review_server_smoke_green":"review-server-smoke.yml",
+              "factual_compliance_green":"factual-compliance-gate.yml",
+              "sync_retention_green":"sync-retention-gate.yml",
+              "dependency_security_clean":"runtime-security-audit.yml",
+              "runtime_locks_present":"generate-runtime-locks.yml",
+          }
+          for check,wf in mapping.items():
+              if check in failed:
+                  routes.add(wf)
+
+          if failed & {"provenance_candidate_match","provenance_inputs_current","sbom_valid"}:
+              routes.add("runtime-provenance.yml")
+
+          auxiliary={
+              "runtime_integrity_manifest","live_deployment_green","review_server_smoke_green",
+              "factual_compliance_green","sync_retention_green","dependency_security_clean",
+              "runtime_locks_present","provenance_candidate_match","provenance_inputs_current","sbom_valid",
+              "workflow_control_green","deployment_contract_green"
+          }
+          if failed-auxiliary:
+              routes.add("free-vision-qa.yml")
+
+          for wf in sorted(routes):
+              print(wf)
           PY
-          route=$(cat /tmp/repair-route)
-          if [ "$route" = "integrity" ]; then
-            gh workflow run runtime-integrity-manifest.yml --ref main
-          else
-            gh workflow run free-vision-qa.yml --ref main
-          fi
+          while IFS= read -r workflow; do
+            [ -n "$workflow" ] || continue
+            echo "dispatching repair: $workflow"
+            gh workflow run "$workflow" --ref main
+          done < /tmp/repair-workflows
       - name: Fail watchdog when repair is required
         if: steps.verify.outcome == 'failure'
         run: exit 2
