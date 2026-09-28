@@ -64,8 +64,13 @@ jobs:
         run: python scripts/verify_episode3_layout.py remotion/CashbackCasinoVisual.jsx
       - name: Bundle composition preflight
         run: npx remotion compositions remotion/episode3-index.jsx
-      - name: Premium Eleven v3 narration
+      - name: Premium AI voice routing
         env:
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
+          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
+          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
+          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
           ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
@@ -75,16 +80,29 @@ jobs:
           set -euo pipefail
           mkdir -p public/audio qa-output/episode3 public-review state
           python scripts/voice_provider.py --out state/episode3-voice-provider.json
-          rm -f public/audio/episode3-cashback.mp3
-          python scripts/eleven_v3_generate.py \
+          rm -f public/audio/episode3-cashback.mp3 public/audio/episode3-cartesia.wav public/audio/episode3-eleven.mp3
+          python scripts/cartesia_sonic_generate.py \
             --dialogue production/episode3/voice-dialogue.json \
-            --out public/audio/episode3-cashback.mp3 \
-            --receipt state/episode3-premium-voice.json \
-            --reference-id episode3-cashback
-          if [ "$(python -c 'import json; print(json.load(open("state/episode3-premium-voice.json"))["status"])')" != "PASS" ]; then
-            curl --fail --location --retry 5 --retry-all-errors \
-              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
-              -o public/audio/episode3-cashback.mp3
+            --out public/audio/episode3-cartesia.wav \
+            --receipt state/episode3-cartesia-voice.json
+          if [ "$(python -c 'import json; print(json.load(open("state/episode3-cartesia-voice.json"))["status"])')" = "PASS" ]; then
+            ffmpeg -y -i public/audio/episode3-cartesia.wav -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
+            printf '%s\n' '{"provider":"cartesia","model_id":"sonic-3.6","status":"PASS","publication_enabled":false}' > state/episode3-premium-voice.json
+          else
+            python scripts/eleven_v3_generate.py \
+              --dialogue production/episode3/voice-dialogue.json \
+              --out public/audio/episode3-eleven.mp3 \
+              --receipt state/episode3-eleven-voice.json \
+              --reference-id episode3-cashback
+            if [ "$(python -c 'import json; print(json.load(open("state/episode3-eleven-voice.json"))["status"])')" = "PASS" ]; then
+              cp public/audio/episode3-eleven.mp3 public/audio/episode3-cashback.mp3
+              printf '%s\n' '{"provider":"elevenlabs","model_id":"eleven_v3","status":"PASS","publication_enabled":false}' > state/episode3-premium-voice.json
+            else
+              curl --fail --location --retry 5 --retry-all-errors \
+                "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
+                -o public/audio/episode3-cashback.mp3
+              printf '%s\n' '{"provider":"content_control_zero_credit","status":"FALLBACK","publication_enabled":false}' > state/episode3-premium-voice.json
+            fi
           fi
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 public/audio/episode3-cashback.mp3 >/dev/null
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
@@ -210,7 +228,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json state/episode3-voice-provider.json state/episode3-premium-voice.json
+          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json state/episode3-voice-provider.json state/episode3-premium-voice.json state/episode3-cartesia-voice.json state/episode3-eleven-voice.json
           git diff --cached --quiet || git commit -m "Persist entertainment-first cashback casino candidate"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
