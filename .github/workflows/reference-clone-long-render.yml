@@ -1,0 +1,70 @@
+name: Reference Clone Long Render
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'production/reference-clones/active/longform-plan.json'
+      - 'production/reference-clones/active/scene-plan.json'
+      - 'remotion/ReferenceCloneLongComposition.jsx'
+      - 'remotion/reference-clone-long-index.jsx'
+      - '.github/workflows/reference-clone-long-render.yml'
+permissions:
+  contents: write
+concurrency:
+  group: reference-clone-long-render
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          test -s production/reference-clones/active/longform-plan.json
+          test -s production/reference-clones/active/scene-plan.json
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Render native 16x9 long-form proof
+        run: |
+          mkdir -p public-review qa-output/reference-clone-long
+          npx remotion render remotion/reference-clone-long-index.jsx ReferenceCloneLong public-review/reference-clone-long-proof.raw.mp4 --codec h264 --crf 25 --concurrency 2
+          ffmpeg -y -i public-review/reference-clone-long-proof.raw.mp4 -c:v libx264 -pix_fmt yuv420p -crf 22 -preset medium -c:a aac -b:a 160k -movflags +faststart public-review/reference-clone-long-proof.mp4
+          rm public-review/reference-clone-long-proof.raw.mp4
+      - name: Long-form technical QA
+        run: python scripts/longform_media_qa.py --video public-review/reference-clone-long-proof.mp4 --out qa-output/reference-clone-long/technical.json
+      - name: Bind long-form proof
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path("public-review/reference-clone-long-proof.mp4")
+          tech=json.load(open("qa-output/reference-clone-long/technical.json"))
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          active=json.load(open("production/reference-clones/active/activation.json"))
+          r={"schema_version":1,"status":"LONG_CLONE_PROOF_GREEN" if tech["status"]=="PASS" else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"technical":tech,"publication_enabled":False}
+          pathlib.Path("state/reference-clone-long-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if r["status"]!="LONG_CLONE_PROOF_GREEN": raise SystemExit(3)
+          PY
+      - name: Persist long-form proof
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public-review/reference-clone-long-proof.mp4 qa-output/reference-clone-long state/reference-clone-long-health.json
+          git diff --cached --quiet || git commit -m "Persist native long-form clone proof"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
