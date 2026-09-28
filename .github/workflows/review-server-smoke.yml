@@ -57,6 +57,9 @@ jobs:
           assert h["publication"] is False
           assert h["hashBound"] is True
           assert h["captionReady"] is True
+          c=json.load(open("state/caption-health.json"))
+          assert h["captionSha256"]==c["caption_sha256"],(h["captionSha256"],c["caption_sha256"])
+          assert h["captionCandidateSha256"]==h["expectedSha256"]
           assert h["expectedSha256"]==h["actualSha256"]
           print(h)
           PY
@@ -70,6 +73,8 @@ jobs:
           grep -q 'src="/captions"' /tmp/watch.html
           test "$(curl -s -D /tmp/captions.headers -o /tmp/captions.vtt -w "%{http_code}" http://127.0.0.1:10000/captions)" = "200"
           grep -qi '^content-type: text/vtt' /tmp/captions.headers
+          expected_caption=$(python -c 'import json; print(json.load(open("state/caption-health.json"))["caption_sha256"])')
+          grep -qi "etag: \"$expected_caption\"" /tmp/captions.headers
           grep -q '^WEBVTT' /tmp/captions.vtt
           grep -q 'Ignore the flex and keep the math.' /tmp/captions.vtt
           test "$(curl -s -D /tmp/media.headers -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
