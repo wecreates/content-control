@@ -44,7 +44,7 @@
     "premium_voice_runtime_smoke_connected": true,
     "premium_voice_stack_connected": true,
     "premium_voice_studio_wiring": true,
-    "premium_voice_tests_exposed": false,
+    "premium_voice_tests_exposed": true,
     "progressive_approval_connected": true,
     "publication_locked": true,
     "publication_owner_separation_locked": true,
@@ -132,8 +132,7 @@
   "failed_checks": [
     "latest_candidate_accepted",
     "latest_candidate_live_verified",
-    "latest_path_end_to_end",
-    "premium_voice_tests_exposed"
+    "latest_path_end_to_end"
   ],
   "publication_enabled": false,
   "schema_version": 1,
