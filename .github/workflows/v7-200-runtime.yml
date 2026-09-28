@@ -1,12 +1,6 @@
 name: V7 Next 200 Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/v7-200-runtime.yml'
-      - 'tests/test_v7_runtime.py'
-      - 'scripts/v7_runtime.py'
 permissions:
   contents: write
 concurrency:
