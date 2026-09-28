@@ -23,6 +23,8 @@ on:
       - 'scripts/verify_deployment_contract.py'
       - 'state/runtime-integrity-manifest.json'
       - 'state/narration-transcription-health.json'
+      - 'state/caption-health.json'
+      - 'public-review/episode1-v10-free.vtt'
       - '.github/workflows/runtime-integrity-manifest.yml'
       - '.github/workflows/episode1-motion-v3.yml'
       - '.github/workflows/episode1-v4.yml'
@@ -90,6 +92,7 @@ jobs:
               "factual_compliance_green":"factual-compliance-gate.yml",
               "sync_retention_green":"sync-retention-gate.yml",
               "narration_transcription_green":"narration-transcription-gate.yml",
+              "caption_health_green":"narration-transcription-gate.yml",
               "dependency_security_clean":"runtime-security-audit.yml",
               "runtime_locks_present":"generate-runtime-locks.yml",
           }
