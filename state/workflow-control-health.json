@@ -43,6 +43,7 @@
     ".github/workflows/runtime-security-audit.yml": true,
     ".github/workflows/source-refresh.yml": true,
     ".github/workflows/sync-retention-gate.yml": true,
+    ".github/workflows/system-wiring-audit.yml": true,
     ".github/workflows/v5-400-verification.yml": true,
     ".github/workflows/v5-artifact-runtime.yml": true,
     ".github/workflows/v5-assembly-runtime.yml": true,
