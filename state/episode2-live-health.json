@@ -1,0 +1,16 @@
+{
+  "candidate_sha256": "7206d8b9f4e9a4cdf4fe87597ae0dbf8aeef470a7179d6499683a857da2ab600",
+  "checks": {
+    "actual_hash_matches": true,
+    "expected_hash_matches": true,
+    "hash_bound": true,
+    "health_green": true,
+    "publication_disabled": true,
+    "range_streaming": true,
+    "watch_page_present": true
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS",
+  "watch_url": "https://content-control-render-worker.onrender.com/episode2/watch"
+}
