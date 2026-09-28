@@ -41,8 +41,12 @@ def audit_root(root: Path):
     checks["episode3_pre_render_creative_gate"]=all(x in episode3_text for x in [
         "validate_creative_blueprint.py","production/episode3/creative-blueprint.json","Local hash-bound review smoke"
     ])
+    checks["episode3_chain_connected"]=all(x in episode3_text for x in [
+        "Trigger live verification","gh workflow run episode3-live-smoke.yml"
+    ])
     checks["episode3_caption_pipeline"]=all(x in episode3_text for x in [
-        "episode3-cashback-casino.vtt","caption_sha256","Build verified captions"
+        "episode3-cashback-casino.vtt","caption_sha256","Build verified captions",
+        "episode3-transcription-health.json","free_transcription_qa.py","caption_cues"
     ])
 
     server=root/"server-lowmem.js"
