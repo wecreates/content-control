@@ -63,27 +63,21 @@ checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,
 checks["python_dependency_security_clean"]=python_security.get("status")=="PASS" and int(python_security.get("total_vulnerabilities",1))==0
 checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
 checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual.get("checks",{}).values())
-checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values()) and ledger_health.get("current_candidate_sha256")==health.get("candidate_sha256") and ledger.get("current_candidate_sha256")==health.get("candidate_sha256")
+checks["acceptance_ledger_candidate_match"]=ledger_health.get("current_candidate_sha256")==health.get("candidate_sha256") and ledger.get("current_candidate_sha256")==health.get("candidate_sha256")
+checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values()) and checks["acceptance_ledger_candidate_match"]
 checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(deployment.get("checks",{}).values())
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
-checks["candidate_identity_consistent"]=all([
-    checks["health_receipt_hash_match"],
-    checks["acceptance_ledger_candidate_match"],
-    checks["caption_candidate_match"],
-    checks["review_server_smoke_candidate_match"],
-    checks["provenance_candidate_match"],
-    checks["live_deployment_green"],
-])
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
 caption_file=ROOT/"public-review/episode1-v10-free.vtt"
 mobile_receipt=receipt.get("mobile",{})
 checks["mobile_playback_green"]=mobile_receipt.get("status")=="PASS" and all(mobile_receipt.get("checks",{}).values())
+checks["caption_candidate_match"]=caption_health.get("candidate_sha256")==health.get("candidate_sha256")
 checks["caption_health_green"]=all([
     caption_health.get("status")=="PASS",
     all(caption_health.get("checks",{}).values()),
     caption_file.is_file(),
-    caption_health.get("candidate_sha256")==health.get("candidate_sha256"),
+    checks["caption_candidate_match"],
     caption_health.get("caption_sha256")==sha256(caption_file) if caption_file.is_file() else False,
     caption_health.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
 ])
@@ -119,6 +113,15 @@ checks["provenance_inputs_current"]=all([
 checks["sbom_valid"]=sbom.get("bomFormat")=="CycloneDX" and bool(sbom.get("components"))
 history=ROOT/"qa-output/free/history"/(str(health.get("candidate_sha256"))+".json")
 checks["immutable_history_present"]=history.is_file()
+checks["candidate_identity_consistent"]=all([
+    checks["health_receipt_hash_match"],
+    checks["acceptance_ledger_candidate_match"],
+    checks["caption_candidate_match"],
+    checks["review_server_smoke_candidate_match"],
+    checks["provenance_candidate_match"],
+    checks["live_deployment_green"],
+])
+checks["candidate_converged"]=candidate_converged
 
 status="GREEN" if all(checks.values()) else "REPAIR_REQUIRED"
 report={
