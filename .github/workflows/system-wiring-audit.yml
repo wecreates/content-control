@@ -50,3 +50,12 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Enforce wiring audit
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("state/system-wiring-health.json"))
+          if d.get("status")!="PASS":
+              raise SystemExit(2)
+          PY
