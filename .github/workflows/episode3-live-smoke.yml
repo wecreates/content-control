@@ -1,0 +1,103 @@
+name: Episode 3 Live Smoke
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Episode 3 Cashback Casino Build
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'server-lowmem.js'
+      - 'state/episode3-health.json'
+      - 'public-review/episode3-cashback-casino.mp4'
+      - 'public-review/episode3-cashback-casino.vtt'
+      - '.github/workflows/episode3-live-smoke.yml'
+permissions:
+  contents: write
+concurrency:
+  group: episode3-live-smoke
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  probe:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - name: Probe live Episode 3 review surface
+        run: |
+          set -euo pipefail
+          BASE="https://content-control-render-worker.onrender.com"
+          EXPECTED=$(python -c 'import json; print(json.load(open("state/episode3-health.json"))["candidate_sha256"])')
+          EXPECTED_CAPTION=$(python -c 'import json; print(json.load(open("state/episode3-health.json"))["caption_sha256"])')
+          mkdir -p /tmp/ep3
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            hc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/ep3/health.json -w "%{http_code}" "$BASE/episode3/health" || true)
+            wc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/ep3/watch.html -w "%{http_code}" "$BASE/episode3/watch" || true)
+            cc=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/ep3/captions.headers -o /tmp/ep3/captions.vtt -w "%{http_code}" "$BASE/episode3/captions" || true)
+            mc=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/ep3/media.headers -o /tmp/ep3/range.bin -w "%{http_code}" "$BASE/episode3/media" || true)
+            if [ "$hc" = "200" ] && [ "$wc" = "200" ] && [ "$cc" = "200" ] && [ "$mc" = "206" ]; then
+              if python - "$EXPECTED" "$EXPECTED_CAPTION" <<'PY'
+import json,sys,pathlib
+h=json.load(open("/tmp/ep3/health.json"))
+e=sys.argv[1]; c=sys.argv[2]
+assert h.get("ok") is True
+assert h.get("publication") is False
+assert h.get("hashBound") is True
+assert h.get("expectedSha256")==e
+assert h.get("actualSha256")==e
+assert h.get("captionReady") is True
+assert h.get("captionSha256")==c
+assert pathlib.Path("/tmp/ep3/captions.vtt").read_text(errors="ignore").startswith("WEBVTT")
+assert pathlib.Path("/tmp/ep3/range.bin").stat().st_size==1024
+PY
+              then ok=1; break; fi
+            fi
+            sleep $((attempt*8))
+          done
+          test "$ok" = "1"
+          grep -q '2% Cashback Turned Dave' /tmp/ep3/watch.html
+          grep -q 'src="/episode3/captions"' /tmp/ep3/watch.html
+          grep -qi '^content-type: text/vtt' /tmp/ep3/captions.headers
+          grep -qi '^accept-ranges: bytes' /tmp/ep3/media.headers
+          grep -qi '^content-range: bytes 0-1023/' /tmp/ep3/media.headers
+      - name: Persist Episode 3 live health
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          expected=json.load(open("state/episode3-health.json"))
+          h=json.load(open("/tmp/ep3/health.json"))
+          checks={
+            "health_green":h.get("ok") is True,
+            "hash_bound":h.get("hashBound") is True,
+            "candidate_matches":h.get("actualSha256")==expected["candidate_sha256"]==h.get("expectedSha256"),
+            "caption_ready":h.get("captionReady") is True,
+            "caption_matches":h.get("captionSha256")==expected["caption_sha256"],
+            "watch_page_present":pathlib.Path("/tmp/ep3/watch.html").exists(),
+            "range_streaming":pathlib.Path("/tmp/ep3/range.bin").exists() and pathlib.Path("/tmp/ep3/range.bin").stat().st_size==1024,
+            "captions_present":pathlib.Path("/tmp/ep3/captions.vtt").exists() and pathlib.Path("/tmp/ep3/captions.vtt").read_text(errors="ignore").startswith("WEBVTT"),
+            "publication_disabled":h.get("publication") is False,
+          }
+          r={"schema_version":1,"status":"PASS" if all(checks.values()) else "FAIL","candidate_sha256":expected["candidate_sha256"],"caption_sha256":expected["caption_sha256"],"checks":checks,"publication_enabled":False,"watch_url":"https://content-control-render-worker.onrender.com/episode3/watch"}
+          pathlib.Path("state/episode3-live-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          if r["status"]!="PASS": raise SystemExit(2)
+          PY
+      - name: Persist evidence
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/episode3-live-health.json
+          git diff --cached --quiet || git commit -m "Verify Episode 3 live review surface"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
