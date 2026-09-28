@@ -23,7 +23,7 @@ def compile_clone(ref, selected_characters):
             "state_change":bool(row.get("state_change")),
             "retention_reason":row.get("why_it_retains",""),
             "content_control_character":selected[i%len(selected)],
-            "adaptation_rule":"preserve timing/camera/motion function; rewrite staging, props, dialogue, and creator-specific identity"
+            "adaptation_rule":"preserve timing/camera/motion function; rebuild staging, props, spoken copy, and creator-specific identity"
         })
     duration=max((b["end"] for b in beats),default=float(ref.get("source",{}).get("duration_seconds",0) or 0))
     return {
