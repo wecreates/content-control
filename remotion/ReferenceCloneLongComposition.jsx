@@ -19,7 +19,8 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
   const ch=s.choreography||{};
   const Ch=C[s.character]||Dave;
   const scale=s.shot_scale==="close"?1.5:s.shot_scale==="wide"?.9:1.15;
-  const x=960+(s.index%2===0?-260:260),y=610;
+  const focal=s.composition?.focal_point||[.5,.56];
+  const x=1920*focal[0]+(s.index%2===0?-90:90),y=1080*focal[1]+40;
   const intensity=Math.max(.5,Math.min(1,(s.motion_intensity||0)*8));
   const m=resolveMotion(s.character,s.pose,p,intensity);
   const fallback=s.camera==="whip_pan"?("translateX("+((1-p)*180)+"px)"):s.camera==="punch_in"?("scale("+(1+.1*p)+")"):("scale("+(1+.025*Math.sin(Math.PI*p))+")");
