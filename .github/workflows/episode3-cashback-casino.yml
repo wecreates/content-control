@@ -1,10 +1,6 @@
 name: Episode 3 Cashback Casino Build
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/episode3-cashback-casino.yml'
 permissions:
   contents: write
 concurrency:
