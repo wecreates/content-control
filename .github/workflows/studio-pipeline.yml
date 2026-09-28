@@ -23,6 +23,7 @@ on:
       - 'scripts/audience_panel_v2.py'
       - 'scripts/visual_development_v2.py'
       - 'scripts/visual_dailies_v2.py'
+      - 'scripts/semantic_dailies_v2.py'
       - 'scripts/storyboard_generator_v2.py'
       - 'scripts/story_room_v2.py'
       - 'scripts/story_room.py'
@@ -145,6 +146,7 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           python scripts/visual_dailies_v2.py --animatic "$S/animatic.json" --video "$S/animatic.mp4" --out "$S/dailies.json"
+          python scripts/semantic_dailies_v2.py --video "$S/animatic.mp4" --ccsd "$S/01-directed-ccsd.json" --frames "$S/dailies-frames" --out "$S/semantic-dailies.json"
           python scripts/audience_panel_v2.py --video "$S/animatic.mp4" --ccsd "$S/01-directed-ccsd.json" --out "$S/audience-panel.json"
 
       - name: Promote to spline
@@ -292,6 +294,7 @@ jobs:
           rows=[
             json.load(open("state/studio/final-ccsd-health.json")),
             json.load(open("production/reference-clones/active/studio/dailies.json")),
+            json.load(open("production/reference-clones/active/studio/semantic-dailies.json")),
             json.load(open("production/reference-clones/active/studio/audience-panel.json")),
             json.load(open("production/reference-clones/active/studio/accessibility.json")),
             json.load(open("state/studio/choreography-health.json")),
