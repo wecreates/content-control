@@ -85,6 +85,7 @@ app.get("/health",(req,res)=>{
     hashBound:a.actual!==null&&a.actual===a.expected,
     captionReady:a.captionReady,
     captionSha256:a.captionHash,
+    captionCandidateSha256:a.captionHealth?.candidate_sha256||null,
     renderStatus:renderState.status
   });
 });
