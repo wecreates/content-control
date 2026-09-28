@@ -1,0 +1,15 @@
+{
+  "checks": {
+    "character_board": true,
+    "long_clone": true,
+    "short_clone": true
+  },
+  "hashes": {
+    "character_board": "4a6d548bd26463469d2081127c63ade7acccabd9f9362cea8a4658299c3d49e1",
+    "long_clone": "8bd473e2e0046032c5fb297c436a1850ee0a348596b1742685b07d2b0dbb0350",
+    "short_clone": "86cfd423725b1afa12f77b9bde087f98104e94cb3b6efffa8b7f1bd5e4ab9616"
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}
