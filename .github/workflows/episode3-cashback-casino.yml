@@ -85,24 +85,49 @@ jobs:
             --dialogue production/episode3/voice-dialogue.json \
             --out public/audio/episode3-cartesia.wav \
             --receipt state/episode3-cartesia-voice.json
-          if [ "$(python -c 'import json; print(json.load(open("state/episode3-cartesia-voice.json"))["status"])')" = "PASS" ]; then
-            ffmpeg -y -i public/audio/episode3-cartesia.wav -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
-            printf '%s\n' '{"provider":"cartesia","model_id":"sonic-3.6","status":"PASS","publication_enabled":false}' > state/episode3-premium-voice.json
-          else
-            python scripts/eleven_v3_generate.py \
-              --dialogue production/episode3/voice-dialogue.json \
-              --out public/audio/episode3-eleven.mp3 \
-              --receipt state/episode3-eleven-voice.json \
-              --reference-id episode3-cashback
-            if [ "$(python -c 'import json; print(json.load(open("state/episode3-eleven-voice.json"))["status"])')" = "PASS" ]; then
-              cp public/audio/episode3-eleven.mp3 public/audio/episode3-cashback.mp3
-              printf '%s\n' '{"provider":"elevenlabs","model_id":"eleven_v3","status":"PASS","publication_enabled":false}' > state/episode3-premium-voice.json
-            else
-              curl --fail --location --retry 5 --retry-all-errors \
-                "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
-                -o public/audio/episode3-cashback.mp3
-              printf '%s\n' '{"provider":"content_control_zero_credit","status":"FALLBACK","publication_enabled":false}' > state/episode3-premium-voice.json
+          python scripts/eleven_v3_generate.py \
+            --dialogue production/episode3/voice-dialogue.json \
+            --out public/audio/episode3-eleven.mp3 \
+            --receipt state/episode3-eleven-voice.json \
+            --reference-id episode3-cashback
+          CSTAT=$(python -c 'import json; print(json.load(open("state/episode3-cartesia-voice.json"))["status"])')
+          ESTAT=$(python -c 'import json; print(json.load(open("state/episode3-eleven-voice.json"))["status"])')
+          if [ "$CSTAT" = "PASS" ] || [ "$ESTAT" = "PASS" ]; then
+            python -m pip install -r requirements-transcription.txt
+            mkdir -p qa-output/episode3/voice-candidates
+            if [ "$CSTAT" = "PASS" ]; then
+              python scripts/voice_candidate_qa.py --audio public/audio/episode3-cartesia.wav --manifest production/episode3/voice-dialogue.json --out qa-output/episode3/voice-candidates/cartesia.json --model base.en || true
             fi
+            if [ "$ESTAT" = "PASS" ]; then
+              python scripts/voice_candidate_qa.py --audio public/audio/episode3-eleven.mp3 --manifest production/episode3/voice-dialogue.json --out qa-output/episode3/voice-candidates/eleven.json --model base.en || true
+            fi
+            python - <<'PY'
+import json,pathlib
+takes=[]
+for provider,path,audio in [
+    ("cartesia","qa-output/episode3/voice-candidates/cartesia.json","public/audio/episode3-cartesia.wav"),
+    ("elevenlabs","qa-output/episode3/voice-candidates/eleven.json","public/audio/episode3-eleven.mp3"),
+]:
+    p=pathlib.Path(path)
+    if p.exists():
+        r=json.load(open(p));r["path"]=audio;r["provider"]=provider;r.setdefault("duration_error_ratio",0)
+        takes.append(r)
+pathlib.Path("qa-output/episode3/voice-candidates/takes.json").write_text(json.dumps({"takes":takes},indent=2,sort_keys=True)+"\n")
+PY
+            if python scripts/voice_take_selector.py --takes qa-output/episode3/voice-candidates/takes.json --out state/episode3-premium-voice.json; then
+              BEST=$(python -c 'import json; print(json.load(open("state/episode3-premium-voice.json"))["best"]["path"])')
+              if [[ "$BEST" == *.wav ]]; then
+                ffmpeg -y -i "$BEST" -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
+              else
+                cp "$BEST" public/audio/episode3-cashback.mp3
+              fi
+            fi
+          fi
+          if [ ! -s public/audio/episode3-cashback.mp3 ]; then
+            curl --fail --location --retry 5 --retry-all-errors \
+              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
+              -o public/audio/episode3-cashback.mp3
+            printf '%s\n' '{"provider":"content_control_zero_credit","status":"FALLBACK","publication_enabled":false}' > state/episode3-premium-voice.json
           fi
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 public/audio/episode3-cashback.mp3 >/dev/null
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
