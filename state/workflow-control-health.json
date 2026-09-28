@@ -20,6 +20,7 @@
     ".github/workflows/episode1-v5-proof.yml": true,
     ".github/workflows/episode1-v6-proof.yml": true,
     ".github/workflows/episode3-cashback-casino.yml": true,
+    ".github/workflows/episode3-live-smoke.yml": true,
     ".github/workflows/exact-av-review.yml": true,
     ".github/workflows/factual-compliance-gate.yml": true,
     ".github/workflows/free-production-watchdog.yml": true,

@@ -2,7 +2,7 @@
   "actual_video_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "candidate_converged": false,
   "candidate_hashes": {
-    "captions": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+    "captions": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "ledger": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "ledger_health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
@@ -19,8 +19,8 @@
     "audio_green": true,
     "candidate_converged": false,
     "candidate_identity_consistent": false,
-    "caption_candidate_match": false,
-    "caption_health_green": false,
+    "caption_candidate_match": true,
+    "caption_health_green": true,
     "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -55,8 +55,6 @@
   },
   "failed_checks": [
     "live_deployment_green",
-    "caption_candidate_match",
-    "caption_health_green",
     "review_server_smoke_candidate_match",
     "review_server_smoke_green",
     "provenance_candidate_match",
