@@ -34,7 +34,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -55,7 +55,8 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "system_wiring_green"
+    "system_wiring_green",
+    "provenance_inputs_current"
   ],
   "integrity_failures": [],
   "publication_enabled": false,
