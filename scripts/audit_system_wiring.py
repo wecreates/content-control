@@ -285,7 +285,7 @@ def audit_root(root: Path):
     analytics_wf=root/".github/workflows/analytics-feedback.yml"
     analytics_text=analytics_wf.read_text() if analytics_wf.is_file() else ""
     checks["analytics_learning_connected"]=all(x in analytics_text for x in [
-        "analytics_feedback.py","analytics-feedback.json","creative-learning-memory.json"
+        "analytics_learning_v2.py","analytics-feedback.json","creative-learning-memory.json","18-master-ccsd.json"
     ]) and ".github/workflows/analytics-feedback.yml" in reg_allowed
     rd_wf=root/".github/workflows/rd-quarantine.yml"
     rd_text=rd_wf.read_text() if rd_wf.is_file() else ""
