@@ -1,0 +1,135 @@
+name: Episode 2 Coupon Book Build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/Episode2CouponBookVisual.jsx'
+      - 'remotion/Episode2CouponBook.jsx'
+      - 'remotion/episode2-index.jsx'
+      - 'state/episode2-factual-contract.json'
+      - 'state/episode2-viral-scout.json'
+      - '.github/workflows/episode2-coupon-book.yml'
+permissions:
+  contents: write
+concurrency:
+  group: episode2-coupon-book
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+  HF_HOME: ~/.cache/huggingface
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-free-qa.lock.txt
+      - name: Install runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-free-qa.lock.txt
+      - name: Vendor Episode 2 narration
+        run: |
+          set -euo pipefail
+          mkdir -p public/audio
+          if [ ! -s public/audio/episode2-narration.mp3 ]; then
+            curl --fail --location --retry 5 --retry-all-errors               "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/6eb18c38-432b-4906-bd9b-582b6d659bd6.mp3"               -o public/audio/episode2-narration.mp3
+          fi
+          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/audio/episode2-narration.mp3 | grep -q audio
+      - name: Render Episode 2
+        run: |
+          set -euo pipefail
+          rm -rf qa-output/episode2
+          mkdir -p qa-output/episode2/candidate-frames public-review
+          npx remotion render remotion/episode2-index.jsx Episode2CouponBook public-review/episode2-coupon-book.mp4 --codec h264 --crf 25 --concurrency 2
+          ffmpeg -y -i public-review/episode2-coupon-book.mp4 -vf "fps=1/3" -q:v 2 qa-output/episode2/candidate-frames/cand-%02d.jpg
+          ffmpeg -y -i public-review/episode2-coupon-book.mp4 -vf "fps=1/3,scale=216:384,tile=5x2:padding=8:margin=8" -frames:v 1 qa-output/episode2/contact.jpg
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.cache/torch
+          key: free-vision-models-v1
+      - name: Audio QA
+        run: python scripts/free_audio_qa.py --video public-review/episode2-coupon-book.mp4 --output qa-output/episode2/audio.json
+      - name: Deterministic visual QA
+        run: python scripts/free_vision_qa.py --reference-dir reference/frames --candidate-video public-review/episode2-coupon-book.mp4 --candidate-dir qa-output/episode2/candidate-frames --output qa-output/episode2/deterministic.json
+      - name: Semantic visual QA
+        run: python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir qa-output/episode2/candidate-frames --output qa-output/episode2/semantic.json
+      - name: Mobile playback QA
+        run: python scripts/free_mobile_compat_qa.py --video public-review/episode2-coupon-book.mp4 --output qa-output/episode2/mobile.json
+      - name: Factual and originality contract
+        run: |
+          python - <<'PY'
+          import ast,html,json,re
+          from pathlib import Path
+          c=json.load(open("state/episode2-factual-contract.json"))
+          visual=html.unescape(Path("remotion/Episode2CouponBookVisual.jsx").read_text())
+          text=c["narration_text"]
+          checks={}
+          checks["publication_disabled"]=c["publication_enabled"] is False
+          checks["educational_example"]=c["educational_example"] is True
+          checks["required_visual_tokens"]=all(x in visual for x in c["required_visual_tokens"])
+          checks["no_named_products"]=all(re.search(r"(?<![A-Za-z0-9])"+re.escape(x)+r"(?![A-Za-z0-9])",text,re.I) is None for x in c["prohibited_named_products"])
+          checks["no_risky_phrases"]=all(x.lower() not in text.lower() for x in c["prohibited_risky_phrases"])
+          arithmetic=[]
+          for a in c["arithmetic"]:
+            node=ast.parse(a["expression"],mode="eval")
+            value=eval(compile(node,"<expr>","eval"),{"__builtins__":{}},{})
+            ok=float(value)==float(a["expected"])
+            arithmetic.append({"expression":a["expression"],"computed":value,"expected":a["expected"],"pass":ok})
+          checks["arithmetic"]=all(x["pass"] for x in arithmetic)
+          r={"schema_version":1,"status":"PASS" if all(checks.values()) else "FAIL","checks":checks,"arithmetic":arithmetic,"publication_enabled":False}
+          Path("qa-output/episode2/factual.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          if r["status"]!="PASS": raise SystemExit(2)
+          PY
+      - name: Bind Episode 2 receipt
+        run: |
+          python - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          video=Path("public-review/episode2-coupon-book.mp4")
+          h=hashlib.sha256(video.read_bytes()).hexdigest()
+          parts={k:json.load(open(f"qa-output/episode2/{k}.json")) for k in ["audio","deterministic","semantic","mobile","factual"]}
+          ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS"
+          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"title":"Your Credit Card Became a Coupon Book","publication_enabled":False,"credit_cost":0,"parts":parts,"video_path":"public-review/episode2-coupon-book.mp4","contact_sheet":"qa-output/episode2/contact.jpg"}
+          Path("state/episode2-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({"status":r["status"],"candidate_sha256":h},sort_keys=True))
+          if not ok: raise SystemExit(3)
+          PY
+      - name: Persist Episode 2 candidate
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public/audio/episode2-narration.mp3 public-review/episode2-coupon-book.mp4 qa-output/episode2 state/episode2-health.json
+          git diff --cached --quiet || git commit -m "Persist Episode 2 coupon book candidate"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode2-coupon-book
+          path: |
+            public-review/episode2-coupon-book.mp4
+            qa-output/episode2/contact.jpg
+            state/episode2-health.json
+          retention-days: 30
