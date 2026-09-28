@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "upgrades": [
+    "story_room_v2",
+    "storyboard_v2",
+    "visual_dailies_v2",
+    "audience_panel_v2",
+    "articulated_acting",
+    "contact_physics",
+    "visual_development_v2",
+    "longform_visual_director",
+    "soundscape_director",
+    "adaptive_score_v2",
+    "reference_optical_flow",
+    "analytics_learning_v2",
+    "production_scheduler",
+    "typography_director",
+    "taste_director"
+  ],
+  "rule": "department existence is insufficient; depth implementations must feed the active CCSD and final rendered proof"
+}
