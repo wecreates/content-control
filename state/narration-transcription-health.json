@@ -1,11 +1,12 @@
 {
-  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase. But the math is simple. 80 minus 20 is 60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "checks": {
     "content_token_recall_ok": true,
     "duration_plausible": true,
     "publication_disabled": true,
     "semantic_recall_ok": true,
     "sequence_similarity_ok": true,
+    "transcript_coverage_ok": true,
     "transcript_nonempty": true
   },
   "content_token_recall": 1.0,
@@ -15,6 +16,7 @@
   "faster_whisper_version": "1.2.1",
   "language": "en",
   "language_probability": 1,
+  "media_duration_seconds": 26.184,
   "model": "base.en",
   "publication_enabled": false,
   "schema_version": 1,
@@ -27,12 +29,12 @@
     {
       "end": 8.04,
       "start": 3.84,
-      "text": "Chad points to a $20 credit after an $80 purchase,"
+      "text": "Chad points to a $20 credit after an $80 purchase."
     },
     {
       "end": 9.56,
       "start": 8.04,
-      "text": "but the math is simple."
+      "text": "But the math is simple."
     },
     {
       "end": 11.84,
@@ -42,7 +44,7 @@
     {
       "end": 15.2,
       "start": 11.84,
-      "text": "Points-monk counts only benefits Dave would have bought anyway."
+      "text": "Points Monk counts only benefits Dave would have bought anyway."
     },
     {
       "end": 18.12,
@@ -149,5 +151,6 @@
   "semantic_recall": 0.909091,
   "sequence_similarity": 1.0,
   "status": "PASS",
-  "transcribed_duration_seconds": 26.12
+  "transcribed_duration_seconds": 26.12,
+  "transcript_coverage_ratio": 0.997556
 }
