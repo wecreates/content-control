@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<rect width="1600" height="1000" fill="#fff"/>
+<style>
+.t{font-family:Arial,sans-serif;fill:#111}.h{font-weight:900}.s{font-size:24px}.m{font-size:18px}.ln{stroke:#111;stroke-width:10;stroke-linecap:round;stroke-linejoin:round;fill:none}
+</style>
+<text x="70" y="80" class="t h" font-size="44">CONTENT CONTROL — CANONICAL CHARACTER BOARD V1</text>
+<text x="70" y="118" class="t m">This SVG is the hash-bound production source of truth for recurring character construction.</text>
+<line x1="70" y1="145" x2="1530" y2="145" stroke="#ddd" stroke-width="2"/>
+<g transform="translate(220 430)">
+<text x="0" y="-230" text-anchor="middle" class="t h s" fill="#11A7A7">DAVE</text>
+<circle cy="-120" r="58" fill="#fff" stroke="#111" stroke-width="10"/><circle cx="-18" cy="-132" r="6"/><circle cx="18" cy="-132" r="6"/><path d="M-22 -96 Q0 -82 22 -96" class="ln"/>
+<line y1="-62" y2="140" class="ln"/><line x1="0" y1="-20" x2="-95" y2="-5" class="ln"/><line x1="0" y1="-20" x2="95" y2="8" class="ln"/>
+<line y1="140" x2="-80" y2="270" class="ln"/><line y1="140" x2="80" y2="270" class="ln"/>
+<text x="0" y="320" text-anchor="middle" class="t m">medium scale • anxious everyman • recoil vocabulary</text>
+</g>
+<g transform="translate(800 420)">
+<text x="0" y="-220" text-anchor="middle" class="t h s" fill="#EF3E36">POINTS MONK</text>
+<circle cy="-125" r="54" fill="#fff" stroke="#111" stroke-width="10"/><circle cx="-17" cy="-135" r="5"/><circle cx="17" cy="-135" r="5"/><line x1="-20" y1="-100" x2="20" y2="-100" class="ln"/>
+<line y1="-70" y2="160" class="ln"/><line x1="0" y1="-25" x2="-90" y2="-25" class="ln"/><line x1="0" y1="-25" x2="90" y2="-25" class="ln"/>
+<line y1="160" x2="-75" y2="300" class="ln"/><line y1="160" x2="75" y2="300" class="ln"/>
+<text x="0" y="350" text-anchor="middle" class="t m">tallest • deadpan truth teller • decisive action</text>
+</g>
+<g transform="translate(1340 500)">
+<text x="0" y="-300" text-anchor="middle" class="t h s" fill="#F4C542">CASHBACK GOBLIN</text>
+<circle cy="-155" r="74" fill="#fff" stroke="#111" stroke-width="10"/><path d="M-62 -195 L-112 -225 L-86 -158 M62 -195 L112 -225 L86 -158" class="ln"/>
+<circle cx="-23" cy="-168" r="7"/><circle cx="23" cy="-168" r="7"/><path d="M-32 -125 Q0 -86 32 -125" class="ln"/>
+<line y1="-80" y2="45" class="ln"/><line y1="-30" x2="-72" y2="-5" class="ln"/><line y1="-30" x2="72" y2="-5" class="ln"/>
+<line y1="45" x2="-58" y2="140" class="ln"/><line y1="45" x2="58" y2="140" class="ln"/>
+<text x="0" y="190" text-anchor="middle" class="t m">shortest • oversized head • mischievous reward mascot</text>
+</g>
+<g transform="translate(70 820)">
+<rect width="1460" height="120" rx="18" fill="#f7f7f7" stroke="#ddd"/>
+<text x="30" y="38" class="t h s">LOCKED STYLE DNA</text>
+<text x="30" y="78" class="t m">White background • #111111 line art • Dave teal #11A7A7 • Points Monk red #EF3E36 • Cashback Goblin yellow #F4C542 • no generic drift</text>
+</g>
+</svg>
