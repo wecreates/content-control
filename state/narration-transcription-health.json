@@ -1,20 +1,17 @@
 {
   "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "checks": {
-    "content_token_recall_ok": false,
+    "content_token_recall_ok": true,
     "duration_plausible": true,
     "publication_disabled": true,
     "semantic_recall_ok": true,
-    "sequence_similarity_ok": false,
+    "sequence_similarity_ok": true,
     "transcript_nonempty": true
   },
-  "content_token_recall": 0.313725,
+  "content_token_recall": 1.0,
   "engine": "faster-whisper",
-  "expected_text": "Dave's premium card just came back with a six-hundred-ninety-five-dollar annual fee. Chad says the fix is simple: spend eighty dollars to unlock a twenty-dollar credit. Points Monk has a less glamorous answer. If you wouldn't buy the thing anyway, that credit isn't saving you money. Count only value you'd purchase without the card, subtract the fee you actually pay, and keep the card only when the math still wins.",
-  "failed_checks": [
-    "sequence_similarity_ok",
-    "content_token_recall_ok"
-  ],
+  "expected_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. $80 minus $20 is $60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "failed_checks": [],
   "faster_whisper_version": "1.2.1",
   "language": "en",
   "language_probability": 1,
@@ -150,7 +147,7 @@
     }
   ],
   "semantic_recall": 0.909091,
-  "sequence_similarity": 0.073781,
-  "status": "FAIL",
+  "sequence_similarity": 1.0,
+  "status": "PASS",
   "transcribed_duration_seconds": 26.12
 }
