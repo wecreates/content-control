@@ -1,13 +1,6 @@
 name: Coupon Book Viral Snippet
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/CouponBookSnippet.jsx'
-      - 'remotion/snippet-index.jsx'
-      - 'state/snippets/coupon-book-brief.json'
-      - '.github/workflows/coupon-book-snippet.yml'
 permissions:
   contents: write
 concurrency:
