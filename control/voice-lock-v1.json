@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "narrator": {
+    "voice_profile": "deep-neutral",
+    "role": "narration_only",
+    "leakage_forbidden": true
+  },
+  "characters": {
+    "dave": {
+      "voice_profile": "medium-fast-anxious",
+      "allowed": "dialogue_only",
+      "leakage_forbidden": true
+    },
+    "points_monk": {
+      "voice_profile": "low-calm-deadpan",
+      "allowed": "dialogue_only",
+      "leakage_forbidden": true
+    },
+    "cashback_goblin": {
+      "voice_profile": "chirps_or_nonverbal",
+      "allowed": "non_narrator",
+      "leakage_forbidden": true
+    }
+  },
+  "checks": [
+    "speaker segments map to assigned character",
+    "narrator never reads SFX",
+    "character voices do not cross roles"
+  ]
+}
