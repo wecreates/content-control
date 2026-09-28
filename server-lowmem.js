@@ -14,6 +14,8 @@ const episode2HealthPath=path.resolve("state/episode2-health.json");
 const episode3Output=path.resolve("public-review/episode3-cashback-casino.mp4");
 const episode3HealthPath=path.resolve("state/episode3-health.json");
 const episode3CaptionsPath=path.resolve("public-review/episode3-cashback-casino.vtt");
+const referenceCloneOutput=path.resolve("public-review/reference-clone-proof.mp4");
+const referenceCloneHealthPath=path.resolve("state/reference-clone-health.json");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
 const renderState={status:"repository-artifact-only",logs:[]};
@@ -49,6 +51,13 @@ function episode3Acceptance(){
   const ready=videoReady&&captionReady;
   return {health:h,actual,expected,captionHash,captionReady,videoReady,ready};
 }
+function referenceCloneAcceptance(){
+  const h=readJson(referenceCloneHealthPath);
+  const actual=fileHash(referenceCloneOutput);
+  const expected=h?.candidate_sha256||null;
+  const ready=Boolean(h?.status==="CLONE_PROOF_GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
+  return {health:h,actual,expected,ready};
+}
 function acceptance(){
   const h=readHealth();
   const c=readCaptionHealth();
@@ -79,7 +88,8 @@ app.use((req,res,next)=>{
 app.get("/",(req,res)=>{
   const canonical=acceptance();
   const ep3=episode3Acceptance();
-  const latest=ep3.ready?"/episode3/watch":canonical.ready?"/watch":null;
+  const clone=referenceCloneAcceptance();
+  const latest=clone.ready?"/clone/watch":ep3.ready?"/episode3/watch":canonical.ready?"/watch":null;
   res.setHeader("Cache-Control","no-store, max-age=0");
   res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;box-sizing:border-box}main{max-width:560px;margin:0 auto}.card{border:1px solid #ddd;border-radius:16px;padding:20px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06)}a{display:inline-block;padding:12px 16px;border-radius:10px;background:#111;color:#fff;text-decoration:none;font-weight:700}.muted{color:#666}.ok{color:#08783f;font-weight:700}.wait{color:#8a5a00;font-weight:700}</style></head><body><main><div class="card"><h1>Content Control Review</h1><p class="${latest?'ok':'wait'}">${latest?'Verified review is ready.':'No verified review is ready yet.'}</p><p class="muted">This page stays visible during cold starts and deployment propagation. Publication is disabled.</p>${latest?`<a href="${latest}">Open latest verified video</a>`:'<p>QA/render pipeline is still working.</p>'}</div></main></body></html>`);
 });
@@ -273,6 +283,19 @@ app.get("/episode3/watch",(req,res)=>{
   const v=document.getElementById('player'),s=document.getElementById('status');
   if(v&&s){const card=document.getElementById('loadingCard');const hide=()=>{if(card)card.classList.add('hidden')};v.addEventListener('loadeddata',()=>{hide();s.textContent='Verified video ready.'});v.addEventListener('playing',()=>{hide();s.textContent='Playing verified candidate.'});v.addEventListener('error',()=>{if(card){card.innerHTML='<strong>Video failed to load.</strong><span style="margin-top:8px;color:#666">The page is still working. Try refresh once.</span>'}s.textContent='Media unavailable; page stayed visible.'});setTimeout(()=>{if(v.readyState>=2)hide()},1200);}
   </script></body></html>`);
+});
+app.get("/clone/health",(req,res)=>{
+  const a=referenceCloneAcceptance();res.setHeader("Cache-Control","no-store");
+  res.status(a.ready?200:503).json({ok:a.ready,id:"reference-clone-proof",publication:false,qaStatus:a.health?.status||"missing",expectedSha256:a.expected,actualSha256:a.actual,hashBound:a.actual!==null&&a.actual===a.expected,referenceId:a.health?.reference_id||null});
+});
+app.get("/clone/media",(req,res)=>{
+  const a=referenceCloneAcceptance();if(!a.ready){res.setHeader("Cache-Control","no-store");return res.status(409).json({error:"clone proof unavailable or hash mismatch",publication:false});}
+  return streamMp4(req,res,referenceCloneOutput,a.expected);
+});
+app.get("/clone/watch",(req,res)=>{
+  const a=referenceCloneAcceptance();const short=(a.expected||"unverified").slice(0,12);
+  const body=a.ready?'<video controls playsinline preload="metadata" src="/clone/media"></video>':'<section class="pending"><h3>Clone proof is not ready yet.</h3><p>The page remains available while QA/rendering completes.</p></section>';
+  res.setHeader("Cache-Control","no-store, max-age=0");res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control Clone Review</title><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:16px}main{max-width:560px;margin:auto}video{width:100%;background:#f5f5f5;border:1px solid #ddd;border-radius:14px}.pending{min-height:55vh;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #ddd;border-radius:14px}small{color:#666}</style><main><h2>Reference Clone Proof</h2>${body}<p><small>hash ${short} • publication disabled</small></p></main>`);
 });
 app.get("/watch",(req,res)=>{
   const a=acceptance();
