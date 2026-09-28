@@ -153,6 +153,14 @@ def audit_root(root: Path):
     ])
     checks["latest_path_end_to_end"]=checks["latest_candidate_accepted"] and checks["latest_candidate_live_verified"]
 
+    checks["chat_drop_clone_system_connected"]=all((root/p).is_file() for p in [
+        "control/chat-drop-clone-contract.json",
+        "scripts/reference_clone_compiler.py",
+        "scripts/validate_reference_clone.py",
+        "tests/test_reference_clone_compiler.py",
+        "tests/test_reference_clone_validation.py",
+    ]) and "chat_drop_clone_director" in ids
+    checks["chat_drop_clone_tests_exposed"]="test:clone" in scripts and "test_reference_clone_compiler.py" in scripts.get("test:clone","")
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
