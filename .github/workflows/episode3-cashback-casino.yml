@@ -17,6 +17,7 @@ on:
       - '.github/workflows/episode3-cashback-casino.yml'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: episode3-cashback-casino
   cancel-in-progress: true
@@ -187,6 +188,11 @@ jobs:
             sleep $((attempt*5))
           done
           exit 1
+      - name: Trigger live verification
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run episode3-live-smoke.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
