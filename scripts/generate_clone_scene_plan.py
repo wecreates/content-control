@@ -13,6 +13,9 @@ def build(bp):
           "shot_scale":b.get("shot_scale","medium"),"prop":"finance_prop_"+str(i%4),
           "text_zone":"upper_third","action_zone":"center","cta_zone":"lower_third",
           "state_change":True,"intentional_contact":False,"motion_intensity":float(b.get("motion_activity",0) or 0),
+          "reference_character_action":b.get("reference_character_action",""),
+          "reference_prop_action":b.get("reference_prop_action",""),
+          "reference_retention_reason":b.get("retention_reason",""),
           "audio_events":[x for x in bp.get("audio_punctuation",[]) if b["start"]<=float(x.get("time",x.get("start",-1)))<b["end"]],
           "adaptation":"original staging using locked Content Control character"
         })
