@@ -1,0 +1,73 @@
+{
+  "schema_version": 3,
+  "name": "Reference-Derived Stick Animation DNA V3",
+  "publication_enabled": false,
+  "reference_policy": {
+    "allowed": "extract transferable pacing, composition, motion, joke structure, camera grammar, prop logic, and scene mechanics",
+    "disallowed": "copy exact creator characters, trace frames, reuse logos/signature costume details, duplicate signature jokes, or recreate a source shot-for-shot",
+    "output_requirement": "original Content Control character identity with reference-derived mechanics"
+  },
+  "format_contract": {
+    "shortform": {
+      "beat_seconds_target": [
+        1.2,
+        1.9
+      ],
+      "max_static_hold_seconds": 1,
+      "min_distinct_compositions_first_10s": 5,
+      "min_shot_scales": [
+        "close",
+        "medium",
+        "wide"
+      ],
+      "action_in_first_seconds": 0.75
+    },
+    "longform": {
+      "max_single_explanation_seconds": 18,
+      "structural_pivot_seconds_max": 45,
+      "recurring_callback_interval_seconds": [
+        30,
+        70
+      ]
+    }
+  },
+  "motion_vocabulary": [
+    "anticipation",
+    "overshoot",
+    "squash_stretch",
+    "recoil",
+    "follow_through",
+    "prop_chase",
+    "impact_pause",
+    "snap_zoom",
+    "whip_pan",
+    "reaction_hold",
+    "foreground_wipe",
+    "match_cut_metaphor"
+  ],
+  "scene_rule": "Every beat must change at least two of: character pose, prop state, camera, environment, scale, spatial relationship.",
+  "comedy_engines": [
+    "physical consequence",
+    "confidently wrong Dave",
+    "Points Monk interruption",
+    "literalized finance metaphor",
+    "tiny reward versus giant cost",
+    "rule of three escalation",
+    "callback reversal",
+    "silent reaction beat"
+  ],
+  "educational_embedding": {
+    "principle": "teach through consequence, not lecture",
+    "max_consecutive_explanatory_sentences": 2,
+    "math_visualization": "show arithmetic as an object interaction or physical transformation",
+    "claim_format": "setup -> consequence -> one-line rule"
+  },
+  "anti_slideshow": [
+    "no narration over unchanged composition longer than 1 second",
+    "no full-screen bullet lists",
+    "no character standing idle while captions advance",
+    "no generic card grids",
+    "no title card intro",
+    "no summary outro after payoff"
+  ]
+}
