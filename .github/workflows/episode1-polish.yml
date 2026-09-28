@@ -1,9 +1,5 @@
 name: Episode 1 Minor Polish Gate
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'production/episode1/polish-plan.json'
   workflow_dispatch:
 permissions:
   contents: read
