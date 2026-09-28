@@ -151,5 +151,27 @@ completion={
     "remaining_user_gate":"watch/approve exact artifact before any publication",
 }
 (ROOT/"state/system-completion.json").write_text(json.dumps(completion,indent=2,sort_keys=True)+"\n")
-print(json.dumps({"watchdog":report,"completion":completion},sort_keys=True))
+ops={
+    "schema_version":1,
+    "status":completion["status"],
+    "machine_system_complete":completion["machine_system_complete"],
+    "candidate_sha256":health.get("candidate_sha256"),
+    "zero_credit_runtime":completion["zero_credit_runtime"],
+    "publication_enabled":False,
+    "public_watch_url":"https://content-control-render-worker.onrender.com/watch",
+    "public_health_url":"https://content-control-render-worker.onrender.com/health",
+    "live_deployment_status":live_deployment.get("status"),
+    "dependency_vulnerabilities":security.get("npm_counts",{}),
+    "rollback_candidate_sha256":ledger_health.get("rollback_candidate_sha256"),
+    "workflow_control_status":workflow_health.get("status"),
+    "deployment_contract_status":deployment.get("status"),
+    "factual_compliance_status":factual.get("status"),
+    "sync_retention_status":sync_health.get("status"),
+    "review_server_smoke_status":smoke.get("status"),
+    "failed_checks":report["failed_checks"],
+    "checks":checks,
+    "remaining_user_gate":completion["remaining_user_gate"],
+}
+(ROOT/"state/operations-snapshot.json").write_text(json.dumps(ops,indent=2,sort_keys=True)+"\n")
+print(json.dumps({"watchdog":report,"completion":completion,"operations":ops},sort_keys=True))
 raise SystemExit(0 if status=="GREEN" else 2)
