@@ -151,8 +151,15 @@ jobs:
           python scripts/music_score_pass.py --ccsd "$S/09-sound.json" --out "$S/10-music.json"
           python scripts/dialogue_direction.py --ccsd "$S/10-music.json" --out "$S/11-dialogue.json"
           python scripts/facial_performance_pass.py --ccsd "$S/11-dialogue.json" --out "$S/12-face.json"
-          python scripts/finishing_pass.py --ccsd "$S/12-face.json" --out "$S/13-final-ccsd.json"
-          python scripts/ccsd_validate.py --input "$S/13-final-ccsd.json" --out state/studio/final-ccsd-health.json
+          python scripts/finishing_pass.py --ccsd "$S/12-face.json" --out "$S/14-choreography.json"
+          python scripts/ccsd_validate.py --input "$S/14-choreography.json" --out state/studio/final-ccsd-health.json
+      - name: Apply visual choreography
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/visual_choreography.py --ccsd "$S/13-final-ccsd.json" --out "$S/14-choreography.json"
+          python scripts/choreography_qa.py --ccsd "$S/14-choreography.json" --out state/studio/choreography-health.json
 
       - name: Generate premium studio voices
         if: steps.active.outputs.ready == 'yes'
@@ -167,7 +174,7 @@ jobs:
           S=production/reference-clones/active/studio
           mkdir -p qa-output/studio-voice public/audio
           python -m pip install -r requirements-voice.lock.txt
-          python scripts/ccsd_voice_manifest.py --ccsd "$S/13-final-ccsd.json" --out "$S/voice-manifest.json"
+          python scripts/ccsd_voice_manifest.py --ccsd "$S/14-choreography.json" --out "$S/voice-manifest.json"
           python scripts/cartesia_voice_engine.py --manifest "$S/voice-manifest.json" --out-dir qa-output/studio-voice/segments --receipt qa-output/studio-voice/receipt.json
           python scripts/premium_voice_qa.py --receipt qa-output/studio-voice/receipt.json --assignments production/reference-clones/active/voice-assignments.json --out qa-output/studio-voice/qa.json
           STATUS=$(python -c 'import json; print(json.load(open("qa-output/studio-voice/receipt.json"))["status"])')
@@ -180,10 +187,10 @@ jobs:
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
-          python scripts/accessibility_pass.py --ccsd "$S/13-final-ccsd.json" --out "$S/accessibility.json"
-          python scripts/localization_plan.py --ccsd "$S/13-final-ccsd.json" --out "$S/localization.json"
-          python scripts/production_tracker.py --ccsd "$S/13-final-ccsd.json" --out "$S/production-tracker.json"
-          python scripts/shot_render_plan.py --ccsd "$S/13-final-ccsd.json" --out "$S/render-plan.json"
+          python scripts/accessibility_pass.py --ccsd "$S/14-choreography.json" --out "$S/accessibility.json"
+          python scripts/localization_plan.py --ccsd "$S/14-choreography.json" --out "$S/localization.json"
+          python scripts/production_tracker.py --ccsd "$S/14-choreography.json" --out "$S/production-tracker.json"
+          python scripts/shot_render_plan.py --ccsd "$S/14-choreography.json" --out "$S/render-plan.json"
           python - <<'PY'
           import json,pathlib
           v=json.load(open("production/reference-clones/active/studio/visual-development.json"))
@@ -194,7 +201,7 @@ jobs:
           PY
           python scripts/asset_memory.py --input "$S/assets-input.json" --out "$S/asset-index.json"
           python scripts/continuity_memory.py --root production --out state/continuity-memory.json
-          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/13-final-ccsd.json" --reason "studio department pass" --out state/studio/version-lineage.json
+          python scripts/version_lineage.py --history state/studio/version-lineage.json --artifact "$S/14-choreography.json" --reason "studio department pass" --out state/studio/version-lineage.json
 
       - name: Promote to polish
         if: steps.active.outputs.ready == 'yes'
@@ -221,7 +228,7 @@ jobs:
           set -euo pipefail
           S=production/reference-clones/active/studio
           mkdir -p state/studio qa-output/studio-voice public/audio
-          python scripts/ccsd_voice_manifest.py --ccsd "$S/13-final-ccsd.json" --out "$S/voice-dialogue.json"
+          python scripts/ccsd_voice_manifest.py --ccsd "$S/14-choreography.json" --out "$S/voice-dialogue.json"
           STATUS=$(python -c 'import json; print(json.load(open("production/reference-clones/active/studio/voice-dialogue.json"))["status"])')
           python scripts/voice_provider.py --out state/studio/voice-provider.json
           if [ "$STATUS" = "PASS" ]; then
@@ -265,7 +272,7 @@ jobs:
         if: steps.active.outputs.ready == 'yes'
         run: |
           S=production/reference-clones/active/studio
-          python scripts/ccsd_to_scene_plan.py --ccsd "$S/13-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
+          python scripts/ccsd_to_scene_plan.py --ccsd "$S/14-choreography.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
           python scripts/inject_voiceover_path.py \
             --scene-plan "$S/scene-plan-studio.json" \
             --voice-file public/audio/reference-clone-voice.mp3 \
