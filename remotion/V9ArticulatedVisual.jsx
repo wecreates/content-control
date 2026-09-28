@@ -51,7 +51,7 @@ const scenes=[
 ({p})=><><Text>One rule.</Text><Text y={270} size={70} color={G}>REAL VALUE &gt; FEE</Text><Stick x={225} y={790} s={1.28} label="DAVE" face="smile" lean={I(p,0,1,-3,3)} la1={I(p,0,1,150,205)} la2={I(p,0,1,125,220)}/><Stick x={495} y={790} s={1.28} label="POINTS MONK" face="smile" lean={I(p,0,1,3,-3)} ra1={I(p,0,1,30,-25)} ra2={I(p,0,1,55,-55)}/><path d="M150 1050 Q360 1120 570 1050" fill="none" stroke={G} strokeWidth="12" strokeLinecap="round"/><Text y={1180} size={31}>Ignore the flex. Keep the math.</Text></>
 ];
 
-const cuts=[0,2,4.5,7,9.5,12,14.5,17,19.5,22,24.5,27,30];
+const cuts=[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30];
 
 export const V9ArticulatedVisual=({frame})=>{
   const t=frame/24;
