@@ -197,6 +197,13 @@
       "impl": "scripts/version_lineage.py",
       "output": "version-lineage.json",
       "gate": "reasoned revision history"
+    },
+    {
+      "id": "visual_choreography",
+      "agent": "visual_choreography_director",
+      "impl": "scripts/visual_choreography.py",
+      "output": "15-choreography.json",
+      "gate": "choreography QA plus rendered composition/motion QA"
     }
   ]
 }
