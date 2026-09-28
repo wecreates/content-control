@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "requirements": [
+    "articulated elbows and knees",
+    "targetable hands",
+    "foot planting",
+    "gaze target",
+    "posture state",
+    "anticipation",
+    "thought holds",
+    "micro expressions",
+    "contact-driven IK",
+    "weight shift",
+    "follow-through"
+  ],
+  "characters": {
+    "dave": "anxious forward unstable",
+    "points_monk": "upright economical deadpan",
+    "cashback_goblin": "compressed elastic rapid"
+  },
+  "renderer": "remotion/CharacterSystem.jsx",
+  "acting_pass": "scripts/acting_director.py",
+  "contact_pass": "scripts/contact_physics_pass.py"
+}
