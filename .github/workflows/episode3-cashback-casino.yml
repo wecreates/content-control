@@ -118,7 +118,7 @@ jobs:
           fi
           if [ ! -s public/audio/episode3-cashback.mp3 ]; then
             curl --fail --location --retry 5 --retry-all-errors \
-              "https://www.aidocmaker.com/g0/audio?name=0c0c5d49a24d41feb7434f1d093caf77" \
+              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
               -o public/audio/episode3-cashback.mp3
             printf '%s\n' '{"provider":"content_control_zero_credit","status":"FALLBACK","publication_enabled":false}' > state/episode3-premium-voice.json
           fi
