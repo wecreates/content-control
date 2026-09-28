@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "caption_end_seconds": 26.16,
   "caption_path": "public-review/episode1-v10-free.vtt",
   "caption_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
@@ -20,5 +20,5 @@
   "schema_version": 1,
   "segment_count": 9,
   "status": "PASS",
-  "transcription_receipt_sha256": "fedbd9d1df0443345893d0540263b9a1ffd10d1952d3d96d30bfd8133ab5102f"
+  "transcription_receipt_sha256": "c2ef34441b444856ab08c0005197529bd061df9d41453ed8334761f476bd093c"
 }

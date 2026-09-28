@@ -1,5 +1,5 @@
 {
-  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase. But the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase. But the math is simple. 80 minus 20 is 60. Points monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "checks": {
     "content_token_recall_ok": true,
     "duration_plausible": true,
@@ -45,7 +45,7 @@
     {
       "end": 15.2,
       "start": 11.84,
-      "text": "Points-monk counts only benefits Dave would have bought anyway."
+      "text": "Points monk counts only benefits Dave would have bought anyway."
     },
     {
       "end": 18.12,
