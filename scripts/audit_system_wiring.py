@@ -41,6 +41,11 @@ def audit_root(root: Path):
     checks["episode3_pre_render_creative_gate"]=all(x in episode3_text for x in [
         "validate_creative_blueprint.py","production/episode3/creative-blueprint.json","Local hash-bound review smoke"
     ])
+    checks["episode3_transcription_acceptance_bound"]=all(x in episode3_text for x in [
+        'transcription=json.load(open("state/episode3-transcription-health.json"))',
+        'transcription["status"]=="PASS"',
+        '"transcription":transcription'
+    ])
     checks["episode3_chain_connected"]=all(x in episode3_text for x in [
         "Trigger live verification","gh workflow run episode3-live-smoke.yml"
     ])
