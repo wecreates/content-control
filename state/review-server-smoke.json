@@ -1,8 +1,11 @@
 {
   "accepted_route_verified": true,
+  "cache_policy_verified": true,
   "candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
   "fail_closed_corruption_verified": true,
   "publication_enabled": false,
+  "range_streaming_verified": true,
   "schema_version": 1,
+  "security_headers_verified": true,
   "status": "PASS"
 }
