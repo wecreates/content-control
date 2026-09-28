@@ -169,6 +169,61 @@ def audit_root(root: Path):
         "clone-blueprint.json"
     ]) and ".github/workflows/reference-clone-compile.yml" in reg_allowed
     checks["chat_drop_clone_tests_exposed"]="test:clone" in scripts and "test_reference_clone_compiler.py" in scripts.get("test:clone","")
+    clone_capability_files=[
+        "scripts/ingest_reference_video.py",
+        "scripts/decompose_reference_video.py",
+        "scripts/reference_clone_compiler.py",
+        "scripts/generate_clone_scene_plan.py",
+        "remotion/ReferenceCloneComposition.jsx",
+        "remotion/reference-clone-index.jsx",
+        "scripts/reference_style_parity_qa.py",
+        "scripts/character_identity_qa.py",
+        "scripts/verify_character_board_lock.py",
+        "scripts/voice_lock_qa.py",
+        "scripts/style_memory.py",
+        "scripts/select_reference_candidate.py",
+        "scripts/generate_concept_selection.py",
+        "scripts/generate_repair_plan.py",
+        "scripts/longform_clone_architect.py",
+        "control/voice-lock-v1.json",
+        "control/character-board-lock-v1.json",
+        "control/concept-selection-contract.json",
+        "control/longform-clone-contract.json",
+        "reference/characters/content-control-character-board.svg",
+        "remotion/CharacterBoardComposition.jsx",
+    ]
+    checks["clone_capability_files_complete"]=all((root/p).is_file() for p in clone_capability_files)
+    checks["clone_ingest_pipeline_connected"]=all((root/p).is_file() for p in [
+        "scripts/ingest_reference_video.py","scripts/decompose_reference_video.py","scripts/validate_reference_clone.py"
+    ])
+    checks["clone_universal_renderer_connected"]=all((root/p).is_file() for p in [
+        "remotion/ReferenceCloneComposition.jsx","remotion/reference-clone-index.jsx","scripts/generate_clone_scene_plan.py"
+    ])
+    checks["character_board_lock_connected"]=all((root/p).is_file() for p in [
+        "reference/characters/content-control-character-board.svg","remotion/CharacterBoardComposition.jsx",
+        "control/character-board-lock-v1.json","scripts/verify_character_board_lock.py"
+    ])
+    checks["voice_lock_connected"]=(root/"control/voice-lock-v1.json").is_file() and (root/"scripts/voice_lock_qa.py").is_file()
+    checks["concept_selection_enforced"]=all(x in clone_wf_text for x in ["generate_concept_selection.py","concept-selection.json"])
+    checks["style_memory_connected"]=all(x in clone_wf_text for x in ["style_memory.py","state/style-memory.json","select_reference_candidate.py"])
+    checks["longform_clone_connected"]=(root/"scripts/longform_clone_architect.py").is_file() and "longform_clone_architect.py" in clone_wf_text
+    clone_render=root/".github/workflows/reference-clone-render.yml"
+    clone_render_text=clone_render.read_text() if clone_render.is_file() else ""
+    checks["clone_render_qa_connected"]=all(x in clone_render_text for x in [
+        "ReferenceClone","reference_style_parity_qa.py","character_identity_qa.py",
+        "free_audio_qa.py","free_mobile_compat_qa.py","free_vision_qa.py","free_semantic_qa.py",
+        "state/reference-clone-health.json"
+    ]) and ".github/workflows/reference-clone-render.yml" in reg_allowed
+    clone_live=root/".github/workflows/reference-clone-live-smoke.yml"
+    clone_live_text=clone_live.read_text() if clone_live.is_file() else ""
+    checks["clone_live_review_connected"]=all(x in server_text for x in [
+        "/clone/health","/clone/media","/clone/watch","referenceCloneAcceptance"
+    ]) and all(x in clone_live_text for x in ["/clone/health","/clone/watch","Range: bytes=0-1023"]) and ".github/workflows/reference-clone-live-smoke.yml" in reg_allowed
+    clone_repair=root/".github/workflows/reference-clone-repair.yml"
+    checks["clone_targeted_repair_connected"]=clone_repair.is_file() and (root/"scripts/generate_repair_plan.py").is_file() and ".github/workflows/reference-clone-repair.yml" in reg_allowed
+    checks["renderer_backed_character_memory"]=all(x in (root/"remotion/CharacterBoardComposition.jsx").read_text() for x in [
+        'from "./CharacterSystem"','<Dave ','<PointsMonk ','<CashbackGoblin '
+    ]) if (root/"remotion/CharacterBoardComposition.jsx").is_file() else False
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
