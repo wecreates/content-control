@@ -20,5 +20,15 @@ class SystemWiringAuditTests(unittest.TestCase):
             report=audit_root(root)
             self.assertIn("creative_contract_paths_exist",report["failed_checks"])
 
+    def test_detects_missing_latest_candidate_state(self):
+        root=Path(__file__).resolve().parents[1]
+        report=audit_root(root)
+        # Current repository must not claim end-to-end latest-path readiness
+        # unless the newest candidate and live receipt actually exist.
+        if not (root/"state/episode3-health.json").is_file():
+            self.assertIn("latest_candidate_accepted",report["failed_checks"])
+        if not (root/"state/episode3-live-health.json").is_file():
+            self.assertIn("latest_candidate_live_verified",report["failed_checks"])
+
 if __name__=="__main__":
     unittest.main()
