@@ -1,0 +1,45 @@
+name: Reference Clone Repair
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'state/reference-clone-repair-plan.json'
+      - '.github/workflows/reference-clone-repair.yml'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: reference-clone-repair
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - name: Route smallest repair
+        run: |
+          set -euo pipefail
+          test -s state/reference-clone-repair-plan.json
+          python - <<'PY' > /tmp/routes
+          import json
+          p=json.load(open("state/reference-clone-repair-plan.json"))
+          routes=set()
+          for r in p.get("repairs",[]):
+              a=r.get("repair","")
+              if "character" in a or "scene" in a or "camera" in a or "retime" in a:
+                  routes.add("reference-clone-render.yml")
+              elif "audio" in a:
+                  routes.add("reference-clone-render.yml")
+              elif "caption" in a:
+                  routes.add("reference-clone-render.yml")
+          for x in sorted(routes): print(x)
+          PY
+          while IFS= read -r workflow; do
+            [ -n "$workflow" ] || continue
+            gh workflow run "$workflow" --ref main
+          done < /tmp/routes
