@@ -498,6 +498,19 @@
         "baseline comparison",
         "promotion receipts"
       ]
+    },
+    {
+      "id": "premium_voice_director",
+      "parallelism": 2,
+      "owns": [
+        "voice casting",
+        "Cartesia Sonic 3.6 quality routing",
+        "Eleven v3 dialogue routing",
+        "character voice ID locks",
+        "cross-provider take generation",
+        "transcript QA",
+        "winning-take selection"
+      ]
     }
   ],
   "hard_rules": [
@@ -542,7 +555,12 @@
     "render level progresses blocking -> preview -> polish -> final",
     "analytics map to exact CCSD scene IDs before becoming future creative rules",
     "experimental models remain quarantined until R&D benchmark passes",
-    "assets, environments, props, callbacks, and character states are versioned in durable memory"
+    "assets, environments, props, callbacks, and character states are versioned in durable memory",
+    "final spoken audio must route through the premium voice selector when premium credentials are available",
+    "Cartesia Sonic 3.6 is the quality-primary provider and Eleven v3 is the dramatic dialogue specialist",
+    "premium voice candidates must pass transcript fidelity before render selection",
+    "speaker voice IDs are secret-backed and locked per recurring character",
+    "spoken dialogue may never silently disappear when a CCSD project contains speech"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -584,6 +602,13 @@
     "audience_panel": "scripts/audience_panel.py",
     "analytics_feedback": "scripts/analytics_feedback.py",
     "studio_department_map": "control/studio-department-map-v1.json",
-    "studio_department_verifier": "scripts/verify_studio_department_map.py"
+    "studio_department_verifier": "scripts/verify_studio_department_map.py",
+    "premium_voice_routing": "control/voice-provider-routing-v2.json",
+    "premium_voice_lock": "control/voice-lock-v1.json",
+    "cartesia_generator": "scripts/cartesia_sonic_generate.py",
+    "eleven_v3_generator": "scripts/eleven_v3_generate.py",
+    "voice_candidate_qa": "scripts/voice_candidate_qa.py",
+    "voice_take_selector": "scripts/voice_take_selector.py",
+    "ccsd_voice_manifest": "scripts/ccsd_voice_manifest.py"
   }
 }
