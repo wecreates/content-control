@@ -64,14 +64,28 @@ jobs:
         run: python scripts/verify_episode3_layout.py remotion/CashbackCasinoVisual.jsx
       - name: Bundle composition preflight
         run: npx remotion compositions remotion/episode3-index.jsx
-      - name: Vendor narration
+      - name: Premium Eleven v3 narration
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
+          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
+          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
+          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
         run: |
           set -euo pipefail
-          mkdir -p public/audio qa-output/episode3 public-review
+          mkdir -p public/audio qa-output/episode3 public-review state
+          python scripts/voice_provider.py --out state/episode3-voice-provider.json
           rm -f public/audio/episode3-cashback.mp3
-          curl --fail --location --retry 5 --retry-all-errors \
-            "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
-            -o public/audio/episode3-cashback.mp3
+          python scripts/eleven_v3_generate.py \
+            --dialogue production/episode3/voice-dialogue.json \
+            --out public/audio/episode3-cashback.mp3 \
+            --receipt state/episode3-premium-voice.json \
+            --reference-id episode3-cashback
+          if [ "$(python -c 'import json; print(json.load(open("state/episode3-premium-voice.json"))["status"])')" != "PASS" ]; then
+            curl --fail --location --retry 5 --retry-all-errors \
+              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
+              -o public/audio/episode3-cashback.mp3
+          fi
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 public/audio/episode3-cashback.mp3 >/dev/null
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
           python - <<'PY'
@@ -150,11 +164,13 @@ jobs:
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           parts={k:json.load(open(f"qa-output/episode3/{k}.json")) for k in ["audio","deterministic","semantic","mobile","factual"]}
           transcription=json.load(open("state/episode3-transcription-health.json"))
+          voice_provider=json.load(open("state/episode3-voice-provider.json"))
+          premium_voice=json.load(open("state/episode3-premium-voice.json"))
           ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS" and transcription["status"]=="PASS"
           captions=pathlib.Path("public-review/episode3-cashback-casino.vtt")
           caption_sha=hashlib.sha256(captions.read_bytes()).hexdigest()
           ok=ok and captions.is_file() and captions.read_text().startswith("WEBVTT")
-          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts,"transcription":transcription}
+          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts,"transcription":transcription,"voice_provider":voice_provider,"premium_voice":premium_voice}
           pathlib.Path("state/episode3-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           print(json.dumps({"status":r["status"],"candidate_sha256":h}))
           if not ok: raise SystemExit(3)
@@ -194,7 +210,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json
+          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json state/episode3-voice-provider.json state/episode3-premium-voice.json
           git diff --cached --quiet || git commit -m "Persist entertainment-first cashback casino candidate"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -217,6 +233,8 @@ jobs:
             qa-output/episode3/contact.jpg
             state/episode3-health.json
             state/episode3-transcription-health.json
+            state/episode3-voice-provider.json
+            state/episode3-premium-voice.json
             qa-output/episode3/audio.json
             qa-output/episode3/deterministic.json
             qa-output/episode3/semantic.json
