@@ -49,6 +49,7 @@
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,
     ".github/workflows/runtime-security-audit.yml": true,
+    ".github/workflows/shot-render-farm.yml": true,
     ".github/workflows/source-refresh.yml": true,
     ".github/workflows/studio-pipeline.yml": true,
     ".github/workflows/sync-retention-gate.yml": true,
