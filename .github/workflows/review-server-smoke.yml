@@ -57,10 +57,20 @@ jobs:
           assert h["expectedSha256"]==h["actualSha256"]
           print(h)
           PY
-          test "$(curl -s -o /tmp/watch.html -w "%{http_code}" http://127.0.0.1:10000/watch)" = "200"
+          test "$(curl -s -D /tmp/watch.headers -o /tmp/watch.html -w "%{http_code}" http://127.0.0.1:10000/watch)" = "200"
+          grep -qi '^cache-control: no-store' /tmp/watch.headers
+          grep -qi '^x-content-type-options: nosniff' /tmp/watch.headers
+          grep -qi '^x-frame-options: DENY' /tmp/watch.headers
+          grep -qi '^referrer-policy: no-referrer' /tmp/watch.headers
           grep -q 'FREE_QA' /tmp/watch.html
           grep -q 'publication disabled' /tmp/watch.html
-          test "$(curl -s -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
+          test "$(curl -s -D /tmp/media.headers -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
+          grep -qi '^accept-ranges: bytes' /tmp/media.headers
+          grep -qi '^cache-control: public, max-age=31536000, immutable' /tmp/media.headers
+          grep -qi '^content-type: video/mp4' /tmp/media.headers
+          test "$(curl -s -D /tmp/range.headers -H 'Range: bytes=0-1023' -o /tmp/range.bin -w "%{http_code}" http://127.0.0.1:10000/media)" = "206"
+          test "$(wc -c < /tmp/range.bin)" = "1024"
+          grep -qi '^content-range: bytes 0-1023/' /tmp/range.headers
           python - <<'PY'
           import hashlib,json
           expected=json.load(open("state/content-control-health.json"))["candidate_sha256"]
@@ -102,6 +112,9 @@ jobs:
             "candidate_sha256":health["candidate_sha256"],
             "accepted_route_verified":ok,
             "fail_closed_corruption_verified":ok,
+            "range_streaming_verified":ok,
+            "security_headers_verified":ok,
+            "cache_policy_verified":ok,
             "publication_enabled":False
           }
           pathlib.Path("state/review-server-smoke.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
