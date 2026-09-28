@@ -95,6 +95,8 @@
       "reusable_character_renderer": "remotion/CharacterSystem.jsx",
       "scene_plan_generator": "scripts/generate_clone_scene_plan.py",
       "storyboard_generator": "scripts/storyboard_generator.py",
+      "studio_department_map": "control/studio-department-map-v1.json",
+      "studio_department_verifier": "scripts/verify_studio_department_map.py",
       "studio_pipeline": "control/studio-pipeline-v1.json",
       "style_dna": "control/style-dna-v3.json",
       "style_memory": "scripts/style_memory.py",
