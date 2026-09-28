@@ -20,7 +20,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": false,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -47,11 +47,9 @@
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [
-    "provenance_inputs_current"
-  ],
+  "failed_checks": [],
   "live_deployment_status": "PASS",
-  "machine_system_complete": false,
+  "machine_system_complete": true,
   "mobile_playback_status": "PASS",
   "narration_transcription_status": "PASS",
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
@@ -61,7 +59,7 @@
   "review_server_smoke_status": "PASS",
   "rollback_candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED",
+  "status": "COMPLETE",
   "sync_retention_status": "PASS",
   "workflow_control_status": "PASS",
   "zero_credit_runtime": true
