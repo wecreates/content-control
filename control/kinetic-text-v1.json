@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "motions": [
+    "slam",
+    "type",
+    "counter",
+    "explode",
+    "wipe",
+    "stretch",
+    "stack",
+    "stamp",
+    "scribble",
+    "highlight",
+    "track_subject",
+    "perspective_push",
+    "kinetic_word",
+    "shake"
+  ],
+  "rules": [
+    "text must teach, punchline, or direct attention",
+    "static-caption progression is forbidden",
+    "numeric finance text should physically transform when possible"
+  ]
+}
