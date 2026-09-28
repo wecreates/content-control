@@ -1,0 +1,48 @@
+{
+  "dialogue_specialist": {
+    "mode": "offline_cinematic_dialogue",
+    "model_id": "eleven_v3",
+    "output_format": "mp3_44100_128",
+    "provider": "elevenlabs",
+    "ready": false,
+    "seed_policy": "locked_per_character_plus_variant"
+  },
+  "fallback": {
+    "enabled": true,
+    "provider": "content_control_zero_credit",
+    "reason": "used when premium providers are unavailable or generation QA fails"
+  },
+  "primary": {
+    "mode": "offline_quality",
+    "model_id": "sonic-3.6",
+    "output_format": "wav_pcm_s16le_44100",
+    "provider": "cartesia",
+    "ready": false
+  },
+  "publication_enabled": false,
+  "schema_version": 2,
+  "selected_provider": "fallback",
+  "selected_strategy": "fallback",
+  "voices": {
+    "cashback_goblin": {
+      "cartesia_voice_id": null,
+      "elevenlabs_voice_id": null,
+      "voice_profile": "chirps_or_nonverbal"
+    },
+    "dave": {
+      "cartesia_voice_id": null,
+      "elevenlabs_voice_id": null,
+      "voice_profile": "medium-fast-anxious"
+    },
+    "narrator": {
+      "cartesia_voice_id": null,
+      "elevenlabs_voice_id": null,
+      "voice_profile": "deep-neutral"
+    },
+    "points_monk": {
+      "cartesia_voice_id": null,
+      "elevenlabs_voice_id": null,
+      "voice_profile": "low-calm-deadpan"
+    }
+  }
+}
