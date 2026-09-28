@@ -680,6 +680,11 @@
     "audience_panel_v2": "scripts/audience_panel_v2.py",
     "reference_optical_flow": "scripts/reference_optical_flow.py",
     "production_scheduler": "scripts/production_scheduler.py",
-    "typography_director": "scripts/typography_director.py"
+    "typography_director": "scripts/typography_director.py",
+    "semantic_dailies": "scripts/semantic_dailies_v2.py",
+    "reference_structure_v2": "scripts/reference_structure_v2.py",
+    "story_strategy": "scripts/apply_story_strategy.py",
+    "rendered_soundscape": "scripts/soundscape_render.py",
+    "analytics_learning_v2": "scripts/analytics_learning_v2.py"
   }
 }
