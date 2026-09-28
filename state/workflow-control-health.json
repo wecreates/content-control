@@ -39,6 +39,7 @@
     ".github/workflows/quarantine-legacy-workflows.yml": true,
     ".github/workflows/reference-clone-compile.yml": true,
     ".github/workflows/reference-clone-live-smoke.yml": true,
+    ".github/workflows/reference-clone-long-render.yml": true,
     ".github/workflows/reference-clone-render.yml": true,
     ".github/workflows/reference-clone-repair.yml": true,
     ".github/workflows/review-server-smoke.yml": true,
