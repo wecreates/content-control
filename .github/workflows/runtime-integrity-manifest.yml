@@ -14,6 +14,14 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'requirements-free-qa.lock.txt'
+      - 'requirements-transcription.txt'
+      - 'scripts/render_episode1_mobile.sh'
+      - 'scripts/free_mobile_compat_qa.py'
+      - 'scripts/free_transcription_qa.py'
+      - 'scripts/build_verified_captions.py'
+      - 'scripts/verify_captions.py'
+      - 'public-review/episode1-v10-free.vtt'
+      - 'render.yaml'
       - '.github/workflows/runtime-integrity-manifest.yml'
 permissions:
   contents: write
@@ -46,6 +54,14 @@ jobs:
             "package.json",
             "package-lock.json",
             "requirements-free-qa.lock.txt",
+            "requirements-transcription.txt",
+            "scripts/render_episode1_mobile.sh",
+            "scripts/free_mobile_compat_qa.py",
+            "scripts/free_transcription_qa.py",
+            "scripts/build_verified_captions.py",
+            "scripts/verify_captions.py",
+            "public-review/episode1-v10-free.vtt",
+            "render.yaml",
           ]
           def sha(p):
               h=hashlib.sha256()
