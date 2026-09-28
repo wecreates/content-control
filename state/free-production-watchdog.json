@@ -1,6 +1,6 @@
 {
-  "actual_video_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "actual_video_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
+  "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "checks": {
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
@@ -12,8 +12,9 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
+    "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
     "provenance_inputs_current": true,
@@ -33,10 +34,12 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
+  "failed_checks": [
+    "live_deployment_green"
+  ],
   "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "dispatch_free_vision_qa",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "REPAIR_REQUIRED"
 }

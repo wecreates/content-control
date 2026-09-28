@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
@@ -13,10 +13,11 @@
     "hash_bound_artifact": true,
     "hash_bound_provenance": true,
     "immutable_acceptance_history": true,
-    "live_public_deployment": true,
+    "live_public_deployment": false,
     "live_review_server_smoke": true,
     "local_audio_assets": true,
     "local_reference_assets": true,
+    "narration_transcription_gate": true,
     "openclip_semantic_qa": true,
     "opencv_pixel_motion_qa": true,
     "phone_range_streaming": true,
@@ -31,13 +32,13 @@
     "sync_retention_gate": true,
     "workflow_control_quarantine": true
   },
-  "machine_system_complete": true,
+  "machine_system_complete": false,
   "publication_enabled": false,
   "publication_separate": true,
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "schema_version": 1,
   "source_receipt": "qa-output/free/final-receipt.json",
-  "status": "COMPLETE",
+  "status": "REPAIR_REQUIRED",
   "watchdog_receipt": "state/free-production-watchdog.json",
   "zero_credit_runtime": true
 }

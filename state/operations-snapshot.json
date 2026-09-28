@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
+  "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "checks": {
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
@@ -11,8 +11,9 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
+    "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
     "provenance_inputs_current": true,
@@ -42,17 +43,19 @@
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [],
+  "failed_checks": [
+    "live_deployment_green"
+  ],
   "live_deployment_status": "PASS",
-  "machine_system_complete": true,
+  "machine_system_complete": false,
   "public_health_url": "https://content-control-render-worker.onrender.com/health",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
   "publication_enabled": false,
   "remaining_user_gate": "watch/approve exact artifact before any publication",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "cad05e794fc9810ae5440e9df01358dbd9abb3055bc2e73159e1a6db4b983eb8",
+  "rollback_candidate_sha256": "5dd406457c2acdefe02ba919164c5819e01db40f9b5606750251c6ac31afe8d6",
   "schema_version": 1,
-  "status": "COMPLETE",
+  "status": "REPAIR_REQUIRED",
   "sync_retention_status": "PASS",
   "workflow_control_status": "PASS",
   "zero_credit_runtime": true
