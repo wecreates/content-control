@@ -5,6 +5,7 @@
   "allowed_automatic": [
     ".github/workflows/apply-runtime-security-fixes.yml",
     ".github/workflows/autonomous-cco.yml",
+    ".github/workflows/candidate-state-reconcile.yml",
     ".github/workflows/cinematic-brand-gate.yml",
     ".github/workflows/cinematic-gate.yml",
     ".github/workflows/comedy-retention-gate.yml",
