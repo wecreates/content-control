@@ -43,8 +43,12 @@ jobs:
           receipt=json.loads((root/"qa-output/free/final-receipt.json").read_text())
           smoke=json.loads((root/"state/review-server-smoke.json").read_text())
           integrity=json.loads((root/"state/runtime-integrity-manifest.json").read_text())
+          captions=json.loads((root/"state/caption-health.json").read_text())
+          transcription=json.loads((root/"state/narration-transcription-health.json").read_text())
           assert smoke.get("status")=="PASS",smoke
           assert smoke.get("candidate_sha256")==receipt.get("candidate_sha256"),(smoke.get("candidate_sha256"),receipt.get("candidate_sha256"))
+          assert captions.get("status")=="PASS",captions
+          assert captions.get("candidate_sha256")==receipt.get("candidate_sha256"),(captions.get("candidate_sha256"),receipt.get("candidate_sha256"))
           pkg=json.loads((root/"package.json").read_text())
           commit=subprocess.check_output(["git","rev-parse","HEAD"],text=True).strip()
           provenance={
@@ -67,6 +71,11 @@ jobs:
               "qa_receipt_sha256":sha(root/"qa-output/free/final-receipt.json"),
               "review_server_smoke_sha256":sha(root/"state/review-server-smoke.json"),
               "review_server_smoke_candidate_sha256":smoke["candidate_sha256"],
+              "caption_health_sha256":sha(root/"state/caption-health.json"),
+              "caption_file_sha256":sha(root/"public-review/episode1-v10-free.vtt"),
+              "caption_candidate_sha256":captions["candidate_sha256"],
+              "narration_transcription_health_sha256":sha(root/"state/narration-transcription-health.json"),
+              "narration_sha256":captions["narration_sha256"],
               "critical_file_count":integrity["critical_file_count"],
               "sbom":"state/provenance/npm-sbom.cdx.json",
           }
