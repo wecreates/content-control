@@ -29,6 +29,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Capture candidate identity
+        run: |
+          echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -133,6 +139,16 @@ jobs:
           }
           pathlib.Path("state/review-server-smoke.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           PY
+      - name: Refuse stale candidate persist
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          LATEST=$(git show origin/main:state/content-control-health.json | python -c 'import json,sys; print(json.load(sys.stdin)["candidate_sha256"])')
+          if [ "$LATEST" != "$CANDIDATE_SHA" ]; then
+            echo "candidate advanced from $CANDIDATE_SHA to $LATEST; refusing stale persist"
+            gh workflow run candidate-state-reconcile.yml --ref main || true
+            exit 1
+          fi
       - name: Persist passing smoke receipt
         if: success()
         run: |
