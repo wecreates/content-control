@@ -44,7 +44,7 @@
     "premium_voice_runtime_smoke_connected": true,
     "premium_voice_stack_connected": true,
     "premium_voice_studio_wiring": true,
-    "premium_voice_tests_exposed": true,
+    "premium_voice_tests_exposed": false,
     "progressive_approval_connected": true,
     "publication_locked": true,
     "publication_owner_separation_locked": true,
@@ -65,6 +65,10 @@
     "vce_character_renderer_connected": true,
     "vce_director_style_reference_connected": true,
     "voice_lock_connected": true,
+    "voice_v3_connected": true,
+    "voice_v3_render_path": true,
+    "voice_v3_studio_path": true,
+    "voice_v3_tests": true,
     "workflow_registry_covers_automatic": true,
     "workflow_registry_disjoint": true
   },
@@ -114,8 +118,11 @@
       "style_memory": "scripts/style_memory.py",
       "style_parity_qa": "scripts/reference_style_parity_qa.py",
       "voice_candidate_qa": "scripts/voice_candidate_qa.py",
+      "voice_engine": "control/voice-engine-v3.json",
       "voice_lock": "control/voice-lock-v1.json",
       "voice_performance": "control/voice-performance-v1.json",
+      "voice_qa": "scripts/premium_voice_qa.py",
+      "voice_runtime": "scripts/cartesia_voice_engine.py",
       "voice_take_selector": "scripts/voice_take_selector.py"
     },
     "missing_cco_agents": [],
@@ -125,7 +132,8 @@
   "failed_checks": [
     "latest_candidate_accepted",
     "latest_candidate_live_verified",
-    "latest_path_end_to_end"
+    "latest_path_end_to_end",
+    "premium_voice_tests_exposed"
   ],
   "publication_enabled": false,
   "schema_version": 1,
