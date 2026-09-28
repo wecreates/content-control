@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "primary_video_path": "reference_clone_remotion",
+  "secondary_video_path": "original_remotion_creative",
+  "generic_text_to_video": {
+    "enabled": false,
+    "reason": "inconsistent character/style continuity and high variance"
+  },
+  "routing": [
+    "chat/reference video -> deterministic decomposition -> clone blueprint -> scene plan -> Remotion",
+    "original concept -> creative director -> locked characters -> Remotion"
+  ]
+}
