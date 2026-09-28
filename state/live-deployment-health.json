@@ -2,6 +2,7 @@
   "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "checks": {
     "actual_hash_matches": true,
+    "caption_hash_matches": true,
     "captions_present": true,
     "expected_hash_matches": true,
     "hash_bound": true,
