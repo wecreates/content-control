@@ -224,6 +224,11 @@ def audit_root(root: Path):
     checks["renderer_backed_character_memory"]=all(x in (root/"remotion/CharacterBoardComposition.jsx").read_text() for x in [
         'from "./CharacterSystem"','<Dave ','<PointsMonk ','<CashbackGoblin '
     ]) if (root/"remotion/CharacterBoardComposition.jsx").is_file() else False
+    checks["clone_generation_routing_locked"]=(root/"control/generation-routing.json").is_file() and _read_json(root/"control/generation-routing.json").get("primary_video_path")=="reference_clone_remotion" and _read_json(root/"control/generation-routing.json").get("generic_text_to_video",{}).get("enabled") is False
+    checks["clone_voice_assignments_enforced"]=all(x in clone_wf_text for x in ["generate_voice_assignments.py","voice_lock_qa.py","voice-lock-health.json"])
+    checks["clone_concept_receipt_enforced"]=all(x in clone_wf_text for x in ["generate_concept_selection.py","concept-selection.json"])
+    checks["clone_renderer_backed_board_hash_enforced"]=all(x in clone_render_text for x in ["verify_character_board_lock.py","character-board-lock-health.json","character_board_lock"])
+    checks["clone_actual_render_parity_enforced"]=all(x in clone_render_text for x in ["candidate-measured.json","decompose_reference_video.py","reference_style_parity_qa.py"])
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
