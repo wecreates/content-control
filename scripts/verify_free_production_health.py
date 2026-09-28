@@ -13,6 +13,7 @@ python_security=json.loads((ROOT/"state/python-security-audit.json").read_text()
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
 factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if (ROOT/"state/factual-compliance-health.json").exists() else {"status":"MISSING"}
 ledger_health=json.loads((ROOT/"state/acceptance-ledger-health.json").read_text()) if (ROOT/"state/acceptance-ledger-health.json").exists() else {"status":"MISSING"}
+ledger=json.loads((ROOT/"state/accepted-candidate-ledger.json").read_text()) if (ROOT/"state/accepted-candidate-ledger.json").exists() else {}
 deployment=json.loads((ROOT/"state/deployment-health.json").read_text()) if (ROOT/"state/deployment-health.json").exists() else {"status":"MISSING"}
 live_deployment=json.loads((ROOT/"state/live-deployment-health.json").read_text()) if (ROOT/"state/live-deployment-health.json").exists() else {"status":"MISSING"}
 sync_health=json.loads((ROOT/"state/sync-retention-health.json").read_text()) if (ROOT/"state/sync-retention-health.json").exists() else {"status":"MISSING"}
@@ -62,7 +63,7 @@ checks["dependency_security_clean"]=all(int(security.get("npm_counts",{}).get(k,
 checks["python_dependency_security_clean"]=python_security.get("status")=="PASS" and int(python_security.get("total_vulnerabilities",1))==0
 checks["workflow_control_green"]=workflow_health.get("status")=="PASS"
 checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual.get("checks",{}).values())
-checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values())
+checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values()) and ledger_health.get("current_candidate_sha256")==health.get("candidate_sha256") and ledger.get("current_candidate_sha256")==health.get("candidate_sha256")
 checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(deployment.get("checks",{}).values())
 checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
