@@ -11,6 +11,7 @@
     "episode3_hash_bound_captions": true,
     "episode3_live_smoke_connected": true,
     "episode3_pre_render_creative_gate": true,
+    "episode3_transcription_acceptance_bound": true,
     "latest_candidate_accepted": false,
     "latest_candidate_live_verified": false,
     "latest_path_end_to_end": false,
