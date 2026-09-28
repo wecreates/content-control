@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse,json,os,subprocess,tempfile,urllib.request
 from pathlib import Path
-from scripts.voice_provider import CARTESIA_ENV
+try:
+    from scripts.voice_provider import CARTESIA_ENV
+except ModuleNotFoundError:
+    from voice_provider import CARTESIA_ENV
 
 API="https://api.cartesia.ai/tts/bytes"
 VERSION="2026-08-14"
