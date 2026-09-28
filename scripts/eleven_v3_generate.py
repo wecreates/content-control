@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse,hashlib,json,os,subprocess,tempfile,urllib.request,urllib.error
 from pathlib import Path
-from scripts.voice_provider import add_v3_tags, VOICE_ENV
+from scripts.voice_provider import add_v3_tags, ELEVEN_ENV
 
 API="https://api.elevenlabs.io/v1/text-to-dialogue"
 MAX_CHARS=1900
@@ -58,7 +58,7 @@ def build_turns(dialogue,lock,env):
     perf=dialogue.get("performance_profiles",{})
     for i,item in enumerate(dialogue.get("segments",[])):
         speaker=item.get("speaker","narrator")
-        env_name=VOICE_ENV[speaker]
+        env_name=ELEVEN_ENV[speaker]
         voice_id=env.get(env_name)
         if not voice_id:
             raise RuntimeError(f"missing {env_name}")
