@@ -160,6 +160,14 @@ def audit_root(root: Path):
         "tests/test_reference_clone_compiler.py",
         "tests/test_reference_clone_validation.py",
     ]) and "chat_drop_clone_director" in ids
+    clone_wf=root/".github/workflows/reference-clone-compile.yml"
+    clone_wf_text=clone_wf.read_text() if clone_wf.is_file() else ""
+    checks["reference_clone_workflow_connected"]=all(x in clone_wf_text for x in [
+        "production/reference-clones/**/reference.json",
+        "reference_clone_compiler.py",
+        "validate_reference_clone.py",
+        "clone-blueprint.json"
+    ]) and ".github/workflows/reference-clone-compile.yml" in reg_allowed
     checks["chat_drop_clone_tests_exposed"]="test:clone" in scripts and "test_reference_clone_compiler.py" in scripts.get("test:clone","")
     failed=[k for k,v in checks.items() if not v]
     return {
