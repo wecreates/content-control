@@ -1,0 +1,11 @@
+import React from "react";
+const K="#111111";
+export const Environment=({id="white_stage",width=720,height=1280,frame=0})=>{
+ const drift=Math.sin(frame/30)*8;
+ if(id==="bank_counter") return <g opacity=".18" stroke={K} strokeWidth="4" fill="none"><rect x={width*.08} y={height*.58} width={width*.84} height={height*.18} rx="18"/><line x1={width*.18} y1={height*.58} x2={width*.18} y2={height*.34}/><line x1={width*.82} y1={height*.58} x2={width*.82} y2={height*.34}/><rect x={width*.34} y={height*.34} width={width*.32} height={height*.16} rx="12"/></g>;
+ if(id==="airport_lounge") return <g opacity=".15" stroke={K} strokeWidth="4" fill="none" transform={`translate(${drift} 0)`}><path d={`M${width*.08} ${height*.68} H${width*.92}`}/><path d={`M${width*.18} ${height*.62} q50 -70 100 0 v80 h-100z M${width*.58} ${height*.62} q50 -70 100 0 v80 h-100z`}/><rect x={width*.33} y={height*.25} width={width*.34} height={height*.2} rx="14"/></g>;
+ if(id==="retail_store") return <g opacity=".14" stroke={K} strokeWidth="4" fill="none"><line x1={width*.08} y1={height*.74} x2={width*.92} y2={height*.74}/>{[.18,.42,.66].map((x,i)=><g key={i}><rect x={width*x} y={height*.35} width={width*.18} height={height*.26}/><line x1={width*x} y1={height*.44} x2={width*(x+.18)} y2={height*.44}/><line x1={width*x} y1={height*.53} x2={width*(x+.18)} y2={height*.53}/></g>)}</g>;
+ if(id==="apartment") return <g opacity=".14" stroke={K} strokeWidth="4" fill="none"><rect x={width*.12} y={height*.38} width={width*.30} height={height*.28}/><line x1={width*.27} y1={height*.38} x2={width*.27} y2={height*.66}/><rect x={width*.56} y={height*.52} width={width*.28} height={height*.18} rx="20"/><line x1={width*.06} y1={height*.76} x2={width*.94} y2={height*.76}/></g>;
+ if(id==="finance_metaphor_world") return <g opacity=".12" stroke={K} strokeWidth="4" fill="none" transform={`translate(${drift} 0)`}><circle cx={width*.22} cy={height*.36} r={width*.12}/><circle cx={width*.78} cy={height*.50} r={width*.17}/><path d={`M0 ${height*.72} Q${width*.25} ${height*.58} ${width*.5} ${height*.72} T${width} ${height*.72}`}/></g>;
+ return <g opacity=".08" stroke={K} strokeWidth="3"><line x1="0" y1={height*.76} x2={width} y2={height*.76}/></g>;
+};
