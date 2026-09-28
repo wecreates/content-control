@@ -153,9 +153,36 @@ jobs:
             sleep $((attempt*5))
           done
           exit 1
-      - name: Start post-acceptance verification chain
+      - name: Start post-acceptance verification chain only when needed
         if: success()
-        run: gh workflow run narration-transcription-gate.yml --ref main
+        run: |
+          python - <<'PY' > /tmp/promotion-needed
+          import json,pathlib
+          h=json.load(open("state/content-control-health.json"))
+          candidate=h["candidate_sha256"]
+          checks=[]
+          for path,key in [
+              ("state/caption-health.json","candidate_sha256"),
+              ("state/review-server-smoke.json","candidate_sha256"),
+              ("state/provenance/runtime-provenance.json","candidate_sha256"),
+              ("state/live-deployment-health.json","candidate_sha256"),
+          ]:
+              p=pathlib.Path(path)
+              if not p.exists():
+                  checks.append(False)
+                  continue
+              try:
+                  d=json.loads(p.read_text())
+                  checks.append(d.get("status","PASS")=="PASS" and d.get(key)==candidate)
+              except Exception:
+                  checks.append(False)
+          print("no" if all(checks) else "yes")
+          PY
+          if [ "$(cat /tmp/promotion-needed)" = "yes" ]; then
+            gh workflow run narration-transcription-gate.yml --ref main
+          else
+            echo "Candidate already fully promoted; skipping redundant caption/smoke/provenance/live chain."
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
