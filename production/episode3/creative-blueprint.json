@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "title": "2% Cashback Turned Dave's Brain Into a Casino",
+  "publication_enabled": false,
+  "hook": {
+    "starts_with_action": true,
+    "seconds_to_conflict": 0.4
+  },
+  "characters": [
+    {
+      "id": "dave",
+      "role": "victim",
+      "signature_pose": "recoil"
+    },
+    {
+      "id": "points_monk",
+      "role": "truth_teller",
+      "signature_pose": "door_kick"
+    },
+    {
+      "id": "cashback_goblin",
+      "role": "temptation",
+      "signature_pose": "ankle_drag"
+    }
+  ],
+  "beats": [
+    {
+      "start": 0,
+      "end": 1.5,
+      "type": "physical_gag",
+      "state_change": true,
+      "camera": "punch_in",
+      "visual_payoff": true
+    },
+    {
+      "start": 1.5,
+      "end": 3,
+      "type": "reaction",
+      "state_change": true,
+      "camera": "snap_wide",
+      "visual_payoff": true
+    },
+    {
+      "start": 3,
+      "end": 4.5,
+      "type": "metaphor",
+      "state_change": true,
+      "camera": "whip_pan",
+      "visual_payoff": true
+    },
+    {
+      "start": 4.5,
+      "end": 6,
+      "type": "dialogue",
+      "state_change": true,
+      "camera": "impact_close",
+      "visual_payoff": false
+    },
+    {
+      "start": 6,
+      "end": 7.5,
+      "type": "math_reveal",
+      "state_change": true,
+      "camera": "tracking",
+      "visual_payoff": true
+    },
+    {
+      "start": 7.5,
+      "end": 9,
+      "type": "physical_gag",
+      "state_change": true,
+      "camera": "punch_in",
+      "visual_payoff": true
+    },
+    {
+      "start": 9,
+      "end": 10.5,
+      "type": "reaction",
+      "state_change": true,
+      "camera": "snap_wide",
+      "visual_payoff": true
+    },
+    {
+      "start": 10.5,
+      "end": 12,
+      "type": "metaphor",
+      "state_change": true,
+      "camera": "whip_pan",
+      "visual_payoff": false
+    },
+    {
+      "start": 12,
+      "end": 13.5,
+      "type": "dialogue",
+      "state_change": true,
+      "camera": "impact_close",
+      "visual_payoff": true
+    },
+    {
+      "start": 13.5,
+      "end": 15,
+      "type": "math_reveal",
+      "state_change": true,
+      "camera": "tracking",
+      "visual_payoff": true
+    },
+    {
+      "start": 15,
+      "end": 16.5,
+      "type": "physical_gag",
+      "state_change": true,
+      "camera": "punch_in",
+      "visual_payoff": true
+    },
+    {
+      "start": 16.5,
+      "end": 18,
+      "type": "reaction",
+      "state_change": true,
+      "camera": "snap_wide",
+      "visual_payoff": false
+    },
+    {
+      "start": 18,
+      "end": 19.5,
+      "type": "metaphor",
+      "state_change": true,
+      "camera": "whip_pan",
+      "visual_payoff": true
+    },
+    {
+      "start": 19.5,
+      "end": 21,
+      "type": "dialogue",
+      "state_change": true,
+      "camera": "impact_close",
+      "visual_payoff": true
+    },
+    {
+      "start": 21,
+      "end": 22.5,
+      "type": "math_reveal",
+      "state_change": true,
+      "camera": "tracking",
+      "visual_payoff": true
+    },
+    {
+      "start": 22.5,
+      "end": 24,
+      "type": "physical_gag",
+      "state_change": true,
+      "camera": "punch_in",
+      "visual_payoff": false
+    },
+    {
+      "start": 24,
+      "end": 25.5,
+      "type": "reaction",
+      "state_change": true,
+      "camera": "snap_wide",
+      "visual_payoff": true
+    },
+    {
+      "start": 25.5,
+      "end": 27,
+      "type": "metaphor",
+      "state_change": true,
+      "camera": "whip_pan",
+      "visual_payoff": true
+    },
+    {
+      "start": 27,
+      "end": 28.5,
+      "type": "dialogue",
+      "state_change": true,
+      "camera": "impact_close",
+      "visual_payoff": true
+    },
+    {
+      "start": 28.5,
+      "end": 30,
+      "type": "math_reveal",
+      "state_change": true,
+      "camera": "tracking",
+      "visual_payoff": false
+    }
+  ],
+  "ending": {
+    "cut_after_payoff": true,
+    "rule_recalled": true
+  },
+  "style": {
+    "background": "#FFFFFF",
+    "line_art": "#111111",
+    "max_simultaneous_accents": 3
+  },
+  "originality": {
+    "exact_reference_character_copy": false,
+    "reference_mechanics_only": true
+  }
+}
