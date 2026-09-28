@@ -13,5 +13,7 @@
   "required_env": {
     "NODE_ENV": "production",
     "PUBLICATION_ENABLED": "false"
-  }
+  },
+  "public_base_url": "https://content-control-render-worker.onrender.com",
+  "live_probe_required": true
 }
