@@ -1,5 +1,6 @@
 import React from "react";
 import {PropIcon} from "./PropSystem";
+import {simulateBody} from "./Physics2D";
 
 const clamp=v=>Math.max(0,Math.min(1,v));
 const easeOutBack=p=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(p-1,3)+c1*Math.pow(p-1,2)};
@@ -19,11 +20,15 @@ export const choreographyCamera=(ch,localFrame)=>{
   if(!e) return "none";
   const p=clamp(localFrame/Math.max(1,e.impact_frame||12));
   const shake=e.micro_shake?Math.sin(localFrame*1.8)*2*(1-p):0;
-  if(e.type==="punch_in") return `translate(${shake}px,0) scale(${1+.09*p})`;
-  if(e.type==="whip_pan") return `translateX(${(1-p)*85+shake}px)`;
-  if(e.type==="impact_close") return `translate(${shake}px,0) scale(${1.05+.05*Math.sin(p*Math.PI)})`;
-  if(e.type==="snap_wide") return `translate(${shake}px,0) scale(${1.12-.12*p})`;
-  return `translate(${shake}px,0)`;
+  const refSpeed=Math.min(18,(e.reference_speed||0)*14);
+  const refDir=e.reference_direction||"stable";
+  const refX=refDir==="right"?refSpeed*p:refDir==="left"?-refSpeed*p:0;
+  const refY=refDir==="down"?refSpeed*p:refDir==="up"?-refSpeed*p:0;
+  if(e.type==="punch_in") return `translate(${shake+refX}px,${refY}px) scale(${1+.09*p})`;
+  if(e.type==="whip_pan") return `translate(${(1-p)*85+shake+refX}px,${refY}px)`;
+  if(e.type==="impact_close") return `translate(${shake+refX}px,${refY}px) scale(${1.05+.05*Math.sin(p*Math.PI)})`;
+  if(e.type==="snap_wide") return `translate(${shake+refX}px,${refY}px) scale(${1.12-.12*p})`;
+  return `translate(${shake+refX}px,${refY}px)`;
 };
 
 export const transitionStyle=(transition,localFrame,totalFrames,isOut=false)=>{
@@ -46,10 +51,17 @@ const objectGlyph=id=>({
 export const ObjectChoreography=({choreography,localFrame,width=720,height=1280})=>{
   return <g>
     {(choreography?.object_actions||[]).map((a,i)=>{
-      const p=curve(a.curve,actionProgress(localFrame,Math.round((a.start||0)*24),Math.round((a.impact||.5)*24)));
-      const x=width*(.5+(i-.5)*.18)+(1-p)*120*(i%2?1:-1);
-      const y=height*.38+(1-p)*-140;
-      const rot=(1-p)*(i%2?18:-18);
+      const startF=Math.round((a.start||0)*24),impactF=Math.round((a.impact||.5)*24);
+      const p=curve(a.curve,actionProgress(localFrame,startF,impactF));
+      const intensity=Math.max(.45,Math.min(1.5,a.intensity||1));
+      const baseX=width*(.5+(i-.5)*.18),baseY=height*.38;
+      const vx=(i%2?1:-1)*220*intensity,vy=-260*intensity;
+      const world=choreography?.physics||{};
+      const traj=simulateBody({x:baseX+(i%2?-120:120),y:baseY-140,vx,vy},Math.max(impactF+18,localFrame+1),{gravity:world.gravity||980,drag:world.drag||.08,restitution:world.restitution||.42,floor:height*.68});
+      const phys=traj[Math.min(localFrame,traj.length-1)]||{x:baseX,y:baseY};
+      const x=localFrame<impactF?phys.x:baseX+(1-p)*24*(i%2?1:-1);
+      const y=localFrame<impactF?phys.y:baseY+Math.sin(p*Math.PI)*-18;
+      const rot=(1-p)*(i%2?18:-18)+((localFrame-startF)*2*(i%2?1:-1));
       const sy=1-(Math.sin(p*Math.PI)*.09);
       return <g key={a.target+"-"+i} transform={`translate(${x} ${y}) scale(${1+.06*p} ${sy})`}>
         <PropIcon id={a.target} x={0} y={0} s={1} rotation={rot}/>
@@ -113,4 +125,14 @@ export const ContactCue=({choreography,localFrame,width=720,height=1280})=>{
       <path d="M-28 -12 L-52 -30 M28 -12 L52 -30 M0 -28 L0 -58" stroke="#EF3E36" strokeWidth="6" strokeLinecap="round"/>
     </g>:null;
   })}</g>;
+};
+
+
+export const performanceTargets=(choreography,localFrame,characterId)=>{
+  const events=(choreography?.contact_events||[]).filter(e=>e.actor===characterId);
+  const active=events.find(e=>localFrame>=(e.contact_frame||0)&&localFrame<=(e.release_frame||999));
+  if(!active)return {};
+  const side=(active.ik_target?.hand||"nearest")==="left"?"left":"right";
+  const target={x:side==="left"?-92:92,y:-18};
+  return side==="left"?{leftHandTarget:target,armBend:26}:{rightHandTarget:target,armBend:26};
 };
