@@ -2,23 +2,19 @@
   "candidate_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "checks": {
     "actual_hash_matches": true,
-    "captions_present": false,
+    "captions_present": true,
     "expected_hash_matches": true,
     "hash_bound": true,
     "health_200_and_green": true,
     "publication_disabled": true,
-    "range_streaming_present": false,
-    "watch_page_present": false
+    "range_streaming_present": true,
+    "watch_page_present": true
   },
-  "failed_checks": [
-    "watch_page_present",
-    "range_streaming_present",
-    "captions_present"
-  ],
+  "failed_checks": [],
   "live_actual_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "live_expected_sha256": "627a2525ea066e3513ea9024c697cb425821caee2b5711a91b64c974a63c3880",
   "public_base_url": "https://content-control-render-worker.onrender.com",
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL"
+  "status": "PASS"
 }
