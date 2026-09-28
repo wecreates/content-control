@@ -12,23 +12,23 @@ class VoiceProviderTests(unittest.TestCase):
           }
         }
 
-    def test_primary_provider_is_eleven_v3_for_offline_video(self):
-        plan=build_provider_plan(self.lock,{"ELEVENLABS_API_KEY":"x","ELEVENLABS_VOICE_NARRATOR":"n","ELEVENLABS_VOICE_DAVE":"d","ELEVENLABS_VOICE_POINTS_MONK":"m","ELEVENLABS_VOICE_CASHBACK_GOBLIN":"g"})
-        self.assertEqual(plan["primary"]["provider"],"elevenlabs")
-        self.assertEqual(plan["primary"]["model_id"],"eleven_v3")
-        self.assertEqual(plan["primary"]["mode"],"offline_cinematic")
+    def test_primary_quality_provider_is_cartesia_sonic_3_6(self):
+        plan=build_provider_plan(self.lock,{"CARTESIA_API_KEY":"x","CARTESIA_VOICE_NARRATOR":"n","CARTESIA_VOICE_DAVE":"d","CARTESIA_VOICE_POINTS_MONK":"m","CARTESIA_VOICE_CASHBACK_GOBLIN":"g"})
+        self.assertEqual(plan["primary"]["provider"],"cartesia")
+        self.assertEqual(plan["primary"]["model_id"],"sonic-3.6")
+        self.assertEqual(plan["primary"]["mode"],"offline_quality")
 
     def test_voice_ids_are_locked_per_character(self):
-        env={"ELEVENLABS_API_KEY":"x","ELEVENLABS_VOICE_NARRATOR":"n","ELEVENLABS_VOICE_DAVE":"d","ELEVENLABS_VOICE_POINTS_MONK":"m","ELEVENLABS_VOICE_CASHBACK_GOBLIN":"g"}
+        env={"CARTESIA_API_KEY":"x","CARTESIA_VOICE_NARRATOR":"n","CARTESIA_VOICE_DAVE":"d","CARTESIA_VOICE_POINTS_MONK":"m","CARTESIA_VOICE_CASHBACK_GOBLIN":"g"}
         plan=build_provider_plan(self.lock,env)
-        self.assertEqual(plan["voices"]["dave"]["voice_id"],"d")
-        self.assertEqual(plan["voices"]["points_monk"]["voice_id"],"m")
-        self.assertNotEqual(plan["voices"]["dave"]["voice_id"],plan["voices"]["points_monk"]["voice_id"])
+        self.assertEqual(plan["voices"]["dave"]["cartesia_voice_id"],"d")
+        self.assertEqual(plan["voices"]["points_monk"]["cartesia_voice_id"],"m")
+        self.assertNotEqual(plan["voices"]["dave"]["cartesia_voice_id"],plan["voices"]["points_monk"]["cartesia_voice_id"])
 
     def test_missing_credentials_fail_over_without_breaking_pipeline(self):
         plan=build_provider_plan(self.lock,{})
         self.assertFalse(plan["primary"]["ready"])
-        self.assertEqual(plan["selected_provider"],"fallback")
+        self.assertEqual(plan["selected_strategy"],"fallback")
         self.assertTrue(plan["fallback"]["enabled"])
 
     def test_audio_tags_encode_character_acting(self):
