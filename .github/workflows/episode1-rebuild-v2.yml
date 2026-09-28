@@ -2,13 +2,6 @@ name: Episode 1 Rebuild V2 Render
 # trigger: rebuild-v2-runtime
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/episode1-rebuild-v2.yml'
-      - 'scripts/episode1_rebuild_render.py'
-      - 'tests/test_episode1_rebuild_render.py'
-      - 'production/episode1/rebuild-v2/**'
 permissions:
   contents: write
 concurrency:
