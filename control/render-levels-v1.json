@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "levels": {
+    "blocking": {
+      "resolution_scale": 0.25,
+      "qa": [
+        "layout",
+        "timing"
+      ]
+    },
+    "preview": {
+      "resolution_scale": 0.5,
+      "qa": [
+        "layout",
+        "timing",
+        "character",
+        "audio"
+      ]
+    },
+    "polish": {
+      "resolution_scale": 0.75,
+      "qa": [
+        "visual",
+        "audio",
+        "continuity",
+        "parity"
+      ]
+    },
+    "final": {
+      "resolution_scale": 1,
+      "qa": [
+        "all",
+        "provenance",
+        "security",
+        "live_smoke"
+      ]
+    }
+  },
+  "promotion_rule": "never jump directly from blocking to final"
+}
