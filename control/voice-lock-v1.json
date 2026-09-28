@@ -7,7 +7,13 @@
     "leakage_forbidden": true,
     "provider": "elevenlabs",
     "model_id": "eleven_v3",
-    "voice_id_env": "ELEVENLABS_VOICE_NARRATOR"
+    "voice_id_env": "ELEVENLABS_VOICE_NARRATOR",
+    "primary_provider": "cartesia",
+    "primary_model_id": "sonic-3.6",
+    "primary_voice_id_env": "CARTESIA_VOICE_NARRATOR",
+    "dialogue_provider": "elevenlabs",
+    "dialogue_model_id": "eleven_v3",
+    "dialogue_voice_id_env": "ELEVENLABS_VOICE_NARRATOR"
   },
   "characters": {
     "dave": {
@@ -16,7 +22,13 @@
       "leakage_forbidden": true,
       "provider": "elevenlabs",
       "model_id": "eleven_v3",
-      "voice_id_env": "ELEVENLABS_VOICE_DAVE"
+      "voice_id_env": "ELEVENLABS_VOICE_DAVE",
+      "primary_provider": "cartesia",
+      "primary_model_id": "sonic-3.6",
+      "primary_voice_id_env": "CARTESIA_VOICE_DAVE",
+      "dialogue_provider": "elevenlabs",
+      "dialogue_model_id": "eleven_v3",
+      "dialogue_voice_id_env": "ELEVENLABS_VOICE_DAVE"
     },
     "points_monk": {
       "voice_profile": "low-calm-deadpan",
@@ -24,7 +36,13 @@
       "leakage_forbidden": true,
       "provider": "elevenlabs",
       "model_id": "eleven_v3",
-      "voice_id_env": "ELEVENLABS_VOICE_POINTS_MONK"
+      "voice_id_env": "ELEVENLABS_VOICE_POINTS_MONK",
+      "primary_provider": "cartesia",
+      "primary_model_id": "sonic-3.6",
+      "primary_voice_id_env": "CARTESIA_VOICE_POINTS_MONK",
+      "dialogue_provider": "elevenlabs",
+      "dialogue_model_id": "eleven_v3",
+      "dialogue_voice_id_env": "ELEVENLABS_VOICE_POINTS_MONK"
     },
     "cashback_goblin": {
       "voice_profile": "chirps_or_nonverbal",
@@ -32,7 +50,13 @@
       "leakage_forbidden": true,
       "provider": "elevenlabs",
       "model_id": "eleven_v3",
-      "voice_id_env": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
+      "voice_id_env": "ELEVENLABS_VOICE_CASHBACK_GOBLIN",
+      "primary_provider": "cartesia",
+      "primary_model_id": "sonic-3.6",
+      "primary_voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN",
+      "dialogue_provider": "elevenlabs",
+      "dialogue_model_id": "eleven_v3",
+      "dialogue_voice_id_env": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
     }
   },
   "checks": [
