@@ -96,6 +96,12 @@ jobs:
         id: semantic
         continue-on-error: true
         run: python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir qa-output/reference-clone/candidate-frames --output qa-output/reference-clone/semantic.json
+      - name: Extract taste features
+        run: python scripts/taste_features.py --video public-review/reference-clone-proof.mp4 --scene-plan production/reference-clones/active/scene-plan.json --out qa-output/reference-clone/taste-features.json
+      - name: Taste Director QA
+        id: taste
+        continue-on-error: true
+        run: python scripts/taste_director.py --features qa-output/reference-clone/taste-features.json --out qa-output/reference-clone/taste.json
       - name: Bind clone proof receipt
         id: bind
         run: |
@@ -103,10 +109,10 @@ jobs:
           import hashlib,json,pathlib
           p=pathlib.Path("public-review/reference-clone-proof.mp4")
           h=hashlib.sha256(p.read_bytes()).hexdigest()
-          keys=["parity","character-identity","audio","mobile","deterministic","semantic","composition","motion"]
+          keys=["parity","character-identity","audio","mobile","deterministic","semantic","composition","motion","taste"]
           parts={k:json.load(open(f"qa-output/reference-clone/{k}.json")) for k in keys}
           board_lock=json.load(open("state/character-board-lock-health.json"))
-          ok=board_lock["status"]=="PASS" and parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["composition"]["status"]=="PASS" and parts["motion"]["status"]=="PASS"
+          ok=board_lock["status"]=="PASS" and parts["parity"]["status"]=="PASS" and parts["character-identity"]["status"]=="PASS" and parts["audio"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["composition"]["status"]=="PASS" and parts["motion"]["status"]=="PASS" and parts["taste"]["status"]=="PASS"
           active=json.load(open("production/reference-clones/active/activation.json"))
           r={"schema_version":1,"status":"CLONE_PROOF_GREEN" if ok else "FAIL","candidate_sha256":h,"reference_id":active["reference_id"],"character_board_sha256":parts["character-identity"]["board_sha256"],"character_system_sha256":parts["character-identity"]["character_system_sha256"],"parts":parts,"character_board_lock":board_lock,"video_path":"public-review/reference-clone-proof.mp4","publication_enabled":False}
           pathlib.Path("state/reference-clone-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
