@@ -1,0 +1,116 @@
+name: Coupon Book Viral Snippet
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'remotion/CouponBookSnippet.jsx'
+      - 'remotion/snippet-index.jsx'
+      - 'state/snippets/coupon-book-brief.json'
+      - '.github/workflows/coupon-book-snippet.yml'
+permissions:
+  contents: write
+concurrency:
+  group: coupon-book-snippet
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+      - name: Vendor new narration locally
+        run: |
+          set -euo pipefail
+          mkdir -p public/audio qa-output/snippets public-review
+          curl --fail --location --retry 4             "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/cb893177-ebb7-48dd-a70d-d919df5ceb6e.mp3"             -o public/audio/snippet-coupon-book.mp3
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/snippet-coupon-book.mp3 > qa-output/snippets/coupon-book-voice-probe.json
+          python - <<'PY'
+          import json
+          d=json.load(open("qa-output/snippets/coupon-book-voice-probe.json"))
+          dur=float(d["format"]["duration"])
+          assert 20 <= dur <= 36, dur
+          assert d["streams"], d
+          print({"voice_duration_seconds":dur,"stream":d["streams"][0]})
+          PY
+      - name: Render 9x16 snippet
+        run: |
+          set -euo pipefail
+          npx remotion render remotion/snippet-index.jsx CouponBookSnippet public-review/coupon-book-snippet.mp4 --codec h264 --crf 23 --concurrency 2
+          test -s public-review/coupon-book-snippet.mp4
+      - name: Verify media and create visual proof
+        run: |
+          set -euo pipefail
+          ffprobe -v error -show_entries stream=codec_type,codec_name,width,height,pix_fmt,sample_rate,channels -show_entries format=duration -of json public-review/coupon-book-snippet.mp4 > qa-output/snippets/coupon-book-media.json
+          ffmpeg -y -i public-review/coupon-book-snippet.mp4 -vf "fps=1/3.6,scale=216:384,tile=5x2:padding=8:margin=8" -frames:v 1 qa-output/snippets/coupon-book-contact.jpg
+          python - <<'PY'
+          import hashlib,json,pathlib
+          media=json.load(open("qa-output/snippets/coupon-book-media.json"))
+          streams=media.get("streams",[])
+          video=next(s for s in streams if s.get("codec_type")=="video")
+          audio=next(s for s in streams if s.get("codec_type")=="audio")
+          dur=float(media["format"]["duration"])
+          checks={
+            "duration_ok":35.5 <= dur <= 36.5,
+            "video_h264":video.get("codec_name")=="h264",
+            "resolution_9x16":video.get("width")==720 and video.get("height")==1280,
+            "pixel_format_mobile":video.get("pix_fmt")=="yuv420p",
+            "audio_aac":audio.get("codec_name")=="aac",
+            "audio_48khz":str(audio.get("sample_rate"))=="48000",
+            "stereo":int(audio.get("channels",0))==2,
+            "contact_sheet_present":pathlib.Path("qa-output/snippets/coupon-book-contact.jpg").is_file(),
+          }
+          p=pathlib.Path("public-review/coupon-book-snippet.mp4")
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          receipt={
+            "schema_version":1,
+            "status":"SNIPPET_GREEN" if all(checks.values()) else "SNIPPET_FAIL",
+            "candidate_sha256":h,
+            "title":"Your Premium Card Is a Coupon Book",
+            "duration_seconds":dur,
+            "publication_enabled":False,
+            "voice_asset":"public/audio/snippet-coupon-book.mp3",
+            "video_path":"public-review/coupon-book-snippet.mp4",
+            "contact_sheet":"qa-output/snippets/coupon-book-contact.jpg",
+            "checks":checks,
+          }
+          pathlib.Path("state/snippets/coupon-book-receipt.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(receipt,sort_keys=True))
+          if receipt["status"]!="SNIPPET_GREEN":
+            raise SystemExit(4)
+          PY
+      - name: Persist snippet and proof
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f public/audio/snippet-coupon-book.mp3 public-review/coupon-book-snippet.mp4 qa-output/snippets/coupon-book-contact.jpg qa-output/snippets/coupon-book-media.json qa-output/snippets/coupon-book-voice-probe.json state/snippets/coupon-book-receipt.json
+          git diff --cached --quiet || git commit -m "Render premium card coupon-book viral snippet"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*5))
+          done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coupon-book-snippet
+          path: |
+            public-review/coupon-book-snippet.mp4
+            qa-output/snippets/coupon-book-contact.jpg
+            state/snippets/coupon-book-receipt.json
+          retention-days: 30
