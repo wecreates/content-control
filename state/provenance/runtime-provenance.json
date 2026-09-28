@@ -1,8 +1,8 @@
 {
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "caption_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "caption_file_sha256": "0b7fd3e5154beef9d584336f0bd41c1cde41e7db032e1878899ef2185eaa4989",
-  "caption_health_sha256": "d14f12ab327b98706d3e05d1951df7d2cbd543bbca074a43cf4ab9e4514bbaf6",
+  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "caption_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "caption_file_sha256": "5dfb4413265de351725b3ca7f732eb6bce5b16f7926ab2a38e01e1a2ab3672d9",
+  "caption_health_sha256": "26ead724548cf6a4e80bf65d32691d02a1151124a3108182d9db97563a153441",
   "critical_file_count": 30,
   "critical_integrity_manifest_sha256": "7d5654c6be6c993f397f76edd64de7a870384fa4ca2a333aa3ce18c988a37bd8",
   "locks": {
@@ -10,11 +10,11 @@
     "python_lock_sha256": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6"
   },
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
-  "narration_transcription_health_sha256": "7b37b96180aad3aec4283eacfe1742fce917886050e3794f7b383fa1daef893a",
+  "narration_transcription_health_sha256": "48b573d60acfacac731511c5fc95320eda56678c68bd6b027da0979974df3b65",
   "publication_enabled": false,
-  "qa_receipt_sha256": "9df7643cf1927fb6d36ca3ada4517dbf81c0e32c958e646908a22603afa4ad66",
-  "review_server_smoke_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "review_server_smoke_sha256": "6fa2168ea64be99e1bf1b3cf0294a9dbf87e60775f03c05e37508a61dd1939af",
+  "qa_receipt_sha256": "16303029ab4d0cec3e9a21591c80055d3cd51978e41fab48afc2e95e420890d0",
+  "review_server_smoke_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "review_server_smoke_sha256": "ce5d4a13327b3951d0c8b2d56d37adfe8643619d9861853d4961ad9d1f07856a",
   "runtime": {
     "node": "22",
     "python": "3.12",
@@ -23,6 +23,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "971cead499f7c5687a64f43d119581f9bfd7cf52",
+  "source_commit": "f83d57bbc4c2595281765dd2a50c3bebf78769c9",
   "zero_credit_runtime": true
 }
