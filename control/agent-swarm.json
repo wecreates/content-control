@@ -582,6 +582,8 @@
     "motion_library": "remotion/MotionLibrary.jsx",
     "production_tracker": "scripts/production_tracker.py",
     "audience_panel": "scripts/audience_panel.py",
-    "analytics_feedback": "scripts/analytics_feedback.py"
+    "analytics_feedback": "scripts/analytics_feedback.py",
+    "studio_department_map": "control/studio-department-map-v1.json",
+    "studio_department_verifier": "scripts/verify_studio_department_map.py"
   }
 }
