@@ -25,8 +25,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
       - name: Verify phone playback compatibility
+        id: verify
+        continue-on-error: true
         run: python scripts/free_mobile_compat_qa.py --video public-review/episode1-v10-free.mp4 --output state/mobile-playback-health.json
       - name: Persist compatibility receipt
+        if: always()
         run: |
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
@@ -38,6 +41,14 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Enforce compatibility gate
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open("state/mobile-playback-health.json"))
+          if d["status"]!="PASS": raise SystemExit(2)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
