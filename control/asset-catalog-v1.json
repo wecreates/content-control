@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "characters": [
+    "dave",
+    "points_monk",
+    "cashback_goblin"
+  ],
+  "environments": [
+    "white_stage",
+    "bank_counter",
+    "airport_lounge",
+    "retail_store",
+    "apartment",
+    "finance_metaphor_world"
+  ],
+  "props": [
+    "wallet",
+    "card",
+    "calculator",
+    "phone",
+    "receipt",
+    "calendar",
+    "price_tag",
+    "coin",
+    "fee_meter",
+    "points_counter"
+  ],
+  "fx": [
+    "impact_lines",
+    "speed_lines",
+    "coin_rain",
+    "paper_burst",
+    "smoke_pop",
+    "glow_pulse",
+    "motion_streak"
+  ],
+  "rules": [
+    "version every reusable asset",
+    "hash assets in accepted candidates",
+    "prefer library reuse before creating new asset"
+  ]
+}
