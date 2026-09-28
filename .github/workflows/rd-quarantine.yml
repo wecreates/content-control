@@ -1,0 +1,41 @@
+name: R&D Quarantine
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'state/rd-candidate.json'
+      - 'control/rd-baseline.json'
+      - 'control/rd-quarantine-v1.json'
+      - 'scripts/rd_quarantine.py'
+      - '.github/workflows/rd-quarantine.yml'
+permissions:
+  contents: write
+concurrency:
+  group: rd-quarantine
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - name: Candidate preflight
+        id: candidate
+        run: |
+          if [ -s state/rd-candidate.json ]; then echo "ready=yes" >> "$GITHUB_OUTPUT"; else echo "ready=no" >> "$GITHUB_OUTPUT"; fi
+      - name: Benchmark candidate against baseline
+        if: steps.candidate.outputs.ready == 'yes'
+        run: python scripts/rd_quarantine.py --candidate state/rd-candidate.json --baseline control/rd-baseline.json --out state/rd-quarantine-health.json
+      - name: Persist quarantine receipt
+        if: steps.candidate.outputs.ready == 'yes'
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/rd-quarantine-health.json
+          git diff --cached --quiet || git commit -m "Benchmark experimental studio technology"
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0 || { git rebase --abort || true; sleep $((attempt*4)); }; done
+          exit 1
