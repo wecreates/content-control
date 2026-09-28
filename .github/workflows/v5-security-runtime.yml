@@ -1,9 +1,6 @@
 name: V5 Security Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/v5-security-runtime.yml']
 permissions:
   contents: write
 concurrency:
