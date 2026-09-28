@@ -1,9 +1,6 @@
 name: V5 Thumbnail Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/v5-thumbnail-runtime.yml']
 permissions:
   actions: read
   contents: write
