@@ -1,11 +1,5 @@
 name: Bottleneck Resolver
 on:
-  workflow_run:
-    workflows:
-      - Content Control Production DAG
-      - Exact AV Reviewer
-      - Pinned Source Refresh
-    types: [completed]
   workflow_dispatch:
 permissions:
   actions: write
