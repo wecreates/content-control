@@ -7,15 +7,20 @@ on:
       - 'public/audio/episode1-narration.mp3'
       - 'state/episode1-factual-contract.json'
       - 'scripts/free_transcription_qa.py'
+      - 'scripts/build_verified_captions.py'
+      - 'scripts/verify_captions.py'
       - 'requirements-transcription.txt'
       - '.github/workflows/narration-transcription-gate.yml'
   schedule:
     - cron: '37 13 * * 1'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: narration-transcription-gate
   cancel-in-progress: true
+env:
+  GH_TOKEN: ${{ github.token }}
 jobs:
   transcribe:
     runs-on: ubuntu-latest
@@ -72,6 +77,9 @@ jobs:
           if d["status"]!="PASS":
               raise SystemExit(2)
           PY
+      - name: Continue caption acceptance chain
+        if: success()
+        run: gh workflow run review-server-smoke.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
