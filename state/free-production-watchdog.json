@@ -5,7 +5,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "caption_health_green": false,
+    "caption_health_green": true,
     "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -36,7 +36,6 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "caption_health_green",
     "provenance_inputs_current"
   ],
   "integrity_failures": [],
