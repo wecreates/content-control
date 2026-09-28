@@ -313,6 +313,38 @@ def audit_root(root: Path):
     dept_map=_read_json(root/"control/studio-department-map-v1.json")
     dept_impls=[d.get("impl","") for d in dept_map.get("departments",[]) if isinstance(d,dict)]
     checks["studio_department_map_connected"]=len(dept_impls)>=25 and all((root/p).is_file() for p in dept_impls) and (root/"scripts/verify_studio_department_map.py").is_file() and "verify_studio_department_map.py" in studio_text
+    voice_files=[
+        "control/voice-provider-routing-v2.json","control/voice-lock-v1.json",
+        "scripts/voice_provider.py","scripts/cartesia_sonic_generate.py","scripts/eleven_v3_generate.py",
+        "scripts/voice_candidate_qa.py","scripts/voice_take_selector.py","scripts/ccsd_voice_manifest.py",
+        "tests/test_voice_provider.py","tests/test_cartesia_sonic_generate.py","tests/test_eleven_v3_generate.py",
+        "tests/test_voice_take_selector.py","tests/test_voice_candidate_qa.py","tests/test_ccsd_voice_manifest.py",
+        "tests/test_voice_render_wiring.py",
+    ]
+    checks["premium_voice_stack_connected"]=all((root/p).is_file() for p in voice_files) and "premium_voice_director" in ids
+    voice_contract=_read_json(root/"control/voice-provider-routing-v2.json")
+    checks["premium_voice_quality_router"]=all([
+        voice_contract.get("primary",{}).get("provider")=="Cartesia",
+        voice_contract.get("primary",{}).get("model_id")=="sonic-3.6",
+        voice_contract.get("dialogue_specialist",{}).get("provider")=="ElevenLabs",
+        voice_contract.get("dialogue_specialist",{}).get("model_id")=="eleven_v3",
+        voice_contract.get("fallback",{}).get("enabled") is True,
+    ])
+    checks["premium_voice_studio_wiring"]=all(x in studio_text for x in [
+        "ccsd_voice_manifest.py","cartesia_sonic_generate.py","eleven_v3_generate.py",
+        "voice_candidate_qa.py","voice_take_selector.py","reference-clone-voice.mp3"
+    ]) and "voiceover_path" in ref_comp
+    episode3_voice=episode3_text
+    checks["premium_voice_episode3_wiring"]=all(x in episode3_voice for x in [
+        "cartesia_sonic_generate.py","eleven_v3_generate.py","voice_candidate_qa.py",
+        "voice_take_selector.py","CARTESIA_API_KEY","ELEVENLABS_API_KEY"
+    ])
+    voice_smoke=root/".github/workflows/premium-voice-runtime-smoke.yml"
+    voice_smoke_text=voice_smoke.read_text() if voice_smoke.is_file() else ""
+    checks["premium_voice_runtime_smoke_connected"]=all(x in voice_smoke_text for x in [
+        "test_voice_provider.py","selected_strategy","sonic-3.6","eleven_v3","voiceover_path"
+    ]) and ".github/workflows/premium-voice-runtime-smoke.yml" in reg_allowed
+    checks["premium_voice_tests_exposed"]="test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
