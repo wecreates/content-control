@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "publication_enabled": false,
+  "selection_basis": "Highest-priority offline cinematic voice quality for Content Control as of 2026-09-28.",
+  "primary": {
+    "provider": "ElevenLabs",
+    "model_id": "eleven_v3",
+    "mode": "text_to_dialogue",
+    "endpoint": "https://api.elevenlabs.io/v1/text-to-dialogue",
+    "output_format": "mp3_44100_128",
+    "max_reliable_chars_per_request": 1900,
+    "variants_per_take": 3,
+    "use_audio_tags": true,
+    "seed_locked": true,
+    "credentials": {
+      "api_key_env": "ELEVENLABS_API_KEY",
+      "voice_envs": {
+        "narrator": "ELEVENLABS_VOICE_NARRATOR",
+        "dave": "ELEVENLABS_VOICE_DAVE",
+        "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
+        "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
+      }
+    }
+  },
+  "fallback": {
+    "enabled": true,
+    "provider": "content_control_zero_credit_voice",
+    "rule": "Use existing verified local/pinned voice asset when ElevenLabs credentials, quota, voice IDs, generation, or QA fail."
+  },
+  "acceptance": [
+    "audio decodes successfully",
+    "speaker voice IDs stay locked by character",
+    "transcript fidelity passes",
+    "semantic recall passes",
+    "duration fits composition",
+    "no SFX or production directions appear in spoken text",
+    "publication remains disabled"
+  ]
+}
