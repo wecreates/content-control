@@ -1,0 +1,124 @@
+name: Shot Render Farm
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: shot-render-farm
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      longform: ${{ steps.matrix.outputs.longform }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Build shard matrix
+        id: matrix
+        run: |
+          set -euo pipefail
+          test -s production/reference-clones/active/studio/render-plan.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          r=json.load(open("production/reference-clones/active/studio/render-plan.json"))
+          rows=[]
+          for x in r.get("shards",[]):
+              rows.append({"id":x["id"],"start":float(x["start"]),"end":float(x["end"])})
+          print("matrix="+json.dumps({"include":rows},separators=(",",":")))
+          longform="yes" if json.load(open("production/reference-clones/active/scene-plan.json")).get("duration_seconds",0)>=300 else "no"
+          print("longform="+longform)
+          PY
+  render:
+    needs: plan
+    if: ${{ fromJson(needs.plan.outputs.matrix).include[0] != null }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+      max-parallel: 8
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - name: Install runtime
+        run: npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
+      - name: Build runtime props
+        run: |
+          mkdir -p qa-output/render-farm
+          python - <<'PY'
+          import json,pathlib
+          scene=json.load(open("production/reference-clones/active/scene-plan.json"))
+          pathlib.Path("qa-output/render-farm/props.json").write_text(json.dumps({"scenePlan":scene},indent=2)+"\n")
+          PY
+      - name: Render shard
+        run: |
+          set -euo pipefail
+          FPS=24
+          START=$(python -c 'import math; print(max(0,math.floor(float("${{ matrix.start }}")*24)))')
+          END=$(python -c 'import math; print(max(0,math.ceil(float("${{ matrix.end }}")*24)-1))')
+          if [ "${{ needs.plan.outputs.longform }}" = "yes" ]; then
+            ENTRY=remotion/reference-clone-long-index.jsx
+            COMP=ReferenceCloneLong
+          else
+            ENTRY=remotion/reference-clone-index.jsx
+            COMP=ReferenceClone
+          fi
+          npx remotion render "$ENTRY" "$COMP" "qa-output/render-farm/${{ matrix.id }}.mp4" --props=qa-output/render-farm/props.json --frames="$START-$END" --codec h264 --crf 25 --concurrency 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.id }}
+          path: qa-output/render-farm/${{ matrix.id }}.mp4
+          retention-days: 7
+  assemble:
+    needs: [plan,render]
+    if: ${{ always() && needs.render.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: qa-output/render-farm/shards
+          merge-multiple: true
+      - name: Assemble sharded preview
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          mkdir -p public-review state
+          find qa-output/render-farm/shards -name '*.mp4' | sort | awk '{print "file '\''"$0"'\''"}' > /tmp/concat.txt
+          test -s /tmp/concat.txt
+          ffmpeg -y -f concat -safe 0 -i /tmp/concat.txt -c copy public-review/reference-clone-sharded-preview.mp4
+          python - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path("public-review/reference-clone-sharded-preview.mp4")
+          h=hashlib.sha256(p.read_bytes()).hexdigest()
+          r={"schema_version":1,"status":"PASS","candidate_sha256":h,"shard_count":len(list(pathlib.Path("qa-output/render-farm/shards").glob("*.mp4"))),"publication_enabled":False}
+          pathlib.Path("state/shot-render-farm-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+      - name: Persist farm receipt
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add -f state/shot-render-farm-health.json public-review/reference-clone-sharded-preview.mp4
+          git diff --cached --quiet || git commit -m "Persist shot-sharded render preview"
+          for attempt in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && exit 0 || { git rebase --abort || true; sleep $((attempt*4)); }; done
+          exit 1
+      - name: Trigger final renderer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ needs.plan.outputs.longform }}" = "yes" ]; then
+            gh workflow run reference-clone-long-render.yml --ref main
+          else
+            gh workflow run reference-clone-render.yml --ref main
+          fi
