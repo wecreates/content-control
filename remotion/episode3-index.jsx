@@ -1,0 +1,2 @@
+import React from "react";import {Composition,registerRoot} from "remotion";import {CashbackCasino} from "./CashbackCasino";
+const Root=()=> <Composition id="CashbackCasino" component={CashbackCasino} durationInFrames={720} fps={24} width={720} height={1280}/>;registerRoot(Root);
