@@ -11,6 +11,7 @@ on:
       - '.github/workflows/episode3-live-smoke.yml'
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: episode3-live-smoke
   cancel-in-progress: true
@@ -108,3 +109,8 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
+      - name: Refresh system wiring audit
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run system-wiring-audit.yml --ref main
