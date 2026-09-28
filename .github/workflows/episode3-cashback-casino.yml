@@ -49,6 +49,16 @@ jobs:
           python -m pip install -r requirements-free-qa.lock.txt
       - name: Validate creative blueprint
         run: python scripts/validate_creative_blueprint.py production/episode3/creative-blueprint.json
+      - name: Verify character identity source
+        run: |
+          set -euo pipefail
+          grep -q 'from "./CharacterSystem"' remotion/CashbackCasinoVisual.jsx
+          grep -q '<Dave ' remotion/CashbackCasinoVisual.jsx
+          grep -q '<PointsMonk ' remotion/CashbackCasinoVisual.jsx
+          grep -q '<CashbackGoblin ' remotion/CashbackCasinoVisual.jsx
+          grep -q 'export const Dave' remotion/CharacterSystem.jsx
+          grep -q 'export const PointsMonk' remotion/CharacterSystem.jsx
+          grep -q 'export const CashbackGoblin' remotion/CharacterSystem.jsx
       - name: Vendor narration
         run: |
           set -euo pipefail
