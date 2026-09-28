@@ -1,6 +1,7 @@
 import React from "react";
 import {AbsoluteFill,Audio,useCurrentFrame,staticFile} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
+import {Environment} from "./EnvironmentSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {choreographyCamera,transitionStyle,ObjectChoreography,KineticText,OverlayChoreography,DepthBackground,MicroGags,ContactCue} from "./ChoreographyRuntime";
 
@@ -37,6 +38,7 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const voiceover=scenePlan?.voiceover_path||null;\n  return <AbsoluteFill style={{background:bg,overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>{voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}{voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
     <div style={{position:"absolute",inset:0,transform:camTransform(s.camera,p),transformOrigin:"center"}}>
       <svg width="720" height="1280" viewBox="0 0 720 1280">
+        <Environment id={s.environment?.id||"white_stage"} width={720} height={1280} frame={localFrame}/>
         <DepthBackground choreography={ch} localFrame={localFrame} width={720} height={1280}/>
         {!(ch.text_actions||[]).length?<text x="360" y="115" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="48" fill="#111">REFERENCE-DRIVEN BEAT {s.index+1}</text>:null}
         <ObjectChoreography choreography={ch} localFrame={localFrame} width={720} height={1280}/>
