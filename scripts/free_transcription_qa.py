@@ -31,6 +31,8 @@ def main():
 
     contract=json.loads(Path(a.contract).read_text())
     expected=contract["narration_text"]
+    cues=contract.get("caption_cues",[])
+    narration_end=float(cues[-1]["end"]) if cues else None
 
     model=WhisperModel(a.model,device="cpu",compute_type="int8")
     segments,info=model.transcribe(
@@ -39,14 +41,18 @@ def main():
         beam_size=5,
         vad_filter=True,
         condition_on_previous_text=True,
+        clip_timestamps=f"0,{narration_end}" if narration_end else "0",
     )
     segs=[]
     actual_parts=[]
     for s in segments:
+        start=float(s.start); end=float(s.end)
+        if narration_end is not None and start>=narration_end+0.25:
+            continue
         text=s.text.strip()
         if text:
             actual_parts.append(text)
-            segs.append({"start":round(float(s.start),3),"end":round(float(s.end),3),"text":text})
+            segs.append({"start":round(start,3),"end":round(min(end,narration_end) if narration_end else end,3),"text":text})
     actual=" ".join(actual_parts).strip()
 
     ne,na=norm(expected),norm(actual)
@@ -88,6 +94,7 @@ def main():
       "semantic_recall_ok":semantic_recall>=0.82,
       "duration_plausible":20.0<=media_duration<=40.0,
       "transcript_coverage_ok":coverage_ratio>=0.70,
+      "no_post_narration_hallucination":narration_end is None or segment_end<=narration_end+0.25,
       "publication_disabled":contract.get("publication_enabled") is False,
     }
     status="PASS" if all(checks.values()) else "FAIL"
