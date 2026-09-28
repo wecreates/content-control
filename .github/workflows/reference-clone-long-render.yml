@@ -1,14 +1,6 @@
 name: Reference Clone Long Render
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'production/reference-clones/active/longform-plan.json'
-      - 'production/reference-clones/active/scene-plan.json'
-      - 'remotion/ReferenceCloneLongComposition.jsx'
-      - 'remotion/reference-clone-long-index.jsx'
-      - '.github/workflows/reference-clone-long-render.yml'
 permissions:
   contents: write
 concurrency:
