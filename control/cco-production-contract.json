@@ -50,7 +50,8 @@
     "accessibility_localization_director",
     "analytics_learning_agent",
     "rd_quarantine_agent",
-    "premium_voice_director"
+    "premium_voice_director",
+    "visual_choreography_director"
   ],
   "output_schema": {
     "video_metadata": {
@@ -140,7 +141,13 @@
     "winning premium voice take is injected into final render scene plan",
     "premium voice provider is Cartesia Sonic 3.6 when configured",
     "premium voice QA passes or explicit fallback state is recorded",
-    "final render consumes timed premium dialogue mix when present"
+    "final render consumes timed premium dialogue mix when present",
+    "composition director assigns focal hierarchy and negative space",
+    "visual choreography exists for every final scene",
+    "choreography QA passes before render planning",
+    "rendered frame composition QA passes",
+    "rendered motion choreography QA passes",
+    "persistent prop and environment systems are used by clone renderers"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -170,6 +177,12 @@
     "premium_voice_lock": "control/voice-lock-v1.json",
     "voice_engine": "control/voice-engine-v3.json",
     "voice_runtime": "scripts/cartesia_voice_engine.py",
-    "voice_qa": "scripts/premium_voice_qa.py"
+    "voice_qa": "scripts/premium_voice_qa.py",
+    "visual_choreography": "control/visual-choreography-v1.json",
+    "object_behaviors": "control/object-behavior-library-v1.json",
+    "kinetic_text": "control/kinetic-text-v1.json",
+    "overlay_policy": "control/overlay-policy-v1.json",
+    "transition_grammar": "control/transition-grammar-v1.json",
+    "composition_policy": "control/composition-policy-v1.json"
   }
 }
