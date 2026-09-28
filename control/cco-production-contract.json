@@ -137,7 +137,10 @@
     "premium voice routing receipt exists when spoken dialogue exists",
     "voice candidate transcript fidelity passes",
     "character voice IDs remain locked by speaker",
-    "winning premium voice take is injected into final render scene plan"
+    "winning premium voice take is injected into final render scene plan",
+    "premium voice provider is Cartesia Sonic 3.6 when configured",
+    "premium voice QA passes or explicit fallback state is recorded",
+    "final render consumes timed premium dialogue mix when present"
   ],
   "creative_contracts": {
     "character_bible": "control/character-bible-v1.json",
@@ -164,6 +167,9 @@
     "studio_department_map": "control/studio-department-map-v1.json",
     "studio_department_verifier": "scripts/verify_studio_department_map.py",
     "premium_voice_routing": "control/voice-provider-routing-v2.json",
-    "premium_voice_lock": "control/voice-lock-v1.json"
+    "premium_voice_lock": "control/voice-lock-v1.json",
+    "voice_engine": "control/voice-engine-v3.json",
+    "voice_runtime": "scripts/cartesia_voice_engine.py",
+    "voice_qa": "scripts/premium_voice_qa.py"
   }
 }
