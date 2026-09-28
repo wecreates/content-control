@@ -311,6 +311,9 @@ def audit_root(root: Path):
     ]) and all(x in long_wf_text for x in [
         "Build runtime props","--props=qa-output/reference-clone-long/props.json"
     ])
+    dept_map=_read_json(root/"control/studio-department-map-v1.json")
+    dept_impls=[d.get("impl","") for d in dept_map.get("departments",[]) if isinstance(d,dict)]
+    checks["studio_department_map_connected"]=len(dept_impls)>=25 and all((root/p).is_file() for p in dept_impls) and (root/"scripts/verify_studio_department_map.py").is_file() and "verify_studio_department_map.py" in studio_text
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
