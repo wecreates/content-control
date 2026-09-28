@@ -1,11 +1,6 @@
 name: V5 Observability Runtime Completion
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/v5_observability_runtime.py'
-      - '.github/workflows/v5-observability-runtime.yml'
 permissions:
   actions: read
   contents: write
