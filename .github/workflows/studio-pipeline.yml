@@ -6,6 +6,15 @@ on:
     paths:
       - 'production/reference-clones/active/scene-plan.json'
       - 'scripts/ccsd_*.py'
+      - 'control/taste-director-v1.json'
+      - 'control/audio-depth-v1.json'
+      - 'control/acting-depth-v1.json'
+      - 'control/quality-depth-v1.json'
+      - 'remotion/ArticulatedRig.jsx'
+      - 'remotion/Physics2D.jsx'
+      - 'scripts/reference_structure_v2.py'
+      - 'scripts/typography_director.py'
+      - 'scripts/apply_story_strategy.py'
       - 'scripts/reference_motion_v2.py'
       - 'scripts/taste_features.py'
       - 'scripts/inject_soundscape_path.py'
@@ -83,7 +92,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
