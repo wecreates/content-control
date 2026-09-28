@@ -1,0 +1,103 @@
+name: Reference Clone Live Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'state/reference-clone-health.json'
+      - 'public-review/reference-clone-proof.mp4'
+      - 'server-lowmem.js'
+      - '.github/workflows/reference-clone-live-smoke.yml'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: reference-clone-live-smoke
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - name: Candidate preflight
+        id: candidate
+        run: |
+          if [ -s state/reference-clone-health.json ] && [ -s public-review/reference-clone-proof.mp4 ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Probe live clone surface
+        if: steps.candidate.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          BASE="https://content-control-render-worker.onrender.com"
+          EXPECTED=$(python -c 'import json; print(json.load(open("state/reference-clone-health.json"))["candidate_sha256"])')
+          mkdir -p /tmp/clone
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            hc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/clone/health.json -w "%{http_code}" "$BASE/clone/health" || true)
+            wc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/clone/watch.html -w "%{http_code}" "$BASE/clone/watch" || true)
+            mc=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/clone/media.headers -o /tmp/clone/range.bin -w "%{http_code}" "$BASE/clone/media" || true)
+            if [ "$hc" = "200" ] && [ "$wc" = "200" ] && [ "$mc" = "206" ]; then
+              if python - "$EXPECTED" <<'PY'
+          import json,sys,pathlib
+          h=json.load(open("/tmp/clone/health.json"))
+          e=sys.argv[1]
+          assert h.get("ok") is True
+          assert h.get("publication") is False
+          assert h.get("hashBound") is True
+          assert h.get("expectedSha256")==e
+          assert h.get("actualSha256")==e
+          assert pathlib.Path("/tmp/clone/range.bin").stat().st_size==1024
+          PY
+              then ok=1; break; fi
+            fi
+            sleep $((attempt*8))
+          done
+          test "$ok" = "1"
+          grep -q 'Reference Clone Proof' /tmp/clone/watch.html
+          grep -qi '^accept-ranges: bytes' /tmp/clone/media.headers
+          grep -qi '^content-range: bytes 0-1023/' /tmp/clone/media.headers
+      - name: Persist live clone health
+        if: steps.candidate.outputs.ready == 'yes'
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          expected=json.load(open("state/reference-clone-health.json"))
+          live=json.load(open("/tmp/clone/health.json"))
+          checks={
+            "health_green":live.get("ok") is True,
+            "hash_bound":live.get("hashBound") is True,
+            "candidate_matches":live.get("actualSha256")==expected["candidate_sha256"]==live.get("expectedSha256"),
+            "watch_page_present":pathlib.Path("/tmp/clone/watch.html").exists(),
+            "range_streaming":pathlib.Path("/tmp/clone/range.bin").exists() and pathlib.Path("/tmp/clone/range.bin").stat().st_size==1024,
+            "publication_disabled":live.get("publication") is False,
+          }
+          r={"schema_version":1,"status":"PASS" if all(checks.values()) else "FAIL","candidate_sha256":expected["candidate_sha256"],"reference_id":expected.get("reference_id"),"checks":checks,"watch_url":"https://content-control-render-worker.onrender.com/clone/watch","publication_enabled":False}
+          pathlib.Path("state/reference-clone-live-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          if r["status"]!="PASS": raise SystemExit(2)
+          PY
+      - name: Persist evidence
+        if: steps.candidate.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/reference-clone-live-health.json
+          git diff --cached --quiet || git commit -m "Verify live reference clone proof"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
+      - name: Refresh wiring audit
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run system-wiring-audit.yml --ref main
