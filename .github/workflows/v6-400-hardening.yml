@@ -1,11 +1,6 @@
 name: V6 Next 400 Runtime Hardening
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/v6-400-hardening.yml'
-      - 'scripts/v6_hardening_runtime.py'
 permissions:
   contents: write
 concurrency:
