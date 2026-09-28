@@ -29,6 +29,7 @@
     ".github/workflows/runtime-provenance.yml",
     ".github/workflows/runtime-security-audit.yml",
     ".github/workflows/sync-retention-gate.yml",
+    ".github/workflows/system-wiring-audit.yml",
     ".github/workflows/vce-gate.yml",
     ".github/workflows/video-playback-contract.yml"
   ],
