@@ -79,7 +79,21 @@
       "workflow_run": false
     },
     {
+      "path": ".github/workflows/coupon-book-snippet.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/episode2-coupon-book.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/episode2-live-smoke.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
       "schedule": false,
