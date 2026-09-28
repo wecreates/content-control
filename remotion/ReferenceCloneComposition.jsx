@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill,useCurrentFrame,interpolate} from "remotion";
+import {AbsoluteFill,Audio,useCurrentFrame,staticFile} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
@@ -22,7 +22,7 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const scale=s.shot_scale==="close"?1.65:s.shot_scale==="wide"?1.05:1.35;
   const x=360+(s.index%2===0?-70:70), y=840;
   const props=["$","%","CARD","FEE"];
-  return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}>
+  return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>
     <div style={{position:"absolute",inset:0,transform:camTransform(s.camera,p),transformOrigin:"center"}}>
       <svg width="720" height="1280" viewBox="0 0 720 1280">
         <text x="360" y="115" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="48" fill="#111">REFERENCE-DRIVEN BEAT {s.index+1}</text>
