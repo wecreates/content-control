@@ -6,6 +6,10 @@ from scripts.animatic_plan import build_animatic
 from scripts.dailies_review import review_dailies
 from scripts.asset_memory import build_asset_index
 from scripts.audience_panel import run_panel
+from scripts.render_level_gate import gate as render_gate
+from scripts.shot_approval import advance as approve_shot
+from scripts.analytics_feedback import map_feedback
+from scripts.rd_quarantine import evaluate as evaluate_rd
 
 class StudioStackTests(unittest.TestCase):
     def test_ccsd_requires_shared_scene_layers(self):
@@ -50,6 +54,22 @@ class StudioStackTests(unittest.TestCase):
     def test_audience_panel_has_multiple_personas(self):
         r=run_panel({"hook_strength":.8,"clarity":.9,"humor":.7,"pace":.8})
         self.assertGreaterEqual(len(r["personas"]),6)
+
+    def test_render_level_and_shot_approval_progress(self):
+        r=render_gate({"level":"blocking"},{"checks":{"layout":True,"timing":True}})
+        self.assertEqual(r["level"],"preview")
+        a=approve_shot({"stage":"BLOCKING"},{"notes":[]})
+        self.assertEqual(a["stage"],"SPLINE")
+
+    def test_analytics_maps_retention_to_scene(self):
+        ccsd={"scenes":[{"id":"s1","start":0,"end":5,"camera":{"move":"punch_in"},"characters":[{"id":"dave"}],"story":{"beat":"hook"}}]}
+        r=map_feedback(ccsd,{"retention_points":[{"time":2,"retention":.4}]})
+        self.assertEqual(r["retention_dips"][0]["scene_id"],"s1")
+
+    def test_rd_candidate_stays_quarantined_when_consistency_is_weak(self):
+        r=evaluate_rd({"quality":.9,"character_consistency":.7,"latency_ms":900,"cost":0},{"quality":.82,"character_consistency":.95,"latency_ms":1000,"cost":0})
+        self.assertEqual(r["status"],"QUARANTINE")
+        self.assertFalse(r["production_allowed"])
 
 if __name__=="__main__":
     unittest.main()
