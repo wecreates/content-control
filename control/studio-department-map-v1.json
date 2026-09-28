@@ -260,6 +260,13 @@
       "impl": "scripts/reference_optical_flow.py",
       "output": "optical-flow.json",
       "gate": "directional motion and camera-flow evidence"
+    },
+    {
+      "id": "semantic_dailies",
+      "agent": "hyper_critical_qa_director",
+      "impl": "scripts/semantic_dailies_v2.py",
+      "output": "semantic-dailies.json",
+      "gate": "OpenCLIP shot-semantic review of actual animatic frames"
     }
   ]
 }
