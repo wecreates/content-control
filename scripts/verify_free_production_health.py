@@ -121,6 +121,17 @@ checks["candidate_identity_consistent"]=all([
     checks["provenance_candidate_match"],
     checks["live_deployment_green"],
 ])
+candidate_hashes={
+    "health":health.get("candidate_sha256"),
+    "receipt":receipt.get("candidate_sha256"),
+    "ledger":ledger.get("current_candidate_sha256"),
+    "ledger_health":ledger_health.get("current_candidate_sha256"),
+    "captions":caption_health.get("candidate_sha256"),
+    "smoke":smoke.get("candidate_sha256"),
+    "provenance":provenance.get("candidate_sha256"),
+    "live_deployment":live_deployment.get("candidate_sha256"),
+}
+candidate_converged=all(candidate_hashes.values()) and len(set(candidate_hashes.values()))==1
 checks["candidate_converged"]=candidate_converged
 
 status="GREEN" if all(checks.values()) else "REPAIR_REQUIRED"
