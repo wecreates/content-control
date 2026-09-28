@@ -245,6 +245,30 @@
         "user approval requirement",
         "publication lock"
       ]
+    },
+    {
+      "id": "character_continuity_director",
+      "parallelism": 2,
+      "owns": [
+        "character bible enforcement",
+        "silhouette continuity",
+        "expression vocabulary",
+        "signature pose reuse",
+        "voice-role continuity",
+        "rendered identity drift review"
+      ]
+    },
+    {
+      "id": "reference_decomposition_agent",
+      "parallelism": 2,
+      "owns": [
+        "shot timeline measurement",
+        "motion verb extraction",
+        "camera verb extraction",
+        "comedy engine extraction",
+        "payoff timing",
+        "transferable mechanics only"
+      ]
     }
   ],
   "hard_rules": [
@@ -272,6 +296,19 @@
     "thumbnail-to-video promise parity is a release-gate requirement",
     "thumbnail spectacle establishes a minimum visual promise that the video opening must satisfy; QA rejects thumbnail-video expectation mismatch",
     "all brand-fighter character heads use approved corporate logo assets instead of generic circle heads",
-    "every production scene must specify camera behavior, lighting vectors, environmental audio bed, and timed foley"
-  ]
+    "every production scene must specify camera behavior, lighting vectors, environmental audio bed, and timed foley",
+    "all short-form production blueprints must pass scripts/validate_creative_blueprint.py before render",
+    "recurring characters must use remotion/CharacterSystem.jsx or an explicitly versioned successor",
+    "reference analysis extracts motion/comedy/camera grammar but never exact creator character identity or shot-for-shot staging",
+    "every abstract finance claim must be physicalized into a visible action, prop transformation, or spatial consequence before render",
+    "creative director must generate at least five materially different story engines before selecting a concept"
+  ],
+  "creative_contracts": {
+    "character_bible": "control/character-bible-v1.json",
+    "style_dna": "control/style-dna-v3.json",
+    "creative_director": "control/creative-director-v3.json",
+    "reference_decomposition": "control/reference-decomposition-contract.json",
+    "blueprint_validator": "scripts/validate_creative_blueprint.py",
+    "reusable_character_renderer": "remotion/CharacterSystem.jsx"
+  }
 }
