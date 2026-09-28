@@ -1,6 +1,7 @@
 import React from "react";
 import {AbsoluteFill,Audio,useCurrentFrame,staticFile} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
+import {Environment} from "./EnvironmentSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {choreographyCamera,transitionStyle,ObjectChoreography,KineticText,OverlayChoreography,DepthBackground,MicroGags,ContactCue} from "./ChoreographyRuntime";
 
@@ -31,6 +32,7 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
     {voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
     <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center",...transition}}>
       <svg width="1920" height="1080" viewBox="0 0 1920 1080">
+        <Environment id={s.environment?.id||"white_stage"} width={1920} height={1080} frame={localFrame}/>
         <DepthBackground choreography={ch} localFrame={localFrame} width={1920} height={1080}/>
         {!(ch.text_actions||[]).length?<text x="960" y="90" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="62" fill="#111">REFERENCE-DRIVEN ACT</text>:null}
         <ObjectChoreography choreography={ch} localFrame={localFrame} width={1920} height={1080}/>
