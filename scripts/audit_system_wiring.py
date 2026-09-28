@@ -41,6 +41,17 @@ def audit_root(root: Path):
     checks["episode3_pre_render_creative_gate"]=all(x in episode3_text for x in [
         "validate_creative_blueprint.py","production/episode3/creative-blueprint.json","Local hash-bound review smoke"
     ])
+    checks["episode3_layout_gate_connected"]=all([
+        (root/"scripts/verify_episode3_layout.py").is_file(),
+        "verify_episode3_layout.py" in episode3_text,
+        "Verify Episode 3 layout safe zones" in episode3_text,
+    ])
+    checks["episode3_failed_diagnostics_persist"]=all(x in episode3_text for x in [
+        "state/episode3-transcription-health.json",
+        "qa-output/episode3/semantic.json",
+        "qa-output/episode3/deterministic.json",
+        "qa-output/episode3/audio.json",
+    ])
     checks["episode3_transcription_acceptance_bound"]=all(x in episode3_text for x in [
         'transcription=json.load(open("state/episode3-transcription-health.json"))',
         'transcription["status"]=="PASS"',
