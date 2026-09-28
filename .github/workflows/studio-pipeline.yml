@@ -183,11 +183,85 @@ jobs:
           printf '%s\n' '{"checks":{"layout":true,"animation":true,"fx":true,"lighting":true,"editorial":true,"sound":true,"continuity":true}}' > state/studio/render-checks.json
           python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
 
+      - name: Build premium voice candidates
+        if: steps.active.outputs.ready == 'yes'
+        env:
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
+          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
+          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
+          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
+          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
+          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
+          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          mkdir -p state/studio qa-output/studio-voice public/audio
+          python scripts/ccsd_voice_manifest.py --ccsd "$S/13-final-ccsd.json" --out "$S/voice-dialogue.json"
+          STATUS=$(python -c 'import json; print(json.load(open("production/reference-clones/active/studio/voice-dialogue.json"))["status"])')
+          python scripts/voice_provider.py --out state/studio/voice-provider.json
+          if [ "$STATUS" = "PASS" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+            python scripts/cartesia_sonic_generate.py --dialogue "$S/voice-dialogue.json" --out qa-output/studio-voice/cartesia.wav --receipt state/studio/cartesia-voice.json
+            python scripts/eleven_v3_generate.py --dialogue "$S/voice-dialogue.json" --out qa-output/studio-voice/eleven.mp3 --receipt state/studio/eleven-voice.json --reference-id studio-active
+            CSTAT=$(python -c 'import json; print(json.load(open("state/studio/cartesia-voice.json"))["status"])')
+            ESTAT=$(python -c 'import json; print(json.load(open("state/studio/eleven-voice.json"))["status"])')
+            if [ "$CSTAT" = "PASS" ] || [ "$ESTAT" = "PASS" ]; then
+              python -m pip install -r requirements-transcription.txt
+              if [ "$CSTAT" = "PASS" ]; then
+                python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/cartesia.wav --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/cartesia.json --model base.en || true
+              fi
+              if [ "$ESTAT" = "PASS" ]; then
+                python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/eleven.mp3 --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/eleven.json --model base.en || true
+              fi
+              python - <<'PY'
+import json,pathlib
+takes=[]
+for provider,path,audio in [
+    ("cartesia","qa-output/studio-voice/cartesia.json","qa-output/studio-voice/cartesia.wav"),
+    ("elevenlabs","qa-output/studio-voice/eleven.json","qa-output/studio-voice/eleven.mp3"),
+]:
+    p=pathlib.Path(path)
+    if p.exists():
+        r=json.load(open(p));r["path"]=audio;r["provider"]=provider;r.setdefault("duration_error_ratio",0)
+        takes.append(r)
+pathlib.Path("qa-output/studio-voice/takes.json").write_text(json.dumps({"takes":takes},indent=2,sort_keys=True)+"\n")
+PY
+              if python scripts/voice_take_selector.py --takes qa-output/studio-voice/takes.json --out state/studio/premium-voice.json; then
+                BEST=$(python -c 'import json; print(json.load(open("state/studio/premium-voice.json"))["best"]["path"])')
+                if [[ "$BEST" == *.wav ]]; then
+                  ffmpeg -y -i "$BEST" -c:a libmp3lame -b:a 192k public/audio/reference-clone-voice.mp3 >/dev/null 2>&1
+                else
+                  cp "$BEST" public/audio/reference-clone-voice.mp3
+                fi
+              fi
+            fi
+            if [ ! -s public/audio/reference-clone-voice.mp3 ]; then
+              printf '%s\n' '{"status":"FALLBACK_REQUIRED","reason":"premium voice unavailable or failed QA","publication_enabled":false}' > state/studio/premium-voice.json
+            fi
+          else
+            printf '%s\n' '{"status":"EMPTY","reason":"no spoken dialogue in CCSD","publication_enabled":false}' > state/studio/premium-voice.json
+          fi
+
       - name: Feed studio decisions into scene plan
         if: steps.active.outputs.ready == 'yes'
         run: |
           S=production/reference-clones/active/studio
           python scripts/ccsd_to_scene_plan.py --ccsd "$S/13-final-ccsd.json" --scene-plan production/reference-clones/active/scene-plan.json --out "$S/scene-plan-studio.json"
+          python - <<'PY'
+import json,pathlib
+p=pathlib.Path("production/reference-clones/active/studio/scene-plan-studio.json")
+d=json.load(open(p))
+voice=pathlib.Path("public/audio/reference-clone-voice.mp3")
+if voice.is_file() and voice.stat().st_size>0:
+    d["voiceover_path"]="audio/reference-clone-voice.mp3"
+    d["voice_receipt"]="state/studio/premium-voice.json"
+p.write_text(json.dumps(d,indent=2,sort_keys=True)+"\n")
+PY
           cp "$S/scene-plan-studio.json" production/reference-clones/active/scene-plan.json
 
       - name: Final studio gate
@@ -224,7 +298,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json
+          git add -f production/reference-clones/active state/studio state/continuity-memory.json state/studio-department-health.json qa-output/studio-voice public/audio/reference-clone-voice.mp3 || true
           git diff --cached --quiet || git commit -m "Run full AI studio department pipeline"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
