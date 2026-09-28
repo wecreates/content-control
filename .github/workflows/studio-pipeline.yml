@@ -109,7 +109,7 @@ jobs:
           mkdir -p production/reference-clones/active/studio/boards state/studio
           RID=$(python -c 'import json; print(json.load(open("production/reference-clones/active/activation.json")).get("reference_id","active"))')
           S=production/reference-clones/active/studio
-          python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-story-ccsd.json"
+          python scripts/ccsd_from_scene_plan.py --scene-plan production/reference-clones/active/scene-plan.json --project-id "$RID" --out "$S/01-ccsd.json"
           python scripts/ccsd_validate.py --input "$S/01-ccsd.json" --out state/studio/ccsd-health.json
           python scripts/story_room_v2.py --topic "$RID finance adaptation" --count 12 --out "$S/story-room.json"
           python scripts/story_room_critic.py --room "$S/story-room.json" --out "$S/story-room-critique.json"
