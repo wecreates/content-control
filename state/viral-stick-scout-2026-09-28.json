@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "MATERIAL_IMPROVEMENT_FOUND",
+  "scan_timestamp_utc": "2026-09-28T17:40:00Z",
+  "publication_enabled": false,
+  "high_confidence_references": [
+    {
+      "platform": "YouTube",
+      "title": "Creeper Clan - Animation vs. Minecraft Shorts Ep 40",
+      "creator": "Alan Becker",
+      "url": "https://www.youtube.com/watch?v=FcQlQAs5EDM",
+      "upload_date": "2026-08-29",
+      "view_count": 16978485,
+      "like_count": 187034,
+      "comment_count": 11000,
+      "approx_views_per_day_since_upload": 565950
+    },
+    {
+      "platform": "YouTube",
+      "title": "School Bops In 2026",
+      "creator": "ChainsFR",
+      "url": "https://www.youtube.com/watch?v=iLBfE_kE7JA",
+      "upload_date": "2026-07-11",
+      "view_count": 6113918,
+      "like_count": 154529,
+      "comment_count": 9000,
+      "approx_views_per_day_since_upload": 77391
+    }
+  ],
+  "finding": "Current breakout stick animation is character-action-first. Rapid visual resets work best when each beat continues one causal chain instead of behaving like an independent information card.",
+  "content_control_upgrade": {
+    "name": "hybrid continuity-reset grammar",
+    "rules": [
+      "Keep the 2-3 second visual reset pace.",
+      "Carry at least one object, goal, obstacle, or character state across every reset.",
+      "Make finance concepts visible through character action before adding explanatory text.",
+      "Use text to label or quantify the action, not replace it.",
+      "Build one escalating physical chain from premium card to credits to calendar to annual-fee math.",
+      "Use one hard audio-visual interruption before the final payoff.",
+      "Resolve the visual problem on-screen instead of ending on a static summary card alone."
+    ],
+    "original_characters_only": ["Dave", "Chad", "Points Monk"],
+    "do_not_copy": [
+      "creator characters",
+      "creator dialogue",
+      "exact scenes",
+      "distinctive branded worlds"
+    ]
+  }
+}
