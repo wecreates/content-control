@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "status": "SCOUT_COMPLETE",
+  "topic": "Your Credit Card Became a Coupon Book",
+  "publication_enabled": false,
+  "references": [
+    {
+      "platform": "YouTube",
+      "title": "Kids in 2026",
+      "creator": "ChainsFR",
+      "url": "https://www.youtube.com/watch?v=qb4AYeWF7as",
+      "view_count": 15679073,
+      "transferable": [
+        "character-first dialogue",
+        "rapid punchline resets",
+        "simple props",
+        "relatable conflict"
+      ]
+    },
+    {
+      "platform": "YouTube",
+      "title": "Animation vs. Addiction",
+      "creator": "Alan Becker",
+      "url": "https://www.youtube.com/watch?v=KoB2cqmYZNg",
+      "view_count": 26766401,
+      "transferable": [
+        "action-first storytelling",
+        "physicalized abstract concepts",
+        "minimal exposition",
+        "visual cause-and-effect"
+      ]
+    },
+    {
+      "platform": "YouTube",
+      "title": "Animation vs. Math",
+      "creator": "Alan Becker",
+      "url": "https://www.youtube.com/watch?v=B1J6Ou4q8vE",
+      "view_count": 146386451,
+      "transferable": [
+        "turn math into physical action",
+        "clear geometric staging",
+        "visual escalation",
+        "no lecture-slide dependence"
+      ]
+    },
+    {
+      "platform": "YouTube",
+      "title": "How Banks Actually Make Money (Stickman Animation Explained)",
+      "creator": "Finance With Stickman",
+      "url": "https://www.youtube.com/watch?v=rGv_0hfjC8E",
+      "view_count": 1514,
+      "transferable": [
+        "finance-specific stick figure framing",
+        "short runtime",
+        "plain-language explanation"
+      ]
+    }
+  ],
+  "trend_basis": [
+    "2026 card discussions increasingly frame premium rewards as complex coupon-book benefits.",
+    "High-performing stick-figure storytelling repeatedly favors characters doing things over static explanation."
+  ],
+  "production_translation": {
+    "original_characters": [
+      "Dave",
+      "Chad",
+      "Points Monk"
+    ],
+    "scene_count": 12,
+    "scene_duration_seconds": 2.5,
+    "style": [
+      "warm off-white field",
+      "black articulated stick figures",
+      "teal/red/yellow accents",
+      "physical coupon props",
+      "calendar gag",
+      "visual math"
+    ],
+    "prohibited": [
+      "copying creator characters",
+      "copying exact scenes",
+      "copying dialogue"
+    ]
+  }
+}
