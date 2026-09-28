@@ -140,11 +140,12 @@ jobs:
           p=pathlib.Path("public-review/episode3-cashback-casino.mp4")
           h=hashlib.sha256(p.read_bytes()).hexdigest()
           parts={k:json.load(open(f"qa-output/episode3/{k}.json")) for k in ["audio","deterministic","semantic","mobile","factual"]}
-          ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS"
+          transcription=json.load(open("state/episode3-transcription-health.json"))
+          ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS" and transcription["status"]=="PASS"
           captions=pathlib.Path("public-review/episode3-cashback-casino.vtt")
           caption_sha=hashlib.sha256(captions.read_bytes()).hexdigest()
           ok=ok and captions.is_file() and captions.read_text().startswith("WEBVTT")
-          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts}
+          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts,"transcription":transcription}
           pathlib.Path("state/episode3-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           print(json.dumps({"status":r["status"],"candidate_sha256":h}))
           if not ok: raise SystemExit(3)
