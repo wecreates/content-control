@@ -12,7 +12,7 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
  const scale=close?1.5:wide?.9:1.15;
  const x=960+(s.index%2===0?-260:260),y=610;
  const camera=s.camera==="whip_pan"?("translateX("+((1-p)*180)+"px)"):s.camera==="punch_in"?("scale("+(1+.1*p)+")"):("scale("+(1+.025*Math.sin(Math.PI*p))+")");
- return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.035}/>
+ const voiceover=scenePlan?.voiceover_path||null;\n return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}><Audio src={staticFile("audio/episode1-music.mp3")} volume={0.035}/>{voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
  <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center"}}>
  <svg width="1920" height="1080" viewBox="0 0 1920 1080">
   <text x="960" y="90" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="62" fill="#111">REFERENCE-DRIVEN ACT</text>
