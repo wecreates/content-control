@@ -31,7 +31,7 @@
     "reproducible_runtime_locks": true,
     "review_server_cache_policy": true,
     "review_server_security_headers": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "sync_retention_gate": true,
     "system_wiring_integrity": false,
     "verified_caption_track": true,
