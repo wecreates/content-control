@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "title": "Your Credit Card Became a Coupon Book",
+  "publication_enabled": false,
+  "educational_example": true,
+  "narration_text": "Dave opened a premium card. Then the card handed him a homework assignment. Fifteen dollars for coffee—only this month. Twenty dollars for streaming—if you remember Tuesday. Ten dollars at a store Dave never uses. Chad calls it free money. Points Monk pulls out a calendar. If a credit changes what you buy, it isn't saving; it's steering. Count only credits you would have used anyway. Then subtract the annual fee. The card isn't a coupon book you must finish. Real value first. Credits second. Flex last.",
+  "claims": {
+    "coffee_credit_example_usd": 15,
+    "streaming_credit_example_usd": 20,
+    "store_credit_example_usd": 10,
+    "example_total_used_value_usd": 45
+  },
+  "arithmetic": [
+    {
+      "expression": "15+20+10",
+      "expected": 45
+    }
+  ],
+  "required_visual_tokens": [
+    "$15 COFFEE",
+    "$20 STREAMING",
+    "$10 MYSTERY STORE",
+    "CREDIT ≠ SAVINGS",
+    "REAL VALUE FIRST",
+    "CREDITS SECOND",
+    "FLEX LAST"
+  ],
+  "prohibited_named_products": [
+    "American Express",
+    "Amex",
+    "Chase",
+    "Citi",
+    "Capital One",
+    "Discover",
+    "Wells Fargo",
+    "Bank of America"
+  ],
+  "prohibited_risky_phrases": [
+    "guaranteed return",
+    "risk-free",
+    "apply now",
+    "you must get this card",
+    "free money guaranteed"
+  ],
+  "topic_basis": "2026 premium-card trend: rising annual fees and increasingly complex coupon-book-style credits; video uses unnamed illustrative values rather than current issuer-specific terms."
+}
