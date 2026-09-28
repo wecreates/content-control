@@ -5,8 +5,8 @@ on:
     branches: [main]
     paths:
       - 'state/analytics-input.json'
-      - 'production/reference-clones/active/studio/13-final-ccsd.json'
-      - 'scripts/analytics_feedback.py'
+      - 'production/reference-clones/active/studio/18-master-ccsd.json'
+      - 'scripts/analytics_learning_v2.py'
       - 'control/analytics-learning-v1.json'
       - '.github/workflows/analytics-feedback.yml'
 permissions:
@@ -26,20 +26,23 @@ jobs:
       - name: Input preflight
         id: input
         run: |
-          if [ -s state/analytics-input.json ] && [ -s production/reference-clones/active/studio/13-final-ccsd.json ]; then echo "ready=yes" >> "$GITHUB_OUTPUT"; else echo "ready=no" >> "$GITHUB_OUTPUT"; fi
+          if [ -s state/analytics-input.json ] && [ -s production/reference-clones/active/studio/18-master-ccsd.json ]; then echo "ready=yes" >> "$GITHUB_OUTPUT"; else echo "ready=no" >> "$GITHUB_OUTPUT"; fi
       - name: Map analytics back to scenes
         if: steps.input.outputs.ready == 'yes'
-        run: python scripts/analytics_feedback.py --ccsd production/reference-clones/active/studio/13-final-ccsd.json --analytics state/analytics-input.json --out state/analytics-feedback.json
+        run: python scripts/analytics_learning_v2.py --ccsd production/reference-clones/active/studio/18-master-ccsd.json --analytics state/analytics-input.json --out state/analytics-feedback.json
       - name: Update creative learning memory
         if: steps.input.outputs.ready == 'yes'
         run: |
           python - <<'PY'
           import json,pathlib
           p=pathlib.Path("state/creative-learning-memory.json")
-          old=json.load(open(p)) if p.exists() else {"schema_version":1,"episodes":[],"rules":[],"publication_enabled":False}
+          old=json.load(open(p)) if p.exists() else {"schema_version":2,"episodes":[],"rules":[],"examples":[],"publication_enabled":False}
           fb=json.load(open("state/analytics-feedback.json"))
-          old["episodes"].append({"mapped_points":len(fb.get("mapped_points",[])),"retention_dips":fb.get("retention_dips",[])})
-          old["rules"].extend(fb.get("learning_rules",[]))
+          old["episodes"].append({"examples":len(fb.get("examples",[])),"rules":len(fb.get("rules",[]))})
+          old["examples"].extend(fb.get("examples",[]))
+          old["rules"].extend(fb.get("rules",[]))
+          old["examples"]=old["examples"][-2000:]
+          old["rules"]=old["rules"][-2000:]
           p.write_text(json.dumps(old,indent=2,sort_keys=True)+"\n")
           PY
       - name: Persist learning
