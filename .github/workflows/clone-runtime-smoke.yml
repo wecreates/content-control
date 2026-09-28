@@ -12,6 +12,8 @@ on:
       - 'remotion/EnvironmentSystem.jsx'
       - 'remotion/PropSystem.jsx'
       - 'remotion/ChoreographyRuntime.jsx'
+      - 'remotion/ArticulatedRig.jsx'
+      - 'remotion/Physics2D.jsx'
       - 'remotion/reference-clone-index.jsx'
       - 'remotion/ReferenceCloneLongComposition.jsx'
       - 'remotion/reference-clone-long-index.jsx'
