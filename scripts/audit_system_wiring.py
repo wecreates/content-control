@@ -413,6 +413,7 @@ def audit_root(root: Path):
         "scripts/apply_story_strategy.py",
         "scripts/storyboard_generator_v2.py",
         "scripts/visual_dailies_v2.py",
+        "scripts/semantic_dailies_v2.py",
         "scripts/audience_panel_v2.py",
         "scripts/acting_director.py",
         "scripts/contact_physics_pass.py",
@@ -423,6 +424,7 @@ def audit_root(root: Path):
         "scripts/soundscape_render.py",
         "scripts/reference_optical_flow.py",
         "scripts/reference_motion_v2.py",
+        "scripts/reference_structure_v2.py",
         "scripts/reference_clone_enrich.py",
         "scripts/analytics_learning_v2.py",
         "scripts/production_scheduler.py",
@@ -437,22 +439,22 @@ def audit_root(root: Path):
     checks["quality_depth_stack_connected"]=all((root/p).is_file() for p in quality_depth_files)
     checks["quality_depth_studio_connected"]=all(x in studio_text for x in [
         "story_room_v2.py","story_room_critic.py","apply_story_strategy.py",
-        "storyboard_generator_v2.py","visual_dailies_v2.py","audience_panel_v2.py",
+        "storyboard_generator_v2.py","visual_dailies_v2.py","semantic_dailies_v2.py","audience_panel_v2.py",
         "acting_director.py","contact_physics_pass.py","visual_development_v2.py",
         "longform_visual_director.py","soundscape_director.py","adaptive_score_v2.py",
         "soundscape_render.py","production_scheduler.py","typography_pass.py","18-master-ccsd.json"
     ])
     ingest=(root/"scripts/ingest_reference_video.py").read_text() if (root/"scripts/ingest_reference_video.py").is_file() else ""
     checks["reference_optical_flow_connected"]=all(x in ingest for x in [
-        "reference_optical_flow.py","reference_motion_v2.py","reference_clone_enrich.py","optical-flow.json"
+        "reference_optical_flow.py","reference_motion_v2.py","reference_structure_v2.py","reference_clone_enrich.py","optical-flow.json","reference-structure.json"
     ]) and all(x in (root/"scripts/reference_clone_compiler.py").read_text() for x in [
         "reference_flow_direction","reference_flow_speed"
     ])
     char_src=(root/"remotion/CharacterSystem.jsx").read_text() if (root/"remotion/CharacterSystem.jsx").is_file() else ""
     checks["articulated_character_runtime_connected"]=all(x in char_src for x in [
-        "elbowPoint","kneePoint","leftHandTarget","rightHandTarget","armBend","legBend"
+        "elbowPoint","kneePoint","leftHandTarget","rightHandTarget","armBend","legBend","gazeX","blink","browLift"
     ]) and "performanceTargets" in ((root/"remotion/ChoreographyRuntime.jsx").read_text() if (root/"remotion/ChoreographyRuntime.jsx").is_file() else "")
-    checks["adaptive_soundscape_connected"]="studio-soundscape.wav" in studio_text and "inject_soundscape_path.py" in studio_text and "soundscape_path" in short_comp and "soundscape_path" in long_comp
+    checks["adaptive_soundscape_connected"]="studio-soundscape.wav" in studio_text and "soundscape_render.py" in studio_text and "inject_soundscape_path.py" in studio_text and "soundscape_path" in short_comp and "soundscape_path" in long_comp
     checks["taste_director_render_gate"]=all(x in clone_render_text for x in [
         "taste_features.py","taste_director.py","taste.json"
     ]) and all(x in long_wf_text for x in [
