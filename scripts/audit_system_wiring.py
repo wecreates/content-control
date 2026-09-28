@@ -239,6 +239,78 @@ def audit_root(root: Path):
     checks["clone_concept_receipt_enforced"]=all(x in clone_wf_text for x in ["generate_concept_selection.py","concept-selection.json"])
     checks["clone_renderer_backed_board_hash_enforced"]=all(x in clone_render_text for x in ["verify_character_board_lock.py","character-board-lock-health.json","character_board_lock"])
     checks["clone_actual_render_parity_enforced"]=all(x in clone_render_text for x in ["candidate-measured.json","decompose_reference_video.py","reference_style_parity_qa.py"])
+    studio_files=[
+        "control/studio-scene-schema-v1.json","control/studio-pipeline-v1.json",
+        "control/dailies-contract-v1.json","control/asset-catalog-v1.json",
+        "control/render-levels-v1.json","control/voice-performance-v1.json",
+        "control/analytics-learning-v1.json","control/rd-quarantine-v1.json",
+        "scripts/ccsd_validate.py","scripts/ccsd_from_scene_plan.py","scripts/ccsd_to_scene_plan.py",
+        "scripts/story_room.py","scripts/storyboard_generator.py","scripts/animatic_plan.py",
+        "scripts/dailies_review.py","scripts/visual_development.py","scripts/color_script.py",
+        "scripts/cinematography_pass.py","scripts/rig_motion_pass.py","scripts/simulation_fx_pass.py",
+        "scripts/crowd_pass.py","scripts/lighting_pass.py","scripts/editorial_pass.py",
+        "scripts/sound_design_pass.py","scripts/music_score_pass.py","scripts/dialogue_direction.py",
+        "scripts/facial_performance_pass.py","scripts/finishing_pass.py","scripts/asset_memory.py",
+        "scripts/continuity_memory.py","scripts/production_tracker.py","scripts/shot_approval.py",
+        "scripts/render_level_gate.py","scripts/shot_render_plan.py","scripts/audience_panel.py",
+        "scripts/ab_development.py","scripts/accessibility_pass.py","scripts/localization_plan.py",
+        "scripts/analytics_feedback.py","scripts/version_lineage.py","scripts/rd_quarantine.py",
+        "remotion/MotionLibrary.jsx","tests/test_studio_stack.py",
+    ]
+    checks["studio_capability_files_complete"]=all((root/p).is_file() for p in studio_files)
+    studio_wf=root/".github/workflows/studio-pipeline.yml"
+    studio_text=studio_wf.read_text() if studio_wf.is_file() else ""
+    checks["studio_pipeline_connected"]=all(x in studio_text for x in [
+        "ccsd_from_scene_plan.py","storyboard_generator.py","animatic_plan.py","dailies_review.py",
+        "visual_development.py","rig_motion_pass.py","simulation_fx_pass.py","lighting_pass.py",
+        "editorial_pass.py","sound_design_pass.py","music_score_pass.py","dialogue_direction.py",
+        "facial_performance_pass.py","audience_panel.py","accessibility_pass.py","localization_plan.py",
+        "production_tracker.py","shot_render_plan.py","ccsd_to_scene_plan.py","shot-render-farm.yml"
+    ]) and ".github/workflows/studio-pipeline.yml" in reg_allowed
+    checks["clone_compiler_routes_through_studio"]="gh workflow run studio-pipeline.yml" in clone_wf_text
+    checks["storyboard_animatic_dailies_connected"]=all((root/p).is_file() for p in [
+        "scripts/storyboard_generator.py","scripts/animatic_plan.py","scripts/dailies_review.py"
+    ]) and all(x in studio_text for x in ["storyboard-manifest.json","animatic.json","dailies.json"])
+    checks["rig_motion_library_connected"]=(root/"remotion/MotionLibrary.jsx").is_file() and 'from "./MotionLibrary"' in clone_render_text if False else True
+    ref_comp=(root/"remotion/ReferenceCloneComposition.jsx").read_text() if (root/"remotion/ReferenceCloneComposition.jsx").is_file() else ""
+    checks["rig_motion_library_connected"]=(root/"remotion/MotionLibrary.jsx").is_file() and 'from "./MotionLibrary"' in ref_comp and "rig_motion_pass.py" in studio_text
+    checks["progressive_approval_connected"]=all(x in studio_text for x in [
+        "shot_approval.py","render_level_gate.py","shot-approval.json","render-level.json","FINAL"
+    ])
+    farm=root/".github/workflows/shot-render-farm.yml"
+    farm_text=farm.read_text() if farm.is_file() else ""
+    checks["shot_render_farm_connected"]=all(x in farm_text for x in [
+        "strategy:","matrix:","--frames=","actions/upload-artifact@v4","actions/download-artifact@v4",
+        "reference-clone-sharded-preview.mp4","shot-render-farm-health.json"
+    ]) and ".github/workflows/shot-render-farm.yml" in reg_allowed and "shot-render-farm.yml" in studio_text
+    analytics_wf=root/".github/workflows/analytics-feedback.yml"
+    analytics_text=analytics_wf.read_text() if analytics_wf.is_file() else ""
+    checks["analytics_learning_connected"]=all(x in analytics_text for x in [
+        "analytics_feedback.py","analytics-feedback.json","creative-learning-memory.json"
+    ]) and ".github/workflows/analytics-feedback.yml" in reg_allowed
+    rd_wf=root/".github/workflows/rd-quarantine.yml"
+    rd_text=rd_wf.read_text() if rd_wf.is_file() else ""
+    checks["rd_quarantine_connected"]=all(x in rd_text for x in [
+        "rd_quarantine.py","rd-baseline.json","rd-quarantine-health.json"
+    ]) and ".github/workflows/rd-quarantine.yml" in reg_allowed
+    checks["asset_continuity_memory_connected"]=all(x in studio_text for x in [
+        "asset_memory.py","continuity_memory.py","asset-index.json","continuity-memory.json"
+    ])
+    checks["ab_audience_accessibility_connected"]=all(x in studio_text for x in [
+        "ab_development.py","audience_panel.py","accessibility_pass.py","localization_plan.py"
+    ])
+    checks["studio_tests_exposed"]="test:studio" in scripts and "test_studio_stack.py" in scripts.get("test:studio","")
+    clone_smoke=root/".github/workflows/clone-runtime-smoke.yml"
+    clone_smoke_text=clone_smoke.read_text() if clone_smoke.is_file() else ""
+    checks["clone_runtime_smoke_connected"]=all(x in clone_smoke_text for x in [
+        "character-board-index.jsx","reference-clone-index.jsx","reference-clone-long-index.jsx",
+        "state/clone-runtime-smoke.json"
+    ]) and ".github/workflows/clone-runtime-smoke.yml" in reg_allowed
+    checks["clone_render_props_connected"]=all(x in clone_render_text for x in [
+        "Build runtime props","--props=qa-output/reference-clone/props.json"
+    ]) and all(x in long_wf_text for x in [
+        "Build runtime props","--props=qa-output/reference-clone-long/props.json"
+    ])
     failed=[k for k,v in checks.items() if not v]
     return {
         "schema_version":1,
