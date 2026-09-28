@@ -1,9 +1,6 @@
 name: V5 400 Task Verification
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['scripts/verify_v5_controls.py','.github/workflows/v5-400-verification.yml']
 permissions:
   contents: read
 env:
