@@ -1,12 +1,6 @@
 name: Build Cashback Trap Snippet
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'remotion/CashbackTrapSnippet.jsx'
-      - 'remotion/snippet-index.jsx'
-      - '.github/workflows/build-cashback-trap-snippet.yml'
 permissions:
   contents: write
 concurrency:
