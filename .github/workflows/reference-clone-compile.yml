@@ -81,13 +81,11 @@ jobs:
             sleep $((attempt*4))
           done
           exit 1
-      - name: Trigger universal clone proof
+      - name: Trigger full studio pipeline
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -s production/reference-clones/active/longform-plan.json ]; then
-            gh workflow run reference-clone-long-render.yml --ref main
-          elif [ -s production/reference-clones/active/scene-plan.json ]; then
-            gh workflow run reference-clone-render.yml --ref main
+          if [ -s production/reference-clones/active/scene-plan.json ]; then
+            gh workflow run studio-pipeline.yml --ref main
           fi
