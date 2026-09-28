@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: content-control-render-worker
+    runtime: node
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLICATION_ENABLED
+        value: "false"
