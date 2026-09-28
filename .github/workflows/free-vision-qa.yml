@@ -155,7 +155,7 @@ jobs:
           exit 1
       - name: Start post-acceptance verification chain
         if: success()
-        run: gh workflow run review-server-smoke.yml --ref main
+        run: gh workflow run narration-transcription-gate.yml --ref main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
