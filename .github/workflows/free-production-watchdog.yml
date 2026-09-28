@@ -138,7 +138,7 @@ jobs:
               "provenance_candidate_match","provenance_inputs_current","sbom_valid",
               "workflow_control_green","system_wiring_green","deployment_contract_green",
               "acceptance_ledger_candidate_match","caption_candidate_match",
-              "review_server_smoke_candidate_match","candidate_identity_consistent"
+              "review_server_smoke_candidate_match","candidate_identity_consistent","candidate_converged"
           }
           if failed-auxiliary:
               routes.add("free-vision-qa.yml")
