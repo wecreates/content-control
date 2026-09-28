@@ -1,0 +1,86 @@
+name: Episode 2 Live Smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'server-lowmem.js'
+      - 'state/episode2-health.json'
+      - 'public-review/episode2-coupon-book.mp4'
+      - '.github/workflows/episode2-live-smoke.yml'
+permissions:
+  contents: write
+concurrency:
+  group: episode2-live-smoke
+  cancel-in-progress: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Probe live Episode 2 review surface
+        run: |
+          set -euo pipefail
+          BASE="https://content-control-render-worker.onrender.com"
+          EXPECTED=$(python - <<'PY'
+          import json
+          print(json.load(open("state/episode2-health.json"))["candidate_sha256"])
+          PY
+          )
+          mkdir -p /tmp/ep2
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            hc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/ep2/health.json -w "%{http_code}" "$BASE/episode2/health" || true)
+            wc=$(curl -L --connect-timeout 15 --max-time 90 -sS -o /tmp/ep2/watch.html -w "%{http_code}" "$BASE/episode2/watch" || true)
+            mc=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/ep2/media.headers -o /tmp/ep2/range.bin -w "%{http_code}" "$BASE/episode2/media" || true)
+            if [ "$hc" = "200" ] && [ "$wc" = "200" ] && [ "$mc" = "206" ]; then ok=1; break; fi
+            sleep $((attempt*10))
+          done
+          test "$ok" = "1"
+          python - "$EXPECTED" <<'PY'
+          import json,sys
+          h=json.load(open("/tmp/ep2/health.json"))
+          e=sys.argv[1]
+          assert h["ok"] is True,h
+          assert h["publication"] is False,h
+          assert h["expectedSha256"]==e,(h["expectedSha256"],e)
+          assert h["actualSha256"]==e,(h["actualSha256"],e)
+          assert h["hashBound"] is True,h
+          print(h)
+          PY
+          grep -q 'Your Credit Card Became a Coupon Book' /tmp/ep2/watch.html
+          test "$(wc -c < /tmp/ep2/range.bin)" = "1024"
+      - name: Persist Episode 2 live health
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          expected=json.load(open("state/episode2-health.json"))["candidate_sha256"]
+          h=json.load(open("/tmp/ep2/health.json"))
+          checks={
+            "health_green":h.get("ok") is True,
+            "hash_bound":h.get("hashBound") is True,
+            "expected_hash_matches":h.get("expectedSha256")==expected,
+            "actual_hash_matches":h.get("actualSha256")==expected,
+            "watch_page_present":pathlib.Path("/tmp/ep2/watch.html").exists(),
+            "range_streaming":pathlib.Path("/tmp/ep2/range.bin").exists() and pathlib.Path("/tmp/ep2/range.bin").stat().st_size==1024,
+            "publication_disabled":h.get("publication") is False,
+          }
+          r={"schema_version":1,"status":"PASS" if all(checks.values()) else "FAIL","candidate_sha256":expected,"checks":checks,"publication_enabled":False,"watch_url":"https://content-control-render-worker.onrender.com/episode2/watch"}
+          pathlib.Path("state/episode2-live-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(r,sort_keys=True))
+          if r["status"]!="PASS": raise SystemExit(2)
+          PY
+      - name: Persist evidence
+        run: |
+          git config user.name content-control-runtime
+          git config user.email actions@users.noreply.github.com
+          git add state/episode2-live-health.json
+          git diff --cached --quiet || git commit -m "Verify Episode 2 live review surface"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+            sleep $((attempt*4))
+          done
+          exit 1
