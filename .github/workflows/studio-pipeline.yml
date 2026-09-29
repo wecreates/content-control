@@ -29,6 +29,7 @@ on:
       - 'scripts/contact_physics_pass.py'
       - 'scripts/acting_director.py'
       - 'scripts/creative_depth_engine.py'
+      - 'scripts/creative_candidate_selector.py'
       - 'tests/test_creative_depth_engine.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -196,7 +197,8 @@ jobs:
           python scripts/contact_physics_pass.py --ccsd "$S/15-choreography.json" --out "$S/16-contact.json"
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
           python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-score.json"
-          python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-master-ccsd.json"
+          python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-depth.json"
+          python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
 
