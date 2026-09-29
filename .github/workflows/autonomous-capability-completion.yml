@@ -29,8 +29,9 @@ jobs:
           python scripts/batch10_500_registry.py --out state/studio/batch10-500-registry.json
           python scripts/batch11_500_registry.py --out state/studio/batch11-500-registry.json
           [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
-          python scripts/persist_capability_progress.py --registries state/studio/batch7-500-registry.json state/studio/batch8-500-registry.json state/studio/batch9-500-registry.json state/studio/batch10-500-registry.json state/studio/batch11-500-registry.json --progress state/capability-progress.json --out state/capability-progress.json
-          python scripts/autonomous_completion_scheduler.py --root state/studio --out state/autonomous/plan.json --shards 16 --limit 160
+          python scripts/initialize_capability_progress.py --registries state/studio/batch7-500-registry.json state/studio/batch8-500-registry.json state/studio/batch9-500-registry.json state/studio/batch10-500-registry.json state/studio/batch11-500-registry.json --progress state/capability-progress.json --out state/capability-progress.next.json
+          mv state/capability-progress.next.json state/capability-progress.json
+          python scripts/autonomous_completion_scheduler.py --progress state/capability-progress.json --out state/autonomous/plan.json --shards 16 --limit 160
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           p=json.load(open("state/autonomous/plan.json"))
