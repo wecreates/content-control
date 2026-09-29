@@ -7,17 +7,17 @@
     },
     {
       "offset": 32,
-      "size": 22642,
+      "size": 22636,
       "type": "moov"
     },
     {
-      "offset": 22674,
+      "offset": 22668,
       "size": 8,
       "type": "free"
     },
     {
-      "offset": 22682,
-      "size": 3305781,
+      "offset": 22676,
+      "size": 4029651,
       "type": "mdat"
     }
   ],
@@ -33,22 +33,20 @@
     "faststart_moov_before_mdat": true,
     "fps_24": true,
     "mp4_container": true,
-    "pixel_format_yuv420p": false,
+    "pixel_format_yuv420p": true,
     "resolution_720x1280": true,
     "stereo_audio": true,
     "video_codec_h264": true
   },
-  "failed_checks": [
-    "pixel_format_yuv420p"
-  ],
+  "failed_checks": [],
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL",
+  "status": "PASS",
   "video": {
     "codec": "h264",
     "fps": 24.0,
     "height": 1280,
-    "pix_fmt": "yuvj420p",
+    "pix_fmt": "yuv420p",
     "profile": "High",
     "width": 720
   }
