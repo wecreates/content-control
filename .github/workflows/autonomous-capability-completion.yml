@@ -82,6 +82,14 @@ jobs:
           PLAN=state/autonomous/plan.json
           [ -f state/autonomous/plan/plan.json ] && PLAN=state/autonomous/plan/plan.json
           python scripts/reconcile_autonomous_completion.py --plan "$PLAN" --evidence-dir state/autonomous/evidence --out state/autonomous/reconciliation.json
+          set +e
+          python scripts/blocker_detector.py --progress state/capability-progress.json --reconciliation state/autonomous/reconciliation.json --out state/autonomous/blocker.json
+          BLOCK_RC=$?
+          set -e
+          python scripts/blocker_repair_router.py --blocker state/autonomous/blocker.json --out state/autonomous/blocker-repair.json
+          if [ "$BLOCK_RC" != "0" ]; then
+            echo "Blocker detected: repair route generated before normal continuation."
+          fi
           python scripts/apply_capability_evidence.py --progress state/capability-progress.json --evidence-dir state/autonomous/evidence --out state/capability-progress.next.json
           mv state/capability-progress.next.json state/capability-progress.json
           git config user.name content-control-autonomy
