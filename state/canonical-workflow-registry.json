@@ -42,7 +42,8 @@
     ".github/workflows/sync-retention-gate.yml",
     ".github/workflows/system-wiring-audit.yml",
     ".github/workflows/vce-gate.yml",
-    ".github/workflows/video-playback-contract.yml"
+    ".github/workflows/video-playback-contract.yml",
+    ".github/workflows/autonomous-capability-completion.yml"
   ],
   "manual_only": [
     ".github/workflows/always-on-resolver.yml",
