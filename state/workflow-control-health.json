@@ -3,6 +3,7 @@
     ".github/workflows/always-on-resolver.yml": true,
     ".github/workflows/analytics-feedback.yml": true,
     ".github/workflows/apply-runtime-security-fixes.yml": true,
+    ".github/workflows/autonomous-capability-completion.yml": true,
     ".github/workflows/autonomous-cco.yml": true,
     ".github/workflows/bottleneck-resolver.yml": true,
     ".github/workflows/candidate-state-reconcile.yml": true,
