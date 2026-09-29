@@ -3,6 +3,16 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '23 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/autonomous_completion_scheduler.py'
+      - 'scripts/initialize_capability_progress.py'
+      - 'scripts/execute_capability_task.py'
+      - 'scripts/apply_capability_evidence.py'
+      - 'scripts/blocker_detector.py'
+      - 'scripts/blocker_repair_router.py'
+      - '.github/workflows/autonomous-capability-completion.yml'
 permissions:
   contents: write
   actions: write
