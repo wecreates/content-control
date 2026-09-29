@@ -32,14 +32,11 @@ jobs:
           npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
           python -m pip install --upgrade pip
           python -m pip install -r requirements-free-qa.lock.txt
-      - name: Vendor Episode 2 narration
+      - name: Legacy voice path retired
         run: |
-          set -euo pipefail
-          mkdir -p public/audio
-          if [ ! -s public/audio/episode2-narration.mp3 ]; then
-            curl --fail --location --retry 5 --retry-all-errors               "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/6eb18c38-432b-4906-bd9b-582b6d659bd6.mp3"               -o public/audio/episode2-narration.mp3
-          fi
-          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/audio/episode2-narration.mp3 | grep -q audio
+          echo "This legacy workflow no longer owns voice generation."
+          echo "Use the canonical Studio Pipeline with Cartesia Sonic 3.6."
+          exit 42
       - name: Render Episode 2
         run: |
           set -euo pipefail
