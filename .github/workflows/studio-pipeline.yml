@@ -54,6 +54,9 @@ on:
       - 'scripts/production_reality_media_qa.py'
       - 'scripts/scene_render_manifest_v4.py'
       - 'tests/test_production_reality_v4.py'
+      - 'remotion/studio-scene-index.jsx'
+      - 'scripts/assemble_scene_master.py'
+      - 'scripts/batch5_realization_ledger.py'
       - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -227,6 +230,7 @@ jobs:
           python scripts/execution_depth_v3.py --ccsd "$S/18-v2.json" --out "$S/18-v3.json"
           python scripts/production_reality_v4.py --ccsd "$S/18-v3.json" --out "$S/18-depth.json"
           python scripts/scene_render_manifest_v4.py --ccsd "$S/18-depth.json" --out state/studio/scene-render-manifest-v4.json
+          python scripts/batch5_realization_ledger.py --out state/studio/batch5-realization-ledger.json
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
