@@ -1,0 +1,85 @@
+name: Autonomous Capability Completion
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 * * * *'
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: autonomous-capability-completion
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - name: Build current registries and parallel plan
+        id: plan
+        run: |
+          mkdir -p state/studio state/autonomous/evidence
+          python scripts/batch7_500_registry.py --out state/studio/batch7-500-registry.json
+          python scripts/batch8_500_registry.py --out state/studio/batch8-500-registry.json
+          python scripts/batch9_500_registry.py --out state/studio/batch9-500-registry.json
+          python scripts/batch10_500_registry.py --out state/studio/batch10-500-registry.json
+          python scripts/batch11_500_registry.py --out state/studio/batch11-500-registry.json
+          python scripts/autonomous_completion_scheduler.py --root state/studio --out state/autonomous/plan.json --shards 16 --limit 160
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          p=json.load(open("state/autonomous/plan.json"))
+          shards=sorted(set(x["shard"] for x in p["tasks"]))
+          print("matrix="+json.dumps({"shard":shards},separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with: {name: autonomous-plan, path: state/autonomous/plan.json, retention-days: 7}
+  workers:
+    needs: plan
+    if: ${{ needs.plan.outputs.matrix != '' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - uses: actions/download-artifact@v4
+        with: {name: autonomous-plan, path: state/autonomous}
+      - name: Execute bounded evidence work for shard
+        run: |
+          mkdir -p state/autonomous/evidence
+          python - <<'PY'
+          import json,os,pathlib
+          shard=int("${{ matrix.shard }}")
+          p=json.load(open("state/autonomous/plan/plan.json")) if pathlib.Path("state/autonomous/plan/plan.json").is_file() else json.load(open("state/autonomous/plan.json"))
+          for t in p["tasks"]:
+            if t["shard"]!=shard: continue
+            # Honest bootstrap receipt: integration presence is evidence, render proof is not fabricated.
+            evidence={"status":"PENDING_RENDER_PROOF","capability_id":t["capability_id"],"domain":t["domain"],"publication_enabled":False}
+            pathlib.Path(f"state/autonomous/evidence/{t['capability_id']}.json").write_text(json.dumps(evidence,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with: {name: "capability-evidence-${{ matrix.shard }}", path: state/autonomous/evidence, retention-days: 7}
+  reconcile:
+    needs: [plan,workers]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main}
+      - uses: actions/download-artifact@v4
+        with: {pattern: capability-evidence-*, path: state/autonomous/evidence, merge-multiple: true}
+      - uses: actions/download-artifact@v4
+        with: {name: autonomous-plan, path: state/autonomous}
+      - name: Reconcile without false promotion
+        run: |
+          PLAN=state/autonomous/plan.json
+          [ -f state/autonomous/plan/plan.json ] && PLAN=state/autonomous/plan/plan.json
+          python scripts/reconcile_autonomous_completion.py --plan "$PLAN" --evidence-dir state/autonomous/evidence --out state/autonomous/reconciliation.json
+      - uses: actions/upload-artifact@v4
+        with: {name: autonomous-reconciliation, path: state/autonomous/reconciliation.json, retention-days: 14}
