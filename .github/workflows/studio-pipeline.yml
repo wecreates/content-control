@@ -40,7 +40,11 @@ on:
       - 'scripts/performance_spatial_qa.py'
       - 'scripts/auto_scene_repair.py'
       - 'scripts/taste_memory.py'
-      - 'tests/test_creative_depth_engine.py'
+      - 'scripts/studio_intelligence_v2.py'
+      - 'scripts/diagnose_multi_repair.py'
+      - 'scripts/final_perceptual_master_gate.py'
+      - 'tests/test_studio_intelligence_v2.py'
+      - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
       - 'scripts/visual_development_v2.py'
@@ -208,7 +212,8 @@ jobs:
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
           python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-score.json"
           python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-depth-pre.json"
-          python scripts/viseme_gaze_pass.py --ccsd "$S/18-depth-pre.json" --out "$S/18-depth.json"
+          python scripts/viseme_gaze_pass.py --ccsd "$S/18-depth-pre.json" --out "$S/18-viseme.json"
+          python scripts/studio_intelligence_v2.py --ccsd "$S/18-viseme.json" --out "$S/18-depth.json"
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
@@ -239,7 +244,8 @@ jobs:
           SPATIAL_RC=$?
           set -e
           if [ "$STORY_RC" != "0" ] || [ "$SPATIAL_RC" != "0" ]; then
-            python scripts/auto_scene_repair.py --ccsd "$S/18-master-ccsd.json" --story state/studio/story-comprehension.json --spatial state/studio/performance-spatial.json --out "$S/18-repaired.json"
+            python scripts/diagnose_multi_repair.py --ccsd "$S/18-master-ccsd.json" --story state/studio/story-comprehension.json --spatial state/studio/performance-spatial.json --diagnosis state/studio/repair-diagnosis.json --variants-dir "$S/repair-variants"
+            python scripts/auto_scene_repair.py --ccsd "$S/repair-variants/clarity.json" --story state/studio/story-comprehension.json --spatial state/studio/performance-spatial.json --out "$S/18-repaired.json"
             cp "$S/18-repaired.json" "$S/18-master-ccsd.json"
             python scripts/story_comprehension_simulator.py --ccsd "$S/18-master-ccsd.json" --out state/studio/story-comprehension-postrepair.json
             python scripts/performance_spatial_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/performance-spatial-postrepair.json
