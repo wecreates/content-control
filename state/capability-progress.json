@@ -1,6 +1,967 @@
 {
-  "schema_version": 1,
-  "capabilities": {},
+  "capabilities": {
+    "1": {
+      "evidence": [
+        "state/autonomous/evidence/1.json"
+      ],
+      "state": "TESTED"
+    },
+    "10": {
+      "evidence": [
+        "state/autonomous/evidence/10.json"
+      ],
+      "state": "TESTED"
+    },
+    "100": {
+      "evidence": [
+        "state/autonomous/evidence/100.json"
+      ],
+      "state": "TESTED"
+    },
+    "101": {
+      "evidence": [
+        "state/autonomous/evidence/101.json"
+      ],
+      "state": "TESTED"
+    },
+    "102": {
+      "evidence": [
+        "state/autonomous/evidence/102.json"
+      ],
+      "state": "TESTED"
+    },
+    "103": {
+      "evidence": [
+        "state/autonomous/evidence/103.json"
+      ],
+      "state": "TESTED"
+    },
+    "104": {
+      "evidence": [
+        "state/autonomous/evidence/104.json"
+      ],
+      "state": "TESTED"
+    },
+    "105": {
+      "evidence": [
+        "state/autonomous/evidence/105.json"
+      ],
+      "state": "TESTED"
+    },
+    "106": {
+      "evidence": [
+        "state/autonomous/evidence/106.json"
+      ],
+      "state": "TESTED"
+    },
+    "107": {
+      "evidence": [
+        "state/autonomous/evidence/107.json"
+      ],
+      "state": "TESTED"
+    },
+    "108": {
+      "evidence": [
+        "state/autonomous/evidence/108.json"
+      ],
+      "state": "TESTED"
+    },
+    "109": {
+      "evidence": [
+        "state/autonomous/evidence/109.json"
+      ],
+      "state": "TESTED"
+    },
+    "11": {
+      "evidence": [
+        "state/autonomous/evidence/11.json"
+      ],
+      "state": "TESTED"
+    },
+    "110": {
+      "evidence": [
+        "state/autonomous/evidence/110.json"
+      ],
+      "state": "TESTED"
+    },
+    "111": {
+      "evidence": [
+        "state/autonomous/evidence/111.json"
+      ],
+      "state": "TESTED"
+    },
+    "112": {
+      "evidence": [
+        "state/autonomous/evidence/112.json"
+      ],
+      "state": "TESTED"
+    },
+    "113": {
+      "evidence": [
+        "state/autonomous/evidence/113.json"
+      ],
+      "state": "TESTED"
+    },
+    "114": {
+      "evidence": [
+        "state/autonomous/evidence/114.json"
+      ],
+      "state": "TESTED"
+    },
+    "115": {
+      "evidence": [
+        "state/autonomous/evidence/115.json"
+      ],
+      "state": "TESTED"
+    },
+    "116": {
+      "evidence": [
+        "state/autonomous/evidence/116.json"
+      ],
+      "state": "TESTED"
+    },
+    "117": {
+      "evidence": [
+        "state/autonomous/evidence/117.json"
+      ],
+      "state": "TESTED"
+    },
+    "118": {
+      "evidence": [
+        "state/autonomous/evidence/118.json"
+      ],
+      "state": "TESTED"
+    },
+    "119": {
+      "evidence": [
+        "state/autonomous/evidence/119.json"
+      ],
+      "state": "TESTED"
+    },
+    "12": {
+      "evidence": [
+        "state/autonomous/evidence/12.json"
+      ],
+      "state": "TESTED"
+    },
+    "120": {
+      "evidence": [
+        "state/autonomous/evidence/120.json"
+      ],
+      "state": "TESTED"
+    },
+    "121": {
+      "evidence": [
+        "state/autonomous/evidence/121.json"
+      ],
+      "state": "TESTED"
+    },
+    "122": {
+      "evidence": [
+        "state/autonomous/evidence/122.json"
+      ],
+      "state": "TESTED"
+    },
+    "123": {
+      "evidence": [
+        "state/autonomous/evidence/123.json"
+      ],
+      "state": "TESTED"
+    },
+    "124": {
+      "evidence": [
+        "state/autonomous/evidence/124.json"
+      ],
+      "state": "TESTED"
+    },
+    "125": {
+      "evidence": [
+        "state/autonomous/evidence/125.json"
+      ],
+      "state": "TESTED"
+    },
+    "126": {
+      "evidence": [
+        "state/autonomous/evidence/126.json"
+      ],
+      "state": "TESTED"
+    },
+    "127": {
+      "evidence": [
+        "state/autonomous/evidence/127.json"
+      ],
+      "state": "TESTED"
+    },
+    "128": {
+      "evidence": [
+        "state/autonomous/evidence/128.json"
+      ],
+      "state": "TESTED"
+    },
+    "129": {
+      "evidence": [
+        "state/autonomous/evidence/129.json"
+      ],
+      "state": "TESTED"
+    },
+    "13": {
+      "evidence": [
+        "state/autonomous/evidence/13.json"
+      ],
+      "state": "TESTED"
+    },
+    "130": {
+      "evidence": [
+        "state/autonomous/evidence/130.json"
+      ],
+      "state": "TESTED"
+    },
+    "131": {
+      "evidence": [
+        "state/autonomous/evidence/131.json"
+      ],
+      "state": "TESTED"
+    },
+    "132": {
+      "evidence": [
+        "state/autonomous/evidence/132.json"
+      ],
+      "state": "TESTED"
+    },
+    "133": {
+      "evidence": [
+        "state/autonomous/evidence/133.json"
+      ],
+      "state": "TESTED"
+    },
+    "134": {
+      "evidence": [
+        "state/autonomous/evidence/134.json"
+      ],
+      "state": "TESTED"
+    },
+    "135": {
+      "evidence": [
+        "state/autonomous/evidence/135.json"
+      ],
+      "state": "TESTED"
+    },
+    "136": {
+      "evidence": [
+        "state/autonomous/evidence/136.json"
+      ],
+      "state": "TESTED"
+    },
+    "137": {
+      "evidence": [
+        "state/autonomous/evidence/137.json"
+      ],
+      "state": "TESTED"
+    },
+    "138": {
+      "evidence": [
+        "state/autonomous/evidence/138.json"
+      ],
+      "state": "TESTED"
+    },
+    "139": {
+      "evidence": [
+        "state/autonomous/evidence/139.json"
+      ],
+      "state": "TESTED"
+    },
+    "14": {
+      "evidence": [
+        "state/autonomous/evidence/14.json"
+      ],
+      "state": "TESTED"
+    },
+    "140": {
+      "evidence": [
+        "state/autonomous/evidence/140.json"
+      ],
+      "state": "TESTED"
+    },
+    "141": {
+      "evidence": [
+        "state/autonomous/evidence/141.json"
+      ],
+      "state": "TESTED"
+    },
+    "142": {
+      "evidence": [
+        "state/autonomous/evidence/142.json"
+      ],
+      "state": "TESTED"
+    },
+    "143": {
+      "evidence": [
+        "state/autonomous/evidence/143.json"
+      ],
+      "state": "TESTED"
+    },
+    "144": {
+      "evidence": [
+        "state/autonomous/evidence/144.json"
+      ],
+      "state": "TESTED"
+    },
+    "145": {
+      "evidence": [
+        "state/autonomous/evidence/145.json"
+      ],
+      "state": "TESTED"
+    },
+    "146": {
+      "evidence": [
+        "state/autonomous/evidence/146.json"
+      ],
+      "state": "TESTED"
+    },
+    "147": {
+      "evidence": [
+        "state/autonomous/evidence/147.json"
+      ],
+      "state": "TESTED"
+    },
+    "148": {
+      "evidence": [
+        "state/autonomous/evidence/148.json"
+      ],
+      "state": "TESTED"
+    },
+    "149": {
+      "evidence": [
+        "state/autonomous/evidence/149.json"
+      ],
+      "state": "TESTED"
+    },
+    "15": {
+      "evidence": [
+        "state/autonomous/evidence/15.json"
+      ],
+      "state": "TESTED"
+    },
+    "150": {
+      "evidence": [
+        "state/autonomous/evidence/150.json"
+      ],
+      "state": "TESTED"
+    },
+    "151": {
+      "evidence": [
+        "state/autonomous/evidence/151.json"
+      ],
+      "state": "TESTED"
+    },
+    "152": {
+      "evidence": [
+        "state/autonomous/evidence/152.json"
+      ],
+      "state": "TESTED"
+    },
+    "153": {
+      "evidence": [
+        "state/autonomous/evidence/153.json"
+      ],
+      "state": "TESTED"
+    },
+    "154": {
+      "evidence": [
+        "state/autonomous/evidence/154.json"
+      ],
+      "state": "TESTED"
+    },
+    "155": {
+      "evidence": [
+        "state/autonomous/evidence/155.json"
+      ],
+      "state": "TESTED"
+    },
+    "156": {
+      "evidence": [
+        "state/autonomous/evidence/156.json"
+      ],
+      "state": "TESTED"
+    },
+    "157": {
+      "evidence": [
+        "state/autonomous/evidence/157.json"
+      ],
+      "state": "TESTED"
+    },
+    "158": {
+      "evidence": [
+        "state/autonomous/evidence/158.json"
+      ],
+      "state": "TESTED"
+    },
+    "159": {
+      "evidence": [
+        "state/autonomous/evidence/159.json"
+      ],
+      "state": "TESTED"
+    },
+    "16": {
+      "evidence": [
+        "state/autonomous/evidence/16.json"
+      ],
+      "state": "TESTED"
+    },
+    "160": {
+      "evidence": [
+        "state/autonomous/evidence/160.json"
+      ],
+      "state": "TESTED"
+    },
+    "17": {
+      "evidence": [
+        "state/autonomous/evidence/17.json"
+      ],
+      "state": "TESTED"
+    },
+    "18": {
+      "evidence": [
+        "state/autonomous/evidence/18.json"
+      ],
+      "state": "TESTED"
+    },
+    "19": {
+      "evidence": [
+        "state/autonomous/evidence/19.json"
+      ],
+      "state": "TESTED"
+    },
+    "2": {
+      "evidence": [
+        "state/autonomous/evidence/2.json"
+      ],
+      "state": "TESTED"
+    },
+    "20": {
+      "evidence": [
+        "state/autonomous/evidence/20.json"
+      ],
+      "state": "TESTED"
+    },
+    "21": {
+      "evidence": [
+        "state/autonomous/evidence/21.json"
+      ],
+      "state": "TESTED"
+    },
+    "22": {
+      "evidence": [
+        "state/autonomous/evidence/22.json"
+      ],
+      "state": "TESTED"
+    },
+    "23": {
+      "evidence": [
+        "state/autonomous/evidence/23.json"
+      ],
+      "state": "TESTED"
+    },
+    "24": {
+      "evidence": [
+        "state/autonomous/evidence/24.json"
+      ],
+      "state": "TESTED"
+    },
+    "25": {
+      "evidence": [
+        "state/autonomous/evidence/25.json"
+      ],
+      "state": "TESTED"
+    },
+    "26": {
+      "evidence": [
+        "state/autonomous/evidence/26.json"
+      ],
+      "state": "TESTED"
+    },
+    "27": {
+      "evidence": [
+        "state/autonomous/evidence/27.json"
+      ],
+      "state": "TESTED"
+    },
+    "28": {
+      "evidence": [
+        "state/autonomous/evidence/28.json"
+      ],
+      "state": "TESTED"
+    },
+    "29": {
+      "evidence": [
+        "state/autonomous/evidence/29.json"
+      ],
+      "state": "TESTED"
+    },
+    "3": {
+      "evidence": [
+        "state/autonomous/evidence/3.json"
+      ],
+      "state": "TESTED"
+    },
+    "30": {
+      "evidence": [
+        "state/autonomous/evidence/30.json"
+      ],
+      "state": "TESTED"
+    },
+    "31": {
+      "evidence": [
+        "state/autonomous/evidence/31.json"
+      ],
+      "state": "TESTED"
+    },
+    "32": {
+      "evidence": [
+        "state/autonomous/evidence/32.json"
+      ],
+      "state": "TESTED"
+    },
+    "33": {
+      "evidence": [
+        "state/autonomous/evidence/33.json"
+      ],
+      "state": "TESTED"
+    },
+    "34": {
+      "evidence": [
+        "state/autonomous/evidence/34.json"
+      ],
+      "state": "TESTED"
+    },
+    "35": {
+      "evidence": [
+        "state/autonomous/evidence/35.json"
+      ],
+      "state": "TESTED"
+    },
+    "36": {
+      "evidence": [
+        "state/autonomous/evidence/36.json"
+      ],
+      "state": "TESTED"
+    },
+    "37": {
+      "evidence": [
+        "state/autonomous/evidence/37.json"
+      ],
+      "state": "TESTED"
+    },
+    "38": {
+      "evidence": [
+        "state/autonomous/evidence/38.json"
+      ],
+      "state": "TESTED"
+    },
+    "39": {
+      "evidence": [
+        "state/autonomous/evidence/39.json"
+      ],
+      "state": "TESTED"
+    },
+    "4": {
+      "evidence": [
+        "state/autonomous/evidence/4.json"
+      ],
+      "state": "TESTED"
+    },
+    "40": {
+      "evidence": [
+        "state/autonomous/evidence/40.json"
+      ],
+      "state": "TESTED"
+    },
+    "41": {
+      "evidence": [
+        "state/autonomous/evidence/41.json"
+      ],
+      "state": "TESTED"
+    },
+    "42": {
+      "evidence": [
+        "state/autonomous/evidence/42.json"
+      ],
+      "state": "TESTED"
+    },
+    "43": {
+      "evidence": [
+        "state/autonomous/evidence/43.json"
+      ],
+      "state": "TESTED"
+    },
+    "44": {
+      "evidence": [
+        "state/autonomous/evidence/44.json"
+      ],
+      "state": "TESTED"
+    },
+    "45": {
+      "evidence": [
+        "state/autonomous/evidence/45.json"
+      ],
+      "state": "TESTED"
+    },
+    "46": {
+      "evidence": [
+        "state/autonomous/evidence/46.json"
+      ],
+      "state": "TESTED"
+    },
+    "47": {
+      "evidence": [
+        "state/autonomous/evidence/47.json"
+      ],
+      "state": "TESTED"
+    },
+    "48": {
+      "evidence": [
+        "state/autonomous/evidence/48.json"
+      ],
+      "state": "TESTED"
+    },
+    "49": {
+      "evidence": [
+        "state/autonomous/evidence/49.json"
+      ],
+      "state": "TESTED"
+    },
+    "5": {
+      "evidence": [
+        "state/autonomous/evidence/5.json"
+      ],
+      "state": "TESTED"
+    },
+    "50": {
+      "evidence": [
+        "state/autonomous/evidence/50.json"
+      ],
+      "state": "TESTED"
+    },
+    "51": {
+      "evidence": [
+        "state/autonomous/evidence/51.json"
+      ],
+      "state": "TESTED"
+    },
+    "52": {
+      "evidence": [
+        "state/autonomous/evidence/52.json"
+      ],
+      "state": "TESTED"
+    },
+    "53": {
+      "evidence": [
+        "state/autonomous/evidence/53.json"
+      ],
+      "state": "TESTED"
+    },
+    "54": {
+      "evidence": [
+        "state/autonomous/evidence/54.json"
+      ],
+      "state": "TESTED"
+    },
+    "55": {
+      "evidence": [
+        "state/autonomous/evidence/55.json"
+      ],
+      "state": "TESTED"
+    },
+    "56": {
+      "evidence": [
+        "state/autonomous/evidence/56.json"
+      ],
+      "state": "TESTED"
+    },
+    "57": {
+      "evidence": [
+        "state/autonomous/evidence/57.json"
+      ],
+      "state": "TESTED"
+    },
+    "58": {
+      "evidence": [
+        "state/autonomous/evidence/58.json"
+      ],
+      "state": "TESTED"
+    },
+    "59": {
+      "evidence": [
+        "state/autonomous/evidence/59.json"
+      ],
+      "state": "TESTED"
+    },
+    "6": {
+      "evidence": [
+        "state/autonomous/evidence/6.json"
+      ],
+      "state": "TESTED"
+    },
+    "60": {
+      "evidence": [
+        "state/autonomous/evidence/60.json"
+      ],
+      "state": "TESTED"
+    },
+    "61": {
+      "evidence": [
+        "state/autonomous/evidence/61.json"
+      ],
+      "state": "TESTED"
+    },
+    "62": {
+      "evidence": [
+        "state/autonomous/evidence/62.json"
+      ],
+      "state": "TESTED"
+    },
+    "63": {
+      "evidence": [
+        "state/autonomous/evidence/63.json"
+      ],
+      "state": "TESTED"
+    },
+    "64": {
+      "evidence": [
+        "state/autonomous/evidence/64.json"
+      ],
+      "state": "TESTED"
+    },
+    "65": {
+      "evidence": [
+        "state/autonomous/evidence/65.json"
+      ],
+      "state": "TESTED"
+    },
+    "66": {
+      "evidence": [
+        "state/autonomous/evidence/66.json"
+      ],
+      "state": "TESTED"
+    },
+    "67": {
+      "evidence": [
+        "state/autonomous/evidence/67.json"
+      ],
+      "state": "TESTED"
+    },
+    "68": {
+      "evidence": [
+        "state/autonomous/evidence/68.json"
+      ],
+      "state": "TESTED"
+    },
+    "69": {
+      "evidence": [
+        "state/autonomous/evidence/69.json"
+      ],
+      "state": "TESTED"
+    },
+    "7": {
+      "evidence": [
+        "state/autonomous/evidence/7.json"
+      ],
+      "state": "TESTED"
+    },
+    "70": {
+      "evidence": [
+        "state/autonomous/evidence/70.json"
+      ],
+      "state": "TESTED"
+    },
+    "71": {
+      "evidence": [
+        "state/autonomous/evidence/71.json"
+      ],
+      "state": "TESTED"
+    },
+    "72": {
+      "evidence": [
+        "state/autonomous/evidence/72.json"
+      ],
+      "state": "TESTED"
+    },
+    "73": {
+      "evidence": [
+        "state/autonomous/evidence/73.json"
+      ],
+      "state": "TESTED"
+    },
+    "74": {
+      "evidence": [
+        "state/autonomous/evidence/74.json"
+      ],
+      "state": "TESTED"
+    },
+    "75": {
+      "evidence": [
+        "state/autonomous/evidence/75.json"
+      ],
+      "state": "TESTED"
+    },
+    "76": {
+      "evidence": [
+        "state/autonomous/evidence/76.json"
+      ],
+      "state": "TESTED"
+    },
+    "77": {
+      "evidence": [
+        "state/autonomous/evidence/77.json"
+      ],
+      "state": "TESTED"
+    },
+    "78": {
+      "evidence": [
+        "state/autonomous/evidence/78.json"
+      ],
+      "state": "TESTED"
+    },
+    "79": {
+      "evidence": [
+        "state/autonomous/evidence/79.json"
+      ],
+      "state": "TESTED"
+    },
+    "8": {
+      "evidence": [
+        "state/autonomous/evidence/8.json"
+      ],
+      "state": "TESTED"
+    },
+    "80": {
+      "evidence": [
+        "state/autonomous/evidence/80.json"
+      ],
+      "state": "TESTED"
+    },
+    "81": {
+      "evidence": [
+        "state/autonomous/evidence/81.json"
+      ],
+      "state": "TESTED"
+    },
+    "82": {
+      "evidence": [
+        "state/autonomous/evidence/82.json"
+      ],
+      "state": "TESTED"
+    },
+    "83": {
+      "evidence": [
+        "state/autonomous/evidence/83.json"
+      ],
+      "state": "TESTED"
+    },
+    "84": {
+      "evidence": [
+        "state/autonomous/evidence/84.json"
+      ],
+      "state": "TESTED"
+    },
+    "85": {
+      "evidence": [
+        "state/autonomous/evidence/85.json"
+      ],
+      "state": "TESTED"
+    },
+    "86": {
+      "evidence": [
+        "state/autonomous/evidence/86.json"
+      ],
+      "state": "TESTED"
+    },
+    "87": {
+      "evidence": [
+        "state/autonomous/evidence/87.json"
+      ],
+      "state": "TESTED"
+    },
+    "88": {
+      "evidence": [
+        "state/autonomous/evidence/88.json"
+      ],
+      "state": "TESTED"
+    },
+    "89": {
+      "evidence": [
+        "state/autonomous/evidence/89.json"
+      ],
+      "state": "TESTED"
+    },
+    "9": {
+      "evidence": [
+        "state/autonomous/evidence/9.json"
+      ],
+      "state": "TESTED"
+    },
+    "90": {
+      "evidence": [
+        "state/autonomous/evidence/90.json"
+      ],
+      "state": "TESTED"
+    },
+    "91": {
+      "evidence": [
+        "state/autonomous/evidence/91.json"
+      ],
+      "state": "TESTED"
+    },
+    "92": {
+      "evidence": [
+        "state/autonomous/evidence/92.json"
+      ],
+      "state": "TESTED"
+    },
+    "93": {
+      "evidence": [
+        "state/autonomous/evidence/93.json"
+      ],
+      "state": "TESTED"
+    },
+    "94": {
+      "evidence": [
+        "state/autonomous/evidence/94.json"
+      ],
+      "state": "TESTED"
+    },
+    "95": {
+      "evidence": [
+        "state/autonomous/evidence/95.json"
+      ],
+      "state": "TESTED"
+    },
+    "96": {
+      "evidence": [
+        "state/autonomous/evidence/96.json"
+      ],
+      "state": "TESTED"
+    },
+    "97": {
+      "evidence": [
+        "state/autonomous/evidence/97.json"
+      ],
+      "state": "TESTED"
+    },
+    "98": {
+      "evidence": [
+        "state/autonomous/evidence/98.json"
+      ],
+      "state": "TESTED"
+    },
+    "99": {
+      "evidence": [
+        "state/autonomous/evidence/99.json"
+      ],
+      "state": "TESTED"
+    }
+  },
+  "note": "Persistent autonomous capability progress. Evidence promotions only; never reset by registry generation.",
   "publication_enabled": false,
-  "note": "Persistent autonomous capability progress. Evidence promotions only; never reset by registry generation."
+  "schema_version": 1
 }
