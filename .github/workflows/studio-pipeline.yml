@@ -226,7 +226,7 @@ jobs:
           printf '%s\n' '{"checks":{"layout":true,"animation":true,"fx":true,"lighting":true,"editorial":true,"sound":true,"continuity":true}}' > state/studio/render-checks.json
           python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
 
-      - name: Build premium voice candidates
+      - name: Build Cartesia Sonic 3.6 production voice
         if: steps.active.outputs.ready == 'yes'
         env:
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
@@ -234,54 +234,60 @@ jobs:
           CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
           CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
           CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
-          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
-          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
-          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
           mkdir -p state/studio qa-output/studio-voice public/audio
+          rm -f public/audio/reference-clone-voice.mp3 qa-output/studio-voice/cartesia.wav
           python scripts/ccsd_voice_manifest.py --ccsd "$S/18-master-ccsd.json" --out "$S/voice-dialogue.json"
           STATUS=$(python -c 'import json; print(json.load(open("production/reference-clones/active/studio/voice-dialogue.json"))["status"])')
           python scripts/voice_provider.py --out state/studio/voice-provider.json
-          if [ "$STATUS" = "PASS" ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq ffmpeg
-            python scripts/cartesia_sonic_generate.py --dialogue "$S/voice-dialogue.json" --out qa-output/studio-voice/cartesia.wav --receipt state/studio/cartesia-voice.json
-            python scripts/eleven_v3_generate.py --dialogue "$S/voice-dialogue.json" --out qa-output/studio-voice/eleven.mp3 --receipt state/studio/eleven-voice.json --reference-id studio-active
-            CSTAT=$(python -c 'import json; print(json.load(open("state/studio/cartesia-voice.json"))["status"])')
-            ESTAT=$(python -c 'import json; print(json.load(open("state/studio/eleven-voice.json"))["status"])')
-            if [ "$CSTAT" = "PASS" ] || [ "$ESTAT" = "PASS" ]; then
-              python -m pip install -r requirements-transcription.txt
-              if [ "$CSTAT" = "PASS" ]; then
-                python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/cartesia.wav --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/cartesia.json --model base.en || true
-              fi
-              if [ "$ESTAT" = "PASS" ]; then
-                python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/eleven.mp3 --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/eleven.json --model base.en || true
-              fi
-              python scripts/build_voice_takes.py \
-                --cartesia-report qa-output/studio-voice/cartesia.json \
-                --cartesia-audio qa-output/studio-voice/cartesia.wav \
-                --eleven-report qa-output/studio-voice/eleven.json \
-                --eleven-audio qa-output/studio-voice/eleven.mp3 \
-                --out qa-output/studio-voice/takes.json
-              if python scripts/voice_take_selector.py --takes qa-output/studio-voice/takes.json --out state/studio/premium-voice.json; then
-                BEST=$(python -c 'import json; print(json.load(open("state/studio/premium-voice.json"))["best"]["path"])')
-                if [[ "$BEST" == *.wav ]]; then
-                  ffmpeg -y -i "$BEST" -c:a libmp3lame -b:a 192k public/audio/reference-clone-voice.mp3 >/dev/null 2>&1
-                else
-                  cp "$BEST" public/audio/reference-clone-voice.mp3
-                fi
-              fi
-            fi
-            if [ ! -s public/audio/reference-clone-voice.mp3 ]; then
-              printf '%s\n' '{"status":"FALLBACK_REQUIRED","reason":"premium voice unavailable or failed QA","publication_enabled":false}' > state/studio/premium-voice.json
-            fi
-          else
-            printf '%s\n' '{"status":"EMPTY","reason":"no spoken dialogue in CCSD","publication_enabled":false}' > state/studio/premium-voice.json
+          if [ "$STATUS" = "EMPTY" ]; then
+            printf '%s\n' '{"status":"NO_DIALOGUE","provider":null,"publication_enabled":false}' > state/studio/premium-voice.json
+            exit 0
           fi
+          STRATEGY=$(python -c 'import json; print(json.load(open("state/studio/voice-provider.json"))["selected_strategy"])')
+          if [ "$STRATEGY" = "required_provider_missing" ]; then
+            printf '%s\n' '{"status":"PROVIDER_REQUIRED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/studio/premium-voice.json
+            echo "Cartesia Sonic 3.6 is required for dialogue-bearing production. CARTESIA_API_KEY is not configured."
+            exit 42
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python scripts/cartesia_sonic_generate.py \
+            --dialogue "$S/voice-dialogue.json" \
+            --out qa-output/studio-voice/cartesia.wav \
+            --receipt state/studio/cartesia-voice.json
+          CSTAT=$(python -c 'import json; print(json.load(open("state/studio/cartesia-voice.json"))["status"])')
+          if [ "$CSTAT" != "PASS" ]; then
+            printf '%s\n' '{"status":"CARTESIA_FAILED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/studio/premium-voice.json
+            exit 43
+          fi
+          python -m pip install -r requirements-transcription.txt
+          python scripts/voice_candidate_qa.py \
+            --audio qa-output/studio-voice/cartesia.wav \
+            --manifest "$S/voice-dialogue.json" \
+            --out qa-output/studio-voice/cartesia.json \
+            --model base.en
+          python - <<'PY'
+          import json,pathlib
+          qa=json.load(open("qa-output/studio-voice/cartesia.json"))
+          ok=qa.get("status")=="PASS" or qa.get("verdict")=="PASS"
+          if not ok:
+              raise SystemExit("Cartesia voice candidate failed QA")
+          r={
+            "schema_version":1,
+            "status":"PASS",
+            "provider":"cartesia",
+            "model_id":"sonic-3.6",
+            "audio":"qa-output/studio-voice/cartesia.wav",
+            "qa":qa,
+            "publication_enabled":False,
+          }
+          pathlib.Path("state/studio/premium-voice.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+          ffmpeg -y -i qa-output/studio-voice/cartesia.wav -c:a libmp3lame -b:a 192k public/audio/reference-clone-voice.mp3 >/dev/null 2>&1
+          test -s public/audio/reference-clone-voice.mp3
 
       - name: Feed studio decisions into scene plan
         if: steps.active.outputs.ready == 'yes'
