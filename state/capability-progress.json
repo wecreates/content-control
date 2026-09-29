@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "capabilities": {},
+  "publication_enabled": false,
+  "note": "Persistent autonomous capability progress. Evidence promotions only; never reset by registry generation."
+}
