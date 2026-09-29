@@ -43,7 +43,7 @@ jobs:
           [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
           python scripts/initialize_capability_progress.py --registries state/studio/batch7-500-registry.json state/studio/batch8-500-registry.json state/studio/batch9-500-registry.json state/studio/batch10-500-registry.json state/studio/batch11-500-registry.json --progress state/capability-progress.json --out state/capability-progress.next.json
           mv state/capability-progress.next.json state/capability-progress.json
-          python scripts/autonomous_completion_scheduler.py --progress state/capability-progress.json --out state/autonomous/plan.json --shards 16 --limit 160
+          python scripts/autonomous_completion_scheduler.py --progress state/capability-progress.json --out state/autonomous/plan.json --shards 32 --limit 500
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           p=json.load(open("state/autonomous/plan.json"))
@@ -57,7 +57,7 @@ jobs:
     if: ${{ needs.plan.outputs.matrix != '' }}
     strategy:
       fail-fast: false
-      max-parallel: 16
+      max-parallel: 32
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
