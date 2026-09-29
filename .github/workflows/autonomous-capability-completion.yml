@@ -52,18 +52,17 @@ jobs:
         with: {ref: main}
       - uses: actions/download-artifact@v4
         with: {name: autonomous-plan, path: state/autonomous}
-      - name: Execute bounded evidence work for shard
+      - name: Execute real capability tests for shard
         run: |
           mkdir -p state/autonomous/evidence
-          python - <<'PY'
-          import json,os,pathlib
-          shard=int("${{ matrix.shard }}")
-          p=json.load(open("state/autonomous/plan/plan.json")) if pathlib.Path("state/autonomous/plan/plan.json").is_file() else json.load(open("state/autonomous/plan.json"))
-          for t in p["tasks"]:
+          PLAN=state/autonomous/plan.json
+          [ -f state/autonomous/plan/plan.json ] && PLAN=state/autonomous/plan/plan.json
+          python - "$PLAN" "${{ matrix.shard }}" <<'PY'
+          import json,subprocess,sys
+          plan=json.load(open(sys.argv[1])); shard=int(sys.argv[2])
+          for t in plan["tasks"]:
             if t["shard"]!=shard: continue
-            # Honest bootstrap receipt: integration presence is evidence, render proof is not fabricated.
-            evidence={"status":"PENDING_RENDER_PROOF","capability_id":t["capability_id"],"domain":t["domain"],"publication_enabled":False}
-            pathlib.Path(f"state/autonomous/evidence/{t['capability_id']}.json").write_text(json.dumps(evidence,indent=2)+"\n")
+            subprocess.run(["python","scripts/execute_capability_task.py","--task",json.dumps(t),"--out",f"state/autonomous/evidence/{t['capability_id']}.json"],check=False)
           PY
       - uses: actions/upload-artifact@v4
         with: {name: "capability-evidence-${{ matrix.shard }}", path: state/autonomous/evidence, retention-days: 7}
@@ -83,6 +82,17 @@ jobs:
           PLAN=state/autonomous/plan.json
           [ -f state/autonomous/plan/plan.json ] && PLAN=state/autonomous/plan/plan.json
           python scripts/reconcile_autonomous_completion.py --plan "$PLAN" --evidence-dir state/autonomous/evidence --out state/autonomous/reconciliation.json
+          python scripts/apply_capability_evidence.py --progress state/capability-progress.json --evidence-dir state/autonomous/evidence --out state/capability-progress.next.json
+          mv state/capability-progress.next.json state/capability-progress.json
+          git config user.name content-control-autonomy
+          git config user.email actions@users.noreply.github.com
+          git add state/capability-progress.json
+          git diff --cached --quiet || git commit -m "Advance autonomous capability evidence"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+            git rebase --abort || true
+            sleep $((attempt*3))
+          done
           [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
           set +e
           python scripts/global_completion_gate.py --progress state/capability-progress.json --out state/autonomous/global-completion.json
