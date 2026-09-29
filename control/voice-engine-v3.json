@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "publication_enabled": false,
   "production_default": {
     "provider": "cartesia",
@@ -42,9 +42,9 @@
     "api_key_env": "CARTESIA_API_KEY"
   },
   "fallback": {
-    "enabled": true,
-    "provider": "verified_local_voice_assets",
-    "rule": "Only use pinned locally verified assets when Cartesia is unavailable or fails QA; never silently swap character identities."
+    "enabled": false,
+    "provider": null,
+    "rule": "No legacy voice generator or pinned voice asset fallback is permitted. Missing Cartesia credentials or failed Cartesia QA blocks dialogue-bearing production."
   },
   "acceptance": [
     "exact speaker-to-voice mapping",
@@ -52,6 +52,8 @@
     "transcript fidelity",
     "no SFX text",
     "duration plausible",
-    "publication disabled"
+    "publication disabled",
+    "Cartesia Sonic 3.6 required for dialogue-bearing production",
+    "legacy AI Voice Generator output forbidden"
   ]
 }
