@@ -101,7 +101,13 @@ jobs:
           if [ "$BLOCK_RC" != "0" ]; then
             echo "Blocker detected: repair route generated before normal continuation."
           fi
-          python scripts/apply_capability_evidence.py --progress state/capability-progress.json --evidence-dir state/autonomous/evidence --out state/capability-progress.next.json
+          python scripts/batch7_500_registry.py --out state/studio/batch7-500-registry.json
+          python scripts/batch8_500_registry.py --out state/studio/batch8-500-registry.json
+          python scripts/batch9_500_registry.py --out state/studio/batch9-500-registry.json
+          python scripts/batch10_500_registry.py --out state/studio/batch10-500-registry.json
+          python scripts/batch11_500_registry.py --out state/studio/batch11-500-registry.json
+          python scripts/initialize_capability_progress.py --registries state/studio/batch7-500-registry.json state/studio/batch8-500-registry.json state/studio/batch9-500-registry.json state/studio/batch10-500-registry.json state/studio/batch11-500-registry.json --progress state/capability-progress.json --out state/capability-progress.full.json
+          python scripts/apply_capability_evidence.py --progress state/capability-progress.full.json --evidence-dir state/autonomous/evidence --out state/capability-progress.next.json
           mv state/capability-progress.next.json state/capability-progress.json
           git config user.name content-control-autonomy
           git config user.email actions@users.noreply.github.com
