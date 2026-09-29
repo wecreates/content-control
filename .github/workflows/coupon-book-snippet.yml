@@ -25,20 +25,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
           npm ci --prefer-offline --ignore-scripts --no-audit --fund=false
-      - name: Vendor new narration locally
+      - name: Legacy voice path retired
         run: |
-          set -euo pipefail
-          mkdir -p public/audio qa-output/snippets public-review
-          curl --fail --location --retry 4             "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/cb893177-ebb7-48dd-a70d-d919df5ceb6e.mp3"             -o public/audio/snippet-coupon-book.mp3
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/snippet-coupon-book.mp3 > qa-output/snippets/coupon-book-voice-probe.json
-          python - <<'PY'
-          import json
-          d=json.load(open("qa-output/snippets/coupon-book-voice-probe.json"))
-          dur=float(d["format"]["duration"])
-          assert 20 <= dur <= 36, dur
-          assert d["streams"], d
-          print({"voice_duration_seconds":dur,"stream":d["streams"][0]})
-          PY
+          echo "This legacy workflow no longer owns voice generation."
+          echo "Use the canonical Studio Pipeline with Cartesia Sonic 3.6."
+          exit 42
       - name: Render 9x16 snippet
         run: |
           set -euo pipefail
