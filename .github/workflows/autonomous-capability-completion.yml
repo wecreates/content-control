@@ -9,6 +9,7 @@ on:
       - 'scripts/autonomous_completion_scheduler.py'
       - 'scripts/initialize_capability_progress.py'
       - 'scripts/execute_capability_task.py'
+      - 'scripts/upgrade_and_test_capability.py'
       - 'scripts/apply_capability_evidence.py'
       - 'scripts/blocker_detector.py'
       - 'scripts/blocker_repair_router.py'
@@ -73,7 +74,7 @@ jobs:
           plan=json.load(open(sys.argv[1])); shard=int(sys.argv[2])
           for t in plan["tasks"]:
             if t["shard"]!=shard: continue
-            subprocess.run(["python","scripts/execute_capability_task.py","--task",json.dumps(t),"--out",f"state/autonomous/evidence/{t['capability_id']}.json"],check=False)
+            subprocess.run(["python","scripts/upgrade_and_test_capability.py","--task",json.dumps(t),"--out",f"state/autonomous/evidence/{t['capability_id']}.json"],check=False)
           PY
       - uses: actions/upload-artifact@v4
         with: {name: "capability-evidence-${{ matrix.shard }}", path: state/autonomous/evidence, retention-days: 7}
