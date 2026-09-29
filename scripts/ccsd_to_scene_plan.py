@@ -14,7 +14,7 @@ def build(ccsd,original):
         s["camera"]=cam.get("move",s.get("camera"));s["shot_scale"]=cam.get("shot_scale",s.get("shot_scale"))
         s["lighting"]=c.get("lighting");s["fx"]=c.get("fx",[]);s["simulation"]=c.get("simulation");s["editorial"]=c.get("editorial")
         s["audio_design"]={"sfx":audio.get("sfx",[]),"music":audio.get("music",{}),"room_tone":audio.get("room_tone")}
-        s["color_script"]=c.get("color_script");s["crowd"]=c.get("crowd");s["environment"]=c.get("environment");s["composition"]=c.get("composition",{});s["choreography"]=c.get("choreography",{});s["longform"]=c.get("longform",{})
+        s["color_script"]=c.get("color_script");s["crowd"]=c.get("crowd");s["environment"]=c.get("environment");s["composition"]=c.get("composition",{});s["choreography"]=c.get("choreography",{});s["longform"]=c.get("longform",{})\n        s["creative_candidates"]=c.get("creative_candidates",[]);s["candidate_selection"]=c.get("candidate_selection",{});s["continuity"]=c.get("continuity",{});s["compositing"]=c.get("compositing",{});s["audio_direction"]=audio.get("direction",{});s["foley"]=audio.get("foley",[])
     out["studio_processed"]=True;out["publication_enabled"]=False;return out
 def main():
     ap=argparse.ArgumentParser();ap.add_argument("--ccsd",required=True);ap.add_argument("--scene-plan",required=True);ap.add_argument("--out",required=True);a=ap.parse_args()
