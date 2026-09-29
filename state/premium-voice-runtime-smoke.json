@@ -2,15 +2,16 @@
   "dialogue_specialist": {
     "mode": "offline_cinematic_dialogue",
     "model_id": "eleven_v3",
+    "optional_comparison_only": true,
     "output_format": "mp3_44100_128",
     "provider": "elevenlabs",
     "ready": false,
     "seed_policy": "locked_per_character_plus_variant"
   },
   "fallback": {
-    "enabled": true,
-    "provider": "content_control_zero_credit",
-    "reason": "used when premium providers are unavailable or generation QA fails"
+    "enabled": false,
+    "provider": null,
+    "reason": "legacy and zero-credit voice fallbacks are forbidden"
   },
   "primary": {
     "mode": "offline_quality",
@@ -21,8 +22,8 @@
   },
   "publication_enabled": false,
   "schema_version": 2,
-  "selected_provider": "fallback",
-  "selected_strategy": "fallback",
+  "selected_provider": "required_provider_missing",
+  "selected_strategy": "required_provider_missing",
   "voices": {
     "cashback_goblin": {
       "cartesia_voice_id": null,
