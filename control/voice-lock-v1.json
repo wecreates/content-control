@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "publication_enabled": false,
   "narrator": {
     "voice_profile": "deep-neutral",
@@ -41,7 +41,8 @@
     "character voices do not cross roles",
     "premium voice IDs stay locked by role",
     "Cartesia Sonic 3.6 is the production default",
-    "fallback is explicit and QA-visible, never silent"
+    "legacy AI Voice Generator fallback is forbidden",
+    "dialogue-bearing production fails if Cartesia Sonic 3.6 is unavailable"
   ],
   "provider_contract": "control/voice-engine-v3.json"
 }
