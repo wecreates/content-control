@@ -58,7 +58,7 @@ on:
       - 'scripts/assemble_scene_master.py'
       - 'scripts/batch5_realization_ledger.py'
       - 'scripts/batch6_evidence_ledger.py'
-      - 'tests/test_historical_runtime_regressions.py tests/test_batch7_500_registry.py tests/test_batch8_500_registry.py'
+      - 'tests/test_historical_runtime_regressions.py tests/test_batch7_500_registry.py tests/test_batch8_500_registry.py tests/test_batch9_500_registry.py'
       - 'scripts/batch7_500_registry.py'
       - 'scripts/enforce_batch7_registry.py'
       - 'scripts/promote_batch7_capability.py'
@@ -67,6 +67,10 @@ on:
       - 'scripts/enforce_1000_capability_registry.py'
       - 'scripts/promote_batch8_capability.py'
       - 'tests/test_batch8_500_registry.py'
+      - 'scripts/batch9_500_registry.py'
+      - 'scripts/enforce_1500_capability_registry.py'
+      - 'scripts/promote_batch9_capability.py'
+      - 'tests/test_batch9_500_registry.py'
       - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -246,6 +250,8 @@ jobs:
           python scripts/enforce_batch7_registry.py --registry state/studio/batch7-500-registry.json --out state/studio/batch7-health.json
           python scripts/batch8_500_registry.py --out state/studio/batch8-500-registry.json
           python scripts/enforce_1000_capability_registry.py --batch7 state/studio/batch7-500-registry.json --batch8 state/studio/batch8-500-registry.json --out state/studio/1000-capability-health.json
+          python scripts/batch9_500_registry.py --out state/studio/batch9-500-registry.json
+          python scripts/enforce_1500_capability_registry.py --batch7 state/studio/batch7-500-registry.json --batch8 state/studio/batch8-500-registry.json --batch9 state/studio/batch9-500-registry.json --out state/studio/1500-capability-health.json
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
