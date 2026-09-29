@@ -63,10 +63,12 @@ def concat_wav(parts,out):
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--dialogue",required=True)
+    ap.add_argument("--config",default="control/voice-engine-v3.json")
     ap.add_argument("--out",required=True)
     ap.add_argument("--receipt",required=True)
     a=ap.parse_args()
     dialogue=json.loads(Path(a.dialogue).read_text())
+    config=json.loads(Path(a.config).read_text())
     api_key=os.environ.get("CARTESIA_API_KEY","")
     receipt={"schema_version":1,"provider":"cartesia","model_id":"sonic-3.6","publication_enabled":False}
     try:
@@ -78,8 +80,9 @@ def main():
         with tempfile.TemporaryDirectory() as td:
             for i,s in enumerate(segs):
                 speaker=s.get("speaker","narrator")
-                voice_id=os.environ.get(CARTESIA_ENV[speaker],"")
-                if not voice_id: raise RuntimeError(f"missing {CARTESIA_ENV[speaker]}")
+                role=(config.get("roles") or {}).get(speaker) or {}
+                voice_id=os.environ.get(CARTESIA_ENV[speaker],"") or role.get("voice_id_default","")
+                if not voice_id: raise RuntimeError(f"missing locked Cartesia voice for {speaker}")
                 perf=s.get("performance") or {}
                 tone=perf.get("tone","")
                 pace=float(perf.get("pace",1.0) or 1.0)
