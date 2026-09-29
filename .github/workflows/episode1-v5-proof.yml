@@ -18,11 +18,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
           npm install
-      - name: Fetch clean narrator-only VO
+      - name: Legacy voice path retired
         run: |
-          mkdir -p public review-output
-          curl --fail --location --retry 3 "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/f51b922f-23be-40ce-b3a7-92d0f277988c.mp3" -o public/v5-proof-voice.mp3
-          ffprobe -v error -show_entries stream=codec_type -of csv=p=0 public/v5-proof-voice.mp3 | grep -q audio
+          echo "This legacy workflow no longer owns voice generation."
+          echo "Use the canonical Studio Pipeline with Cartesia Sonic 3.6."
+          exit 42
       - name: Generate separate beat and SFX tracks
         run: |
           python - <<'PY'
