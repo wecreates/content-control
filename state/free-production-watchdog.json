@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,9 +55,16 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "system_wiring_green"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "94a9458e1371aea86c9d82dfcf08032b333ec77592e5f597fc51a21f790d6fa0",
+      "expected": "ed251cd5c05539469449d166f506a6753cb15f58d137a489b36ceb2be3628042",
+      "path": "package.json"
+    }
+  ],
   "publication_enabled": false,
   "repair_action": "audit_system_wiring",
   "schema_version": 1,
