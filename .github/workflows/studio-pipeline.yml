@@ -28,6 +28,8 @@ on:
       - 'scripts/longform_visual_director.py'
       - 'scripts/contact_physics_pass.py'
       - 'scripts/acting_director.py'
+      - 'scripts/creative_depth_engine.py'
+      - 'tests/test_creative_depth_engine.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
       - 'scripts/visual_development_v2.py'
@@ -92,7 +94,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py tests/test_creative_depth_engine.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
@@ -193,7 +195,8 @@ jobs:
           python scripts/visual_choreography.py --ccsd "$S/14-composition.json" --out "$S/15-choreography.json"
           python scripts/contact_physics_pass.py --ccsd "$S/15-choreography.json" --out "$S/16-contact.json"
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
-          python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-master-ccsd.json"
+          python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-score.json"
+          python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-master-ccsd.json"
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
 
