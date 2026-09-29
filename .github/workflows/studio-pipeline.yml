@@ -30,6 +30,9 @@ on:
       - 'scripts/acting_director.py'
       - 'scripts/creative_depth_engine.py'
       - 'scripts/creative_candidate_selector.py'
+      - 'scripts/materialize_creative_candidate.py'
+      - 'scripts/rendered_candidate_qa.py'
+      - 'scripts/apply_rendered_candidate.py'
       - 'tests/test_creative_depth_engine.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -201,6 +204,26 @@ jobs:
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
+
+      - name: Render and measure creative A-B-C candidates
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          mkdir -p "$S/candidates"
+          for C in clarity energy comedy; do
+            python scripts/materialize_creative_candidate.py --ccsd "$S/18-master-ccsd.json" --candidate "$C" --out "$S/candidates/$C.json"
+            python - "$C" <<'PY'
+          import json,pathlib,sys
+          c=sys.argv[1]
+          d=json.load(open(f"production/reference-clones/active/studio/candidates/{c}.json"))
+          pathlib.Path(f"production/reference-clones/active/studio/candidates/{c}-props.json").write_text(json.dumps({"ccsd":d},indent=2)+"\n")
+          PY
+            npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic "$S/candidates/$C.mp4" --props="$S/candidates/$C-props.json" --scale=0.35 --codec h264 --crf 30 --concurrency 2
+          done
+          python scripts/rendered_candidate_qa.py --candidates clarity="$S/candidates/clarity.mp4" energy="$S/candidates/energy.mp4" comedy="$S/candidates/comedy.mp4" --out state/studio/rendered-candidate-qa.json --min-score 0.58
+          python scripts/apply_rendered_candidate.py --ccsd "$S/18-master-ccsd.json" --receipt state/studio/rendered-candidate-qa.json --out "$S/18-measured-winner.json"
+          cp "$S/18-measured-winner.json" "$S/18-master-ccsd.json"
 
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
