@@ -25,11 +25,17 @@ class VoiceProviderTests(unittest.TestCase):
         self.assertEqual(plan["voices"]["points_monk"]["cartesia_voice_id"],"m")
         self.assertNotEqual(plan["voices"]["dave"]["cartesia_voice_id"],plan["voices"]["points_monk"]["cartesia_voice_id"])
 
-    def test_missing_credentials_fail_over_without_breaking_pipeline(self):
+    def test_missing_cartesia_blocks_dialogue_production(self):
         plan=build_provider_plan(self.lock,{})
         self.assertFalse(plan["primary"]["ready"])
-        self.assertEqual(plan["selected_strategy"],"fallback")
-        self.assertTrue(plan["fallback"]["enabled"])
+        self.assertEqual(plan["selected_strategy"],"required_provider_missing")
+        self.assertFalse(plan["fallback"]["enabled"])
+        self.assertIsNone(plan["fallback"]["provider"])
+
+    def test_cartesia_api_key_is_enough_when_locked_default_voice_ids_exist(self):
+        plan=build_provider_plan(self.lock,{"CARTESIA_API_KEY":"x"})
+        self.assertTrue(plan["primary"]["ready"])
+        self.assertEqual(plan["selected_strategy"],"cartesia")
 
     def test_audio_tags_encode_character_acting(self):
         self.assertIn("[anxious]",add_v3_tags("dave","I get money back.",{"tone":"anxious_excited"}))
