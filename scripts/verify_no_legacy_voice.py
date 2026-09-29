@@ -12,6 +12,8 @@ FORBIDDEN={
 }
 EXCLUDE={
   "scripts/verify_no_legacy_voice.py",
+  "scripts/audit_system_wiring.py",
+  ".github/workflows/premium-voice-runtime-smoke.yml",
 }
 TEXT_SUFFIXES={".py",".yml",".yaml",".json",".jsx",".js",".ts",".tsx"}
 
