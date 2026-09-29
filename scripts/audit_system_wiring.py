@@ -315,34 +315,34 @@ def audit_root(root: Path):
     checks["studio_department_map_connected"]=len(dept_impls)>=25 and all((root/p).is_file() for p in dept_impls) and (root/"scripts/verify_studio_department_map.py").is_file() and "verify_studio_department_map.py" in studio_text
     voice_files=[
         "control/voice-provider-routing-v2.json","control/voice-lock-v1.json",
-        "scripts/voice_provider.py","scripts/cartesia_sonic_generate.py","scripts/eleven_v3_generate.py",
-        "scripts/voice_candidate_qa.py","scripts/voice_take_selector.py","scripts/ccsd_voice_manifest.py",
-        "tests/test_voice_provider.py","tests/test_cartesia_sonic_generate.py","tests/test_eleven_v3_generate.py",
-        "tests/test_voice_take_selector.py","tests/test_voice_candidate_qa.py","tests/test_ccsd_voice_manifest.py",
-        "tests/test_voice_render_wiring.py",
+        "scripts/voice_provider.py","scripts/cartesia_sonic_generate.py",
+        "scripts/voice_candidate_qa.py","scripts/ccsd_voice_manifest.py","scripts/verify_no_legacy_voice.py",
+        "tests/test_voice_provider.py","tests/test_cartesia_sonic_generate.py",
+        "tests/test_voice_candidate_qa.py","tests/test_ccsd_voice_manifest.py",
+        "tests/test_voice_render_wiring.py","tests/test_no_legacy_voice.py",
     ]
     checks["premium_voice_stack_connected"]=all((root/p).is_file() for p in voice_files) and "premium_voice_director" in ids
     voice_contract=_read_json(root/"control/voice-provider-routing-v2.json")
     checks["premium_voice_quality_router"]=all([
         voice_contract.get("primary",{}).get("provider")=="Cartesia",
         voice_contract.get("primary",{}).get("model_id")=="sonic-3.6",
-        voice_contract.get("dialogue_specialist",{}).get("provider")=="ElevenLabs",
-        voice_contract.get("dialogue_specialist",{}).get("model_id")=="eleven_v3",
-        voice_contract.get("fallback",{}).get("enabled") is True,
+        voice_contract.get("primary",{}).get("required_for_production") is True,
+        voice_contract.get("fallback",{}).get("enabled") is False,
+        voice_contract.get("fallback",{}).get("provider") is None,
     ])
     checks["premium_voice_studio_wiring"]=all(x in studio_text for x in [
-        "ccsd_voice_manifest.py","cartesia_sonic_generate.py","eleven_v3_generate.py",
-        "voice_candidate_qa.py","voice_take_selector.py","reference-clone-voice.mp3"
+        "Build Cartesia Sonic 3.6 production voice","ccsd_voice_manifest.py","cartesia_sonic_generate.py",
+        "voice_candidate_qa.py","required_provider_missing","reference-clone-voice.mp3"
     ]) and "voiceover_path" in ref_comp
     episode3_voice=episode3_text
     checks["premium_voice_episode3_wiring"]=all(x in episode3_voice for x in [
-        "cartesia_sonic_generate.py","eleven_v3_generate.py","voice_candidate_qa.py",
-        "voice_take_selector.py","CARTESIA_API_KEY","ELEVENLABS_API_KEY"
-    ])
+        "Cartesia Sonic 3.6 voice","cartesia_sonic_generate.py","voice_candidate_qa.py",
+        "required_provider_missing","CARTESIA_API_KEY"
+    ]) and all(x not in episode3_voice for x in ["mcp-preview","content_control_zero_credit","aidocmaker.com"])
     voice_smoke=root/".github/workflows/premium-voice-runtime-smoke.yml"
     voice_smoke_text=voice_smoke.read_text() if voice_smoke.is_file() else ""
     checks["premium_voice_runtime_smoke_connected"]=all(x in voice_smoke_text for x in [
-        "test_voice_provider.py","selected_strategy","sonic-3.6","eleven_v3","voiceover_path"
+        "test_voice_provider.py","required_provider_missing","sonic-3.6","verify_no_legacy_voice.py","voiceover_path"
     ]) and ".github/workflows/premium-voice-runtime-smoke.yml" in reg_allowed
     checks["premium_voice_tests_exposed"]="test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
     voice_v3=_read_json(root/"control/voice-engine-v3.json")
@@ -355,9 +355,9 @@ def audit_root(root: Path):
         "scripts/mix_voice_tracks.py"
     ]) and voice_v3.get("production_default",{}).get("model_id")=="sonic-3.6"
     checks["voice_v3_studio_path"]=all(x in studio_text for x in [
-        "Build premium voice candidates",
+        "Build Cartesia Sonic 3.6 production voice",
         "cartesia_sonic_generate.py",
-        "voice_take_selector.py",
+        "required_provider_missing",
         "reference-clone-voice.mp3",
         "inject_voiceover_path.py"
     ])
@@ -365,6 +365,15 @@ def audit_root(root: Path):
     long_comp=(root/"remotion/ReferenceCloneLongComposition.jsx").read_text() if (root/"remotion/ReferenceCloneLongComposition.jsx").is_file() else ""
     checks["voice_v3_render_path"]="voiceover_path" in short_comp and "voiceover_path" in long_comp
     checks["voice_v3_tests"]="test:voice" in scripts
+    legacy_markers=["aidocmaker.com","mcp-preview","content_control_zero_credit","verified_local_voice_assets","READY_NO_CREDENTIALS"]
+    active_voice_text="\n".join([
+        studio_text,episode3_voice,voice_smoke_text,
+        (root/"scripts/voice_provider.py").read_text() if (root/"scripts/voice_provider.py").is_file() else "",
+        (root/"scripts/premium_voice_qa.py").read_text() if (root/"scripts/premium_voice_qa.py").is_file() else "",
+        (root/"control/voice-provider-routing-v2.json").read_text() if (root/"control/voice-provider-routing-v2.json").is_file() else "",
+        (root/"control/voice-engine-v3.json").read_text() if (root/"control/voice-engine-v3.json").is_file() else "",
+    ])
+    checks["legacy_voice_absent"]=all(x not in active_voice_text for x in legacy_markers)
     choreography_files=[
         "control/visual-choreography-v1.json",
         "control/object-behavior-library-v1.json",
