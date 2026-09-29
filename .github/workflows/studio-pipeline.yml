@@ -33,6 +33,9 @@ on:
       - 'scripts/materialize_creative_candidate.py'
       - 'scripts/rendered_candidate_qa.py'
       - 'scripts/apply_rendered_candidate.py'
+      - 'scripts/story_comprehension_simulator.py'
+      - 'scripts/creative_learning_profile.py'
+      - 'scripts/rendered_character_identity_qa.py'
       - 'tests/test_creative_depth_engine.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -201,7 +204,7 @@ jobs:
           python scripts/soundscape_director.py --ccsd "$S/16-contact.json" --out "$S/17-soundscape.json"
           python scripts/adaptive_score_v2.py --ccsd "$S/17-soundscape.json" --out "$S/18-score.json"
           python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-depth.json"
-          python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json
+          python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
 
@@ -224,6 +227,9 @@ jobs:
           python scripts/rendered_candidate_qa.py --candidates clarity="$S/candidates/clarity.mp4" energy="$S/candidates/energy.mp4" comedy="$S/candidates/comedy.mp4" --out state/studio/rendered-candidate-qa.json --min-score 0.58
           python scripts/apply_rendered_candidate.py --ccsd "$S/18-master-ccsd.json" --receipt state/studio/rendered-candidate-qa.json --out "$S/18-measured-winner.json"
           cp "$S/18-measured-winner.json" "$S/18-master-ccsd.json"
+          python scripts/story_comprehension_simulator.py --ccsd "$S/18-master-ccsd.json" --out state/studio/story-comprehension.json
+          SCORE=$(python -c 'import json; d=json.load(open("state/studio/rendered-candidate-qa.json")); print((d.get("winner") or {}).get("score",0))')
+          python scripts/creative_learning_profile.py --profile state/creative-learning-profile.json --receipt state/studio/rendered-candidate-qa.json --reward "$SCORE" --out state/creative-learning-profile.json
 
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
