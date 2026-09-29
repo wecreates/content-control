@@ -43,13 +43,17 @@ on:
       - 'scripts/studio_intelligence_v2.py'
       - 'scripts/diagnose_multi_repair.py'
       - 'scripts/final_perceptual_master_gate.py'
-      - 'tests/test_studio_intelligence_v2.py tests/test_execution_depth_v3.py'
+      - 'tests/test_studio_intelligence_v2.py tests/test_execution_depth_v3.py tests/test_production_reality_v4.py'
       - 'scripts/execution_depth_v3.py'
       - 'scripts/render_execution_qa.py'
       - 'scripts/scene_best_ledger.py'
       - 'scripts/episode_memory_graph.py'
       - 'scripts/final_video_tribunal.py'
       - 'tests/test_execution_depth_v3.py'
+      - 'scripts/production_reality_v4.py'
+      - 'scripts/production_reality_media_qa.py'
+      - 'scripts/scene_render_manifest_v4.py'
+      - 'tests/test_production_reality_v4.py'
       - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -220,7 +224,9 @@ jobs:
           python scripts/creative_depth_engine.py --ccsd "$S/18-score.json" --out "$S/18-depth-pre.json"
           python scripts/viseme_gaze_pass.py --ccsd "$S/18-depth-pre.json" --out "$S/18-viseme.json"
           python scripts/studio_intelligence_v2.py --ccsd "$S/18-viseme.json" --out "$S/18-v2.json"
-          python scripts/execution_depth_v3.py --ccsd "$S/18-v2.json" --out "$S/18-depth.json"
+          python scripts/execution_depth_v3.py --ccsd "$S/18-v2.json" --out "$S/18-v3.json"
+          python scripts/production_reality_v4.py --ccsd "$S/18-v3.json" --out "$S/18-depth.json"
+          python scripts/scene_render_manifest_v4.py --ccsd "$S/18-depth.json" --out state/studio/scene-render-manifest-v4.json
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
