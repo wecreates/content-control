@@ -57,6 +57,8 @@ on:
       - 'remotion/studio-scene-index.jsx'
       - 'scripts/assemble_scene_master.py'
       - 'scripts/batch5_realization_ledger.py'
+      - 'scripts/batch6_evidence_ledger.py'
+      - 'tests/test_historical_runtime_regressions.py'
       - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
@@ -122,7 +124,7 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py tests/test_creative_depth_engine.py
+        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py tests/test_creative_depth_engine.py tests/test_historical_runtime_regressions.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
@@ -231,6 +233,7 @@ jobs:
           python scripts/production_reality_v4.py --ccsd "$S/18-v3.json" --out "$S/18-depth.json"
           python scripts/scene_render_manifest_v4.py --ccsd "$S/18-depth.json" --out state/studio/scene-render-manifest-v4.json
           python scripts/batch5_realization_ledger.py --out state/studio/batch5-realization-ledger.json
+          python scripts/batch6_evidence_ledger.py --out state/studio/batch6-evidence-ledger.json
           python scripts/creative_candidate_selector.py --ccsd "$S/18-depth.json" --out "$S/18-master-ccsd.json" --receipt state/studio/creative-candidates.json --learning-profile state/creative-learning-profile.json
           python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
           python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
