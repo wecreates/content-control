@@ -49,18 +49,16 @@ def build_provider_plan(lock,env=None):
           "elevenlabs_voice_id":env.get(ELEVEN_ENV[speaker]) or None,
         }
     if cartesia_ready and eleven_ready:
-        selected="dual_generate_and_qa_select"
+        selected="cartesia_with_optional_eleven_comparison"
     elif cartesia_ready:
         selected="cartesia"
-    elif eleven_ready:
-        selected="elevenlabs"
     else:
-        selected="fallback"
+        selected="required_provider_missing"
     return {
       "schema_version":2,
       "primary":{"provider":"cartesia","model_id":"sonic-3.6","mode":"offline_quality","ready":bool(cartesia_ready),"output_format":"wav_pcm_s16le_44100"},
-      "dialogue_specialist":{"provider":"elevenlabs","model_id":"eleven_v3","mode":"offline_cinematic_dialogue","ready":bool(eleven_ready),"output_format":"mp3_44100_128","seed_policy":"locked_per_character_plus_variant"},
-      "fallback":{"provider":"content_control_zero_credit","enabled":True,"reason":"used when premium providers are unavailable or generation QA fails"},
+      "dialogue_specialist":{"provider":"elevenlabs","model_id":"eleven_v3","mode":"offline_cinematic_dialogue","ready":bool(eleven_ready),"optional_comparison_only":True,"output_format":"mp3_44100_128","seed_policy":"locked_per_character_plus_variant"},
+      "fallback":{"provider":None,"enabled":False,"reason":"legacy and zero-credit voice fallbacks are forbidden"},
       "selected_strategy":selected,
       "selected_provider":selected,
       "voices":voices,
