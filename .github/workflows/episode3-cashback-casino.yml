@@ -64,65 +64,57 @@ jobs:
         run: python scripts/verify_episode3_layout.py remotion/CashbackCasinoVisual.jsx
       - name: Bundle composition preflight
         run: npx remotion compositions remotion/episode3-index.jsx
-      - name: Premium AI voice routing
+      - name: Cartesia Sonic 3.6 voice
         env:
           CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
           CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
           CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
           CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
           CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
-          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
-          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
-          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
         run: |
           set -euo pipefail
-          mkdir -p public/audio qa-output/episode3 public-review state
+          mkdir -p public/audio qa-output/episode3/voice-candidates public-review state
+          rm -f public/audio/episode3-cashback.mp3 public/audio/episode3-cartesia.wav
           python scripts/voice_provider.py --out state/episode3-voice-provider.json
-          rm -f public/audio/episode3-cashback.mp3 public/audio/episode3-cartesia.wav public/audio/episode3-eleven.mp3
+          STRATEGY=$(python -c 'import json; print(json.load(open("state/episode3-voice-provider.json"))["selected_strategy"])')
+          if [ "$STRATEGY" = "required_provider_missing" ]; then
+            printf '%s\n' '{"status":"PROVIDER_REQUIRED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/episode3-premium-voice.json
+            echo "Cartesia Sonic 3.6 is required. CARTESIA_API_KEY is not configured."
+            exit 42
+          fi
           python scripts/cartesia_sonic_generate.py \
             --dialogue production/episode3/voice-dialogue.json \
             --out public/audio/episode3-cartesia.wav \
             --receipt state/episode3-cartesia-voice.json
-          python scripts/eleven_v3_generate.py \
-            --dialogue production/episode3/voice-dialogue.json \
-            --out public/audio/episode3-eleven.mp3 \
-            --receipt state/episode3-eleven-voice.json \
-            --reference-id episode3-cashback
           CSTAT=$(python -c 'import json; print(json.load(open("state/episode3-cartesia-voice.json"))["status"])')
-          ESTAT=$(python -c 'import json; print(json.load(open("state/episode3-eleven-voice.json"))["status"])')
-          if [ "$CSTAT" = "PASS" ] || [ "$ESTAT" = "PASS" ]; then
-            python -m pip install -r requirements-transcription.txt
-            mkdir -p qa-output/episode3/voice-candidates
-            if [ "$CSTAT" = "PASS" ]; then
-              python scripts/voice_candidate_qa.py --audio public/audio/episode3-cartesia.wav --manifest production/episode3/voice-dialogue.json --out qa-output/episode3/voice-candidates/cartesia.json --model base.en || true
-            fi
-            if [ "$ESTAT" = "PASS" ]; then
-              python scripts/voice_candidate_qa.py --audio public/audio/episode3-eleven.mp3 --manifest production/episode3/voice-dialogue.json --out qa-output/episode3/voice-candidates/eleven.json --model base.en || true
-            fi
-            python scripts/build_voice_takes.py \
-              --cartesia-report qa-output/episode3/voice-candidates/cartesia.json \
-              --cartesia-audio public/audio/episode3-cartesia.wav \
-              --eleven-report qa-output/episode3/voice-candidates/eleven.json \
-              --eleven-audio public/audio/episode3-eleven.mp3 \
-              --out qa-output/episode3/voice-candidates/takes.json
-            if python scripts/voice_take_selector.py --takes qa-output/episode3/voice-candidates/takes.json --out state/episode3-premium-voice.json; then
-              BEST=$(python -c 'import json; print(json.load(open("state/episode3-premium-voice.json"))["best"]["path"])')
-              if [[ "$BEST" == *.wav ]]; then
-                ffmpeg -y -i "$BEST" -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
-              else
-                cp "$BEST" public/audio/episode3-cashback.mp3
-              fi
-            fi
+          if [ "$CSTAT" != "PASS" ]; then
+            printf '%s\n' '{"status":"CARTESIA_FAILED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/episode3-premium-voice.json
+            exit 43
           fi
-          if [ ! -s public/audio/episode3-cashback.mp3 ]; then
-            curl --fail --location --retry 5 --retry-all-errors \
-              "https://storage.googleapis.com/adm--audio-playback--7d--public/mcp-preview/788abc88-6c56-4e57-b344-fbdd48dfd35a.mp3" \
-              -o public/audio/episode3-cashback.mp3
-            printf '%s\n' '{"provider":"content_control_zero_credit","status":"FALLBACK","publication_enabled":false}' > state/episode3-premium-voice.json
-          fi
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 public/audio/episode3-cashback.mp3 >/dev/null
+          python -m pip install -r requirements-transcription.txt
+          python scripts/voice_candidate_qa.py \
+            --audio public/audio/episode3-cartesia.wav \
+            --manifest production/episode3/voice-dialogue.json \
+            --out qa-output/episode3/voice-candidates/cartesia.json \
+            --model base.en
+          python - <<'PY'
+          import json,pathlib
+          qa=json.load(open("qa-output/episode3/voice-candidates/cartesia.json"))
+          ok=qa.get("status")=="PASS" or qa.get("verdict")=="PASS"
+          if not ok:
+              raise SystemExit("Cartesia voice failed QA")
+          r={
+            "schema_version":1,
+            "status":"PASS",
+            "provider":"cartesia",
+            "model_id":"sonic-3.6",
+            "audio":"public/audio/episode3-cartesia.wav",
+            "qa":qa,
+            "publication_enabled":False,
+          }
+          pathlib.Path("state/episode3-premium-voice.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
+          PY
+          ffmpeg -y -i public/audio/episode3-cartesia.wav -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
           python - <<'PY'
           import json
@@ -130,8 +122,9 @@ jobs:
           dur=float(d["format"]["duration"])
           assert dur <= 30.25, f"narration would be truncated by 30s composition: {dur:.3f}s"
           assert d.get("streams"), d
-          print({"narration_duration_seconds":dur})
+          print({"narration_duration_seconds":dur,"provider":"cartesia","model":"sonic-3.6"})
           PY
+
       - name: Render
         run: |
           set -euo pipefail
