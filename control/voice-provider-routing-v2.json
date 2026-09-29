@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "publication_enabled": false,
   "selection_basis": "Independent September 2026 blind-listener benchmarks place Cartesia Sonic 3.6 at or near the top for perceived TTS quality; Eleven v3 remains the cinematic multi-speaker/dialogue specialist.",
   "primary": {
@@ -22,12 +22,13 @@
         "points_monk": "CARTESIA_VOICE_POINTS_MONK",
         "cashback_goblin": "CARTESIA_VOICE_CASHBACK_GOBLIN"
       }
-    }
+    },
+    "required_for_production": true
   },
   "fallback": {
-    "enabled": true,
-    "provider": "content_control_zero_credit_voice",
-    "rule": "Use existing verified local/pinned voice asset when ElevenLabs credentials, quota, voice IDs, generation, or QA fail."
+    "enabled": false,
+    "provider": null,
+    "rule": "No legacy or zero-credit voice fallback is allowed. Dialogue-bearing production must use an approved premium provider and pass voice QA, otherwise the build fails closed."
   },
   "acceptance": [
     "audio decodes successfully",
@@ -56,12 +57,12 @@
         "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
         "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
       }
-    }
+    },
+    "optional_comparison_only": true
   },
   "routing": [
-    "If both premium providers are configured: generate both and let transcript/audio QA select the take.",
-    "If only Cartesia is configured: use Sonic 3.6.",
-    "If only ElevenLabs is configured: use Eleven v3.",
-    "If neither premium provider passes readiness/QA: use the verified zero-credit fallback."
+    "If Cartesia Sonic 3.6 is configured: generate and use Cartesia as the production default.",
+    "If ElevenLabs v3 is also configured: it may be generated as an optional comparison candidate, but Cartesia remains the required primary provider.",
+    "If Cartesia is unavailable or fails QA: fail the dialogue-bearing build. Do not use legacy AI Voice Generator output, pinned preview audio, or zero-credit local voice assets."
   ]
 }
