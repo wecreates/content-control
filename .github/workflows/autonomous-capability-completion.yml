@@ -28,6 +28,8 @@ jobs:
           python scripts/batch9_500_registry.py --out state/studio/batch9-500-registry.json
           python scripts/batch10_500_registry.py --out state/studio/batch10-500-registry.json
           python scripts/batch11_500_registry.py --out state/studio/batch11-500-registry.json
+          [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
+          python scripts/persist_capability_progress.py --registries state/studio/batch7-500-registry.json state/studio/batch8-500-registry.json state/studio/batch9-500-registry.json state/studio/batch10-500-registry.json state/studio/batch11-500-registry.json --progress state/capability-progress.json --out state/capability-progress.json
           python scripts/autonomous_completion_scheduler.py --root state/studio --out state/autonomous/plan.json --shards 16 --limit 160
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
@@ -81,5 +83,9 @@ jobs:
           PLAN=state/autonomous/plan.json
           [ -f state/autonomous/plan/plan.json ] && PLAN=state/autonomous/plan/plan.json
           python scripts/reconcile_autonomous_completion.py --plan "$PLAN" --evidence-dir state/autonomous/evidence --out state/autonomous/reconciliation.json
+          [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
+          set +e
+          python scripts/global_completion_gate.py --progress state/capability-progress.json --out state/autonomous/global-completion.json
+          set -e
       - uses: actions/upload-artifact@v4
         with: {name: autonomous-reconciliation, path: state/autonomous/reconciliation.json, retention-days: 14}
