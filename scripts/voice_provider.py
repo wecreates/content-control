@@ -39,7 +39,7 @@ def build_provider_plan(lock,env=None):
     env=env or os.environ
     roles={"narrator":lock.get("narrator",{}),**lock.get("characters",{})}
     role_names=list(roles)
-    cartesia_ready=_provider_ready(env,"CARTESIA_API_KEY",CARTESIA_ENV,role_names)
+    cartesia_ready=bool(env.get("CARTESIA_API_KEY"))
     eleven_ready=_provider_ready(env,"ELEVENLABS_API_KEY",ELEVEN_ENV,role_names)
     voices={}
     for speaker,meta in roles.items():
