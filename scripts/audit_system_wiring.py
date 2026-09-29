@@ -367,7 +367,7 @@ def audit_root(root: Path):
     checks["voice_v3_tests"]="test:voice" in scripts
     legacy_markers=["aidocmaker.com","mcp-preview","content_control_zero_credit","verified_local_voice_assets","READY_NO_CREDENTIALS"]
     active_voice_text="\n".join([
-        studio_text,episode3_voice,voice_smoke_text,
+        studio_text,episode3_voice,
         (root/"scripts/voice_provider.py").read_text() if (root/"scripts/voice_provider.py").is_file() else "",
         (root/"scripts/premium_voice_qa.py").read_text() if (root/"scripts/premium_voice_qa.py").is_file() else "",
         (root/"control/voice-provider-routing-v2.json").read_text() if (root/"control/voice-provider-routing-v2.json").is_file() else "",
