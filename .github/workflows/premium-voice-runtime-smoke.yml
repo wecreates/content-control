@@ -7,6 +7,7 @@ on:
       - 'control/voice-provider-routing-v2.json'
       - 'control/voice-lock-v1.json'
       - 'scripts/voice_provider.py'
+      - 'scripts/verify_no_legacy_voice.py'
       - 'scripts/cartesia_sonic_generate.py'
       - 'scripts/eleven_v3_generate.py'
       - 'scripts/voice_candidate_qa.py'
