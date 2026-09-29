@@ -24,7 +24,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -34,11 +34,11 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": false,
+    "system_wiring_green": true,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
@@ -55,8 +55,7 @@
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "runtime_integrity_manifest",
-    "system_wiring_green"
+    "provenance_inputs_current"
   ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
@@ -73,7 +72,7 @@
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "sync_retention_status": "PASS",
-  "system_wiring_status": "FAIL",
+  "system_wiring_status": "PASS",
   "workflow_control_status": "PASS",
   "zero_credit_runtime": true
 }

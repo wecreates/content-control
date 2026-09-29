@@ -34,7 +34,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -44,29 +44,22 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": false,
+    "system_wiring_green": true,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
-    "system_wiring_green"
+    "provenance_inputs_current"
   ],
-  "integrity_failures": [
-    {
-      "actual": "94a9458e1371aea86c9d82dfcf08032b333ec77592e5f597fc51a21f790d6fa0",
-      "expected": "ed251cd5c05539469449d166f506a6753cb15f58d137a489b36ceb2be3628042",
-      "path": "package.json"
-    }
-  ],
+  "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "audit_system_wiring",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED"
 }

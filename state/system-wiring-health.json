@@ -41,7 +41,7 @@
     "latest_candidate_accepted": true,
     "latest_candidate_live_verified": true,
     "latest_path_end_to_end": true,
-    "legacy_voice_absent": false,
+    "legacy_voice_absent": true,
     "longform_clone_connected": true,
     "premium_voice_episode3_wiring": true,
     "premium_voice_quality_router": true,
@@ -173,10 +173,8 @@
     "workflow_registry_duplicates": [],
     "workflow_violations": []
   },
-  "failed_checks": [
-    "legacy_voice_absent"
-  ],
+  "failed_checks": [],
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL"
+  "status": "PASS"
 }
