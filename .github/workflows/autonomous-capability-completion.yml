@@ -101,6 +101,7 @@ jobs:
           if [ "$BLOCK_RC" != "0" ]; then
             echo "Blocker detected: repair route generated before normal continuation."
           fi
+          mkdir -p state/studio state/autonomous/evidence
           python scripts/batch7_500_registry.py --out state/studio/batch7-500-registry.json
           python scripts/batch8_500_registry.py --out state/studio/batch8-500-registry.json
           python scripts/batch9_500_registry.py --out state/studio/batch9-500-registry.json
