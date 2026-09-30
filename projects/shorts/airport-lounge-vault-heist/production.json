@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "project_id": "8dd02b0f-c3b6-4f8c-9b3e-580b7e4cbf37",
+  "ccsd": "projects/shorts/airport-lounge-vault-heist/ccsd.json",
+  "duration_seconds": 50,
+  "composition": "StudioAnimatic",
+  "render_entry": "remotion/studio-animatic-index.jsx",
+  "critical_gate": "scripts/short_production_critical_gate.py",
+  "required_departments": [
+    "story",
+    "character_identity",
+    "layout",
+    "voice",
+    "audio",
+    "animation",
+    "render",
+    "factual",
+    "sync",
+    "mobile_playback",
+    "final_av_review"
+  ],
+  "review_ready": false,
+  "publication_enabled": false
+}
