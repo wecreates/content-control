@@ -1,0 +1,60 @@
+name: Full Capability Validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/full_validation_scheduler.py'
+      - 'scripts/render_proof_capability.py'
+      - '.github/workflows/full-capability-validation.yml'
+  schedule:
+    - cron: '37 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: full-capability-validation
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        run: |
+          mkdir -p state/validation
+          python scripts/full_validation_scheduler.py --progress state/capability-progress.json --out state/validation/plan.json --limit 500 --shards 50
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          p=json.load(open("state/validation/plan.json"));s=sorted(set(x["shard"] for x in p["tasks"]))
+          print("matrix="+json.dumps({"shard":s},separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with: {name: validation-plan, path: state/validation/plan.json, retention-days: 7}
+  validate:
+    needs: plan
+    strategy:
+      fail-fast: false
+      max-parallel: 50
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: validation-plan, path: state/validation}
+      - name: Test validation shard
+        run: |
+          mkdir -p state/validation/evidence
+          python - "${{ matrix.shard }}" <<'PY'
+          import json,subprocess,sys,pathlib
+          shard=int(sys.argv[1]);p=json.load(open("state/validation/plan.json"))
+          for t in p["tasks"]:
+            if t["shard"]!=shard:continue
+            out=f"state/validation/evidence/{t['capability_id']}.json"
+            subprocess.run(["python","scripts/upgrade_and_test_capability.py","--task",json.dumps(t),"--out",out],check=False)
+          PY
+      - uses: actions/upload-artifact@v4
+        with: {name: "validation-evidence-${{ matrix.shard }}", path: state/validation/evidence, retention-days: 7}
