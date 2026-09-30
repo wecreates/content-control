@@ -5,6 +5,7 @@
   "allowed_automatic": [
     ".github/workflows/analytics-feedback.yml",
     ".github/workflows/apply-runtime-security-fixes.yml",
+    ".github/workflows/autonomous-capability-completion.yml",
     ".github/workflows/autonomous-cco.yml",
     ".github/workflows/candidate-state-reconcile.yml",
     ".github/workflows/cinematic-brand-gate.yml",
@@ -17,6 +18,7 @@
     ".github/workflows/free-production-watchdog.yml",
     ".github/workflows/free-qa-failure-router.yml",
     ".github/workflows/free-vision-qa.yml",
+    ".github/workflows/full-capability-validation.yml",
     ".github/workflows/generate-runtime-locks.yml",
     ".github/workflows/hyper-critical-qa.yml",
     ".github/workflows/live-render-deployment-smoke.yml",
@@ -42,8 +44,7 @@
     ".github/workflows/sync-retention-gate.yml",
     ".github/workflows/system-wiring-audit.yml",
     ".github/workflows/vce-gate.yml",
-    ".github/workflows/video-playback-contract.yml",
-    ".github/workflows/autonomous-capability-completion.yml"
+    ".github/workflows/video-playback-contract.yml"
   ],
   "manual_only": [
     ".github/workflows/always-on-resolver.yml",
