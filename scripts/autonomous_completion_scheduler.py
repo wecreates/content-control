@@ -3,7 +3,7 @@ import argparse,json
 from pathlib import Path
 DOMAINS=["renderer","animation","physics","camera","editing","composition","audio","voice","story","retention","reference","qa","repair","learning","reliability","acceptance"]
 def main():
- ap=argparse.ArgumentParser();ap.add_argument("--progress",required=True);ap.add_argument("--out",required=True);ap.add_argument("--shards",type=int,default=32);ap.add_argument("--limit",type=int,default=500);a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument("--progress",required=True);ap.add_argument("--out",required=True);ap.add_argument("--shards",type=int,default=50);ap.add_argument("--limit",type=int,default=2000);a=ap.parse_args()
  d=json.loads(Path(a.progress).read_text());caps=d.get("capabilities",{})
  remaining=[(int(k),v) for k,v in caps.items() if v.get("state") in {"MISSING","INSTALLED","IMPLEMENTED"}];remaining.sort();remaining=remaining[:a.limit];tasks=[]
  for i,(cid,row) in enumerate(remaining):
