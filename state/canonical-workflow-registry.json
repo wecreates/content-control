@@ -25,6 +25,7 @@
     ".github/workflows/long-form-showrunner-gate.yml",
     ".github/workflows/mobile-playback-compat.yml",
     ".github/workflows/narration-transcription-gate.yml",
+    ".github/workflows/ordered-capability-completion.yml",
     ".github/workflows/patched-transformers-smoke.yml",
     ".github/workflows/premium-voice-runtime-smoke.yml",
     ".github/workflows/python-security-audit.yml",
