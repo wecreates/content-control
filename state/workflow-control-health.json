@@ -29,6 +29,7 @@
     ".github/workflows/free-production-watchdog.yml": true,
     ".github/workflows/free-qa-failure-router.yml": true,
     ".github/workflows/free-vision-qa.yml": true,
+    ".github/workflows/full-capability-validation.yml": true,
     ".github/workflows/generate-runtime-locks.yml": true,
     ".github/workflows/hyper-critical-qa.yml": true,
     ".github/workflows/instagram-reel-bridge.yml": true,
@@ -79,19 +80,11 @@
     ".github/workflows/vce-gate.yml": true,
     ".github/workflows/video-playback-contract.yml": true,
     "canonical_generation_exists": true,
-    "deny_unlisted_automatic_workflows": false,
+    "deny_unlisted_automatic_workflows": true,
     "publication_disabled": true
   },
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL",
-  "violations": [
-    {
-      "path": ".github/workflows/full-capability-validation.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": true,
-      "workflow_run": false
-    }
-  ]
+  "status": "PASS",
+  "violations": []
 }
