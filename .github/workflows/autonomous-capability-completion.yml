@@ -14,6 +14,7 @@ on:
       - 'scripts/apply_capability_evidence.py'
       - 'scripts/blocker_detector.py'
       - 'scripts/blocker_repair_router.py'
+      - 'scripts/implementation_drain_gate.py'
       - '.github/workflows/autonomous-capability-completion.yml'
 permissions:
   contents: write
@@ -123,7 +124,8 @@ jobs:
           done
           [ -f state/capability-progress.json ] || printf '%s\n' '{"schema_version":1,"capabilities":{},"publication_enabled":false}' > state/capability-progress.json
           set +e
-          python scripts/global_completion_gate.py --progress state/capability-progress.json --out state/autonomous/global-completion.json
+          python scripts/implementation_drain_gate.py --progress state/capability-progress.json --out state/autonomous/implementation-drain.json
+                    python scripts/global_completion_gate.py --progress state/capability-progress.json --out state/autonomous/global-completion.json
           set -e
       - uses: actions/upload-artifact@v4
         with: {name: autonomous-reconciliation, path: state/autonomous/reconciliation.json, retention-days: 14}
