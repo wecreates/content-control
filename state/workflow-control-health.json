@@ -38,6 +38,7 @@
     ".github/workflows/migrate-free-assets.yml": true,
     ".github/workflows/mobile-playback-compat.yml": true,
     ".github/workflows/narration-transcription-gate.yml": true,
+    ".github/workflows/ordered-capability-completion.yml": true,
     ".github/workflows/patched-transformers-smoke.yml": true,
     ".github/workflows/premium-voice-runtime-smoke.yml": true,
     ".github/workflows/python-security-audit.yml": true,
