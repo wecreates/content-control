@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "project_id": "8dd02b0f-c3b6-4f8c-9b3e-580b7e4cbf37",
+  "title": "Airport Lounge Vault Heist",
+  "format": "short_9x16",
+  "fps": 24,
+  "width": 720,
+  "height": 1280,
+  "publication_enabled": false,
+  "style": {
+    "background": "#FFFFFF",
+    "stick_figure": "#000000",
+    "grammar": "white background, black stick figures, clean negative space, no overlap"
+  },
+  "scenes": [
+    {
+      "id": "s01",
+      "start": 0,
+      "end": 3,
+      "story": {
+        "beat": "HOOK: airport lounge door becomes a bank vault"
+      },
+      "camera": {
+        "shot": "wide_push"
+      },
+      "characters": [
+        {
+          "id": "debit_card_dave",
+          "role": "lead",
+          "action": "runs toward vault door"
+        }
+      ],
+      "props": [
+        {
+          "id": "vault_door",
+          "label": "AIRPORT LOUNGE"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Airport lounges look free. They are absolutely not."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s02",
+      "start": 3,
+      "end": 8,
+      "story": {
+        "beat": "Dave hits the locked lounge vault"
+      },
+      "camera": {
+        "shot": "medium_impact"
+      },
+      "characters": [
+        {
+          "id": "debit_card_dave",
+          "action": "collides with locked door"
+        }
+      ],
+      "props": [
+        {
+          "id": "fee_meter",
+          "label": "ACCESS COST"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "The trick is knowing what actually unlocks the door."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s03",
+      "start": 8,
+      "end": 16,
+      "story": {
+        "beat": "Centurion-style premium card key metaphor"
+      },
+      "camera": {
+        "shot": "insert_then_reaction"
+      },
+      "characters": [
+        {
+          "id": "points_monk",
+          "action": "reveals premium card key"
+        }
+      ],
+      "props": [
+        {
+          "id": "premium_card_key",
+          "label": "PREMIUM CARD"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "points_monk",
+            "text": "Benefits matter only when you actually use them."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s04",
+      "start": 16,
+      "end": 27,
+      "story": {
+        "beat": "annual fee monster appears behind the reward"
+      },
+      "camera": {
+        "shot": "reveal_pullback"
+      },
+      "characters": [
+        {
+          "id": "debit_card_dave",
+          "action": "celebrates then freezes"
+        }
+      ],
+      "props": [
+        {
+          "id": "annual_fee_monster",
+          "label": "ANNUAL FEE"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Because the annual fee is still waiting behind you."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s05",
+      "start": 27,
+      "end": 39,
+      "story": {
+        "beat": "simple break-even visual"
+      },
+      "camera": {
+        "shot": "topdown_math"
+      },
+      "characters": [
+        {
+          "id": "points_monk",
+          "action": "balances benefits and cost"
+        }
+      ],
+      "props": [
+        {
+          "id": "benefit_scale",
+          "label": "VALUE YOU USE vs COST"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "If the benefits you use beat the cost, the math can work."
+          }
+        ]
+      }
+    },
+    {
+      "id": "s06",
+      "start": 39,
+      "end": 50,
+      "story": {
+        "beat": "loop payoff: vault opens then another fee vault appears"
+      },
+      "camera": {
+        "shot": "push_then_smash_reveal"
+      },
+      "characters": [
+        {
+          "id": "debit_card_dave",
+          "action": "enters vault then sees second vault"
+        }
+      ],
+      "props": [
+        {
+          "id": "second_vault",
+          "label": "NEXT FEE"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "debit_card_dave",
+            "text": "There is another door?"
+          },
+          {
+            "speaker": "narrator",
+            "text": "There is always another door."
+          }
+        ]
+      }
+    }
+  ]
+}
