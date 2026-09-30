@@ -1,6 +1,12 @@
 {
-  "schema_version": 1,
-  "primary": ".github/workflows/episode1-max-speed.yml",
+  "schema_version": 2,
+  "primary": ".github/workflows/studio-pipeline.yml",
+  "generation_gate": ".github/workflows/free-vision-qa.yml",
+  "render_farm": ".github/workflows/shot-render-farm.yml",
+  "validation": ".github/workflows/full-capability-validation.yml",
+  "repair_router": ".github/workflows/free-qa-failure-router.yml",
+  "review_gate": ".github/workflows/video-playback-contract.yml",
   "legacy_workflows_policy": "manual_or_callable_only",
-  "rule": "one production orchestrator owns scheduling; no overlapping autonomous production triggers"
+  "rule": "one studio orchestrator owns CCSD handoffs; generation, render, validation, repair, and review are registered stages under it",
+  "publication_enabled": false
 }
