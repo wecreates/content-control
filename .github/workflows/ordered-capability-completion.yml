@@ -1,0 +1,39 @@
+name: Ordered Capability Completion
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '47 * * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/load_remaining_task_queue.py'
+      - 'scripts/complete_task_one_by_one.py'
+      - '.github/workflows/ordered-capability-completion.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  ordered:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Load all remaining tasks
+        run: |
+          mkdir -p state/ordered/evidence
+          python scripts/load_remaining_task_queue.py --progress state/capability-progress.json --out state/ordered/queue.json
+      - name: Complete tasks sequentially until first blocker
+        run: |
+          python - <<'PY'
+          import json,subprocess,pathlib
+          q=json.load(open("state/ordered/queue.json"))
+          for i,t in enumerate(q["tasks"]):
+            out=f"state/ordered/evidence/{t['capability_id']}.json"
+            rc=subprocess.run(["python","scripts/complete_task_one_by_one.py","--queue","state/ordered/queue.json","--index",str(i),"--out",out]).returncode
+            if rc:
+              pathlib.Path("state/ordered/blocker.json").write_text(json.dumps({"status":"BLOCKED","position":i+1,"capability_id":t["capability_id"],"publication_enabled":False},indent=2)+"\n")
+              raise SystemExit(rc)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: ordered-capability-evidence, path: state/ordered, retention-days: 14}
