@@ -20,9 +20,11 @@
     },
     "1000": {
       "capability": "mastering_acceptance_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/1000.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "1001": {
       "capability": "performance_embeddings_01",
@@ -12370,57 +12372,75 @@
     },
     "501": {
       "capability": "advanced_facial_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/501.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "502": {
       "capability": "advanced_facial_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/502.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "503": {
       "capability": "advanced_facial_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/503.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "504": {
       "capability": "advanced_facial_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/504.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "505": {
       "capability": "advanced_facial_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/505.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "506": {
       "capability": "advanced_facial_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/506.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "507": {
       "capability": "advanced_facial_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/507.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "508": {
       "capability": "advanced_facial_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/508.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "509": {
       "capability": "advanced_facial_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/509.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "51": {
       "evidence": [
@@ -12430,63 +12450,83 @@
     },
     "510": {
       "capability": "advanced_facial_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/510.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "511": {
       "capability": "advanced_facial_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/511.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "512": {
       "capability": "advanced_facial_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/512.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "513": {
       "capability": "advanced_facial_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/513.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "514": {
       "capability": "advanced_facial_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/514.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "515": {
       "capability": "advanced_facial_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/515.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "516": {
       "capability": "advanced_facial_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/516.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "517": {
       "capability": "advanced_facial_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/517.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "518": {
       "capability": "advanced_facial_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/518.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "519": {
       "capability": "advanced_facial_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/519.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "52": {
       "evidence": [
@@ -12496,63 +12536,83 @@
     },
     "520": {
       "capability": "advanced_facial_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/520.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "521": {
       "capability": "advanced_facial_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/521.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "522": {
       "capability": "advanced_facial_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/522.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "523": {
       "capability": "advanced_facial_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/523.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "524": {
       "capability": "advanced_facial_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/524.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "525": {
       "capability": "advanced_facial_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/525.json"
+      ],
       "group": "advanced_facial",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "526": {
       "capability": "advanced_body_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/526.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "527": {
       "capability": "advanced_body_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/527.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "528": {
       "capability": "advanced_body_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/528.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "529": {
       "capability": "advanced_body_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/529.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "53": {
       "evidence": [
@@ -12562,63 +12622,83 @@
     },
     "530": {
       "capability": "advanced_body_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/530.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "531": {
       "capability": "advanced_body_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/531.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "532": {
       "capability": "advanced_body_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/532.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "533": {
       "capability": "advanced_body_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/533.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "534": {
       "capability": "advanced_body_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/534.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "535": {
       "capability": "advanced_body_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/535.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "536": {
       "capability": "advanced_body_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/536.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "537": {
       "capability": "advanced_body_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/537.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "538": {
       "capability": "advanced_body_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/538.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "539": {
       "capability": "advanced_body_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/539.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "54": {
       "evidence": [
@@ -12628,63 +12708,83 @@
     },
     "540": {
       "capability": "advanced_body_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/540.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "541": {
       "capability": "advanced_body_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/541.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "542": {
       "capability": "advanced_body_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/542.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "543": {
       "capability": "advanced_body_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/543.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "544": {
       "capability": "advanced_body_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/544.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "545": {
       "capability": "advanced_body_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/545.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "546": {
       "capability": "advanced_body_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/546.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "547": {
       "capability": "advanced_body_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/547.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "548": {
       "capability": "advanced_body_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/548.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "549": {
       "capability": "advanced_body_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/549.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "55": {
       "evidence": [
@@ -12694,63 +12794,83 @@
     },
     "550": {
       "capability": "advanced_body_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/550.json"
+      ],
       "group": "advanced_body",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "551": {
       "capability": "multi_character_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/551.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "552": {
       "capability": "multi_character_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/552.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "553": {
       "capability": "multi_character_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/553.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "554": {
       "capability": "multi_character_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/554.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "555": {
       "capability": "multi_character_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/555.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "556": {
       "capability": "multi_character_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/556.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "557": {
       "capability": "multi_character_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/557.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "558": {
       "capability": "multi_character_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/558.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "559": {
       "capability": "multi_character_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/559.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "56": {
       "evidence": [
@@ -12760,63 +12880,83 @@
     },
     "560": {
       "capability": "multi_character_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/560.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "561": {
       "capability": "multi_character_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/561.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "562": {
       "capability": "multi_character_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/562.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "563": {
       "capability": "multi_character_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/563.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "564": {
       "capability": "multi_character_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/564.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "565": {
       "capability": "multi_character_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/565.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "566": {
       "capability": "multi_character_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/566.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "567": {
       "capability": "multi_character_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/567.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "568": {
       "capability": "multi_character_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/568.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "569": {
       "capability": "multi_character_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/569.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "57": {
       "evidence": [
@@ -12826,63 +12966,83 @@
     },
     "570": {
       "capability": "multi_character_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/570.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "571": {
       "capability": "multi_character_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/571.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "572": {
       "capability": "multi_character_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/572.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "573": {
       "capability": "multi_character_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/573.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "574": {
       "capability": "multi_character_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/574.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "575": {
       "capability": "multi_character_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/575.json"
+      ],
       "group": "multi_character",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "576": {
       "capability": "advanced_physics_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/576.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "577": {
       "capability": "advanced_physics_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/577.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "578": {
       "capability": "advanced_physics_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/578.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "579": {
       "capability": "advanced_physics_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/579.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "58": {
       "evidence": [
@@ -12892,63 +13052,83 @@
     },
     "580": {
       "capability": "advanced_physics_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/580.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "581": {
       "capability": "advanced_physics_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/581.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "582": {
       "capability": "advanced_physics_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/582.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "583": {
       "capability": "advanced_physics_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/583.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "584": {
       "capability": "advanced_physics_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/584.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "585": {
       "capability": "advanced_physics_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/585.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "586": {
       "capability": "advanced_physics_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/586.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "587": {
       "capability": "advanced_physics_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/587.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "588": {
       "capability": "advanced_physics_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/588.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "589": {
       "capability": "advanced_physics_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/589.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "59": {
       "evidence": [
@@ -12958,63 +13138,83 @@
     },
     "590": {
       "capability": "advanced_physics_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/590.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "591": {
       "capability": "advanced_physics_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/591.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "592": {
       "capability": "advanced_physics_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/592.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "593": {
       "capability": "advanced_physics_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/593.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "594": {
       "capability": "advanced_physics_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/594.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "595": {
       "capability": "advanced_physics_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/595.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "596": {
       "capability": "advanced_physics_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/596.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "597": {
       "capability": "advanced_physics_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/597.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "598": {
       "capability": "advanced_physics_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/598.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "599": {
       "capability": "advanced_physics_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/599.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "6": {
       "evidence": [
@@ -13030,63 +13230,83 @@
     },
     "600": {
       "capability": "advanced_physics_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/600.json"
+      ],
       "group": "advanced_physics",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "601": {
       "capability": "advanced_cinematography_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/601.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "602": {
       "capability": "advanced_cinematography_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/602.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "603": {
       "capability": "advanced_cinematography_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/603.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "604": {
       "capability": "advanced_cinematography_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/604.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "605": {
       "capability": "advanced_cinematography_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/605.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "606": {
       "capability": "advanced_cinematography_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/606.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "607": {
       "capability": "advanced_cinematography_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/607.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "608": {
       "capability": "advanced_cinematography_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/608.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "609": {
       "capability": "advanced_cinematography_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/609.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "61": {
       "evidence": [
@@ -13096,63 +13316,83 @@
     },
     "610": {
       "capability": "advanced_cinematography_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/610.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "611": {
       "capability": "advanced_cinematography_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/611.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "612": {
       "capability": "advanced_cinematography_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/612.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "613": {
       "capability": "advanced_cinematography_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/613.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "614": {
       "capability": "advanced_cinematography_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/614.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "615": {
       "capability": "advanced_cinematography_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/615.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "616": {
       "capability": "advanced_cinematography_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/616.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "617": {
       "capability": "advanced_cinematography_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/617.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "618": {
       "capability": "advanced_cinematography_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/618.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "619": {
       "capability": "advanced_cinematography_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/619.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "62": {
       "evidence": [
@@ -13162,63 +13402,83 @@
     },
     "620": {
       "capability": "advanced_cinematography_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/620.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "621": {
       "capability": "advanced_cinematography_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/621.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "622": {
       "capability": "advanced_cinematography_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/622.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "623": {
       "capability": "advanced_cinematography_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/623.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "624": {
       "capability": "advanced_cinematography_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/624.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "625": {
       "capability": "advanced_cinematography_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/625.json"
+      ],
       "group": "advanced_cinematography",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "626": {
       "capability": "advanced_editing_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/626.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "627": {
       "capability": "advanced_editing_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/627.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "628": {
       "capability": "advanced_editing_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/628.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "629": {
       "capability": "advanced_editing_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/629.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "63": {
       "evidence": [
@@ -13228,63 +13488,83 @@
     },
     "630": {
       "capability": "advanced_editing_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/630.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "631": {
       "capability": "advanced_editing_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/631.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "632": {
       "capability": "advanced_editing_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/632.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "633": {
       "capability": "advanced_editing_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/633.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "634": {
       "capability": "advanced_editing_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/634.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "635": {
       "capability": "advanced_editing_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/635.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "636": {
       "capability": "advanced_editing_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/636.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "637": {
       "capability": "advanced_editing_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/637.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "638": {
       "capability": "advanced_editing_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/638.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "639": {
       "capability": "advanced_editing_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/639.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "64": {
       "evidence": [
@@ -13294,63 +13574,83 @@
     },
     "640": {
       "capability": "advanced_editing_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/640.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "641": {
       "capability": "advanced_editing_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/641.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "642": {
       "capability": "advanced_editing_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/642.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "643": {
       "capability": "advanced_editing_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/643.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "644": {
       "capability": "advanced_editing_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/644.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "645": {
       "capability": "advanced_editing_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/645.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "646": {
       "capability": "advanced_editing_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/646.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "647": {
       "capability": "advanced_editing_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/647.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "648": {
       "capability": "advanced_editing_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/648.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "649": {
       "capability": "advanced_editing_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/649.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "65": {
       "evidence": [
@@ -13360,63 +13660,83 @@
     },
     "650": {
       "capability": "advanced_editing_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/650.json"
+      ],
       "group": "advanced_editing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "651": {
       "capability": "metaphor_intelligence_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/651.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "652": {
       "capability": "metaphor_intelligence_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/652.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "653": {
       "capability": "metaphor_intelligence_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/653.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "654": {
       "capability": "metaphor_intelligence_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/654.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "655": {
       "capability": "metaphor_intelligence_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/655.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "656": {
       "capability": "metaphor_intelligence_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/656.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "657": {
       "capability": "metaphor_intelligence_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/657.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "658": {
       "capability": "metaphor_intelligence_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/658.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "659": {
       "capability": "metaphor_intelligence_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/659.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "66": {
       "evidence": [
@@ -13426,63 +13746,83 @@
     },
     "660": {
       "capability": "metaphor_intelligence_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/660.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "661": {
       "capability": "metaphor_intelligence_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/661.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "662": {
       "capability": "metaphor_intelligence_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/662.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "663": {
       "capability": "metaphor_intelligence_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/663.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "664": {
       "capability": "metaphor_intelligence_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/664.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "665": {
       "capability": "metaphor_intelligence_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/665.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "666": {
       "capability": "metaphor_intelligence_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/666.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "667": {
       "capability": "metaphor_intelligence_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/667.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "668": {
       "capability": "metaphor_intelligence_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/668.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "669": {
       "capability": "metaphor_intelligence_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/669.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "67": {
       "evidence": [
@@ -13492,63 +13832,83 @@
     },
     "670": {
       "capability": "metaphor_intelligence_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/670.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "671": {
       "capability": "metaphor_intelligence_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/671.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "672": {
       "capability": "metaphor_intelligence_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/672.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "673": {
       "capability": "metaphor_intelligence_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/673.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "674": {
       "capability": "metaphor_intelligence_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/674.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "675": {
       "capability": "metaphor_intelligence_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/675.json"
+      ],
       "group": "metaphor_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "676": {
       "capability": "comedy_intelligence_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/676.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "677": {
       "capability": "comedy_intelligence_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/677.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "678": {
       "capability": "comedy_intelligence_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/678.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "679": {
       "capability": "comedy_intelligence_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/679.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "68": {
       "evidence": [
@@ -13558,63 +13918,83 @@
     },
     "680": {
       "capability": "comedy_intelligence_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/680.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "681": {
       "capability": "comedy_intelligence_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/681.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "682": {
       "capability": "comedy_intelligence_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/682.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "683": {
       "capability": "comedy_intelligence_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/683.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "684": {
       "capability": "comedy_intelligence_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/684.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "685": {
       "capability": "comedy_intelligence_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/685.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "686": {
       "capability": "comedy_intelligence_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/686.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "687": {
       "capability": "comedy_intelligence_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/687.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "688": {
       "capability": "comedy_intelligence_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/688.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "689": {
       "capability": "comedy_intelligence_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/689.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "69": {
       "evidence": [
@@ -13624,63 +14004,83 @@
     },
     "690": {
       "capability": "comedy_intelligence_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/690.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "691": {
       "capability": "comedy_intelligence_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/691.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "692": {
       "capability": "comedy_intelligence_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/692.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "693": {
       "capability": "comedy_intelligence_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/693.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "694": {
       "capability": "comedy_intelligence_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/694.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "695": {
       "capability": "comedy_intelligence_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/695.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "696": {
       "capability": "comedy_intelligence_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/696.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "697": {
       "capability": "comedy_intelligence_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/697.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "698": {
       "capability": "comedy_intelligence_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/698.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "699": {
       "capability": "comedy_intelligence_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/699.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "7": {
       "evidence": [
@@ -13696,63 +14096,83 @@
     },
     "700": {
       "capability": "comedy_intelligence_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/700.json"
+      ],
       "group": "comedy_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "701": {
       "capability": "advanced_story_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/701.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "702": {
       "capability": "advanced_story_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/702.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "703": {
       "capability": "advanced_story_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/703.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "704": {
       "capability": "advanced_story_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/704.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "705": {
       "capability": "advanced_story_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/705.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "706": {
       "capability": "advanced_story_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/706.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "707": {
       "capability": "advanced_story_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/707.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "708": {
       "capability": "advanced_story_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/708.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "709": {
       "capability": "advanced_story_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/709.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "71": {
       "evidence": [
@@ -13762,63 +14182,83 @@
     },
     "710": {
       "capability": "advanced_story_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/710.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "711": {
       "capability": "advanced_story_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/711.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "712": {
       "capability": "advanced_story_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/712.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "713": {
       "capability": "advanced_story_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/713.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "714": {
       "capability": "advanced_story_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/714.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "715": {
       "capability": "advanced_story_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/715.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "716": {
       "capability": "advanced_story_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/716.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "717": {
       "capability": "advanced_story_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/717.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "718": {
       "capability": "advanced_story_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/718.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "719": {
       "capability": "advanced_story_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/719.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "72": {
       "evidence": [
@@ -13828,63 +14268,83 @@
     },
     "720": {
       "capability": "advanced_story_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/720.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "721": {
       "capability": "advanced_story_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/721.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "722": {
       "capability": "advanced_story_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/722.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "723": {
       "capability": "advanced_story_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/723.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "724": {
       "capability": "advanced_story_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/724.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "725": {
       "capability": "advanced_story_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/725.json"
+      ],
       "group": "advanced_story",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "726": {
       "capability": "audience_psychology_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/726.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "727": {
       "capability": "audience_psychology_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/727.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "728": {
       "capability": "audience_psychology_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/728.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "729": {
       "capability": "audience_psychology_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/729.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "73": {
       "evidence": [
@@ -13894,63 +14354,83 @@
     },
     "730": {
       "capability": "audience_psychology_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/730.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "731": {
       "capability": "audience_psychology_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/731.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "732": {
       "capability": "audience_psychology_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/732.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "733": {
       "capability": "audience_psychology_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/733.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "734": {
       "capability": "audience_psychology_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/734.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "735": {
       "capability": "audience_psychology_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/735.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "736": {
       "capability": "audience_psychology_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/736.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "737": {
       "capability": "audience_psychology_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/737.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "738": {
       "capability": "audience_psychology_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/738.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "739": {
       "capability": "audience_psychology_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/739.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "74": {
       "evidence": [
@@ -13960,63 +14440,83 @@
     },
     "740": {
       "capability": "audience_psychology_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/740.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "741": {
       "capability": "audience_psychology_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/741.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "742": {
       "capability": "audience_psychology_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/742.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "743": {
       "capability": "audience_psychology_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/743.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "744": {
       "capability": "audience_psychology_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/744.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "745": {
       "capability": "audience_psychology_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/745.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "746": {
       "capability": "audience_psychology_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/746.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "747": {
       "capability": "audience_psychology_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/747.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "748": {
       "capability": "audience_psychology_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/748.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "749": {
       "capability": "audience_psychology_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/749.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "75": {
       "evidence": [
@@ -14026,63 +14526,83 @@
     },
     "750": {
       "capability": "audience_psychology_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/750.json"
+      ],
       "group": "audience_psychology",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "751": {
       "capability": "perceptual_visual_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/751.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "752": {
       "capability": "perceptual_visual_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/752.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "753": {
       "capability": "perceptual_visual_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/753.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "754": {
       "capability": "perceptual_visual_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/754.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "755": {
       "capability": "perceptual_visual_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/755.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "756": {
       "capability": "perceptual_visual_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/756.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "757": {
       "capability": "perceptual_visual_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/757.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "758": {
       "capability": "perceptual_visual_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/758.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "759": {
       "capability": "perceptual_visual_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/759.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "76": {
       "evidence": [
@@ -14092,63 +14612,83 @@
     },
     "760": {
       "capability": "perceptual_visual_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/760.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "761": {
       "capability": "perceptual_visual_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/761.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "762": {
       "capability": "perceptual_visual_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/762.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "763": {
       "capability": "perceptual_visual_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/763.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "764": {
       "capability": "perceptual_visual_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/764.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "765": {
       "capability": "perceptual_visual_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/765.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "766": {
       "capability": "perceptual_visual_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/766.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "767": {
       "capability": "perceptual_visual_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/767.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "768": {
       "capability": "perceptual_visual_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/768.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "769": {
       "capability": "perceptual_visual_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/769.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "77": {
       "evidence": [
@@ -14158,63 +14698,83 @@
     },
     "770": {
       "capability": "perceptual_visual_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/770.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "771": {
       "capability": "perceptual_visual_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/771.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "772": {
       "capability": "perceptual_visual_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/772.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "773": {
       "capability": "perceptual_visual_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/773.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "774": {
       "capability": "perceptual_visual_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/774.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "775": {
       "capability": "perceptual_visual_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/775.json"
+      ],
       "group": "perceptual_visual",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "776": {
       "capability": "audio_intelligence_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/776.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "777": {
       "capability": "audio_intelligence_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/777.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "778": {
       "capability": "audio_intelligence_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/778.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "779": {
       "capability": "audio_intelligence_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/779.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "78": {
       "evidence": [
@@ -14224,63 +14784,83 @@
     },
     "780": {
       "capability": "audio_intelligence_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/780.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "781": {
       "capability": "audio_intelligence_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/781.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "782": {
       "capability": "audio_intelligence_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/782.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "783": {
       "capability": "audio_intelligence_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/783.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "784": {
       "capability": "audio_intelligence_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/784.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "785": {
       "capability": "audio_intelligence_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/785.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "786": {
       "capability": "audio_intelligence_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/786.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "787": {
       "capability": "audio_intelligence_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/787.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "788": {
       "capability": "audio_intelligence_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/788.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "789": {
       "capability": "audio_intelligence_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/789.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "79": {
       "evidence": [
@@ -14290,63 +14870,83 @@
     },
     "790": {
       "capability": "audio_intelligence_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/790.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "791": {
       "capability": "audio_intelligence_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/791.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "792": {
       "capability": "audio_intelligence_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/792.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "793": {
       "capability": "audio_intelligence_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/793.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "794": {
       "capability": "audio_intelligence_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/794.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "795": {
       "capability": "audio_intelligence_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/795.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "796": {
       "capability": "audio_intelligence_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/796.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "797": {
       "capability": "audio_intelligence_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/797.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "798": {
       "capability": "audio_intelligence_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/798.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "799": {
       "capability": "audio_intelligence_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/799.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "8": {
       "evidence": [
@@ -14362,63 +14962,83 @@
     },
     "800": {
       "capability": "audio_intelligence_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/800.json"
+      ],
       "group": "audio_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "801": {
       "capability": "voice_intelligence_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/801.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "802": {
       "capability": "voice_intelligence_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/802.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "803": {
       "capability": "voice_intelligence_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/803.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "804": {
       "capability": "voice_intelligence_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/804.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "805": {
       "capability": "voice_intelligence_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/805.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "806": {
       "capability": "voice_intelligence_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/806.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "807": {
       "capability": "voice_intelligence_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/807.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "808": {
       "capability": "voice_intelligence_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/808.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "809": {
       "capability": "voice_intelligence_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/809.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "81": {
       "evidence": [
@@ -14428,63 +15048,83 @@
     },
     "810": {
       "capability": "voice_intelligence_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/810.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "811": {
       "capability": "voice_intelligence_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/811.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "812": {
       "capability": "voice_intelligence_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/812.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "813": {
       "capability": "voice_intelligence_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/813.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "814": {
       "capability": "voice_intelligence_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/814.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "815": {
       "capability": "voice_intelligence_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/815.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "816": {
       "capability": "voice_intelligence_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/816.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "817": {
       "capability": "voice_intelligence_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/817.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "818": {
       "capability": "voice_intelligence_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/818.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "819": {
       "capability": "voice_intelligence_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/819.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "82": {
       "evidence": [
@@ -14494,63 +15134,83 @@
     },
     "820": {
       "capability": "voice_intelligence_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/820.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "821": {
       "capability": "voice_intelligence_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/821.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "822": {
       "capability": "voice_intelligence_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/822.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "823": {
       "capability": "voice_intelligence_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/823.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "824": {
       "capability": "voice_intelligence_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/824.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "825": {
       "capability": "voice_intelligence_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/825.json"
+      ],
       "group": "voice_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "826": {
       "capability": "asset_intelligence_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/826.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "827": {
       "capability": "asset_intelligence_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/827.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "828": {
       "capability": "asset_intelligence_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/828.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "829": {
       "capability": "asset_intelligence_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/829.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "83": {
       "evidence": [
@@ -14560,63 +15220,83 @@
     },
     "830": {
       "capability": "asset_intelligence_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/830.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "831": {
       "capability": "asset_intelligence_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/831.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "832": {
       "capability": "asset_intelligence_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/832.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "833": {
       "capability": "asset_intelligence_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/833.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "834": {
       "capability": "asset_intelligence_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/834.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "835": {
       "capability": "asset_intelligence_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/835.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "836": {
       "capability": "asset_intelligence_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/836.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "837": {
       "capability": "asset_intelligence_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/837.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "838": {
       "capability": "asset_intelligence_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/838.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "839": {
       "capability": "asset_intelligence_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/839.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "84": {
       "evidence": [
@@ -14626,63 +15306,83 @@
     },
     "840": {
       "capability": "asset_intelligence_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/840.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "841": {
       "capability": "asset_intelligence_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/841.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "842": {
       "capability": "asset_intelligence_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/842.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "843": {
       "capability": "asset_intelligence_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/843.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "844": {
       "capability": "asset_intelligence_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/844.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "845": {
       "capability": "asset_intelligence_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/845.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "846": {
       "capability": "asset_intelligence_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/846.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "847": {
       "capability": "asset_intelligence_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/847.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "848": {
       "capability": "asset_intelligence_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/848.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "849": {
       "capability": "asset_intelligence_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/849.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "85": {
       "evidence": [
@@ -14692,63 +15392,83 @@
     },
     "850": {
       "capability": "asset_intelligence_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/850.json"
+      ],
       "group": "asset_intelligence",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "851": {
       "capability": "reference_v5_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/851.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "852": {
       "capability": "reference_v5_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/852.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "853": {
       "capability": "reference_v5_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/853.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "854": {
       "capability": "reference_v5_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/854.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "855": {
       "capability": "reference_v5_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/855.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "856": {
       "capability": "reference_v5_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/856.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "857": {
       "capability": "reference_v5_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/857.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "858": {
       "capability": "reference_v5_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/858.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "859": {
       "capability": "reference_v5_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/859.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "86": {
       "evidence": [
@@ -14758,63 +15478,83 @@
     },
     "860": {
       "capability": "reference_v5_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/860.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "861": {
       "capability": "reference_v5_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/861.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "862": {
       "capability": "reference_v5_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/862.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "863": {
       "capability": "reference_v5_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/863.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "864": {
       "capability": "reference_v5_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/864.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "865": {
       "capability": "reference_v5_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/865.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "866": {
       "capability": "reference_v5_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/866.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "867": {
       "capability": "reference_v5_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/867.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "868": {
       "capability": "reference_v5_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/868.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "869": {
       "capability": "reference_v5_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/869.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "87": {
       "evidence": [
@@ -14824,63 +15564,83 @@
     },
     "870": {
       "capability": "reference_v5_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/870.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "871": {
       "capability": "reference_v5_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/871.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "872": {
       "capability": "reference_v5_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/872.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "873": {
       "capability": "reference_v5_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/873.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "874": {
       "capability": "reference_v5_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/874.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "875": {
       "capability": "reference_v5_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/875.json"
+      ],
       "group": "reference_v5",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "876": {
       "capability": "self_learning_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/876.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "877": {
       "capability": "self_learning_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/877.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "878": {
       "capability": "self_learning_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/878.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "879": {
       "capability": "self_learning_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/879.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "88": {
       "evidence": [
@@ -14890,63 +15650,83 @@
     },
     "880": {
       "capability": "self_learning_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/880.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "881": {
       "capability": "self_learning_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/881.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "882": {
       "capability": "self_learning_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/882.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "883": {
       "capability": "self_learning_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/883.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "884": {
       "capability": "self_learning_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/884.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "885": {
       "capability": "self_learning_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/885.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "886": {
       "capability": "self_learning_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/886.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "887": {
       "capability": "self_learning_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/887.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "888": {
       "capability": "self_learning_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/888.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "889": {
       "capability": "self_learning_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/889.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "89": {
       "evidence": [
@@ -14956,63 +15736,83 @@
     },
     "890": {
       "capability": "self_learning_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/890.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "891": {
       "capability": "self_learning_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/891.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "892": {
       "capability": "self_learning_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/892.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "893": {
       "capability": "self_learning_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/893.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "894": {
       "capability": "self_learning_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/894.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "895": {
       "capability": "self_learning_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/895.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "896": {
       "capability": "self_learning_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/896.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "897": {
       "capability": "self_learning_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/897.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "898": {
       "capability": "self_learning_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/898.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "899": {
       "capability": "self_learning_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/899.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "9": {
       "evidence": [
@@ -15028,63 +15828,83 @@
     },
     "900": {
       "capability": "self_learning_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/900.json"
+      ],
       "group": "self_learning",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "901": {
       "capability": "autonomous_directing_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/901.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "902": {
       "capability": "autonomous_directing_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/902.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "903": {
       "capability": "autonomous_directing_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/903.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "904": {
       "capability": "autonomous_directing_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/904.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "905": {
       "capability": "autonomous_directing_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/905.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "906": {
       "capability": "autonomous_directing_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/906.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "907": {
       "capability": "autonomous_directing_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/907.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "908": {
       "capability": "autonomous_directing_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/908.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "909": {
       "capability": "autonomous_directing_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/909.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "91": {
       "evidence": [
@@ -15094,63 +15914,83 @@
     },
     "910": {
       "capability": "autonomous_directing_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/910.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "911": {
       "capability": "autonomous_directing_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/911.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "912": {
       "capability": "autonomous_directing_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/912.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "913": {
       "capability": "autonomous_directing_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/913.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "914": {
       "capability": "autonomous_directing_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/914.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "915": {
       "capability": "autonomous_directing_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/915.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "916": {
       "capability": "autonomous_directing_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/916.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "917": {
       "capability": "autonomous_directing_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/917.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "918": {
       "capability": "autonomous_directing_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/918.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "919": {
       "capability": "autonomous_directing_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/919.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "92": {
       "evidence": [
@@ -15160,63 +16000,83 @@
     },
     "920": {
       "capability": "autonomous_directing_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/920.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "921": {
       "capability": "autonomous_directing_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/921.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "922": {
       "capability": "autonomous_directing_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/922.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "923": {
       "capability": "autonomous_directing_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/923.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "924": {
       "capability": "autonomous_directing_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/924.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "925": {
       "capability": "autonomous_directing_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/925.json"
+      ],
       "group": "autonomous_directing",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "926": {
       "capability": "production_optimization_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/926.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "927": {
       "capability": "production_optimization_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/927.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "928": {
       "capability": "production_optimization_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/928.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "929": {
       "capability": "production_optimization_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/929.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "93": {
       "evidence": [
@@ -15226,63 +16086,83 @@
     },
     "930": {
       "capability": "production_optimization_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/930.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "931": {
       "capability": "production_optimization_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/931.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "932": {
       "capability": "production_optimization_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/932.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "933": {
       "capability": "production_optimization_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/933.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "934": {
       "capability": "production_optimization_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/934.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "935": {
       "capability": "production_optimization_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/935.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "936": {
       "capability": "production_optimization_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/936.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "937": {
       "capability": "production_optimization_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/937.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "938": {
       "capability": "production_optimization_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/938.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "939": {
       "capability": "production_optimization_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/939.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "94": {
       "evidence": [
@@ -15292,63 +16172,83 @@
     },
     "940": {
       "capability": "production_optimization_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/940.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "941": {
       "capability": "production_optimization_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/941.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "942": {
       "capability": "production_optimization_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/942.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "943": {
       "capability": "production_optimization_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/943.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "944": {
       "capability": "production_optimization_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/944.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "945": {
       "capability": "production_optimization_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/945.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "946": {
       "capability": "production_optimization_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/946.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "947": {
       "capability": "production_optimization_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/947.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "948": {
       "capability": "production_optimization_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/948.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "949": {
       "capability": "production_optimization_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/949.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "95": {
       "evidence": [
@@ -15358,63 +16258,83 @@
     },
     "950": {
       "capability": "production_optimization_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/950.json"
+      ],
       "group": "production_optimization",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "951": {
       "capability": "adversarial_qa_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/951.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "952": {
       "capability": "adversarial_qa_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/952.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "953": {
       "capability": "adversarial_qa_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/953.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "954": {
       "capability": "adversarial_qa_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/954.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "955": {
       "capability": "adversarial_qa_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/955.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "956": {
       "capability": "adversarial_qa_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/956.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "957": {
       "capability": "adversarial_qa_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/957.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "958": {
       "capability": "adversarial_qa_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/958.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "959": {
       "capability": "adversarial_qa_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/959.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "96": {
       "evidence": [
@@ -15424,63 +16344,83 @@
     },
     "960": {
       "capability": "adversarial_qa_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/960.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "961": {
       "capability": "adversarial_qa_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/961.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "962": {
       "capability": "adversarial_qa_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/962.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "963": {
       "capability": "adversarial_qa_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/963.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "964": {
       "capability": "adversarial_qa_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/964.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "965": {
       "capability": "adversarial_qa_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/965.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "966": {
       "capability": "adversarial_qa_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/966.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "967": {
       "capability": "adversarial_qa_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/967.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "968": {
       "capability": "adversarial_qa_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/968.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "969": {
       "capability": "adversarial_qa_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/969.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "97": {
       "evidence": [
@@ -15490,63 +16430,83 @@
     },
     "970": {
       "capability": "adversarial_qa_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/970.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "971": {
       "capability": "adversarial_qa_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/971.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "972": {
       "capability": "adversarial_qa_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/972.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "973": {
       "capability": "adversarial_qa_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/973.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "974": {
       "capability": "adversarial_qa_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/974.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "975": {
       "capability": "adversarial_qa_25",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/975.json"
+      ],
       "group": "adversarial_qa",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "976": {
       "capability": "mastering_acceptance_01",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/976.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "977": {
       "capability": "mastering_acceptance_02",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/977.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "978": {
       "capability": "mastering_acceptance_03",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/978.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "979": {
       "capability": "mastering_acceptance_04",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/979.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "98": {
       "evidence": [
@@ -15556,63 +16516,83 @@
     },
     "980": {
       "capability": "mastering_acceptance_05",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/980.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "981": {
       "capability": "mastering_acceptance_06",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/981.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "982": {
       "capability": "mastering_acceptance_07",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/982.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "983": {
       "capability": "mastering_acceptance_08",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/983.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "984": {
       "capability": "mastering_acceptance_09",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/984.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "985": {
       "capability": "mastering_acceptance_10",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/985.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "986": {
       "capability": "mastering_acceptance_11",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/986.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "987": {
       "capability": "mastering_acceptance_12",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/987.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "988": {
       "capability": "mastering_acceptance_13",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/988.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "989": {
       "capability": "mastering_acceptance_14",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/989.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "99": {
       "evidence": [
@@ -15622,63 +16602,83 @@
     },
     "990": {
       "capability": "mastering_acceptance_15",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/990.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "991": {
       "capability": "mastering_acceptance_16",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/991.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "992": {
       "capability": "mastering_acceptance_17",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/992.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "993": {
       "capability": "mastering_acceptance_18",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/993.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "994": {
       "capability": "mastering_acceptance_19",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/994.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "995": {
       "capability": "mastering_acceptance_20",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/995.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "996": {
       "capability": "mastering_acceptance_21",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/996.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "997": {
       "capability": "mastering_acceptance_22",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/997.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "998": {
       "capability": "mastering_acceptance_23",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/998.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     },
     "999": {
       "capability": "mastering_acceptance_24",
-      "evidence": [],
+      "evidence": [
+        "state/autonomous/evidence/999.json"
+      ],
       "group": "mastering_acceptance",
-      "state": "INSTALLED"
+      "state": "INTEGRATED"
     }
   },
   "note": "Persistent autonomous capability progress. Evidence promotions only; never reset by registry generation.",
