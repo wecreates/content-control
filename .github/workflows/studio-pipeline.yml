@@ -79,6 +79,8 @@ on:
       - 'scripts/enforce_2500_capability_registry.py'
       - 'scripts/promote_batch11_capability.py'
       - 'tests/test_batch11_500_registry.py'
+      - 'control/canonical-orchestrator.json'
+      - 'scripts/verify_unified_studio.py'
       - 'tests/test_creative_depth_engine.py tests/test_studio_intelligence_v2.py'
       - 'scripts/production_scheduler.py'
       - 'scripts/audience_panel_v2.py'
