@@ -2,14 +2,14 @@ name: Content Control V2 Acceptance
 on:
   workflow_dispatch:
   push:
-    branches: [v2-production-engine]
+    branches: [main]
     paths:
       - 'projects/v2/**'
       - 'scripts/v2_acceptance.py'
       - 'tests/test_v2_acceptance.py'
       - '.github/workflows/content-control-v2.yml'
 permissions:
-  contents: read
+  contents: write
 env:
   PUBLICATION_ENABLED: "false"
 jobs:
@@ -49,7 +49,8 @@ jobs:
       - name: Compile entertainment-first V2 plan
         run: |
           python - <<'PY'
-          import json
+          import json,os
+          os.makedirs("state/v2",exist_ok=True)
           p="state/v2/reference.json"
           json.dump({"transferable_mechanics":["cold_open","rising_power_levels","counter_attack","payoff"],"beats":[{"start":0,"end":3},{"start":3,"end":8},{"start":8,"end":15},{"start":15,"end":24},{"start":24,"end":34},{"start":34,"end":43},{"start":43,"end":50}]},open(p,"w"))
           PY
@@ -83,6 +84,13 @@ jobs:
           h=hashlib.sha256(open(p,"rb").read()).hexdigest()
           json.dump({"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
           PY
+      - name: Persist accepted V2 preview for streaming deployment
+        run: |
+          git config user.name "content-control-v2"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f public-review/v2-boss-fight.mp4 state/v2-health.json
+          git diff --cached --quiet || git commit -m "Publish verified V2 preview artifact [skip ci]"
+          git push origin HEAD:main
       - uses: actions/upload-artifact@v4
         if: always()
         with:
