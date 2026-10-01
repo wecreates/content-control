@@ -1,6 +1,8 @@
 name: Content Control V2 Acceptance
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 * * * *'
   push:
     branches: [main]
     paths:
