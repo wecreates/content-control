@@ -16,6 +16,8 @@ const episode3HealthPath=path.resolve("state/episode3-health.json");
 const episode3CaptionsPath=path.resolve("public-review/episode3-cashback-casino.vtt");
 const referenceCloneOutput=path.resolve("public-review/reference-clone-proof.mp4");
 const referenceCloneHealthPath=path.resolve("state/reference-clone-health.json");
+const v2Output=path.resolve("public-review/v2-boss-fight.mp4");
+const v2HealthPath=path.resolve("state/v2-health.json");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
 const renderState={status:"repository-artifact-only",logs:[]};
@@ -50,6 +52,12 @@ function episode3Acceptance(){
   const videoReady=Boolean(h?.status==="GREEN"&&publicationLocked&&actual&&expected&&actual===expected);
   const ready=videoReady&&captionReady;
   return {health:h,actual,expected,captionHash,captionReady,videoReady,ready};
+}
+function v2Acceptance(){
+  const h=readJson(v2HealthPath);
+  const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
+  const ready=Boolean(h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&actual&&expected&&actual===expected);
+  return {health:h,actual,expected,ready};
 }
 function referenceCloneAcceptance(){
   const h=readJson(referenceCloneHealthPath);
@@ -283,6 +291,16 @@ app.get("/episode3/watch",(req,res)=>{
   const v=document.getElementById('player'),s=document.getElementById('status');
   if(v&&s){const card=document.getElementById('loadingCard');const hide=()=>{if(card)card.classList.add('hidden')};v.addEventListener('loadeddata',()=>{hide();s.textContent='Verified video ready.'});v.addEventListener('playing',()=>{hide();s.textContent='Playing verified candidate.'});v.addEventListener('error',()=>{if(card){card.innerHTML='<strong>Video failed to load.</strong><span style="margin-top:8px;color:#666">The page is still working. Try refresh once.</span>'}s.textContent='Media unavailable; page stayed visible.'});setTimeout(()=>{if(v.readyState>=2)hide()},1200);}
   </script></body></html>`);
+});
+app.get("/v2/health",(req,res)=>{
+  const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,qaStatus:a.health?.status||"missing",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
+});
+app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
+app.get("/v2/watch",(req,res)=>{
+ const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
+ const body=a.ready?'<video controls playsinline preload="metadata" src="/v2/media"></video>':'<p>V2 has not passed the complete production contract yet.</p>';
+ res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:90vh;background:#f5f5f5;border-radius:14px}</style><main><h2>Content Control V2</h2>${body}<p>Publication disabled</p></main>`);
 });
 app.get("/clone/health",(req,res)=>{
   const a=referenceCloneAcceptance();res.setHeader("Cache-Control","no-store");
