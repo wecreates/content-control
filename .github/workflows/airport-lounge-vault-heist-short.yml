@@ -17,15 +17,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
-      - name: Install renderer
-        run: npm ci
+      - name: Install renderer and QA dependencies
+        run: |
+          npm ci
+          python -m pip install --disable-pip-version-check numpy opencv-python-headless
       - name: Build production CCSD
         run: |
           mkdir -p state/short-airport/receipts state/short-airport/render
           cp projects/shorts/airport-lounge-vault-heist/ccsd.json state/short-airport/ccsd.json
       - name: Render Short
         run: |
-          npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/short-airport/render/airport-lounge-vault-heist.mp4 --props=state/short-airport/ccsd.json --codec=h264 --crf=18
+          npx remotion render remotion/studio-scene-index.jsx StudioScene state/short-airport/render/airport-lounge-vault-heist.mp4 --props=state/short-airport/ccsd.json --codec=h264 --crf=18
       - name: Render media QA
         run: |
           python scripts/production_reality_media_qa.py --video state/short-airport/render/airport-lounge-vault-heist.mp4 --ccsd state/short-airport/ccsd.json --out state/short-airport/receipts/render.json
