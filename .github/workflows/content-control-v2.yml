@@ -58,7 +58,7 @@ jobs:
       - name: Render V2 entertainment acceptance Short
         run: |
           mkdir -p state/v2/render state/v2/receipts
-          cp projects/shorts/credit-score-boss-fight/ccsd.json state/v2/ccsd.json
+          cp projects/v2/amex-vs-chase-boss-fight/ccsd.json state/v2/ccsd.json
           python scripts/ccsd_voice_manifest.py --ccsd state/v2/ccsd.json --out state/v2/dialogue.json
           python scripts/local_tts_fallback.py --dialogue state/v2/dialogue.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/v2/ccsd.json"))},separators=(",",":")))')
@@ -69,9 +69,11 @@ jobs:
         run: |
           python - <<'PY'
           import json,sys
-          from scripts.v2_orchestrator import creative_gate
-          candidate={"duration_seconds":50,"scene_count":12,"max_static_seconds":2.8,"narrator_share":0.50,"has_conflict":True,"has_escalation":True,"has_payoff":True,"pattern_interrupt_max_seconds":3.0}
+          from scripts.v2_orchestrator import creative_gate,derive_metrics
+          ccsd=json.load(open("state/v2/ccsd.json"))
+          candidate=derive_metrics(ccsd)
           result=creative_gate(candidate)
+          result["metrics"]=candidate
           json.dump(result,open("state/v2/receipts/creative.json","w"),indent=2)
           if not result["pass"]: sys.exit("creative QA failed: "+",".join(result["reasons"]))
           PY
