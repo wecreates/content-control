@@ -302,6 +302,12 @@ app.get("/episode3/watch",(req,res)=>{
   if(v&&s){const card=document.getElementById('loadingCard');const hide=()=>{if(card)card.classList.add('hidden')};v.addEventListener('loadeddata',()=>{hide();s.textContent='Verified video ready.'});v.addEventListener('playing',()=>{hide();s.textContent='Playing verified candidate.'});v.addEventListener('error',()=>{if(card){card.innerHTML='<strong>Video failed to load.</strong><span style="margin-top:8px;color:#666">The page is still working. Try refresh once.</span>'}s.textContent='Media unavailable; page stayed visible.'});setTimeout(()=>{if(v.readyState>=2)hide()},1200);}
   </script></body></html>`);
 });
+app.post("/v2/run",(req,res)=>{
+  if(v2TickRunning)return res.status(202).json({ok:true,status:"already-running",publication:false});
+  runV2Tick();
+  return res.status(202).json({ok:true,status:"started",publication:false});
+});
+app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:v2TickRunning,logs:renderState.logs.slice(-40),publication:false});});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
   res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,qaStatus:a.health?.status||"missing",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
