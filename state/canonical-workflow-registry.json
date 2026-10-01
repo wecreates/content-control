@@ -3,6 +3,7 @@
   "status": "ACTIVE",
   "canonical_generation_workflow": ".github/workflows/free-vision-qa.yml",
   "allowed_automatic": [
+    ".github/workflows/airport-lounge-vault-heist-short.yml",
     ".github/workflows/analytics-feedback.yml",
     ".github/workflows/apply-runtime-security-fixes.yml",
     ".github/workflows/autonomous-capability-completion.yml",
