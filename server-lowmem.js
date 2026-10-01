@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import {spawn} from "node:child_process";
 
 const app=express();
 const PORT=Number(process.env.PORT||10000);
@@ -20,7 +21,16 @@ const v2Output=path.resolve("public-review/v2-boss-fight.mp4");
 const v2HealthPath=path.resolve("state/v2-health.json");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
-const renderState={status:"repository-artifact-only",logs:[]};
+const renderState={status:"booting",logs:[]};
+let v2TickRunning=false;
+function runV2Tick(){
+  if(v2TickRunning)return;
+  v2TickRunning=true;renderState.status="v2-tick-running";
+  const p=spawn("python",["scripts/v2_runtime_tick.py"],{env:{...process.env,PUBLICATION_ENABLED:"false"}});
+  p.stdout.on("data",d=>renderState.logs.push(String(d).trim()));
+  p.stderr.on("data",d=>renderState.logs.push(String(d).trim()));
+  p.on("close",code=>{renderState.status=code===0?"v2-tick-ok":"v2-tick-failed";v2TickRunning=false;});
+}
 function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
 function readHealth(){return readJson(healthPath);}
 function readCaptionHealth(){return readJson(captionHealthPath);}
@@ -329,6 +339,8 @@ app.use((req,res)=>res.status(404).json({error:"not found",publication:false}));
 
 const server=app.listen(PORT,()=>{
   console.log("hash-bound V10 free review worker listening",PORT);
+  runV2Tick();
+  setInterval(runV2Tick,15*60*1000).unref();
   const a=acceptance();
   if(!fs.existsSync(output)){
     console.error("Canonical review artifact missing; fail-closed until CI restores an accepted artifact");
