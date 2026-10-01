@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "production_reality_v4": {
+    "installed": true
+  },
+  "project_id": "studio-acceptance-credit-score-boss-fight",
+  "title": "Credit Score Boss Fight",
+  "format": "short_9x16",
+  "fps": 24,
+  "width": 720,
+  "height": 1280,
+  "publication_enabled": false,
+  "style": {
+    "background": "#FFFFFF",
+    "stick_figure": "#000000",
+    "grammar": "white background black stick figures; high motion; no overlap"
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "start": 0,
+      "end": 5,
+      "story": {
+        "beat": "YOUR CREDIT SCORE HAS A BOSS BAR",
+        "intent": "instant hook"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "score_meter",
+          "label": "FICO BOSS"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Your credit score behaves like a boss fight with three health bars."
+          }
+        ]
+      }
+    },
+    {
+      "id": "util",
+      "start": 5,
+      "end": 14,
+      "story": {
+        "beat": "HEALTH BAR 1: UTILIZATION"
+      },
+      "camera": {
+        "move": "tracking"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "run"
+        }
+      ],
+      "props": [
+        {
+          "id": "utilization_meter",
+          "label": "UTILIZATION"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "First bar: utilization. High balances can make this bar hurt fast."
+          }
+        ]
+      }
+    },
+    {
+      "id": "pay",
+      "start": 14,
+      "end": 23,
+      "story": {
+        "beat": "HEALTH BAR 2: PAYMENT HISTORY"
+      },
+      "camera": {
+        "move": "snap_reveal"
+      },
+      "characters": [
+        {
+          "id": "points_monk",
+          "motion_clip": "point"
+        }
+      ],
+      "props": [
+        {
+          "id": "calendar",
+          "label": "PAY ON TIME"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "points_monk",
+            "text": "Second bar: payment history. Missing payments is the boss landing a critical hit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "age",
+      "start": 23,
+      "end": 32,
+      "story": {
+        "beat": "HEALTH BAR 3: AGE"
+      },
+      "camera": {
+        "move": "creeping_push"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "think"
+        }
+      ],
+      "props": [
+        {
+          "id": "clock",
+          "label": "TIME"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Third bar: time. Some credit factors simply cannot be speedrun."
+          }
+        ]
+      }
+    },
+    {
+      "id": "trap",
+      "start": 32,
+      "end": 42,
+      "story": {
+        "beat": "THE FAKE SPEEDRUN BUTTON"
+      },
+      "camera": {
+        "move": "whip_pan"
+      },
+      "characters": [
+        {
+          "id": "cashback_goblin",
+          "motion_clip": "celebrate"
+        },
+        {
+          "id": "dave",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "button",
+          "label": "FIX SCORE NOW"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "And this shiny instant-fix button? That is usually where the trap starts."
+          }
+        ]
+      }
+    },
+    {
+      "id": "loop",
+      "start": 42,
+      "end": 50,
+      "story": {
+        "beat": "BOSS RESPAWNS"
+      },
+      "camera": {
+        "move": "snap_wide"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "victory"
+        }
+      ],
+      "props": [
+        {
+          "id": "boss_respawn",
+          "label": "NEXT STATEMENT"
+        }
+      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "dave",
+            "text": "I beat it."
+          },
+          {
+            "speaker": "narrator",
+            "text": "Nice. Your next statement just respawned the boss."
+          }
+        ]
+      }
+    }
+  ]
+}
