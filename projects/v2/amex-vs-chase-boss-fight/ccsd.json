@@ -17,9 +17,9 @@
   },
   "scenes": [
     {
-      "id": "cold-open",
+      "id": "cold-open-a",
       "start": 0,
-      "end": 3,
+      "end": 1.5,
       "story": {
         "beat": "CONFLICT: TWO CARD EMPIRES COLLIDE",
         "intent": "conflict attack"
@@ -54,9 +54,41 @@
       }
     },
     {
-      "id": "chase-strike",
+      "id": "cold-open-b",
+      "start": 1.5,
+      "end": 3,
+      "story": {
+        "beat": "CONFLICT: TWO CARD EMPIRES COLLIDE",
+        "intent": "conflict attack"
+      },
+      "camera": {
+        "move": "tracking"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "score_meter",
+          "label": "BOSS METER"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "chase-strike-a",
       "start": 3,
-      "end": 8,
+      "end": 5.5,
       "story": {
         "beat": "CHASE OPENS WITH A TRANSFER COMBO",
         "intent": "escalation counter attack"
@@ -91,9 +123,41 @@
       }
     },
     {
-      "id": "amex-counter",
+      "id": "chase-strike-b",
+      "start": 5.5,
+      "end": 8,
+      "story": {
+        "beat": "CHASE OPENS WITH A TRANSFER COMBO",
+        "intent": "escalation counter attack"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "points_monk",
+          "motion_clip": "point"
+        }
+      ],
+      "props": [
+        {
+          "id": "card",
+          "label": "POWER CARD"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "amex-counter-a",
       "start": 8,
-      "end": 14,
+      "end": 11,
       "story": {
         "beat": "AMEX COUNTERS WITH LOUNGE POWER",
         "intent": "escalation counter power"
@@ -128,9 +192,41 @@
       }
     },
     {
-      "id": "fee-drain",
+      "id": "amex-counter-b",
+      "start": 11,
+      "end": 14,
+      "story": {
+        "beat": "AMEX COUNTERS WITH LOUNGE POWER",
+        "intent": "escalation counter power"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "cashback_goblin",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "score_meter",
+          "label": "BOSS METER"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "fee-drain-a",
       "start": 14,
-      "end": 21,
+      "end": 17.5,
       "story": {
         "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
         "intent": "escalation rising power"
@@ -165,9 +261,41 @@
       }
     },
     {
-      "id": "points-summon",
+      "id": "fee-drain-b",
+      "start": 17.5,
+      "end": 21,
+      "story": {
+        "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
+        "intent": "escalation rising power"
+      },
+      "camera": {
+        "move": "tracking"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "point"
+        }
+      ],
+      "props": [
+        {
+          "id": "card",
+          "label": "POWER CARD"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "points-summon-a",
       "start": 21,
-      "end": 29,
+      "end": 25,
       "story": {
         "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
         "intent": "escalation counter"
@@ -202,9 +330,41 @@
       }
     },
     {
-      "id": "trap",
+      "id": "points-summon-b",
+      "start": 25,
+      "end": 29,
+      "story": {
+        "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
+        "intent": "escalation counter"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "points_monk",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "score_meter",
+          "label": "BOSS METER"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "trap-a",
       "start": 29,
-      "end": 37,
+      "end": 33,
       "story": {
         "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
         "intent": "conflict attack escalation"
@@ -239,9 +399,41 @@
       }
     },
     {
-      "id": "final-clash",
+      "id": "trap-b",
+      "start": 33,
+      "end": 37,
+      "story": {
+        "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
+        "intent": "conflict attack escalation"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "point"
+        }
+      ],
+      "props": [
+        {
+          "id": "card",
+          "label": "POWER CARD"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "final-clash-a",
       "start": 37,
-      "end": 45,
+      "end": 41,
       "story": {
         "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
         "intent": "escalation battle payoff"
@@ -276,9 +468,41 @@
       }
     },
     {
-      "id": "finish",
+      "id": "final-clash-b",
+      "start": 41,
+      "end": 45,
+      "story": {
+        "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
+        "intent": "escalation battle payoff"
+      },
+      "camera": {
+        "move": "tracking"
+      },
+      "characters": [
+        {
+          "id": "cashback_goblin",
+          "motion_clip": "recoil"
+        }
+      ],
+      "props": [
+        {
+          "id": "score_meter",
+          "label": "BOSS METER"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
+      }
+    },
+    {
+      "id": "finish-a",
       "start": 45,
-      "end": 50,
+      "end": 47.5,
       "story": {
         "beat": "PAYOFF: THE PLAYER IS THE BUILD",
         "intent": "payoff victory finish"
@@ -310,6 +534,38 @@
             "text": "The strongest card setup is the one whose benefits you actually use."
           }
         ]
+      }
+    },
+    {
+      "id": "finish-b",
+      "start": 47.5,
+      "end": 50,
+      "story": {
+        "beat": "PAYOFF: THE PLAYER IS THE BUILD",
+        "intent": "payoff victory finish"
+      },
+      "camera": {
+        "move": "punch_in"
+      },
+      "characters": [
+        {
+          "id": "dave",
+          "motion_clip": "point"
+        }
+      ],
+      "props": [
+        {
+          "id": "card",
+          "label": "POWER CARD"
+        }
+      ],
+      "fx": [
+        {
+          "type": "story_impact"
+        }
+      ],
+      "audio": {
+        "dialogue": []
       }
     }
   ]
