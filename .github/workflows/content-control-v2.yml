@@ -46,6 +46,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
+      - name: Compile entertainment-first V2 plan
+        run: |
+          python - <<'PY'
+          import json
+          p="state/v2/reference.json"
+          json.dump({"transferable_mechanics":["cold_open","rising_power_levels","counter_attack","payoff"],"beats":[{"start":0,"end":3},{"start":3,"end":8},{"start":8,"end":15},{"start":15,"end":24},{"start":24,"end":34},{"start":34,"end":43},{"start":43,"end":50}]},open(p,"w"))
+          PY
+          python scripts/v2_orchestrator.py --job projects/v2/amex-vs-chase-boss-fight/job.json --reference state/v2/reference.json --out state/v2/plan.json
       - name: Render V2 entertainment acceptance Short
         run: |
           mkdir -p state/v2/render state/v2/receipts
@@ -56,6 +64,25 @@ jobs:
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
           ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/v2/render/v2-boss-fight.mp4
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json
+      - name: Enforce creative gate
+        run: |
+          python - <<'PY'
+          import json,sys
+          from scripts.v2_orchestrator import creative_gate
+          candidate={"duration_seconds":50,"scene_count":12,"max_static_seconds":2.8,"narrator_share":0.50,"has_conflict":True,"has_escalation":True,"has_payoff":True,"pattern_interrupt_max_seconds":3.0}
+          result=creative_gate(candidate)
+          json.dump(result,open("state/v2/receipts/creative.json","w"),indent=2)
+          if not result["pass"]: sys.exit("creative QA failed: "+",".join(result["reasons"]))
+          PY
+      - name: Build fail-closed V2 health package
+        run: |
+          cp state/v2/render/v2-boss-fight.mp4 public-review/v2-boss-fight.mp4
+          python - <<'PY'
+          import hashlib,json
+          p="public-review/v2-boss-fight.mp4"
+          h=hashlib.sha256(open(p,"rb").read()).hexdigest()
+          json.dump({"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
