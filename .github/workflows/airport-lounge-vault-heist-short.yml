@@ -1,0 +1,37 @@
+name: Airport Lounge Vault Heist Short
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/shorts/airport-lounge-vault-heist/**'
+      - '.github/workflows/airport-lounge-vault-heist-short.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Install renderer
+        run: npm ci
+      - name: Build production CCSD
+        run: |
+          mkdir -p state/short-airport/receipts state/short-airport/render
+          cp projects/shorts/airport-lounge-vault-heist/ccsd.json state/short-airport/ccsd.json
+      - name: Render Short
+        run: |
+          npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/short-airport/render/airport-lounge-vault-heist.mp4 --props=state/short-airport/ccsd.json --codec=h264 --crf=18
+      - name: Render media QA
+        run: |
+          python scripts/production_reality_media_qa.py --video state/short-airport/render/airport-lounge-vault-heist.mp4 --ccsd state/short-airport/ccsd.json --out state/short-airport/receipts/render.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: airport-lounge-vault-heist-short
+          path: state/short-airport
+          retention-days: 14
