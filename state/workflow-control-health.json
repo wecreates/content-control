@@ -94,7 +94,7 @@
       "path": ".github/workflows/content-control-v2.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
-      "schedule": false,
+      "schedule": true,
       "workflow_run": false
     }
   ]
