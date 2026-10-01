@@ -8,5 +8,9 @@ class V2RuntimeTickTests(unittest.TestCase):
         text=p.read_text()
         self.assertIn("PUBLICATION_ENABLED",text)
         self.assertIn("false",text.lower())
+        self.assertIn("subprocess",text)
+        self.assertIn("remotion",text)
+        self.assertIn("production_reality_media_qa.py",text)
+        self.assertIn("v2-boss-fight.mp4",text)
 
 if __name__=="__main__": unittest.main()
