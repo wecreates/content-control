@@ -37,6 +37,12 @@ jobs:
           CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
         run: |
           python scripts/cartesia_sonic_generate.py --dialogue state/short-airport/dialogue.json --out state/short-airport/voice.wav --receipt state/short-airport/receipts/voice.json
+      - name: Ensure usable voice track
+        run: |
+          if [ ! -f state/short-airport/voice.wav ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq espeak-ng
+            python scripts/local_tts_fallback.py --dialogue state/short-airport/dialogue.json --out state/short-airport/voice.wav --receipt state/short-airport/receipts/voice-fallback.json
+          fi
       - name: Render Short
         run: |
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/short-airport/ccsd.json"))},separators=(",",":")))')
