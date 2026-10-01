@@ -41,5 +41,10 @@ class V2AcceptanceTests(unittest.TestCase):
                    "has_conflict":True,"has_escalation":True,"has_payoff":True,"pattern_interrupt_max_seconds":2.8}
         self.assertTrue(creative_gate(candidate)["pass"])
 
+    def test_v2_job_names_boss_fight(self):
+        import json
+        job=json.load(open("projects/v2/amex-vs-chase-boss-fight/job.json"))
+        self.assertIn("boss fight",job["creative_directive"]["concept"])
+
 if __name__=="__main__":
     unittest.main()
