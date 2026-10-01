@@ -1,0 +1,25 @@
+{
+  "schema_version": 2,
+  "engine": "content-control-v2",
+  "publication_enabled": false,
+  "niche": "credit cards and personal finance",
+  "creative_directive": {
+    "entertainment_first": true,
+    "lecture_format_forbidden": true,
+    "concept": "anime boss fight between two major credit-card ecosystems",
+    "reference_policy": "extract format mechanics only; create original script, characters, scenes and dialogue",
+    "education_rule": "facts must change the action or stakes rather than be delivered as an exposition list",
+    "pattern_interrupt_max_seconds": 3.0,
+    "target_seconds": 50
+  },
+  "acceptance": {
+    "story_locked": true,
+    "fact_locked": true,
+    "audio_locked": false,
+    "rendered": false,
+    "technical_qa": false,
+    "creative_qa": false,
+    "stream_url": null,
+    "stream_verified": false
+  }
+}
