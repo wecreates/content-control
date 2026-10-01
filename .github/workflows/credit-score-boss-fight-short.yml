@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'projects/shorts/credit-score-boss-fight/**'
+      - 'remotion/StudioAnimaticComposition.jsx'
       - '.github/workflows/credit-score-boss-fight-short.yml'
 permissions:
   contents: read
