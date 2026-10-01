@@ -13,6 +13,7 @@
     ".github/workflows/cinematic-gate.yml",
     ".github/workflows/clone-runtime-smoke.yml",
     ".github/workflows/comedy-retention-gate.yml",
+    ".github/workflows/credit-score-boss-fight-short.yml",
     ".github/workflows/episode3-cashback-casino.yml",
     ".github/workflows/episode3-live-smoke.yml",
     ".github/workflows/factual-compliance-gate.yml",
