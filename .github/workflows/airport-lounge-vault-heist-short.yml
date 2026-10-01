@@ -27,7 +27,9 @@ jobs:
           cp projects/shorts/airport-lounge-vault-heist/ccsd.json state/short-airport/ccsd.json
       - name: Render Short
         run: |
-          npx remotion render remotion/studio-scene-index.jsx StudioScene state/short-airport/render/airport-lounge-vault-heist.mp4 --props=state/short-airport/ccsd.json --codec=h264 --crf=18
+          PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/short-airport/ccsd.json"))},separators=(",",":")))')
+          npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/short-airport/render/airport-lounge-vault-heist-silent.mp4 --props="$PROPS" --codec=h264 --crf=18
+          ffmpeg -y -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=48000" -i state/short-airport/render/airport-lounge-vault-heist-silent.mp4 -map 1:v:0 -map 0:a:0 -c:v copy -c:a aac -b:a 192k -shortest state/short-airport/render/airport-lounge-vault-heist.mp4
       - name: Render media QA
         run: |
           python scripts/production_reality_media_qa.py --video state/short-airport/render/airport-lounge-vault-heist.mp4 --ccsd state/short-airport/ccsd.json --out state/short-airport/receipts/render.json
