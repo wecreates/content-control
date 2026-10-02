@@ -24,6 +24,14 @@ def _state():
 def _write(data):
     STATE_FILE.write_text(json.dumps(data, indent=2))
 
+@app.after_request
+def add_security_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
+
 @app.get("/")
 def home():
     state = _state()
