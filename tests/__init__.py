@@ -13,3 +13,8 @@ from agents.scriptwriter import write_script
 assert build_chain("gemini-3.8-flash")[0] == "gemini-3.8-flash"
 assert callable(research_topic)
 assert callable(write_script)
+
+from video.audio import synthesize_sections
+from video.basic_renderer import render
+assert callable(synthesize_sections)
+assert callable(render)
