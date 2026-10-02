@@ -29,6 +29,22 @@ def build_chain(starting_model=None):
         return MODEL_CHAIN[i:] + MODEL_CHAIN[:i]
     return list(MODEL_CHAIN)
 
+def generate_grounded(prompt, starting_model=None):
+    client = _get_client()
+    model = build_chain(starting_model)[0]
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            temperature=0.4,
+            tools=[types.Tool(google_search=types.GoogleSearch())],
+        ),
+    )
+    text = (response.text or "").strip()
+    if not text:
+        raise RuntimeError("empty grounded model response")
+    return text
+
 def generate(prompt, starting_model=None, temperature=0.7):
     client = _get_client()
     last = None
