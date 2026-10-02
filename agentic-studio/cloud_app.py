@@ -4,7 +4,7 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 
 import config
 
@@ -23,6 +23,17 @@ def _state():
 
 def _write(data):
     STATE_FILE.write_text(json.dumps(data, indent=2))
+
+@app.get("/")
+def home():
+    state = _state()
+    missing = [name for name, value in {
+        "GEMINI_API_KEY": config.GEMINI_API_KEY,
+        "PEXELS_API_KEY": config.PEXELS_API_KEY,
+    }.items() if not value]
+    ready = not missing
+    html = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ViralForge Studio</title><style>body{{font-family:system-ui;background:#0b0b12;color:#f8fafc;margin:0;padding:24px}}main{{max-width:720px;margin:auto}}.card{{background:#151522;border:1px solid #29293b;border-radius:18px;padding:24px}}.ok{{color:#34d399}}.wait{{color:#fbbf24}}code{{color:#c4b5fd}}</style></head><body><main><div class="card"><h1>ViralForge Studio</h1><p class="{'ok' if ready else 'wait'}">{'Cloud engine ready.' if ready else 'Cloud engine online; external API configuration required.'}</p><p>State: <code>{state.get('status','idle')}</code></p><p>Publication: <strong>DISABLED</strong></p><p>YouTube privacy: <strong>{config.VIDEO_PRIVACY.upper()}</strong></p><p>Missing configuration: <code>{', '.join(missing) if missing else 'none'}</code></p></div></main></body></html>"""
+    return Response(html, mimetype="text/html")
 
 @app.get("/health")
 def health():
