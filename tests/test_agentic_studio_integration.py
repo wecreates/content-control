@@ -36,7 +36,8 @@ def load_tests(loader, tests, pattern):
     from tests.test_viralforge_agents import ViralForgeAgentTests
     from tests.test_viralforge_pipeline import ViralForgePipelineTests
     from tests.test_viralforge_qa_contract import ViralForgeQAContractTests
-    for case in (ViralForgeAgentTests, ViralForgePipelineTests, ViralForgeQAContractTests):
+    from tests.test_viralforge_media_runtime import ViralForgeMediaRuntimeTests
+    for case in (ViralForgeAgentTests, ViralForgePipelineTests, ViralForgeQAContractTests, ViralForgeMediaRuntimeTests):
         suite.addTests(loader.loadTestsFromTestCase(case))
     return suite
 
