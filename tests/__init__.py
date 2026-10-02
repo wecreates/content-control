@@ -18,3 +18,6 @@ from video.audio import synthesize_sections
 from video.basic_renderer import render
 assert callable(synthesize_sections)
 assert callable(render)
+
+from qa_contract import validate_handoff
+assert callable(validate_handoff)
