@@ -30,5 +30,15 @@ class AgenticStudioIntegrationTests(unittest.TestCase):
         cfg = runpy.run_path(str(CONFIG))
         self.assertEqual(cfg["YOUTUBE_CLIENT_SECRET"], "")
 
+def load_tests(loader, tests, pattern):
+    suite = unittest.TestSuite()
+    suite.addTests(tests)
+    from tests.test_viralforge_agents import ViralForgeAgentTests
+    from tests.test_viralforge_pipeline import ViralForgePipelineTests
+    from tests.test_viralforge_qa_contract import ViralForgeQAContractTests
+    for case in (ViralForgeAgentTests, ViralForgePipelineTests, ViralForgeQAContractTests):
+        suite.addTests(loader.loadTestsFromTestCase(case))
+    return suite
+
 if __name__ == "__main__":
     unittest.main()
