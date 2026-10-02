@@ -32,7 +32,7 @@ def health():
     }.items() if not value]
     return jsonify({
         "ok": not missing,
-        "service": "agentic-ai-studio",
+        "service": "viralforge-studio",
         "publication": False,
         "youtubePrivacy": config.VIDEO_PRIVACY,
         "missingConfiguration": missing,
@@ -73,7 +73,7 @@ def run_pipeline():
 @app.post("/publish")
 def publish():
     return jsonify({
-        "error": "publication is disabled in Content Control",
+        "error": "publication is disabled in ViralForge Studio",
         "publication": False,
     }), 403
 
