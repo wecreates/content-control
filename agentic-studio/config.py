@@ -4,7 +4,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 
-CHANNEL_NAME = os.getenv("CHANNEL_NAME", "Content Control Finance")
+CHANNEL_NAME = os.getenv("CHANNEL_NAME", "ViralForge Studio")
 CHANNEL_DESCRIPTION = os.getenv("CHANNEL_DESCRIPTION", """
 An entertainment-first personal-finance and credit-card channel.
 Topics include credit cards, rewards, points, credit scores, fees, consumer finance,
