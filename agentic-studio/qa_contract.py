@@ -20,6 +20,10 @@ def validate_handoff(output_dir):
         errors.append("publication must remain disabled")
     if config.VIDEO_PRIVACY != "private":
         errors.append("video privacy must remain private")
+    if handoff.get("publication") is not False:
+        errors.append("handoff publication must be disabled")
+    if handoff.get("youtubePrivacy") != "private":
+        errors.append("handoff video privacy must be private")
     video = Path(str(handoff.get("video", "")))
     if not video.exists() or video.stat().st_size < 1024:
         errors.append("rendered video missing or empty")
