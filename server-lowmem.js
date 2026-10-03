@@ -66,7 +66,7 @@ function episode3Acceptance(){
 function v2Acceptance(){
   const h=readJson(v2HealthPath);
   const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
-  const ready=Boolean(h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&actual&&expected&&actual===expected);
+  const ready=Boolean(h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
   return {health:h,actual,expected,ready};
 }
 function referenceCloneAcceptance(){
@@ -310,7 +310,7 @@ app.post("/v2/run",(req,res)=>{
 app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:v2TickRunning,logs:renderState.logs.slice(-40),publication:false});});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,qaStatus:a.health?.status||"missing",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,qaStatus:a.health?.status||"missing",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
 });
 app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{
