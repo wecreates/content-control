@@ -10,6 +10,7 @@ on:
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/production_reality_media_qa.py'
       - 'scripts/cartesia_sonic_generate.py'
+      - 'scripts/eleven_v3_generate.py'
       - 'control/voice-engine-v3.json'
       - 'tests/test_rendered_visual_parity.py'
       - 'tests/test_production_reality_media_qa.py'
@@ -47,17 +48,40 @@ jobs:
           CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
           CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
           CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
+          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
+          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
+          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
         run: |
-          python scripts/cartesia_sonic_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/premium-voice.json
+          python scripts/cartesia_sonic_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice-cartesia.wav --receipt state/boss-fight/receipts/cartesia-voice.json
           if python - <<'PY'
           import json
-          r=json.load(open("state/boss-fight/receipts/premium-voice.json"))
+          r=json.load(open("state/boss-fight/receipts/cartesia-voice.json"))
           raise SystemExit(0 if r.get("status")=="PASS" else 1)
           PY
           then
-            cp state/boss-fight/receipts/premium-voice.json state/boss-fight/receipts/voice.json
+            cp state/boss-fight/voice-cartesia.wav state/boss-fight/voice.wav
+            cp state/boss-fight/receipts/cartesia-voice.json state/boss-fight/receipts/premium-voice.json
           else
-            python scripts/local_tts_fallback.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/voice.json
+            python scripts/eleven_v3_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice-eleven.mp3 --receipt state/boss-fight/receipts/eleven-voice.json --reference-id credit-score-boss-fight
+            if python - <<'PY'
+          import json
+          r=json.load(open("state/boss-fight/receipts/eleven-voice.json"))
+          raise SystemExit(0 if r.get("status")=="PASS" else 1)
+          PY
+            then
+              ffmpeg -y -i state/boss-fight/voice-eleven.mp3 -ar 44100 -ac 2 state/boss-fight/voice.wav
+              cp state/boss-fight/receipts/eleven-voice.json state/boss-fight/receipts/premium-voice.json
+            else
+              python scripts/local_tts_fallback.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/voice.json
+              python - <<'PY'
+          import json
+          c=json.load(open("state/boss-fight/receipts/cartesia-voice.json"))
+          e=json.load(open("state/boss-fight/receipts/eleven-voice.json"))
+          json.dump({"schema_version":1,"status":"FALLBACK_REQUIRED","provider":"none","cartesia":c,"elevenlabs":e,"publication_enabled":False},open("state/boss-fight/receipts/premium-voice.json","w"),indent=2)
+          PY
+            fi
           fi
       - name: Render complete 50 second Short
         run: |
@@ -83,7 +107,7 @@ jobs:
           parity=json.load(open("state/boss-fight/receipts/visual-parity.json"))
           voice=json.load(open("state/boss-fight/receipts/premium-voice.json"))
           video=Path("state/boss-fight/render/credit-score-boss-fight.mp4")
-          voice_ok=voice.get("status")=="PASS" and voice.get("provider")=="cartesia"
+          voice_ok=voice.get("status")=="PASS" and voice.get("provider") in ("cartesia","elevenlabs")
           status="PASS" if media.get("status")=="PASS" and parity.get("status")=="PASS" and voice_ok else "FAIL"
           receipt={
             "schema_version":1,
