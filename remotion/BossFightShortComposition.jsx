@@ -2,7 +2,7 @@ import React from "react";
 import {AbsoluteFill,useCurrentFrame,interpolate,spring} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {PropIcon} from "./PropSystem";
-const K="#111111",W="#F6F1E7",R="#EF3E36",Y="#F4C542",T="#16A7B5";
+const K="#111111",W="#FFFFFF",R="#EF3E36",Y="#F4C542",T="#16A7B5";
 const beats=[
  {id:"cold-open",start:0,end:2.2,scale:"close"},{id:"three-bars",start:2.2,end:5,scale:"wide"},
  {id:"util-drop",start:5,end:7.5,scale:"medium"},{id:"util-crush",start:7.5,end:10.5,scale:"close"},
@@ -23,13 +23,17 @@ const PaperTexture=({frame=0})=><g opacity=".065" stroke={K} fill="none">
  {Array.from({length:48}).map((_,i)=>{const x=(i*137)%720,y=(i*223)%1280,w=10+(i%5)*7;return <path key={i} d={"M"+x+" "+y+" q"+(w*.4)+" "+((i%2?1:-1)*3)+" "+w+" 0"} strokeWidth={1+(i%3)*.35}/>})}
 </g>;
 const Ground=()=> <line x1="35" y1="1035" x2="685" y2="1035" stroke={K} strokeWidth="4" opacity=".18"/>;
+const ActionDust=({frame,intensity=1})=><g opacity={.12*intensity} fill={K}>
+ {Array.from({length:14}).map((_,i)=>{const phase=(frame*7+i*61)%760;const x=(i%2?720-phase:phase)-20;const y=360+(i*83)%610;const r=2+(i%3);return <ellipse key={i} cx={x} cy={y} rx={r*2.4} ry={r} transform={`rotate(${i%2?18:-18} ${x} ${y})`}/>})}
+</g>;
 const AccentTitle=({top,bottom,y=180,topSize=50,bottomSize=58})=><g><text x="360" y={y} textAnchor="middle" fontFamily="Arial Black,Arial" fontSize={topSize} fill={K}>{top}</text><text x="360" y={y+64} textAnchor="middle" fontFamily="Arial Black,Arial" fontSize={bottomSize} fill={T}>{bottom}</text></g>;
 const UtilMeter=({x=360,y=400,s=1,fill=.7})=><g transform={`translate(${x} ${y}) scale(${s})`}><rect x="-180" y="-65" width="360" height="130" rx="22" fill={W} stroke={K} strokeWidth="6"/><rect x="-160" y="-25" width="320" height="44" rx="12" fill="#EEE"/><rect x="-160" y="-25" width={320*clamp(fill)} height="44" rx="12" fill={fill>.6?R:Y}/><text x="0" y="-85" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="27" fill={K}>UTILIZATION</text><text x="0" y="52" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="25" fill={K}>{Math.round(fill*100)}%</text></g>;
 const BigClock=({x=360,y=460,s=1,angle=0})=><g transform={`translate(${x} ${y}) scale(${s})`}><circle r="170" fill={W} stroke={K} strokeWidth="8"/><line x1="0" y1="0" x2={Math.sin(angle)*92} y2={-Math.cos(angle)*92} stroke={K} strokeWidth="9" strokeLinecap="round"/><line x1="0" y1="0" x2={Math.sin(angle*.35)*58} y2={-Math.cos(angle*.35)*58} stroke={K} strokeWidth="9" strokeLinecap="round"/><circle r="10" fill={K}/><text y="-205" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="30" fill={K}>AGE OF CREDIT</text></g>;
 export const BossFightShortComposition=({ccsd})=>{
  const frame=useCurrentFrame(),fps=ccsd?.fps||24,t=frame/fps,b=beatAt(t),p=clamp((t-b.start)/(b.end-b.start)),beatIndex=Math.max(0,beats.findIndex(x=>x.id===b.id)),dir=beatIndex%2?1:-1;
  const local=frame-Math.round(b.start*fps),pulse=Math.sin(frame*.45),camScale=b.scale==="close"?1.16:b.scale==="wide"?.92:1.03,enter=pop(local,fps,0,10),impact=Math.max(0,1-p*2.2);
- const baseCamX=b.id==="critical-hit"?lerp(0,-42,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*7:0,camX=baseCamX+dir*lerp(-22,22,ease(p)),camY=(b.id==="respawn"?lerp(45,0,ease(p)):0)+lerp(10,-10,ease(p)),camRot=b.id==="critical-hit"?lerp(0,-2,ease(p)):0,microScale=.965+.09*ease(p);
+ const subBeat=Math.floor((t-b.start)/.75),kineticX=Math.sin(frame*.31+beatIndex)*7+((subBeat%2)*2-1)*3,kineticY=Math.cos(frame*.27+beatIndex*.7)*5,kineticScale=1+Math.sin(frame*.24+beatIndex)*.018;
+ const baseCamX=b.id==="critical-hit"?lerp(0,-42,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*7:0,camX=baseCamX+dir*lerp(-22,22,ease(p))+kineticX,camY=(b.id==="respawn"?lerp(45,0,ease(p)):0)+lerp(10,-10,ease(p))+kineticY,camRot=(b.id==="critical-hit"?lerp(0,-2,ease(p)):0)+Math.sin(frame*.19)*.45,microScale=(.965+.09*ease(p))*kineticScale;
  let content=null;
  if(b.id==="cold-open"){const slam=pop(local,fps,2,8),recoil=clamp(p*2.4);content=<><HealthBar y={128-90*(1-slam)} fill={.96}/><BurstText text="BOSS FIGHT" y={300} size={66} opacity={slam}/><Dave x={360+55*recoil} y={800} s={1.42} mood="shock" lean={-15*recoil} arm={34*recoil}/><ImpactLines y={760} r={150} opacity={impact}/></>;}
  else if(b.id==="three-bars"){content=<><AccentTitle top="THREE" bottom="HEALTH BARS" y={155} topSize={48} bottomSize={54}/>{[["UTILIZATION",R,.82],["PAYMENTS",Y,.68],["AGE",T,.55]].map((x,i)=><g key={x[0]} transform={`translate(0 ${i*145})`}><HealthBar x={110} y={310} w={500} label={x[0]} fill={x[2]} accent={x[1]}/></g>)}<Dave x={360} y={980} s={.9} mood="panic" arm={28}/></>;}
@@ -48,5 +52,5 @@ export const BossFightShortComposition=({ccsd})=>{
  else if(b.id==="victory"){content=<><HealthBar y={145} fill={lerp(.18,0,p)} label="FICO BOSS" accent={R}/><Dave x={360} y={820} s={1.4} mood="smile" arm={48} leg={18}/><BurstText text="BOSS DEFEATED" y={320} size={56}/>{[0,1,2,3,4,5,6,7].map(i=><circle key={i} cx={100+(i*83)%560} cy={400+((i*137+frame*7)%420)} r="9" fill={i%2?Y:T}/>)}</>;}
  else if(b.id==="i-beat-it"){const z=1+ease(p)*.24;content=<><g transform={`translate(${lerp(320,395,ease(p))} 760) scale(${z}) translate(-360 -760)`}><Dave x={360} y={805} s={1.55} mood="smile" arm={34+Math.sin(frame*.2)*18}/></g><BurstText text="I BEAT IT." y={255} size={68}/></>;}
  else {const bar=clamp(p*1.55),shock=clamp((p-.28)*2.2);content=<><HealthBar y={130} fill={bar} label="NEXT STATEMENT" accent={R} shake={Math.sin(frame*2.8)*7*shock}/><Dave x={360} y={835} s={1.28+shock*.12} mood={shock>.25?"shock":"smile"} lean={-12*shock} arm={40*shock}/><BurstText text={shock>.25?"...OH.":"BOSS RESPAWNS"} y={300} size={shock>.25?72:48} opacity={Math.max(.35,shock)}/><ImpactLines y={710} r={180} opacity={shock}/></>;}
- return <AbsoluteFill style={{background:W,overflow:"hidden"}}><svg width="720" height="1280" viewBox="0 0 720 1280"><rect width="720" height="1280" fill={W}/><PaperTexture frame={frame}/><g transform={`translate(${camX} ${camY}) rotate(${camRot} 360 640) scale(${camScale})`}><Ground/>{content}</g></svg></AbsoluteFill>;
+ return <AbsoluteFill style={{background:W,overflow:"hidden"}}><svg width="720" height="1280" viewBox="0 0 720 1280"><rect width="720" height="1280" fill={W}/><PaperTexture frame={frame}/><ActionDust frame={frame} intensity={b.scale==="close"?.55:1}/><g transform={`translate(${camX} ${camY}) rotate(${camRot} 360 640) scale(${camScale*microScale})`}><Ground/>{content}</g></svg></AbsoluteFill>;
 };
