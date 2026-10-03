@@ -5,7 +5,8 @@ on:
     branches: [main]
     paths:
       - 'projects/shorts/credit-score-boss-fight/**'
-      - 'remotion/BossFightShortComposition.jsx'\n      - 'remotion/studio-animatic-index.jsx'
+      - 'remotion/BossFightShortComposition.jsx'
+      - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
       - 'tests/test_rendered_visual_parity.py'
       - 'reference/frames/**'
@@ -70,7 +71,8 @@ jobs:
             "media_qa":media,
             "visual_parity":parity,
           }
-          Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"
+")
           if status!="PASS":
               raise SystemExit("final acceptance failed")
           PY
