@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'projects/shorts/credit-score-boss-fight/**'
-      - 'remotion/StudioAnimaticComposition.jsx'
+      - 'remotion/BossFightShortComposition.jsx'\n      - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
       - 'tests/test_rendered_visual_parity.py'
       - 'reference/frames/**'
@@ -39,7 +39,7 @@ jobs:
       - name: Render complete 50 second Short
         run: |
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/boss-fight/ccsd.json"))},separators=(",",":")))')
-          npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/boss-fight/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
+          npx remotion render remotion/studio-animatic-index.jsx BossFightShort state/boss-fight/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
           ffmpeg -y -i state/boss-fight/render/silent.mp4 -i state/boss-fight/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/boss-fight/render/credit-score-boss-fight.mp4
       - name: Media reality QA
         continue-on-error: true

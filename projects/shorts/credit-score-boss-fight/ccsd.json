@@ -13,200 +13,302 @@
   "style": {
     "background": "#FFFFFF",
     "stick_figure": "#000000",
-    "grammar": "white background black stick figures; high motion; no overlap"
+    "grammar": "white background black stick figures; physical cause-and-effect; rapid restaging; no lecture cards; no overlap"
   },
   "scenes": [
     {
-      "id": "hook",
+      "id": "cold-open",
       "start": 0,
+      "end": 2.2,
+      "story": {
+        "beat": "BOSS FIGHT",
+        "intent": "instant conflict"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Your credit score has a boss bar."
+          }
+        ]
+      }
+    },
+    {
+      "id": "three-bars",
+      "start": 2.2,
       "end": 5,
       "story": {
-        "beat": "YOUR CREDIT SCORE HAS A BOSS BAR",
-        "intent": "instant hook"
+        "beat": "THREE HEALTH BARS",
+        "intent": "reveal"
       },
-      "camera": {
-        "move": "punch_in"
-      },
-      "characters": [
-        {
-          "id": "dave",
-          "motion_clip": "recoil"
-        }
-      ],
-      "props": [
-        {
-          "id": "score_meter",
-          "label": "FICO BOSS"
-        }
-      ],
       "audio": {
         "dialogue": [
           {
-            "speaker": "narrator",
-            "text": "Your credit score behaves like a boss fight with three health bars."
+            "speaker": "dave",
+            "text": "Why are there three of them?"
           }
         ]
       }
     },
     {
-      "id": "util",
+      "id": "util-drop",
       "start": 5,
+      "end": 7.5,
+      "story": {
+        "beat": "UTILIZATION DROPS",
+        "intent": "physical attack"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "First: utilization."
+          }
+        ]
+      }
+    },
+    {
+      "id": "util-crush",
+      "start": 7.5,
+      "end": 10.5,
+      "story": {
+        "beat": "HIGH BALANCE CRUSH",
+        "intent": "escalation"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "High balances make this thing hit harder."
+          }
+        ]
+      }
+    },
+    {
+      "id": "util-counter",
+      "start": 10.5,
       "end": 14,
       "story": {
-        "beat": "HEALTH BAR 1: UTILIZATION"
+        "beat": "LOWER THE LOAD",
+        "intent": "counter attack"
       },
-      "camera": {
-        "move": "tracking"
-      },
-      "characters": [
-        {
-          "id": "dave",
-          "motion_clip": "run"
-        }
-      ],
-      "props": [
-        {
-          "id": "utilization_meter",
-          "label": "UTILIZATION"
-        }
-      ],
-      "audio": {
-        "dialogue": [
-          {
-            "speaker": "narrator",
-            "text": "First bar: utilization. High balances can make this bar hurt fast."
-          }
-        ]
-      }
-    },
-    {
-      "id": "pay",
-      "start": 14,
-      "end": 23,
-      "story": {
-        "beat": "HEALTH BAR 2: PAYMENT HISTORY"
-      },
-      "camera": {
-        "move": "snap_reveal"
-      },
-      "characters": [
-        {
-          "id": "points_monk",
-          "motion_clip": "point"
-        }
-      ],
-      "props": [
-        {
-          "id": "calendar",
-          "label": "PAY ON TIME"
-        }
-      ],
       "audio": {
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Second bar: payment history. Missing payments is the boss landing a critical hit."
+            "text": "Lower the balance. Stop feeding the boss."
           }
         ]
       }
     },
     {
-      "id": "age",
+      "id": "calendar-drop",
+      "start": 14,
+      "end": 16.5,
+      "story": {
+        "beat": "PAYMENT HISTORY",
+        "intent": "new threat"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Second bar: payment history."
+          }
+        ]
+      }
+    },
+    {
+      "id": "critical-hit",
+      "start": 16.5,
+      "end": 19.5,
+      "story": {
+        "beat": "CRITICAL HIT",
+        "intent": "impact"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "points_monk",
+            "text": "Miss one payment and—critical hit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "payment-recover",
+      "start": 19.5,
+      "end": 23,
+      "story": {
+        "beat": "PAY ON TIME",
+        "intent": "recovery"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "dave",
+            "text": "So I just stop getting punched?"
+          },
+          {
+            "speaker": "points_monk",
+            "text": "Consistently. Yes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock-wall",
       "start": 23,
+      "end": 26,
+      "story": {
+        "beat": "AGE OF CREDIT",
+        "intent": "new obstacle"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "Third bar: time."
+          }
+        ]
+      }
+    },
+    {
+      "id": "clock-drag",
+      "start": 26,
+      "end": 29,
+      "story": {
+        "beat": "CANNOT SPEEDRUN",
+        "intent": "frustration"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "dave",
+            "text": "Can I speedrun that?"
+          },
+          {
+            "speaker": "points_monk",
+            "text": "No."
+          }
+        ]
+      }
+    },
+    {
+      "id": "fake-button",
+      "start": 29,
       "end": 32,
       "story": {
-        "beat": "HEALTH BAR 3: AGE"
+        "beat": "SHINY BUTTON",
+        "intent": "temptation"
       },
-      "camera": {
-        "move": "creeping_push"
-      },
-      "characters": [
-        {
-          "id": "dave",
-          "motion_clip": "think"
-        }
-      ],
-      "props": [
-        {
-          "id": "clock",
-          "label": "TIME"
-        }
-      ],
       "audio": {
         "dialogue": [
           {
-            "speaker": "narrator",
-            "text": "Third bar: time. Some credit factors simply cannot be speedrun."
+            "speaker": "dave",
+            "text": "Wait. What does that button do?"
           }
         ]
       }
     },
     {
-      "id": "trap",
+      "id": "goblin-offer",
       "start": 32,
-      "end": 42,
+      "end": 35,
       "story": {
-        "beat": "THE FAKE SPEEDRUN BUTTON"
+        "beat": "INSTANT FIX",
+        "intent": "trap offer"
       },
-      "camera": {
-        "move": "whip_pan"
-      },
-      "characters": [
-        {
-          "id": "cashback_goblin",
-          "motion_clip": "celebrate"
-        },
-        {
-          "id": "dave",
-          "motion_clip": "recoil"
-        }
-      ],
-      "props": [
-        {
-          "id": "button",
-          "label": "FIX SCORE NOW"
-        }
-      ],
       "audio": {
         "dialogue": [
           {
-            "speaker": "narrator",
-            "text": "And this shiny instant-fix button? That is usually where the trap starts."
+            "speaker": "cashback_goblin",
+            "text": "Instant credit repair. Totally legitimate."
           }
         ]
       }
     },
     {
-      "id": "loop",
-      "start": 42,
-      "end": 50,
+      "id": "trap-snap",
+      "start": 35,
+      "end": 38,
       "story": {
-        "beat": "BOSS RESPAWNS"
+        "beat": "TRAP",
+        "intent": "reversal"
       },
-      "camera": {
-        "move": "snap_wide"
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "narrator",
+            "text": "And that is where the trap usually starts."
+          }
+        ]
+      }
+    },
+    {
+      "id": "monk-cut",
+      "start": 38,
+      "end": 41,
+      "story": {
+        "beat": "NO SHORTCUT",
+        "intent": "rescue"
       },
-      "characters": [
-        {
-          "id": "dave",
-          "motion_clip": "victory"
-        }
-      ],
-      "props": [
-        {
-          "id": "boss_respawn",
-          "label": "NEXT STATEMENT"
-        }
-      ],
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "points_monk",
+            "text": "There is no magic button."
+          }
+        ]
+      }
+    },
+    {
+      "id": "victory",
+      "start": 41,
+      "end": 44.5,
+      "story": {
+        "beat": "BOSS DEFEATED",
+        "intent": "payoff"
+      },
       "audio": {
         "dialogue": [
           {
             "speaker": "dave",
             "text": "I beat it."
-          },
+          }
+        ]
+      }
+    },
+    {
+      "id": "i-beat-it",
+      "start": 44.5,
+      "end": 47,
+      "story": {
+        "beat": "VICTORY HOLD",
+        "intent": "comic pause"
+      },
+      "audio": {
+        "dialogue": [
+          {
+            "speaker": "points_monk",
+            "text": "For the moment."
+          }
+        ]
+      }
+    },
+    {
+      "id": "respawn",
+      "start": 47,
+      "end": 50,
+      "story": {
+        "beat": "NEXT STATEMENT",
+        "intent": "loop payoff"
+      },
+      "audio": {
+        "dialogue": [
           {
             "speaker": "narrator",
-            "text": "Nice. Your next statement just respawned the boss."
+            "text": "Your next statement just respawned the boss."
           }
         ]
       }
