@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import hashlib,json,os,subprocess,time
 from pathlib import Path
-from scripts.v2_orchestrator import build_plan,derive_metrics,creative_gate
+from v2_orchestrator import build_plan,derive_metrics,creative_gate
 
 ROOT=Path(__file__).resolve().parents[1]
 CCSD=ROOT/"projects/v2/amex-vs-chase-boss-fight/ccsd.json"
