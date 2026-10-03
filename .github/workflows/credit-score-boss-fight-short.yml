@@ -6,6 +6,9 @@ on:
     paths:
       - 'projects/shorts/credit-score-boss-fight/**'
       - 'remotion/StudioAnimaticComposition.jsx'
+      - 'scripts/rendered_visual_parity.py'
+      - 'tests/test_rendered_visual_parity.py'
+      - 'reference/frames/**'
       - '.github/workflows/credit-score-boss-fight-short.yml'
 permissions:
   contents: read
@@ -24,6 +27,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
+      - name: Verify rendered visual parity comparator
+        run: python -m unittest -v tests/test_rendered_visual_parity.py
       - name: Prepare CCSD and dialogue
         run: |
           mkdir -p state/boss-fight/render state/boss-fight/receipts
@@ -38,6 +43,35 @@ jobs:
           ffmpeg -y -i state/boss-fight/render/silent.mp4 -i state/boss-fight/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/boss-fight/render/credit-score-boss-fight.mp4
       - name: Media reality QA
         run: python scripts/production_reality_media_qa.py --video state/boss-fight/render/credit-score-boss-fight.mp4 --ccsd state/boss-fight/ccsd.json --out state/boss-fight/receipts/render.json
+      - name: Rendered viral-reference visual parity QA
+        run: |
+          python scripts/rendered_visual_parity.py \
+            --reference-dir reference/frames \
+            --candidate-video state/boss-fight/render/credit-score-boss-fight.mp4 \
+            --out state/boss-fight/receipts/visual-parity.json
+      - name: Final acceptance receipt
+        run: |
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          media=json.load(open("state/boss-fight/receipts/render.json"))
+          parity=json.load(open("state/boss-fight/receipts/visual-parity.json"))
+          video=Path("state/boss-fight/render/credit-score-boss-fight.mp4")
+          status="PASS" if media.get("status")=="PASS" and parity.get("status")=="PASS" else "FAIL"
+          receipt={
+            "schema_version":1,
+            "status":status,
+            "publication_enabled":False,
+            "technical_qa":media.get("status")=="PASS",
+            "visual_parity_qa":parity.get("status")=="PASS",
+            "candidate_sha256":hashlib.sha256(video.read_bytes()).hexdigest(),
+            "media_qa":media,
+            "visual_parity":parity,
+          }
+          Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
+          if status!="PASS":
+              raise SystemExit("final acceptance failed")
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: credit-score-boss-fight-acceptance-short, path: state/boss-fight, retention-days: 14}
