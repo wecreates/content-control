@@ -15,7 +15,7 @@ def stage(name,extra=None):
     (ROOT/"state").mkdir(parents=True,exist_ok=True)
     (ROOT/"state/v2-stage.json").write_text(json.dumps(payload,indent=2)+"\n")
 
-def run(cmd,name):
+def run(cmd,name,allow_fail=False):
     stage(name,{"command":cmd[0]})
     try:
         result=subprocess.run(cmd,cwd=ROOT,check=True,text=True,capture_output=True)
@@ -23,6 +23,8 @@ def run(cmd,name):
         return result
     except subprocess.CalledProcessError as e:
         stage(name+"_FAIL",{"returncode":e.returncode,"stderr":(e.stderr or "")[-3000:]})
+        if allow_fail:
+            return e
         raise
 
 def tick():
@@ -39,10 +41,10 @@ def tick():
     props=json.dumps({"ccsd":ccsd},separators=(",",":"))
     run(["npx","remotion","render","remotion/studio-animatic-index.jsx","StudioAnimatic",str(silent),"--props="+props,"--codec=h264","--crf=18","--concurrency=1"],"remotion_render")
     run(["ffmpeg","-y","-i",str(silent),"-i",str(voice),"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","192k","-af","apad","-shortest",str(OUT)],"audio_mux")
-    run(["python","scripts/production_reality_media_qa.py","--video",str(OUT),"--ccsd",str(CCSD),"--out",str(receipt)],"media_qa")
+    run(["python","scripts/production_reality_media_qa.py","--video",str(OUT),"--ccsd",str(CCSD),"--out",str(receipt)],"media_qa",allow_fail=True)
     media=json.loads(receipt.read_text())
     technical=media.get("status") in ("PASS","GREEN")
-    run(["python","scripts/rendered_visual_parity.py","--reference-dir",str(ROOT/"reference/frames"),"--candidate-video",str(OUT),"--out",str(parity_receipt)],"visual_parity_qa")
+    run(["python","scripts/rendered_visual_parity.py","--reference-dir",str(ROOT/"reference/frames"),"--candidate-video",str(OUT),"--out",str(parity_receipt)],"visual_parity_qa",allow_fail=True)
     parity=json.loads(parity_receipt.read_text())
     visual_parity=parity.get("status")=="PASS"
     digest=hashlib.sha256(OUT.read_bytes()).hexdigest()
