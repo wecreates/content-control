@@ -8,7 +8,11 @@ on:
       - 'remotion/BossFightShortComposition.jsx'
       - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
+      - 'scripts/production_reality_media_qa.py'
+      - 'scripts/cartesia_sonic_generate.py'
+      - 'control/voice-engine-v3.json'
       - 'tests/test_rendered_visual_parity.py'
+      - 'tests/test_production_reality_media_qa.py'
       - 'tests/test_boss_fight_viral_parity_render.py'
       - 'reference/frames/**'
       - '.github/workflows/credit-score-boss-fight-short.yml'
@@ -30,14 +34,31 @@ jobs:
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
       - name: Verify rendered visual parity comparator
-        run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_boss_fight_viral_parity_render.py
+        run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py tests/test_boss_fight_viral_parity_render.py
       - name: Prepare CCSD and dialogue
         run: |
           mkdir -p state/boss-fight/render state/boss-fight/receipts
           cp projects/shorts/credit-score-boss-fight/ccsd.json state/boss-fight/ccsd.json
           python scripts/ccsd_voice_manifest.py --ccsd state/boss-fight/ccsd.json --out state/boss-fight/dialogue.json
-      - name: Generate autonomous voice
-        run: python scripts/local_tts_fallback.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/voice.json
+      - name: Generate premium character voices
+        env:
+          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
+          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
+          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
+          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
+          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
+        run: |
+          python scripts/cartesia_sonic_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/premium-voice.json
+          if python - <<'PY'
+          import json
+          r=json.load(open("state/boss-fight/receipts/premium-voice.json"))
+          raise SystemExit(0 if r.get("status")=="PASS" else 1)
+          PY
+          then
+            cp state/boss-fight/receipts/premium-voice.json state/boss-fight/receipts/voice.json
+          else
+            python scripts/local_tts_fallback.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/voice.json
+          fi
       - name: Render complete 50 second Short
         run: |
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/boss-fight/ccsd.json"))},separators=(",",":")))')
@@ -60,17 +81,22 @@ jobs:
           from pathlib import Path
           media=json.load(open("state/boss-fight/receipts/render.json"))
           parity=json.load(open("state/boss-fight/receipts/visual-parity.json"))
+          voice=json.load(open("state/boss-fight/receipts/premium-voice.json"))
           video=Path("state/boss-fight/render/credit-score-boss-fight.mp4")
-          status="PASS" if media.get("status")=="PASS" and parity.get("status")=="PASS" else "FAIL"
+          voice_ok=voice.get("status")=="PASS" and voice.get("provider")=="cartesia"
+          status="PASS" if media.get("status")=="PASS" and parity.get("status")=="PASS" and voice_ok else "FAIL"
           receipt={
             "schema_version":1,
             "status":status,
             "publication_enabled":False,
             "technical_qa":media.get("status")=="PASS",
             "visual_parity_qa":parity.get("status")=="PASS",
+            "voice_qa":voice_ok,
+            "voice_provider":voice.get("provider"),
             "candidate_sha256":hashlib.sha256(video.read_bytes()).hexdigest(),
             "media_qa":media,
             "visual_parity":parity,
+            "voice":voice,
           }
           Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\\n")
           if status!="PASS":

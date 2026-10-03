@@ -28,7 +28,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "Your credit score has a boss bar."
+            "text": "Your credit score has a boss bar.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -45,7 +49,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "Why are there three of them?"
+            "text": "Why are there three of them?",
+            "performance": {
+              "tone": "anxious excited",
+              "pace": 1.08
+            }
           }
         ]
       }
@@ -62,7 +70,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "First: utilization."
+            "text": "First: utilization.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -79,7 +91,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "High balances make this thing hit harder."
+            "text": "High balances make this thing hit harder.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -96,7 +112,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Lower the balance. Stop feeding the boss."
+            "text": "Lower the balance. Stop feeding the boss.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -113,7 +133,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "Second bar: payment history."
+            "text": "Second bar: payment history.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -130,7 +154,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Miss one payment and—critical hit."
+            "text": "Miss one payment and—critical hit.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -147,11 +175,19 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "So I just stop getting punched?"
+            "text": "So I just stop getting punched?",
+            "performance": {
+              "tone": "anxious excited",
+              "pace": 1.08
+            }
           },
           {
             "speaker": "points_monk",
-            "text": "Consistently. Yes."
+            "text": "Consistently. Yes.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -168,7 +204,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "Third bar: time."
+            "text": "Third bar: time.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -185,11 +225,19 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "Can I speedrun that?"
+            "text": "Can I speedrun that?",
+            "performance": {
+              "tone": "anxious excited",
+              "pace": 1.08
+            }
           },
           {
             "speaker": "points_monk",
-            "text": "No."
+            "text": "No.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -206,7 +254,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "Wait. What does that button do?"
+            "text": "Wait. What does that button do?",
+            "performance": {
+              "tone": "anxious excited",
+              "pace": 1.08
+            }
           }
         ]
       }
@@ -223,7 +275,11 @@
         "dialogue": [
           {
             "speaker": "cashback_goblin",
-            "text": "Instant credit repair. Totally legitimate."
+            "text": "Instant credit repair. Totally legitimate.",
+            "performance": {
+              "tone": "mischievous",
+              "pace": 1.08
+            }
           }
         ]
       }
@@ -240,7 +296,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "And that is where the trap usually starts."
+            "text": "And that is where the trap usually starts.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
@@ -257,7 +317,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "There is no magic button."
+            "text": "There is no magic button.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -274,7 +338,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "I beat it."
+            "text": "I beat it.",
+            "performance": {
+              "tone": "anxious excited",
+              "pace": 1.08
+            }
           }
         ]
       }
@@ -291,7 +359,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "For the moment."
+            "text": "For the moment.",
+            "performance": {
+              "tone": "deadpan calm",
+              "pace": 0.95
+            }
           }
         ]
       }
@@ -308,7 +380,11 @@
         "dialogue": [
           {
             "speaker": "narrator",
-            "text": "Your next statement just respawned the boss."
+            "text": "Your next statement just respawned the boss.",
+            "performance": {
+              "tone": "confident",
+              "pace": 1.03
+            }
           }
         ]
       }
