@@ -33,7 +33,7 @@ def tick():
     if not creative["pass"]:
         HEALTH.write_text(json.dumps({"status":"BLOCKED","publication_enabled":False,"creative_qa":False,"metrics":metrics},indent=2)+"\n")
         return {"status":"BLOCKED","reason":"creative_qa","metrics":metrics}
-    dialogue=WORK/"dialogue.json";voice=WORK/"voice.wav";silent=WORK/"silent.mp4";receipt=WORK/"media-qa.json"
+    dialogue=WORK/"dialogue.json";voice=WORK/"voice.wav";silent=WORK/"silent.mp4";receipt=WORK/"media-qa.json";parity_receipt=WORK/"visual-parity.json"
     run(["python","scripts/ccsd_voice_manifest.py","--ccsd",str(CCSD),"--out",str(dialogue)],"voice_manifest")
     run(["python","scripts/local_tts_fallback.py","--dialogue",str(dialogue),"--out",str(voice),"--receipt",str(WORK/"voice.json")],"tts")
     props=json.dumps({"ccsd":ccsd},separators=(",",":"))
@@ -42,9 +42,12 @@ def tick():
     run(["python","scripts/production_reality_media_qa.py","--video",str(OUT),"--ccsd",str(CCSD),"--out",str(receipt)],"media_qa")
     media=json.loads(receipt.read_text())
     technical=media.get("status") in ("PASS","GREEN")
+    run(["python","scripts/rendered_visual_parity.py","--reference-dir",str(ROOT/"reference/frames"),"--candidate-video",str(OUT),"--out",str(parity_receipt)],"visual_parity_qa")
+    parity=json.loads(parity_receipt.read_text())
+    visual_parity=parity.get("status")=="PASS"
     digest=hashlib.sha256(OUT.read_bytes()).hexdigest()
-    status="READY" if technical and creative["pass"] else "BLOCKED"
-    health={"status":status,"publication_enabled":False,"technical_qa":technical,"creative_qa":creative["pass"],"candidate_sha256":digest,"metrics":metrics,"media_qa":media,"updated_at":int(time.time())}
+    status="READY" if technical and creative["pass"] and visual_parity else "BLOCKED"
+    health={"status":status,"publication_enabled":False,"technical_qa":technical,"creative_qa":creative["pass"],"visual_parity_qa":visual_parity,"candidate_sha256":digest,"metrics":metrics,"media_qa":media,"visual_parity":parity,"updated_at":int(time.time())}
     HEALTH.write_text(json.dumps(health,indent=2)+"\n")
     return health
 
