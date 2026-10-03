@@ -71,8 +71,7 @@ jobs:
             "media_qa":media,
             "visual_parity":parity,
           }
-          Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"
-")
+          Path("state/boss-fight/receipts/final-acceptance.json").write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\\n")
           if status!="PASS":
               raise SystemExit("final acceptance failed")
           PY
