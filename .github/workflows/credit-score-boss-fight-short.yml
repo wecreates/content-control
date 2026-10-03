@@ -9,6 +9,7 @@ on:
       - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
       - 'tests/test_rendered_visual_parity.py'
+      - 'tests/test_boss_fight_viral_parity_render.py'
       - 'reference/frames/**'
       - '.github/workflows/credit-score-boss-fight-short.yml'
 permissions:
@@ -29,7 +30,7 @@ jobs:
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
       - name: Verify rendered visual parity comparator
-        run: python -m unittest -v tests/test_rendered_visual_parity.py
+        run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_boss_fight_viral_parity_render.py
       - name: Prepare CCSD and dialogue
         run: |
           mkdir -p state/boss-fight/render state/boss-fight/receipts
