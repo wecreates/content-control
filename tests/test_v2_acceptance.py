@@ -5,7 +5,7 @@ from scripts.v2_orchestrator import build_plan, creative_gate, derive_metrics
 class V2AcceptanceTests(unittest.TestCase):
     def test_ready_requires_every_gate_and_stream(self):
         state={"story_locked":True,"fact_locked":True,"audio_locked":True,"rendered":True,
-               "technical_qa":True,"creative_qa":True,"stream_url":"https://preview.example/video.mp4",
+               "technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"stream_url":"https://preview.example/video.mp4",
                "stream_verified":True}
         self.assertEqual(evaluate(state)["status"],"READY")
 
@@ -18,9 +18,17 @@ class V2AcceptanceTests(unittest.TestCase):
 
     def test_creative_failure_blocks_ready(self):
         state={"story_locked":True,"fact_locked":True,"audio_locked":True,"rendered":True,
-               "technical_qa":True,"creative_qa":False,"stream_url":"https://preview.example/video.mp4",
+               "technical_qa":True,"creative_qa":False,"visual_parity_qa":True,"stream_url":"https://preview.example/video.mp4",
                "stream_verified":True}
         self.assertEqual(evaluate(state)["status"],"BLOCKED")
+
+    def test_visual_parity_failure_blocks_ready(self):
+        state={"story_locked":True,"fact_locked":True,"audio_locked":True,"rendered":True,
+               "technical_qa":True,"creative_qa":True,"visual_parity_qa":False,
+               "stream_url":"https://preview.example/video.mp4","stream_verified":True}
+        result=evaluate(state)
+        self.assertEqual(result["status"],"BLOCKED")
+        self.assertIn("visual_parity_qa",result["missing"])
 
     def test_plan_is_entertainment_first(self):
         job={"niche":"finance","creative_directive":{"concept":"anime boss fight","lecture_format_forbidden":True,"target_seconds":50}}
