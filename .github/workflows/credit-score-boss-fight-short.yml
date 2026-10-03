@@ -8,9 +8,11 @@ on:
       - 'remotion/BossFightShortComposition.jsx'
       - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
+      - 'scripts/production_reality_media_qa.py'
       - 'scripts/cartesia_sonic_generate.py'
       - 'control/voice-engine-v3.json'
       - 'tests/test_rendered_visual_parity.py'
+      - 'tests/test_production_reality_media_qa.py'
       - 'tests/test_boss_fight_viral_parity_render.py'
       - 'reference/frames/**'
       - '.github/workflows/credit-score-boss-fight-short.yml'
@@ -32,7 +34,7 @@ jobs:
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
       - name: Verify rendered visual parity comparator
-        run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_boss_fight_viral_parity_render.py
+        run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py tests/test_boss_fight_viral_parity_render.py
       - name: Prepare CCSD and dialogue
         run: |
           mkdir -p state/boss-fight/render state/boss-fight/receipts
