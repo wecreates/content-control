@@ -26,7 +26,7 @@ const BigClock=({x=360,y=460,s=1,angle=0})=><g transform={`translate(${x} ${y}) 
 export const BossFightShortComposition=({ccsd})=>{
  const frame=useCurrentFrame(),fps=ccsd?.fps||24,t=frame/fps,b=beatAt(t),p=clamp((t-b.start)/(b.end-b.start));
  const local=frame-Math.round(b.start*fps),pulse=Math.sin(frame*.45),camScale=b.scale==="close"?1.16:b.scale==="wide"?.92:1.03,enter=pop(local,fps,0,10),impact=Math.max(0,1-p*2.2);
- const camX=b.id==="critical-hit"?lerp(0,-70,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*9:0,camY=b.id==="respawn"?lerp(60,0,ease(p)):0,camRot=b.id==="critical-hit"?lerp(0,-3,ease(p)):0;
+ const camX=b.id==="critical-hit"?lerp(0,-70,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*9:0,camY=(b.id==="respawn"?lerp(60,0,ease(p)):0)+Math.sin(frame*.12)*2.5,camRot=b.id==="critical-hit"?lerp(0,-3,ease(p)):0,microScale=1+Math.sin(frame*.09)*.004;
  let content=null;
  if(b.id==="cold-open"){const slam=pop(local,fps,2,8),recoil=clamp(p*2.4);content=<><HealthBar y={128-90*(1-slam)} fill={.96}/><BurstText text="BOSS FIGHT" y={300} size={66} opacity={slam}/><Dave x={360+55*recoil} y={800} s={1.42} mood="shock" lean={-15*recoil} arm={34*recoil}/><ImpactLines y={760} r={150} opacity={impact}/></>;}
  else if(b.id==="three-bars"){content=<><BurstText text="THREE HEALTH BARS." y={205} size={47}/>{[["UTILIZATION",R,.82],["PAYMENTS",Y,.68],["AGE",T,.55]].map((x,i)=><g key={x[0]} transform={`translate(0 ${i*145})`}><HealthBar x={110} y={310} w={500} label={x[0]} fill={x[2]} accent={x[1]}/></g>)}<Dave x={360} y={980} s={.9} mood="panic" arm={28}/></>;}
