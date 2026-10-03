@@ -1,4 +1,4 @@
-REQUIRED=("story_locked","fact_locked","audio_locked","rendered","technical_qa","creative_qa","stream_verified")
+REQUIRED=("story_locked","fact_locked","audio_locked","rendered","technical_qa","creative_qa","visual_parity_qa","stream_verified")
 
 def evaluate(state):
     missing=[key for key in REQUIRED if not state.get(key)]

@@ -11,6 +11,8 @@ class V2RuntimeTickTests(unittest.TestCase):
         self.assertIn("subprocess",text)
         self.assertIn("remotion",text)
         self.assertIn("production_reality_media_qa.py",text)
+        self.assertIn("rendered_visual_parity.py",text)
+        self.assertIn("visual_parity_qa",text)
         self.assertIn("v2-boss-fight.mp4",text)
 
 if __name__=="__main__": unittest.main()
