@@ -16,6 +16,12 @@ class BossFightViralParityRenderTests(unittest.TestCase):
         self.assertIn("NEXT STATEMENT", text)
         self.assertNotIn("story.intent", text)
         self.assertNotIn("camera •", text)
+        self.assertIn('W="#FFFFFF"', text)
+        self.assertIn("kineticX", text)
+        self.assertIn("kineticY", text)
+        self.assertIn("kineticScale", text)
+        self.assertIn("ActionDust", text)
+        self.assertIn("subBeat", text)
 
 if __name__=="__main__":
     unittest.main()
