@@ -70,6 +70,7 @@ jobs:
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
           ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/v2/render/v2-boss-fight.mp4
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json
+          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json
       - name: Enforce creative gate
         run: |
           python - <<'PY'
@@ -89,7 +90,9 @@ jobs:
           import hashlib,json
           p="public-review/v2-boss-fight.mp4"
           h=hashlib.sha256(open(p,"rb").read()).hexdigest()
-          json.dump({"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
+          parity=json.load(open("state/v2/receipts/visual-parity.json"))
+          if parity.get("status")!="PASS": raise SystemExit("visual parity QA did not pass")
+          json.dump({"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
           PY
       - name: Persist accepted V2 preview for streaming deployment
         run: |
