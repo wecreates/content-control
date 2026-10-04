@@ -91,6 +91,13 @@
   "status": "FAIL",
   "violations": [
     {
+      "path": ".github/workflows/clone-e2e-contract.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/content-control-v2.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
