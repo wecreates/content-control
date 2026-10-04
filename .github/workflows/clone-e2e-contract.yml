@@ -1,0 +1,33 @@
+name: Clone E2E Contract
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/clone_end_to_end_acceptance.py'
+      - 'tests/test_clone_end_to_end_acceptance.py'
+      - 'scripts/reference_clone_compiler.py'
+      - 'scripts/generate_clone_scene_plan.py'
+      - 'scripts/apply_clone_repairs.py'
+      - 'scripts/creator_parity_compare.py'
+      - 'tools/instagram_reel_bridge.mjs'
+      - 'remotion/ReferenceCloneComposition.jsx'
+      - '.github/workflows/clone-e2e-contract.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run clone unit and E2E acceptance tests
+        run: |
+          python -m unittest -v             tests/test_reference_clone_compiler.py             tests/test_reference_clone_validation.py             tests/test_clone_system_v2.py             tests/test_instagram_reel_bridge.py             tests/test_creator_parity_compare.py             tests/test_clone_end_to_end_acceptance.py
+      - name: Verify publication remains disabled
+        run: |
+          test "$PUBLICATION_ENABLED" = "false"
