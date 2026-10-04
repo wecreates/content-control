@@ -4,6 +4,7 @@ import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
+import {BossFightShortComposition} from "./BossFightShortComposition";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const sceneAt=(scenes,t)=>scenes.find(s=>t>=s.start&&t<s.end)||scenes[scenes.length-1];
@@ -22,6 +23,7 @@ const emotionAt=(ch,p)=>{
  const dur=a[a.length-1].t||1,t=p*dur; return [...a].reverse().find(x=>t>=x.t)||a[0];
 };
 export const StudioAnimaticComposition=({ccsd})=>{
+ if(ccsd?.project_id==="v2-amex-vs-chase-anime-boss-fight") return <BossFightShortComposition ccsd={ccsd}/>;
  const frame=useCurrentFrame(),fps=24,t=frame/fps,scenes=ccsd?.scenes||[],s=sceneAt(scenes,t);
  if(!s)return <AbsoluteFill style={{background:"#fff"}}/>;
  const local=Math.max(0,frame-Math.round((s.start||0)*fps)),total=Math.max(1,Math.round((s.end-s.start||1)*fps)),p=clamp(local/total);
