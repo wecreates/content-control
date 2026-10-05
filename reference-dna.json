@@ -26,6 +26,45 @@
         3.6
       ],
       "role": "stick-figure explainer timing"
+    },
+    {
+      "reel": "Dc_4XF3hT-b",
+      "source": "Instagram public Reel / browser-inspected metadata and visual context",
+      "creator": "@charleshayes.png",
+      "role": "high-entertainment build-in-public challenge format",
+      "transferable_rules": [
+        "Use a time-bound challenge hook that creates urgency immediately",
+        "Progress through micro-steps with frequent visual resets and fast montage pacing",
+        "Mix creator face, screen capture, product visuals, and environment shots",
+        "Use absurdist hyperbole and self-aware humor instead of polished corporate tone",
+        "End with a punchline tied back to the challenge constraint",
+        "Let audience curiosity drive implicit CTA and sequel demand"
+      ],
+      "estimated_beat_cadence": "2-4 seconds per micro-step",
+      "publication": false
+    },
+    {
+      "reel": "DcpwWfTTePr",
+      "source": "Instagram public Reel / browser-inspected metadata and comment context",
+      "creator": "@robertmckeaveney",
+      "role": "trending e-commerce product content style",
+      "transferable_rules": [
+        "Lead with a curiosity-heavy colloquial hook rather than product description",
+        "Use anti-patterns and expectation subversion to stand out from over-edited ads",
+        "Keep production simple when personality or novelty carries the scene",
+        "Use satire, deadpan delivery, memes, and internet-culture references",
+        "Prefer original audio/voice when it strengthens creator identity",
+        "Use proof cues and audience reaction without overexplaining",
+        "Keep CTA implicit when content naturally creates product curiosity"
+      ],
+      "ecom_use_cases": [
+        "trend product reveals",
+        "POD product tests",
+        "dropshipping validation",
+        "build-in-public product launches",
+        "before/after product concepts"
+      ],
+      "publication": false
     }
   ],
   "transferable_grammar": {
@@ -35,7 +74,16 @@
     "focal_density": "one primary action plus at most one supporting prop/text cluster",
     "beat_cadence": "roughly 2-5 seconds per semantic/comedic beat",
     "motion": "pose change or prop movement at each beat; avoid static lecture framing",
-    "accent_color": "limited high-contrast accent for the active concept"
+    "accent_color": "limited high-contrast accent for the active concept",
+    "ecommerce_trending_style": {
+      "hook": "curiosity + novelty + immediate product/problem tension",
+      "pacing": "choose either rapid 2-4 second progression or deliberate anti-pattern slow/no-cut delivery when the joke depends on it",
+      "visual_mix": "creator face + screen capture + product + environment + meme/screenshot inserts",
+      "humor": "deadpan, absurdist hyperbole, self-awareness, expectation subversion",
+      "proof": "visible product demo, audience reactions, comments, build progress, results only when verified",
+      "cta": "implicit curiosity-driven CTA first; direct CTA only when the buying path is frictionless",
+      "adaptation_rule": "borrow pacing, narrative devices, and editing grammar; never copy exact dialogue, characters, or scenes"
+    }
   },
   "adaptation": {
     "characters": [
