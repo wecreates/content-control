@@ -90,6 +90,27 @@
       ],
       "evidence_note": "Direct playback failed; specific shot order and cut timing were not visually verified.",
       "publication": false
+    },
+    {
+      "reel": "Ddm08FwTdVt",
+      "source": "Instagram public Reel / browser-inspected caption, comments, and context",
+      "creator": "@robertmckeaveney",
+      "role": "viral-format replication strategy",
+      "transferable_rules": [
+        "Continuously monitor short-form platforms for formats with proven engagement",
+        "Decompose each winner into hook, pacing, beat structure, visual resets, humor device, proof cue, and CTA",
+        "Rebuild the format around a different product, script, footage, examples, and brand voice",
+        "Prefer proven structural patterns over inventing every format from zero",
+        "Move fast while the format is still culturally relevant",
+        "Measure the variation against the source pattern on retention and engagement, not visual similarity"
+      ],
+      "originality_guardrails": [
+        "Do not reuse exact dialogue",
+        "Do not reuse creator identity or likeness",
+        "Do not copy exact scenes, proprietary footage, logos, or music without rights",
+        "Do not present another creator's results as CYZOR results"
+      ],
+      "publication": false
     }
   ],
   "transferable_grammar": {
@@ -117,6 +138,22 @@
       "proof": "inventory/service capability, audience reactions, real buyer comments, verified results only",
       "cta": "implicit brand-recall CTA by default; direct CTA only when frictionless and natural",
       "ideal_use": "high-ticket, local, service-heavy, or personality-led products"
+    },
+    "viral_format_replication": {
+      "workflow": [
+        "find proven viral format",
+        "extract structural DNA",
+        "map structure to current product/offer",
+        "generate original script and visuals",
+        "render native platform version",
+        "QA for originality, clarity, and retention",
+        "publish only when publication is enabled",
+        "compare performance and keep winning variants"
+      ],
+      "selection_rule": "Prioritize recent formats with strong engagement, clear audience-product fit, and repeatable structure.",
+      "adaptation_rule": "Replicate mechanics and pacing, not protected expression or exact creative.",
+      "speed_rule": "Use proven formats while they are still current; archive stale patterns.",
+      "publication": false
     }
   },
   "adaptation": {
