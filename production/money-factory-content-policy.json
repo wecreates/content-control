@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "updated_at": "2026-10-05",
+  "upstream": "wecreates/Money-factory/CONTENT_CONTROL_BRIDGE.json",
+  "readiness_source": "wecreates/Money-factory/CONTENT_READINESS.json",
+  "default_publication": false,
+  "default_mode": "RESEARCH",
+  "mode_order": [
+    "RESEARCH",
+    "PRELAUNCH",
+    "LAUNCH"
+  ],
+  "enforcement": {
+    "reject_unknown_business": true,
+    "reject_mode_above_ceiling": true,
+    "reject_launch_cta_without_launch_permission": true,
+    "reject_unverified_numeric_claims": true,
+    "reject_unverified_shipping_safety_warranty_claims": true,
+    "reject_fabricated_social_proof": true,
+    "reject_unverified_revenue_claims": true,
+    "require_originality_check_for_reference_driven_content": true
+  },
+  "qa_required": [
+    "claim audit",
+    "source/evidence check",
+    "CTA permission check",
+    "mode ceiling check",
+    "originality check",
+    "visual overlap/clipping check",
+    "audio/voice separation check",
+    "platform-native aspect ratio check"
+  ],
+  "style_profiles": [
+    "product_demo_short_form",
+    "ecommerce_trending_style",
+    "entertainment_first_product_promo",
+    "viral_format_replication"
+  ],
+  "output_rule": "A render package can be produced for any known business, but publication and direct-response launch content remain gated by Money Factory readiness."
+}
