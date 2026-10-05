@@ -111,6 +111,30 @@
         "Do not present another creator's results as CYZOR results"
       ],
       "publication": false
+    },
+    {
+      "reel": "DduI87gz9_D",
+      "source": "Instagram public Reel / browser-inspected caption, comments, thumbnails, and context",
+      "creator": "@almu_yousef",
+      "role": "show-dont-tell product demo / short-form ad",
+      "transferable_rules": [
+        "Use a curiosity-first caption that withholds explanation until the visual payoff",
+        "Structure the demo as setup → action → impressive result → abrupt confident close",
+        "Make the output/result the hero instead of narrating every feature",
+        "Use cursor movement, zoom-ins, split-screen, or before/after framing to guide attention",
+        "Favor simple direct cuts and fast 2-4 second visual beats over decorative transitions",
+        "Design the demo to naturally trigger useful questions rather than forced engagement bait",
+        "Use original audio, screen audio, voiceover, or silence intentionally; do not add music that obscures the demo",
+        "End immediately after the payoff to increase loopability",
+        "Use verifiable proof such as working output, source/repo/product page, or measured result",
+        "Target a need-to-know audience whose engagement quality matters more than broad reach"
+      ],
+      "originality_guardrails": [
+        "Do not fake community comments or pretend a planted commenter is independent proof",
+        "Do not fabricate product outputs or before/after results",
+        "Do not reuse exact creator dialogue, footage, or proprietary assets"
+      ],
+      "publication": false
     }
   ],
   "transferable_grammar": {
@@ -153,6 +177,30 @@
       "selection_rule": "Prioritize recent formats with strong engagement, clear audience-product fit, and repeatable structure.",
       "adaptation_rule": "Replicate mechanics and pacing, not protected expression or exact creative.",
       "speed_rule": "Use proven formats while they are still current; archive stale patterns.",
+      "publication": false
+    },
+    "product_demo_short_form": {
+      "hook": "curiosity gap + immediate visual context",
+      "sequence": [
+        "setup/problem",
+        "product in action",
+        "proof/result reveal",
+        "abrupt close"
+      ],
+      "pacing": "2-4 second visual beats; use faster cuts only when clarity remains high",
+      "framing": "show-dont-tell; product output is the hero",
+      "guidance": "cursor path, zoom, split-screen, before/after, callouts only where needed",
+      "proof": "real working output, verified numbers, authentic customer evidence, or direct demonstration",
+      "cta": "implicit curiosity first; direct CTA only when buying path and claims are verified",
+      "loop": "end on the payoff or a visual state that makes the opening feel natural on replay",
+      "best_fit": [
+        "software",
+        "Chrome extensions",
+        "AI tools",
+        "digital products",
+        "gadgets",
+        "physical products with obvious demonstration value"
+      ],
       "publication": false
     }
   },
