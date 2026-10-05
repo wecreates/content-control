@@ -65,6 +65,31 @@
         "before/after product concepts"
       ],
       "publication": false
+    },
+    {
+      "reel": "DdZC5ElxwpV",
+      "source": "Instagram public Reel / browser-inspected metadata, caption, engagement, and community response",
+      "creator": "@middletonford",
+      "role": "entertainment-first product promotion for high-ticket and local products",
+      "transferable_rules": [
+        "Entertain before selling; make the ad feel like content",
+        "Lead with a bold capability promise tied directly to buyer intent",
+        "Use brand confidence and personality as part of the value proposition",
+        "Favor smooth, rewatchable editing over hard-sell product listing",
+        "Use humor and an unexpected payoff to create comments and shares",
+        "Keep the CTA implicit when brand recall and trust matter more than immediate click-through",
+        "Let audience comments reveal live purchase intent and product requests"
+      ],
+      "best_fit_products": [
+        "vehicles",
+        "real estate",
+        "boats",
+        "high-ticket local inventory",
+        "local services with concierge or sourcing capability",
+        "products where brand personality materially affects trust"
+      ],
+      "evidence_note": "Direct playback failed; specific shot order and cut timing were not visually verified.",
+      "publication": false
     }
   ],
   "transferable_grammar": {
@@ -83,6 +108,15 @@
       "proof": "visible product demo, audience reactions, comments, build progress, results only when verified",
       "cta": "implicit curiosity-driven CTA first; direct CTA only when the buying path is frictionless",
       "adaptation_rule": "borrow pacing, narrative devices, and editing grammar; never copy exact dialogue, characters, or scenes"
+    },
+    "entertainment_first_product_promo": {
+      "hook": "buyer-intent problem + bold capability promise",
+      "structure": "setup → confident solution → humorous or unexpected payoff",
+      "editing": "smooth, polished, highly rewatchable; product/service remains legible",
+      "humor": "self-aware confidence, meme-ready punchline, no forced corporate tone",
+      "proof": "inventory/service capability, audience reactions, real buyer comments, verified results only",
+      "cta": "implicit brand-recall CTA by default; direct CTA only when frictionless and natural",
+      "ideal_use": "high-ticket, local, service-heavy, or personality-led products"
     }
   },
   "adaptation": {
