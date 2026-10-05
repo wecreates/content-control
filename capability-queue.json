@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "updated_at": "2026-10-04",
+  "queue": [
+    {
+      "id": "instagram-carousel-DeChDzQDFXy",
+      "source_url": "https://www.instagram.com/p/DeChDzQDFXy/?img_index=7",
+      "source_type": "instagram_carousel",
+      "status": "source_queued_pending_slide_extraction",
+      "requested_use": [
+        "Money Factory",
+        "Content Control",
+        "e-commerce",
+        "lead generation",
+        "Chrome extension growth",
+        "faceless content"
+      ],
+      "instruction": "Extract every distinct skill/capability/workflow/tool/tactic from all slides; deduplicate; preserve visible wording/examples; rank by usefulness; then promote each verified skill into its own queue record.",
+      "integrity_rule": "Do not invent slide content if Instagram blocks or obscures an image."
+    }
+  ]
+}
