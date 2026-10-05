@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-04",
+  "updated_at": "2026-10-05",
   "queue": [
     {
       "id": "instagram-carousel-DeChDzQDFXy",
@@ -17,6 +17,29 @@
       ],
       "instruction": "Extract every distinct skill/capability/workflow/tool/tactic from all slides; deduplicate; preserve visible wording/examples; rank by usefulness; then promote each verified skill into its own queue record.",
       "integrity_rule": "Do not invent slide content if Instagram blocks or obscures an image."
+    },
+    {
+      "id": "product-demo-short-form-ad-skill",
+      "source_url": "https://www.instagram.com/reel/DduI87gz9_D/",
+      "source_type": "instagram_reel",
+      "status": "active_verified_reference",
+      "applies_to": [
+        "Money Factory",
+        "Content Control",
+        "e-commerce",
+        "Chrome extensions",
+        "digital products",
+        "physical product demos"
+      ],
+      "capability": [
+        "curiosity-first product demo",
+        "show-dont-tell visual proof",
+        "split-screen/before-after demo",
+        "screen-recording guidance",
+        "loop-optimized payoff",
+        "proof-first CTA"
+      ],
+      "publication_rule": "Use for production only within the business content-readiness ceiling supplied by Money Factory."
     }
   ]
 }
