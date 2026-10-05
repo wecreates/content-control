@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "purpose": "Keep Content Control aligned with Money Factory business readiness so production never overstates an unvalidated offer.",
+  "phases": {
+    "RESEARCH": {
+      "allowed": [
+        "trend_validation",
+        "market_education",
+        "problem_explainer",
+        "comparison",
+        "sourcing_story",
+        "build_in_public",
+        "teaser",
+        "concept_demo"
+      ],
+      "purchase_cta": false,
+      "final_price": false,
+      "verified_proof": false,
+      "blocked": [
+        "buy_now_cta",
+        "final_price_claims",
+        "shipping_promises",
+        "warranty_promises",
+        "safety_or_performance_claims",
+        "fabricated_results",
+        "fabricated_reviews"
+      ]
+    },
+    "PRELAUNCH": {
+      "allowed": [
+        "trend_validation",
+        "market_education",
+        "problem_explainer",
+        "comparison",
+        "sourcing_story",
+        "build_in_public",
+        "teaser",
+        "concept_demo",
+        "waitlist_cta",
+        "coming_soon",
+        "product_demo",
+        "behind_the_scenes",
+        "verified_feature_demo",
+        "founder_story",
+        "lead_magnet"
+      ],
+      "purchase_cta": false,
+      "final_price": false,
+      "verified_proof": true,
+      "blocked": [
+        "buy_now_cta",
+        "final_shipping_promises",
+        "final_warranty_promises",
+        "unverified_safety_or_performance_claims",
+        "fabricated_results"
+      ]
+    },
+    "LAUNCH": {
+      "allowed": [
+        "trend_validation",
+        "market_education",
+        "problem_explainer",
+        "comparison",
+        "sourcing_story",
+        "build_in_public",
+        "teaser",
+        "concept_demo",
+        "waitlist_cta",
+        "coming_soon",
+        "product_demo",
+        "behind_the_scenes",
+        "verified_feature_demo",
+        "founder_story",
+        "lead_magnet",
+        "buy_now_ad",
+        "launch_announcement",
+        "offer_breakdown",
+        "verified_testimonial",
+        "verified_results_case_study",
+        "retargeting_ad",
+        "upsell_cross_sell"
+      ],
+      "purchase_cta": true,
+      "final_price": true,
+      "verified_proof": true,
+      "blocked": [
+        "fabricated_testimonials",
+        "fabricated_results",
+        "unverified_scarcity",
+        "unsupported_safety_claims"
+      ]
+    }
+  },
+  "launch_gate": "Money Factory business must be launch_ready or later, validation passed, verified gross margin >=20%, research verified, legal checked, and fulfillment feasible.",
+  "product_demo_skill": {
+    "id": "product-demo-short-form",
+    "canvas": "9:16 portrait",
+    "target_duration_seconds": [
+      15,
+      45
+    ],
+    "sequence": [
+      "hook",
+      "problem",
+      "product_reveal",
+      "demonstration",
+      "proof",
+      "objection_handler",
+      "cta",
+      "loop_or_payoff"
+    ],
+    "beat_cadence_seconds": [
+      1.5,
+      4
+    ],
+    "variants": [
+      "entertainment_first",
+      "direct_response",
+      "build_in_public",
+      "trend_product"
+    ],
+    "qa": [
+      "product visible",
+      "problem clear",
+      "demo understandable without audio",
+      "claim evidence attached",
+      "no overlap/clipping",
+      "native 9:16",
+      "CTA phase-compliant",
+      "audio/SFX separate from narration"
+    ]
+  }
+}
