@@ -1,0 +1,46 @@
+name: Probe Render Infra Status
+
+on:
+  push:
+    paths:
+      - '.github/workflows/probe-render-infra.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe Render worker
+        shell: bash
+        run: |
+          set -e
+          URL="https://content-control-render-worker.onrender.com/infra/status"
+          BODY=""
+          CODE=""
+          for i in {1..30}; do
+            CODE=$(curl -sS -o /tmp/body -w "%{http_code}" --max-time 10 "$URL" || true)
+            BODY=$(cat /tmp/body 2>/dev/null || true)
+            if [ "$CODE" = "200" ]; then break; fi
+            sleep 5
+          done
+          node - "$CODE" "$BODY" <<'NODE'
+          const fs=require('fs');
+          const [code,body]=process.argv.slice(2);
+          let parsed=null; try{parsed=JSON.parse(body)}catch{}
+          const out={checked_at:new Date().toISOString(),http_status:Number(code)||0,body:parsed||body,pass:Number(code)===200};
+          fs.writeFileSync('RENDER_INFRA_STATUS.json',JSON.stringify(out,null,2)+'\n');
+          NODE
+      - name: Persist result
+        shell: bash
+        run: |
+          git config user.name "cyzor-monitor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add RENDER_INFRA_STATUS.json
+          git diff --cached --quiet || git commit -m "record Render infrastructure status"
+          git pull --rebase origin main
+          git push origin HEAD:main
