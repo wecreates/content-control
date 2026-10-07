@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-10-07T19:38:35.593Z",
+  "http_status": 200,
+  "body": {
+    "databaseUrlConfigured": false,
+    "redisUrlConfigured": false
+  },
+  "pass": true
+}
