@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {spawn} from "node:child_process";
+import {infraStatus} from "./monitor-infra.js";
 
 const app=express();
 const PORT=Number(process.env.PORT||10000);
@@ -119,6 +120,11 @@ app.get("/latest",(req,res)=>{
   if(canonical.ready) return res.redirect(302,"/watch");
   res.setHeader("Cache-Control","no-store");
   return res.status(503).type("html").send('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:24px}</style><h2>No verified video is ready yet.</h2><p>The review service is online and publication is disabled.</p>');
+});
+
+app.get("/infra/status",(req,res)=>{
+  res.setHeader("Cache-Control","no-store");
+  res.json(infraStatus(process.env));
 });
 
 app.get("/health",(req,res)=>{
