@@ -103,6 +103,13 @@
       "reason": "unlisted_automatic_workflow",
       "schedule": true,
       "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/probe-render-infra.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
     }
   ]
 }
