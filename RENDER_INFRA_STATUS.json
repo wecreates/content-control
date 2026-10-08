@@ -1,9 +1,10 @@
 {
-  "checked_at": "2026-10-07T19:38:35.593Z",
+  "checked_at": "2026-10-08T02:57:28.509Z",
   "http_status": 200,
   "body": {
     "databaseUrlConfigured": false,
-    "redisUrlConfigured": false
+    "redisUrlConfigured": false,
+    "githubTokenConfigured": false
   },
   "pass": true
 }
