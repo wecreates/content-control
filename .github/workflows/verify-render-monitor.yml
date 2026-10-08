@@ -1,4 +1,5 @@
 name: Verify Free Render Monitor API
+# rerun after live monitor deployment
 
 on:
   push:
