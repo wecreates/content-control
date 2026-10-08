@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-08T02:59:47.801Z",
+  "checked_at": "2026-10-08T03:00:55.236Z",
   "health_status": 200,
   "create_status": 200,
-  "watchId": "cbd9bd56-29e0-4367-ac06-b88de0b026b4",
-  "last_checked_at": 1791428384000,
-  "cadence_advanced": true,
+  "watchId": "b2d0c3c3-82e2-46e0-b97f-12f2a7a6b609",
+  "last_checked_at": null,
+  "cadence_advanced": false,
   "delete_status": 200,
   "final_watch_count": 0,
-  "pass": true
+  "pass": false
 }
