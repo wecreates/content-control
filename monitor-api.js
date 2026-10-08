@@ -1,6 +1,6 @@
 import express from 'express';
 import {createWatch,listWatches,deleteWatch} from './monitor-store.js';
-import {saveMonitorStore} from './monitor-runtime.js';
+import {saveMonitorStore,checkWatch} from './monitor-runtime.js';
 
 export function createMonitorRouter(store){
   const router=express.Router();
@@ -14,7 +14,8 @@ export function createMonitorRouter(store){
     try{
       const w=createWatch(store,req.body||{});
       await saveMonitorStore(store);
-      res.json({ok:true,id:w.id});
+      const firstCheck=await checkWatch(store,w.id);
+      res.json({ok:true,id:w.id,last_checked_at:firstCheck.last_checked_at??null,first_check_ok:firstCheck.ok});
     }catch(error){
       res.status(400).json({error:String(error?.message||error)});
     }
