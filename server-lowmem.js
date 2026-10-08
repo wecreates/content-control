@@ -4,8 +4,11 @@ import fs from "node:fs";
 import path from "node:path";
 import {spawn} from "node:child_process";
 import {infraStatus} from "./monitor-infra.js";
+import {createMonitorRouter} from "./monitor-api.js";
+import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 
 const app=express();
+const monitorStore=await loadMonitorStore();
 const PORT=Number(process.env.PORT||10000);
 const output=path.resolve("public-review/episode1-v10-free.mp4");
 const healthPath=path.resolve("state/content-control-health.json");
@@ -121,6 +124,13 @@ app.get("/latest",(req,res)=>{
   res.setHeader("Cache-Control","no-store");
   return res.status(503).type("html").send('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:24px}</style><h2>No verified video is ready yet.</h2><p>The review service is online and publication is disabled.</p>');
 });
+
+app.get("/monitor/health",(req,res)=>{
+  res.setHeader("Cache-Control","no-store");
+  res.json({ok:true,service:"cyzor-render-monitor-api",watches:monitorStore.watches.length,events:monitorStore.events.length});
+});
+
+app.use("/api/v1/ext",createMonitorRouter(monitorStore));
 
 app.get("/infra/status",(req,res)=>{
   res.setHeader("Cache-Control","no-store");
@@ -353,6 +363,8 @@ const server=app.listen(PORT,()=>{
   console.log("hash-bound V10 free review worker listening",PORT);
   runV2Tick();
   setInterval(runV2Tick,15*60*1000).unref();
+  setTimeout(()=>checkMonitorStore(monitorStore).catch(e=>console.error("monitor-check",e)),5000).unref();
+  setInterval(()=>checkMonitorStore(monitorStore).catch(e=>console.error("monitor-check",e)),5*60*1000).unref();
   const a=acceptance();
   if(!fs.existsSync(output)){
     console.error("Canonical review artifact missing; fail-closed until CI restores an accepted artifact");
