@@ -39,3 +39,15 @@ test('backup metadata round-trips with generation time',()=>{
   const restored=hydrateStore(raw);
   assert.equal(restored.watches.length,1);
 });
+
+
+test('a new watch can be checked immediately through the runtime helper', async()=>{
+  const {checkWatch} = await import('../monitor-runtime.js');
+  const s=createStore();
+  const w=createWatch(s,{clientId:'a',kind:'change',targetUrl:'https://example.com/',label:'A'});
+  const fakeFetch=async()=>({status:200,arrayBuffer:async()=>new TextEncoder().encode('hello').buffer});
+  const result=await checkWatch(s,w.id,{fetchImpl:fakeFetch,persist:false});
+  assert.equal(result.ok,true);
+  assert.equal(typeof listWatches(s,'a')[0].last_checked_at,'number');
+  assert.equal(listWatches(s,'a')[0].last_status,200);
+});
