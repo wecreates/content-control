@@ -20,18 +20,28 @@ export async function saveMonitorStore(store){
   await fs.writeFile(STATE_FILE,serializeStore(store));
 }
 
+export async function checkWatch(store,id,{fetchImpl=fetch,persist=true}={}){
+  const w=store.watches.find(x=>x.id===String(id));
+  if(!w||w.status!=='active') return {ok:false,reason:'not_found_or_inactive'};
+  try{
+    const r=await fetchImpl(w.target_url,{redirect:'follow',headers:{'user-agent':'CYZOR-Free-Monitor/1.0'}});
+    const body=Buffer.from(await r.arrayBuffer());
+    const hash=crypto.createHash('sha256').update(body).digest('hex');
+    applyCheck(store,w.id,{hash,checkedAt:Date.now(),status:r.status});
+    delete w.last_error;
+    if(persist) await saveMonitorStore(store);
+    return {ok:true,status:r.status,last_checked_at:w.last_checked_at};
+  }catch(error){
+    w.last_checked_at=Date.now();
+    w.last_error=String(error);
+    if(persist) await saveMonitorStore(store);
+    return {ok:false,error:w.last_error,last_checked_at:w.last_checked_at};
+  }
+}
+
 export async function checkMonitorStore(store){
   for(const w of store.watches.filter(x=>x.status==='active')){
-    try{
-      const r=await fetch(w.target_url,{redirect:'follow',headers:{'user-agent':'CYZOR-Free-Monitor/1.0'}});
-      const body=Buffer.from(await r.arrayBuffer());
-      const hash=crypto.createHash('sha256').update(body).digest('hex');
-      applyCheck(store,w.id,{hash,checkedAt:Date.now(),status:r.status});
-      delete w.last_error;
-    }catch(error){
-      w.last_checked_at=Date.now();
-      w.last_error=String(error);
-    }
+    await checkWatch(store,w.id,{persist:false});
   }
   await saveMonitorStore(store);
 }
