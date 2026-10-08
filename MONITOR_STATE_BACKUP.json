@@ -1,1 +1,5 @@
-{"watches":[{"id":"cbd9bd56-29e0-4367-ac06-b88de0b026b4","client_id":"render-monitor-smoke-1791428361442","kind":"change","target_url":"https://example.com/","label":"Render monitor smoke","last_value":null,"last_checked_at":null,"last_change_at":null,"last_status":null,"status":"active"}],"events":[]}
+{
+  "generated_at": 1791429039405,
+  "watches": [],
+  "events": []
+}
