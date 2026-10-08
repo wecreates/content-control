@@ -1,0 +1,21 @@
+name: CYZOR Render Monitor Tests
+
+on:
+  push:
+    paths:
+      - 'monitor-*.js'
+      - 'tests/monitor_*.test.mjs'
+      - '.github/workflows/render-monitor-tests.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run monitor tests
+        run: node --test tests/monitor_*.test.mjs
