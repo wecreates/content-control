@@ -29,3 +29,13 @@ test('store round-trips through backup serialization',()=>{
   assert.equal(restored.watches.length,1);
   assert.equal(restored.watches[0].client_id,'a');
 });
+
+
+test('backup metadata round-trips with generation time',()=>{
+  const s=createStore();
+  createWatch(s,{clientId:'a',kind:'change',targetUrl:'https://example.com/',label:'A'});
+  const raw=JSON.parse(serializeStore(s,{generatedAt:123}));
+  assert.equal(raw.generated_at,123);
+  const restored=hydrateStore(raw);
+  assert.equal(restored.watches.length,1);
+});
