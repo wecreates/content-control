@@ -91,6 +91,13 @@
   "status": "FAIL",
   "violations": [
     {
+      "path": ".github/workflows/backup-render-monitor-state.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": true,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/clone-e2e-contract.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
@@ -106,6 +113,13 @@
     },
     {
       "path": ".github/workflows/probe-render-infra.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": false,
+      "workflow_run": false
+    },
+    {
+      "path": ".github/workflows/verify-render-monitor.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
       "schedule": false,
