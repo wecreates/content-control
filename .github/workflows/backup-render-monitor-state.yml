@@ -30,7 +30,7 @@ jobs:
             fi
             sleep 5
           done
-          node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('MONITOR_STATE_BACKUP.json','utf8')); if(!Array.isArray(x.watches)||!Array.isArray(x.events)) process.exit(2)"
+          node -e "const fs=require('fs'); const p='MONITOR_STATE_BACKUP.json'; const x=JSON.parse(fs.readFileSync(p,'utf8')); if(!Array.isArray(x.watches)||!Array.isArray(x.events)) process.exit(2); x.generated_at=Date.now(); fs.writeFileSync(p,JSON.stringify(x,null,2)+'\\n')"
       - name: Persist backup
         shell: bash
         run: |
