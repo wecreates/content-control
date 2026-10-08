@@ -1,4 +1,5 @@
 name: Probe Render Infra Status
+# rerun after github capability deploy
 
 on:
   push:
