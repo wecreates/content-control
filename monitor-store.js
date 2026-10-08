@@ -9,8 +9,8 @@ export function createStore(seed={}){
 
 export function hydrateStore(seed={}){ return createStore(seed); }
 
-export function serializeStore(store){
-  return JSON.stringify({watches:store.watches,events:store.events},null,2)+'\n';
+export function serializeStore(store,{generatedAt=Date.now()}={}){
+  return JSON.stringify({generated_at:generatedAt,watches:store.watches,events:store.events},null,2)+'\n';
 }
 
 export function createWatch(store,{clientId,kind='change',targetUrl,label='Watch'}){
