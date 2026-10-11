@@ -21,3 +21,11 @@ The report now shows per-metric contributions, reference hashes, explicit unchan
 ## Validation
 
 Seven focused Python tests pass. Running the modified script on the actual failed artifact reproduces every original comparison output exactly and exits 2. The candidate still requires an explicitly justified reference-benchmark review, composition refinement, complete audiovisual review, and two full competitor comparisons before any handoff.
+
+## Layout refinement and verification limits
+
+V2-only framing now moves the complete action group down 100 pixels and uniformly scales it 1.06x, keeping camera motion and every actor/prop contact in the same shared coordinate system. Preferred caption size increases from 34 to 42 pixels; all eight complete dialogue-beat captions still fit without losing words. Non-V2 framing is unchanged. Background remains white.
+
+Eight Node layout tests and seven Python parity tests pass. React server-side rendering and CairoSVG rasterization sampled 72 scene starts, midpoints and final frames. In those static samples, no dark foreground touches either 8-pixel side-edge strip or the y=280..329 caption/action separation strip. Observed foreground bounds across samples: x=54..699, y=75..1052. An eight-beat contact sheet was visually inspected. These checks do not establish arbitrary interior object occlusion, platform-overlay safe areas, animation timing or audio quality.
+
+Full local Remotion rendering was attempted but Chromium could not launch because its socket operation is prohibited by the execution sandbox. No security bypass was attempted. Static SVG evidence is not full browser-video equivalence or creative acceptance. Do not expose this unfinished preview. A read-only branch render and complete audiovisual/competitor review are still required; all existing quality gates remain in force.
