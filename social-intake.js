@@ -85,15 +85,19 @@ export function routeFinding(queue,id,finding,{allowedProjects=[]}={}) {
 }
 export function denyExternalAction(action) {const error=new Error(`External action disabled: ${String(action)}`);error.code='PUBLICATION_DISABLED';throw error;}
 export function connectionStatus(connection={},now=Date.now()) {
+  if(!connection || typeof connection!=='object')return {status:'unverified',read_verified:false};
   const expiry=Date.parse(connection.expires_at||'');
-  if(!connection.last_read_verified_at)return {status:'unverified',read_verified:false};
+  const verified=Date.parse(connection.last_read_verified_at||'');
+  if(!Number.isFinite(verified)||verified>now)return {status:'unverified',read_verified:false};
   if(connection.error_code)return {status:'error',read_verified:false,error_code:String(connection.error_code).replace(/[^A-Z0-9_]/gi,'').slice(0,80)};
   if(Number.isFinite(expiry)&&expiry<=now)return {status:'expired',read_verified:false};
+  if(connection.expires_at&&!Number.isFinite(expiry))return {status:'expiry_unknown',read_verified:false};
+  if(now-verified>86400000)return {status:'stale',read_verified:false,last_read_verified_at:connection.last_read_verified_at};
   return {status:'previously_verified',read_verified:true,last_read_verified_at:connection.last_read_verified_at};
 }
 export function planTokenRenewal(connection={},now=Date.now()) {
   const expiry=Date.parse(connection.expires_at||'');
-  if(!connection.renewal_supported)return {action:'reauthorization_required',automatic:false};
+  if(connection.renewal_supported!==true)return {action:'reauthorization_required',automatic:false};
   if(!Number.isFinite(expiry))return {action:'expiry_unknown',automatic:false};
   return {action:expiry-now<=86400000?'renewal_due':'not_due',automatic:false,implementation:'plan_only',expires_at:new Date(expiry).toISOString()};
 }

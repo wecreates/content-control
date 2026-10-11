@@ -6,12 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import {createSocialRouter} from '../social-router.js';
 
-async function fixture(run,{missing=false}={}) {
+async function fixture(run,{missing=false,fetchImpl}={}) {
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'social-http-'));
  const original=process.env.PUBLICATION_ENABLED;process.env.PUBLICATION_ENABLED='true';
  const queue={version:1,queue:[{id:'existing',source_url:'https://www.instagram.com/reel/DeUlQTQxv5O/',publication_enabled:false}]};
  if(!missing){await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify(queue));await fs.writeFile(path.join(root,'social-capabilities.json'),JSON.stringify({platforms:[]}));}
- const app=express();app.use('/api/social',createSocialRouter({root}));
+ const app=express();app.use('/api/social',createSocialRouter({root,fetchImpl}));
  const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
  const base=`http://127.0.0.1:${server.address().port}/api/social`;
  try{await run(base,root);}finally{await new Promise(resolve=>server.close(resolve));await fs.rm(root,{recursive:true,force:true});if(original===undefined)delete process.env.PUBLICATION_ENABLED;else process.env.PUBLICATION_ENABLED=original;}
@@ -40,3 +40,28 @@ test('intake explicitly fails without a durable authenticated writer and does no
  const d=await r.json();assert.equal(r.status,503);assert.equal(d.saved,false);assert.equal(d.error,'AUTHENTICATED_DURABLE_WRITER_NOT_CONFIGURED');assert.equal(await fs.readFile(path.join(root,'capability-queue.json'),'utf8'),before);
 }));
 test('missing status data returns 503 rather than empty successful dashboard',()=>fixture(async(base)=>{const r=await fetch(base+'/status');assert.equal(r.status,503);assert.equal((await r.json()).publication_enabled,false);},{missing:true}));
+
+test('malformed and oversized JSON return locked structured errors',()=>fixture(async(base)=>{
+ for(const [body,status,error] of [['{',400,'INVALID_REQUEST_BODY'],[JSON.stringify({url:'x'.repeat(5000)}),413,'REQUEST_TOO_LARGE']]) {
+  const r=await fetch(base+'/validate',{method:'POST',headers:{'content-type':'application/json'},body});
+  assert.equal(r.status,status);const data=await r.json();assert.equal(data.error,error);assert.equal(data.publication_enabled,false);assert.equal(data.external_actions_enabled,false);
+ }
+}));
+test('invalid persisted queue schema is an unavailable source, not a client error',()=>fixture(async(base,root)=>{
+ await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify({queue:{}}));
+ assert.equal((await fetch(base+'/status')).status,503);
+ const r=await fetch(base+'/validate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:'https://youtu.be/abcdefghijk'})});
+ assert.equal(r.status,503);assert.equal((await r.json()).error,'QUEUE_SOURCE_UNAVAILABLE');
+}));
+test('status evaluates dated connection observations without performing provider calls',()=>fixture(async(base,root)=>{
+ await fs.writeFile(path.join(root,'social-capabilities.json'),JSON.stringify({platforms:[{id:'instagram',connection:{last_read_verified_at:'2020-01-01'}}]}));
+ const data=await (await fetch(base+'/status')).json();
+ assert.equal(data.connection_health[0].status,'stale');assert.equal(data.connection_health[0].read_verified,false);assert.equal(data.connection_health[0].renewal.automatic,false);
+}));
+
+for(const [name,payload,status] of [['valid',{ideas:[{id:'linked',source_record:{repository:'wecreates/content-control'},publication_enabled:false},{id:'unrelated',source_record:{repository:'other'}}]},200],['missing collection',{},503],['malformed collection',{ideas:{}},503],['null entry',{ideas:[null]},503]]) {
+ test(`Money Factory bridge validates ${name} without external requests`,()=>fixture(async(base)=>{
+  const response=await fetch(base+'/project-links');assert.equal(response.status,status);const data=await response.json();assert.equal(data.publication_enabled,false);
+  if(status===200){assert.equal(data.references.length,1);assert.equal(data.references[0].id,'linked');assert.equal(data.verification_scope,'repository_references_only_not_runtime_routing_or_revenue');assert.equal(data.verified_at,undefined);assert.ok(data.retrieved_at);}
+ },{fetchImpl:async()=>({ok:true,json:async()=>payload})}));
+}

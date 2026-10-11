@@ -1,36 +1,117 @@
 {
   "schema_version": 1,
-  "status": "BLOCKED_PENDING_RENDERED_REVIEW",
+  "status": "BLOCKED_PENDING_FULL_AUDIOVISUAL_AND_COMPETITOR_REVIEW",
   "publication_enabled": false,
   "production_approved": false,
   "reviewed_source": {
-    "run_id": 38157282127,
-    "commit": "e491d87c5481df3de096754e6f098d5dbcc64190",
-    "duration_seconds": 50,
-    "coverage": "eight diagnostic stills, actual speech transcription and automated full-file motion/decode checks; not complete audiovisual viewing"
+    "run_id": 38157835426,
+    "job_id": 114524407560,
+    "commit": "68790a1f24601be83ff0ef1d47ee9c8fc43dadcc",
+    "candidate_sha256": "59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485",
+    "duration_seconds": 34.958333333333336,
+    "planned_duration_seconds": 35.04,
+    "fps": 24,
+    "coverage": "Eight actual rendered diagnostic stills at the times below, receipt inspection and independently recomputed candidate hash/style metric components; automated full-file media and transcription checks. Not complete audiovisual viewing.",
+    "render_artifact_id": 11709257472,
+    "render_artifact_digest": "sha256:63163aec11e07b20864c98d44abc9c099d1c8821f6ff1a836fe8151d470c1f4b",
+    "diagnostic_artifact_id": 11709476612,
+    "diagnostic_artifact_digest": "sha256:e21b4007db3572cb2fe487513c38843fd0ef01322285489cbac87ab68fdc7732",
+    "diagnostic_frames": [
+      {
+        "frame": 33,
+        "seconds": 1.375,
+        "sha256": "69b065a159a656a55a80a09d9316af6b34a700ce08b39140b2f231a1ee76156f"
+      },
+      {
+        "frame": 118,
+        "seconds": 4.916667,
+        "sha256": "cda8156a5763adcf5e877b8d63196ceb4f5b4c523fd1b0edda7f95141839df32"
+      },
+      {
+        "frame": 226,
+        "seconds": 9.416667,
+        "sha256": "211ff44ee35ef30d22358af27f32f91d4a920db27d27ee459089659d81191e70"
+      },
+      {
+        "frame": 339,
+        "seconds": 14.125,
+        "sha256": "8d2bdd19c7fb8bc9602c9d7365516df727159d42124c32b348c17d59d9a4cbac"
+      },
+      {
+        "frame": 460,
+        "seconds": 19.166667,
+        "sha256": "c96508374171a84ec8031c45b4a5c27be22dee88c49d4729d67248a43c7858d9"
+      },
+      {
+        "frame": 572,
+        "seconds": 23.833333,
+        "sha256": "a70fc808deb04bbc7f0084264afd465f19960ad1078e9a70e8f00ea5bb0cf5fb"
+      },
+      {
+        "frame": 681,
+        "seconds": 28.375,
+        "sha256": "a3e46318477b20d529979b41bca68392a38111519fbf95eebe7ea458436d134e"
+      },
+      {
+        "frame": 792,
+        "seconds": 33.0,
+        "sha256": "90de75084ab22f52e347926fb455b830b5d6c129198150395ecf29b5b4e9e0db"
+      }
+    ],
+    "receipt_sha256": {
+      "render.json": "56a9b44d03c58bd234b5d24649edc0fc7f808064292aad4ccd1ce4c8ff7fde34",
+      "transcription.json": "e3797bad0ec3615dd0ab58df73e951964ae0e4296c1722111fbb1fa42d71b327",
+      "visual-parity.json": "25c01c9509d57036c0a4aaf85f7817486cfcd4c9c270d6a50dec78c555994291"
+    }
   },
   "verified_on_reviewed_source": {
     "free_voice_generation": true,
     "separate_audio_stems": true,
     "transcript_qa": "PASS",
-    "sequence_similarity": 0.987013,
+    "sequence_similarity": 0.974026,
+    "content_token_recall": 0.965517,
     "sampled_outer_clipping_observed": false,
     "sampled_caption_prop_collisions_observed": false,
-    "motion_gate": "FAIL",
-    "style_parity": "FAIL"
+    "sampled_chase_face_hand_crossing_observed": false,
+    "sampled_v2_floor_removed": true,
+    "sampled_caption_wrap_improvement_observed": true,
+    "sampled_actor_prop_contact_improvement_observed": true,
+    "motion_gate": "PASS",
+    "max_duplicate_run_seconds": 0.625,
+    "mean_motion": 0.010906801494990669,
+    "technical_checks": {
+      "audio_present": true,
+      "decodes": true,
+      "duration_match": true,
+      "motion_alive": true,
+      "no_black": true,
+      "no_duplicate_run": true,
+      "publication_disabled": true,
+      "safe_border": true,
+      "v4_installed": true
+    },
+    "style_parity": "FAIL",
+    "style_mean_frame_distance": 0.35522750823376226
   },
-  "subsequent_changes_require_rerender": [
-    "35.04-second pacing",
-    "face/hand intersection correction",
-    "wider caption wrapping",
-    "V2 floor removal",
-    "causal animation follow-through"
-  ],
+  "style_failure_analysis": {
+    "reference_description": "Inspected reference frame shows beige paper background; current required white-background render remains white.",
+    "mean_reference_white_fraction": 0.01801009114583333,
+    "mean_candidate_white_fraction": 0.9567839626736111,
+    "weighted_mean_distance_components": {
+      "edge_density": 0.002724083116319444,
+      "white_fraction": 0.3285708550347222,
+      "mean_brightness": 0.023932570082720588
+    },
+    "interpretation": "White-fraction difference dominates this statistical metric; this does not establish semantic or creative parity. Existing FAIL retained; no threshold changed."
+  },
+  "subsequent_changes_require_rerender": [],
   "unresolved_issues": [
-    "Full audiovisual creative review unavailable in current verified free capabilities",
-    "Full audiovisual competitor comparison unavailable; metadata alone is insufficient",
-    "Full-beat captions can expose punchlines before the spoken delivery",
-    "Latest render must pass motion and style checks before approval"
+    "Complete audiovisual creative review has not been performed; eight stills do not establish complete motion, acting or sound quality.",
+    "Full audiovisual competitor comparison has not been performed; metadata and source statistics are insufficient.",
+    "Full-beat captions still reveal spoken punchlines early in this reviewed artifact.",
+    "ASR recognizes opening boss as bus; this may be recognition error or voice clarity and requires listening rather than assuming either.",
+    "Style metric remains FAIL; background mismatch is quantitatively dominant but does not waive the gate.",
+    "This report applies only to the identified candidate hash; subsequent caption or other code changes require new render and review."
   ],
-  "handoff": "Do not invite the user to watch an unapproved draft."
+  "handoff": "Do not invite the user to watch an unapproved draft. Technical PASS is not production or competitive-creative approval."
 }
