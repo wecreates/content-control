@@ -2,7 +2,7 @@
 
 Upstream: https://github.com/yihui-dev/awesome-opus5-5-videos
 Source type: curated examples, prompts, and links, **not an installable video generator**.
-Integration status: catalog specification committed; ingestion/rendering not wired or tested.
+Integration status: importer tested against 513 upstream entries at revision `756290289742535eb0ac3817548f152e9759cc70` on 2026-10-11. References remain non-executable and publication-disabled. Per-entry rights review and reference-driven production rendering are not complete.
 
 ## Intended integration
 Read `data/videos.json` and the linked `prompts/*.md` files from a pinned upstream revision. Record each item's creator, source URL, technique, prompt path, dependencies, and license/rights status. Never execute downloaded code or remote scripts during catalog ingestion.

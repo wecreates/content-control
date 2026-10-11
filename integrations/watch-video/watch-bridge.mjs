@@ -8,7 +8,7 @@ export function buildWatchInvocation({url,skillDir,python='python3',question='Su
   const normalized=normalizeSocialUrl(url);
   if (!skillDir || typeof skillDir!=='string' || !skillDir.startsWith('/')) throw new Error('Absolute trusted skill directory required');
   if (typeof question!=='string'||question.length>2000) throw new Error('Invalid question');
-  return {command:python,args:[resolve(skillDir,'scripts/watch.py'),normalized.source_url,'--question',question,'--engine','local'],normalized};
+  return {command:python,args:[resolve(skillDir,'scripts/watch.py'),normalized.source_url,'--question',question,'--no-whisper','--engine','local'],normalized};
 }
 export async function runWatch({url,skillDir,python='python3',question,timeoutMs=DEFAULT_TIMEOUT_MS,runner=spawn}) {
   const invocation=buildWatchInvocation({url,skillDir,python,question});

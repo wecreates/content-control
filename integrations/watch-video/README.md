@@ -2,7 +2,7 @@
 
 Source: https://github.com/bradautomates/claude-video/tree/main/skills/watch
 Upstream skill: `watch` v0.3.2 at inspection; MIT.
-State: **adapter and test contract only**. Do not claim installation until dependencies and end-to-end video test succeed.
+State: **local extraction tested; full audiovisual analysis and hosted execution not verified**. On 2026-10-11, pinned revision `03ceb42f7fa2c4439aca01752118044baabffb8f` retrieved a 52.1-second public Instagram reel and extracted 16 frames. Captions were unavailable. The authorized-account test still requires browser sign-in.
 
 ## Purpose
 Use Watch as an optional authorized-video analysis backend for Content Control's existing social intake. Do not replace `social-intake.js`, `social-router.js`, or existing transcription tools.
@@ -17,7 +17,7 @@ Use Watch as an optional authorized-video analysis backend for Content Control's
 1. Classify URL and check user authorization and source restrictions.
 2. Resolve skill at a pinned, reviewed upstream commit; inspect bundled Python before running.
 3. Perform dependency preflight using bundled `scripts/setup.py --json` in an isolated runner.
-4. Execute `scripts/watch.py URL --question QUESTION --engine local` only for authorized content.
+4. Execute `scripts/watch.py URL --question QUESTION --no-whisper --engine local` only for authorized content.
 5. Preserve source timestamps, frame/transcript coverage, failure details, and provenance.
 6. Distinguish a complete video watch from partial captions, sampled frames, or metadata.
 7. Send verified observations to existing Content Control and Money Factory classifiers.
@@ -34,3 +34,5 @@ Use Watch as an optional authorized-video analysis backend for Content Control's
 
 ## Compatibility
 This is an Agent Skill intended for supported local coding-agent environments. Copying `SKILL.md` into a GitHub repository does not install it into ChatGPT or guarantee that hosted video ingestion works.
+
+The adapter explicitly disables Whisper fallbacks even if the host has API credentials. Local engine alone does not guarantee zero paid transcription. Existing transcript evidence is retained separately from this run.

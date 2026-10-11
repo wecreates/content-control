@@ -9,6 +9,7 @@ test('uses fixed argv and local engine without shell',()=>{
  const v=buildWatchInvocation({url:'https://www.instagram.com/reel/DeUlQTQxv5O/?tracking=1',skillDir:'/tmp/trusted-watch'});
  assert.equal(v.normalized.source_url,'https://www.instagram.com/reel/DeUlQTQxv5O/');
  assert.deepEqual(v.args.slice(-2),['--engine','local']);
+ assert.ok(v.args.includes('--no-whisper'), 'must override configured paid transcription fallback');
  assert.ok(v.args.includes('https://www.instagram.com/reel/DeUlQTQxv5O/'));
 });
 test('rejects unsupported hosts',()=>{

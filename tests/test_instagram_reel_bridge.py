@@ -10,7 +10,7 @@ class InstagramReelBridgeContractTests(unittest.TestCase):
     def test_bridge_uses_persistent_logged_in_browser_and_actual_media(self):
         src=(ROOT/'tools/instagram_reel_bridge.mjs').read_text()
         self.assertIn('launchPersistentContext',src)
-        self.assertIn('video.currentSrc',src)
+        self.assertIn('v.currentSrc || v.src',src)
         self.assertIn("resourceType() === 'media'",src)
         self.assertIn('instagram.com/reel/',src)
         self.assertIn('ffprobe',src)
