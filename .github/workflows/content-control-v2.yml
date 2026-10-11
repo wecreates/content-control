@@ -18,6 +18,8 @@ on:
       - 'control/free-voice-policy.json'
       - 'tests/test_v2_free_voice.py'
       - 'scripts/v2_sound_mix.py'
+      - 'scripts/persist_v2_artifacts.py'
+      - 'tests/test_persist_v2_artifacts.py'
       - 'scripts/v2_captions.py'
       - 'scripts/v2_build_status.py'
       - 'scripts/rendered_visual_parity.py'
@@ -118,7 +120,7 @@ jobs:
           python scripts/v2_audio_assemble.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --manifest state/v2/generated-audio/approved-manifest.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
       - name: Test and assemble separate music and effects
         run: |
-          python -m unittest -v tests/test_v2_sound_mix.py
+          python -m unittest -v tests/test_v2_sound_mix.py tests/test_persist_v2_artifacts.py
           python scripts/v2_sound_mix.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --voice state/v2/voice.wav --out-dir state/v2/mix --receipt state/v2/receipts/mix.json
       - name: Transcribe actual free narration
         run: |
@@ -147,6 +149,7 @@ jobs:
           PY
           python scripts/v2_orchestrator.py --job projects/v2/amex-vs-chase-boss-fight/job.json --reference state/v2/reference.json --out state/v2/plan.json
       - name: Render V2 entertainment acceptance Short
+        id: render_video
         run: |
           mkdir -p state/v2/render state/v2/receipts
           python - <<'PYCAPTIONS'
@@ -164,20 +167,15 @@ jobs:
         run: |
           cp state/v2/render/v2-boss-fight.mp4 public-review/v2-draft.mp4
           python - <<'PYDRAFT'
-          import json,hashlib
+          import json,hashlib,os
           p="public-review/v2-draft.mp4"
-          json.dump({"status":"DRAFT","publication_enabled":False,"production_approved":False,"voice_provider":"kokoro_local_cpu","candidate_sha256":hashlib.sha256(open(p,"rb").read()).hexdigest(),"full_av_review":False},open("state/v2-draft.json","w"),indent=2)
+          json.dump({"run_id":int(os.environ["GITHUB_RUN_ID"]),"source_commit":os.environ["GITHUB_SHA"],"status":"DRAFT","publication_enabled":False,"production_approved":False,"voice_provider":"kokoro_local_cpu","candidate_sha256":hashlib.sha256(open(p,"rb").read()).hexdigest(),"full_av_review":False},open("state/v2-draft.json","w"),indent=2)
           PYDRAFT
           git config user.name "content-control-v2"
           git config user.email "actions@users.noreply.github.com"
-          git add -f public-review/v2-draft.mp4 state/v2-draft.json
-          git diff --cached --quiet || git commit -m "Save free-voice internal V2 draft for review [skip ci]"
-          for attempt in 1 2 3; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
-            git rebase --abort || true
-          done
-          exit 1
+          python scripts/persist_v2_artifacts.py --kind draft
       - name: Inspect rendered candidate
+        if: ${{ !cancelled() && steps.render_video.outcome == 'success' }}
         run: |
           python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py
           media_status=0
@@ -231,28 +229,7 @@ jobs:
           python scripts/v2_build_status.py --root state/v2 --run-id "$GITHUB_RUN_ID" --source-commit "$GITHUB_SHA" --outcome "$BUILD_OUTCOME" --out state/v2-production-status.json
           git config user.name "content-control-v2"
           git config user.email "actions@users.noreply.github.com"
-          git add state/v2-production-status.json
-          git diff --cached --quiet || git commit -m "Record V2 build checks without production approval [skip ci]"
-          for attempt in 1 2 3; do
-            git fetch origin main
-            if python - <<'PYORDER'
-          import json,subprocess
-          from scripts.v2_build_status import should_replace
-          try: old=json.loads(subprocess.check_output(["git","show","origin/main:state/v2-production-status.json"],stderr=subprocess.DEVNULL,text=True))
-          except subprocess.CalledProcessError:old={}
-          incoming=json.load(open("state/v2-production-status.json"))
-          if not should_replace(old,incoming):raise SystemExit(3)
-          PYORDER
-            then
-              if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
-              git rebase --abort || true
-            else
-              status=$?
-              if [ "$status" -eq 3 ]; then exit 0; fi
-              exit "$status"
-            fi
-          done
-          exit 1
+          python scripts/persist_v2_artifacts.py --kind report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
