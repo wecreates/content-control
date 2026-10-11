@@ -6,7 +6,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction,v2WalletMotion} from "./V2BattleAction";
-import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose} from "./StudioLayout.mjs";
+import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,resolveBattleHandTargets} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34,caption=false})=>{
@@ -59,9 +59,8 @@ export const StudioAnimaticComposition=({ccsd})=>{
         }
         // Keep the deliberate pose/reaction movement, but compensate hand IK so
         // hands stay on the prop instead of drifting with the body rotation.
-        const angle=(m.lean||0)*Math.PI/180;
-        const contact=target=>{if(!target)return undefined;const y=target.y-(m.bob||0)/slot.scale;return {x:target.x*Math.cos(angle)+y*Math.sin(angle),y:-target.x*Math.sin(angle)+y*Math.cos(angle)};};
-        m.leftHandTarget=contact(slot.leftHandTarget);m.rightHandTarget=contact(slot.rightHandTarget);m.mood=slot.mood;
+        Object.assign(m,resolveBattleHandTargets(m,slot,{freeGesture:battle==='finish'&&id==='dave'}));
+        m.mood=slot.mood;
       }
       return <Character key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}

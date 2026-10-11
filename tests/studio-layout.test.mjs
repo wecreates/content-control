@@ -59,3 +59,26 @@ test('V2 captions preserve every word with weighted glyph bounds and padding',as
  for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const l=fitCaption(line.text);assert.equal(l.lines.join(' '),line.text);assert.ok(l.lines.every(x=>captionTextWidth(x,l.size)<=544));assert.ok(l.lines.length*l.lineHeight<=175);}
  const monk=v2SceneActor('chase-strike','points_monk',0,1);assert.equal(monk.x+monk.leftHandTarget.x,528);assert.equal(monk.y+monk.leftHandTarget.y,560);assert.ok(monk.x>590&&monk.y>700);
 });
+
+test('rendered victory hand inputs preserve moving gesture instead of fixed prop contact',async()=>{
+ const {v2VictoryPose,v2SceneActor,resolveBattleHandTargets}=await import('../remotion/StudioLayout.mjs');
+ const slot=v2SceneActor('finish','dave',0,1);
+ const start=resolveBattleHandTargets(v2VictoryPose(0),slot,{freeGesture:true});
+ const raised=resolveBattleHandTargets(v2VictoryPose(.35),slot,{freeGesture:true});
+ assert.equal(start.leftHandTarget.y,-10);
+ assert.equal(raised.leftHandTarget.y,-90);
+ assert.notDeepEqual(raised.leftHandTarget,slot.leftHandTarget);
+ assert.equal(raised.rightHandTarget.y,raised.leftHandTarget.y);
+});
+test('prop contact remains fixed in world coordinates through bob and lean',async()=>{
+ const {resolveBattleHandTargets}=await import('../remotion/StudioLayout.mjs');
+ for(const lean of [-30,0,27])for(const bob of [-25,0,18]){
+  const slot={x:360,y:755,scale:1.05,leftHandTarget:{x:-55,y:-184},rightHandTarget:{x:55,y:-184}};
+  const hands=resolveBattleHandTargets({lean,bob},slot),a=lean*Math.PI/180;
+  for(const key of ['leftHandTarget','rightHandTarget']){
+   const h=hands[key];
+   assert.ok(Math.abs(slot.x+slot.scale*(h.x*Math.cos(a)-h.y*Math.sin(a))-(slot.x+slot.scale*slot[key].x))<1e-9);
+   assert.ok(Math.abs(slot.y+bob+slot.scale*(h.x*Math.sin(a)+h.y*Math.cos(a))-(slot.y+slot.scale*slot[key].y))<1e-9);
+  }
+ }
+});

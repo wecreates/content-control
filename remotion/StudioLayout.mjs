@@ -68,3 +68,15 @@ export function fitCaption(text,width=592,height=175,preferredSize=34) {
  }
  throw new Error('Caption exceeds safe text region');
 }
+
+// World-anchored contacts compensate body movement; free gestures follow the rig.
+export function resolveBattleHandTargets(motion,slot,{freeGesture=false}={}) {
+ if(freeGesture)return {leftHandTarget:motion.leftHandTarget,rightHandTarget:motion.rightHandTarget};
+ const angle=(motion.lean||0)*Math.PI/180;
+ const contact=target=>{
+  if(!target)return undefined;
+  const y=target.y-(motion.bob||0)/slot.scale;
+  return {x:target.x*Math.cos(angle)+y*Math.sin(angle),y:-target.x*Math.sin(angle)+y*Math.cos(angle)};
+ };
+ return {leftHandTarget:contact(slot.leftHandTarget),rightHandTarget:contact(slot.rightHandTarget)};
+}
