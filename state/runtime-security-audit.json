@@ -1,32 +1,15 @@
 {
   "critical_count": 0,
-  "high_count": 1,
+  "high_count": 0,
   "npm_counts": {
     "critical": 0,
-    "high": 1,
+    "high": 0,
     "info": 0,
     "low": 0,
     "moderate": 0,
-    "total": 1
+    "total": 0
   },
   "publication_enabled": false,
   "schema_version": 1,
-  "vulnerabilities": [
-    {
-      "fix_available": true,
-      "is_direct": false,
-      "name": "source-map-js",
-      "range": "1.0.0 - 1.2.1",
-      "severity": "high",
-      "via": [
-        {
-          "name": "source-map-js",
-          "range": ">=1.0.0 <1.2.2",
-          "severity": "high",
-          "source": 1241209,
-          "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets"
-        }
-      ]
-    }
-  ]
+  "vulnerabilities": []
 }
