@@ -28,3 +28,6 @@ export function propSlots(count) {
   if(count>4) throw new Error('Studio stage supports at most four props');
   return Array.from({length:count},(_,i)=>({x:360+(i-(count-1)/2)*(count<=2?230:145),y:440,scale:count<=2?.82:.54}));
 }
+export function v2BattleBeat(id) {
+  return ['cold-open','chase-strike','amex-counter','fee-drain','points-summon','trap','final-clash','finish'].find(prefix=>String(id||'').startsWith(prefix+'-'))||null;
+}

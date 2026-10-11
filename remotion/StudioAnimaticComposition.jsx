@@ -4,7 +4,8 @@ import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
-import {fitText,normalizePropId,characterSlots,propSlots} from "./StudioLayout.mjs";
+import {V2BattleAction} from "./V2BattleAction";
+import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34})=>{
@@ -24,6 +25,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
  const scale=move==='punch_in'||move==='creeping_push'?1+.035*p:move==='snap_reveal'?1.035-.035*p:1;
  const pan=(move==='tracking'||move==='guided_track')?(p-.5)*14:0;
  const shake=Math.sin(local*2.7)*impactAmount*3;
+ const battle=ccsd?.project_id==='v2-amex-vs-chase-anime-boss-fight' && v2BattleBeat(s.id);
  const title=String(s.story?.beat||'').replace(/^(CONFLICT|ESCALATION|PAYOFF):\s*/i,'');
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
@@ -33,7 +35,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
     <Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>
     {impactAmount>0?<g opacity={impactAmount*.6} stroke="#111" strokeWidth="3">{[-1,1].map(side=><g key={side}><line x1={360+side*230} y1="635" x2={360+side*265} y2="610"/><line x1={360+side*235} y1="675" x2={360+side*275} y2="675"/></g>)}</g>:null}
-    {props.map((prop,i)=>{const slot=objects[i];return <PropIcon key={i} id={normalizePropId(prop.id)} x={slot.x} y={slot.y-Math.sin(p*Math.PI)*14} s={slot.scale} rotation={Math.sin(p*Math.PI)*(i%2?4:-4)}/>;})}
+    {battle?<V2BattleAction scene={s} scenes={ccsd.scenes} time={t}/>:props.map((prop,i)=>{const slot=objects[i];return <PropIcon key={i} id={normalizePropId(prop.id)} x={slot.x} y={slot.y-Math.sin(p*Math.PI)*14} s={slot.scale} rotation={Math.sin(p*Math.PI)*(i%2?4:-4)}/>;})}
     {chars.map((ch,i)=>{
       const id=ch.id||'dave',Character=C[id];if(!Character)throw new Error(`Unknown character: ${id}`);
       const slot=slots[i],curve=ch.performance_engine?.emotion_curve||[];

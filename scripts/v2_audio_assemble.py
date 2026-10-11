@@ -14,7 +14,7 @@ def assemble(ccsd, manifest, root, output):
     if manifest.get('provider')!='cartesia' or manifest.get('model_id')!='sonic-3.6':
         raise ValueError('Existing production voice policy requires Cartesia Sonic 3.6 clips')
     locks=manifest.get('voice_assignments',{})
-    expected=[(s,d) for s in ccsd.get('scenes',[]) for d in s.get('audio',{}).get('dialogue',[]) if d.get('text','').strip()]
+    expected=[(s,d) for s in sorted(ccsd.get('scenes',[]),key=lambda s:float(s['start'])) for d in s.get('audio',{}).get('dialogue',[]) if d.get('text','').strip()]
     clips=manifest.get('clips',[])
     if not expected or len(clips)!=len(expected):raise ValueError('Exactly one approved clip per dialogue segment required')
     speakers={d['speaker'] for _,d in expected}

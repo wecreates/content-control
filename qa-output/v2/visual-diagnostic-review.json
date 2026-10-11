@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "NEEDS_CREATIVE_WORK",
+  "publication_enabled": false,
+  "source_commit": "64c23c7f95f9830bcfc92ec98ace2fcd25e2d458",
+  "workflow_run": 38153345609,
+  "artifact_id": 11707925503,
+  "reviewed_at": "2026-10-11T15:59:08.808164+00:00",
+  "coverage": {
+    "sampled_frames": 8,
+    "full_video_watched": false,
+    "audio_reviewed": false,
+    "timing_and_pacing_verified": false
+  },
+  "frames": [
+    {
+      "frame": 1152,
+      "seconds": 48.0,
+      "sha256": "fe77d02fba5276bac05fe7d04fb6cbadbea7e425f97ecb2a5fe065fe16ea9740"
+    },
+    {
+      "frame": 120,
+      "seconds": 5.0,
+      "sha256": "9753581f793fb324c17986f0fd87a9ed08fbf5f95a65292e2cdc8d2fdc888fa0"
+    },
+    {
+      "frame": 24,
+      "seconds": 1.0,
+      "sha256": "0a455256b5bec71ca03f76d2f89005e618dcd4cdced8bd9936e588b3c1a1c550"
+    },
+    {
+      "frame": 240,
+      "seconds": 10.0,
+      "sha256": "3fdbe2038e16656382251ca8c8f259c623a45e07d5b289456c158be90b145adf"
+    },
+    {
+      "frame": 432,
+      "seconds": 18.0,
+      "sha256": "670b65b44d827f366a170c86cd8c162b501104f191c7fbe5fd3d15ad15bf84c4"
+    },
+    {
+      "frame": 600,
+      "seconds": 25.0,
+      "sha256": "71e93ef617b678406813ba13c441690bcc529ce12c87fb6d0a759a5b1034e406"
+    },
+    {
+      "frame": 792,
+      "seconds": 33.0,
+      "sha256": "5a283d23ba1105248168bb1e5f28c622d812f1aae9ba192a94ce6894804f12c7"
+    },
+    {
+      "frame": 984,
+      "seconds": 41.0,
+      "sha256": "310c1ce0c6ba98502c4a018c035ae46b6c5afd68491009fa013994c6c6a74391"
+    }
+  ],
+  "observations": [
+    "Eight sampled frames rendered successfully with white backgrounds and recurring black stick figures.",
+    "Sampled titles were readable, with no visible text or character clipping.",
+    "No internal scene IDs or camera instructions visible in sampled frames.",
+    "Generic floating props and repeated poses do not yet demonstrate the card-battle story."
+  ],
+  "remaining": [
+    "Approved text-matching character audio is absent.",
+    "Music and sound effects are not yet mixed in the V2 workflow.",
+    "Goblin spoken dialogue conflicts with its nonverbal character profile.",
+    "Full-video creative review and final visual-parity approval are outstanding."
+  ],
+  "reference_metric_limitation": "Current reference frames have beige backgrounds; white-pixel fraction penalizes the explicitly required white background. Threshold has not been relaxed.",
+  "voice_access": {
+    "connected_library_matching_clips": 0,
+    "connected_character_profiles": 0,
+    "connector_estimate_credits": 11,
+    "available_connector_credits": 1,
+    "estimate_scope": "Combined script estimate; per-clip rounding may cost more; exact connector Sonic version unverified.",
+    "provider_calls": 0
+  }
+}

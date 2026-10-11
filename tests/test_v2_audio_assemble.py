@@ -16,6 +16,16 @@ class AudioAssemblyTests(unittest.TestCase):
   r=self.run_assembly();self.assertEqual(r['duration'],4);self.assertEqual(r['dialogue'][1]['start'],2)
   with wave.open(str(self.root/'out.wav'),'rb') as w:
    w.setpos(44100);self.assertEqual(w.readframes(1),b'\0'*4);w.setpos(88200);self.assertNotEqual(w.readframes(1),b'\0'*4)
+ def test_scene_order_does_not_shift_voice_timing(self):
+  self.cc['scenes'].reverse()
+  r=self.run_assembly();self.assertEqual([x['start'] for x in r['dialogue']],[0,2])
+ def test_current_script_respects_nonverbal_goblin_profile(self):
+  import json
+  cc=json.loads((Path(__file__).resolve().parents[1]/'projects/v2/amex-vs-chase-boss-fight/ccsd.json').read_text())
+  for s in cc['scenes']:
+   for d in s.get('audio',{}).get('dialogue',[]):
+    self.assertNotEqual(d['speaker'],'cashback_goblin')
+    self.assertIn(d['speaker'],[c['id'] for c in s['characters']])
  def test_reject_crossed_voice(self):
   self.m['clips'][1]['voice_id']='voice-a'
   with self.assertRaisesRegex(ValueError,'voice'):self.run_assembly()
