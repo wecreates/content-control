@@ -1,0 +1,65 @@
+name: Save social link
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: Social post or video URL to save in the existing queue
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: social-link-intake-main
+  cancel-in-progress: false
+  queue: max
+jobs:
+  save:
+    if: github.ref == 'refs/heads/main' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PUBLICATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate and persist the canonical queue
+        env:
+          SOURCE_URL: ${{ inputs.source_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name content-control-intake
+          git config user.email actions@users.noreply.github.com
+          saved=false
+          for attempt in 1 2 3; do
+            git fetch origin main
+            # Disposable Actions checkout only: recompute against latest queue.
+            git reset --hard origin/main
+            node scripts/social_link_intake.mjs > /tmp/social-intake-receipt.json
+            git add -- capability-queue.json
+            if git diff --cached --quiet; then
+              saved=true
+              break
+            fi
+            git commit -m 'Save authorized social link in canonical intake queue'
+            if git push origin HEAD:main; then
+              saved=true
+              break
+            fi
+          done
+          if [ "$saved" != true ]; then
+            echo 'Durable queue write failed after three attempts.' >&2
+            exit 1
+          fi
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const receipt=JSON.parse(fs.readFileSync('/tmp/social-intake-receipt.json','utf8'));
+          const status=receipt.created?'Saved in existing queue':'Already in existing queue';
+          // Canonical URL only; never echo the untrusted original input.
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`${status}\n\n${receipt.source_url}\n\nPublication remains disabled. Retrieval and analysis have not run.\n`);
+          JS

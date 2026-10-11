@@ -76,3 +76,43 @@ test('connection health rejects invalid, future, stale and malformed expiry evid
  assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z'},now).status,'previously_verified');
  assert.equal(planTokenRenewal({renewal_supported:'false',expires_at:'2026-10-11'},now).action,'reauthorization_required');
 });
+
+test('full analysis requires known media duration and contiguous evidence-backed AV coverage',()=>{
+ const {queue,record}=addIntake(null,reel);const opts={allowedProjects:['Content Control']};
+ const f={project:'Content Control',category:'Content-production technique',summary:'Continuous observed analysis',basis:'audiovisual',evidence_refs:['av1'],full_analysis:true};
+ record.evidence=[{id:'av1',kind:'audiovisual',verified:true,start_seconds:0,end_seconds:4},{id:'av2',kind:'audiovisual',verified:true,start_seconds:4,end_seconds:10}];
+ record.coverage={full_video:true,full_audio:true,segments:[{start_seconds:0,end_seconds:4,video:true,audio:true,evidence_ref:'av1'},{start_seconds:4,end_seconds:10,video:true,audio:true,evidence_ref:'av2'}]};
+ assert.throws(()=>routeFinding(queue,record.id,f,opts),/duration/);
+ record.evidence.push({id:'duration',kind:'media_probe',verified:true,duration_seconds:10});record.coverage.duration_evidence_ref='duration';
+ assert.equal(routeFinding(queue,record.id,f,opts).finding.full_analysis,true);
+ for(const change of [()=>record.coverage.segments[1].start_seconds=4.1,()=>record.coverage.segments[1].end_seconds=9,()=>record.coverage.segments[1].evidence_ref='missing']) {
+  const saved=structuredClone(record.coverage);change();assert.throws(()=>routeFinding(queue,record.id,f,opts));record.coverage=saved;
+ }
+ assert.equal(queue.queue[0].findings.length,0);
+});
+test('finding retries return persisted records and conflicting IDs cannot fabricate a result',()=>{
+ const {queue,record}=addIntake(null,reel);record.evidence=[{id:'m',verified:true,kind:'metadata'}];
+ const f={id:'fixed',project:'Content Control',category:'Marketing strategy',summary:'Observed metadata',basis:'metadata',evidence_refs:['m']};const options={allowedProjects:['Content Control']};
+ const first=routeFinding(queue,record.id,f,options);first.finding.status='reviewed_internally';
+ const retry=routeFinding(first.queue,record.id,f,options);
+ assert.equal(retry.created,false);assert.equal(retry.finding.status,'reviewed_internally');assert.equal(retry.finding,retry.record.findings[0]);assert.equal(retry.record.findings.length,1);
+ assert.throws(()=>routeFinding(first.queue,record.id,{...f,summary:'Different unsupported claim'},options),/conflicts/);
+ const automatic=routeFinding(queue,record.id,{...f,id:undefined},options);const automaticRetry=routeFinding(automatic.queue,record.id,{...f,id:undefined},options);assert.equal(automaticRetry.created,false);
+});
+test('verified retrieval never silently promotes a creator claim to a verified fact',()=>{
+ const {queue,record}=addIntake(null,reel);record.evidence=[{id:'m',kind:'metadata',verified:true,url:reel,summary:'Creator says revenue doubled'}];
+ const f={project:'Content Control',category:'Business opportunity',summary:'Creator says revenue doubled',basis:'metadata',evidence_refs:['m']};const options={allowedProjects:['Content Control']};
+ assert.equal(routeFinding(queue,record.id,f,options).finding.claim_status,'observation');
+ assert.equal(routeFinding(queue,record.id,{...f,claim_status:'creator_claim'},options).finding.claim_status,'creator_claim');
+ const fact={...f,claim_status:'independently_verified',claim_id:'revenue-doubled',verification_refs:['m']};
+ assert.throws(()=>routeFinding(queue,record.id,fact,options),/independently/);
+ record.evidence.push({id:'fact',kind:'metadata',verified:true,url:'https://example.org/audit',verification_scope:'fact_check',supports_claim_ids:['revenue-doubled']});
+ assert.equal(routeFinding(queue,record.id,{...fact,verification_refs:['fact']},options).finding.claim_status,'independently_verified');
+ assert.throws(()=>routeFinding(queue,record.id,{...fact,claim_id:'different-claim',verification_refs:['fact']},options));
+ record.evidence[1].url=reel+'?tracking=1';assert.throws(()=>routeFinding(queue,record.id,{...fact,verification_refs:['fact']},options));
+});
+test('legacy findings and queue data survive idempotent routing without schema rewrites',async()=>{
+ const queue=JSON.parse(await fs.readFile(new URL('../capability-queue.json',import.meta.url)));const record=queue.queue.find(r=>r.findings?.length);const before=structuredClone(queue);const finding=record.findings[0];
+ const result=routeFinding(queue,record.id,finding,{allowedProjects:[finding.project]});
+ assert.deepEqual(result.queue,before);assert.equal(result.finding,result.record.findings[0]);assert.equal(result.created,false);
+});

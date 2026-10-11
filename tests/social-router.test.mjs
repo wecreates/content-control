@@ -20,6 +20,13 @@ test('HTTP status returns real queue and explicit locked/missing revenue state',
  const r=await fetch(base+'/status');assert.equal(r.status,200);assert.equal(r.headers.get('cache-control'),'no-store');
  const d=await r.json();assert.equal(d.records[0].id,'existing');assert.equal(d.publication_enabled,false);assert.equal(d.external_actions_enabled,false);assert.equal(d.automatic_token_renewal,false);assert.equal(d.revenue.net_profit,null);
 }));
+test('status does not promote full-coverage flags without recorded duration evidence',()=>fixture(async(base,root)=>{
+ const file=path.join(root,'capability-queue.json');const q=JSON.parse(await fs.readFile(file,'utf8'));
+ q.queue[0].coverage={full_video:true,full_audio:true};await fs.writeFile(file,JSON.stringify(q));
+ const d=await (await fetch(base+'/status')).json();assert.equal(d.records[0].coverage_validation.verified,false);
+ assert.equal(d.intake_workflow_url,'https://github.com/wecreates/content-control/actions/workflows/social-link-intake.yml');
+ assert.deepEqual(JSON.parse(await fs.readFile(file,'utf8')),q);
+}));
 test('HTTP validation canonicalizes duplicates without persisting a new job',()=>fixture(async(base,root)=>{
  const before=await fs.readFile(path.join(root,'capability-queue.json'),'utf8');
  const r=await fetch(base+'/validate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:'https://instagram.com/p/DeUlQTQxv5O/?utm_source=test'})});
@@ -34,10 +41,10 @@ test('external action endpoints reject all mutation methods despite enabled envi
  const retry=await fetch(base+'/publish',{method:'POST'});assert.equal(retry.status,403);
  for(const action of ['publish','schedule','messages','ads','unknown'])assert.equal((await fetch(base+'/'+action)).status,404);
 }));
-test('intake explicitly fails without a durable authenticated writer and does not mutate',()=>fixture(async(base,root)=>{
+test('public intake directs to authenticated workflow without mutating',()=>fixture(async(base,root)=>{
  const before=await fs.readFile(path.join(root,'capability-queue.json'),'utf8');
  const r=await fetch(base+'/intake',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:'https://youtu.be/abcdefghijk'})});
- const d=await r.json();assert.equal(r.status,503);assert.equal(d.saved,false);assert.equal(d.error,'AUTHENTICATED_DURABLE_WRITER_NOT_CONFIGURED');assert.equal(await fs.readFile(path.join(root,'capability-queue.json'),'utf8'),before);
+ const d=await r.json();assert.equal(r.status,503);assert.equal(d.saved,false);assert.equal(d.error,'DASHBOARD_WRITE_DISABLED');assert.equal(await fs.readFile(path.join(root,'capability-queue.json'),'utf8'),before);
 }));
 test('missing status data returns 503 rather than empty successful dashboard',()=>fixture(async(base)=>{const r=await fetch(base+'/status');assert.equal(r.status,503);assert.equal((await r.json()).publication_enabled,false);},{missing:true}));
 
@@ -80,7 +87,7 @@ test('public status projects connection fields and strips explicit nested creden
 }));
 
 test('Money Factory includes secondary Watch references and validates their recorded evidence',()=>fixture(async(base,root)=>{
- const queue={queue:[{id:'reel',coverage:{sampled_frame_seconds:[4]},evidence:[{id:'frame',kind:'sampled_frame',seconds:4,verified:true}],findings:[{id:'watch',category:'Content-production technique',project:'Content Control',summary:'Observed visual alternation',basis:'sampled_frame',evidence_refs:['frame'],full_analysis:false}]}]};
+ const queue={queue:[{id:'reel',coverage:{sampled_frame_seconds:[4]},evidence:[{id:'frame',kind:'sampled_frame',seconds:4,verified:true}],findings:[{id:'watch',category:'Content-production technique',project:'Content Control',summary:'Observed visual alternation',basis:'sampled_frame',evidence_refs:['frame'],full_analysis:false,publication_enabled:false}]}]};
  await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify(queue));
  const data=await (await fetch(base+'/project-links')).json();
  assert.equal(data.references.length,1);

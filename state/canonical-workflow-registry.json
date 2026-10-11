@@ -73,6 +73,7 @@
     ".github/workflows/exact-av-review.yml",
     ".github/workflows/instagram-reel-bridge.yml",
     ".github/workflows/migrate-free-assets.yml",
+    ".github/workflows/social-link-intake.yml",
     ".github/workflows/source-refresh.yml",
     ".github/workflows/v5-400-verification.yml",
     ".github/workflows/v5-artifact-runtime.yml",

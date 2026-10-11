@@ -1,7 +1,8 @@
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal,routeFinding} from './social-intake.js';
+import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal,routeFinding,fullAnalysisCoverage} from './social-intake.js';
+export const INTAKE_WORKFLOW_URL='https://github.com/wecreates/content-control/actions/workflows/social-link-intake.yml';
 
 // Public status is a projection, never a serialization of authorization state.
 const SECRET_FIELDS=new Set(['accesstoken','refreshtoken','idtoken','clientsecret','apikey','token','tokens','secret','secrets','password','authorization','cookie','cookies','credentials','authentication']);
@@ -51,7 +52,7 @@ export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
       const [queue,capabilities]=await Promise.all([read('capability-queue.json'),read('social-capabilities.json')]);
       if(!Array.isArray(queue.queue)||!Array.isArray(capabilities.platforms))throw Error('schema');
       const connection_health=capabilities.platforms.map(p=>({platform:p.id,...connectionStatus(p.connection),renewal:planTokenRenewal(p.connection||{})}));
-      res.json({connection_health,publication_enabled:false,external_actions_enabled:false,storage:'versioned_existing_repository_queue',intake_mode:'chat_assisted_persistent; dashboard_validation_only',automatic_token_renewal:false,capabilities:publicStatusData(capabilities),records:publicStatusData(queue.queue),checked_at:new Date().toISOString(),connection_checks_are:'dated_observations_not_live_provider_polling',revenue:{traffic:null,leads:null,sales:null,costs:null,refunds:null,net_profit:null,reason:'No connected attributed financial feed'}});
+      res.json({connection_health,publication_enabled:false,external_actions_enabled:false,storage:'versioned_existing_repository_queue',intake_mode:'owner_authenticated_github_workflow; dashboard_validation_only',intake_workflow_url:INTAKE_WORKFLOW_URL,automatic_token_renewal:false,capabilities:publicStatusData(capabilities),records:publicStatusData(queue.queue.map(record=>({...record,coverage_validation:fullAnalysisCoverage(record)}))),checked_at:new Date().toISOString(),connection_checks_are:'dated_observations_not_live_provider_polling',revenue:{traffic:null,leads:null,sales:null,costs:null,refunds:null,net_profit:null,reason:'No connected attributed financial feed'}});
     } catch {res.status(503).json({error:'STATUS_SOURCE_UNAVAILABLE',publication_enabled:false});}
   });
   router.get('/project-links',async(req,res)=>{
@@ -76,12 +77,12 @@ export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
       let queue;
       try {queue=await read('capability-queue.json');if(!Array.isArray(queue.queue))throw Error('schema');} catch {return res.status(503).json({error:'QUEUE_SOURCE_UNAVAILABLE',publication_enabled:false});}
       const existing=queue.queue.find(r=>{try{return normalizeSocialUrl(r.source_url).canonical_id===normalized.canonical_id;}catch{return false;}});
-      res.json({...normalized,duplicate:Boolean(existing),record_id:existing?.id||null,saved:false,next_action:existing?'Existing intake found':'Submit this link in the project chat for authorized retrieval and durable intake',publication_enabled:false});
+      res.json({...normalized,duplicate:Boolean(existing),record_id:existing?.id||null,saved:false,intake_workflow_url:INTAKE_WORKFLOW_URL,next_action:existing?'Existing intake found':'Copy the canonical link, open secure intake, and run the workflow from your repository-owner GitHub account. Saving a link does not retrieve or analyze its video.',publication_enabled:false});
     } catch {res.status(400).json({error:'INVALID_OR_UNSUPPORTED_CONTENT_URL',publication_enabled:false});}
   });
-  // Render free storage is ephemeral, and this deployment has no authenticated
-  // durable-write provider. Never acknowledge a successful save into ephemeral RAM.
-  router.post('/intake',(req,res)=>res.status(503).json({error:'AUTHENTICATED_DURABLE_WRITER_NOT_CONFIGURED',saved:false,publication_enabled:false}));
+  // Dashboard storage remains read-only. Durable writes require the owner-authenticated
+  // GitHub workflow; never acknowledge a save into ephemeral RAM.
+  router.post('/intake',(req,res)=>res.status(503).json({error:'DASHBOARD_WRITE_DISABLED',intake_workflow_url:INTAKE_WORKFLOW_URL,saved:false,publication_enabled:false}));
   router.use((req,res)=>{
     if(req.method!=='GET'&&req.method!=='HEAD') {
       try {denyExternalAction(req.path);} catch(e){return res.status(403).json({error:e.code,publication_enabled:false});}

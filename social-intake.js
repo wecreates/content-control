@@ -47,9 +47,35 @@ export function addIntake(queue,raw,options={}) {
   let record=copy.queue.find(r=>r.canonical_id===n.canonical_id || (()=>{try{return normalizeSocialUrl(r.source_url).canonical_id===n.canonical_id;}catch{return false;}})());
   if(record) return {queue:copy,record,created:false};
   record={id:`social-${n.canonical_id.replace(/[^a-zA-Z0-9_-]/g,'-')}`,...n,source_type:'social_link',status:'pending_authorized_retrieval',created_at:options.now||new Date().toISOString(),publication_enabled:false,coverage:{full_video:false,full_audio:false,segments:[],transcript_segments:[],sampled_frame_seconds:[]},evidence:[],findings:[],retrieval_attempts:[],analysis_status:'not_analyzed'};
-  copy.queue.push(record);return {queue:copy,record,created:true};
+  copy.queue.push(record);copy.updated_at=record.created_at;return {queue:copy,record,created:true};
 }
 export const upsertIntake=addIntake;
+function assertCompleteCoverage(record) {
+  const c=record.coverage;
+  if(c?.full_video!==true||c?.full_audio!==true)fail('Complete audiovisual coverage required for full analysis');
+  const probe=record.evidence?.find(e=>e.id===c.duration_evidence_ref);
+  if(!probe||probe.kind!=='media_probe'||probe.verified!==true||!Number.isFinite(probe.duration_seconds)||probe.duration_seconds<=0)fail('Verified source media duration evidence required');
+  const duration=probe.duration_seconds;
+  const segments=(c.segments||[]).filter(s=>s.video===true&&s.audio===true);
+  const verified=[];
+  for(const segment of segments) {
+    const {start_seconds:start,end_seconds:end}=segment;
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end<=start||end>duration)fail('Invalid full-analysis coverage segment');
+    const evidence=record.evidence?.find(e=>e.id===segment.evidence_ref);
+    if(!evidence||evidence.kind!=='audiovisual'||evidence.verified!==true||!Number.isFinite(evidence.start_seconds)||!Number.isFinite(evidence.end_seconds)||evidence.start_seconds<0||evidence.start_seconds>start||evidence.end_seconds<end||evidence.end_seconds>duration)fail('Full coverage segment lacks recorded audiovisual evidence');
+    verified.push({start,end});
+  }
+  let covered=0;
+  for(const s of verified.sort((a,b)=>a.start-b.start)) {
+    if(s.start>covered)fail('Gap in full audiovisual coverage');
+    covered=Math.max(covered,s.end);
+  }
+  if(covered!==duration)fail('Full audiovisual coverage does not reach verified duration');
+}
+export function fullAnalysisCoverage(record) {
+  try {assertCompleteCoverage(record);return {verified:true,scope:'recorded_duration_and_contiguous_audiovisual_evidence'};}
+  catch {return {verified:false,reason:'Complete duration-bound audiovisual evidence has not been established'};}
+}
 export function routeFinding(queue,id,finding,{allowedProjects=[]}={}) {
   const copy=structuredClone(queue), record=copy.queue.find(r=>r.id===id);
   if(!record) fail('Unknown intake record');
@@ -58,6 +84,21 @@ export function routeFinding(queue,id,finding,{allowedProjects=[]}={}) {
   if(typeof finding.summary!=='string'||!finding.summary.trim())fail('Finding summary required');
   if(!['metadata','audiovisual','transcript','sampled_frame'].includes(finding.basis))fail('Explicit evidence basis required');
   if(!Array.isArray(finding.evidence_refs)||!finding.evidence_refs.length)fail('Recorded evidence references required');
+  const claimStatus=finding.claim_status||'observation';
+  if(!['observation','creator_claim','independently_verified'].includes(claimStatus))fail('Explicit supported claim status required');
+  const verificationRefs=finding.verification_refs||[];
+  if(!Array.isArray(verificationRefs))fail('Invalid verification references');
+  if(claimStatus==='independently_verified') {
+    if(typeof finding.claim_id!=='string'||!finding.claim_id.trim()||!verificationRefs.length)fail('Claim-specific independent verification required');
+    for(const ref of verificationRefs) {
+      const e=record.evidence?.find(e=>e.id===ref);
+      let url;try{url=new URL(e?.url);}catch{fail('Independent verification source URL required');}
+      let sameSource;try{sameSource=normalizeSocialUrl(url.href).canonical_id===normalizeSocialUrl(record.source_url).canonical_id;}catch{const original=new URL(record.source_url);sameSource=url.hostname.replace(/^www\./,'')===original.hostname.replace(/^www\./,'')&&url.pathname.replace(/\/$/,'')===original.pathname.replace(/\/$/,'');}
+      if(e.verified!==true||e.kind!=='metadata'||e.verification_scope!=='fact_check'||(!Array.isArray(e.supports_claim_ids)||!e.supports_claim_ids.includes(finding.claim_id))||url.protocol!=='https:'||url.username||url.password||sameSource)fail('Evidence does not independently verify this claim');
+    }
+  } else if(verificationRefs.length)fail('Verification references require independently_verified status');
+  const evidenceIds=(record.evidence||[]).map(e=>e.id);
+  if(new Set(evidenceIds).size!==evidenceIds.length)fail('Ambiguous duplicate evidence identifiers');
   for(const ref of finding.evidence_refs){
     const e=record.evidence?.find(e=>e.id===ref);
     if(!e || e.verified!==true)fail('Unverified or missing recorded evidence');
@@ -76,13 +117,24 @@ export function routeFinding(queue,id,finding,{allowedProjects=[]}={}) {
       if(!covered)fail('Evidence timestamps outside verified audiovisual coverage');
     }
   }
-  if(finding.full_analysis===true && (finding.basis!=='audiovisual'||record.coverage?.full_video!==true||record.coverage?.full_audio!==true))fail('Complete audiovisual coverage required for full analysis');
-  const routed={id:finding.id||crypto.randomUUID(),category:finding.category,project:finding.project,summary:finding.summary,basis:finding.basis,evidence_refs:[...finding.evidence_refs],full_analysis:finding.full_analysis===true,publication_enabled:false,status:'internal_review'};
+  if(finding.full_analysis===true) {if(finding.basis!=='audiovisual')fail('Complete audiovisual coverage required for full analysis');assertCompleteCoverage(record);}
+  const payload={category:finding.category,project:finding.project,summary:finding.summary,basis:finding.basis,evidence_refs:[...new Set(finding.evidence_refs)].sort(),full_analysis:finding.full_analysis===true,claim_status:claimStatus,claim_id:finding.claim_id||null,verification_refs:[...new Set(verificationRefs)].sort()};
+  const stableId='finding-'+crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0,24);
+  const routed={id:finding.id||stableId,...payload,publication_enabled:false,status:'internal_review'};
   record.findings??=[];
-  if(!record.findings.some(f=>f.id===routed.id)) record.findings.push(routed);
+  const existing=record.findings.find(f=>f.id===routed.id);
+  if(existing) {
+    const comparable={category:existing.category,project:existing.project,summary:existing.summary,basis:existing.basis,evidence_refs:[...new Set(existing.evidence_refs||[])].sort(),full_analysis:existing.full_analysis===true,claim_status:existing.claim_status||'observation',claim_id:existing.claim_id||null,verification_refs:[...new Set(existing.verification_refs||[])].sort()};
+    if(JSON.stringify(comparable)!==JSON.stringify(payload))fail('Finding ID conflicts with persisted finding');
+    if(existing.publication_enabled!==false)fail('Persisted finding publication is not disabled');
+    record.publication_enabled=false;
+    return {queue:copy,record,finding:existing,created:false};
+  }
+  record.findings.push(routed);
   record.publication_enabled=false;
-  return {queue:copy,record,finding:routed};
+  return {queue:copy,record,finding:routed,created:true};
 }
+
 export function denyExternalAction(action) {const error=new Error(`External action disabled: ${String(action)}`);error.code='PUBLICATION_DISABLED';throw error;}
 export function connectionStatus(connection={},now=Date.now()) {
   if(!connection || typeof connection!=='object')return {status:'unverified',read_verified:false};
