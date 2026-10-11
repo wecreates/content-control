@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "status": "BLOCKED_PENDING_RENDERED_REVIEW",
+  "publication_enabled": false,
+  "production_approved": false,
+  "reviewed_source": {
+    "run_id": 38157282127,
+    "commit": "e491d87c5481df3de096754e6f098d5dbcc64190",
+    "duration_seconds": 50,
+    "coverage": "eight diagnostic stills, actual speech transcription and automated full-file motion/decode checks; not complete audiovisual viewing"
+  },
+  "verified_on_reviewed_source": {
+    "free_voice_generation": true,
+    "separate_audio_stems": true,
+    "transcript_qa": "PASS",
+    "sequence_similarity": 0.987013,
+    "sampled_outer_clipping_observed": false,
+    "sampled_caption_prop_collisions_observed": false,
+    "motion_gate": "FAIL",
+    "style_parity": "FAIL"
+  },
+  "subsequent_changes_require_rerender": [
+    "35.04-second pacing",
+    "face/hand intersection correction",
+    "wider caption wrapping",
+    "V2 floor removal",
+    "causal animation follow-through"
+  ],
+  "unresolved_issues": [
+    "Full audiovisual creative review unavailable in current verified free capabilities",
+    "Full audiovisual competitor comparison unavailable; metadata alone is insufficient",
+    "Full-beat captions can expose punchlines before the spoken delivery",
+    "Latest render must pass motion and style checks before approval"
+  ],
+  "handoff": "Do not invite the user to watch an unapproved draft."
+}

@@ -4,12 +4,12 @@ import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
-import {V2BattleAction} from "./V2BattleAction";
-import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose} from "./StudioLayout.mjs";
+import {V2BattleAction,v2WalletMotion} from "./V2BattleAction";
+import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
-const TextBlock=({text,y,height=144,size=34})=>{
- const layout=fitText(text,592,height,size);
+const TextBlock=({text,y,height=144,size=34,caption=false})=>{
+ const layout=(caption?fitCaption:fitText)(text,592,height,size);
  return <text x="360" y={y} textAnchor="middle" fontFamily="Arial Black,Arial" fontWeight="700" fontSize={layout.size} fill="#111">{layout.lines.map((line,i)=><tspan key={i} x="360" dy={i?layout.lineHeight:0}>{line}</tspan>)}</text>;
 };
 export const StudioAnimaticComposition=({ccsd})=>{
@@ -32,10 +32,10 @@ export const StudioAnimaticComposition=({ccsd})=>{
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?dialogue:title} y={105} height={175} size={34}/>
+   <TextBlock text={battle?dialogue:title} y={105} height={175} size={34} caption={!!battle}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
-    <Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>
+    {!battle?<Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>:null}
     {impactAmount>0?<g opacity={impactAmount*.6} stroke="#111" strokeWidth="3">{[-1,1].map(side=><g key={side}><line x1={360+side*230} y1="635" x2={360+side*265} y2="610"/><line x1={360+side*235} y1="675" x2={360+side*275} y2="675"/></g>)}</g>:null}
     {battle?<V2BattleAction scene={s} scenes={ccsd.scenes} time={t}/>:props.map((prop,i)=>{const slot=objects[i];return <PropIcon key={i} id={normalizePropId(prop.id)} x={slot.x} y={slot.y-Math.sin(p*Math.PI)*14} s={slot.scale} rotation={Math.sin(p*Math.PI)*(i%2?4:-4)}/>;})}
     {chars.map((ch,i)=>{
@@ -45,6 +45,12 @@ export const StudioAnimaticComposition=({ccsd})=>{
       const defaults={dave:'recoil',points_monk:'deadpan_point',cashback_goblin:'coin_scamper'};
       const m=resolveMotion(id,ch.motion_clip||ch.pose||defaults[id],p,emotion?.intensity??.8,true);
       if(battle){
+        if(battle==='trap'){
+          const start=beatScenes[0].start,end=beatScenes.at(-1).end;
+          const wallet=v2WalletMotion('trap',clamp((t-start)/(end-start))),a=wallet.rotation*Math.PI/180;
+          const anchor=x=>({x:(wallet.x+wallet.s*(x*Math.cos(a)-72*Math.sin(a))-slot.x)/slot.scale,y:(wallet.y+wallet.s*(x*Math.sin(a)+72*Math.cos(a))-slot.y)/slot.scale});
+          slot.leftHandTarget=anchor(-102);slot.rightHandTarget=anchor(102);
+        }
         if(battle==='finish'&&id==='dave'){
           const start=beatScenes[0].start,end=beatScenes.at(-1).end;
           Object.assign(m,v2VictoryPose(clamp((t-start)/(end-start))));

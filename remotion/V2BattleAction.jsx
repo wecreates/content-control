@@ -13,11 +13,23 @@ const Cape=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${
 const FeeJaw=({x,y,open=1,s=1})=><g transform={`translate(${x} ${y}) scale(${s})`}><text x="0" y="-80" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="31" fill={K}>FEE</text><g transform={`translate(0 ${-open*27})`}><path d="M-80-28Q0-90 80-28L60-5 40-28 20-5 0-28-20-5-40-28-60-5Z" fill={W} stroke={K} strokeWidth="5"/></g><g transform={`translate(0 ${open*27})`}><path d="M-80 28Q0 90 80 28L60 5 40 28 20 5 0 28-20 5-40 28-60 5Z" fill={W} stroke={K} strokeWidth="5"/></g></g>;
 const Button=({x,label,pressed=false})=><g><rect x={x-122} y="356" width="244" height="72" rx="12" fill={pressed?K:W} stroke={K} strokeWidth="5"/><text x={x} y="400" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="23" fill={pressed?W:K}>{label}</text></g>;
 
+export function v2WalletMotion(beat,p) {
+ if(beat==='finish'){
+  const lift=ease(clamp(p/.32)),settle=clamp((p-.32)/.28);
+  return {x:360,y:462+34*(1-lift)-Math.sin(settle*Math.PI)*10,s:1.3,rotation:0};
+ }
+ if(beat==='trap'){
+  const spill=clamp((p-.12)/.72),tilt=Math.sin(spill*Math.PI);
+  return {x:360,y:532-tilt*14,s:.54,rotation:-28*tilt};
+ }
+ return null;
+}
 export function V2BattleAction({scene,scenes,time}) {
  const beat=v2BattleBeat(scene.id);if(!beat)return null;
  const same=scenes.filter(s=>v2BattleBeat(s.id)===beat),start=Math.min(...same.map(s=>s.start)),end=Math.max(...same.map(s=>s.end));
  const p=clamp((time-start)/(end-start)),q=ease(p);
  const strike=clamp((p-.12)/.55),contact=Math.max(0,Math.sin(strike*Math.PI));
+ const rebound=ease(clamp((p-.67)/.33));
  return <g data-v2-beat={beat}>
   {beat==='cold-open'?<g>
    <Card x={175+q*32} y={375} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={375} label="AMEX" rotation={-q*12}/>
@@ -27,7 +39,7 @@ export function V2BattleAction({scene,scenes,time}) {
   </g>:null}
   {beat==='chase-strike'?<g>
    <Card x={180} y={366} label="CHASE"/><Card x={540} y={366} label="AMEX"/>
-   <Sword x={mix(250,435,strike)} y={480-contact*22} rotation={mix(-24,12,strike)} s={1.15}/>
+   <Sword x={mix(250,435,strike)-rebound*145} y={480-contact*22-rebound*36} rotation={mix(-24,12,strike)-rebound*42} s={1.15}/>
    <Wallet x={530+contact*18} y={530+contact*24} s={.38} rotation={contact*30}/>
    <Word size={26}>SWORD: HUGE. BUDGET: MISSING.</Word>
   </g>:null}
@@ -51,10 +63,10 @@ export function V2BattleAction({scene,scenes,time}) {
    <Word>NOT ON THE GUEST LIST.</Word>
   </g>:null}
   {beat==='trap'?<g>
-   <Button x={210} label="PANIC TAP" pressed={p>.35}/><Button x={510} label="CHECK VALUE"/>
-   <Wallet x={360} y={532} s={.54} rotation={p>.35?contact*10:0}/>
-   <path d={`M365 467L${mix(355,210,clamp(p/.35))} ${mix(466,423,clamp(p/.35))}`} stroke={K} strokeWidth="9" strokeLinecap="round"/>
-   {Array.from({length:5},(_,i)=>{const escape=clamp((p-.35)*1.54);return <Coin key={i} x={360+(i-2)*104*escape} y={535-Math.sin(escape*Math.PI)*(60+i%2*34)+escape*40} opacity={p>.35?1:0}/>;})}
+   <Button x={210} label="PANIC TAP" pressed={p>.12}/><Button x={510} label="CHECK VALUE"/>
+   <Wallet {...v2WalletMotion('trap',p)}/>
+   <path d={`M365 467L${mix(355,210,clamp(p/.12))} ${mix(466,423,clamp(p/.12))}`} stroke={K} strokeWidth="9" strokeLinecap="round"/>
+   {Array.from({length:5},(_,i)=>{const escape=clamp((p-.12)/.88);return <Coin key={i} x={360+(i-2)*104*escape} y={535-Math.sin(escape*Math.PI)*(60+i%2*34)+escape*40} s={1.5} opacity={p>.12?1:0}/>;})}
    <Word>THE BUTTON WAS A WARNING.</Word>
   </g>:null}
   {beat==='final-clash'?<g>
@@ -64,7 +76,7 @@ export function V2BattleAction({scene,scenes,time}) {
    {['NEEDS','COSTS','USE'].map((label,i)=><g key={label}><Word x={378} y={405+i*60} size={26}>{label}</Word><path d={`M282 ${394+i*60}l13 13 22-29`} pathLength="1" strokeDasharray="1" strokeDashoffset={1-clamp(p*3-i)} fill="none" stroke={K} strokeWidth="6"/></g>)}
   </g>:null}
   {beat==='finish'?<g>
-   <Wallet x={360} y={462} s={1.3} label="BUDGET"/>
+   <Wallet {...v2WalletMotion('finish',p)} label="BUDGET"/>
    <Sandwich x={360} y={mix(610,582,q)} s={.58}/>
    <path d="M205 550Q360 730 515 550" fill="none" stroke={K} strokeWidth="6" strokeLinecap="round"/>
    <Word y={349} size={28}>CAPE OPTIONAL.</Word>

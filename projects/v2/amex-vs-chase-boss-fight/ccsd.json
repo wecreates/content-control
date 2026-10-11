@@ -18,8 +18,8 @@
   "scenes": [
     {
       "id": "cold-open-a-1",
-      "start": 0,
-      "end": 1.5,
+      "start": 0.0,
+      "end": 1.375,
       "story": {
         "beat": "MY WALLET IS THE FINAL BOSS",
         "intent": "conflict attack",
@@ -64,8 +64,8 @@
     },
     {
       "id": "cold-open-b-1",
-      "start": 1.5,
-      "end": 3,
+      "start": 1.375,
+      "end": 2.75,
       "story": {
         "beat": "MY WALLET IS THE FINAL BOSS",
         "intent": "conflict attack",
@@ -101,8 +101,8 @@
     },
     {
       "id": "chase-strike-a-1",
-      "start": 3,
-      "end": 5.5,
+      "start": 2.75,
+      "end": 4.916666666666667,
       "story": {
         "beat": "TWO CARDS. ZERO BUDGET.",
         "intent": "escalation counter attack",
@@ -147,8 +147,8 @@
     },
     {
       "id": "chase-strike-b-1",
-      "start": 5.5,
-      "end": 8,
+      "start": 4.916666666666667,
+      "end": 7.083333333333333,
       "story": {
         "beat": "TWO CARDS. ZERO BUDGET.",
         "intent": "escalation counter attack",
@@ -184,8 +184,8 @@
     },
     {
       "id": "amex-counter-a-1",
-      "start": 8,
-      "end": 11,
+      "start": 7.083333333333333,
+      "end": 9.416666666666666,
       "story": {
         "beat": "DISTRACTED BY SHINY PERKS",
         "intent": "escalation counter power",
@@ -234,8 +234,8 @@
     },
     {
       "id": "amex-counter-b-1",
-      "start": 11,
-      "end": 14,
+      "start": 9.416666666666666,
+      "end": 11.75,
       "story": {
         "beat": "DISTRACTED BY SHINY PERKS",
         "intent": "escalation counter power",
@@ -275,8 +275,8 @@
     },
     {
       "id": "fee-drain-a-1",
-      "start": 14,
-      "end": 15.75,
+      "start": 11.75,
+      "end": 12.916666666666666,
       "story": {
         "beat": "THE TINY SANDWICH STRATEGY",
         "intent": "escalation rising power",
@@ -321,8 +321,8 @@
     },
     {
       "id": "fee-drain-a-2",
-      "start": 15.75,
-      "end": 17.5,
+      "start": 12.916666666666666,
+      "end": 14.125,
       "story": {
         "beat": "THE TINY SANDWICH STRATEGY",
         "intent": "escalation rising power",
@@ -358,8 +358,8 @@
     },
     {
       "id": "fee-drain-b-1",
-      "start": 17.5,
-      "end": 19.25,
+      "start": 14.125,
+      "end": 15.333333333333334,
       "story": {
         "beat": "THE TINY SANDWICH STRATEGY",
         "intent": "escalation rising power",
@@ -395,8 +395,8 @@
     },
     {
       "id": "fee-drain-b-2",
-      "start": 19.25,
-      "end": 21,
+      "start": 15.333333333333334,
+      "end": 16.5,
       "story": {
         "beat": "THE TINY SANDWICH STRATEGY",
         "intent": "escalation rising power",
@@ -432,8 +432,8 @@
     },
     {
       "id": "points-summon-a-1",
-      "start": 21,
-      "end": 23,
+      "start": 16.5,
+      "end": 17.833333333333332,
       "story": {
         "beat": "THE UNINVITED FEE",
         "intent": "escalation counter",
@@ -478,8 +478,8 @@
     },
     {
       "id": "points-summon-a-2",
-      "start": 23,
-      "end": 25,
+      "start": 17.833333333333332,
+      "end": 19.166666666666668,
       "story": {
         "beat": "THE UNINVITED FEE",
         "intent": "escalation counter",
@@ -515,8 +515,8 @@
     },
     {
       "id": "points-summon-b-1",
-      "start": 25,
-      "end": 27,
+      "start": 19.166666666666668,
+      "end": 20.541666666666668,
       "story": {
         "beat": "THE UNINVITED FEE",
         "intent": "escalation counter",
@@ -552,8 +552,8 @@
     },
     {
       "id": "points-summon-b-2",
-      "start": 27,
-      "end": 29,
+      "start": 20.541666666666668,
+      "end": 21.875,
       "story": {
         "beat": "THE UNINVITED FEE",
         "intent": "escalation counter",
@@ -589,8 +589,8 @@
     },
     {
       "id": "trap-a-1",
-      "start": 29,
-      "end": 31,
+      "start": 21.875,
+      "end": 22.833333333333332,
       "story": {
         "beat": "PANIC TAP OR CHECK VALUE",
         "intent": "conflict attack escalation",
@@ -635,8 +635,8 @@
     },
     {
       "id": "trap-a-2",
-      "start": 31,
-      "end": 33,
+      "start": 22.833333333333332,
+      "end": 23.791666666666668,
       "story": {
         "beat": "PANIC TAP OR CHECK VALUE",
         "intent": "conflict attack escalation",
@@ -672,8 +672,8 @@
     },
     {
       "id": "trap-b-1",
-      "start": 33,
-      "end": 35,
+      "start": 23.791666666666668,
+      "end": 24.791666666666668,
       "story": {
         "beat": "PANIC TAP OR CHECK VALUE",
         "intent": "conflict attack escalation",
@@ -709,8 +709,8 @@
     },
     {
       "id": "trap-b-2",
-      "start": 35,
-      "end": 37,
+      "start": 24.791666666666668,
+      "end": 25.75,
       "story": {
         "beat": "PANIC TAP OR CHECK VALUE",
         "intent": "conflict attack escalation",
@@ -746,8 +746,8 @@
     },
     {
       "id": "final-clash-a-1",
-      "start": 37,
-      "end": 39,
+      "start": 25.75,
+      "end": 27.083333333333332,
       "story": {
         "beat": "THE CHECKLIST WINS",
         "intent": "escalation battle payoff",
@@ -796,8 +796,8 @@
     },
     {
       "id": "final-clash-a-2",
-      "start": 39,
-      "end": 41,
+      "start": 27.083333333333332,
+      "end": 28.375,
       "story": {
         "beat": "THE CHECKLIST WINS",
         "intent": "escalation battle payoff",
@@ -837,8 +837,8 @@
     },
     {
       "id": "final-clash-b-1",
-      "start": 41,
-      "end": 43,
+      "start": 28.375,
+      "end": 29.666666666666668,
       "story": {
         "beat": "THE CHECKLIST WINS",
         "intent": "escalation battle payoff",
@@ -878,8 +878,8 @@
     },
     {
       "id": "final-clash-b-2",
-      "start": 43,
-      "end": 45,
+      "start": 29.666666666666668,
+      "end": 31.0,
       "story": {
         "beat": "THE CHECKLIST WINS",
         "intent": "escalation battle payoff",
@@ -919,8 +919,8 @@
     },
     {
       "id": "finish-a-1",
-      "start": 45,
-      "end": 47.5,
+      "start": 31.0,
+      "end": 33.0,
       "story": {
         "beat": "BUDGET WITH A SIDE OF SANDWICH",
         "intent": "payoff victory finish",
@@ -965,8 +965,8 @@
     },
     {
       "id": "finish-b-1",
-      "start": 47.5,
-      "end": 50,
+      "start": 33.0,
+      "end": 35.041666666666664,
       "story": {
         "beat": "BUDGET WITH A SIDE OF SANDWICH",
         "intent": "payoff victory finish",
@@ -1012,16 +1012,81 @@
     "source": "existing_owned_assets",
     "cue_seconds": [
       0.5,
-      7,
-      13.5,
-      20,
-      27,
-      34,
-      41,
-      48
+      7.5,
+      14,
+      22.25,
+      28.5,
+      34.5
     ],
     "music_role": "quiet continuous backing below dialogue",
     "sfx_role": "sparse physical impacts and final callback; never spoken",
     "listening_review": "pending"
+  },
+  "pacing_revision": {
+    "reason": "Replace long silent gaps with measured speech plus short breaths; no dialogue acceleration",
+    "source_run": "38157282127",
+    "fps": 24,
+    "duration_frames": 841,
+    "duration_seconds": 35.041666666666664,
+    "speech_seconds": 31.3,
+    "windows": [
+      {
+        "beat": "cold-open",
+        "start": 0.0,
+        "end": 2.75,
+        "measured_speech_seconds": 2.275,
+        "breath_seconds": 0.4750000000000001
+      },
+      {
+        "beat": "chase-strike",
+        "start": 2.75,
+        "end": 7.083333333333333,
+        "measured_speech_seconds": 3.85,
+        "breath_seconds": 0.48333333333333295
+      },
+      {
+        "beat": "amex-counter",
+        "start": 7.083333333333333,
+        "end": 11.75,
+        "measured_speech_seconds": 4.2,
+        "breath_seconds": 0.4666666666666668
+      },
+      {
+        "beat": "fee-drain",
+        "start": 11.75,
+        "end": 16.5,
+        "measured_speech_seconds": 4.3,
+        "breath_seconds": 0.4500000000000002
+      },
+      {
+        "beat": "points-summon",
+        "start": 16.5,
+        "end": 21.875,
+        "measured_speech_seconds": 4.9,
+        "breath_seconds": 0.47499999999999964
+      },
+      {
+        "beat": "trap",
+        "start": 21.875,
+        "end": 25.75,
+        "measured_speech_seconds": 3.4,
+        "breath_seconds": 0.4750000000000001
+      },
+      {
+        "beat": "final-clash",
+        "start": 25.75,
+        "end": 31.0,
+        "measured_speech_seconds": 4.8,
+        "breath_seconds": 0.4500000000000002
+      },
+      {
+        "beat": "finish",
+        "start": 31.0,
+        "end": 35.041666666666664,
+        "measured_speech_seconds": 3.575,
+        "breath_seconds": 0.4666666666666668
+      }
+    ],
+    "review_status": "RENDER_VERIFICATION_PENDING"
   }
 }

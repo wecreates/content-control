@@ -41,7 +41,7 @@ export function v2VictoryPose(progress) {
 export function v2SceneActor(beat,id,index,count) {
   const slots={
     'cold-open':{x:190,y:680,scale:1.1,rightHandTarget:{x:78,y:-110},mood:'shock'},
-    'chase-strike':{x:540,y:680,scale:1,leftHandTarget:{x:-12,y:-120},mood:'deadpan'},
+    'chase-strike':{x:600,y:715,scale:1,leftHandTarget:{x:-72,y:-155},mood:'deadpan'},
     'fee-drain':{x:155,y:710,scale:1,rightHandTarget:{x:90,y:-145},mood:'panic'},
     'points-summon':{x:360,y:745,scale:1,leftHandTarget:{x:-100,y:-140},rightHandTarget:{x:110,y:-150},mood:'deadpan'},
     'trap':{x:360,y:755,scale:1,leftHandTarget:{x:-55,y:-184},rightHandTarget:{x:55,y:-184},mood:'shock'},
@@ -50,4 +50,21 @@ export function v2SceneActor(beat,id,index,count) {
   if(beat==='amex-counter')return id==='cashback_goblin'?{x:190,y:730,scale:.95,rightHandTarget:{x:35,y:-165},mood:'smile'}:{x:540,y:660,scale:1,leftHandTarget:{x:-67,y:-158},mood:'deadpan'};
   if(beat==='final-clash')return index===0?{x:185,y:650,scale:.95,rightHandTarget:{x:85,y:-140},mood:'smile'}:{x:535,y:650,scale:.95,leftHandTarget:{x:-85,y:-140},mood:'smile'};
   return slots[beat]||characterSlots(count)[index];
+}
+export function captionTextWidth(text,size) {
+  // Deliberately overestimate Arial Bold advances; reserve padding separately.
+  return [...String(text)].reduce((sum,c)=>sum+(/[MW@#%&mw]/.test(c)?1:/[ilI1.,'!:;|]/.test(c)?.4:/\s/.test(c)?.38:/[A-Z0-9]/.test(c)?.78:.66),0)*size;
+}
+export function fitCaption(text,width=592,height=175,preferredSize=34) {
+ const words=String(text||'').trim().split(/\s+/).filter(Boolean),usable=width-48;
+ for(let size=preferredSize;size>=14;size--){
+  const lines=[];
+  for(const word of words){
+   const last=lines.length-1;
+   if(last>=0&&captionTextWidth(lines[last]+' '+word,size)<=usable)lines[last]+=' '+word;
+   else lines.push(word);
+  }
+  if(lines.every(line=>captionTextWidth(line,size)<=usable)&&lines.length*size*1.2<=height)return {lines,size,lineHeight:size*1.2};
+ }
+ throw new Error('Caption exceeds safe text region');
 }

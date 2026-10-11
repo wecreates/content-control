@@ -10,9 +10,10 @@
     "reference_policy": "extract format mechanics only; create original script, characters, scenes and dialogue",
     "education_rule": "facts must change the action or stakes rather than be delivered as an exposition list",
     "pattern_interrupt_max_seconds": 3.0,
-    "target_seconds": 50,
+    "target_seconds": 35.041666666666664,
     "user_preview_requires_team_review": true,
-    "free_tools_only": true
+    "free_tools_only": true,
+    "timing_basis": "Measured existing speech plus0.45\u20130.50second breaths; unchanged speech and voices"
   },
   "acceptance": {
     "story_locked": true,
@@ -29,6 +30,7 @@
     "status": "IMPLEMENTED_PENDING_RENDERED_REVIEW",
     "full_audiovisual_review": false,
     "competitive_parity_verified": false,
-    "benchmark_evidence": "projects/v2/amex-vs-chase-boss-fight/competitive-review-evidence.json"
+    "benchmark_evidence": "projects/v2/amex-vs-chase-boss-fight/competitive-review-evidence.json",
+    "pacing_revision": 3
   }
 }

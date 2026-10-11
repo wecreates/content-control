@@ -21,7 +21,10 @@ test('V2 battle has real changing SVG actions across all original story beats',a
  const {renderToStaticMarkup}=await import('react-dom/server');
  const React=await import('react');
  const result=await build({entryPoints:['remotion/V2BattleAction.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'}});
- const {V2BattleAction}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ const {V2BattleAction,v2WalletMotion}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ assert.ok(v2WalletMotion('finish',0).y>v2WalletMotion('finish',.32).y);
+ assert.ok(v2WalletMotion('trap',.5).rotation< -20);
+ assert.ok(Math.abs(v2WalletMotion('trap',1).rotation)<1e-10);
  const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
  const {v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
  for(const prefix of new Set(c.scenes.map(s=>v2BattleBeat(s.id)))){
@@ -49,4 +52,10 @@ test('V2 characters are staged for specific props instead of repeated center pos
  assert.ok(Math.abs(right.x+right.leftHandTarget.x*right.scale-460)<10);
  const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
  for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const layout=fitText(line.text,592,175,34);assert.equal(layout.lines.join(' '),line.text);}
+});
+test('V2 captions preserve every word with weighted glyph bounds and padding',async()=>{
+ const {fitCaption,captionTextWidth,v2SceneActor}=await import('../remotion/StudioLayout.mjs');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const l=fitCaption(line.text);assert.equal(l.lines.join(' '),line.text);assert.ok(l.lines.every(x=>captionTextWidth(x,l.size)<=544));assert.ok(l.lines.length*l.lineHeight<=175);}
+ const monk=v2SceneActor('chase-strike','points_monk',0,1);assert.equal(monk.x+monk.leftHandTarget.x,528);assert.equal(monk.y+monk.leftHandTarget.y,560);assert.ok(monk.x>590&&monk.y>700);
 });

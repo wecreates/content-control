@@ -69,7 +69,8 @@ jobs:
         run: |
           mkdir -p state/v2/visual-diagnostics
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json"))},separators=(",",":")))')
-          for frame in 24 120 240 432 600 792 984 1152; do
+          FRAMES=$(python -c 'import json; c=json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json")); b=[s["start"] for s in c["scenes"] if s.get("audio",{}).get("dialogue")]+[max(s["end"] for s in c["scenes"])]; print(" ".join(str(round((a+z)*12)) for a,z in zip(b,b[1:])))')
+          for frame in $FRAMES; do
             npx remotion still remotion/studio-animatic-index.jsx StudioAnimatic "state/v2/visual-diagnostics/frame-$frame.png" --props="$PROPS" --frame="$frame"
           done
       - uses: actions/upload-artifact@v4
@@ -124,7 +125,9 @@ jobs:
           import json,os
           os.makedirs("state/v2",exist_ok=True)
           p="state/v2/reference.json"
-          json.dump({"transferable_mechanics":["cold_open","rising_power_levels","counter_attack","payoff"],"beats":[{"start":0,"end":3},{"start":3,"end":8},{"start":8,"end":15},{"start":15,"end":24},{"start":24,"end":34},{"start":34,"end":43},{"start":43,"end":50}]},open(p,"w"))
+          c=json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json"))
+          starts=[s["start"] for s in c["scenes"] if s.get("audio",{}).get("dialogue")]+[max(s["end"] for s in c["scenes"])]
+          json.dump({"scope":"editorial structure only; not observed competitor video evidence","transferable_mechanics":["cold_open","escalation","counter_attack","callback"],"beats":[{"start":a,"end":b} for a,b in zip(starts,starts[1:])]},open(p,"w"))
           PY
           python scripts/v2_orchestrator.py --job projects/v2/amex-vs-chase-boss-fight/job.json --reference state/v2/reference.json --out state/v2/plan.json
       - name: Render V2 entertainment acceptance Short

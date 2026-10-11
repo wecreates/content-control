@@ -14,7 +14,7 @@ export function creativeHandoff(review, hash) {
  }
  if(!complete||end<duration-.05) reasons.push('review_coverage_incomplete');
  const refs=review?.comparisons;
- if(!Array.isArray(refs)||new Set(refs.filter(r=>r&&/^https:\/\//.test(r.url||'')&&r.access_scope&&r.observation&&r.applied_difference).map(r=>r.url)).size<2) reasons.push('competitor_comparison_pending');
+ if(!Array.isArray(refs)||new Set(refs.filter(r=>r&&/^https:\/\//.test(r.url||'')&&r.full_video_review===true&&r.full_audio_review===true&&r.access_scope&&r.observation&&r.applied_difference).map(r=>r.url)).size<2) reasons.push('competitor_comparison_pending');
  if(!Array.isArray(review?.unresolved_issues)||review.unresolved_issues.length) reasons.push('unresolved_creative_issues');
  return {ready:reasons.length===0,reasons,publication:false};
 }
