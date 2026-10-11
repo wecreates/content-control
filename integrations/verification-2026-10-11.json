@@ -1,9 +1,50 @@
 {
   "publication_enabled": false,
-  "tests": {"node_contract_tests_passed": 19, "python_clone_and_instagram_contract_tests_passed": 8},
-  "opus": {"entries": 513, "revision": "756290289742535eb0ac3817548f152e9759cc70", "status": "import_verified_reference_only"},
-  "watch": {"revision": "03ceb42f7fa2c4439aca01752118044baabffb8f", "dependency_preflight": "ready_in_task_runner", "public_reel_extraction": "partial_evidence", "duration_seconds": 52.1, "frames_reviewed": 16, "new_transcript_available": false, "account_authenticated": false},
-  "render_v7": {"service_id": "srv-das3mhp7lnhs73ffuo40", "observed_deploy": "dep-db5rvc95efls73avhd5g", "status": "build_failed", "confirmed_cause": "crf and videoBitrate both set", "prepared_build_command": "npm install && npm install http-server && bash scripts/build-v7-review.sh", "dashboard_change": "pending_secure_sign_in", "local_render": "bundle_succeeded_then_runner_networkInterfaces_system_error"},
-  "live_worker": {"health_ok": true, "publication": false, "hash_bound": true, "money_factory_reference_resolved": true},
-  "full_production_e2e": "not_verified"
+  "tests": {
+    "node_contract_tests_passed": 19,
+    "python_clone_and_instagram_contract_tests_passed": 8
+  },
+  "opus": {
+    "entries": 513,
+    "revision": "756290289742535eb0ac3817548f152e9759cc70",
+    "status": "import_verified_reference_only"
+  },
+  "watch": {
+    "revision": "03ceb42f7fa2c4439aca01752118044baabffb8f",
+    "dependency_preflight": "ready_in_task_runner",
+    "public_reel_extraction": "partial_evidence",
+    "duration_seconds": 52.1,
+    "frames_reviewed": 16,
+    "new_transcript_available": false,
+    "account_authenticated": false
+  },
+  "render_v7": {
+    "service_id": "srv-das3mhp7lnhs73ffuo40",
+    "observed_deploy": "dep-db5sgqcs728c738t5r40",
+    "status": "live",
+    "confirmed_cause": "crf and videoBitrate both set",
+    "prepared_build_command": "npm install && npm install http-server && bash scripts/build-v7-review.sh",
+    "dashboard_change": "applied_and_verified",
+    "local_render": "bundle_succeeded_then_runner_networkInterfaces_system_error",
+    "deployed_at": "2026-10-11T17:35:12Z",
+    "media_verification": {
+      "http_download": "success",
+      "duration_seconds": 30.058667,
+      "width": 720,
+      "height": 1280,
+      "video_codec": "h264",
+      "audio_codec": "aac",
+      "size_bytes": 2298514,
+      "audio_mean_db": -19.6,
+      "audio_peak_db": -3.1,
+      "creative_approval": false
+    }
+  },
+  "live_worker": {
+    "health_ok": true,
+    "publication": false,
+    "hash_bound": true,
+    "money_factory_reference_resolved": true
+  },
+  "full_production_e2e": "V7 build/deploy/media verified; V2 creative gates and authenticated Instagram full audiovisual analysis remain incomplete"
 }

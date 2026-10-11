@@ -66,3 +66,13 @@ test('transcripts and sampled frames route only explicitly limited observations'
  record.evidence[1].seconds=16;
  assert.throws(()=>routeFinding(queue,record.id,{...base,basis:'sampled_frame',evidence_refs:['s1']},opts));
 });
+
+test('connection health rejects invalid, future, stale and malformed expiry evidence',()=>{
+ const now=Date.parse('2026-10-11T12:00:00Z');
+ for(const date of ['invalid','2026-10-12T00:00:00Z'])assert.equal(connectionStatus({last_read_verified_at:date},now).read_verified,false);
+ assert.equal(connectionStatus(null,now).status,'unverified');
+ assert.equal(connectionStatus({last_read_verified_at:'2026-10-09T12:00:00Z'},now).status,'stale');
+ assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z',expires_at:'invalid'},now).status,'expiry_unknown');
+ assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z'},now).status,'previously_verified');
+ assert.equal(planTokenRenewal({renewal_supported:'false',expires_at:'2026-10-11'},now).action,'reauthorization_required');
+});

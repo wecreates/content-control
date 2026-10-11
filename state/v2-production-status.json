@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "run_id": 38159974084,
+  "source_commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
+  "workflow_outcome": "failure",
+  "recorded_at": "2026-10-11T17:34:58.962447+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38159974084",
+  "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13",
+  "candidate_generated": true,
+  "checks": {
+    "voices": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "0e3a5ec8c6eb1fe58d71e40c5a586a80f17cfa41d0e2ff8d5ec4bacc37f90d99"
+    },
+    "sound_mix": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "c5f02e6d1a1de33d2c8248a44d22387774139d829433dd35e851e90a2908c129"
+    },
+    "transcription": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "355933af9a2ffd708c182f87c338cebe3486a66960aaeb144f82c34b81d6b701"
+    },
+    "captions": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931"
+    },
+    "technical_video": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "706cc5803aa7f98c89a60921dbb8bf745466c606ba76168a4d7d84b3d5317eaa"
+    },
+    "style_parity": {
+      "status": "FAIL",
+      "failed_checks": [
+        "framewise_style_parity"
+      ],
+      "receipt_sha256": "331442ff48cfb43600f02e510806f42439e7d71bc501f3a5765cb23d18bf9c67"
+    }
+  },
+  "status": "BLOCKED",
+  "production_approved": false,
+  "publication_enabled": false,
+  "scope": "Recorded build result; no full audiovisual or competitor approval."
+}

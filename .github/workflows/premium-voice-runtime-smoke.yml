@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: Run premium voice regression suite
-        run: python -m unittest -v tests/test_voice_provider.py tests/test_cartesia_sonic_generate.py tests/test_voice_candidate_qa.py tests/test_ccsd_voice_manifest.py tests/test_voice_render_wiring.py tests/test_no_legacy_voice.py
+        run: python -m unittest -v tests/test_voice_provider.py tests/test_voice_manifest.py tests/test_cartesia_sonic_generate.py tests/test_voice_candidate_qa.py tests/test_ccsd_voice_manifest.py tests/test_voice_render_wiring.py tests/test_no_legacy_voice.py
       - name: Verify no-credential fail-closed route
         run: |
           unset CARTESIA_API_KEY ELEVENLABS_API_KEY || true
@@ -47,8 +47,15 @@ jobs:
           python - <<'PY'
           import json
           r=json.load(open("state/premium-voice-runtime-smoke.json"))
-          assert r["selected_strategy"]=="required_provider_missing",r
-          assert r["primary"]["provider"]=="cartesia" and r["primary"]["model_id"]=="sonic-3.6",r
+          assert r["selected_strategy"]=="kokoro_local_cpu",r
+          assert r["primary"]["provider"]=="kokoro" and r["primary"]["model_id"]=="Kokoro-82M",r
+          assert r["primary"]["mode"]=="local_cpu",r
+          assert r["primary"]["ready"] is False,r
+          assert r["primary"]["readiness"]=="requires_local_runtime_probe",r
+          assert r["paid_providers_enabled"] is False,r
+          assert r["dialogue_specialist"]["enabled"] is False,r
+          assert r["dialogue_specialist"]["ready"] is False,r
+          assert r["dialogue_specialist"]["provider"] is None,r
           assert r["fallback"]["enabled"] is False,r
           assert r["fallback"]["provider"] is None,r
           assert r["publication_enabled"] is False,r

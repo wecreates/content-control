@@ -1,36 +1,173 @@
 {
   "schema_version": 1,
-  "status": "BLOCKED_PENDING_RENDERED_REVIEW",
+  "status": "BLOCKED_PENDING_FULL_AUDIOVISUAL_AND_COMPETITOR_REVIEW",
   "publication_enabled": false,
   "production_approved": false,
   "reviewed_source": {
-    "run_id": 38157282127,
-    "commit": "e491d87c5481df3de096754e6f098d5dbcc64190",
-    "duration_seconds": 50,
-    "coverage": "eight diagnostic stills, actual speech transcription and automated full-file motion/decode checks; not complete audiovisual viewing"
+    "run_id": 38159974084,
+    "job_id": 114530680507,
+    "commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
+    "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13",
+    "duration_seconds": 34.958333333333336,
+    "planned_duration_seconds": 35.041666666666664,
+    "fps": 24,
+    "coverage": "Eleven stills decoded from the actual captioned full MP4: one from each of eight dialogue beats plus opening/last-word caption samples. Inspected receipt data, exact script-word reconstruction, audio hash, cue timings and style metric components. This is not complete audiovisual viewing.",
+    "render_artifact_id": 11708854902,
+    "render_artifact_digest": "sha256:be6a3b78f0685c297df34fa2ed2876d9d604d69b8fef4f222fc5c2153b84af58",
+    "diagnostic_frames": [
+      {
+        "frame": 21,
+        "seconds": 0.875,
+        "sha256": "d919a660289c4ee48a33e8794f61c4a9a67fae160a0d7ac4fe9256ef7988c6f9"
+      },
+      {
+        "frame": 89,
+        "seconds": 3.7083333333333335,
+        "sha256": "af2f349dca978c770228e3aa2afff93d629114b0d317362323c65ad10d659d48"
+      },
+      {
+        "frame": 194,
+        "seconds": 8.083333333333334,
+        "sha256": "f8454df5f6bc60e77b46c80965d4d568a7258e61a136890a4b178069e8814c86"
+      },
+      {
+        "frame": 323,
+        "seconds": 13.458333333333334,
+        "sha256": "85c20572a6f0452795857bbdaf5238ceafc07c73931b48de7903d294461639d6"
+      },
+      {
+        "frame": 421,
+        "seconds": 17.541666666666668,
+        "sha256": "c132f5c84b5fadb53b314d5e4c7846ad85e8d12483d790f00062dd556ab8580d"
+      },
+      {
+        "frame": 540,
+        "seconds": 22.5,
+        "sha256": "c8935b902fc87456991f98bf1a81cc6f5ca4ae5bd920e7182a0fa1a907affbe3"
+      },
+      {
+        "frame": 651,
+        "seconds": 27.125,
+        "sha256": "bf0b03330e1c6394eb1551911bbd9e9c84eec5524a31e85a4997446dca177c20"
+      },
+      {
+        "frame": 763,
+        "seconds": 31.791666666666668,
+        "sha256": "826946eae7895ace8a69eea47daa8de97f17a901393517a06fb5099af0fc24e0"
+      },
+      {
+        "frame": 5,
+        "seconds": 0.20833333333333334,
+        "sha256": "56433b4ca84f3074b8fbd1e7a4d36d6f4192480ee95966ff3e27f8c31dab2116"
+      },
+      {
+        "frame": 27,
+        "seconds": 1.125,
+        "sha256": "e75678259926ba80f2470f94fb58d42d838cd734ff3a5e4fd8dd71940c8d6609"
+      },
+      {
+        "frame": 804,
+        "seconds": 33.5,
+        "sha256": "4b62a000c72315ab62f878acf60b6615f300de0dc8aa10fd81b7baef32d36482"
+      }
+    ],
+    "receipt_sha256": {
+      "render.json": "706cc5803aa7f98c89a60921dbb8bf745466c606ba76168a4d7d84b3d5317eaa",
+      "transcription.json": "355933af9a2ffd708c182f87c338cebe3486a66960aaeb144f82c34b81d6b701",
+      "visual-parity.json": "331442ff48cfb43600f02e510806f42439e7d71bc501f3a5765cb23d18bf9c67"
+    },
+    "captions_sha256": "703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931",
+    "source_audio_sha256": "d711230781602f81117d5a43206cd40d4c9cfb65bc14f6a05a3c95c6bd2f4c3e",
+    "ccsd_sha256": "7f99342c3d26935c2aef1a83aa8b0e8badb9b5f678b836ac69c8a4eb35cb1b3c",
+    "independent_diagnostic_warning": "Separate visual-diagnostics artifact was rendered before caption injection and was not used to verify caption appearance."
   },
   "verified_on_reviewed_source": {
     "free_voice_generation": true,
     "separate_audio_stems": true,
     "transcript_qa": "PASS",
-    "sequence_similarity": 0.987013,
+    "sequence_similarity": 1.0,
+    "content_token_recall": 1.0,
     "sampled_outer_clipping_observed": false,
     "sampled_caption_prop_collisions_observed": false,
-    "motion_gate": "FAIL",
-    "style_parity": "FAIL"
+    "sampled_chase_face_hand_crossing_observed": false,
+    "sampled_v2_floor_removed": true,
+    "sampled_caption_wrap_improvement_observed": true,
+    "sampled_actor_prop_contact_improvement_observed": true,
+    "motion_gate": "PASS",
+    "max_duplicate_run_seconds": 0.625,
+    "mean_motion": 0.011218749755975668,
+    "technical_checks": {
+      "audio_present": true,
+      "decodes": true,
+      "duration_match": true,
+      "motion_alive": true,
+      "no_black": true,
+      "no_duplicate_run": true,
+      "publication_disabled": true,
+      "safe_border": true,
+      "v4_installed": true
+    },
+    "style_parity": "FAIL",
+    "style_mean_frame_distance": 0.3623905891288807,
+    "captions_qa": "PASS",
+    "caption_cue_count": 72,
+    "caption_source_words": 74,
+    "caption_original_script_reconstructed_exactly": true,
+    "caption_source_audio_hash_matches": true,
+    "sampled_caption_text_readable": true,
+    "sampled_whole_beat_caption_reveal_observed": false,
+    "caption_rendered_observations": [
+      {
+        "seconds": 0.208333,
+        "text": "Stop"
+      },
+      {
+        "seconds": 0.875,
+        "text": "Stop attacking my"
+      },
+      {
+        "seconds": 1.125,
+        "text": "wallet!"
+      },
+      {
+        "seconds": 33.5,
+        "text": "with tiny sandwiches?"
+      }
+    ]
   },
-  "subsequent_changes_require_rerender": [
-    "35.04-second pacing",
-    "face/hand intersection correction",
-    "wider caption wrapping",
-    "V2 floor removal",
-    "causal animation follow-through"
-  ],
+  "style_failure_analysis": {
+    "reference_description": "Inspected reference frame shows beige paper background; current required white-background render remains white.",
+    "mean_reference_white_fraction": 0.01801009114583333,
+    "mean_candidate_white_fraction": 0.9679232855902778,
+    "weighted_mean_distance_components": {
+      "edge_density": 0.003738953993055555,
+      "white_fraction": 0.33246961805555547,
+      "mean_brightness": 0.026182017080269605
+    },
+    "interpretation": "White-fraction difference dominates this statistical metric; this does not establish semantic or creative parity. Existing FAIL retained; no threshold changed."
+  },
+  "subsequent_changes_require_rerender": [],
   "unresolved_issues": [
-    "Full audiovisual creative review unavailable in current verified free capabilities",
-    "Full audiovisual competitor comparison unavailable; metadata alone is insufficient",
-    "Full-beat captions can expose punchlines before the spoken delivery",
-    "Latest render must pass motion and style checks before approval"
+    "Complete audiovisual creative review has not been performed; eleven stills do not establish complete motion, acting, intelligibility or sound quality.",
+    "Full audiovisual competitor comparison has not been performed; metadata and source statistics are insufficient.",
+    "ASR alignment accuracy, naturalness and caption reading pace still require complete audiovisual review; exact token match alone is not listening.",
+    "Style metric remains FAIL; background mismatch is quantitatively dominant but does not waive the gate.",
+    "This report applies only to the identified candidate hash; subsequent changes require new render and review."
   ],
-  "handoff": "Do not invite the user to watch an unapproved draft."
+  "handoff": "Do not invite the user to watch an unapproved draft. Technical PASS is not production or competitive-creative approval.",
+  "previous_reviewed_candidate": {
+    "run_id": 38157835426,
+    "commit": "68790a1f24601be83ff0ef1d47ee9c8fc43dadcc",
+    "candidate_sha256": "59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485"
+  },
+  "caption_review": {
+    "timing_source": "faster-whisper observed words; no timing interpolation",
+    "display_mode": "progressive_phrase_max_3_words",
+    "original_words_preserved": true,
+    "punctuation_preserved": true,
+    "zero_duration_source_words_deferred": 2,
+    "observed_timing_scope": "Cue starts follow observed ASR word starts; sampled video captions match the expected progressive text. ASR timestamps were not independently verified by listening.",
+    "opening_script": "Stop attacking my wallet!",
+    "opening_note": "This revision changes the original opening; previous boss/bus recognition issue does not apply to this candidate."
+  }
 }

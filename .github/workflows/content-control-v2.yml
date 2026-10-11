@@ -18,6 +18,10 @@ on:
       - 'control/free-voice-policy.json'
       - 'tests/test_v2_free_voice.py'
       - 'scripts/v2_sound_mix.py'
+      - 'scripts/v2_captions.py'
+      - 'scripts/v2_build_status.py'
+      - 'tests/test_v2_captions.py'
+      - 'tests/test_v2_build_status.py'
       - 'tests/test_v2_sound_mix.py'
       - 'tests/test_v2_audio_assemble.py'
       - 'projects/v2/amex-vs-chase-boss-fight/ccsd.json'
@@ -37,9 +41,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: V2 acceptance tests
-        run: python -m unittest -v tests/test_v2_acceptance.py tests/test_v2_audio_assemble.py tests/test_v2_runtime_tick.py
+        run: python -m unittest -v tests/test_v2_acceptance.py tests/test_v2_audio_assemble.py tests/test_v2_runtime_tick.py tests/test_v2_captions.py tests/test_v2_build_status.py
       - name: Verify complete creative review before customer handoff
-        run: node --test tests/creative-handoff.test.mjs
+        run: node --test tests/creative-handoff.test.mjs tests/observed-captions.test.mjs
       - name: Verify job cannot falsely report READY
         run: |
           python - <<'PY'
@@ -118,7 +122,9 @@ jobs:
           text=" ".join(d["text"] for s in sorted(c["scenes"],key=lambda s:s["start"]) for d in s.get("audio",{}).get("dialogue",[]))
           json.dump({"publication_enabled":False,"narration_text":text,"expected_duration_seconds":max(s["end"] for s in c["scenes"])},open("state/v2/transcription-contract.json","w"))
           PYTRANSCRIPT
-          python scripts/free_transcription_qa.py --audio state/v2/voice.wav --contract state/v2/transcription-contract.json --output state/v2/receipts/transcription.json --model base.en
+          python scripts/free_transcription_qa.py --audio state/v2/voice.wav --contract state/v2/transcription-contract.json --output state/v2/receipts/transcription.json --model small.en
+      - name: Align captions to actual spoken words
+        run: python scripts/v2_captions.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --transcription state/v2/receipts/transcription.json --audio state/v2/voice.wav --out state/v2/captions.json
       - name: Compile entertainment-first V2 plan
         run: |
           python - <<'PY'
@@ -133,7 +139,13 @@ jobs:
       - name: Render V2 entertainment acceptance Short
         run: |
           mkdir -p state/v2/render state/v2/receipts
-          cp projects/v2/amex-vs-chase-boss-fight/ccsd.json state/v2/ccsd.json
+          python - <<'PYCAPTIONS'
+          import json
+          c=json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json"))
+          c["caption_track"]=json.load(open("state/v2/captions.json"))
+          if c["caption_track"].get("status")!="PASS":raise SystemExit("Observed captions required")
+          json.dump(c,open("state/v2/ccsd.json","w"))
+          PYCAPTIONS
           python scripts/ccsd_voice_manifest.py --ccsd state/v2/ccsd.json --out state/v2/dialogue.json
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/v2/ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
@@ -194,6 +206,36 @@ jobs:
           git add -f public-review/v2-boss-fight.mp4 state/v2-health.json
           git diff --cached --quiet || git commit -m "Publish verified V2 preview artifact [skip ci]"
           git push origin HEAD:main
+      - name: Persist actual build results without approving a preview
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ job.status }}
+        run: |
+          python scripts/v2_build_status.py --root state/v2 --run-id "$GITHUB_RUN_ID" --source-commit "$GITHUB_SHA" --outcome "$BUILD_OUTCOME" --out state/v2-production-status.json
+          git config user.name "content-control-v2"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/v2-production-status.json
+          git diff --cached --quiet || git commit -m "Record V2 build checks without production approval [skip ci]"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if python - <<'PYORDER'
+          import json,subprocess
+          from scripts.v2_build_status import should_replace
+          try: old=json.loads(subprocess.check_output(["git","show","origin/main:state/v2-production-status.json"],stderr=subprocess.DEVNULL,text=True))
+          except subprocess.CalledProcessError:old={}
+          incoming=json.load(open("state/v2-production-status.json"))
+          if not should_replace(old,incoming):raise SystemExit(3)
+          PYORDER
+            then
+              if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+              git rebase --abort || true
+            else
+              status=$?
+              if [ "$status" -eq 3 ]; then exit 0; fi
+              exit "$status"
+            fi
+          done
+          exit 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:

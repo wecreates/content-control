@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {captionAtTime} from '../remotion/ObservedCaptions.mjs';
+const track={status:'PASS',publication_enabled:false,cues:[{start:0,end:.3,text:'Why'},{start:.4,end:.7,text:'Why is'},{start:1,end:1.4,text:'boss?'}]};
+test('never reveals a future punchline and bridges only short gaps',()=>{assert.equal(captionAtTime(track,.2).text,'Why');assert.equal(captionAtTime(track,.35).text,'Why');assert.equal(captionAtTime(track,.4).text,'Why is');assert.equal(captionAtTime(track,.9),null);assert.equal(captionAtTime(track,1).text,'boss?');assert.equal(captionAtTime(track,2),null)});
+test('missing or failed caption evidence never becomes whole-beat dialogue',()=>{assert.equal(captionAtTime(null,1),null);assert.equal(captionAtTime({...track,status:'BLOCKED'},1),null);assert.equal(captionAtTime({...track,publication_enabled:true},1),null)});

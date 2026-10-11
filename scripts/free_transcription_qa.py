@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse,json,re,difflib,math,subprocess
+import argparse,json,re,difflib,math,subprocess,hashlib
 from collections import Counter
 from pathlib import Path
 
@@ -103,12 +103,14 @@ def main():
         audio_samples,
         language="en",
         beam_size=5,
+        word_timestamps=True,
         vad_filter=True,
         condition_on_previous_text=True,
         clip_timestamps=f"0,{narration_end}" if narration_end else "0",
     )
     segs=[]
     actual_parts=[]
+    words=[]
     for s in segments:
         start=float(s.start); end=float(s.end)
         if narration_end is not None and start>=narration_end+0.25:
@@ -116,6 +118,8 @@ def main():
         text=s.text.strip()
         if text:
             actual_parts.append(text)
+            for word in getattr(s,"words",None) or []:
+                words.append({"word":word.word,"start":float(word.start),"end":float(word.end),"probability":float(word.probability)})
             segs.append({"start":round(start,3),"end":round(min(end,narration_end) if narration_end else end,3),"text":text})
     actual=" ".join(actual_parts).strip()
 
@@ -167,6 +171,9 @@ def main():
       "expected_text":expected,
       "actual_transcript":actual,
       "segments":segs,
+      "word_timestamps":True,
+      "words":words,
+      "audio_sha256":hashlib.sha256(Path(a.audio).read_bytes()).hexdigest(),
       "sequence_similarity":round(sequence_ratio,6),
       "content_token_recall":round(token_recall,6),
       "semantic_recall":round(semantic_recall,6),
