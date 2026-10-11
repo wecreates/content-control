@@ -21,6 +21,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           python - <<'PY'
+          raise RuntimeError('unverified_cost_review_disabled: free-only policy requires verified zero-cost inference before external video upload or analysis')
           import json,os,pathlib,time,urllib.request,urllib.error,random
           p=pathlib.Path("FINANCE_REVIEW_4_9.mp4"); key=os.environ["GEMINI_API_KEY"]
           meta=json.dumps({"file":{"display_name":p.name}}).encode()

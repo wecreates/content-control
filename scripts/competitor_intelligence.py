@@ -56,6 +56,7 @@ def transcript_stats(vtt_path):
     return {"present":True,"word_count":len(words),"cue_count":text.count("-->")}
 
 def gemini_upload(path,key):
+    raise RuntimeError('unverified_cost_review_disabled: free-only policy requires verified zero-cost inference before external video upload or analysis')
     meta=json.dumps({"file":{"display_name":path.name}}).encode()
     req=urllib.request.Request("https://generativelanguage.googleapis.com/upload/v1beta/files?key="+key,data=meta,headers={"X-Goog-Upload-Protocol":"resumable","X-Goog-Upload-Command":"start","X-Goog-Upload-Header-Content-Length":str(path.stat().st_size),"X-Goog-Upload-Header-Content-Type":"video/mp4","Content-Type":"application/json"})
     with urllib.request.urlopen(req,timeout=60) as r:
@@ -96,6 +97,7 @@ Be concrete and timestamped. Focus on transferable mechanics for an original mot
 """
 
 def gemini_analyze(file_uri,key):
+    raise RuntimeError('unverified_cost_review_disabled: free-only policy requires verified zero-cost inference before external video upload or analysis')
     body={"model":"gemini-3.8-flash","input":[{"type":"video","uri":file_uri,"mime_type":"video/mp4","processing":"agentic"},{"type":"text","text":PROMPT}]}
     for model in ["gemini-3.8-flash","gemini-3-flash-preview"]:
         body["model"]=model

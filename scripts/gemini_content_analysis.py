@@ -3,6 +3,7 @@ import json,os,pathlib,random,time,urllib.error,urllib.request
 MEDIA=pathlib.Path(os.environ.get('EPISODE1_MEDIA','/tmp/content/EPISODE1_FIRST_WATCH.mp4'))
 KEY=os.environ['GEMINI_API_KEY']; EXPECTED=os.environ['EXPECTED_SHA']; OUT=pathlib.Path('state/episode1-content-analysis.json')
 def upload():
+ raise RuntimeError('unverified_cost_review_disabled: free-only policy requires verified zero-cost inference before external video upload or analysis')
  meta=json.dumps({'file':{'display_name':MEDIA.name}}).encode()
  req=urllib.request.Request('https://generativelanguage.googleapis.com/upload/v1beta/files?key='+KEY,data=meta,headers={'X-Goog-Upload-Protocol':'resumable','X-Goog-Upload-Command':'start','X-Goog-Upload-Header-Content-Length':str(MEDIA.stat().st_size),'X-Goog-Upload-Header-Content-Type':'video/mp4','Content-Type':'application/json'})
  with urllib.request.urlopen(req,timeout=90) as r: url=r.headers['X-Goog-Upload-URL']
@@ -25,6 +26,7 @@ def prompt():
 3) research_claims: at least 5 concrete financial/factual statements made in the video that merit verification, each with start_sec, claim, verification_target, and risk_level (low|medium|high). This is a verification-target inventory, not a declaration that claims are true.
 Schema: {{"artifact_sha256":"{EXPECTED}","complete_end_to_end_analysis":true,"captions":[{{"start_sec":0.0,"end_sec":1.0,"text":""}}],"story_beats":[{{"start_sec":0.0,"end_sec":1.0,"summary":"","purpose":"","transition":""}}],"research_claims":[{{"start_sec":0.0,"claim":"","verification_target":"","risk_level":"low"}}]}}.'''
 def infer(f):
+ raise RuntimeError('unverified_cost_review_disabled: free-only policy requires verified zero-cost inference before external video upload or analysis')
  body={'model':'gemini-3.8-flash','input':[{'type':'video','uri':f['uri'],'mime_type':'video/mp4','processing':'agentic'},{'type':'text','text':prompt()}]}; obj=None; errors=[]
  for model in ['gemini-3.8-flash','gemini-3-flash-preview']:
   body['model']=model
