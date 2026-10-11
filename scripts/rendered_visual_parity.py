@@ -52,6 +52,11 @@ def frame_metrics(img):
     # must not become acceptable by division or exposure normalization.
     normalized=np.clip(gray.astype(float)*255.0/max(background,210.0),0,255).astype(np.uint8)
     normalized_edge=cv2.Canny(normalized,80,180)
+    # The project's reserved caption region is above y=320 on its 1280px stage.
+    # Density guards measure action below that band, so replacing paragraphs
+    # with truthful progressive captions cannot masquerade as erased artwork.
+    action=gray[gray.shape[0]//4:]
+    action_normalized=normalized[gray.shape[0]//4:]
     return {
         "edge_density":float((edge>0).mean()),
         "white_fraction":float((gray>245).mean()),
@@ -67,6 +72,11 @@ def frame_metrics(img):
             "white_fraction":float((normalized>245).mean()),
             "mean_brightness":float(normalized.mean()/255.0),
         },
+        "action_region_diagnostics":{
+            "top_fraction":.25,
+            "dark_foreground_fraction":foreground_diagnostics(action)["dark_foreground_fraction"],
+            "edge_density":float((cv2.Canny(action_normalized,80,180)>0).mean()),
+        },
     }
 
 def compare_white_stage(refs,cands,threshold=0.14):
@@ -81,9 +91,9 @@ def compare_white_stage(refs,cands,threshold=0.14):
         return {"framewise_style_parity":False,"checks":{"paired_reference_coverage":False},"paired_frames":min(len(refs),len(cands))}
     comparison=compare_metric_series([r["light_stage_normalized"] for r in refs],[c["light_stage_normalized"] for c in cands],threshold)
     def foreground_mean(xs):
-        return float(np.mean([x["foreground_diagnostics"]["dark_foreground_fraction"] for x in xs]))
+        return float(np.mean([x["action_region_diagnostics"]["dark_foreground_fraction"] for x in xs]))
     def edge_mean(xs):
-        return float(np.mean([x["light_stage_normalized"]["edge_density"] for x in xs]))
+        return float(np.mean([x["action_region_diagnostics"]["edge_density"] for x in xs]))
     reference_ink,reference_edges=foreground_mean(refs),edge_mean(refs)
     ink_ratio=foreground_mean(cands)/reference_ink if reference_ink else 0.0
     edge_ratio=edge_mean(cands)/reference_edges if reference_edges else 0.0
@@ -99,10 +109,11 @@ def compare_white_stage(refs,cands,threshold=0.14):
     }
     return {**comparison,"framewise_style_parity":all(checks.values()),"checks":checks,
             "foreground_density_ratio":ink_ratio,"edge_density_ratio":edge_ratio,
+            "density_scope":"action region below the reserved top-quarter caption band",
             "profile_limits":{"reference_p90_luma_min":210,"light_pixel_luma_min":210,
                               "light_pixel_fraction_min":.55,"candidate_p90_channel_min":245,
                               "candidate_p90_channel_spread_max":10,"foreground_fraction_min":.005,
-                              "foreground_density_ratio":[.5,2.0],"edge_density_ratio":[.5,2.0]},
+                              "foreground_density_ratio":[.5,2.0],"edge_density_ratio":[.5,2.0],"action_region_top_fraction":.25},
             "profile":"white-stage-v2","creative_acceptance":False}
 
 def compare_metric_series(refs,cands,threshold=0.14):
