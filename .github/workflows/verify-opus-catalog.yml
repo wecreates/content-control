@@ -1,10 +1,24 @@
-name: Verify upstream Opus catalog
+name: Verify social integrations and Opus catalog
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'integrations/awesome-opus-videos/**'
+      - 'integrations/watch-video/**'
+      - 'social-intake.js'
+      - 'social-router.js'
+      - 'tests/social-*.test.mjs'
+      - 'package*.json'
+      - '.github/workflows/verify-opus-catalog.yml'
   pull_request:
     paths:
       - 'integrations/awesome-opus-videos/**'
       - 'integrations/watch-video/**'
+      - 'social-intake.js'
+      - 'social-router.js'
+      - 'tests/social-*.test.mjs'
+      - 'package*.json'
       - '.github/workflows/verify-opus-catalog.yml'
 permissions:
   contents: read
@@ -18,7 +32,9 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs
       - name: Import public reference catalog
         run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
       - name: Validate output
