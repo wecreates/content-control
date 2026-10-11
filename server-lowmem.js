@@ -79,7 +79,7 @@ function v2Acceptance(){
   const h=readJson(v2HealthPath);
   const runtime=readJson(path.resolve("state/v2-runtime-validation.json"));
   const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
-  const handoff=creativeHandoff(h?.creative_review,actual);
+  const handoff=creativeHandoff(h?.creative_review,actual,h?.media_evidence);
   const ready=Boolean(handoff.ready&&runtime?.status==="READY"&&runtime?.candidate_sha256===actual&&h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
   return {health:h,actual,expected,ready,runtime,handoff};
 }

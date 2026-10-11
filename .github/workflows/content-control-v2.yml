@@ -21,6 +21,8 @@ on:
       - 'scripts/v2_captions.py'
       - 'scripts/v2_build_status.py'
       - 'scripts/rendered_visual_parity.py'
+      - 'scripts/production_reality_media_qa.py'
+      - 'tests/test_production_reality_media_qa.py'
       - 'tests/test_rendered_visual_parity.py'
       - 'scripts/verify_caption_frames.mjs'
       - 'tests/verify-caption-frames.test.mjs'
@@ -177,7 +179,7 @@ jobs:
           exit 1
       - name: Inspect rendered candidate
         run: |
-          python -m unittest -v tests/test_rendered_visual_parity.py
+          python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py
           media_status=0
           parity_status=0
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json || media_status=$?
@@ -203,10 +205,16 @@ jobs:
           h=hashlib.sha256(open(p,"rb").read()).hexdigest()
           parity=json.load(open("state/v2/receipts/visual-parity.json"))
           if parity.get("status")!="PASS": raise SystemExit("visual parity QA did not pass")
+          media=json.load(open("state/v2/receipts/render.json"))
+          if media.get("status")!="PASS" or media.get("candidate_sha256")!=h: raise SystemExit("Hash-bound complete media decode required")
+          media_evidence={"candidate_sha256":h,"duration_seconds":media["metrics"]["duration"],"verified":True}
           review=json.load(open("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))
           if review.get("status")!="PASS" or review.get("candidate_sha256")!=h or review.get("method")!="rendered_video_review": raise SystemExit("Exact rendered video creative review required")
+          import subprocess
+          gate=subprocess.run(["node","--input-type=module","-e",'import fs from "node:fs"; import {creativeHandoff} from "./creative-handoff.js"; const x=JSON.parse(fs.readFileSync(0,"utf8")); const r=creativeHandoff(x.review,x.hash,x.media); if(!r.ready){console.error(JSON.stringify(r));process.exit(1);}'],input=json.dumps({"review":review,"hash":h,"media":media_evidence}),text=True)
+          if gate.returncode: raise SystemExit("Complete competitor and audiovisual review required")
           shutil.copyfile(p,"public-review/v2-boss-fight.mp4")
-          json.dump({"creative_review":review,"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
+          json.dump({"creative_review":review,"media_evidence":media_evidence,"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
           PY
       - name: Persist accepted V2 preview for streaming deployment
         run: |
