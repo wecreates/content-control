@@ -2,6 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {fitText,normalizePropId,normalizePose,characterSlots,propSlots} from '../remotion/StudioLayout.mjs';
+test('trap button label matches the spoken bad idea setup',()=>{
+ const action=fs.readFileSync(new URL('../remotion/V2BattleAction.jsx',import.meta.url),'utf8');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ const lines=c.scenes.filter(s=>s.id.startsWith('trap-')).flatMap(s=>s.audio?.dialogue||[]).map(x=>x.text).join(' ');
+ assert.match(lines,/button say bad idea/i);
+ assert.ok(action.includes('<Button x={210} label="BAD IDEA" pressed={p>.12}/>'));
+ assert.ok(!action.includes('PANIC TAP'));
+});
 test('V2 portrait framing preserves actor-prop contacts and readable captions',async()=>{
  const {V2_STAGE_FRAMING:f,v2StageTransform,fitCaption,captionTextWidth,v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
  assert.equal(f.scale,1.06);assert.equal(f.targetY-f.sourceY,100);
