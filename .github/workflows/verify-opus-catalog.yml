@@ -8,6 +8,8 @@ on:
       - 'integrations/watch-video/**'
       - 'social-intake.js'
       - 'social-router.js'
+      - 'production-status.js'
+      - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
       - '.github/workflows/social-link-intake.yml'
       - 'tests/social-*.test.mjs'
@@ -19,6 +21,8 @@ on:
       - 'integrations/watch-video/**'
       - 'social-intake.js'
       - 'social-router.js'
+      - 'production-status.js'
+      - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
       - '.github/workflows/social-link-intake.yml'
       - 'tests/social-*.test.mjs'
@@ -38,7 +42,7 @@ jobs:
       - name: Unit tests
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
-          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-link-intake.test.mjs
+          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-link-intake.test.mjs tests/production-status.test.mjs
       - name: Import public reference catalog
         run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
       - name: Validate output
