@@ -53,6 +53,13 @@ class RenderedVisualParityTests(unittest.TestCase):
         self.assertFalse(result['checks']['foreground_density_preserved'])
         self.assertFalse(result['framewise_style_parity'])
 
+    def test_progressive_caption_change_does_not_change_action_density(self):
+        ref=self.figure(230);full=self.figure();short=full.copy();short[:60]=255
+        a,b=self.profile(ref,full),self.profile(ref,short)
+        self.assertEqual(a['foreground_density_ratio'],b['foreground_density_ratio'])
+        self.assertEqual(a['edge_density_ratio'],b['edge_density_ratio'])
+        self.assertTrue(b['framewise_style_parity'])
+
     def test_white_profile_rejects_mismatched_or_insufficient_sampling(self):
         metric=frame_metrics(self.figure())
         for a,b in [(4,3),(3,3),(0,0)]:
