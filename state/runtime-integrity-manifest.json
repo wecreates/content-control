@@ -103,8 +103,8 @@
       "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
     },
     "scripts/free_transcription_qa.py": {
-      "bytes": 8496,
-      "sha256": "99544bce0b9793178f82c0a44a8756b6a4cdef1786455d369ce59a95e1c5a554"
+      "bytes": 8865,
+      "sha256": "f4d82baead8f6541ecbb1069dfd9d0e42013693f7bb4d7dc8e3eb53896a15d85"
     },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
@@ -115,8 +115,8 @@
       "sha256": "a86a5fc38fa2ab2bcc305821cd47a713c5f678281a75d24ba1d99621429b8bf8"
     },
     "server-lowmem.js": {
-      "bytes": 26415,
-      "sha256": "9f718750499a7206c71167f63ccb0ee415bd7e290124592df84fdcca564e9621"
+      "bytes": 25642,
+      "sha256": "01f3f4c718083f2bfc9aacaffc19e55ea2a71cd71f28eca3591659df3b839278"
     },
     "server.js": {
       "bytes": 29,
