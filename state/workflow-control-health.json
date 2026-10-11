@@ -6,13 +6,16 @@
     ".github/workflows/apply-runtime-security-fixes.yml": true,
     ".github/workflows/autonomous-capability-completion.yml": true,
     ".github/workflows/autonomous-cco.yml": true,
+    ".github/workflows/backup-render-monitor-state.yml": true,
     ".github/workflows/bottleneck-resolver.yml": true,
     ".github/workflows/candidate-state-reconcile.yml": true,
     ".github/workflows/cinematic-brand-gate.yml": true,
     ".github/workflows/cinematic-gate.yml": true,
+    ".github/workflows/clone-e2e-contract.yml": true,
     ".github/workflows/clone-runtime-smoke.yml": true,
     ".github/workflows/comedy-retention-gate.yml": true,
     ".github/workflows/competitor-intelligence.yml": true,
+    ".github/workflows/content-control-v2.yml": true,
     ".github/workflows/credit-score-boss-fight-short.yml": true,
     ".github/workflows/dropbox-review-bridge.yml": true,
     ".github/workflows/episode1-first-watch-package.yml": true,
@@ -43,6 +46,7 @@
     ".github/workflows/ordered-capability-completion.yml": true,
     ".github/workflows/patched-transformers-smoke.yml": true,
     ".github/workflows/premium-voice-runtime-smoke.yml": true,
+    ".github/workflows/probe-render-infra.yml": true,
     ".github/workflows/python-security-audit.yml": true,
     ".github/workflows/quarantine-legacy-workflows.yml": true,
     ".github/workflows/rd-quarantine.yml": true,
@@ -51,6 +55,7 @@
     ".github/workflows/reference-clone-long-render.yml": true,
     ".github/workflows/reference-clone-render.yml": true,
     ".github/workflows/reference-clone-repair.yml": true,
+    ".github/workflows/render-monitor-tests.yml": true,
     ".github/workflows/review-server-smoke.yml": true,
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,
@@ -81,56 +86,14 @@
     ".github/workflows/v7-200-runtime.yml": true,
     ".github/workflows/v8-200-runtime.yml": true,
     ".github/workflows/vce-gate.yml": true,
+    ".github/workflows/verify-render-monitor.yml": true,
     ".github/workflows/video-playback-contract.yml": true,
     "canonical_generation_exists": true,
-    "deny_unlisted_automatic_workflows": false,
+    "deny_unlisted_automatic_workflows": true,
     "publication_disabled": true
   },
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL",
-  "violations": [
-    {
-      "path": ".github/workflows/backup-render-monitor-state.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": true,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/clone-e2e-contract.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/content-control-v2.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": true,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/probe-render-infra.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/render-monitor-tests.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    },
-    {
-      "path": ".github/workflows/verify-render-monitor.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    }
-  ]
+  "status": "PASS",
+  "violations": []
 }
