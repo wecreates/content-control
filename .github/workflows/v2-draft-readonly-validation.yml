@@ -62,7 +62,7 @@ jobs:
       - name: Render candidate and copy verified audio unchanged
         run: |
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic qa-output/v2-draft-readonly/silent.mp4 --props=qa-output/v2-draft-readonly/props.json --codec=h264 --crf=18 --concurrency=2
-          ffmpeg -y -i qa-output/v2-draft-readonly/silent.mp4 -i public-review/v2-draft.mp4 -map 0:v:0 -map 1:a:0 -c:v copy -c:a copy -shortest qa-output/v2-draft-readonly/candidate.mp4
+          ffmpeg -y -i qa-output/v2-draft-readonly/silent.mp4 -i public-review/v2-draft.mp4 -map 0:v:0 -map 1:a:0 -c:v copy -c:a copy qa-output/v2-draft-readonly/candidate.mp4
           python - <<'PY'
           import hashlib,json,subprocess
           def audio_hash(path):
@@ -71,6 +71,10 @@ jobs:
           candidate=audio_hash("qa-output/v2-draft-readonly/candidate.mp4")
           assert source==candidate, "Audio packets changed"
           p="qa-output/v2-draft-readonly/candidate.mp4"
+          def video_frames(path):
+              data=json.loads(subprocess.check_output(["ffprobe","-v","error","-select_streams","v:0","-show_entries","stream=nb_frames","-of","json",path]))
+              return int(data["streams"][0]["nb_frames"])
+          assert video_frames(p)==video_frames("qa-output/v2-draft-readonly/silent.mp4"), "Muxing dropped video frames"
           json.dump({"candidate_sha256":hashlib.sha256(open(p,"rb").read()).hexdigest(),"source_audio_hash":source,"candidate_audio_hash":candidate,"publication_enabled":False,"production_approved":False,"full_av_review":False},open("qa-output/v2-draft-readonly/identity.json","w"),indent=2)
           PY
       - name: Check actual rendered media
