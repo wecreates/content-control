@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "status": "NEEDS_CREATIVE_WORK",
+  "status": "SAMPLED_LAYOUT_VERIFIED_FULL_REVIEW_PENDING",
   "publication_enabled": false,
-  "source_commit": "64c23c7f95f9830bcfc92ec98ace2fcd25e2d458",
-  "workflow_run": 38153345609,
-  "artifact_id": 11707925503,
-  "reviewed_at": "2026-10-11T15:59:08.808164+00:00",
+  "source_commit": "5a459aee8372f2f0cc36d64bee4346f15cf29311",
+  "workflow_run": 38153853917,
+  "artifact_id": 11707811884,
+  "reviewed_at": "2026-10-11T16:05:43.465159+00:00",
   "coverage": {
     "sampled_frames": 8,
     "full_video_watched": false,
@@ -16,55 +16,55 @@
     {
       "frame": 1152,
       "seconds": 48.0,
-      "sha256": "fe77d02fba5276bac05fe7d04fb6cbadbea7e425f97ecb2a5fe065fe16ea9740"
+      "sha256": "488a2281ac5025d7f580e6069d384efcca576418de3087f4dded58540d8b66fd"
     },
     {
       "frame": 120,
       "seconds": 5.0,
-      "sha256": "9753581f793fb324c17986f0fd87a9ed08fbf5f95a65292e2cdc8d2fdc888fa0"
+      "sha256": "bd1f7764e69067a6f00640829bb7f6286e409a78b58122c5073375dbc90ab627"
     },
     {
       "frame": 24,
       "seconds": 1.0,
-      "sha256": "0a455256b5bec71ca03f76d2f89005e618dcd4cdced8bd9936e588b3c1a1c550"
+      "sha256": "508e4af8c622b4b9b58c4a22ca6899915180607d9f1b9bbbfa115874ec2a49bb"
     },
     {
       "frame": 240,
       "seconds": 10.0,
-      "sha256": "3fdbe2038e16656382251ca8c8f259c623a45e07d5b289456c158be90b145adf"
+      "sha256": "585e50e194a821a82eb79aed699bf9c4e4208aca30a3357008a29ac541cb33ce"
     },
     {
       "frame": 432,
       "seconds": 18.0,
-      "sha256": "670b65b44d827f366a170c86cd8c162b501104f191c7fbe5fd3d15ad15bf84c4"
+      "sha256": "c9d820616bd0878c545e40d7ea4ef3862b7a6aaf826c737dd2599e467c5c0766"
     },
     {
       "frame": 600,
       "seconds": 25.0,
-      "sha256": "71e93ef617b678406813ba13c441690bcc529ce12c87fb6d0a759a5b1034e406"
+      "sha256": "b4308430627af83667c81cd00f6aad509312a25e60b07bec51337f9bbe67efb6"
     },
     {
       "frame": 792,
       "seconds": 33.0,
-      "sha256": "5a283d23ba1105248168bb1e5f28c622d812f1aae9ba192a94ce6894804f12c7"
+      "sha256": "fe432e73a88e9119db56e2b116b2c0d342a48d5f41ff6ae25621c588a8858052"
     },
     {
       "frame": 984,
       "seconds": 41.0,
-      "sha256": "310c1ce0c6ba98502c4a018c035ae46b6c5afd68491009fa013994c6c6a74391"
+      "sha256": "d62294ed26a704e8e9e7b283cfd77bc8f9093ea0e73d6ac34c026df476ffb7b6"
     }
   ],
   "observations": [
-    "Eight sampled frames rendered successfully with white backgrounds and recurring black stick figures.",
-    "Sampled titles were readable, with no visible text or character clipping.",
-    "No internal scene IDs or camera instructions visible in sampled frames.",
-    "Generic floating props and repeated poses do not yet demonstrate the card-battle story."
+    "Eight rendered frames inspected at 1,5,10,18,25,33,41,48 seconds.",
+    "White background, recurring black figures, readable headings, no visible text/character clipping in these samples.",
+    "Distinct CHASE/AMEX competitors and story-specific transfer, fee, loss and decision diagrams now visible.",
+    "Points Monk appears alongside the nonverbal Goblin in its beats.",
+    "Moving SVG output independently differs across all eight beat intervals; full motion/pacing review remains pending."
   ],
   "remaining": [
-    "Approved text-matching character audio is absent.",
-    "Music and sound effects are not yet mixed in the V2 workflow.",
-    "Goblin spoken dialogue conflicts with its nonverbal character profile.",
-    "Full-video creative review and final visual-parity approval are outstanding."
+    "Eight approved text-matching voice clips across Dave and Points Monk are absent.",
+    "Separate narration/music/SFX mixer is implemented and tested with synthetic fixtures; production audio and listening quality remain unverified.",
+    "Full rendered video, creative review and final visual-parity approval remain outstanding."
   ],
   "reference_metric_limitation": "Current reference frames have beige backgrounds; white-pixel fraction penalizes the explicitly required white background. Threshold has not been relaxed.",
   "voice_access": {
@@ -73,6 +73,18 @@
     "connector_estimate_credits": 11,
     "available_connector_credits": 1,
     "estimate_scope": "Combined script estimate; per-clip rounding may cost more; exact connector Sonic version unverified.",
-    "provider_calls": 0
+    "provider_calls": 0,
+    "official_model_documentation": "https://docs.cartesia.ai/build-with-cartesia/tts-models/latest",
+    "official_pricing": "https://www.cartesia.ai/pricing",
+    "direct_provider_option": "Sonic 3.6 supported. Pro listed at $5/month includes commercial use; no subscription or generation authorized."
+  },
+  "verification": {
+    "local_tests_passed": 53,
+    "ci_contract": "PASS",
+    "ci_visual_diagnostics": "PASS",
+    "ci_system_wiring": "PASS",
+    "ci_production_render": "BLOCKED_APPROVED_CHARACTER_AUDIO_MISSING",
+    "live_existing_preview": "health 200; captionReady true; publication false",
+    "live_v2": "health 503; publication false"
   }
 }
