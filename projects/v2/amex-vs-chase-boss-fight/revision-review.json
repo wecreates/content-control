@@ -4,82 +4,33 @@
   "publication_enabled": false,
   "production_approved": false,
   "reviewed_source": {
-    "run_id": 38159974084,
-    "job_id": 114530680507,
-    "commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
-    "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13",
+    "run_id": 38161369341,
+    "job_id": 114534833861,
+    "commit": "363bffe3b429a7c56519340bcfc7aeb2e7657f56",
+    "candidate_sha256": "c8001ecce6498d13a29ffff2a6df1eeef67a8e53f44f5955184d6b0d19b49208",
     "duration_seconds": 34.958333333333336,
     "planned_duration_seconds": 35.041666666666664,
     "fps": 24,
-    "coverage": "Eleven stills decoded from the actual captioned full MP4: one from each of eight dialogue beats plus opening/last-word caption samples. Inspected receipt data, exact script-word reconstruction, audio hash, cue timings and style metric components. This is not complete audiovisual viewing.",
-    "render_artifact_id": 11708854902,
-    "render_artifact_digest": "sha256:be6a3b78f0685c297df34fa2ed2876d9d604d69b8fef4f222fc5c2153b84af58",
+    "coverage": "Targeted actual MP4 frame 651 at 27.125 seconds inspected to verify repaired article visibility; complete receipt inspection and local frame-grid verification. Earlier eleven-frame review retained separately under its own candidate hash. Neither is complete audiovisual viewing.",
+    "render_artifact_id": 11710013292,
+    "render_artifact_digest": "sha256:8c301ba78202b8dc5f4329d58d01cf9817f7da7faa6c7b3cad0ea09ef7262e6b",
     "diagnostic_frames": [
-      {
-        "frame": 21,
-        "seconds": 0.875,
-        "sha256": "d919a660289c4ee48a33e8794f61c4a9a67fae160a0d7ac4fe9256ef7988c6f9"
-      },
-      {
-        "frame": 89,
-        "seconds": 3.7083333333333335,
-        "sha256": "af2f349dca978c770228e3aa2afff93d629114b0d317362323c65ad10d659d48"
-      },
-      {
-        "frame": 194,
-        "seconds": 8.083333333333334,
-        "sha256": "f8454df5f6bc60e77b46c80965d4d568a7258e61a136890a4b178069e8814c86"
-      },
-      {
-        "frame": 323,
-        "seconds": 13.458333333333334,
-        "sha256": "85c20572a6f0452795857bbdaf5238ceafc07c73931b48de7903d294461639d6"
-      },
-      {
-        "frame": 421,
-        "seconds": 17.541666666666668,
-        "sha256": "c132f5c84b5fadb53b314d5e4c7846ad85e8d12483d790f00062dd556ab8580d"
-      },
-      {
-        "frame": 540,
-        "seconds": 22.5,
-        "sha256": "c8935b902fc87456991f98bf1a81cc6f5ca4ae5bd920e7182a0fa1a907affbe3"
-      },
       {
         "frame": 651,
         "seconds": 27.125,
-        "sha256": "bf0b03330e1c6394eb1551911bbd9e9c84eec5524a31e85a4997446dca177c20"
-      },
-      {
-        "frame": 763,
-        "seconds": 31.791666666666668,
-        "sha256": "826946eae7895ace8a69eea47daa8de97f17a901393517a06fb5099af0fc24e0"
-      },
-      {
-        "frame": 5,
-        "seconds": 0.20833333333333334,
-        "sha256": "56433b4ca84f3074b8fbd1e7a4d36d6f4192480ee95966ff3e27f8c31dab2116"
-      },
-      {
-        "frame": 27,
-        "seconds": 1.125,
-        "sha256": "e75678259926ba80f2470f94fb58d42d838cd734ff3a5e4fd8dd71940c8d6609"
-      },
-      {
-        "frame": 804,
-        "seconds": 33.5,
-        "sha256": "4b62a000c72315ab62f878acf60b6615f300de0dc8aa10fd81b7baef32d36482"
+        "sha256": "4f772fde6628235a7acc18646f6ad705bc27082308e1db1fc516afd711747699",
+        "observed_caption": "the winning"
       }
     ],
     "receipt_sha256": {
-      "render.json": "706cc5803aa7f98c89a60921dbb8bf745466c606ba76168a4d7d84b3d5317eaa",
-      "transcription.json": "355933af9a2ffd708c182f87c338cebe3486a66960aaeb144f82c34b81d6b701",
-      "visual-parity.json": "331442ff48cfb43600f02e510806f42439e7d71bc501f3a5765cb23d18bf9c67"
+      "render.json": "e5e6f0dc000c2309f926f527396b5b35b687a626b15d444b8492b16c540525b6",
+      "transcription.json": "33b40bb1d752fc952cb2aaa9badf90642e791db35eeff1f3d99ce5cb65e851c1",
+      "visual-parity.json": "8444c0bf030ac2cc04a8f1ee0bc7b24630dd7b98cc840560951cb1f9b4550aff",
+      "caption-frames.json": "bc7b4a6c60812040cacc16c1cb7026e5ff180cf8f8629193fafd88c1a35a10e8"
     },
-    "captions_sha256": "703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931",
-    "source_audio_sha256": "d711230781602f81117d5a43206cd40d4c9cfb65bc14f6a05a3c95c6bd2f4c3e",
-    "ccsd_sha256": "7f99342c3d26935c2aef1a83aa8b0e8badb9b5f678b836ac69c8a4eb35cb1b3c",
-    "independent_diagnostic_warning": "Separate visual-diagnostics artifact was rendered before caption injection and was not used to verify caption appearance."
+    "captions_sha256": "a1bb3daadce716b6d4fec5a97ec8335c166405d89805104e8f24577c4bc8f2b7",
+    "source_audio_sha256": "bb9b938200883da7f9165cd808653974914dbfdfc8c535d8b2ba8945e4b3510b",
+    "ccsd_sha256": "b12d59a979c627dfa5c1c2d57749e9f2e303b592faadee17c788d71db12f2dfd"
   },
   "verified_on_reviewed_source": {
     "free_voice_generation": true,
@@ -89,13 +40,13 @@
     "content_token_recall": 1.0,
     "sampled_outer_clipping_observed": false,
     "sampled_caption_prop_collisions_observed": false,
-    "sampled_chase_face_hand_crossing_observed": false,
+    "sampled_chase_face_hand_crossing_observed": null,
     "sampled_v2_floor_removed": true,
-    "sampled_caption_wrap_improvement_observed": true,
-    "sampled_actor_prop_contact_improvement_observed": true,
+    "sampled_caption_wrap_improvement_observed": null,
+    "sampled_actor_prop_contact_improvement_observed": null,
     "motion_gate": "PASS",
     "max_duplicate_run_seconds": 0.625,
-    "mean_motion": 0.011218749755975668,
+    "mean_motion": 0.011215531563083218,
     "technical_checks": {
       "audio_present": true,
       "decodes": true,
@@ -108,7 +59,7 @@
       "v4_installed": true
     },
     "style_parity": "FAIL",
-    "style_mean_frame_distance": 0.3623905891288807,
+    "style_mean_frame_distance": 0.3623553243081087,
     "captions_qa": "PASS",
     "caption_cue_count": 72,
     "caption_source_words": 74,
@@ -118,47 +69,81 @@
     "sampled_whole_beat_caption_reveal_observed": false,
     "caption_rendered_observations": [
       {
-        "seconds": 0.208333,
-        "text": "Stop"
-      },
-      {
-        "seconds": 0.875,
-        "text": "Stop attacking my"
-      },
-      {
-        "seconds": 1.125,
-        "text": "wallet!"
-      },
-      {
-        "seconds": 33.5,
-        "text": "with tiny sandwiches?"
+        "seconds": 27.125,
+        "frame": 651,
+        "text": "the winning"
       }
-    ]
+    ],
+    "caption_frame_gate": "PASS",
+    "caption_frame_gate_visible_words": 74,
+    "caption_frame_gate_expected_words": 74
   },
   "style_failure_analysis": {
-    "reference_description": "Inspected reference frame shows beige paper background; current required white-background render remains white.",
-    "mean_reference_white_fraction": 0.01801009114583333,
-    "mean_candidate_white_fraction": 0.9679232855902778,
+    "reference_description": "Existing beige-paper reference images versus required white-background candidate.",
     "weighted_mean_distance_components": {
-      "edge_density": 0.003738953993055555,
-      "white_fraction": 0.33246961805555547,
-      "mean_brightness": 0.026182017080269605
+      "edge_density": 0.0037499674479166654,
+      "mean_brightness": 0.02616539917790033,
+      "white_fraction": 0.3324399576822916
     },
-    "interpretation": "White-fraction difference dominates this statistical metric; this does not establish semantic or creative parity. Existing FAIL retained; no threshold changed."
+    "reference_manifest": [
+      {
+        "file": "ref-01.jpg",
+        "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+      },
+      {
+        "file": "ref-02.jpg",
+        "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+      },
+      {
+        "file": "ref-03.jpg",
+        "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+      },
+      {
+        "file": "ref-04.jpg",
+        "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+      },
+      {
+        "file": "ref-05.jpg",
+        "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+      },
+      {
+        "file": "ref-06.jpg",
+        "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+      },
+      {
+        "file": "ref-07.jpg",
+        "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+      },
+      {
+        "file": "ref-08.jpg",
+        "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+      },
+      {
+        "file": "ref-09.jpg",
+        "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+      },
+      {
+        "file": "ref-10.jpg",
+        "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+      }
+    ],
+    "threshold": 0.14,
+    "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3324 of 0.3624). This does not assess creative quality or override the required brand style.",
+    "interpretation": "Existing FAIL retained; dominant white fraction difference does not waive the gate or establish semantic/creative parity."
   },
   "subsequent_changes_require_rerender": [],
   "unresolved_issues": [
-    "Complete audiovisual creative review has not been performed; eleven stills do not establish complete motion, acting, intelligibility or sound quality.",
+    "Complete audiovisual creative review has not been performed; targeted current-frame and historical sampled-frame reviews do not establish complete motion, acting, intelligibility or sound quality.",
     "Full audiovisual competitor comparison has not been performed; metadata and source statistics are insufficient.",
     "ASR alignment accuracy, naturalness and caption reading pace still require complete audiovisual review; exact token match alone is not listening.",
     "Style metric remains FAIL; background mismatch is quantitatively dominant but does not waive the gate.",
     "This report applies only to the identified candidate hash; subsequent changes require new render and review."
   ],
-  "handoff": "Do not invite the user to watch an unapproved draft. Technical PASS is not production or competitive-creative approval.",
+  "handoff": "Do not invite the user to watch an unapproved draft. Technical and caption PASS do not establish complete audiovisual or competitive-creative approval.",
   "previous_reviewed_candidate": {
-    "run_id": 38157835426,
-    "commit": "68790a1f24601be83ff0ef1d47ee9c8fc43dadcc",
-    "candidate_sha256": "59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485"
+    "run_id": 38159974084,
+    "commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
+    "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13"
   },
   "caption_review": {
     "timing_source": "faster-whisper observed words; no timing interpolation",
@@ -168,6 +153,185 @@
     "zero_duration_source_words_deferred": 2,
     "observed_timing_scope": "Cue starts follow observed ASR word starts; sampled video captions match the expected progressive text. ASR timestamps were not independently verified by listening.",
     "opening_script": "Stop attacking my wallet!",
-    "opening_note": "This revision changes the original opening; previous boss/bus recognition issue does not apply to this candidate."
-  }
+    "opening_note": "This revision changes the original opening; previous boss/bus recognition issue does not apply to this candidate.",
+    "frame_visibility_repair": "Previously subframe-invisible source word index 54 (the) is carried into the next visible phrase. Actual decoded frame 651 visibly reads the winning.",
+    "ci_frame_gate": {
+      "status": "PASS",
+      "frame_count": 841,
+      "visible_words": 74,
+      "version_scope": "CI code predates the scene-gap correction; current contiguous timeline unaffected."
+    },
+    "local_gap_aware_frame_gate": {
+      "status": "PASS",
+      "visible_words": 74,
+      "regression_tests_passed": 5,
+      "scope": "Local updated verifier skips frames without active scene; current artifact passes without rerender."
+    },
+    "actual_video_extent_check": {
+      "decoded_frames": 839,
+      "visible_words": 74,
+      "scope": "CaptionAtTime evaluated over actual decoded frame count, not only planned 841 frames; still not visual inspection of every frame."
+    }
+  },
+  "review_history": [
+    {
+      "reviewed_source": {
+        "run_id": 38159974084,
+        "job_id": 114530680507,
+        "commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
+        "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13",
+        "duration_seconds": 34.958333333333336,
+        "planned_duration_seconds": 35.041666666666664,
+        "fps": 24,
+        "coverage": "Eleven stills decoded from the actual captioned full MP4: one from each of eight dialogue beats plus opening/last-word caption samples. Inspected receipt data, exact script-word reconstruction, audio hash, cue timings and style metric components. This is not complete audiovisual viewing.",
+        "render_artifact_id": 11708854902,
+        "render_artifact_digest": "sha256:be6a3b78f0685c297df34fa2ed2876d9d604d69b8fef4f222fc5c2153b84af58",
+        "diagnostic_frames": [
+          {
+            "frame": 21,
+            "seconds": 0.875,
+            "sha256": "d919a660289c4ee48a33e8794f61c4a9a67fae160a0d7ac4fe9256ef7988c6f9"
+          },
+          {
+            "frame": 89,
+            "seconds": 3.7083333333333335,
+            "sha256": "af2f349dca978c770228e3aa2afff93d629114b0d317362323c65ad10d659d48"
+          },
+          {
+            "frame": 194,
+            "seconds": 8.083333333333334,
+            "sha256": "f8454df5f6bc60e77b46c80965d4d568a7258e61a136890a4b178069e8814c86"
+          },
+          {
+            "frame": 323,
+            "seconds": 13.458333333333334,
+            "sha256": "85c20572a6f0452795857bbdaf5238ceafc07c73931b48de7903d294461639d6"
+          },
+          {
+            "frame": 421,
+            "seconds": 17.541666666666668,
+            "sha256": "c132f5c84b5fadb53b314d5e4c7846ad85e8d12483d790f00062dd556ab8580d"
+          },
+          {
+            "frame": 540,
+            "seconds": 22.5,
+            "sha256": "c8935b902fc87456991f98bf1a81cc6f5ca4ae5bd920e7182a0fa1a907affbe3"
+          },
+          {
+            "frame": 651,
+            "seconds": 27.125,
+            "sha256": "bf0b03330e1c6394eb1551911bbd9e9c84eec5524a31e85a4997446dca177c20"
+          },
+          {
+            "frame": 763,
+            "seconds": 31.791666666666668,
+            "sha256": "826946eae7895ace8a69eea47daa8de97f17a901393517a06fb5099af0fc24e0"
+          },
+          {
+            "frame": 5,
+            "seconds": 0.20833333333333334,
+            "sha256": "56433b4ca84f3074b8fbd1e7a4d36d6f4192480ee95966ff3e27f8c31dab2116"
+          },
+          {
+            "frame": 27,
+            "seconds": 1.125,
+            "sha256": "e75678259926ba80f2470f94fb58d42d838cd734ff3a5e4fd8dd71940c8d6609"
+          },
+          {
+            "frame": 804,
+            "seconds": 33.5,
+            "sha256": "4b62a000c72315ab62f878acf60b6615f300de0dc8aa10fd81b7baef32d36482"
+          }
+        ],
+        "receipt_sha256": {
+          "render.json": "706cc5803aa7f98c89a60921dbb8bf745466c606ba76168a4d7d84b3d5317eaa",
+          "transcription.json": "355933af9a2ffd708c182f87c338cebe3486a66960aaeb144f82c34b81d6b701",
+          "visual-parity.json": "331442ff48cfb43600f02e510806f42439e7d71bc501f3a5765cb23d18bf9c67"
+        },
+        "captions_sha256": "703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931",
+        "source_audio_sha256": "d711230781602f81117d5a43206cd40d4c9cfb65bc14f6a05a3c95c6bd2f4c3e",
+        "ccsd_sha256": "7f99342c3d26935c2aef1a83aa8b0e8badb9b5f678b836ac69c8a4eb35cb1b3c",
+        "independent_diagnostic_warning": "Separate visual-diagnostics artifact was rendered before caption injection and was not used to verify caption appearance."
+      },
+      "verified_on_reviewed_source": {
+        "free_voice_generation": true,
+        "separate_audio_stems": true,
+        "transcript_qa": "PASS",
+        "sequence_similarity": 1.0,
+        "content_token_recall": 1.0,
+        "sampled_outer_clipping_observed": false,
+        "sampled_caption_prop_collisions_observed": false,
+        "sampled_chase_face_hand_crossing_observed": null,
+        "sampled_v2_floor_removed": true,
+        "sampled_caption_wrap_improvement_observed": null,
+        "sampled_actor_prop_contact_improvement_observed": null,
+        "motion_gate": "PASS",
+        "max_duplicate_run_seconds": 0.625,
+        "mean_motion": 0.011215531563083218,
+        "technical_checks": {
+          "audio_present": true,
+          "decodes": true,
+          "duration_match": true,
+          "motion_alive": true,
+          "no_black": true,
+          "no_duplicate_run": true,
+          "publication_disabled": true,
+          "safe_border": true,
+          "v4_installed": true
+        },
+        "style_parity": "FAIL",
+        "style_mean_frame_distance": 0.3623553243081087,
+        "captions_qa": "PASS",
+        "caption_cue_count": 72,
+        "caption_source_words": 74,
+        "caption_original_script_reconstructed_exactly": true,
+        "caption_source_audio_hash_matches": true,
+        "sampled_caption_text_readable": true,
+        "sampled_whole_beat_caption_reveal_observed": false,
+        "caption_rendered_observations": [
+          {
+            "seconds": 27.125,
+            "frame": 651,
+            "text": "the winning"
+          }
+        ],
+        "caption_frame_gate": "PASS",
+        "caption_frame_gate_visible_words": 74,
+        "caption_frame_gate_expected_words": 74
+      },
+      "caption_review": {
+        "timing_source": "faster-whisper observed words; no timing interpolation",
+        "display_mode": "progressive_phrase_max_3_words",
+        "original_words_preserved": true,
+        "punctuation_preserved": true,
+        "zero_duration_source_words_deferred": 2,
+        "observed_timing_scope": "Cue starts follow observed ASR word starts; sampled video captions match the expected progressive text. ASR timestamps were not independently verified by listening.",
+        "opening_script": "Stop attacking my wallet!",
+        "opening_note": "This revision changes the original opening; previous boss/bus recognition issue does not apply to this candidate.",
+        "frame_visibility_repair": "Previously subframe-invisible source word index 54 (the) is carried into the next visible phrase. Actual decoded frame 651 visibly reads the winning.",
+        "ci_frame_gate": {
+          "status": "PASS",
+          "frame_count": 841,
+          "visible_words": 74,
+          "version_scope": "CI code predates the scene-gap correction; current contiguous timeline unaffected."
+        },
+        "local_gap_aware_frame_gate": {
+          "status": "PASS",
+          "visible_words": 74,
+          "regression_tests_passed": 5,
+          "scope": "Local updated verifier skips frames without active scene; current artifact passes without rerender."
+        },
+        "actual_video_extent_check": {
+          "decoded_frames": 839,
+          "visible_words": 74,
+          "scope": "CaptionAtTime evaluated over actual decoded frame count, not only planned 841 frames; still not visual inspection of every frame."
+        }
+      },
+      "previous_reviewed_candidate": {
+        "run_id": 38157835426,
+        "commit": "68790a1f24601be83ff0ef1d47ee9c8fc43dadcc",
+        "candidate_sha256": "59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485"
+      }
+    }
+  ]
 }
