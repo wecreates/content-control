@@ -6,6 +6,44 @@ import numpy as np
 
 METRIC_WEIGHTS={"edge_density":0.35,"white_fraction":0.35,"mean_brightness":0.30}
 
+def foreground_diagnostics(gray):
+    """Describe composition without treating paper tint as foreground.
+
+    Supplemental evidence only: these measurements cannot change acceptance.
+    The 90th percentile estimates a light backdrop, not a semantic subject mask.
+    """
+    background=float(np.percentile(gray,90))
+    ink=gray.astype(float)<background-40.0
+    height,width=gray.shape
+    ys,xs=np.nonzero(ink)
+    return {
+        "estimated_background_luma":background/255.0,
+        "dark_foreground_fraction":float(ink.mean()),
+        "foreground_centroid_xy":([float(xs.mean()/width),float(ys.mean()/height)] if len(xs) else None),
+        "foreground_vertical_quarters":[float(part.mean()) for part in np.array_split(ink,4,axis=0)],
+        "method":"luma_40_below_frame_p90_descriptive_only",
+    }
+
+def benchmark_diagnostics(refs,cands):
+    """Expose why the existing gate failed; never substitute a new score."""
+    n=min(len(refs),len(cands))
+    if not n:
+        return {"acceptance_effect":"none","paired_frames":0}
+    contributions={k:float(np.mean([abs(r[k]-c[k])*w for r,c in zip(refs[:n],cands[:n])])) for k,w in METRIC_WEIGHTS.items()}
+    total=sum(contributions.values())
+    return {
+        "acceptance_effect":"none",
+        "scope":"pixel statistics only; not full audiovisual or competitor-quality review",
+        "paired_frames":n,
+        "reference_means":{k:float(np.mean([r[k] for r in refs[:n]])) for k in METRIC_WEIGHTS},
+        "candidate_means":{k:float(np.mean([c[k] for c in cands[:n]])) for k in METRIC_WEIGHTS},
+        "weighted_distance_contributions":contributions,
+        "white_fraction_distance_share":contributions["white_fraction"]/total if total else 0.0,
+        "reference_foreground":[r.get("foreground_diagnostics") for r in refs[:n]],
+        "candidate_foreground":[c.get("foreground_diagnostics") for c in cands[:n]],
+        "review_guidance":"Check reference background and composition against the approved brief. Do not recolor output or loosen thresholds merely to pass this metric.",
+    }
+
 def frame_metrics(img):
     gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     edge=cv2.Canny(gray,80,180)
@@ -13,6 +51,7 @@ def frame_metrics(img):
         "edge_density":float((edge>0).mean()),
         "white_fraction":float((gray>245).mean()),
         "mean_brightness":float(gray.mean()/255.0),
+        "foreground_diagnostics":foreground_diagnostics(gray),
     }
 
 def compare_metric_series(refs,cands,threshold=0.14):
@@ -92,6 +131,9 @@ def main():
         "candidate_sha256":sha256(a.candidate_video),
         "candidate_duration_seconds":duration,
         "reference_frames":len(refs),
+        "thresholds":{"mean_frame_distance":a.threshold,"p90_frame_distance":a.threshold*1.5},
+        "reference_frame_sha256":{p.name:sha256(p) for p in sorted(Path(a.reference_dir).glob("ref-*.jpg")) if cv2.imread(str(p)) is not None},
+        "benchmark_diagnostics":benchmark_diagnostics(refs,cands),
         "checks":checks,
         **comp,
         "status":"PASS" if all(checks.values()) else "FAIL",
@@ -104,3 +146,4 @@ def main():
 
 if __name__=="__main__":
     main()
+
