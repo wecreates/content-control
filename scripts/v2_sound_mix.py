@@ -47,17 +47,26 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
     # Normalize backing music first, then hold it well below speech.
     run(common+['-stream_loop','-1','-i',str(sources[1]),'-af','loudnorm=I=-30:TP=-8:LRA=7,afade=t=in:d=0.4,afade=t=out:st='+str(max(0,duration-.7))+':d=0.7']+pcm+[str(targets[0])])
     # At most eight restrained accents, never more often than every six seconds.
+    directed=ccsd.get('sound_design',{}).get('cue_seconds')
     cues=[]
-    for scene in scenes:
-        t=float(scene['start'])
-        if t<duration-.1 and (not cues or t-cues[-1]>=6):cues.append(t)
-        if len(cues)==8:break
+    if directed is not None:
+        if not isinstance(directed,list) or len(directed)>8:raise ValueError('At most eight directed sound cues required')
+        for value in directed:
+            t=float(value)
+            if not math.isfinite(t) or not 0<=t<duration-.1 or (cues and t-cues[-1]<6):raise ValueError('Directed cues must be ordered, sparse and inside the timeline')
+            cues.append(t)
+        if not cues:raise ValueError('Directed cues cannot be empty')
+    else:
+        for scene in scenes:
+            t=float(scene['start'])
+            if t<duration-.1 and (not cues or t-cues[-1]>=6):cues.append(t)
+            if len(cues)==8:break
     inputs=[];filters=[];labels=[]
     for i,t in enumerate(cues):
         inputs+=['-i',str(sources[2+i%2])]
         label=f'hit{i}';labels.append('['+label+']')
-        filters.append(f'[{i}:a]atrim=duration={min(.65,duration-t)},asetpts=PTS-STARTPTS,loudnorm=I=-27:TP=-9:LRA=7,afade=t=out:st=0.4:d=0.25,adelay={round(t*1000)}:all=1[{label}]')
-    filters.append(''.join(labels)+f'amix=inputs={len(labels)}:normalize=0,apad,atrim=duration={duration}[sfx]')
+        filters.append(f'[{i}:a]atrim=duration={min(.65,duration-t)},asetpts=PTS-STARTPTS,volume=0.18,alimiter=limit=0.18:level=false:latency=true,aresample=44100,asetpts=N/SR/TB,afade=t=out:st=0.4:d=0.25,adelay={round(t*1000)}:all=1[{label}]')
+    filters.append(''.join(labels)+f'amix=inputs={len(labels)}:normalize=0,apad=whole_dur={duration},atrim=duration={duration}[sfx]')
     run(common+inputs+['-filter_complex',';'.join(filters),'-map','[sfx]']+pcm+[str(targets[1])])
     # Narration enters exactly once. Low music/SFX stems remain separate for revision.
     run(common+['-i',str(sources[0]),'-i',str(targets[0]),'-i',str(targets[1]),'-filter_complex','[0:a]loudnorm=I=-16:TP=-2:LRA=7[v];[v][1:a][2:a]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=false:latency=true[m]','-map','[m]']+pcm+[str(targets[2])])

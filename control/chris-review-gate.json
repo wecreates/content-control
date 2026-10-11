@@ -1,10 +1,15 @@
 {
   "schema_version": 1,
   "order": 1,
-  "status": "WAITING_FOR_PLAYABLE_CANDIDATE",
+  "status": "WAITING_FOR_TEAM_CREATIVE_REVIEW",
   "requires": [
     "exact_candidate_hash",
-    "playable_artifact"
+    "playable_artifact",
+    "complete_audiovisual_review",
+    "documented_competitor_comparison",
+    "no_unresolved_creative_issues"
   ],
-  "team_final_review_before_chris": false
+  "team_final_review_before_chris": true,
+  "show_unreviewed_drafts": false,
+  "publication_enabled": false
 }

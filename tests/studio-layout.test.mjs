@@ -28,7 +28,7 @@ test('V2 battle has real changing SVG actions across all original story beats',a
   assert.ok(prefix);const scenes=c.scenes.filter(s=>v2BattleBeat(s.id)===prefix),start=scenes[0].start,end=scenes.at(-1).end;
   const render=time=>renderToStaticMarkup(React.createElement(V2BattleAction,{scene:scenes[0],scenes:c.scenes,time}));
   const a=render(start),b=render(end-.01);
-  assert.match(a,/CHASE/);assert.match(a,/AMEX/);
+  assert.match(a,/data-v2-beat/);
   assert.notEqual(a,b,`${prefix} must visibly change`);
   assert.ok(!a.includes('score_meter'));
  }

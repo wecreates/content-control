@@ -9,6 +9,8 @@ import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 
 import {createSocialRouter} from "./social-router.js";
 
+import {creativeHandoff} from "./creative-handoff.js";
+
 const app=express();
 const monitorStore=await loadMonitorStore();
 const PORT=Number(process.env.PORT||10000);
@@ -73,8 +75,9 @@ function v2Acceptance(){
   const h=readJson(v2HealthPath);
   const runtime=readJson(path.resolve("state/v2-runtime-validation.json"));
   const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
-  const ready=Boolean(runtime?.status==="READY"&&runtime?.candidate_sha256===actual&&h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
-  return {health:h,actual,expected,ready,runtime};
+  const handoff=creativeHandoff(h?.creative_review,actual);
+  const ready=Boolean(handoff.ready&&runtime?.status==="READY"&&runtime?.candidate_sha256===actual&&h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
+  return {health:h,actual,expected,ready,runtime,handoff};
 }
 function referenceCloneAcceptance(){
   const h=readJson(referenceCloneHealthPath);
@@ -335,12 +338,12 @@ function v2Draft(){
  const output=path.resolve("public-review/v2-draft.mp4"),actual=fileHash(output);
  return {health,output,actual,ready:Boolean(health?.status==="DRAFT"&&health?.publication_enabled===false&&actual&&actual===health?.candidate_sha256)};
 }
-app.get("/v2/draft/status",(req,res)=>{const d=v2Draft();res.setHeader("Cache-Control","no-store");res.status(d.ready?200:503).json({status:d.ready?"DRAFT":"NOT_AVAILABLE",publication:false,production_approved:false,voice_provider:d.health?.voice_provider||null,watchUrl:d.ready?"/v2/draft/watch":null,full_av_review:false});});
+app.get("/v2/draft/status",(req,res)=>{const d=v2Draft();res.setHeader("Cache-Control","no-store");res.status(d.ready?200:503).json({status:d.ready?"DRAFT":"NOT_AVAILABLE",publication:false,production_approved:false,voice_provider:d.health?.voice_provider||null,watchUrl:null,handoff_status:"INTERNAL_REVIEW_ONLY",full_av_review:false});});
 app.get("/v2/draft/media",(req,res)=>{const d=v2Draft();if(!d.ready)return res.status(409).json({error:"Draft unavailable or hash mismatch",publication:false});return streamMp4(req,res,d.output,d.actual);});
 app.get("/v2/draft/watch",(req,res)=>{const d=v2Draft();res.setHeader("Cache-Control","no-store");res.type("html").send(`<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>V2 draft review</title><style>body{font-family:system-ui;background:white;color:#111;margin:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:78vh}p{line-height:1.5}</style><main><h1>V2 draft review</h1><p>Free character voices. Full audiovisual review pending. Publishing disabled.</p>${d.ready?'<video controls playsinline preload="metadata" src="/v2/draft/media"></video>':'<p>No verified draft file is available yet.</p>'}<p>This draft is not approved production.</p><a href="/social">Operations dashboard</a></main></html>`);});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:v2Draft().ready?"free_dialogue_generated_review_pending":"free_generation_pending",voiceProvider:"kokoro_local_cpu",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,creativeHandoff:a.handoff,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:v2Draft().ready?"free_dialogue_generated_review_pending":"free_generation_pending",voiceProvider:"kokoro_local_cpu",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
 });
 app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{

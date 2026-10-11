@@ -20,6 +20,14 @@ class SoundMixTests(unittest.TestCase):
   self.assertEqual(len({o['sha256'] for o in r['outputs'].values()}),3)
   for o in r['outputs'].values():self.assertAlmostEqual(probe(o['path']),2,places=2)
   self.assertEqual(before,[p.read_bytes() for p in self.sources]);self.assertEqual(r['cue_seconds'],[0])
+ def test_directed_cue_alignment_and_invalid_density(self):
+  self.cc['sound_design']={'cue_seconds':[.5]}
+  result=self.call();self.assertEqual(result['cue_seconds'],[.5])
+  with wave.open(str(self.root/'out'/'sfx.wav'),'rb') as w:
+   self.assertEqual(w.readframes(20000),b'\0'*80000)
+   w.setpos(23000);self.assertNotEqual(w.readframes(1000),b'\0'*4000)
+  self.cc['sound_design']['cue_seconds']=[.2,.4]
+  with self.assertRaisesRegex(ValueError,'sparse'):self.call()
  def test_publication_and_missing_voice_fail_closed(self):
   self.cc['publication_enabled']=True
   with self.assertRaisesRegex(ValueError,'Publication'):self.call()

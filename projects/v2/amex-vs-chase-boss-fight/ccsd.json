@@ -4,7 +4,7 @@
     "installed": true
   },
   "project_id": "v2-amex-vs-chase-anime-boss-fight",
-  "title": "Amex vs Chase: Anime Boss Fight",
+  "title": "Amex vs Chase: My Wallet Is the Final Boss",
   "format": "short_9x16",
   "fps": 24,
   "width": 720,
@@ -21,8 +21,9 @@
       "start": 0,
       "end": 1.5,
       "story": {
-        "beat": "CONFLICT: TWO CARD EMPIRES COLLIDE",
-        "intent": "conflict attack"
+        "beat": "MY WALLET IS THE FINAL BOSS",
+        "intent": "conflict attack",
+        "visual_gag": "Wallet drops between two enormous rival attacks."
       },
       "camera": {
         "move": "punch_in",
@@ -52,7 +53,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "The points arena just summoned two bosses."
+            "text": "Why is my wallet the final boss?",
+            "performance": {
+              "intent": "anxious comic sincerity",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -62,8 +67,9 @@
       "start": 1.5,
       "end": 3,
       "story": {
-        "beat": "CONFLICT: TWO CARD EMPIRES COLLIDE",
-        "intent": "conflict attack"
+        "beat": "MY WALLET IS THE FINAL BOSS",
+        "intent": "conflict attack",
+        "visual_gag": "Wallet raises a pathetic little shield; smash zoom on Dave."
       },
       "camera": {
         "move": "punch_in",
@@ -98,8 +104,9 @@
       "start": 3,
       "end": 5.5,
       "story": {
-        "beat": "CHASE OPENS WITH A TRANSFER COMBO",
-        "intent": "escalation counter attack"
+        "beat": "TWO CARDS. ZERO BUDGET.",
+        "intent": "escalation counter attack",
+        "visual_gag": "A card summons an absurdly oversized sword."
       },
       "camera": {
         "move": "punch_in",
@@ -129,7 +136,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Chase chains its transfer partners into the first combo."
+            "text": "You summoned two cards. Neither summoned a budget.",
+            "performance": {
+              "intent": "calm deadpan interruption",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -139,8 +150,9 @@
       "start": 5.5,
       "end": 8,
       "story": {
-        "beat": "CHASE OPENS WITH A TRANSFER COMBO",
-        "intent": "escalation counter attack"
+        "beat": "TWO CARDS. ZERO BUDGET.",
+        "intent": "escalation counter attack",
+        "visual_gag": "The wallet blocks with a miniature budget shield."
       },
       "camera": {
         "move": "punch_in",
@@ -175,8 +187,9 @@
       "start": 8,
       "end": 11,
       "story": {
-        "beat": "AMEX COUNTERS WITH LOUNGE POWER",
-        "intent": "escalation counter power"
+        "beat": "DISTRACTED BY SHINY PERKS",
+        "intent": "escalation counter power",
+        "visual_gag": "A glamorous cape sweeps into frame with a spotlight."
       },
       "camera": {
         "move": "punch_in",
@@ -210,7 +223,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Amex counters with premium travel perks and lounge access."
+            "text": "Watch the shiny perks. That's where Dave stops reading.",
+            "performance": {
+              "intent": "calm deadpan interruption",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -220,8 +237,9 @@
       "start": 11,
       "end": 14,
       "story": {
-        "beat": "AMEX COUNTERS WITH LOUNGE POWER",
-        "intent": "escalation counter power"
+        "beat": "DISTRACTED BY SHINY PERKS",
+        "intent": "escalation counter power",
+        "visual_gag": "The reveal is one tiny sandwich; Dave leans toward it."
       },
       "camera": {
         "move": "punch_in",
@@ -260,8 +278,9 @@
       "start": 14,
       "end": 15.75,
       "story": {
-        "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
-        "intent": "escalation rising power"
+        "beat": "THE TINY SANDWICH STRATEGY",
+        "intent": "escalation rising power",
+        "visual_gag": "Tiny sandwich tempts Dave away from the wallet."
       },
       "camera": {
         "move": "punch_in",
@@ -291,7 +310,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "But premium perks are not free. The annual fees start draining health."
+            "text": "Lounge snacks? Finally, a financial plan with tiny sandwiches.",
+            "performance": {
+              "intent": "anxious comic sincerity",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -301,8 +324,9 @@
       "start": 15.75,
       "end": 17.5,
       "story": {
-        "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
-        "intent": "escalation rising power"
+        "beat": "THE TINY SANDWICH STRATEGY",
+        "intent": "escalation rising power",
+        "visual_gag": "Dave follows the sandwich as the fee jaw sneaks up."
       },
       "camera": {
         "move": "tracking",
@@ -337,8 +361,9 @@
       "start": 17.5,
       "end": 19.25,
       "story": {
-        "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
-        "intent": "escalation rising power"
+        "beat": "THE TINY SANDWICH STRATEGY",
+        "intent": "escalation rising power",
+        "visual_gag": "The fee jaw takes one exaggerated bite from the wallet."
       },
       "camera": {
         "move": "punch_in",
@@ -373,8 +398,9 @@
       "start": 19.25,
       "end": 21,
       "story": {
-        "beat": "ANNUAL FEES DRAIN THE HEALTH BAR",
-        "intent": "escalation rising power"
+        "beat": "THE TINY SANDWICH STRATEGY",
+        "intent": "escalation rising power",
+        "visual_gag": "Dave protects the sandwich instead of his wallet."
       },
       "camera": {
         "move": "tracking",
@@ -409,8 +435,9 @@
       "start": 21,
       "end": 23,
       "story": {
-        "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
-        "intent": "escalation counter"
+        "beat": "THE UNINVITED FEE",
+        "intent": "escalation counter",
+        "visual_gag": "Sandwich arrives at the party wearing an invitation."
       },
       "camera": {
         "move": "punch_in",
@@ -440,7 +467,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Transfer value depends on how you redeem, not just how many points glow on screen."
+            "text": "The snacks arrived. So did the fee. Dave only invited one.",
+            "performance": {
+              "intent": "calm deadpan interruption",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -450,8 +481,9 @@
       "start": 23,
       "end": 25,
       "story": {
-        "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
-        "intent": "escalation counter"
+        "beat": "THE UNINVITED FEE",
+        "intent": "escalation counter",
+        "visual_gag": "Fee arrives uninvited and squeezes through the same door."
       },
       "camera": {
         "move": "tracking",
@@ -486,8 +518,9 @@
       "start": 25,
       "end": 27,
       "story": {
-        "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
-        "intent": "escalation counter"
+        "beat": "THE UNINVITED FEE",
+        "intent": "escalation counter",
+        "visual_gag": "Wallet backs away as the fee takes up the whole room."
       },
       "camera": {
         "move": "punch_in",
@@ -522,8 +555,9 @@
       "start": 27,
       "end": 29,
       "story": {
-        "beat": "POINTS MONK SUMMONS TRANSFER VALUE",
-        "intent": "escalation counter"
+        "beat": "THE UNINVITED FEE",
+        "intent": "escalation counter",
+        "visual_gag": "Monk points at the unwanted guest; Dave hides the snack."
       },
       "camera": {
         "move": "tracking",
@@ -558,8 +592,9 @@
       "start": 29,
       "end": 31,
       "story": {
-        "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
-        "intent": "conflict attack escalation"
+        "beat": "PANIC TAP OR CHECK VALUE",
+        "intent": "conflict attack escalation",
+        "visual_gag": "Dave reaches toward a glowing PANIC TAP button."
       },
       "camera": {
         "move": "punch_in",
@@ -589,7 +624,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "Dave panic redeems badly and vaporizes part of his value."
+            "text": "I'll pay with points! Why does this button say bad idea?",
+            "performance": {
+              "intent": "anxious comic sincerity",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -599,8 +638,9 @@
       "start": 31,
       "end": 33,
       "story": {
-        "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
-        "intent": "conflict attack escalation"
+        "beat": "PANIC TAP OR CHECK VALUE",
+        "intent": "conflict attack escalation",
+        "visual_gag": "CHECK VALUE appears beside it; Dave ignores the calm option."
       },
       "camera": {
         "move": "tracking",
@@ -635,8 +675,9 @@
       "start": 33,
       "end": 35,
       "story": {
-        "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
-        "intent": "conflict attack escalation"
+        "beat": "PANIC TAP OR CHECK VALUE",
+        "intent": "conflict attack escalation",
+        "visual_gag": "An illustrative cloud of unpriced points scatters from his tap."
       },
       "camera": {
         "move": "punch_in",
@@ -671,8 +712,9 @@
       "start": 35,
       "end": 37,
       "story": {
-        "beat": "DAVE HITS THE BAD REDEMPTION TRAP",
-        "intent": "conflict attack escalation"
+        "beat": "PANIC TAP OR CHECK VALUE",
+        "intent": "conflict attack escalation",
+        "visual_gag": "Dave freezes, looks at the calm option, and retracts his hand."
       },
       "camera": {
         "move": "tracking",
@@ -707,8 +749,9 @@
       "start": 37,
       "end": 39,
       "story": {
-        "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
-        "intent": "escalation battle payoff"
+        "beat": "THE CHECKLIST WINS",
+        "intent": "escalation battle payoff",
+        "visual_gag": "Monk interrupts the fight with a practical checklist."
       },
       "camera": {
         "move": "punch_in",
@@ -742,7 +785,11 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "The real matchup depends on your spending, travel, fees, and redemption habits."
+            "text": "Plot twist: the winning card fits your life. The cape is optional.",
+            "performance": {
+              "intent": "calm deadpan interruption",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -752,8 +799,9 @@
       "start": 39,
       "end": 41,
       "story": {
-        "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
-        "intent": "escalation battle payoff"
+        "beat": "THE CHECKLIST WINS",
+        "intent": "escalation battle payoff",
+        "visual_gag": "NEEDS, COSTS, and USE become a shield in sequence."
       },
       "camera": {
         "move": "tracking",
@@ -792,8 +840,9 @@
       "start": 41,
       "end": 43,
       "story": {
-        "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
-        "intent": "escalation battle payoff"
+        "beat": "THE CHECKLIST WINS",
+        "intent": "escalation battle payoff",
+        "visual_gag": "Shield stops both rival attacks; neither brand wins automatically."
       },
       "camera": {
         "move": "punch_in",
@@ -832,8 +881,9 @@
       "start": 43,
       "end": 45,
       "story": {
-        "beat": "FINAL CLASH: WHICH SYSTEM FITS THE PLAYER?",
-        "intent": "escalation battle payoff"
+        "beat": "THE CHECKLIST WINS",
+        "intent": "escalation battle payoff",
+        "visual_gag": "Cape falls away; the wallet stands behind its own shield."
       },
       "camera": {
         "move": "tracking",
@@ -872,8 +922,9 @@
       "start": 45,
       "end": 47.5,
       "story": {
-        "beat": "PAYOFF: THE PLAYER IS THE BUILD",
-        "intent": "payoff victory finish"
+        "beat": "BUDGET WITH A SIDE OF SANDWICH",
+        "intent": "payoff victory finish",
+        "visual_gag": "Wallet closes safely around the little sandwich."
       },
       "camera": {
         "move": "punch_in",
@@ -903,7 +954,11 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "The strongest card setup is the one whose benefits you actually use."
+            "text": "I'm choosing a budget. Does it come with tiny sandwiches?",
+            "performance": {
+              "intent": "anxious comic sincerity",
+              "sfx_in_narration": false
+            }
           }
         ]
       }
@@ -913,8 +968,9 @@
       "start": 47.5,
       "end": 50,
       "story": {
-        "beat": "PAYOFF: THE PLAYER IS THE BUILD",
-        "intent": "payoff victory finish"
+        "beat": "BUDGET WITH A SIDE OF SANDWICH",
+        "intent": "payoff victory finish",
+        "visual_gag": "Dave peers inside for snacks; end on the protected wallet callback."
       },
       "camera": {
         "move": "punch_in",
@@ -944,5 +1000,28 @@
         "dialogue": []
       }
     }
-  ]
+  ],
+  "creative_revision": {
+    "version": 2,
+    "premise": "Dave mistakes a card battle for a financial plan; the wallet pays for his sandwich obsession.",
+    "payoff": "A practical checklist stops the fight; the sandwich returns as a callback.",
+    "claim_scope": "Fictional illustrative comedy. No specific fees, benefits, point values, guaranteed returns or universal card winner asserted. Character snack obsession is not financial advice.",
+    "review_status": "SCRIPT_REVISED_RENDER_REVIEW_PENDING"
+  },
+  "sound_design": {
+    "source": "existing_owned_assets",
+    "cue_seconds": [
+      0.5,
+      7,
+      13.5,
+      20,
+      27,
+      34,
+      41,
+      48
+    ],
+    "music_role": "quiet continuous backing below dialogue",
+    "sfx_role": "sparse physical impacts and final callback; never spoken",
+    "listening_review": "pending"
+  }
 }

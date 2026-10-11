@@ -1,69 +1,73 @@
 import React from 'react';
 import {v2BattleBeat} from './StudioLayout.mjs';
-const K='#111',W='#fff';
-const lerp=(a,b,p)=>a+(b-a)*p;
-const Token=({x,y,r=12,opacity=1})=><g opacity={opacity}><circle cx={x} cy={y} r={r} fill={W} stroke={K} strokeWidth="3"/><path d={`M${x-4} ${y}h8M${x} ${y-4}v8`} stroke={K} strokeWidth="2"/></g>;
-const Card=({x,y,label,subtitle,scale=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${scale})`}>
- <rect x="-104" y="-48" width="208" height="96" rx="14" fill={W} stroke={K} strokeWidth="4"/>
- <rect x="-80" y="-24" width="26" height="21" rx="3" fill="none" stroke={K} strokeWidth="2"/>
- <text x="12" y="-6" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="24" fill={K}>{label}</text>
- <text x="0" y="29" textAnchor="middle" fontFamily="Arial" fontSize="14" fill={K}>{subtitle}</text>
-</g>;
-const Label=({x=360,y=595,children,size=19})=><text x={x} y={y} textAnchor="middle" fontFamily="Arial" fontWeight="700" fontSize={size} fill={K}>{children}</text>;
-// These bars are qualitative story metaphors, never dollar/points estimates.
-const Meter=({x,y,width=200,fill=1,label})=><g><text x={x+width/2} y={y-10} textAnchor="middle" fontFamily="Arial" fontSize="15" fill={K}>{label}</text><rect x={x} y={y} width={width} height="20" rx="5" fill={W} stroke={K} strokeWidth="2"/><rect x={x+4} y={y+4} width={Math.max(0,(width-8)*fill)} height="12" rx="2" fill={K}/></g>;
+const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
+const mix=(a,b,p)=>a+(b-a)*p;
+const ease=p=>p*p*(3-2*p);
+const Word=({x=360,y=620,size=24,children})=><text x={x} y={y} textAnchor="middle" fontFamily="Arial" fontWeight="800" fontSize={size} fill={K}>{children}</text>;
+const Card=({x,y,label,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation})`}><rect x="-87" y="-42" width="174" height="84" rx="13" fill={W} stroke={K} strokeWidth="5"/><rect x="-64" y="-19" width="23" height="20" rx="3" fill="none" stroke={K} strokeWidth="3"/><text x="16" y="9" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="23" fill={K}>{label}</text></g>;
+const Wallet=({x=360,y=480,s=1,rotation=0,label=''})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><rect x="-110" y="-66" width="220" height="132" rx="20" fill={W} stroke={K} strokeWidth="6"/><path d="M-85-42H65" stroke={K} strokeWidth="3"/><rect x="45" y="-20" width="79" height="45" rx="9" fill={W} stroke={K} strokeWidth="5"/><circle cx="67" cy="3" r="5" fill={K}/>{label?<text x="-12" y="19" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="25" fill={K}>{label}</text>:null}</g>;
+const Sandwich=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-56 18L0-38 56 18Z" fill={W} stroke={K} strokeWidth="5" strokeLinejoin="round"/><path d="M-56 18v14H56V18M-47 21l14 7 14-7 14 7 14-7 14 7 15-7" fill={W} stroke={K} strokeWidth="4"/><path d="M-4-16l9 6M-20 2l6 3" stroke={K} strokeWidth="3"/></g>;
+const Coin=({x,y,s=1,opacity=1})=><g opacity={opacity}><circle cx={x} cy={y} r={14*s} fill={W} stroke={K} strokeWidth="4"/><path d={`M${x-4*s} ${y}h${8*s}`} stroke={K} strokeWidth="3"/></g>;
+const Sword=({x,y,rotation=0,s=1})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-94-15H72L112 0 72 15H-94Z" fill={W} stroke={K} strokeWidth="5"/><path d="M-72 0H83M-96-31V31M-124 0H-98" fill="none" stroke={K} strokeWidth="7" strokeLinecap="round"/></g>;
+const Cape=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-35-75L-105 90Q-42 65 0 95Q45 65 105 90L35-75Q0-55-35-75Z" fill={K}/><path d="M-25-49L-58 66M25-49L58 66" stroke={W} strokeWidth="3"/></g>;
+const FeeJaw=({x,y,open=1,s=1})=><g transform={`translate(${x} ${y}) scale(${s})`}><text x="0" y="-80" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="31" fill={K}>FEE</text><g transform={`translate(0 ${-open*27})`}><path d="M-80-28Q0-90 80-28L60-5 40-28 20-5 0-28-20-5-40-28-60-5Z" fill={W} stroke={K} strokeWidth="5"/></g><g transform={`translate(0 ${open*27})`}><path d="M-80 28Q0 90 80 28L60 5 40 28 20 5 0 28-20 5-40 28-60 5Z" fill={W} stroke={K} strokeWidth="5"/></g></g>;
+const Button=({x,label,pressed=false})=><g><rect x={x-122} y="356" width="244" height="72" rx="12" fill={pressed?K:W} stroke={K} strokeWidth="5"/><text x={x} y="400" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="23" fill={pressed?W:K}>{label}</text></g>;
+
 export function V2BattleAction({scene,scenes,time}) {
  const beat=v2BattleBeat(scene.id);if(!beat)return null;
  const same=scenes.filter(s=>v2BattleBeat(s.id)===beat),start=Math.min(...same.map(s=>s.start)),end=Math.max(...same.map(s=>s.end));
- const p=Math.max(0,Math.min(1,(time-start)/(end-start))),smooth=p*p*(3-2*p);
- const chaseAttack=beat==='chase-strike',amexAttack=beat==='amex-counter',fee=beat==='fee-drain',transfer=beat==='points-summon',trap=beat==='trap',clash=beat==='final-clash',finish=beat==='finish';
- const entrance=beat==='cold-open'?1-smooth:0;
- // Three discrete combo strikes, each followed by the defender recoiling.
- const strikePhase=(p*3)%1;
- const lunge=Math.sin(Math.PI*strikePhase)*38;
- const recoil=Math.max(0,Math.sin(Math.PI*Math.max(0,strikePhase-.45)/.55))*18;
- const cy=402;
+ const p=clamp((time-start)/(end-start)),q=ease(p),seconds=time-start;
+ const strike=clamp((p-.12)/.55),contact=Math.max(0,Math.sin(strike*Math.PI));
  return <g data-v2-beat={beat}>
-  <Card x={190-entrance*8+(chaseAttack?lunge:0)} y={cy+(amexAttack?recoil:chaseAttack?-lunge*.25:0)} label="CHASE" subtitle={chaseAttack?'TRANSFER COMBO':'POINTS SYSTEM'} rotation={chaseAttack?Math.sin(p*Math.PI)*6:0}/>
-  <Card x={530+entrance*8-(amexAttack?lunge:0)} y={cy+(chaseAttack?recoil:amexAttack?-lunge*.25:0)} label="AMEX" subtitle={amexAttack?'TRAVEL PERKS':'POINTS SYSTEM'} rotation={amexAttack?-Math.sin(p*Math.PI)*6:0}/>
-  <Label y={410} size={23}>VS</Label>
-  {chaseAttack||amexAttack?<g>
-   <path d={chaseAttack?'M180 479Q360 540 540 479':'M540 479Q360 540 180 479'} fill="none" stroke={K} strokeWidth="3" strokeDasharray="7 8"/>
-   {[0,1,2].map((offset,i)=>{const q=Math.max(0,Math.min(1,p*3-offset));return <Token key={i} x={chaseAttack?lerp(180,540,q):lerp(540,180,q)} y={479+Math.sin(q*Math.PI)*31} r={18} opacity={q>0&&q<1?1:0}/>;})}
-   <Label>{chaseAttack?'TRANSFER COMBO →':'← TRAVEL PERK COUNTER'}</Label>
+  {beat==='cold-open'?<g>
+   <Card x={175+q*32} y={375} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={375} label="AMEX" rotation={-q*12}/>
+   <Wallet x={360} y={510} s={.76} rotation={Math.sin(p*Math.PI*2)*7}/>
+   {[0,1].map(i=><path key={i} d={`M${i?510:210} 422L${mix(i?500:220,360,q)} ${mix(438,483,q)}`} stroke={K} strokeWidth="10" strokeLinecap="round"/>)}
+   <Word>WHY IS MY WALLET THE BOSS?</Word>
   </g>:null}
-  {fee?<g>
-   <Meter x={90} y={505} fill={1-smooth*.72} label="VALUE AFTER FEES"/>
-   <Meter x={430} y={505} fill={1-smooth*.72} label="VALUE AFTER FEES"/>
-   {[190,530].map(x=><g key={x}><Token x={x} y={535+smooth*27} opacity={Math.sin(p*Math.PI)}/><path d={`M${x-8} 556l8 8 8-8`} fill="none" stroke={K} strokeWidth="3"/></g>)}
-   <Label>FEES REDUCE THE PAYOFF</Label>
+  {beat==='chase-strike'?<g>
+   <Card x={180} y={366} label="CHASE"/><Card x={540} y={366} label="AMEX"/>
+   <Sword x={mix(250,435,strike)} y={480-contact*22} rotation={mix(-24,12,strike)} s={1.15}/>
+   <Wallet x={530+contact*18} y={530+contact*24} s={.38} rotation={contact*30}/>
+   <Word size={26}>SWORD: HUGE. BUDGET: MISSING.</Word>
   </g>:null}
-  {transfer?<g>
-   <rect x="75" y="492" width="150" height="54" rx="10" fill={W} stroke={K} strokeWidth="3"/><Label x={150} y={525}>POINTS</Label>
-   <path d="M240 519H463l-10-8m10 8-10 8" stroke={K} strokeWidth="3" fill="none"/>
-   <Token x={lerp(245,460,smooth)} y={519}/>
-   <rect x="485" y="492" width="160" height="54" rx="10" fill={W} stroke={K} strokeWidth="3"/><Label x={565} y={525}>REDEMPTION</Label>
-   <Label>HOW YOU USE THEM MATTERS</Label>
+  {beat==='amex-counter'?<g>
+   <Cape x={360-q*140} y={452} s={1.05} rotation={-q*18}/>
+   <path d="M460 330L355 566H610Z" fill="none" stroke={K} strokeWidth="2" strokeDasharray="8 8" opacity={q}/>
+   <Sandwich x={470} y={492-q*32} s={.65+q*.4} rotation={-8+q*8}/>
+   <Word>THE PERK HAS A CRUST.</Word>
   </g>:null}
-  {trap?<g>
-   <Meter x={110} y={510} width={230} fill={1-smooth*.8} label="REDEMPTION VALUE"/>
-   <path d="M376 530h72l-12-10m12 10-12 10" stroke={K} strokeWidth="3" fill="none"/>
-   <path d="M487 484l90 0-15 65h-60z" fill={W} stroke={K} strokeWidth="3"/>
-   <Token x={532} y={lerp(471,537,smooth)} r={lerp(12,3,smooth)} opacity={1-smooth}/>
-   <Label>BAD REDEMPTION. LOST VALUE.</Label>
+  {beat==='fee-drain'?<g>
+   <Sandwich x={220} y={365} s={.7}/>
+   <Wallet x={240-contact*18} y={503} s={.82} rotation={contact*-8}/>
+   <FeeJaw x={mix(540,410,q)} y={500} open={.15+.85*Math.abs(Math.sin(p*Math.PI*2))} s={.8}/>
+   <Word>THE SNACK HAS COMPANY.</Word>
   </g>:null}
-  {clash?<g>
-   <path d="M190 467L300 495M530 467L420 495" pathLength="1" strokeDasharray="1" strokeDashoffset={clash?1-smooth:0} stroke={K} strokeWidth="3" fill="none"/>
-   <rect x="240" y="490" width="240" height="65" rx="12" fill={W} stroke={K} strokeWidth="3"/>
-   <Label y={517}>{finish?'BENEFITS YOU USE':'YOUR HABITS'}</Label>
-   <Label y={541} size={15}>{finish?'YOUR WINNING SETUP':'SPENDING • TRAVEL • FEES'}</Label>
-   {finish?<path d={`M330 578l18 17 42-35`} pathLength="1" strokeDasharray="1" strokeDashoffset={1-smooth} fill="none" stroke={K} strokeWidth="5"/>:<Label>THE PLAYER DECIDES THE BUILD</Label>}
+  {beat==='points-summon'?<g>
+   <Sandwich x={mix(150,270,q)} y={430} s={1.05}/>
+   <path d="M130 490H390" stroke={K} strokeWidth="4"/>
+   <Word x={260} y={527} size={23}>INVITED</Word>
+   <g transform={`translate(${mix(590,488,q)} ${mix(385,468,q)}) rotate(${-12+q*12})`}><rect x="-78" y="-70" width="156" height="138" rx="8" fill={W} stroke={K} strokeWidth="5"/><path d="M-78-70L0-8 78-70" stroke={K} strokeWidth="4" fill="none"/><text x="0" y="40" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="34" fill={K}>FEE</text></g>
+   <Word>NOT ON THE GUEST LIST.</Word>
   </g>:null}
-  {finish?<g>
-   <Label y={480} size={24}>BENEFITS YOU USE</Label>
-   <path d="M280 535l55 45 105-85" pathLength="1" strokeDasharray="1" strokeDashoffset={1-p} strokeLinecap="round" strokeLinejoin="round" fill="none" stroke={K} strokeWidth="12"/>
-   <Label y={617}>YOUR WINNING SETUP</Label>
+  {beat==='trap'?<g>
+   <Button x={210} label="PANIC TAP" pressed={p>.35}/><Button x={510} label="CHECK VALUE"/>
+   <Wallet x={360} y={532} s={.54} rotation={p>.35?contact*10:0}/>
+   <path d={`M365 467L${mix(355,210,clamp(p/.35))} ${mix(466,423,clamp(p/.35))}`} stroke={K} strokeWidth="9" strokeLinecap="round"/>
+   {Array.from({length:5},(_,i)=>{const escape=clamp((p-.35)*1.54);return <Coin key={i} x={360+(i-2)*104*escape} y={535-Math.sin(escape*Math.PI)*(60+i%2*34)+escape*40} opacity={p>.35?1:0}/>;})}
+   <Word>THE BUTTON WAS A WARNING.</Word>
   </g>:null}
-  {beat==='cold-open'?<Label>TWO SYSTEMS. ONE PLAYER.</Label>:null}
+  {beat==='final-clash'?<g>
+   <Cape x={125} y={mix(420,516,q)} s={.42} rotation={q*-70}/>
+   <Sword x={mix(190,200,q)} y={438} rotation={10} s={.65}/><Sword x={mix(540,520,q)} y={485} rotation={175} s={.65}/>
+   <path d="M260 333Q360 365 460 333V501Q446 574 360 612Q274 574 260 501Z" fill={W} stroke={K} strokeWidth="7"/>
+   {['NEEDS','COSTS','USE'].map((label,i)=><g key={label}><Word x={378} y={405+i*60} size={26}>{label}</Word><path d={`M282 ${394+i*60}l13 13 22-29`} pathLength="1" strokeDasharray="1" strokeDashoffset={1-clamp(p*3-i)} fill="none" stroke={K} strokeWidth="6"/></g>)}
+  </g>:null}
+  {beat==='finish'?<g>
+   <Wallet x={360} y={462} s={1.3} label="BUDGET"/>
+   <Sandwich x={360} y={mix(610,582,q)} s={.58}/>
+   <path d={`M205 550Q360 ${mix(545,640,q)} 515 550`} fill="none" stroke={K} strokeWidth="6" strokeLinecap="round"/>
+   <Word y={349} size={28}>CAPE OPTIONAL.</Word>
+  </g>:null}
  </g>;
 }

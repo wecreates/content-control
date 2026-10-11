@@ -22,6 +22,8 @@ on:
       - 'tests/test_v2_audio_assemble.py'
       - 'projects/v2/amex-vs-chase-boss-fight/ccsd.json'
       - 'remotion/**'
+      - 'creative-handoff.js'
+      - 'tests/creative-handoff.test.mjs'
       - '.github/workflows/content-control-v2.yml'
 permissions:
   contents: write
@@ -36,6 +38,8 @@ jobs:
         with: {python-version: '3.12'}
       - name: V2 acceptance tests
         run: python -m unittest -v tests/test_v2_acceptance.py tests/test_v2_audio_assemble.py tests/test_v2_runtime_tick.py
+      - name: Verify complete creative review before customer handoff
+        run: node --test tests/creative-handoff.test.mjs
       - name: Verify job cannot falsely report READY
         run: |
           python - <<'PY'
@@ -150,8 +154,11 @@ jobs:
           exit 1
       - name: Inspect rendered candidate
         run: |
-          python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json
-          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json
+          media_status=0
+          parity_status=0
+          python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json || media_status=$?
+          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json || parity_status=$?
+          test "$media_status" -eq 0 && test "$parity_status" -eq 0
       - name: Enforce structural preflight (not rendered creative review)
         run: |
           python - <<'PY'
