@@ -5,6 +5,7 @@ on:
       - 'remotion/**'
       - 'scripts/rendered_visual_parity.py'
       - 'tests/test_rendered_visual_parity.py'
+      - 'tests/test_white_stage_reference_calibration.py'
       - 'tests/studio-layout.test.mjs'
       - '.github/workflows/v2-draft-readonly-validation.yml'
 permissions:
@@ -35,6 +36,7 @@ jobs:
       - name: Run parity and choreography regression tests
         run: |
           python -m unittest discover -s tests -p test_rendered_visual_parity.py -v
+          python -m unittest discover -s tests -p test_white_stage_reference_calibration.py -v
           node --test tests/studio-layout.test.mjs
       - name: Verify exact existing free audio source and unchanged timeline
         run: |
@@ -81,10 +83,10 @@ jobs:
         id: media
         continue-on-error: true
         run: python scripts/production_reality_media_qa.py --video qa-output/v2-draft-readonly/candidate.mp4 --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --out qa-output/v2-draft-readonly/media.json
-      - name: Run unchanged parity gate with diagnostic evidence
+      - name: Validate white-stage benchmark with preserved legacy evidence
         id: parity
         continue-on-error: true
-        run: python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video qa-output/v2-draft-readonly/candidate.mp4 --out qa-output/v2-draft-readonly/parity.json
+        run: python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video qa-output/v2-draft-readonly/candidate.mp4 --out qa-output/v2-draft-readonly/parity.json --comparison-profile white-stage-v2
       - name: Preserve internal evidence only
         if: always()
         uses: actions/upload-artifact@v4
