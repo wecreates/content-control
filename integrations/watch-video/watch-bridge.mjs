@@ -6,7 +6,7 @@ import {normalizeSocialUrl,addIntake,updateQueueFile} from '../../social-intake.
 const DEFAULT_TIMEOUT_MS = 180000;
 export function buildWatchInvocation({url,skillDir,python='python3',question='Summarize this video with timestamped visual and spoken evidence.'}) {
   const normalized=normalizeSocialUrl(url);
-  if (!skillDir || !resolve(skillDir).startsWith('/')) throw new Error('Absolute trusted skill directory required');
+  if (!skillDir || typeof skillDir!=='string' || !skillDir.startsWith('/')) throw new Error('Absolute trusted skill directory required');
   if (typeof question!=='string'||question.length>2000) throw new Error('Invalid question');
   return {command:python,args:[resolve(skillDir,'scripts/watch.py'),normalized.source_url,'--question',question,'--engine','local'],normalized};
 }
@@ -32,6 +32,7 @@ export async function queueWatchResult({queuePath,url,result,now=new Date().toIS
     const record=added.record;
     record.retrieval_attempts??=[];
     record.retrieval_attempts.push({date:now,route:'watch_skill_local',result:'output_collected_unreviewed'});
+    record.unreviewed_watch_output={text:result.stdout.slice(0,20000),truncated:result.stdout.length>20000,review_required:true,verified:false};
     record.analysis_status='watch_output_pending_evidence_review';
     record.status='pending_human_or_agent_evidence_review';
     record.coverage??={full_video:false,full_audio:false,segments:[],transcript_segments:[],sampled_frame_seconds:[]};
