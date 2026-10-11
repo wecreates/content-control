@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,9 +55,16 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "dependency_security_clean"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "9f718750499a7206c71167f63ccb0ee415bd7e290124592df84fdcca564e9621",
+      "expected": "b9822cc6e601a4282e55cabbad660461cbb41811ebe120c2db585d84f169a5a4",
+      "path": "server-lowmem.js"
+    }
+  ],
   "publication_enabled": false,
   "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
