@@ -10,13 +10,13 @@ export function normalizeCatalog(input, revision = DEFAULT_SHA) {
   const seen = new Set();
   return rows.map((v, index) => {
     if (!v || typeof v !== 'object') return null;
-    const id = String(v.id ?? v.slug ?? v.videoId ?? v.video_id ?? index).slice(0,160);
+    const id = String(v.slug ?? v.id ?? v.videoId ?? v.video_id ?? index).slice(0,160);
     if (seen.has(id)) return null;
     seen.add(id);
     const category = String(v.category ?? v.type ?? v.section ?? 'unclassified').slice(0,120);
-    const prompt = String(v.promptPath ?? v.prompt_path ?? v.promptFile ?? v.prompt_file ?? '').slice(0,250);
-    const source = String(v.sourceUrl ?? v.source_url ?? v.url ?? v.postUrl ?? v.post_url ?? '').slice(0,500);
-    return {id, category, title: String(v.title ?? v.name ?? id).slice(0,200), creator: String(v.creator ?? v.author ?? v.handle ?? 'unknown').slice(0,160), source_url: /^https:\/\//.test(source) ? source : null, prompt_path: /^prompts\/[a-zA-Z0-9._/-]+\.md$/.test(prompt) && !prompt.includes('..') ? prompt : null, revision, status:'reference_only', execution_allowed:false, publication_allowed:false};
+    const prompt = String(v.promptPath ?? v.prompt_path ?? v.promptFile ?? v.prompt_file ?? (v.slug ? 'prompts/' + v.slug + '.md' : '')).slice(0,250);
+    const source = String(v.post_url ?? v.sourceUrl ?? v.source_url ?? v.url ?? v.postUrl ?? '').slice(0,500);
+    return {id, category, title: String(v.title ?? v.name ?? id).slice(0,200), creator: String(v.author ?? v.creator ?? v.handle ?? 'unknown').slice(0,160), source_url: /^https:\/\//.test(source) ? source : null, prompt_path: /^prompts\/[a-zA-Z0-9._/-]+\.md$/.test(prompt) && !prompt.includes('..') ? prompt : null, revision, status:'reference_only', execution_allowed:false, publication_allowed:false};
   }).filter(Boolean);
 }
 export async function buildCatalog({inputPath, outputPath, revision = DEFAULT_SHA, allowNetwork = false} = {}) {
