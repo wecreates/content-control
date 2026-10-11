@@ -52,6 +52,7 @@
     ".github/workflows/sync-retention-gate.yml",
     ".github/workflows/system-wiring-audit.yml",
     ".github/workflows/vce-gate.yml",
+    ".github/workflows/verify-opus-catalog.yml",
     ".github/workflows/verify-render-monitor.yml",
     ".github/workflows/video-playback-contract.yml"
   ],
