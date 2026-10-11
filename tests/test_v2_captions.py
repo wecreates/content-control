@@ -21,6 +21,26 @@ class ObservedCaptionsTests(unittest.TestCase):
    saved=copy.deepcopy(self.report);mutate(self.report)
    with self.assertRaises(ValueError):self.run_build()
    self.report=saved
+ def test_zero_duration_word_waits_for_observed_positive_interval(self):
+  self.report['words'][3]['end']=self.report['words'][3]['start']
+  r=self.run_build();cue=next(c for c in r['cues'] if c['observed_word_index']==4)
+  self.assertEqual(cue['text'],'wallet the');self.assertEqual(cue['start'],2.0);self.assertEqual(cue['end'],2.3)
+  self.assertEqual(cue['deferred_zero_duration_indices'],[3])
+  self.assertFalse(any(c['observed_word_index']==3 for c in r['cues']))
+  self.assertEqual(' '.join(c['word'] for c in r['cues']),'Why is my wallet the final boss?')
+ def test_unresolved_or_cross_speaker_zero_duration_stays_blocked(self):
+  self.report['words'][-1]['end']=self.report['words'][-1]['start']
+  with self.assertRaisesRegex(ValueError,'Terminal'):self.run_build()
+  self.report['words'][-1]['end']+=.3
+  self.cc['scenes'][0]['audio']['dialogue']=[{'speaker':'dave','text':'Why is my'},{'speaker':'points_monk','text':'wallet the final boss?'}]
+  self.report['words'][2]['end']=self.report['words'][2]['start']
+  with self.assertRaisesRegex(ValueError,'boundary'):self.run_build()
+ def test_zero_prefix_does_not_cross_scene_or_grow_unbounded(self):
+  self.cc['scenes']=[{'id':'a','start':0,'end':1.5,'audio':{'dialogue':[{'speaker':'dave','text':'Why is my'}]}},{'id':'b','start':1.5,'end':5,'audio':{'dialogue':[{'speaker':'dave','text':'wallet the final boss?'}]}}]
+  self.report['words'][2]['end']=self.report['words'][2]['start']
+  with self.assertRaisesRegex(ValueError,'boundary'):self.run_build()
+  for i in range(3):self.report['words'][i]['end']=self.report['words'][i]['start']
+  with self.assertRaisesRegex(ValueError,'Too many'):self.run_build()
  def test_hash_failed_asr_and_publication_block(self):
   for key,value in [('audio_sha256','bad'),('status','FAIL'),('word_timestamps',False),('publication_enabled',True)]:
    old=self.report[key];self.report[key]=value

@@ -21,7 +21,7 @@
       "start": 0.0,
       "end": 1.375,
       "story": {
-        "beat": "MY WALLET IS THE FINAL BOSS",
+        "beat": "STOP ATTACKING MY WALLET",
         "intent": "conflict attack",
         "visual_gag": "Wallet drops between two enormous rival attacks."
       },
@@ -53,7 +53,7 @@
         "dialogue": [
           {
             "speaker": "dave",
-            "text": "Why is my wallet the final boss?",
+            "text": "Stop attacking my wallet!",
             "performance": {
               "intent": "anxious comic sincerity",
               "sfx_in_narration": false
@@ -67,7 +67,7 @@
       "start": 1.375,
       "end": 2.75,
       "story": {
-        "beat": "MY WALLET IS THE FINAL BOSS",
+        "beat": "STOP ATTACKING MY WALLET",
         "intent": "conflict attack",
         "visual_gag": "Wallet raises a pathetic little shield; smash zoom on Dave."
       },
@@ -1006,7 +1006,8 @@
     "premise": "Dave mistakes a card battle for a financial plan; the wallet pays for his sandwich obsession.",
     "payoff": "A practical checklist stops the fight; the sandwich returns as a callback.",
     "claim_scope": "Fictional illustrative comedy. No specific fees, benefits, point values, guaranteed returns or universal card winner asserted. Character snack obsession is not financial advice.",
-    "review_status": "SCRIPT_REVISED_RENDER_REVIEW_PENDING"
+    "review_status": "SCRIPT_REVISED_RENDER_REVIEW_PENDING",
+    "opening_clarity_revision": "Action-first plea replaces ambiguously recognized boss line; no word aliases or relaxed caption alignment."
   },
   "sound_design": {
     "source": "existing_owned_assets",

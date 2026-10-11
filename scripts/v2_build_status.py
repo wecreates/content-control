@@ -23,6 +23,7 @@ def summarize(root,run_id,source_commit,outcome):
             if r.get('publication_enabled') is not False:
                 status='BLOCKED';failed.append('publication_disabled_not_verified')
             checks[name]={'status':status,'failed_checks':failed,'receipt_sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+            if isinstance(r.get('reason'),str):checks[name]['reason']=r['reason'][:240]
         except (ValueError,TypeError):checks[name]={'status':'INVALID_RECEIPT'}
     video=root/'render/v2-boss-fight.mp4'
     digest=hashlib.sha256(video.read_bytes()).hexdigest() if video.is_file() else None
