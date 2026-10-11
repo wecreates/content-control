@@ -37,7 +37,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_rendered_visual_parity.py -v
           python -m unittest discover -s tests -p test_white_stage_reference_calibration.py -v
-          node --test tests/studio-layout.test.mjs
+          node --test tests/studio-layout.test.mjs tests/observed-captions.test.mjs
       - name: Verify exact existing free audio source and unchanged timeline
         run: |
           mkdir -p qa-output/v2-draft-readonly
@@ -46,14 +46,20 @@ jobs:
           from pathlib import Path
           draft=Path("public-review/v2-draft.mp4")
           ccsd=Path("projects/v2/amex-vs-chase-boss-fight/ccsd.json")
-          expected="59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485"
+          expected="f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13"
           actual=hashlib.sha256(draft.read_bytes()).hexdigest()
           assert actual==expected, "Draft source changed: inspect the new source before reusing audio"
           state=json.loads(Path("state/v2-draft.json").read_text())
           assert state["candidate_sha256"]==actual and state["publication_enabled"] is False
           assert state["voice_provider"]=="kokoro_local_cpu" and state["production_approved"] is False
-          assert hashlib.sha256(ccsd.read_bytes()).hexdigest()=="ef139bbf9f01734fc094a00e0605a1dff7e36e913fffbb7154f8ead189a3ef6b", "Timeline changed: regenerate and review audio"
+          assert hashlib.sha256(ccsd.read_bytes()).hexdigest()=="b134d811182db8d1c6f45a8976fd80a767139f663b32f0998391e304004061de", "Timeline changed: regenerate and review audio"
           c=json.loads(ccsd.read_text())
+          caption_bytes=Path("tests/fixtures/v2-observed-captions-run-38159974084.json").read_bytes()
+          assert hashlib.sha256(caption_bytes).hexdigest()=="703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931", "Observed caption evidence changed"
+          captions=json.loads(caption_bytes)
+          assert captions["status"]=="PASS" and captions["publication_enabled"] is False
+          assert captions["source_audio_sha256"]=="d711230781602f81117d5a43206cd40d4c9cfb65bc14f6a05a3c95c6bd2f4c3e"
+          c["caption_track"]=captions
           duration=max(s["end"] for s in c["scenes"])
           probe=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_streams","-of","json",str(draft)]))
           audio=next(s for s in probe["streams"] if s["codec_type"]=="audio")
