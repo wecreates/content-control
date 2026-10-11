@@ -1,4 +1,5 @@
 import React from "react";
+import {captionAtTime} from "./ObservedCaptions.mjs";
 import {AbsoluteFill,useCurrentFrame,useVideoConfig} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {Environment} from "./EnvironmentSystem";
@@ -28,11 +29,12 @@ export const StudioAnimaticComposition=({ccsd})=>{
  const battle=ccsd?.project_id==='v2-amex-vs-chase-anime-boss-fight' && v2BattleBeat(s.id);
  const beatScenes=battle?ccsd.scenes.filter(scene=>v2BattleBeat(scene.id)===battle):[];
  const dialogue=beatScenes.flatMap(scene=>scene.audio?.dialogue||[]).map(line=>line.text).join(' ');
+ const observedCaption=battle?captionAtTime(ccsd.caption_track,t):null;
  const title=String(s.story?.beat||'').replace(/^(CONFLICT|ESCALATION|PAYOFF):\s*/i,'');
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?dialogue:title} y={105} height={175} size={battle?V2_STAGE_FRAMING.captionSize:34} caption={!!battle}/>
+   <TextBlock text={battle?(observedCaption?.text||''):title} y={105} height={175} size={battle?V2_STAGE_FRAMING.captionSize:34} caption={!!battle}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
    <g transform={battle?v2StageTransform():undefined}>
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
