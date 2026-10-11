@@ -78,3 +78,23 @@ test('public status projects connection fields and strips explicit nested creden
  assert.equal(data.records[0].evidence[0].summary,'Creator explains authentication tokens');assert.deepEqual(data.records[0].evidence[0].details,{normal:'keep'});
  assert.deepEqual(JSON.parse(await fs.readFile(path.join(root,'capability-queue.json'),'utf8')),queue);
 }));
+
+test('Money Factory includes secondary Watch references and validates their recorded evidence',()=>fixture(async(base,root)=>{
+ const queue={queue:[{id:'reel',coverage:{sampled_frame_seconds:[4]},evidence:[{id:'frame',kind:'sampled_frame',seconds:4,verified:true}],findings:[{id:'watch',category:'Content-production technique',project:'Content Control',summary:'Observed visual alternation',basis:'sampled_frame',evidence_refs:['frame'],full_analysis:false}]}]};
+ await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify(queue));
+ const data=await (await fetch(base+'/project-links')).json();
+ assert.equal(data.references.length,1);
+ const ref=data.references[0];
+ assert.equal(ref.additional_content_reference.finding_id,'watch');
+ assert.equal(ref.additional_content_reference.access_token,undefined);
+ assert.equal(ref.publication_enabled,false);
+ assert.equal(ref.reference_checks[0].status,'verified_repository_evidence');
+ assert.equal(ref.reference_checks[0].evidence_verified,true);
+ assert.equal(ref.reference_checks[0].full_analysis,false);
+ assert.deepEqual(JSON.parse(await fs.readFile(path.join(root,'capability-queue.json'),'utf8')),queue);
+ queue.queue[0].evidence[0].verified=false;
+ await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify(queue));
+ const rejected=await (await fetch(base+'/project-links')).json();
+ assert.equal(rejected.references[0].reference_checks[0].status,'evidence_invalid');
+ assert.equal(rejected.references[0].reference_checks[0].evidence_verified,false);
+},{fetchImpl:async()=>({ok:true,json:async()=>({ideas:[{id:'linked',publication_enabled:true,additional_content_reference:{repository:'wecreates/content-control',path:'capability-queue.json',id:'reel',finding_id:'watch',basis:'sampled_frame',full_analysis:false,access_token:'must-not-leak'}}]})})}));

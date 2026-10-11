@@ -1,7 +1,7 @@
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal} from './social-intake.js';
+import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal,routeFinding} from './social-intake.js';
 
 // Public status is a projection, never a serialization of authorization state.
 const SECRET_FIELDS=new Set(['accesstoken','refreshtoken','idtoken','clientsecret','apikey','token','tokens','secret','secrets','password','authorization','cookie','cookies','credentials','authentication']);
@@ -23,6 +23,25 @@ function publicStatusData(value) {
   return Object.fromEntries(Object.entries(value).filter(([key])=>!SECRET_FIELDS.has(key.replace(/[^a-z0-9]/gi,'').toLowerCase())).map(([key,item])=>[key,key==='connection'?publicConnection(item):publicStatusData(item)]));
 }
 
+function contentReference(ref) {
+  if(!ref||ref.repository!=='wecreates/content-control')return null;
+  return Object.fromEntries(['repository','path','id','finding_id','basis','full_analysis'].filter(k=>['string','boolean'].includes(typeof ref[k])).map(k=>[k,ref[k]]));
+}
+function referenceCheck(ref,queue) {
+  const result={...ref,evidence_verified:false,publication_enabled:false};
+  if(ref.path!=='capability-queue.json')return {...result,status:'unsupported_reference_path'};
+  const record=queue.queue.find(r=>r?.id===ref.id);
+  if(!record)return {...result,status:'record_missing'};
+  const finding=record.findings?.find(f=>f.id===ref.finding_id);
+  if(!finding)return {...result,status:'finding_missing'};
+  try {
+    if(ref.basis!==undefined&&ref.basis!==finding.basis)throw Error('basis mismatch');
+    if(ref.full_analysis!==undefined&&ref.full_analysis!==(finding.full_analysis===true))throw Error('coverage mismatch');
+    routeFinding(queue,record.id,finding,{allowedProjects:['Content Control','Money Factory','CYZOR Money Factory / Chrome extensions']});
+    return {...result,status:'verified_repository_evidence',evidence_verified:true,basis:finding.basis,full_analysis:finding.full_analysis===true,evidence_refs:finding.evidence_refs};
+  }catch{return {...result,status:'evidence_invalid'};}
+}
+
 export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
   const router=express.Router();
   const read=async name=>JSON.parse(await fs.readFile(path.join(root,name),'utf8'));
@@ -41,7 +60,14 @@ export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
       if(!upstream.ok)throw Error('upstream');
       const data=await upstream.json();
       if(!data||!Array.isArray(data.ideas)||data.ideas.some(x=>!x||typeof x!=='object'))throw Error('schema');
-      res.json({retrieved_at:new Date().toISOString(),verification_scope:'repository_references_only_not_runtime_routing_or_revenue',repository:'wecreates/Money-factory',references:(data.ideas||[]).filter(x=>x.source_record?.repository==='wecreates/content-control').map(x=>({id:x.id,status:x.status,source_record:x.source_record,publication_enabled:x.publication_enabled})),publication_enabled:false});
+      const queue=await read('capability-queue.json');
+      if(!Array.isArray(queue.queue))throw Error('queue schema');
+      const references=data.ideas.flatMap(idea=>{
+        const primary=contentReference(idea.source_record),additional=contentReference(idea.additional_content_reference);
+        if(!primary&&!additional)return [];
+        return [{id:idea.id,status:idea.status,...(primary?{source_record:primary}:{}),...(additional?{additional_content_reference:additional}:{}),reference_checks:[primary,additional].filter(Boolean).map(ref=>referenceCheck(ref,queue)),publication_enabled:false}];
+      });
+      res.json({retrieved_at:new Date().toISOString(),verification_scope:'repository_references_only_not_runtime_routing_or_revenue',repository:'wecreates/Money-factory',references,publication_enabled:false});
     } catch {res.status(503).json({error:'MONEY_FACTORY_REFERENCE_UNAVAILABLE',publication_enabled:false});}
   });
   router.post('/validate',express.json({limit:'4kb'}),async(req,res)=>{
