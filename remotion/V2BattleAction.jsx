@@ -63,7 +63,7 @@ export function V2BattleAction({scene,scenes,time}) {
    <Word>NOT ON THE GUEST LIST.</Word>
   </g>:null}
   {beat==='trap'?<g>
-   <Button x={210} label="PANIC TAP" pressed={p>.12}/><Button x={510} label="CHECK VALUE"/>
+   <Button x={210} label="BAD IDEA" pressed={p>.12}/><Button x={510} label="CHECK VALUE"/>
    <Wallet {...v2WalletMotion('trap',p)}/>
    <path d={`M365 467L${mix(355,210,clamp(p/.12))} ${mix(466,423,clamp(p/.12))}`} stroke={K} strokeWidth="9" strokeLinecap="round"/>
    {Array.from({length:5},(_,i)=>{const escape=clamp((p-.12)/.88);return <Coin key={i} x={360+(i-2)*104*escape} y={535-Math.sin(escape*Math.PI)*(60+i%2*34)+escape*40} s={1.5} opacity={p>.12?1:0}/>;})}
@@ -83,3 +83,4 @@ export function V2BattleAction({scene,scenes,time}) {
   </g>:null}
  </g>;
 }
+

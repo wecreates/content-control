@@ -1,0 +1,110 @@
+name: V2 Draft Read-Only Validation
+on:
+  pull_request:
+    paths:
+      - 'remotion/**'
+      - 'scripts/rendered_visual_parity.py'
+      - 'tests/test_rendered_visual_parity.py'
+      - 'tests/test_white_stage_reference_calibration.py'
+      - 'tests/studio-layout.test.mjs'
+      - '.github/workflows/v2-draft-readonly-validation.yml'
+permissions:
+  contents: read
+concurrency:
+  group: v2-draft-readonly-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: "false"
+jobs:
+  validate-internal-draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install free rendering and QA tools
+        run: |
+          npm ci
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install --disable-pip-version-check numpy opencv-python-headless
+      - name: Run parity and choreography regression tests
+        run: |
+          python -m unittest discover -s tests -p test_rendered_visual_parity.py -v
+          python -m unittest discover -s tests -p test_white_stage_reference_calibration.py -v
+          node --test tests/studio-layout.test.mjs tests/observed-captions.test.mjs
+      - name: Verify exact existing free audio source and unchanged timeline
+        run: |
+          mkdir -p qa-output/v2-draft-readonly
+          python - <<'PY'
+          import hashlib,json,subprocess
+          from pathlib import Path
+          draft=Path("public-review/v2-draft.mp4")
+          ccsd=Path("projects/v2/amex-vs-chase-boss-fight/ccsd.json")
+          expected="f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13"
+          actual=hashlib.sha256(draft.read_bytes()).hexdigest()
+          assert actual==expected, "Draft source changed: inspect the new source before reusing audio"
+          state=json.loads(Path("state/v2-draft.json").read_text())
+          assert state["candidate_sha256"]==actual and state["publication_enabled"] is False
+          assert state["voice_provider"]=="kokoro_local_cpu" and state["production_approved"] is False
+          assert hashlib.sha256(ccsd.read_bytes()).hexdigest()=="b134d811182db8d1c6f45a8976fd80a767139f663b32f0998391e304004061de", "Timeline changed: regenerate and review audio"
+          c=json.loads(ccsd.read_text())
+          caption_bytes=Path("tests/fixtures/v2-observed-captions-run-38159974084.json").read_bytes()
+          assert hashlib.sha256(caption_bytes).hexdigest()=="703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931", "Observed caption evidence changed"
+          captions=json.loads(caption_bytes)
+          assert captions["status"]=="PASS" and captions["publication_enabled"] is False
+          assert captions["source_audio_sha256"]=="d711230781602f81117d5a43206cd40d4c9cfb65bc14f6a05a3c95c6bd2f4c3e"
+          c["caption_track"]=captions
+          duration=max(s["end"] for s in c["scenes"])
+          probe=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_streams","-of","json",str(draft)]))
+          audio=next(s for s in probe["streams"] if s["codec_type"]=="audio")
+          assert abs(float(audio["duration"])-duration)<0.1
+          json.dump({"ccsd":c},open("qa-output/v2-draft-readonly/props.json","w"))
+          json.dump({"source_sha256":actual,"audio_duration":audio["duration"],"timeline_duration":duration,"publication_enabled":False,"full_av_review":False},open("qa-output/v2-draft-readonly/source.json","w"),indent=2)
+          PY
+      - name: Render candidate and copy verified audio unchanged
+        run: |
+          npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic qa-output/v2-draft-readonly/silent.mp4 --props=qa-output/v2-draft-readonly/props.json --codec=h264 --crf=18 --concurrency=2
+          ffmpeg -y -i qa-output/v2-draft-readonly/silent.mp4 -i public-review/v2-draft.mp4 -map 0:v:0 -map 1:a:0 -c:v copy -c:a copy qa-output/v2-draft-readonly/candidate.mp4
+          python - <<'PY'
+          import hashlib,json,subprocess
+          def audio_hash(path):
+              return subprocess.check_output(["ffmpeg","-v","error","-i",path,"-map","0:a:0","-c","copy","-f","hash","-hash","sha256","-"]).decode().strip()
+          source=audio_hash("public-review/v2-draft.mp4")
+          candidate=audio_hash("qa-output/v2-draft-readonly/candidate.mp4")
+          assert source==candidate, "Audio packets changed"
+          p="qa-output/v2-draft-readonly/candidate.mp4"
+          def video_frames(path):
+              data=json.loads(subprocess.check_output(["ffprobe","-v","error","-select_streams","v:0","-show_entries","stream=nb_frames","-of","json",path]))
+              return int(data["streams"][0]["nb_frames"])
+          assert video_frames(p)==video_frames("qa-output/v2-draft-readonly/silent.mp4"), "Muxing dropped video frames"
+          json.dump({"candidate_sha256":hashlib.sha256(open(p,"rb").read()).hexdigest(),"source_audio_hash":source,"candidate_audio_hash":candidate,"publication_enabled":False,"production_approved":False,"full_av_review":False},open("qa-output/v2-draft-readonly/identity.json","w"),indent=2)
+          PY
+      - name: Check actual rendered media
+        id: media
+        continue-on-error: true
+        run: python scripts/production_reality_media_qa.py --video qa-output/v2-draft-readonly/candidate.mp4 --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --out qa-output/v2-draft-readonly/media.json
+      - name: Validate white-stage benchmark with preserved legacy evidence
+        id: parity
+        continue-on-error: true
+        run: python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video qa-output/v2-draft-readonly/candidate.mp4 --out qa-output/v2-draft-readonly/parity.json --comparison-profile white-stage-v2
+      - name: Preserve internal evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-internal-draft-not-accepted
+          path: qa-output/v2-draft-readonly
+          retention-days: 7
+      - name: Keep acceptance fail-closed
+        if: always()
+        env:
+          MEDIA_OUTCOME: ${{ steps.media.outcome }}
+          PARITY_OUTCOME: ${{ steps.parity.outcome }}
+        run: |
+          echo "Internal validation only. Complete audiovisual/competitor review remains required. Publication stays disabled."
+          test "$MEDIA_OUTCOME" = success && test "$PARITY_OUTCOME" = success

@@ -18,6 +18,10 @@ export function fitText(value,width=600,height=144,preferredSize=34) {
   throw new Error('Text exceeds safe title region; shorten the scene copy');
 }
 export const normalizePropId=id=>id==='score_meter'?'score_gauge':id;
+// Move the V2 action into the portrait's lower stage while scaling the whole
+// interaction together so character-to-prop hand contacts remain unchanged.
+export const V2_STAGE_FRAMING=Object.freeze({scale:1.06,centerX:360,sourceY:690,targetY:790,captionSize:42});
+export const v2StageTransform=()=>`translate(${V2_STAGE_FRAMING.centerX} ${V2_STAGE_FRAMING.targetY}) scale(${V2_STAGE_FRAMING.scale}) translate(${-V2_STAGE_FRAMING.centerX} ${-V2_STAGE_FRAMING.sourceY})`;
 export const poseAliases={dave:{point:'hands_up_uncertain'},points_monk:{point:'deadpan_point',recoil:'ankle_yank'},cashback_goblin:{point:'sale_sign_point',recoil:'ankle_drag'}};
 export const normalizePose=(character,pose)=>poseAliases[character]?.[pose]||pose;
 export function characterSlots(count) {
@@ -68,3 +72,4 @@ export function fitCaption(text,width=592,height=175,preferredSize=34) {
  }
  throw new Error('Caption exceeds safe text region');
 }
+

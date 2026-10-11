@@ -2,6 +2,31 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {fitText,normalizePropId,normalizePose,characterSlots,propSlots} from '../remotion/StudioLayout.mjs';
+test('trap button label matches the spoken bad idea setup',()=>{
+ const action=fs.readFileSync(new URL('../remotion/V2BattleAction.jsx',import.meta.url),'utf8');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ const lines=c.scenes.filter(s=>s.id.startsWith('trap-')).flatMap(s=>s.audio?.dialogue||[]).map(x=>x.text).join(' ');
+ assert.match(lines,/button say bad idea/i);
+ assert.ok(action.includes('<Button x={210} label="BAD IDEA" pressed={p>.12}/>'));
+ assert.ok(!action.includes('PANIC TAP'));
+});
+test('V2 portrait framing preserves actor-prop contacts and readable captions',async()=>{
+ const {V2_STAGE_FRAMING:f,v2StageTransform,fitCaption,captionTextWidth,v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
+ assert.equal(f.scale,1.06);assert.equal(f.targetY-f.sourceY,100);
+ assert.match(v2StageTransform(),/^translate\(360 790\) scale\(1.06\)/);
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ for(const beat of new Set(c.scenes.map(s=>v2BattleBeat(s.id)))){
+  const text=c.scenes.filter(s=>v2BattleBeat(s.id)===beat).flatMap(s=>s.audio?.dialogue||[]).map(x=>x.text).join(' ');
+  const layout=fitCaption(text,592,175,f.captionSize);
+  assert.equal(layout.lines.join(' '),text);
+  assert.ok(layout.lines.every(line=>captionTextWidth(line,layout.size)<=544));
+  assert.ok(layout.lines.length*layout.lineHeight<=175);
+  assert.ok(layout.size>=34,'larger preferred captions must not shrink below prior size');
+ }
+ const source=fs.readFileSync(new URL('../remotion/StudioAnimaticComposition.jsx',import.meta.url),'utf8');
+ assert.ok(source.includes("background:'#fff'"));
+ assert.ok(source.includes('transform={battle?v2StageTransform():undefined}'));
+});
 test('all current V2 headlines fit without truncating words',()=>{
  const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
  for(const scene of c.scenes){const title=scene.story.beat;const l=fitText(title,592,144);assert.equal(l.lines.join(' '),title);assert.ok(l.lines.every(x=>x.length*l.size<=592));assert.ok(l.lines.length*l.lineHeight<=144);}
@@ -59,3 +84,4 @@ test('V2 captions preserve every word with weighted glyph bounds and padding',as
  for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const l=fitCaption(line.text);assert.equal(l.lines.join(' '),line.text);assert.ok(l.lines.every(x=>captionTextWidth(x,l.size)<=544));assert.ok(l.lines.length*l.lineHeight<=175);}
  const monk=v2SceneActor('chase-strike','points_monk',0,1);assert.equal(monk.x+monk.leftHandTarget.x,528);assert.equal(monk.y+monk.leftHandTarget.y,560);assert.ok(monk.x>590&&monk.y>700);
 });
+

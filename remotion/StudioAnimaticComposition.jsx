@@ -6,7 +6,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction,v2WalletMotion} from "./V2BattleAction";
-import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose} from "./StudioLayout.mjs";
+import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,V2_STAGE_FRAMING,v2StageTransform} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34,caption=false})=>{
@@ -34,8 +34,9 @@ export const StudioAnimaticComposition=({ccsd})=>{
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?(observedCaption?.text||''):title} y={105} height={175} size={34} caption={!!battle}/>
+   <TextBlock text={battle?(observedCaption?.text||''):title} y={105} height={175} size={battle?V2_STAGE_FRAMING.captionSize:34} caption={!!battle}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
+   <g transform={battle?v2StageTransform():undefined}>
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
     {!battle?<Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>:null}
     {impactAmount>0?<g opacity={impactAmount*.6} stroke="#111" strokeWidth="3">{[-1,1].map(side=><g key={side}><line x1={360+side*230} y1="635" x2={360+side*265} y2="610"/><line x1={360+side*235} y1="675" x2={360+side*275} y2="675"/></g>)}</g>:null}
@@ -66,6 +67,8 @@ export const StudioAnimaticComposition=({ccsd})=>{
       return <Character key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}
    </g>
+   </g>
   </svg>
  </AbsoluteFill>;
 };
+
