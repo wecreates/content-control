@@ -1,61 +1,93 @@
 #!/usr/bin/env python3
-import hashlib,json,os,subprocess,time
+"""Validate a persisted preview; rendering belongs on the production worker.
+
+A periodic web-host tick must never invoke Remotion, TTS, or replace a candidate.
+Persisted QA assertions are not a fresh creative review. The metadata heuristic
+in v2_orchestrator is structural preflight only and cannot approve a video.
+"""
+import hashlib
+import json
+import os
+import time
 from pathlib import Path
-from v2_orchestrator import build_plan,derive_metrics,creative_gate
 
-ROOT=Path(__file__).resolve().parents[1]
-CCSD=ROOT/"projects/v2/amex-vs-chase-boss-fight/ccsd.json"
-OUT=ROOT/"public-review/v2-boss-fight.mp4"
-HEALTH=ROOT/"state/v2-health.json"
-WORK=ROOT/"state/v2-live"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "public-review/v2-boss-fight.mp4"
+HEALTH = ROOT / "state/v2-health.json"
+RUNTIME_STATUS = ROOT / "state/v2-runtime-validation.json"
 
-def stage(name,extra=None):
-    payload={"stage":name,"updated_at":int(time.time()),"publication_enabled":False}
-    if extra: payload.update(extra)
-    (ROOT/"state").mkdir(parents=True,exist_ok=True)
-    (ROOT/"state/v2-stage.json").write_text(json.dumps(payload,indent=2)+"\n")
 
-def run(cmd,name,allow_fail=False):
-    stage(name,{"command":cmd[0]})
+def validate_candidate(health_path, candidate_path, publication_enabled=False):
+    reasons = []
+    result = {
+        "status": "BLOCKED", "mode": "persisted_artifact_validation",
+        "publication_enabled": False, "updated_at": int(time.time()),
+        "render_attempted": False, "fresh_creative_review": False,
+        "qa_evidence_scope": "persisted assertions; no new media or creative review",
+    }
+    if publication_enabled:
+        reasons.append("publication_enabled_environment")
     try:
-        result=subprocess.run(cmd,cwd=ROOT,check=True,text=True,capture_output=True)
-        stage(name+"_PASS")
+        health = json.loads(Path(health_path).read_text())
+        if not isinstance(health, dict):
+            raise ValueError("health must be an object")
+    except (OSError, ValueError) as exc:
+        result.update(reasons=reasons + ["health_missing_or_invalid"], error=str(exc))
         return result
-    except subprocess.CalledProcessError as e:
-        stage(name+"_FAIL",{"returncode":e.returncode,"stderr":(e.stderr or "")[-3000:]})
-        if allow_fail:
-            return e
-        raise
+    if health.get("status") != "READY":
+        reasons.append("persisted_candidate_not_accepted")
+    if health.get("publication_enabled") is not False:
+        reasons.append("publication_not_explicitly_disabled")
+    for gate in ("technical_qa", "creative_qa", "visual_parity_qa"):
+        if health.get(gate) is not True:
+            reasons.append(gate + "_not_verified")
+    # Legacy runtime generated creative_qa from these metadata-only metrics.
+    # Preserve its record, but never interpret that heuristic as rendered review.
+    review = health.get("creative_review")
+    if "metrics" in health and not isinstance(review, dict):
+        reasons.append("creative_evidence_is_metadata_only")
+    if isinstance(review, dict):
+        if review.get("status") != "PASS" or review.get("candidate_sha256") != health.get("candidate_sha256"):
+            reasons.append("creative_review_not_hash_bound")
+        if review.get("method") in ("metadata", "structural_preflight", "v2_orchestrator"):
+            reasons.append("creative_evidence_is_metadata_only")
+    expected = health.get("candidate_sha256")
+    if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected):
+        reasons.append("candidate_sha256_missing_or_invalid")
+    try:
+        digest = hashlib.sha256()
+        size = 0
+        with Path(candidate_path).open("rb") as stream:
+            for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                size += len(chunk)
+                digest.update(chunk)
+        actual = digest.hexdigest()
+        result["candidate_sha256"] = actual
+        if not size:
+            reasons.append("candidate_empty")
+        if actual != expected:
+            reasons.append("candidate_sha256_mismatch")
+    except OSError as exc:
+        reasons.append("candidate_missing_or_unreadable")
+        result["error"] = str(exc)
+    result["reasons"] = reasons
+    if not reasons:
+        result["status"] = "READY"
+    return result
+
 
 def tick():
-    if os.getenv("PUBLICATION_ENABLED","false").lower()=="true":
-        raise RuntimeError("V2 refuses publication-enabled execution")
-    WORK.mkdir(parents=True,exist_ok=True);OUT.parent.mkdir(parents=True,exist_ok=True);HEALTH.parent.mkdir(parents=True,exist_ok=True)
-    ccsd=json.loads(CCSD.read_text());metrics=derive_metrics(ccsd);creative=creative_gate(metrics)
-    if not creative["pass"]:
-        HEALTH.write_text(json.dumps({"status":"BLOCKED","publication_enabled":False,"creative_qa":False,"metrics":metrics},indent=2)+"\n")
-        return {"status":"BLOCKED","reason":"creative_qa","metrics":metrics}
-    dialogue=WORK/"dialogue.json";voice=WORK/"voice.wav";silent=WORK/"silent.mp4";receipt=WORK/"media-qa.json";parity_receipt=WORK/"visual-parity.json"
-    run(["python","scripts/ccsd_voice_manifest.py","--ccsd",str(CCSD),"--out",str(dialogue)],"voice_manifest")
-    run(["python","scripts/local_tts_fallback.py","--dialogue",str(dialogue),"--out",str(voice),"--receipt",str(WORK/"voice.json")],"tts")
-    props=json.dumps({"ccsd":ccsd},separators=(",",":"))
-    run(["npx","remotion","render","remotion/studio-animatic-index.jsx","StudioAnimatic",str(silent),"--props="+props,"--codec=h264","--crf=18","--concurrency=1"],"remotion_render")
-    run(["ffmpeg","-y","-i",str(silent),"-i",str(voice),"-map","0:v:0","-map","1:a:0","-c:v","copy","-c:a","aac","-b:a","192k","-af","apad","-shortest",str(OUT)],"audio_mux")
-    run(["python","scripts/production_reality_media_qa.py","--video",str(OUT),"--ccsd",str(CCSD),"--out",str(receipt)],"media_qa",allow_fail=True)
-    media=json.loads(receipt.read_text())
-    technical=media.get("status") in ("PASS","GREEN")
-    run(["python","scripts/rendered_visual_parity.py","--reference-dir",str(ROOT/"reference/frames"),"--candidate-video",str(OUT),"--out",str(parity_receipt)],"visual_parity_qa",allow_fail=True)
-    parity=json.loads(parity_receipt.read_text())
-    visual_parity=parity.get("status")=="PASS"
-    digest=hashlib.sha256(OUT.read_bytes()).hexdigest()
-    status="READY" if technical and creative["pass"] and visual_parity else "BLOCKED"
-    health={"status":status,"publication_enabled":False,"technical_qa":technical,"creative_qa":creative["pass"],"visual_parity_qa":visual_parity,"candidate_sha256":digest,"metrics":metrics,"media_qa":media,"visual_parity":parity,"updated_at":int(time.time())}
-    HEALTH.write_text(json.dumps(health,indent=2)+"\n")
-    return health
+    result = validate_candidate(
+        HEALTH, OUT,
+        publication_enabled=os.getenv("PUBLICATION_ENABLED", "false").lower() != "false",
+    )
+    # Separate observational status; never overwrite acceptance evidence or video.
+    RUNTIME_STATUS.parent.mkdir(parents=True, exist_ok=True)
+    temporary = RUNTIME_STATUS.with_suffix(".tmp")
+    temporary.write_text(json.dumps(result, indent=2) + "\n")
+    temporary.replace(RUNTIME_STATUS)
+    return result
 
-if __name__=="__main__":
-    try: print(json.dumps(tick()))
-    except Exception as e:
-        HEALTH.parent.mkdir(parents=True,exist_ok=True)
-        HEALTH.write_text(json.dumps({"status":"BLOCKED","publication_enabled":False,"error":str(e),"updated_at":int(time.time())},indent=2)+"\n")
-        raise
+
+if __name__ == "__main__":
+    print(json.dumps(tick()))

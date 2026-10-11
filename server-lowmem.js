@@ -31,11 +31,11 @@ const renderState={status:"booting",logs:[]};
 let v2TickRunning=false;
 function runV2Tick(){
   if(v2TickRunning)return;
-  v2TickRunning=true;renderState.status="v2-tick-running";
+  v2TickRunning=true;renderState.status="v2-validation-running";
   const p=spawn("python",["scripts/v2_runtime_tick.py"],{env:{...process.env,PUBLICATION_ENABLED:"false"}});
   p.stdout.on("data",d=>renderState.logs.push(String(d).trim()));
   p.stderr.on("data",d=>renderState.logs.push(String(d).trim()));
-  p.on("close",code=>{renderState.status=code===0?"v2-tick-ok":"v2-tick-failed";v2TickRunning=false;});
+  p.on("close",code=>{renderState.status=code===0?"v2-validation-complete":"v2-validation-error";v2TickRunning=false;});
 }
 function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
 function readHealth(){return readJson(healthPath);}
@@ -71,9 +71,10 @@ function episode3Acceptance(){
 }
 function v2Acceptance(){
   const h=readJson(v2HealthPath);
+  const runtime=readJson(path.resolve("state/v2-runtime-validation.json"));
   const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
-  const ready=Boolean(h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
-  return {health:h,actual,expected,ready};
+  const ready=Boolean(runtime?.status==="READY"&&runtime?.candidate_sha256===actual&&h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
+  return {health:h,actual,expected,ready,runtime};
 }
 function referenceCloneAcceptance(){
   const h=readJson(referenceCloneHealthPath);
@@ -331,7 +332,7 @@ app.post("/v2/run",(req,res)=>{
 app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:v2TickRunning,logs:renderState.logs.slice(-40),publication:false});});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,qaStatus:a.health?.status||"missing",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
 });
 app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{

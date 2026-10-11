@@ -10,6 +10,8 @@ on:
       - 'scripts/v2_acceptance.py'
       - 'tests/test_v2_acceptance.py'
       - 'scripts/v2_orchestrator.py'
+      - 'scripts/v2_audio_assemble.py'
+      - 'tests/test_v2_audio_assemble.py'
       - 'projects/v2/amex-vs-chase-boss-fight/ccsd.json'
       - 'remotion/**'
       - '.github/workflows/content-control-v2.yml'
@@ -25,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - name: V2 acceptance tests
-        run: python -m unittest -v tests/test_v2_acceptance.py
+        run: python -m unittest -v tests/test_v2_acceptance.py tests/test_v2_audio_assemble.py tests/test_v2_runtime_tick.py
       - name: Verify job cannot falsely report READY
         run: |
           python - <<'PY'
@@ -45,11 +47,14 @@ jobs:
         with: {node-version: '20'}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
+      - name: Assemble approved character audio without provider calls
+        run: |
+          python scripts/v2_audio_assemble.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --manifest projects/v2/amex-vs-chase-boss-fight/audio/approved-manifest.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
       - name: Install render runtime
         run: |
           npm ci
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg espeak-ng
+          sudo apt-get install -y -qq ffmpeg
           python -m pip install --disable-pip-version-check numpy opencv-python-headless
       - name: Compile entertainment-first V2 plan
         run: |
@@ -65,13 +70,12 @@ jobs:
           mkdir -p state/v2/render state/v2/receipts
           cp projects/v2/amex-vs-chase-boss-fight/ccsd.json state/v2/ccsd.json
           python scripts/ccsd_voice_manifest.py --ccsd state/v2/ccsd.json --out state/v2/dialogue.json
-          python scripts/local_tts_fallback.py --dialogue state/v2/dialogue.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/v2/ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
-          ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/v2/render/v2-boss-fight.mp4
+          ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -shortest state/v2/render/v2-boss-fight.mp4
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json
           python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json
-      - name: Enforce creative gate
+      - name: Enforce structural preflight (not rendered creative review)
         run: |
           python - <<'PY'
           import json,sys
@@ -85,14 +89,16 @@ jobs:
           PY
       - name: Build fail-closed V2 health package
         run: |
-          cp state/v2/render/v2-boss-fight.mp4 public-review/v2-boss-fight.mp4
           python - <<'PY'
-          import hashlib,json
-          p="public-review/v2-boss-fight.mp4"
+          import hashlib,json,shutil
+          p="state/v2/render/v2-boss-fight.mp4"
           h=hashlib.sha256(open(p,"rb").read()).hexdigest()
           parity=json.load(open("state/v2/receipts/visual-parity.json"))
           if parity.get("status")!="PASS": raise SystemExit("visual parity QA did not pass")
-          json.dump({"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
+          review=json.load(open("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))
+          if review.get("status")!="PASS" or review.get("candidate_sha256")!=h or review.get("method")!="rendered_video_review": raise SystemExit("Exact rendered video creative review required")
+          shutil.copyfile(p,"public-review/v2-boss-fight.mp4")
+          json.dump({"creative_review":review,"status":"READY","publication_enabled":False,"technical_qa":True,"creative_qa":True,"visual_parity_qa":True,"candidate_sha256":h},open("state/v2-health.json","w"),indent=2)
           PY
       - name: Persist accepted V2 preview for streaming deployment
         run: |
