@@ -5,7 +5,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction} from "./V2BattleAction";
-import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat} from "./StudioLayout.mjs";
+import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2VictoryPose} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34})=>{
@@ -42,7 +42,12 @@ export const StudioAnimaticComposition=({ccsd})=>{
       const emotion=[...curve].reverse().find(e=>p*(curve.at(-1)?.t||1)>=e.t);
       const defaults={dave:'recoil',points_monk:'deadpan_point',cashback_goblin:'coin_scamper'};
       const m=resolveMotion(id,ch.motion_clip||ch.pose||defaults[id],p,emotion?.intensity??.8,true);
-      return <Character key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} mood={emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
+      if(battle==='finish'&&id==='dave'){
+        const finishScenes=ccsd.scenes.filter(scene=>v2BattleBeat(scene.id)==='finish');
+        const start=finishScenes[0].start,end=finishScenes.at(-1).end;
+        Object.assign(m,v2VictoryPose(clamp((t-start)/(end-start))));
+      }
+      return <Character key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}
    </g>
   </svg>

@@ -18,15 +18,18 @@ export function V2BattleAction({scene,scenes,time}) {
  const p=Math.max(0,Math.min(1,(time-start)/(end-start))),smooth=p*p*(3-2*p);
  const chaseAttack=beat==='chase-strike',amexAttack=beat==='amex-counter',fee=beat==='fee-drain',transfer=beat==='points-summon',trap=beat==='trap',clash=beat==='final-clash',finish=beat==='finish';
  const entrance=beat==='cold-open'?1-smooth:0;
- const lunge=Math.sin(Math.PI*p)*38;
+ // Three discrete combo strikes, each followed by the defender recoiling.
+ const strikePhase=(p*3)%1;
+ const lunge=Math.sin(Math.PI*strikePhase)*38;
+ const recoil=Math.max(0,Math.sin(Math.PI*Math.max(0,strikePhase-.45)/.55))*18;
  const cy=402;
  return <g data-v2-beat={beat}>
-  <Card x={190-entrance*8+(chaseAttack?lunge:0)} y={cy} label="CHASE" subtitle={chaseAttack?'TRANSFER COMBO':'POINTS SYSTEM'} rotation={chaseAttack?Math.sin(p*Math.PI)*6:0}/>
-  <Card x={530+entrance*8-(amexAttack?lunge:0)} y={cy} label="AMEX" subtitle={amexAttack?'TRAVEL PERKS':'POINTS SYSTEM'} rotation={amexAttack?-Math.sin(p*Math.PI)*6:0}/>
+  <Card x={190-entrance*8+(chaseAttack?lunge:0)} y={cy+(amexAttack?recoil:chaseAttack?-lunge*.25:0)} label="CHASE" subtitle={chaseAttack?'TRANSFER COMBO':'POINTS SYSTEM'} rotation={chaseAttack?Math.sin(p*Math.PI)*6:0}/>
+  <Card x={530+entrance*8-(amexAttack?lunge:0)} y={cy+(chaseAttack?recoil:amexAttack?-lunge*.25:0)} label="AMEX" subtitle={amexAttack?'TRAVEL PERKS':'POINTS SYSTEM'} rotation={amexAttack?-Math.sin(p*Math.PI)*6:0}/>
   <Label y={410} size={23}>VS</Label>
   {chaseAttack||amexAttack?<g>
    <path d={chaseAttack?'M180 479Q360 540 540 479':'M540 479Q360 540 180 479'} fill="none" stroke={K} strokeWidth="3" strokeDasharray="7 8"/>
-   {[0,.2,.4].map((offset,i)=>{const q=Math.max(0,Math.min(1,p*1.7-offset));return <Token key={i} x={chaseAttack?lerp(180,540,q):lerp(540,180,q)} y={479+Math.sin(q*Math.PI)*31} opacity={q>0&&q<1?1:0}/>;})}
+   {[0,1,2].map((offset,i)=>{const q=Math.max(0,Math.min(1,p*3-offset));return <Token key={i} x={chaseAttack?lerp(180,540,q):lerp(540,180,q)} y={479+Math.sin(q*Math.PI)*31} r={18} opacity={q>0&&q<1?1:0}/>;})}
    <Label>{chaseAttack?'TRANSFER COMBO →':'← TRAVEL PERK COUNTER'}</Label>
   </g>:null}
   {fee?<g>
@@ -49,12 +52,17 @@ export function V2BattleAction({scene,scenes,time}) {
    <Token x={532} y={lerp(471,537,smooth)} r={lerp(12,3,smooth)} opacity={1-smooth}/>
    <Label>BAD REDEMPTION. LOST VALUE.</Label>
   </g>:null}
-  {clash||finish?<g>
+  {clash?<g>
    <path d="M190 467L300 495M530 467L420 495" pathLength="1" strokeDasharray="1" strokeDashoffset={clash?1-smooth:0} stroke={K} strokeWidth="3" fill="none"/>
    <rect x="240" y="490" width="240" height="65" rx="12" fill={W} stroke={K} strokeWidth="3"/>
    <Label y={517}>{finish?'BENEFITS YOU USE':'YOUR HABITS'}</Label>
    <Label y={541} size={15}>{finish?'YOUR WINNING SETUP':'SPENDING • TRAVEL • FEES'}</Label>
    {finish?<path d={`M330 578l18 17 42-35`} pathLength="1" strokeDasharray="1" strokeDashoffset={1-smooth} fill="none" stroke={K} strokeWidth="5"/>:<Label>THE PLAYER DECIDES THE BUILD</Label>}
+  </g>:null}
+  {finish?<g>
+   <Label y={480} size={24}>BENEFITS YOU USE</Label>
+   <path d="M280 535l55 45 105-85" pathLength="1" strokeDasharray="1" strokeDashoffset={1-p} strokeLinecap="round" strokeLinejoin="round" fill="none" stroke={K} strokeWidth="12"/>
+   <Label y={617}>YOUR WINNING SETUP</Label>
   </g>:null}
   {beat==='cold-open'?<Label>TWO SYSTEMS. ONE PLAYER.</Label>:null}
  </g>;

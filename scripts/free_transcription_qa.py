@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-import argparse,json,re,difflib
+import argparse,json,re,difflib,math
 from collections import Counter
 from pathlib import Path
-import av
 
 STOP={
   "the","a","an","and","or","to","of","in","on","for","with","that","this","it",
@@ -10,8 +9,38 @@ STOP={
   "just","has","have","had","only","when","if"
 }
 
+def _integer_words(value):
+    small=('zero one two three four five six seven eight nine ten eleven twelve '
+           'thirteen fourteen fifteen sixteen seventeen eighteen nineteen').split()
+    tens='zero ten twenty thirty forty fifty sixty seventy eighty ninety'.split()
+    if value<20:return small[value]
+    if value<100:return tens[value//10]+(' '+small[value%10] if value%10 else '')
+    if value<1000:return small[value//100]+' hundred'+(' '+_integer_words(value%100) if value%100 else '')
+    for scale,name in [(10**12,'trillion'),(10**9,'billion'),(10**6,'million'),(1000,'thousand')]:
+        if value>=scale:return _integer_words(value//scale)+' '+name+(' '+_integer_words(value%scale) if value%scale else '')
+
+def _numeric_words(match):
+    currency,sign,number,percent=match.groups()
+    whole,separator,fraction=number.replace(',','').partition('.')
+    # Leave extremely long identifiers intact rather than treating them as speech.
+    if len(whole)>15:return match.group(0)
+    words=('minus ' if sign=='-' else 'plus ' if sign=='+' else '')+_integer_words(int(whole))
+    if currency and (not separator or len(fraction)<=2):
+        words+=' dollar'
+        if separator and int(fraction.ljust(2,'0')):
+            words+=' and '+_integer_words(int(fraction.ljust(2,'0')))+' cent'
+    else:
+        if separator:words+=' point '+' '.join(_integer_words(int(d)) for d in fraction)
+        if currency:words+=' dollar'
+    if percent:words+=' percent'
+    return words
+
 def norm(s):
     s=s.lower().replace("’","'").replace("“",'"').replace("”",'"')
+    # Expand notation, preserving sign, magnitude, cents, and percentage units.
+    s=re.sub(r"(?<![\w.])(\$?)([+-]?)(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(%?)(?!\w|\.\d)",_numeric_words,s)
+    s=re.sub(r'\bdollars\b','dollar',s)
+    s=re.sub(r'\bcents\b','cent',s)
     s=re.sub(r"[^a-z0-9']+"," ",s)
     return " ".join(s.split())
 
@@ -27,7 +56,14 @@ def ordered_word_similarity(expected,actual):
     aw=norm(actual).split()
     return difflib.SequenceMatcher(None,ew,aw,autojunk=False).ratio()
 
+def duration_matches_contract(duration,contract):
+    expected=contract.get("expected_duration_seconds")
+    if expected is None:return 20.0<=duration<=40.0
+    if isinstance(expected,bool) or not isinstance(expected,(int,float)) or not math.isfinite(expected) or not 0<expected<=3600:return False
+    return math.isfinite(duration) and abs(duration-expected)<=0.1
+
 def main():
+    import av
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
     ap.add_argument("--contract",required=True)
@@ -97,7 +133,7 @@ def main():
       "sequence_similarity_ok":sequence_ratio>=0.62,
       "content_token_recall_ok":token_recall>=0.68,
       "semantic_recall_ok":semantic_recall>=0.82,
-      "duration_plausible":20.0<=media_duration<=40.0,
+      "duration_plausible":duration_matches_contract(media_duration,contract),
       "transcript_coverage_ok":coverage_ratio>=0.70,
       "no_post_narration_hallucination":narration_end is None or segment_end<=narration_end+0.25,
       "publication_disabled":contract.get("publication_enabled") is False,

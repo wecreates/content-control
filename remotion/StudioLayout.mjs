@@ -31,3 +31,10 @@ export function propSlots(count) {
 export function v2BattleBeat(id) {
   return ['cold-open','chase-strike','amex-counter','fee-drain','points-summon','trap','final-clash','finish'].find(prefix=>String(id||'').startsWith(prefix+'-'))||null;
 }
+export function v2VictoryPose(progress) {
+  // A deliberate hands-up celebration: raise, then three diminishing hops.
+  const raise=Math.min(1,progress/.35);
+  const hopPhase=Math.max(0,(progress-.35)/.65)*3;
+  const hop=progress<.35?0:Math.abs(Math.sin(hopPhase*Math.PI))*(30-12*progress);
+  return {bob:-hop,arm:28+raise*40,lean:0,leg:hop*.6,mood:'smile',leftHandTarget:{x:-66,y:-10-raise*80},rightHandTarget:{x:66,y:-10-raise*80}};
+}

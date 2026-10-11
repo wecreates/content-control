@@ -33,3 +33,8 @@ test('V2 battle has real changing SVG actions across all original story beats',a
   assert.ok(!a.includes('score_meter'));
  }
 });
+test('victory gesture stays inside the character stage and does not reset per cut',async()=>{
+ const {v2VictoryPose}=await import('../remotion/StudioLayout.mjs');
+ for(let i=0;i<=100;i++){const m=v2VictoryPose(i/100);assert.ok(m.bob>=-30&&m.bob<=0);assert.ok(m.arm>=28&&m.arm<=68);assert.equal(m.mood,'smile');}
+ assert.notDeepEqual(v2VictoryPose(.45),v2VictoryPose(.55));
+});

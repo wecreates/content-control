@@ -89,6 +89,7 @@ jobs:
           sudo apt-get install -y -qq ffmpeg espeak-ng
           python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy opencv-python-headless
+          python -m pip install -r requirements-transcription.txt
       - name: Generate free locked character voices locally
         env:
           HF_HUB_DISABLE_TELEMETRY: "1"
@@ -101,6 +102,15 @@ jobs:
         run: |
           python -m unittest -v tests/test_v2_sound_mix.py
           python scripts/v2_sound_mix.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --voice state/v2/voice.wav --out-dir state/v2/mix --receipt state/v2/receipts/mix.json
+      - name: Transcribe actual free narration
+        run: |
+          python - <<'PYTRANSCRIPT'
+          import json
+          c=json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json"))
+          text=" ".join(d["text"] for s in sorted(c["scenes"],key=lambda s:s["start"]) for d in s.get("audio",{}).get("dialogue",[]))
+          json.dump({"publication_enabled":False,"narration_text":text,"expected_duration_seconds":max(s["end"] for s in c["scenes"])},open("state/v2/transcription-contract.json","w"))
+          PYTRANSCRIPT
+          python scripts/free_transcription_qa.py --audio state/v2/voice.wav --contract state/v2/transcription-contract.json --output state/v2/receipts/transcription.json --model base.en
       - name: Compile entertainment-first V2 plan
         run: |
           python - <<'PY'
