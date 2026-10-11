@@ -1011,17 +1011,42 @@
   },
   "sound_design": {
     "source": "existing_owned_assets",
-    "cue_seconds": [
-      0.5,
-      7.5,
-      14,
-      22.25,
-      28.5,
-      34.5
-    ],
     "music_role": "quiet continuous backing below dialogue",
     "sfx_role": "sparse physical impacts and final callback; never spoken",
-    "listening_review": "pending"
+    "listening_review": "pending",
+    "cue_events": [
+      {
+        "id": "cold-open-accent",
+        "beat": "cold-open",
+        "phase": 0.18181818181818182
+      },
+      {
+        "id": "amex-counter-accent",
+        "beat": "amex-counter",
+        "phase": 0.08928571428571434
+      },
+      {
+        "id": "fee-drain-accent",
+        "beat": "fee-drain",
+        "phase": 0.47368421052631576
+      },
+      {
+        "id": "trap-accent",
+        "beat": "trap",
+        "phase": 0.0967741935483871
+      },
+      {
+        "id": "final-clash-accent",
+        "beat": "final-clash",
+        "phase": 0.5238095238095238
+      },
+      {
+        "id": "finish-accent",
+        "beat": "finish",
+        "phase": 0.8659793814432994
+      }
+    ],
+    "timing_basis": "Beat-relative migration preserving existing cue positions; listening and impact alignment review pending."
   },
   "pacing_revision": {
     "reason": "Replace long silent gaps with measured speech plus short breaths; no dialogue acceleration",

@@ -27,6 +27,45 @@ def probe(file):
 def digest(file):return hashlib.sha256(Path(file).read_bytes()).hexdigest()
 
 
+def resolve_cues(ccsd, scenes, duration):
+    """Resolve beat-relative accents against the same scene windows as animation."""
+    design=ccsd.get('sound_design',{})
+    directed=design.get('cue_seconds')
+    events=design.get('cue_events')
+    resolved=[]
+    if events is not None:
+        if directed is not None:raise ValueError('Choose cue_events or cue_seconds, not both')
+        if not isinstance(events,list) or not 1<=len(events)<=8:raise ValueError('One to eight cue events required')
+        ids=set()
+        for event in events:
+            if not isinstance(event,dict):raise ValueError('Invalid cue event')
+            event_id,beat,phase=event.get('id'),event.get('beat'),event.get('phase')
+            if not isinstance(event_id,str) or not event_id.strip() or event_id in ids:raise ValueError('Cue event IDs must be unique and nonempty')
+            ids.add(event_id)
+            if beat not in ('cold-open','chase-strike','amex-counter','fee-drain','points-summon','trap','final-clash','finish'):raise ValueError('Unknown animation beat')
+            if isinstance(phase,bool) or not isinstance(phase,(int,float)) or not math.isfinite(phase) or not 0<=phase<=1:raise ValueError('Cue phase must be between zero and one')
+            group=sorted((s for s in scenes if str(s.get('id','')).startswith(beat+'-')),key=lambda s:float(s['start']))
+            if not group:raise ValueError('Cue animation beat has no scenes: '+beat)
+            if any(abs(float(a['end'])-float(b['start']))>1e-6 for a,b in zip(group,group[1:])):raise ValueError('Cue beat scenes must be contiguous without overlap')
+            start,end=float(group[0]['start']),float(group[-1]['end'])
+            resolved.append({'id':event_id,'beat':beat,'phase':phase,'beat_start':start,'beat_end':end,'seconds':start+(end-start)*phase})
+        directed=[event['seconds'] for event in resolved]
+    cues=[]
+    if directed is not None:
+        if not isinstance(directed,list) or not 1<=len(directed)<=8:raise ValueError('One to eight directed sound cues required')
+        for value in directed:
+            if isinstance(value,bool) or not isinstance(value,(int,float)):raise ValueError('Cue seconds must be numeric')
+            t=float(value)
+            if not math.isfinite(t) or not 0<=t<duration-.1 or (cues and t-cues[-1]<6-1e-6):raise ValueError('Directed cues must be ordered, sparse and inside the timeline')
+            cues.append(t)
+    else:
+        for scene in scenes:
+            t=float(scene['start'])
+            if t<duration-.1 and (not cues or t-cues[-1]>=6):cues.append(t)
+            if len(cues)==8:break
+    return cues,resolved
+
+
 def mix(voice,ccsd,music,sfx_files,out_dir):
     if ccsd.get('publication_enabled') is not False:raise ValueError('Publication must remain disabled')
     scenes=sorted(ccsd.get('scenes',[]),key=lambda s:float(s['start']))
@@ -36,6 +75,7 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
     for scene in scenes:
         start,end=float(scene['start']),float(scene['end'])
         if not math.isfinite(start) or not math.isfinite(end) or not 0<=start<end<=duration:raise ValueError('Invalid scene timing')
+    cues,resolved_events=resolve_cues(ccsd,scenes,duration)
     sources=[Path(voice).resolve(),Path(music).resolve(),*[Path(p).resolve() for p in sfx_files]]
     if len(sfx_files)!=2 or any(not p.is_file() for p in sources):raise ValueError('Existing narration, music, and two effects required')
     voice_duration=probe(sources[0])
@@ -49,21 +89,6 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
     pcm=['-t',str(duration),'-ar','44100','-ac','2','-c:a','pcm_s16le']
     # Normalize backing music first, then hold it well below speech.
     run(common+['-stream_loop','-1','-i',str(sources[1]),'-af','loudnorm=I=-30:TP=-8:LRA=7,afade=t=in:d=0.4,afade=t=out:st='+str(max(0,duration-.7))+':d=0.7']+pcm+[str(targets[0])])
-    # At most eight restrained accents, never more often than every six seconds.
-    directed=ccsd.get('sound_design',{}).get('cue_seconds')
-    cues=[]
-    if directed is not None:
-        if not isinstance(directed,list) or len(directed)>8:raise ValueError('At most eight directed sound cues required')
-        for value in directed:
-            t=float(value)
-            if not math.isfinite(t) or not 0<=t<duration-.1 or (cues and t-cues[-1]<6):raise ValueError('Directed cues must be ordered, sparse and inside the timeline')
-            cues.append(t)
-        if not cues:raise ValueError('Directed cues cannot be empty')
-    else:
-        for scene in scenes:
-            t=float(scene['start'])
-            if t<duration-.1 and (not cues or t-cues[-1]>=6):cues.append(t)
-            if len(cues)==8:break
     # Decode short MP3 effects independently, then place samples on an exact PCM
     # timeline. MP3 encoder timestamps interacting with a multi-input filter graph
     # previously ended the SFX stem at the first delay (0.5s rather than 50s).
@@ -91,7 +116,7 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
         if digest(p)!=before[str(p)]:raise ValueError('Source audio changed during mixing')
     durations={p.name:probe(p) for p in targets}
     if any(abs(v-duration)>.05 for v in durations.values()):raise ValueError('Mixed stem duration mismatch: '+json.dumps(durations))
-    return {'status':'PASS','publication_enabled':False,'provider_calls':0,'duration':duration,'cue_seconds':cues,'source_sha256':before,'source_duration_seconds':source_durations,'outputs':{p.name:{'path':str(p),'sha256':digest(p),'duration':durations[p.name]} for p in targets},'scope':'Local decode, separate stem assembly, source integrity and duration verification; listening quality and voice identity remain unverified'}
+    return {'status':'PASS','publication_enabled':False,'provider_calls':0,'duration':duration,'cue_seconds':cues,'resolved_cue_events':resolved_events,'source_sha256':before,'source_duration_seconds':source_durations,'outputs':{p.name:{'path':str(p),'sha256':digest(p),'duration':durations[p.name]} for p in targets},'scope':'Local decode, separate stem assembly, source integrity and duration verification; listening quality and voice identity remain unverified'}
 
 
 def main():

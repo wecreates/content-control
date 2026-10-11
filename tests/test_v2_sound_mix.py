@@ -1,6 +1,30 @@
 import hashlib,math,shutil,struct,tempfile,unittest,wave
 from pathlib import Path
-from scripts.v2_sound_mix import mix,probe
+from scripts.v2_sound_mix import mix,probe,resolve_cues
+
+class CueTimingTests(unittest.TestCase):
+ def test_current_project_migration_preserves_timing(self):
+  import json
+  cc=json.loads(Path('projects/v2/amex-vs-chase-boss-fight/ccsd.json').read_text())
+  cues,events=resolve_cues(cc,cc['scenes'],max(s['end'] for s in cc['scenes']))
+  for actual,expected in zip(cues,[.5,7.5,14,22.25,28.5,34.5]):self.assertAlmostEqual(actual,expected)
+  self.assertEqual(len(events),6)
+ def test_cues_follow_shifted_and_stretched_beat(self):
+  cc={'sound_design':{'cue_events':[{'id':'impact','beat':'trap','phase':.25}]}}
+  scenes=[{'id':'trap-a-1','start':10,'end':12},{'id':'trap-b-1','start':12,'end':14}]
+  self.assertEqual(resolve_cues(cc,scenes,20)[0],[11])
+  scenes=[{'id':'trap-a-1','start':20,'end':24},{'id':'trap-b-1','start':24,'end':28}]
+  cues,events=resolve_cues(cc,scenes,30)
+  self.assertEqual(cues,[22]);self.assertEqual(events[0]['beat_end'],28)
+ def test_invalid_events_fail_closed(self):
+  scenes=[{'id':'trap-a-1','start':0,'end':10}]
+  valid={'id':'impact','beat':'trap','phase':.25}
+  for event in [dict(valid,phase=True),dict(valid,phase=float('nan')),dict(valid,phase=2),dict(valid,beat='absent'),dict(valid,id=''),None]:
+   with self.subTest(event=event),self.assertRaises(ValueError):resolve_cues({'sound_design':{'cue_events':[event]}},scenes,10)
+  for design in [{'cue_events':[valid,valid]},{'cue_events':[valid],'cue_seconds':[1]},{'cue_events':[]}]:
+   with self.assertRaises(ValueError):resolve_cues({'sound_design':design},scenes,10)
+  for start in (4,6):
+   with self.assertRaisesRegex(ValueError,'contiguous'):resolve_cues({'sound_design':{'cue_events':[valid]}},[{'id':'trap-a-1','start':0,'end':5},{'id':'trap-b-1','start':start,'end':10}],10)
 
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'),'ffmpeg/ffprobe required')
 class SoundMixTests(unittest.TestCase):
@@ -28,6 +52,14 @@ class SoundMixTests(unittest.TestCase):
    w.setpos(23000);self.assertNotEqual(w.readframes(1000),b'\0'*4000)
   self.cc['sound_design']['cue_seconds']=[.2,.4]
   with self.assertRaisesRegex(ValueError,'sparse'):self.call()
+ def test_relative_cue_places_pcm_at_resolved_time(self):
+  self.cc['scenes'][0]['id']='trap-a-1';self.cc['scenes'][1]['id']='trap-b-1'
+  self.cc['sound_design']={'cue_events':[{'id':'tap','beat':'trap','phase':.25}]}
+  result=self.call();self.assertEqual(result['cue_seconds'],[.5])
+  self.assertEqual(result['resolved_cue_events'][0]['beat_end'],2)
+  with wave.open(str(self.root/'out'/'sfx.wav'),'rb') as w:
+   self.assertEqual(w.readframes(22050),b'\0'*88200)
+   self.assertNotEqual(w.readframes(1000),b'\0'*4000)
  def test_fifty_second_mp3_cues_keep_exact_pcm_timeline(self):
   import subprocess
   with wave.open(str(self.sources[0]),'rb') as w:data=w.readframes(w.getnframes())
