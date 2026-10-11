@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse,json,re,difflib,math
+import argparse,json,re,difflib,math,subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -62,8 +62,26 @@ def duration_matches_contract(duration,contract):
     if isinstance(expected,bool) or not isinstance(expected,(int,float)) or not math.isfinite(expected) or not 0<expected<=3600:return False
     return math.isfinite(duration) and abs(duration-expected)<=0.1
 
+def decode_transcription_audio(path):
+    """Decode local audio to Whisper's 16kHz mono float32 input using FFmpeg.
+
+    Passing samples avoids faster-whisper 1.2.1's PyAV metadata_errors call,
+    which is incompatible with PyAV 19. Duration uses the full decoded track.
+    """
+    import numpy as np
+    source=Path(path).resolve(strict=True)
+    if not source.is_file():raise ValueError("Audio input must be a local file")
+    result=subprocess.run([
+        "ffmpeg","-nostdin","-hide_banner","-loglevel","error","-i",str(source),
+        "-map","0:a:0","-vn","-ac","1","-ar","16000","-f","f32le","pipe:1",
+    ],capture_output=True,timeout=180)
+    if result.returncode:raise ValueError("Audio decode failed: "+result.stderr.decode(errors="replace")[-500:])
+    if not result.stdout or len(result.stdout)%4:raise ValueError("Decoded audio is empty or malformed")
+    samples=np.frombuffer(result.stdout,dtype="<f4").copy()
+    if not np.isfinite(samples).all():raise ValueError("Decoded audio contains nonfinite samples")
+    return samples,len(samples)/16000
+
 def main():
-    import av
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
     ap.add_argument("--contract",required=True)
@@ -79,9 +97,10 @@ def main():
     cues=contract.get("caption_cues",[])
     narration_end=float(cues[-1]["end"]) if cues else None
 
+    audio_samples,media_duration=decode_transcription_audio(a.audio)
     model=WhisperModel(a.model,device="cpu",compute_type="int8")
     segments,info=model.transcribe(
-        a.audio,
+        audio_samples,
         language="en",
         beam_size=5,
         vad_filter=True,
@@ -125,8 +144,6 @@ def main():
     semantic_recall=sum(x["pass"] for x in semantic_hits)/len(semantic_hits)
 
     segment_end=max((s["end"] for s in segs),default=0.0)
-    with av.open(a.audio) as container:
-        media_duration=float(container.duration/1_000_000) if container.duration is not None else segment_end
     coverage_ratio=segment_end/media_duration if media_duration>0 else 0.0
     checks={
       "transcript_nonempty":len(actual.split())>=40,
