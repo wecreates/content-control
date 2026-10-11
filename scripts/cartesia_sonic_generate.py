@@ -35,6 +35,7 @@ def split_segments(segments):
     return [dict(x) for x in segments if (x.get("text") or "").strip()]
 
 def request_audio(api_key,payload,out):
+    raise RuntimeError("paid_voice_provider_disabled: free-only policy forbids paid TTS network requests")
     req=urllib.request.Request(
       API,
       data=json.dumps(payload).encode(),
@@ -72,6 +73,7 @@ def main():
     api_key=os.environ.get("CARTESIA_API_KEY","")
     receipt={"schema_version":1,"provider":"cartesia","model_id":"sonic-3.6","publication_enabled":False}
     try:
+        raise RuntimeError("paid_voice_provider_disabled: free-only policy forbids paid TTS network requests")
         if not api_key: raise RuntimeError("missing CARTESIA_API_KEY")
         segs=split_segments(dialogue.get("segments",[]))
         if not segs: raise RuntimeError("no dialogue segments")
@@ -97,7 +99,7 @@ def main():
     Path(a.receipt).parent.mkdir(parents=True,exist_ok=True)
     Path(a.receipt).write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
     print(json.dumps(receipt,sort_keys=True))
-    raise SystemExit(0)
+    raise SystemExit(0 if receipt.get("status")=="PASS" else 2)
 
 if __name__=="__main__":
     main()

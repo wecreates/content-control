@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json,re,sys
+import ast,json,re,sys
 from pathlib import Path
 
 AUTO_RE=re.compile(r"(?m)^  (push|schedule|workflow_run):")
@@ -9,6 +9,17 @@ def _read_json(path, default=None):
         return json.loads(path.read_text())
     except Exception:
         return {} if default is None else default
+
+
+def _paid_boundary_locked(path, function_name):
+    """A paid entry point must raise before credentials, imports or network work."""
+    try:
+        tree=ast.parse(path.read_text())
+        function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name==function_name)
+        statement=function.body[0]
+        return isinstance(statement,ast.Raise) and "paid_voice_provider_disabled" in ast.unparse(statement)
+    except (OSError,SyntaxError,StopIteration):
+        return False
 
 def audit_root(root: Path):
     checks={}
@@ -314,53 +325,49 @@ def audit_root(root: Path):
     dept_impls=[d.get("impl","") for d in dept_map.get("departments",[]) if isinstance(d,dict)]
     checks["studio_department_map_connected"]=len(dept_impls)>=25 and all((root/p).is_file() for p in dept_impls) and (root/"scripts/verify_studio_department_map.py").is_file() and "verify_studio_department_map.py" in studio_text
     voice_files=[
-        "control/voice-provider-routing-v2.json","control/voice-lock-v1.json",
-        "scripts/voice_provider.py","scripts/cartesia_sonic_generate.py",
-        "scripts/voice_candidate_qa.py","scripts/ccsd_voice_manifest.py","scripts/verify_no_legacy_voice.py",
-        "tests/test_voice_provider.py","tests/test_cartesia_sonic_generate.py",
-        "tests/test_voice_candidate_qa.py","tests/test_ccsd_voice_manifest.py",
-        "tests/test_voice_render_wiring.py","tests/test_no_legacy_voice.py",
+        "control/free-voice-policy.json", "control/voice-provider-routing-v2.json",
+        "control/voice-lock-v1.json", "control/voice-engine-v3.json",
+        "scripts/v2_free_voice.py", "scripts/v2_audio_assemble.py",
+        "scripts/voice_provider.py", "scripts/voice_candidate_qa.py",
+        "scripts/premium_voice_qa.py", "scripts/ccsd_voice_manifest.py",
+        "tests/test_free_voice_policy.py", "tests/test_v2_free_voice.py",
+        "tests/test_voice_provider.py", "tests/test_voice_candidate_qa.py",
     ]
-    checks["premium_voice_stack_connected"]=all((root/p).is_file() for p in voice_files) and "premium_voice_director" in ids
+    checks["free_voice_stack_connected"]=all((root/p).is_file() for p in voice_files)
     voice_contract=_read_json(root/"control/voice-provider-routing-v2.json")
-    checks["premium_voice_quality_router"]=all([
-        voice_contract.get("primary",{}).get("provider")=="Cartesia",
-        voice_contract.get("primary",{}).get("model_id")=="sonic-3.6",
+    voice_v3=_read_json(root/"control/voice-engine-v3.json")
+    free_policy=_read_json(root/"control/free-voice-policy.json")
+    checks["free_voice_quality_router"]=all([
+        voice_contract.get("primary",{}).get("provider")=="kokoro",
+        voice_contract.get("primary",{}).get("model_id")=="Kokoro-82M",
         voice_contract.get("primary",{}).get("required_for_production") is True,
+        voice_contract.get("paid_providers_enabled") is False,
         voice_contract.get("fallback",{}).get("enabled") is False,
         voice_contract.get("fallback",{}).get("provider") is None,
+        voice_v3.get("production_default",{}).get("device")=="cpu",
+        voice_v3.get("production_default",{}).get("model_id")=="Kokoro-82M",
+        free_policy.get("paid_network_requests_allowed") is False,
+        free_policy.get("voices")=={"narrator":"am_adam","dave":"am_fenrir","points_monk":"am_michael","cashback_goblin":None},
     ])
-    checks["premium_voice_studio_wiring"]=all(x in studio_text for x in [
-        "Build Cartesia Sonic 3.6 production voice","ccsd_voice_manifest.py","cartesia_sonic_generate.py",
-        "voice_candidate_qa.py","required_provider_missing","reference-clone-voice.mp3"
-    ]) and "voiceover_path" in ref_comp
+    checks["paid_voice_network_boundaries_locked"]=all(_paid_boundary_locked(root/p,fn) for p,fn in [
+        ("scripts/cartesia_sonic_generate.py","request_audio"),
+        ("scripts/eleven_v3_generate.py","request_audio"),
+        ("scripts/cartesia_voice_engine.py","generate"),
+    ])
+    v2_voice_path=root/".github/workflows/content-control-v2.yml"
+    v2_voice_text=v2_voice_path.read_text() if v2_voice_path.is_file() else ""
+    checks["free_voice_v2_pipeline_wired"]=all(x in v2_voice_text for x in [
+        "kokoro==", "scripts/v2_free_voice.py", "state/v2/receipts/free-voice.json",
+        "scripts/v2_audio_assemble.py", "state/v2/generated-audio/approved-manifest.json",
+        "production_reality_media_qa.py", "rendered-creative-review.json",
+    ]) and not any(x in v2_voice_text for x in ["scripts/cartesia_sonic_generate.py", "scripts/eleven_v3_generate.py"])
+    checks["free_voice_tests_wired"]="tests/test_v2_free_voice.py" in v2_voice_text and "test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
+    # Older studio/Episode 3 callers remain structurally present, but cannot call a
+    # paid provider. They are blocked pending explicit migration, not live-ready.
+    checks["legacy_studio_voice_callers_preserved"]=all(x in studio_text for x in ["ccsd_voice_manifest.py","voice_candidate_qa.py","inject_voiceover_path.py"]) and "voiceover_path" in ref_comp
     episode3_voice=episode3_text
-    checks["premium_voice_episode3_wiring"]=all(x in episode3_voice for x in [
-        "Cartesia Sonic 3.6 voice","cartesia_sonic_generate.py","voice_candidate_qa.py",
-        "required_provider_missing","CARTESIA_API_KEY"
-    ]) and all(x not in episode3_voice for x in ["mcp-preview","content_control_zero_credit","aidocmaker.com"])
-    voice_smoke=root/".github/workflows/premium-voice-runtime-smoke.yml"
-    voice_smoke_text=voice_smoke.read_text() if voice_smoke.is_file() else ""
-    checks["premium_voice_runtime_smoke_connected"]=all(x in voice_smoke_text for x in [
-        "test_voice_provider.py","required_provider_missing","sonic-3.6","verify_no_legacy_voice.py","voiceover_path"
-    ]) and ".github/workflows/premium-voice-runtime-smoke.yml" in reg_allowed
-    checks["premium_voice_tests_exposed"]="test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
-    voice_v3=_read_json(root/"control/voice-engine-v3.json")
-    checks["voice_v3_connected"]=all((root/p).is_file() for p in [
-        "control/voice-engine-v3.json",
-        "requirements-voice.lock.txt",
-        "scripts/cartesia_voice_engine.py",
-        "scripts/premium_voice_qa.py",
-        "scripts/ccsd_voice_manifest.py",
-        "scripts/mix_voice_tracks.py"
-    ]) and voice_v3.get("production_default",{}).get("model_id")=="sonic-3.6"
-    checks["voice_v3_studio_path"]=all(x in studio_text for x in [
-        "Build Cartesia Sonic 3.6 production voice",
-        "cartesia_sonic_generate.py",
-        "required_provider_missing",
-        "reference-clone-voice.mp3",
-        "inject_voiceover_path.py"
-    ])
+    checks["legacy_episode3_voice_qa_preserved"]="voice_candidate_qa.py" in episode3_voice and checks["paid_voice_network_boundaries_locked"]
+    details["free_voice_readiness"]={"structural_wiring_only":True,"local_generation":"not_verified_by_this_audit","listening_and_transcript_quality":"not_verified_by_this_audit","legacy_studio_and_episode3":"paid_generation_blocked_pending_route_migration"}
     short_comp=ref_comp
     long_comp=(root/"remotion/ReferenceCloneLongComposition.jsx").read_text() if (root/"remotion/ReferenceCloneLongComposition.jsx").is_file() else ""
     checks["voice_v3_render_path"]="voiceover_path" in short_comp and "voiceover_path" in long_comp

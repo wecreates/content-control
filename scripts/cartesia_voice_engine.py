@@ -6,6 +6,7 @@ def sha(p):
     h=hashlib.sha256();h.update(Path(p).read_bytes());return h.hexdigest()
 
 def generate(manifest,config,outdir):
+    raise RuntimeError("paid_voice_provider_disabled: free-only policy forbids paid TTS network requests")
     key=os.getenv(config["credentials"]["api_key_env"])
     if not key:
         return {"schema_version":1,"status":"NOT_CONFIGURED","reason":"CARTESIA_API_KEY missing","publication_enabled":False}

@@ -1,34 +1,102 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "publication_enabled": false,
-  "selection_basis": "Independent September 2026 blind-listener benchmarks place Cartesia Sonic 3.6 at or near the top for perceived TTS quality; Eleven v3 remains the cinematic multi-speaker/dialogue specialist.",
+  "paid_providers_enabled": false,
+  "policy": "control/free-voice-policy.json",
+  "archived_paid_configuration": {
+    "enabled": false,
+    "configuration": {
+      "schema_version": 3,
+      "publication_enabled": false,
+      "selection_basis": "Independent September 2026 blind-listener benchmarks place Cartesia Sonic 3.6 at or near the top for perceived TTS quality; Eleven v3 remains the cinematic multi-speaker/dialogue specialist.",
+      "primary": {
+        "provider": "Cartesia",
+        "model_id": "sonic-3.6",
+        "mode": "offline_quality",
+        "endpoint": "https://api.cartesia.ai/tts/bytes",
+        "api_version": "2026-08-14",
+        "output_format": {
+          "container": "wav",
+          "encoding": "pcm_s16le",
+          "sample_rate": 44100
+        },
+        "variants_per_take": 3,
+        "credentials": {
+          "api_key_env": "CARTESIA_API_KEY",
+          "voice_envs": {
+            "narrator": "CARTESIA_VOICE_NARRATOR",
+            "dave": "CARTESIA_VOICE_DAVE",
+            "points_monk": "CARTESIA_VOICE_POINTS_MONK",
+            "cashback_goblin": "CARTESIA_VOICE_CASHBACK_GOBLIN"
+          }
+        },
+        "required_for_production": true
+      },
+      "fallback": {
+        "enabled": false,
+        "provider": null,
+        "rule": "No legacy or zero-credit voice fallback is allowed. Dialogue-bearing production must use an approved premium provider and pass voice QA, otherwise the build fails closed."
+      },
+      "acceptance": [
+        "audio decodes successfully",
+        "speaker voice IDs stay locked by character",
+        "transcript fidelity passes",
+        "semantic recall passes",
+        "duration fits composition",
+        "no SFX or production directions appear in spoken text",
+        "best QA-scored premium take wins when multiple providers are available",
+        "publication remains disabled"
+      ],
+      "dialogue_specialist": {
+        "provider": "ElevenLabs",
+        "model_id": "eleven_v3",
+        "mode": "text_to_dialogue",
+        "endpoint": "https://api.elevenlabs.io/v1/text-to-dialogue",
+        "output_format": "mp3_44100_128",
+        "max_reliable_chars_per_request": 1900,
+        "use_audio_tags": true,
+        "seed_locked": true,
+        "credentials": {
+          "api_key_env": "ELEVENLABS_API_KEY",
+          "voice_envs": {
+            "narrator": "ELEVENLABS_VOICE_NARRATOR",
+            "dave": "ELEVENLABS_VOICE_DAVE",
+            "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
+            "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
+          }
+        },
+        "optional_comparison_only": true
+      },
+      "routing": [
+        "If Cartesia Sonic 3.6 is configured: generate and use Cartesia as the production default.",
+        "If ElevenLabs v3 is also configured: it may be generated as an optional comparison candidate, but Cartesia remains the required primary provider.",
+        "If Cartesia is unavailable or fails QA: fail the dialogue-bearing build. Do not use legacy AI Voice Generator output, pinned preview audio, or zero-credit local voice assets."
+      ]
+    }
+  },
+  "selection_basis": "User requires free alternatives only; local CPU speech must pass existing quality gates.",
   "primary": {
-    "provider": "Cartesia",
-    "model_id": "sonic-3.6",
-    "mode": "offline_quality",
-    "endpoint": "https://api.cartesia.ai/tts/bytes",
-    "api_version": "2026-08-14",
-    "output_format": {
-      "container": "wav",
-      "encoding": "pcm_s16le",
-      "sample_rate": 44100
-    },
-    "variants_per_take": 3,
-    "credentials": {
-      "api_key_env": "CARTESIA_API_KEY",
-      "voice_envs": {
-        "narrator": "CARTESIA_VOICE_NARRATOR",
-        "dave": "CARTESIA_VOICE_DAVE",
-        "points_monk": "CARTESIA_VOICE_POINTS_MONK",
-        "cashback_goblin": "CARTESIA_VOICE_CASHBACK_GOBLIN"
-      }
-    },
-    "required_for_production": true
+    "provider": "kokoro",
+    "model_id": "Kokoro-82M",
+    "device": "cpu",
+    "mode": "local_inference",
+    "required_for_production": true,
+    "credentials_required": false,
+    "voices": {
+      "narrator": "am_adam",
+      "dave": "am_fenrir",
+      "points_monk": "am_michael",
+      "cashback_goblin": null
+    }
   },
   "fallback": {
     "enabled": false,
     "provider": null,
-    "rule": "No legacy or zero-credit voice fallback is allowed. Dialogue-bearing production must use an approved premium provider and pass voice QA, otherwise the build fails closed."
+    "rule": "Missing local runtime or failed QA blocks generation. No paid fallback."
+  },
+  "dialogue_specialist": {
+    "provider": null,
+    "enabled": false
   },
   "acceptance": [
     "audio decodes successfully",
@@ -37,32 +105,12 @@
     "semantic recall passes",
     "duration fits composition",
     "no SFX or production directions appear in spoken text",
-    "best QA-scored premium take wins when multiple providers are available",
-    "publication remains disabled"
+    "publication remains disabled",
+    "local speech passes the same quality checks"
   ],
-  "dialogue_specialist": {
-    "provider": "ElevenLabs",
-    "model_id": "eleven_v3",
-    "mode": "text_to_dialogue",
-    "endpoint": "https://api.elevenlabs.io/v1/text-to-dialogue",
-    "output_format": "mp3_44100_128",
-    "max_reliable_chars_per_request": 1900,
-    "use_audio_tags": true,
-    "seed_locked": true,
-    "credentials": {
-      "api_key_env": "ELEVENLABS_API_KEY",
-      "voice_envs": {
-        "narrator": "ELEVENLABS_VOICE_NARRATOR",
-        "dave": "ELEVENLABS_VOICE_DAVE",
-        "points_monk": "ELEVENLABS_VOICE_POINTS_MONK",
-        "cashback_goblin": "ELEVENLABS_VOICE_CASHBACK_GOBLIN"
-      }
-    },
-    "optional_comparison_only": true
-  },
   "routing": [
-    "If Cartesia Sonic 3.6 is configured: generate and use Cartesia as the production default.",
-    "If ElevenLabs v3 is also configured: it may be generated as an optional comparison candidate, but Cartesia remains the required primary provider.",
-    "If Cartesia is unavailable or fails QA: fail the dialogue-bearing build. Do not use legacy AI Voice Generator output, pinned preview audio, or zero-credit local voice assets."
+    "Use Kokoro-82M on local CPU with fixed character voices.",
+    "Reject dialogue for nonverbal cashback_goblin.",
+    "Never invoke paid TTS providers."
   ]
 }

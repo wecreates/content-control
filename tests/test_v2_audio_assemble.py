@@ -5,7 +5,7 @@ class AudioAssemblyTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.root=Path(self.tmp.name)
   self.cc={'publication_enabled':False,'scenes':[{'id':'a','start':0,'end':1,'audio':{'dialogue':[{'speaker':'dave','text':'Hello'}]}},{'id':'b','start':2,'end':4,'audio':{'dialogue':[{'speaker':'points_monk','text':'Yes'}]}}]}
-  self.m={'publication_enabled':False,'provider':'cartesia','model_id':'sonic-3.6','voice_assignments':{'dave':'voice-a','points_monk':'voice-b'},'clips':[]}
+  self.m={'publication_enabled':False,'provider':'kokoro','model_id':'Kokoro-82M','voice_assignments':{'dave':'am_fenrir','points_monk':'am_michael'},'clips':[]}
   for i,(speaker,text) in enumerate([('dave','Hello'),('points_monk','Yes')]):
    f=self.root/f'{i}.wav'
    with wave.open(str(f),'wb') as w:w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(struct.pack('<hh',1000,-1000)*22050)
@@ -27,7 +27,7 @@ class AudioAssemblyTests(unittest.TestCase):
     self.assertNotEqual(d['speaker'],'cashback_goblin')
     self.assertIn(d['speaker'],[c['id'] for c in s['characters']])
  def test_reject_crossed_voice(self):
-  self.m['clips'][1]['voice_id']='voice-a'
+  self.m['clips'][1]['voice_id']='am_fenrir'
   with self.assertRaisesRegex(ValueError,'voice'):self.run_assembly()
  def test_reject_text_mismatch(self):
   self.cc['scenes'][0]['audio']['dialogue'][0]['text']='Different'
@@ -38,7 +38,7 @@ class AudioAssemblyTests(unittest.TestCase):
  def test_reject_fallback_and_publication(self):
   self.m['provider']='espeak'
   with self.assertRaises(ValueError):self.run_assembly()
-  self.m['provider']='cartesia';self.cc['publication_enabled']=True
+  self.m['provider']='kokoro';self.cc['publication_enabled']=True
   with self.assertRaisesRegex(ValueError,'PUBLICATION'):self.run_assembly()
  def test_reject_tamper(self):
   (self.root/'0.wav').write_bytes(b'invalid')

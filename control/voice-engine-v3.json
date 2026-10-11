@@ -1,11 +1,75 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "publication_enabled": false,
+  "paid_providers_enabled": false,
+  "policy": "control/free-voice-policy.json",
+  "archived_paid_configuration": {
+    "enabled": false,
+    "configuration": {
+      "schema_version": 4,
+      "publication_enabled": false,
+      "production_default": {
+        "provider": "cartesia",
+        "model_id": "sonic-3.6",
+        "sdk": "cartesia==4.2.0",
+        "quality_basis": "Artificial Analysis Provider Voice Arena point-estimate leader, Sep 2026"
+      },
+      "output": {
+        "container": "wav",
+        "encoding": "pcm_s16le",
+        "sample_rate": 44100
+      },
+      "roles": {
+        "narrator": {
+          "voice_id_default": "e07c00bc-4134-4eae-9ea4-1a55fb45746b",
+          "voice_id_env": "CARTESIA_VOICE_NARRATOR",
+          "language": "en",
+          "profile": "deep-neutral"
+        },
+        "dave": {
+          "voice_id_default": "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
+          "voice_id_env": "CARTESIA_VOICE_DAVE",
+          "language": "en",
+          "profile": "medium-fast-anxious"
+        },
+        "points_monk": {
+          "voice_id_default": "ef191366-f52f-447a-a398-ed8c0f2943a1",
+          "voice_id_env": "CARTESIA_VOICE_POINTS_MONK",
+          "language": "en",
+          "profile": "low-calm-deadpan"
+        },
+        "cashback_goblin": {
+          "voice_id_default": "86e30c1d-714b-4074-a1f2-1cb6b552fb49",
+          "voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN",
+          "language": "en",
+          "profile": "mischievous-chirp"
+        }
+      },
+      "credentials": {
+        "api_key_env": "CARTESIA_API_KEY"
+      },
+      "fallback": {
+        "enabled": false,
+        "provider": null,
+        "rule": "No legacy voice generator or pinned voice asset fallback is permitted. Missing Cartesia credentials or failed Cartesia QA blocks dialogue-bearing production."
+      },
+      "acceptance": [
+        "exact speaker-to-voice mapping",
+        "WAV PCM 44.1kHz",
+        "transcript fidelity",
+        "no SFX text",
+        "duration plausible",
+        "publication disabled",
+        "Cartesia Sonic 3.6 required for dialogue-bearing production",
+        "legacy AI Voice Generator output forbidden"
+      ]
+    }
+  },
   "production_default": {
-    "provider": "cartesia",
-    "model_id": "sonic-3.6",
-    "sdk": "cartesia==4.2.0",
-    "quality_basis": "Artificial Analysis Provider Voice Arena point-estimate leader, Sep 2026"
+    "provider": "kokoro",
+    "model_id": "Kokoro-82M",
+    "device": "cpu",
+    "mode": "local_inference"
   },
   "output": {
     "container": "wav",
@@ -14,37 +78,35 @@
   },
   "roles": {
     "narrator": {
-      "voice_id_default": "e07c00bc-4134-4eae-9ea4-1a55fb45746b",
-      "voice_id_env": "CARTESIA_VOICE_NARRATOR",
+      "voice_id_default": "am_adam",
       "language": "en",
+      "nonverbal": false,
       "profile": "deep-neutral"
     },
     "dave": {
-      "voice_id_default": "6ccbfb76-1fc6-48f7-b71d-91ac6298247b",
-      "voice_id_env": "CARTESIA_VOICE_DAVE",
+      "voice_id_default": "am_fenrir",
       "language": "en",
+      "nonverbal": false,
       "profile": "medium-fast-anxious"
     },
     "points_monk": {
-      "voice_id_default": "ef191366-f52f-447a-a398-ed8c0f2943a1",
-      "voice_id_env": "CARTESIA_VOICE_POINTS_MONK",
+      "voice_id_default": "am_michael",
       "language": "en",
+      "nonverbal": false,
       "profile": "low-calm-deadpan"
     },
     "cashback_goblin": {
-      "voice_id_default": "86e30c1d-714b-4074-a1f2-1cb6b552fb49",
-      "voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN",
+      "voice_id_default": null,
       "language": "en",
+      "nonverbal": true,
       "profile": "mischievous-chirp"
     }
   },
-  "credentials": {
-    "api_key_env": "CARTESIA_API_KEY"
-  },
+  "credentials": {},
   "fallback": {
     "enabled": false,
     "provider": null,
-    "rule": "No legacy voice generator or pinned voice asset fallback is permitted. Missing Cartesia credentials or failed Cartesia QA blocks dialogue-bearing production."
+    "rule": "Local runtime missing or failed QA blocks production; paid fallback forbidden."
   },
   "acceptance": [
     "exact speaker-to-voice mapping",
@@ -53,7 +115,7 @@
     "no SFX text",
     "duration plausible",
     "publication disabled",
-    "Cartesia Sonic 3.6 required for dialogue-bearing production",
-    "legacy AI Voice Generator output forbidden"
+    "rendered creative quality review",
+    "nonverbal goblin"
   ]
 }

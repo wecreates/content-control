@@ -1,48 +1,101 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "publication_enabled": false,
+  "paid_providers_enabled": false,
+  "policy": "control/free-voice-policy.json",
+  "archived_paid_configuration": {
+    "enabled": false,
+    "configuration": {
+      "schema_version": 3,
+      "publication_enabled": false,
+      "narrator": {
+        "voice_profile": "deep-neutral",
+        "role": "narration_only",
+        "leakage_forbidden": true,
+        "provider": "cartesia",
+        "model_id": "sonic-3.6",
+        "voice_id_env": "CARTESIA_VOICE_NARRATOR"
+      },
+      "characters": {
+        "dave": {
+          "voice_profile": "medium-fast-anxious",
+          "allowed": "dialogue_only",
+          "leakage_forbidden": true,
+          "provider": "cartesia",
+          "model_id": "sonic-3.6",
+          "voice_id_env": "CARTESIA_VOICE_DAVE"
+        },
+        "points_monk": {
+          "voice_profile": "low-calm-deadpan",
+          "allowed": "dialogue_only",
+          "leakage_forbidden": true,
+          "provider": "cartesia",
+          "model_id": "sonic-3.6",
+          "voice_id_env": "CARTESIA_VOICE_POINTS_MONK"
+        },
+        "cashback_goblin": {
+          "voice_profile": "chirps_or_nonverbal",
+          "allowed": "non_narrator",
+          "leakage_forbidden": true,
+          "provider": "cartesia",
+          "model_id": "sonic-3.6",
+          "voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN"
+        }
+      },
+      "checks": [
+        "speaker segments map to assigned character",
+        "narrator never reads SFX",
+        "character voices do not cross roles",
+        "premium voice IDs stay locked by role",
+        "Cartesia Sonic 3.6 is the production default",
+        "legacy AI Voice Generator fallback is forbidden",
+        "dialogue-bearing production fails if Cartesia Sonic 3.6 is unavailable"
+      ],
+      "provider_contract": "control/voice-engine-v3.json"
+    }
+  },
   "narrator": {
     "voice_profile": "deep-neutral",
     "role": "narration_only",
     "leakage_forbidden": true,
-    "provider": "cartesia",
-    "model_id": "sonic-3.6",
-    "voice_id_env": "CARTESIA_VOICE_NARRATOR"
+    "provider": "kokoro",
+    "model_id": "Kokoro-82M",
+    "voice_id": "am_adam"
   },
   "characters": {
     "dave": {
       "voice_profile": "medium-fast-anxious",
       "allowed": "dialogue_only",
       "leakage_forbidden": true,
-      "provider": "cartesia",
-      "model_id": "sonic-3.6",
-      "voice_id_env": "CARTESIA_VOICE_DAVE"
+      "provider": "kokoro",
+      "model_id": "Kokoro-82M",
+      "voice_id": "am_fenrir"
     },
     "points_monk": {
       "voice_profile": "low-calm-deadpan",
       "allowed": "dialogue_only",
       "leakage_forbidden": true,
-      "provider": "cartesia",
-      "model_id": "sonic-3.6",
-      "voice_id_env": "CARTESIA_VOICE_POINTS_MONK"
+      "provider": "kokoro",
+      "model_id": "Kokoro-82M",
+      "voice_id": "am_michael"
     },
     "cashback_goblin": {
       "voice_profile": "chirps_or_nonverbal",
-      "allowed": "non_narrator",
+      "allowed": "nonverbal_only",
       "leakage_forbidden": true,
-      "provider": "cartesia",
-      "model_id": "sonic-3.6",
-      "voice_id_env": "CARTESIA_VOICE_CASHBACK_GOBLIN"
+      "provider": null,
+      "model_id": null,
+      "voice_id": null
     }
   },
+  "provider_contract": "control/voice-engine-v3.json",
   "checks": [
     "speaker segments map to assigned character",
     "narrator never reads SFX",
     "character voices do not cross roles",
-    "premium voice IDs stay locked by role",
-    "Cartesia Sonic 3.6 is the production default",
-    "legacy AI Voice Generator fallback is forbidden",
-    "dialogue-bearing production fails if Cartesia Sonic 3.6 is unavailable"
-  ],
-  "provider_contract": "control/voice-engine-v3.json"
+    "fixed local voice IDs stay locked by role",
+    "cashback_goblin has no spoken dialogue",
+    "failed local QA blocks production",
+    "paid provider requests forbidden"
+  ]
 }

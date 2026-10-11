@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "publication_enabled": false,
+  "paid_providers_enabled": false,
+  "paid_network_requests_allowed": false,
+  "primary": {
+    "provider": "kokoro",
+    "model_id": "Kokoro-82M",
+    "device": "cpu",
+    "mode": "local_inference"
+  },
+  "voices": {
+    "narrator": "am_adam",
+    "dave": "am_fenrir",
+    "points_monk": "am_michael",
+    "cashback_goblin": null
+  },
+  "nonverbal_roles": [
+    "cashback_goblin"
+  ],
+  "credentials_required": false,
+  "quality_policy": "Keep transcript, speaker mapping, duration, audio decode and rendered creative review gates; local generation is not acceptance.",
+  "accepted_media_policy": "Preserve existing accepted assets; do not relabel historical provider provenance.",
+  "network_policy": "No paid TTS API requests, regardless of supplied credentials. Local model installation/download is separate from inference."
+}

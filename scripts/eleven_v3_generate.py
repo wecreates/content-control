@@ -38,6 +38,7 @@ def stable_seed(reference,speaker,index):
     return int(h[:8],16)%2147483647
 
 def request_audio(api_key,payload,output):
+    raise RuntimeError("paid_voice_provider_disabled: free-only policy forbids paid TTS network requests")
     data=json.dumps(payload).encode()
     req=urllib.request.Request(
       API+"?output_format=mp3_44100_128",
@@ -85,6 +86,7 @@ def main():
     api_key=os.environ.get("ELEVENLABS_API_KEY","")
     receipt={"schema_version":1,"provider":"elevenlabs","model_id":"eleven_v3","publication_enabled":False}
     try:
+        raise RuntimeError("paid_voice_provider_disabled: free-only policy forbids paid TTS network requests")
         if not api_key: raise RuntimeError("missing ELEVENLABS_API_KEY")
         turns=build_turns(dialogue,lock,os.environ)
         chunks=chunk_turns(turns)
@@ -104,7 +106,7 @@ def main():
     Path(a.receipt).parent.mkdir(parents=True,exist_ok=True)
     Path(a.receipt).write_text(json.dumps(receipt,indent=2,sort_keys=True)+"\n")
     print(json.dumps(receipt,sort_keys=True))
-    raise SystemExit(0)
+    raise SystemExit(0 if receipt.get("status")=="PASS" else 2)
 
 if __name__=="__main__":
     main()

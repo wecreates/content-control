@@ -11,9 +11,11 @@ def assemble(ccsd, manifest, root, output):
     root=Path(root).resolve();output=Path(output)
     if ccsd.get('publication_enabled') is not False or manifest.get('publication_enabled') is not False:
         raise ValueError('PUBLICATION_DISABLED required')
-    if manifest.get('provider')!='cartesia' or manifest.get('model_id')!='sonic-3.6':
-        raise ValueError('Existing production voice policy requires Cartesia Sonic 3.6 clips')
+    if manifest.get('provider')!='kokoro' or manifest.get('model_id')!='Kokoro-82M':
+        raise ValueError('Free-only production requires local Kokoro-82M clips')
     locks=manifest.get('voice_assignments',{})
+    approved={'dave':'am_fenrir','points_monk':'am_michael','narrator':'am_adam'}
+    if any(approved.get(s)!=v for s,v in locks.items()):raise ValueError('Voice assignment differs from fixed character voice policy')
     expected=[(s,d) for s in sorted(ccsd.get('scenes',[]),key=lambda s:float(s['start'])) for d in s.get('audio',{}).get('dialogue',[]) if d.get('text','').strip()]
     clips=manifest.get('clips',[])
     if not expected or len(clips)!=len(expected):raise ValueError('Exactly one approved clip per dialogue segment required')

@@ -12,30 +12,31 @@ class VoiceProviderTests(unittest.TestCase):
           }
         }
 
-    def test_primary_quality_provider_is_cartesia_sonic_3_6(self):
+    def test_primary_is_local_kokoro_despite_paid_credentials(self):
         plan=build_provider_plan(self.lock,{"CARTESIA_API_KEY":"x","CARTESIA_VOICE_NARRATOR":"n","CARTESIA_VOICE_DAVE":"d","CARTESIA_VOICE_POINTS_MONK":"m","CARTESIA_VOICE_CASHBACK_GOBLIN":"g"})
-        self.assertEqual(plan["primary"]["provider"],"cartesia")
-        self.assertEqual(plan["primary"]["model_id"],"sonic-3.6")
-        self.assertEqual(plan["primary"]["mode"],"offline_quality")
+        self.assertEqual(plan["primary"]["provider"],"kokoro")
+        self.assertEqual(plan["primary"]["model_id"],"Kokoro-82M")
+        self.assertEqual(plan["primary"]["mode"],"local_cpu")
 
     def test_voice_ids_are_locked_per_character(self):
         env={"CARTESIA_API_KEY":"x","CARTESIA_VOICE_NARRATOR":"n","CARTESIA_VOICE_DAVE":"d","CARTESIA_VOICE_POINTS_MONK":"m","CARTESIA_VOICE_CASHBACK_GOBLIN":"g"}
         plan=build_provider_plan(self.lock,env)
-        self.assertEqual(plan["voices"]["dave"]["cartesia_voice_id"],"d")
-        self.assertEqual(plan["voices"]["points_monk"]["cartesia_voice_id"],"m")
-        self.assertNotEqual(plan["voices"]["dave"]["cartesia_voice_id"],plan["voices"]["points_monk"]["cartesia_voice_id"])
+        self.assertEqual(plan["voices"]["dave"]["voice_id"],"am_fenrir")
+        self.assertEqual(plan["voices"]["points_monk"]["voice_id"],"am_michael")
+        self.assertNotEqual(plan["voices"]["dave"]["voice_id"],plan["voices"]["points_monk"]["voice_id"])
 
-    def test_missing_cartesia_blocks_dialogue_production(self):
+    def test_local_runtime_is_not_assumed_ready(self):
         plan=build_provider_plan(self.lock,{})
         self.assertFalse(plan["primary"]["ready"])
-        self.assertEqual(plan["selected_strategy"],"required_provider_missing")
+        self.assertEqual(plan["selected_strategy"],"kokoro_local_cpu")
         self.assertFalse(plan["fallback"]["enabled"])
         self.assertIsNone(plan["fallback"]["provider"])
 
-    def test_cartesia_api_key_is_enough_when_locked_default_voice_ids_exist(self):
+    def test_paid_credentials_do_not_grant_readiness_or_spending(self):
         plan=build_provider_plan(self.lock,{"CARTESIA_API_KEY":"x"})
-        self.assertTrue(plan["primary"]["ready"])
-        self.assertEqual(plan["selected_strategy"],"cartesia")
+        self.assertFalse(plan["primary"]["ready"])
+        self.assertFalse(plan["paid_providers_enabled"])
+        self.assertEqual(plan["selected_strategy"],"kokoro_local_cpu")
 
     def test_audio_tags_encode_character_acting(self):
         self.assertIn("[anxious]",add_v3_tags("dave","I get money back.",{"tone":"anxious_excited"}))

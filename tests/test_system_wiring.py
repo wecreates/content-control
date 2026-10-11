@@ -1,8 +1,16 @@
 import json, tempfile, unittest
 from pathlib import Path
-from scripts.audit_system_wiring import audit_root
+from scripts.audit_system_wiring import audit_root, _paid_boundary_locked
 
 class SystemWiringAuditTests(unittest.TestCase):
+    def test_paid_guard_must_precede_all_work(self):
+        with tempfile.TemporaryDirectory() as td:
+            source=Path(td)/"provider.py"
+            source.write_text('def request_audio():\n    network_call()\n    raise RuntimeError("paid_voice_provider_disabled")\n')
+            self.assertFalse(_paid_boundary_locked(source,"request_audio"))
+            source.write_text('def request_audio():\n    raise RuntimeError("paid_voice_provider_disabled")\n    network_call()\n')
+            self.assertTrue(_paid_boundary_locked(source,"request_audio"))
+
     def test_unregistered_automatic_workflow_remains_denied(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)

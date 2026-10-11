@@ -11,6 +11,9 @@ on:
       - 'tests/test_v2_acceptance.py'
       - 'scripts/v2_orchestrator.py'
       - 'scripts/v2_audio_assemble.py'
+      - 'scripts/v2_free_voice.py'
+      - 'control/free-voice-policy.json'
+      - 'tests/test_v2_free_voice.py'
       - 'scripts/v2_sound_mix.py'
       - 'tests/test_v2_sound_mix.py'
       - 'tests/test_v2_audio_assemble.py'
@@ -69,6 +72,8 @@ jobs:
           path: state/v2/visual-diagnostics
           retention-days: 14
   render:
+    if: github.event_name != 'schedule'
+    timeout-minutes: 25
     needs: contract
     runs-on: ubuntu-latest
     steps:
@@ -77,15 +82,21 @@ jobs:
         with: {node-version: '20'}
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - name: Assemble approved character audio without provider calls
-        run: |
-          python scripts/v2_audio_assemble.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --manifest projects/v2/amex-vs-chase-boss-fight/audio/approved-manifest.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
       - name: Install render runtime
         run: |
           npm ci
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          python -m pip install --disable-pip-version-check numpy opencv-python-headless
+          sudo apt-get install -y -qq ffmpeg espeak-ng
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy opencv-python-headless
+      - name: Generate free locked character voices locally
+        env:
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          DO_NOT_TRACK: "1"
+        run: |
+          python -m unittest -v tests/test_v2_free_voice.py
+          python scripts/v2_free_voice.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --out-dir state/v2/generated-audio --receipt state/v2/receipts/free-voice.json
+          python scripts/v2_audio_assemble.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --manifest state/v2/generated-audio/approved-manifest.json --out state/v2/voice.wav --receipt state/v2/receipts/voice.json
       - name: Test and assemble separate music and effects
         run: |
           python -m unittest -v tests/test_v2_sound_mix.py
@@ -107,6 +118,25 @@ jobs:
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/v2/ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
           ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/mix/mix.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -shortest state/v2/render/v2-boss-fight.mp4
+      - name: Preserve internal draft for phone review
+        run: |
+          cp state/v2/render/v2-boss-fight.mp4 public-review/v2-draft.mp4
+          python - <<'PYDRAFT'
+          import json,hashlib
+          p="public-review/v2-draft.mp4"
+          json.dump({"status":"DRAFT","publication_enabled":False,"production_approved":False,"voice_provider":"kokoro_local_cpu","candidate_sha256":hashlib.sha256(open(p,"rb").read()).hexdigest(),"full_av_review":False},open("state/v2-draft.json","w"),indent=2)
+          PYDRAFT
+          git config user.name "content-control-v2"
+          git config user.email "actions@users.noreply.github.com"
+          git add -f public-review/v2-draft.mp4 state/v2-draft.json
+          git diff --cached --quiet || git commit -m "Save free-voice internal V2 draft for review [skip ci]"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            git rebase --abort || true
+          done
+          exit 1
+      - name: Inspect rendered candidate
+        run: |
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json
           python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json
       - name: Enforce structural preflight (not rendered creative review)

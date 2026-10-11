@@ -36,32 +36,17 @@ def _provider_ready(env,key_name,voice_envs,roles):
     return all(bool(env.get(voice_envs[s])) for s in roles)
 
 def build_provider_plan(lock,env=None):
-    env=env or os.environ
-    roles={"narrator":lock.get("narrator",{}),**lock.get("characters",{})}
-    role_names=list(roles)
-    cartesia_ready=bool(env.get("CARTESIA_API_KEY"))
-    eleven_ready=_provider_ready(env,"ELEVENLABS_API_KEY",ELEVEN_ENV,role_names)
-    voices={}
-    for speaker,meta in roles.items():
-        voices[speaker]={
-          "voice_profile":meta.get("voice_profile"),
-          "cartesia_voice_id":env.get(CARTESIA_ENV[speaker]) or None,
-          "elevenlabs_voice_id":env.get(ELEVEN_ENV[speaker]) or None,
-        }
-    if cartesia_ready and eleven_ready:
-        selected="cartesia_with_optional_eleven_comparison"
-    elif cartesia_ready:
-        selected="cartesia"
-    else:
-        selected="required_provider_missing"
+    # Credentials never authorize spending under the user-selected free-only policy.
+    voices={"narrator":"am_adam","dave":"am_fenrir","points_monk":"am_michael","cashback_goblin":None}
     return {
-      "schema_version":2,
-      "primary":{"provider":"cartesia","model_id":"sonic-3.6","mode":"offline_quality","ready":bool(cartesia_ready),"output_format":"wav_pcm_s16le_44100"},
-      "dialogue_specialist":{"provider":"elevenlabs","model_id":"eleven_v3","mode":"offline_cinematic_dialogue","ready":bool(eleven_ready),"optional_comparison_only":True,"output_format":"mp3_44100_128","seed_policy":"locked_per_character_plus_variant"},
-      "fallback":{"provider":None,"enabled":False,"reason":"legacy and zero-credit voice fallbacks are forbidden"},
-      "selected_strategy":selected,
-      "selected_provider":selected,
-      "voices":voices,
+      "schema_version":3,
+      "primary":{"provider":"kokoro","model_id":"Kokoro-82M","mode":"local_cpu","ready":False,"readiness":"requires_local_runtime_probe","output_format":"wav_pcm_s16le_44100"},
+      "dialogue_specialist":{"provider":None,"ready":False,"enabled":False},
+      "fallback":{"provider":None,"enabled":False,"reason":"paid voice providers disabled"},
+      "selected_strategy":"kokoro_local_cpu",
+      "selected_provider":"kokoro",
+      "voices":{speaker:{"voice_id":voice,"nonverbal":voice is None} for speaker,voice in voices.items()},
+      "paid_providers_enabled":False,
       "publication_enabled":False
     }
 
@@ -72,7 +57,7 @@ def main():
     a=ap.parse_args()
     plan=build_provider_plan(json.loads(Path(a.lock).read_text()))
     Path(a.out).write_text(json.dumps(plan,indent=2,sort_keys=True)+"\n")
-    print(json.dumps({"status":"PASS","selected_strategy":plan["selected_strategy"],"cartesia_ready":plan["primary"]["ready"],"eleven_ready":plan["dialogue_specialist"]["ready"]},sort_keys=True))
+    print(json.dumps({"status":"PASS","selected_strategy":plan["selected_strategy"],"local_runtime_verified":plan["primary"]["ready"],"paid_providers_enabled":False},sort_keys=True))
 
 if __name__=="__main__":
     main()
