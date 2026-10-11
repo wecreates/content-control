@@ -10,7 +10,7 @@ const DaveFace=({mood="smile",gazeX=0,gazeY=0,blink=1,browLift=0})=><g fill={K} 
   <ellipse cx={-11+gazeX} cy={-10+gazeY} rx={mood==="shock"||mood==="panic"?5:4} ry={(mood==="shock"||mood==="panic"?5:4)*Math.max(.12,blink)}/><ellipse cx={11+gazeX} cy={-10+gazeY} rx={mood==="shock"||mood==="panic"?5:4} ry={(mood==="shock"||mood==="panic"?5:4)*Math.max(.12,blink)}/>
   <path d={`M-20 ${-22-browLift} Q-11 ${-27-browLift} -3 ${-20-browLift} M3 ${-20-browLift} Q11 ${-27-browLift} 20 ${-22-browLift}`} fill="none"/>
   {mood==="shock"?<ellipse cy="10" rx="9" ry="12" fill="none"/>:
-   mood==="panic"?<path d="M-14 12 Q0 24 14 12" fill="none"/>:
+   mood==="panic"?<path d="M-14 16 Q0 -2 14 16 L11 20 Q0 11 -11 20 Z" fill={W}/>:
    mood==="mad"?<path d="M-14 13 Q0 0 14 13" fill="none"/>:
    mood==="deadpan"?<path d="M-12 8 L12 8" fill="none"/>:
    <path d="M-13 6 Q0 15 13 6" fill="none"/>}

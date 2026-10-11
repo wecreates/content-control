@@ -82,3 +82,21 @@ test('prop contact remains fixed in world coordinates through bob and lean',asyn
   }
  }
 });
+
+test('V2 eyes track the action without escaping face bounds and blink over time',async()=>{
+ const {v2FacePerformance}=await import('../remotion/V2FacePerformance.mjs');
+ const {v2SceneActor}=await import('../remotion/StudioLayout.mjs');
+ const slot=v2SceneActor('fee-drain','dave',0,1);
+ const face=time=>v2FacePerformance({id:'dave',beat:'fee-drain',time,start:11.75,end:16.5,slot,motion:{lean:-10,bob:3}});
+ for(let t=11.75;t<16.5;t+=1/24){const f=face(t);assert.ok(f.gazeX>0&&f.gazeX<=3);assert.ok(f.gazeY>=-2&&f.gazeY<=2);assert.ok(f.blink>=0&&f.blink<=1);assert.ok(f.browLift>=3);}
+ assert.ok(face(13.9).blink<.01);assert.equal(face(14.2).blink,1);
+});
+test('panic and gaze controls change actual shared character SVG',async()=>{
+ const {build}=await import('esbuild');const {renderToStaticMarkup}=await import('react-dom/server');const React=await import('react');
+ const result=await build({entryPoints:['remotion/CharacterSystem.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'}});
+ const {Dave}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ const draw=props=>renderToStaticMarkup(React.createElement(Dave,{x:0,y:0,label:'',...props}));
+ const panic=draw({mood:'panic'}),smile=draw({mood:'smile'});
+ assert.notEqual(panic,smile);assert.ok(!panic.includes('M-14 12 Q0 24 14 12'));
+ assert.notEqual(panic,draw({mood:'panic',gazeX:3,gazeY:-2,blink:.12,browLift:4}));
+});
