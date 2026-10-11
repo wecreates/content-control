@@ -1,42 +1,38 @@
 {
   "schema_version": 1,
-  "run_id": 38157835426,
-  "source_commit": "68790a1f24601be83ff0ef1d47ee9c8fc43dadcc",
+  "run_id": 38159344191,
+  "source_commit": "23766204bf411bfa0c8fc5c115060bd839f8f2e9",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-11T17:19:52.476003+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38157835426",
-  "candidate_sha256": "59c3ac3b7dc7edf2e768ea2fbeab7381e12e07dd90b003fc02499af168436485",
-  "candidate_generated": true,
+  "recorded_at": "2026-10-11T17:24:49.420351+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38159344191",
+  "candidate_sha256": null,
+  "candidate_generated": false,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "aeb26efb3193f71c09695338a89a20be6471133dda3fef92726588c45ccbca27"
+      "receipt_sha256": "26c0494b192786920c790df2b5608012fc66ab7b69ba0246086f0d6e59cc5ddf"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "5233fc636e9c04c3cb81e4e73a4e5771fd511fdc818445d70547efa1709f448b"
+      "receipt_sha256": "9eb2735db25a3abcecab781335a98df831213e422d4012d90dbd665f0f36a83c"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "e3797bad0ec3615dd0ab58df73e951964ae0e4296c1722111fbb1fa42d71b327"
+      "receipt_sha256": "0313a022b8fe50dd502b7bbf5d43fbce86fa91bec000675b0a80b27a515557d8"
     },
     "captions": {
-      "status": "NOT_RUN"
+      "status": "BLOCKED",
+      "failed_checks": [],
+      "receipt_sha256": "77b93d664ed03faf0ae1b3ba1a8bef0c2129d58d0ce794880e50f5699bab1820"
     },
     "technical_video": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "56a9b44d03c58bd234b5d24649edc0fc7f808064292aad4ccd1ce4c8ff7fde34"
+      "status": "NOT_RUN"
     },
     "style_parity": {
-      "status": "FAIL",
-      "failed_checks": [
-        "framewise_style_parity"
-      ],
-      "receipt_sha256": "25c01c9509d57036c0a4aaf85f7817486cfcd4c9c270d6a50dec78c555994291"
+      "status": "NOT_RUN"
     }
   },
   "status": "BLOCKED",
