@@ -1,5 +1,5 @@
 import json, pathlib, tempfile, unittest
-from scripts.creator_parity_compare import compare
+from scripts.creator_parity_compare import compare, collect_competitor_signals, safe_num
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 RUBRIC=json.load(open(ROOT/'control/creator-parity-ruthless-gate.json'))
@@ -8,6 +8,7 @@ RUBRIC['pass_contract']['minimum_competitor_full_av_videos']=2
 def comp(name):
     return {
       'creator':name,
+      'source_url':'https://www.instagram.com/reel/'+name+'/',
       'source_av_access':{'visual':True,'audio':True,'complete_end_to_end':True},
       'opening':{'intro_length_est_sec':2},
       'motion_language':{'meaningful_visual_change_est_sec':1.8},
@@ -18,6 +19,41 @@ def comp(name):
     }
 
 class CreatorParityTests(unittest.TestCase):
+    def test_duplicates_and_incomplete_reviews_cannot_inflate_benchmark(self):
+        a=comp('A'); duplicate=comp('Other');duplicate['source_url']='https://instagram.com/reel/A/?tracking=1'
+        incomplete=comp('B');incomplete['source_av_access']['audio']=False
+        string_flag=comp('C');string_flag['source_av_access']['visual']='true'
+        report=collect_competitor_signals([a,duplicate,incomplete,string_flag])
+        self.assertEqual(report['full_av_count'],1)
+        self.assertEqual(report['creator_count'],1)
+        self.assertEqual(report['instagram_reel_full_av_count'],1)
+
+    def test_partial_review_does_not_affect_cadence(self):
+        partial=comp('B');partial['source_av_access']['complete_end_to_end']=False
+        partial['motion_language']['meaningful_visual_change_est_sec']=100
+        self.assertEqual(collect_competitor_signals([comp('A'),partial])['median_visual_change_sec'],1.8)
+
+    def test_existing_creator_and_reel_requirements_are_enforced(self):
+        r=compare({},[comp('A'),comp('B')],RUBRIC)
+        dimensions={f['dimension'] for f in r['faults']}
+        self.assertIn('competitor_creators',dimensions)
+        self.assertIn('instagram_reel_benchmark',dimensions)
+        self.assertFalse(r['approval_allowed'])
+
+    def test_source_aliases_and_creator_case_do_not_inflate_counts(self):
+        a=comp('A');a['source_url']='https://youtu.be/abcdefghijk'
+        b=comp('B');b['source_url']='https://www.youtube.com/watch?v=abcdefghijk'
+        c=comp(' @a ')
+        c['source_url']='https://www.instagram.com/reel/unique/'
+        r=collect_competitor_signals([a,b,c])
+        self.assertEqual(r['full_av_count'],2)
+        self.assertEqual(r['creator_count'],1)
+        self.assertEqual(r['instagram_reel_full_av_count'],1)
+
+    def test_nonfinite_and_boolean_measurements_are_not_evidence(self):
+        for value in ['NaN','Infinity',True,False]:
+            self.assertIsNone(safe_num(value))
+
     def test_rejects_slideshow_candidate(self):
         c={
           'source_av_access':{'visual':True,'audio':True,'complete_end_to_end':True},

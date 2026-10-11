@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import argparse, json, pathlib, statistics
+import argparse, json, pathlib, statistics, math, re
+from urllib.parse import urlsplit, parse_qs
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 RUBRIC = ROOT / "control" / "creator-parity-ruthless-gate.json"
@@ -9,9 +10,31 @@ def load(path):
 
 def safe_num(v, default=None):
     try:
-        return float(v)
+        n = float(v)
+        return n if not isinstance(v, bool) and math.isfinite(n) else default
     except Exception:
         return default
+
+def full_av_access(report):
+    access = report.get("source_av_access", {})
+    return all(access.get(k) is True for k in ("visual", "audio", "complete_end_to_end"))
+
+def source_identity(report):
+    try:
+        u = urlsplit(report.get("source_url") or report.get("video_url") or report.get("url") or "")
+        if u.scheme != 'https' or not u.hostname or u.username or u.password or u.port:
+            return None, False
+        host = u.hostname.lower().removeprefix('www.')
+        path = u.path.rstrip('/')
+        if host == 'instagram.com':
+            match = re.fullmatch(r'/(reel|p|tv)/([A-Za-z0-9_-]+)', path)
+            return (('instagram:' + match[2], match[1] == 'reel') if match else (None, False))
+        if host in ('youtube.com', 'm.youtube.com', 'youtu.be'):
+            video = path[1:] if host == 'youtu.be' else parse_qs(u.query).get('v', [''])[0] if path == '/watch' else path.rsplit('/', 1)[-1] if path.startswith(('/shorts/', '/embed/')) else ''
+            return (('youtube:' + video, False) if re.fullmatch(r'[A-Za-z0-9_-]{11}', video) else (None, False))
+        return host + path, False
+    except (TypeError, ValueError):
+        return None, False
 
 def collect_competitor_signals(reports):
     signals = {
@@ -19,18 +42,23 @@ def collect_competitor_signals(reports):
         "intro_length_sec": [],
         "retention_reset_counts": [],
         "full_av_count": 0,
+        "instagram_reel_full_av_count": 0,
         "creators": set(),
         "transferable_mechanics": [],
         "slideshow_failure_modes": [],
         "lecture_failure_modes": [],
     }
+    seen = set()
     for r in reports:
-        access = r.get("source_av_access", {})
-        if access.get("visual") and access.get("audio") and access.get("complete_end_to_end"):
-            signals["full_av_count"] += 1
+        identity, is_reel = source_identity(r)
+        if not full_av_access(r) or not identity or identity in seen:
+            continue
+        seen.add(identity)
+        signals["full_av_count"] += 1
+        signals["instagram_reel_full_av_count"] += int(is_reel)
         creator = r.get("creator")
-        if creator:
-            signals["creators"].add(creator)
+        if isinstance(creator, str) and creator.strip():
+            signals["creators"].add(creator.strip().lstrip('@').casefold())
         opening = r.get("opening", {})
         n = safe_num(opening.get("intro_length_est_sec"))
         if n is not None:
@@ -49,6 +77,7 @@ def collect_competitor_signals(reports):
         return statistics.median(xs) if xs else None
     return {
         "full_av_count": signals["full_av_count"],
+        "instagram_reel_full_av_count": signals["instagram_reel_full_av_count"],
         "creator_count": len(signals["creators"]),
         "creator_names": sorted(signals["creators"]),
         "median_visual_change_sec": median(signals["visual_change_sec"]),
@@ -77,14 +106,20 @@ def compare(candidate, competitor_reports, rubric):
         })
         repairs.append({"dimension": dimension, "priority": severity, "action": repair})
 
-    access = candidate.get("source_av_access", {})
-    if not (access.get("visual") and access.get("audio") and access.get("complete_end_to_end")):
+    if not full_av_access(candidate):
         fault("candidate_av_review","critical","Candidate lacks validated full visual+audio end-to-end review.","Run full AV review before parity evaluation.")
 
     if benchmark["full_av_count"] < rubric["pass_contract"].get("minimum_competitor_full_av_videos", 0):
         fault("competitor_benchmark","critical",
               f"Only {benchmark['full_av_count']} competitor videos have validated full AV evidence.",
               "Complete required competitor full-AV benchmark before approval.")
+    for metric, requirement, dimension in [
+        ('creator_count', 'minimum_competitor_creators', 'competitor_creators'),
+        ('instagram_reel_full_av_count', 'minimum_instagram_reel_full_av_reviews', 'instagram_reel_benchmark'),
+    ]:
+        minimum = rubric['pass_contract'].get(requirement, 0)
+        if benchmark[metric] < minimum:
+            fault(dimension, 'critical', f"Only {benchmark[metric]} qualified; {minimum} required.", 'Complete distinct, source-linked full audiovisual reviews required by the existing rubric.')
 
     opening = candidate.get("opening", {})
     first3 = (opening.get("first_3_seconds") or "").strip()
@@ -97,7 +132,7 @@ def compare(candidate, competitor_reports, rubric):
     motion = candidate.get("motion_language", {})
     cand_change = safe_num(motion.get("meaningful_visual_change_est_sec"))
     bench_change = benchmark.get("median_visual_change_sec")
-    if cand_change is None:
+    if cand_change is None or cand_change <= 0:
         fault("visual_change_frequency","major","Candidate visual-change cadence is unmeasured.","Measure meaningful visual-change cadence.")
     elif bench_change and cand_change > bench_change * 1.35:
         fault("visual_change_frequency","major",
