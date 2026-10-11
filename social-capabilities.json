@@ -1,0 +1,593 @@
+{
+  "schema_version": 1,
+  "research_date": "2026-10-11",
+  "publication_policy": {
+    "publishing": false,
+    "messages": false,
+    "ads": false,
+    "spending": false
+  },
+  "verification_note": "Documentation research is not a runtime connection test. Meta primary references failed retrieval; Meta-owned Postman search evidence used. Exact costs and all capabilities not fully verified. Empty Instagram/YouTube connector inventories supplied by parent agent; no accounts connected.",
+  "platforms": [
+    {
+      "id": "instagram",
+      "documentation_verification": "partial",
+      "eligibility": "Professional business/creator; Instagram Login needs no linked Facebook Page; Facebook Login does.",
+      "scopes": "instagram_business_basic; feature-specific content/comment/message/insights grants",
+      "costs": "No per-call cost verified; hosting/review costs unverified",
+      "quota": "Current exact limits not verified; inspect usage headers and publishing-limit endpoint",
+      "renewal": "Refresh endpoint documented; current lifetime/review details require verification",
+      "limitations": "Own-account authorization does not establish access to arbitrary Reel video/audio.",
+      "sources": [
+        "https://www.postman.com/meta/instagram/folder/6raa77c/instagram-api-with-instagram-login"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "provider": "vidIQ",
+          "observed": "accounts=[]",
+          "result": "no_connected_account"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "own_media_only_arbitrary_url_unverified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "facebook",
+      "documentation_verification": "partial",
+      "eligibility": "Managed Facebook Page and appropriate role; personal-profile-wide management unsupported by evidence.",
+      "scopes": "pages_show_list; pages_read_engagement; feature-specific grants",
+      "costs": "No current per-call price verified",
+      "quota": "App/use-case dependent; not verified",
+      "renewal": "Inspect token validity/data-access expiry; do not assume permanent token",
+      "limitations": "Meta reference fetch failed; exact approved functions require console and token inspection.",
+      "sources": [
+        "https://www.postman.com/meta/facebook/request/bqfxwbp/get-access-tokens-of-pages-you-manage"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "authorized_page_media_only",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "separate_messenger_product",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "threads",
+      "documentation_verification": "partial",
+      "eligibility": "Threads account plus Meta app authorization/review as applicable.",
+      "scopes": "threads_basic; threads_manage_insights; threads_read_replies; threads_manage_replies; threads_content_publish",
+      "costs": "No current per-call price verified",
+      "quota": "Exact current quota not verified",
+      "renewal": "Refresh/debug endpoints documented; lifetime not verified",
+      "limitations": "General inbox access not established; native scheduling/drafts not established.",
+      "sources": [
+        "https://www.postman.com/meta/threads/documentation/dht3nzz/threads-api"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "permission_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "replies_documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "youtube",
+      "documentation_verification": "verified_for_cited_details",
+      "eligibility": "Google API project and channel-owner OAuth; consent verification/audit as applicable.",
+      "scopes": "youtube.readonly; yt-analytics.readonly separately; write scopes excluded",
+      "costs": "Quota-based; no billing configured or price guarantee made",
+      "quota": "100 search.list/day; 100 videos.insert/day; 10000 units/day other endpoints; extensions audited",
+      "renewal": "Offline web-server OAuth refresh; handle revocation and consent-state expiry",
+      "limitations": "Caption download requires edit permission; API metadata does not provide arbitrary full video/audio.",
+      "sources": [
+        "https://developers.google.com/youtube/v3/guides/quota_and_compliance_audits",
+        "https://developers.google.com/youtube/v3/docs/captions/download",
+        "https://developers.google.com/identity/protocols/oauth2/web-server"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "provider": "vidIQ",
+          "observed": "channels=[]",
+          "result": "no_connected_channel"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "separate_analytics_api",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "metadata_not_full_video",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "tiktok",
+      "documentation_verification": "verified_for_cited_details",
+      "eligibility": "Approved Login Kit/Display products and user consent; direct-post separately approved/audited.",
+      "scopes": "user.info.basic; video.list; video.publish only if later authorized",
+      "costs": "No current API price verified",
+      "quota": "Display user/info video/list video/query each default 600/min",
+      "renewal": "Access 24h; refresh initially 365d; persist replacement token from refresh response",
+      "limitations": "Display provides authorized profile/video display; arbitrary video bytes, general inbox/comments not established.",
+      "sources": [
+        "https://developers.tiktok.com/docs/en/display-api-get-started",
+        "https://developers.tiktok.com/docs/en/tiktok-api-v2-rate-limit",
+        "https://developers.tiktok.com/docs/en/oauth-user-access-token-management",
+        "https://developers.tiktok.com/docs/en/content-posting-api-get-started"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "limited_video_statistics",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "authorized_display_not_raw_video",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "x",
+      "documentation_verification": "verified_for_pricing_other_details_partial",
+      "eligibility": "Developer app; appropriate OAuth scopes; explicit cost approval before API calls.",
+      "scopes": "Endpoint-specific scopes not yet verified",
+      "costs": "Paid: post reads $0.005/resource; user reads $0.010; qualifying owned reads $0.001; no spend authorized",
+      "quota": "Endpoint-specific; pay-per-use post reads capped 3 million/month",
+      "renewal": "OAuth renewal implementation requires app inspection",
+      "limitations": "Even harmless read probes can incur costs; blocked without cost approval.",
+      "sources": [
+        "https://docs.x.com/x-api/getting-started/pricing"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented_paid",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "permission_dependent_paid",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "permission_dependent_paid",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "replies_permission_dependent_paid",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "permission_dependent_paid",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "pinterest",
+      "documentation_verification": "verified_for_cited_details",
+      "eligibility": "Business account; registered app; Trial/Standard approval.",
+      "scopes": "user_accounts:read; pins:read; boards:read; verify approved scopes",
+      "costs": "No current API price verified",
+      "quota": "Trial 1000/day/app universal; Standard 100/sec/user/app plus category caps: analytics 60/min, organic read 1000/min, write 100/min",
+      "renewal": "Access 30d; continuous refresh 60d renewable; old apps continuous_refresh=true",
+      "limitations": "Inbox/comments not established; arbitrary full video retrieval not established.",
+      "sources": [
+        "https://developers.pinterest.com/docs/reference/rate-limits/",
+        "https://developer.pinterest.com/docs/getting-started/set-up-authentication-and-authorization/",
+        "https://developers.pinterest.com/docs/developer-tools/quickstart-tools/"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "authorized_pins",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "linkedin",
+      "documentation_verification": "verified_for_cited_details",
+      "eligibility": "Community Management approval and asset roles; separate Standard upgrade.",
+      "scopes": "r_organization_social; r_member_profileAnalytics; r_member_postAnalytics; applicable approved product scopes",
+      "costs": "No current API price verified",
+      "quota": "Development 500 calls/app/day,100/member/day; no BATCH_GET/social webhooks; Standard separately approved",
+      "renewal": "Approved MDP partners: access 60d; refresh fixed 365d; otherwise reauthorize",
+      "limitations": "General private-message access not established; version 202510 sunsets 2026-10-15.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/linkedin/marketing/increasing-access?view=li-lms-2026-04",
+        "https://learn.microsoft.com/en-us/linkedin/shared/authentication/programmatic-refresh-tokens"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "documented",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "authorized_content_only",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    },
+    {
+      "id": "reddit",
+      "documentation_verification": "verified_for_access_rules_other_details_partial",
+      "eligibility": "Explicit API approval; commercial use needs written approval.",
+      "scopes": "OAuth scopes specific to approved application; not yet inspected",
+      "costs": "Free eligibility not presumed for commercial Money Factory",
+      "quota": "Eligible free access:100 QPM/client averaged over10min",
+      "renewal": "Approved OAuth app renewal path requires verification",
+      "limitations": "Deletion reconciliation required; no unrestricted commercial research or retention.",
+      "sources": [
+        "https://support.reddithelp.com/hc/en-us/articles/16160319875092-Reddit-Data-API-Wiki",
+        "https://redditinc.com/policies/data-api-terms"
+      ],
+      "publishing": false,
+      "connection": {
+        "status": "unverified",
+        "connected": false,
+        "read_check": {
+          "result": "not_tested"
+        }
+      },
+      "actions": {
+        "account": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "analytics": {
+          "documented": "not_established",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "intake": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "comments": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "messages": {
+          "documented": "approval_dependent",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "drafts": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "scheduling": {
+          "documented": "internal_only_native_not_verified",
+          "runtime": "unverified",
+          "enabled": false
+        },
+        "publishing": {
+          "documented": "permission_dependent",
+          "runtime": "disabled",
+          "enabled": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-11",
+  "scope": "Existing Money Factory and Content Control integration",
+  "publication_enabled": false,
+  "implemented": [
+    "Nine-platform content URL recognition and deduplication",
+    "Timestamp-scoped evidence routing in existing capability-queue.json",
+    "Existing Money Factory idea-vault reference",
+    "Read-only phone dashboard at /social",
+    "HTTP external-action denial across retries",
+    "Honest unavailable financial data",
+    "Atomic queue persistence for authorized repository-assisted intake"
+  ],
+  "verified_local": {
+    "tests_passed": 13,
+    "tests_failed": 0,
+    "full_reel_watched": false
+  },
+  "live_before_change": {
+    "v10": "HTTP 200; hash-bound video and captions; publication false",
+    "v2": "HTTP 503 BLOCKED; no accepted candidate",
+    "render_plan": "free",
+    "instagram_vidiq": "accounts empty",
+    "youtube_vidiq": "channels empty",
+    "renewal": "planning only; no automatic refresh configured"
+  },
+  "dependencies": [
+    "Connect intended Instagram professional account and YouTube channel through secure provider authorization; do not send secrets in chat",
+    "Approve/configure platform developer applications and permission scopes where required",
+    "Authenticated durable dashboard write path; existing Render file storage is ephemeral",
+    "Full authorized audiovisual review of acceptance Reel still incomplete",
+    "X reads require cost approval; Reddit commercial API requires written approval",
+    "Meta exact quotas/approvals and several platform costs remain partly unverified",
+    "Other seven account connections not tested; no configured credentials found in inspected integration",
+    "Android device interaction test pending"
+  ],
+  "prohibited": [
+    "social publication",
+    "messages",
+    "ads",
+    "spending",
+    "account security changes"
+  ],
+  "no_new_background_job": true
+}

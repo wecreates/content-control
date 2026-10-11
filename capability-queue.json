@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated_at": "2026-10-05",
+  "updated_at": "2026-10-11",
   "queue": [
     {
       "id": "instagram-carousel-DeChDzQDFXy",
@@ -40,6 +40,133 @@
         "proof-first CTA"
       ],
       "publication_rule": "Use for production only within the business content-readiness ceiling supplied by Money Factory."
+    },
+    {
+      "id": "social-instagram-DeUlQTQxv5O",
+      "platform": "instagram",
+      "source_url": "https://www.instagram.com/reel/DeUlQTQxv5O/",
+      "canonical_id": "instagram:DeUlQTQxv5O",
+      "source_type": "social_link",
+      "status": "partial_analysis_routed",
+      "created_at": "2026-10-11",
+      "publication_enabled": false,
+      "coverage": {
+        "full_video": false,
+        "full_audio": false,
+        "segments": [],
+        "transcript_segments": [
+          {
+            "start_seconds": 0,
+            "end_seconds": 52.08
+          }
+        ],
+        "sampled_frame_seconds": [
+          0,
+          15,
+          35
+        ]
+      },
+      "evidence": [
+        {
+          "id": "hook-transcript",
+          "kind": "transcript",
+          "verified": true,
+          "start_seconds": 0,
+          "end_seconds": 11.92,
+          "summary": "Creator opens with reverse engineering and a return-tomorrow prediction. Popularity figure is an unverified creator claim."
+        },
+        {
+          "id": "code-frame-15",
+          "kind": "sampled_frame",
+          "verified": true,
+          "seconds": 15,
+          "summary": "Dark code panel highlights widget and notification entry points, with bold captions below. This frame does not prove the code belongs to Duolingo."
+        },
+        {
+          "id": "notification-transcript",
+          "kind": "transcript",
+          "verified": true,
+          "start_seconds": 22.72,
+          "end_seconds": 50.16,
+          "summary": "Creator alleges network-based timing, silent-mode signals and personalized notification prompts; those specific implementation claims remain unverified."
+        },
+        {
+          "id": "cta-transcript",
+          "kind": "transcript",
+          "verified": true,
+          "start_seconds": 50.16,
+          "end_seconds": 52.08,
+          "summary": "Ends by inviting viewers to name the next app for analysis."
+        },
+        {
+          "id": "duolingo-primary",
+          "kind": "metadata",
+          "verified": true,
+          "url": "https://blog.duolingo.com/hi-its-duo-the-ai-behind-the-meme/",
+          "summary": "Duolingo documents notification personalization, controlled experiments and reducing repetition. This does not verify Wi-Fi tracking."
+        }
+      ],
+      "findings": [
+        {
+          "id": "evidence-reveal",
+          "category": "Content-production technique",
+          "project": "Content Control",
+          "summary": "Draft a concrete evidence reveal after the hook; preserve white backgrounds, black stick figures, separate audio stems and readable zones.",
+          "basis": "sampled_frame",
+          "evidence_refs": [
+            "code-frame-15"
+          ],
+          "full_analysis": false,
+          "publication_enabled": false,
+          "status": "internal_review"
+        },
+        {
+          "id": "retention-experiment",
+          "category": "Automation improvement",
+          "project": "CYZOR Money Factory / Chrome extensions",
+          "summary": "Prepare an opt-in retention experiment with consented first-party events and a holdout; no messaging or data collection enabled.",
+          "basis": "metadata",
+          "evidence_refs": [
+            "duolingo-primary"
+          ],
+          "full_analysis": false,
+          "publication_enabled": false,
+          "status": "internal_review"
+        },
+        {
+          "id": "audience-next-topic",
+          "category": "Marketing strategy",
+          "project": "Content Control",
+          "summary": "Add a next-topic question to the internal script brief; do not post it.",
+          "basis": "transcript",
+          "evidence_refs": [
+            "cta-transcript"
+          ],
+          "full_analysis": false,
+          "publication_enabled": false,
+          "status": "internal_review"
+        }
+      ],
+      "retrieval_attempts": [
+        {
+          "date": "2026-10-11",
+          "route": "Transcriptor metadata",
+          "result": "metadata_available_duration_null"
+        },
+        {
+          "date": "2026-10-11",
+          "route": "Transcriptor automatic Whisper transcript and raw SRT",
+          "result": "returned_untruncated_0_to_52.08_seconds"
+        },
+        {
+          "date": "2026-10-11",
+          "route": "Transcriptor sampled frames",
+          "result": "visually_inspected_0_15_35_seconds"
+        }
+      ],
+      "analysis_status": "transcript_and_three_frames_only",
+      "title": "Duolingo retention breakdown — limited evidence review",
+      "incomplete_reason": "Timestamped automatic transcript available through 52.08s; frames inspected at 0, 15, 35s. Full video duration, continuous visual sequence and audible audio were not verified. No complete-watch claim."
     }
   ]
 }

@@ -7,6 +7,8 @@ import {infraStatus} from "./monitor-infra.js";
 import {createMonitorRouter} from "./monitor-api.js";
 import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 
+import {createSocialRouter} from "./social-router.js";
+
 const app=express();
 const monitorStore=await loadMonitorStore();
 const PORT=Number(process.env.PORT||10000);
@@ -107,13 +109,16 @@ app.use((req,res,next)=>{
   next();
 });
 
+app.use("/api/social",createSocialRouter());
+app.get("/social",(req,res)=>{res.setHeader("Cache-Control","no-store");res.sendFile(path.resolve("social-ui/index.html"));});
+
 app.get("/",(req,res)=>{
   const canonical=acceptance();
   const ep3=episode3Acceptance();
   const clone=referenceCloneAcceptance();
   const latest=clone.ready?"/clone/watch":ep3.ready?"/episode3/watch":canonical.ready?"/watch":null;
   res.setHeader("Cache-Control","no-store, max-age=0");
-  res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;box-sizing:border-box}main{max-width:560px;margin:0 auto}.card{border:1px solid #ddd;border-radius:16px;padding:20px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06)}a{display:inline-block;padding:12px 16px;border-radius:10px;background:#111;color:#fff;text-decoration:none;font-weight:700}.muted{color:#666}.ok{color:#08783f;font-weight:700}.wait{color:#8a5a00;font-weight:700}</style></head><body><main><div class="card"><h1>Content Control Review</h1><p class="${latest?'ok':'wait'}">${latest?'Verified review is ready.':'No verified review is ready yet.'}</p><p class="muted">This page stays visible during cold starts and deployment propagation. Publication is disabled.</p>${latest?`<a href="${latest}">Open latest verified video</a>`:'<p>QA/render pipeline is still working.</p>'}</div></main></body></html>`);
+  res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;box-sizing:border-box}main{max-width:560px;margin:0 auto}.card{border:1px solid #ddd;border-radius:16px;padding:20px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06)}a{display:inline-block;padding:12px 16px;border-radius:10px;background:#111;color:#fff;text-decoration:none;font-weight:700}.muted{color:#666}.ok{color:#08783f;font-weight:700}.wait{color:#8a5a00;font-weight:700}</style></head><body><main><div class="card"><h1>Content Control Review</h1><p><a href="/social">Social operations</a></p><p class="${latest?'ok':'wait'}">${latest?'Verified review is ready.':'No verified review is ready yet.'}</p><p class="muted">This page stays visible during cold starts and deployment propagation. Publication is disabled.</p>${latest?`<a href="${latest}">Open latest verified video</a>`:'<p>QA/render pipeline is still working.</p>'}</div></main></body></html>`);
 });
 
 app.get("/latest",(req,res)=>{
