@@ -3,6 +3,23 @@ from pathlib import Path
 from scripts.audit_system_wiring import audit_root
 
 class SystemWiringAuditTests(unittest.TestCase):
+    def test_unregistered_automatic_workflow_remains_denied(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            workflows=root/".github/workflows"
+            workflows.mkdir(parents=True)
+            (workflows/"unexpected.yml").write_text("name: Unexpected\non:\n  push:\n    branches: [main]\n")
+            report=audit_root(root)
+            self.assertIn("workflow_registry_covers_automatic", report["failed_checks"])
+            self.assertIn({"path":".github/workflows/unexpected.yml", "reason":"automatic_not_registered"}, report["details"]["workflow_violations"])
+
+    def test_audit_workflow_regenerates_receipts_after_test_failure(self):
+        workflow=(Path(__file__).resolve().parents[1]/".github/workflows/system-wiring-audit.yml").read_text()
+        for step_id in ["audit", "workflow_control"]:
+            self.assertIn(f"id: {step_id}\n        if: always()", workflow)
+        self.assertIn('os.environ.get("WIRING_AUDIT_OUTCOME") != "success"', workflow)
+        self.assertIn('os.environ.get("WORKFLOW_CONTROL_OUTCOME") != "success"', workflow)
+
     def test_current_repository_contracts_are_connected(self):
         root=Path(__file__).resolve().parents[1]
         report=audit_root(root)

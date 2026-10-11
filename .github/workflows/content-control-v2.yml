@@ -38,6 +38,33 @@ jobs:
           print(json.dumps(result,indent=2))
           assert result["status"]=="BLOCKED", "Unrendered V2 job must never be READY"
           PY
+  visual-diagnostics:
+    needs: contract
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Test stage layout
+        run: |
+          npm ci
+          node --test tests/studio-layout.test.mjs
+      - name: Render diagnostic stills (not accepted production)
+        run: |
+          mkdir -p state/v2/visual-diagnostics
+          PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("projects/v2/amex-vs-chase-boss-fight/ccsd.json"))},separators=(",",":")))')
+          for frame in 24 120 240 432 600 792 984 1152; do
+            npx remotion still remotion/studio-animatic-index.jsx StudioAnimatic "state/v2/visual-diagnostics/frame-$frame.png" --props="$PROPS" --frame="$frame"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-visual-diagnostics-not-accepted
+          path: state/v2/visual-diagnostics
+          retention-days: 14
   render:
     needs: contract
     runs-on: ubuntu-latest

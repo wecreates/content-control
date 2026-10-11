@@ -332,7 +332,7 @@ app.post("/v2/run",(req,res)=>{
 app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:v2TickRunning,logs:renderState.logs.slice(-40),publication:false});});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/audio/approved-manifest.json"))?"present_not_validated_here":"missing",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
 });
 app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{

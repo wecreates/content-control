@@ -35,14 +35,16 @@ jobs:
         run: python -m unittest -v tests/test_system_wiring.py tests/test_creative_blueprint.py
       - name: Audit complete production graph
         id: audit
+        if: always()
         continue-on-error: true
         run: python scripts/audit_system_wiring.py
       - name: Verify workflow control
         id: workflow_control
+        if: always()
         continue-on-error: true
         run: python scripts/verify_workflow_control.py
       - name: Persist wiring health
-        if: always()
+        if: always() && steps.audit.outcome != 'skipped' && steps.workflow_control.outcome != 'skipped'
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
@@ -57,9 +59,14 @@ jobs:
           exit 1
       - name: Enforce wiring and workflow-control audits
         if: always()
+        env:
+          WIRING_AUDIT_OUTCOME: ${{ steps.audit.outcome }}
+          WORKFLOW_CONTROL_OUTCOME: ${{ steps.workflow_control.outcome }}
         run: |
           python - <<'PY'
-          import json
+          import json, os
+          if os.environ.get("WIRING_AUDIT_OUTCOME") != "success" or os.environ.get("WORKFLOW_CONTROL_OUTCOME") != "success":
+              raise SystemExit("Current-run wiring and workflow-control audits must both pass")
           wiring=json.load(open("state/system-wiring-health.json"))
           control=json.load(open("state/workflow-control-health.json"))
           if wiring.get("status")!="PASS" or control.get("status")!="PASS":

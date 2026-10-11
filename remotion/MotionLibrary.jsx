@@ -1,9 +1,12 @@
 import {characterMotion} from "./CharacterSystem";
+import {normalizePose} from "./StudioLayout.mjs";
 
 const ease=(p)=>p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
-export const resolveMotion=(character,pose,p,intensity=1)=>{
+export const resolveMotion=(character,pose,p,intensity=1,strict=false)=>{
   const table=characterMotion[character]||{};
-  const base=table[pose]||{lean:0,arm:0,leg:0};
+  const resolved=normalizePose(character,pose);
+  if(strict&&!table[resolved]) throw new Error(`Unsupported motion ${character}:${pose}`);
+  const base=table[resolved]||{lean:0,arm:0,leg:0};
   const e=ease(Math.max(0,Math.min(1,p)));
   const pulse=Math.sin(Math.PI*e);
   return {
