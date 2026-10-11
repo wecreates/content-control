@@ -3,6 +3,6 @@
   "publication_enabled": false,
   "production_approved": false,
   "voice_provider": "kokoro_local_cpu",
-  "candidate_sha256": "a489e4ff663d6887250c6fb75c2f4ee64a2ce4d59a179ef85b5ee0b57cbb9eb3",
+  "candidate_sha256": "187a7e7541c2e496c4a9bde0611e0f45733c226cb5a1895ceb77baad2c2c2ee6",
   "full_av_review": false
 }
