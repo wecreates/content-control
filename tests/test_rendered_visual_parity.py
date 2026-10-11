@@ -1,9 +1,63 @@
 import unittest
 import numpy as np
+import cv2
 from scripts.rendered_visual_parity import (compare_metric_series, frame_metrics,
-    foreground_diagnostics, benchmark_diagnostics, METRIC_WEIGHTS)
+    foreground_diagnostics, benchmark_diagnostics, METRIC_WEIGHTS, compare_white_stage)
 
 class RenderedVisualParityTests(unittest.TestCase):
+    @staticmethod
+    def figure(background=255,scale=1.0):
+        image=np.full((240,160,3),background,dtype=np.uint8)
+        cv2.circle(image,(80,75),22,(0,0,0),4)
+        for a,b in [((80,97),(80,165)),((80,120),(38,148)),((80,120),(125,145)),((80,165),(44,220)),((80,165),(115,220))]:
+            cv2.line(image,a,b,(0,0,0),4)
+        cv2.putText(image,'VALUE',(10,35),cv2.FONT_HERSHEY_SIMPLEX,.8,(0,0,0),2)
+        if scale!=1:
+            image=cv2.warpAffine(image,cv2.getRotationMatrix2D((80,120),0,scale),(160,240),borderValue=(background,)*3)
+        return image
+
+    def profile(self,reference,candidate):
+        return compare_white_stage([frame_metrics(reference)]*4,[frame_metrics(candidate)]*4)
+
+    def test_white_profile_accepts_light_paper_to_required_white(self):
+        self.assertTrue(self.profile(self.figure(230),self.figure())['framewise_style_parity'])
+
+    def test_white_profile_keeps_exact_distance_thresholds_and_weights(self):
+        refs=[frame_metrics(self.figure(230))]*4;cands=[frame_metrics(self.figure())]*4
+        expected=compare_metric_series([x['light_stage_normalized'] for x in refs],[x['light_stage_normalized'] for x in cands])
+        actual=compare_white_stage(refs,cands)
+        for k in ['mean_frame_distance','p90_frame_distance','frame_distances']:
+            self.assertEqual(actual[k],expected[k])
+        self.assertFalse(actual['creative_acceptance'])
+
+    def test_white_profile_rejects_empty_dark_colored_and_tiny_content(self):
+        ref=self.figure(230)
+        candidates=[np.full_like(ref,255),np.zeros_like(ref),np.full_like(ref,(0,0,255)),self.figure(scale=.2)]
+        for candidate in candidates:
+            with self.subTest(mean=float(candidate.mean())):
+                self.assertFalse(self.profile(ref,candidate)['framewise_style_parity'])
+
+    def test_white_profile_rejects_cream_output_when_brief_is_white(self):
+        result=self.profile(self.figure(230),self.figure(230))
+        self.assertFalse(result['checks']['raw_white_candidate_background'])
+        self.assertFalse(result['framewise_style_parity'])
+
+    def test_white_profile_rejects_whitened_dark_reference(self):
+        result=self.profile(self.figure(100),self.figure())
+        self.assertFalse(result['checks']['light_reference_stage'])
+        self.assertFalse(result['framewise_style_parity'])
+
+    def test_white_profile_rejects_content_erasure_even_if_global_color_close(self):
+        ref=self.figure(230);candidate=self.figure();candidate[55:]=255
+        result=self.profile(ref,candidate)
+        self.assertFalse(result['checks']['foreground_density_preserved'])
+        self.assertFalse(result['framewise_style_parity'])
+
+    def test_white_profile_rejects_mismatched_or_insufficient_sampling(self):
+        metric=frame_metrics(self.figure())
+        for a,b in [(4,3),(3,3),(0,0)]:
+            self.assertFalse(compare_white_stage([metric]*a,[metric]*b)['framewise_style_parity'])
+
     def test_paper_tint_is_diagnosed_without_overriding_gate(self):
         white=np.full((100,100,3),255,dtype=np.uint8)
         paper=np.full((100,100,3),230,dtype=np.uint8)
