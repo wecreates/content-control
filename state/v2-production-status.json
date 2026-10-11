@@ -1,44 +1,50 @@
 {
   "schema_version": 1,
-  "run_id": 38159974084,
-  "source_commit": "c6524a6f28ade57792d3a4b1eda0dab3874a6dfa",
+  "run_id": 38161369341,
+  "source_commit": "363bffe3b429a7c56519340bcfc7aeb2e7657f56",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-11T17:34:58.962447+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38159974084",
-  "candidate_sha256": "f4ef7f2ae719de39853492c0de440127b0442cd6b5ff58e07998f31190be3e13",
+  "recorded_at": "2026-10-11T17:54:47.902258+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38161369341",
+  "candidate_sha256": "c8001ecce6498d13a29ffff2a6df1eeef67a8e53f44f5955184d6b0d19b49208",
   "candidate_generated": true,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "0e3a5ec8c6eb1fe58d71e40c5a586a80f17cfa41d0e2ff8d5ec4bacc37f90d99"
+      "receipt_sha256": "8629354b7773c5b02afb0f9d3009c2e054fa73a8f8cec8dc101ebae26a1a7478"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "c5f02e6d1a1de33d2c8248a44d22387774139d829433dd35e851e90a2908c129"
+      "receipt_sha256": "df7795770dde5c8ef92f14bd86c73f437c9f0be4cc721212f11ca6db4f003a6f"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "355933af9a2ffd708c182f87c338cebe3486a66960aaeb144f82c34b81d6b701"
+      "receipt_sha256": "33b40bb1d752fc952cb2aaa9badf90642e791db35eeff1f3d99ce5cb65e851c1"
     },
     "captions": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "703dc9c414eda6159b588dbfcc811b2b4fa543298f891f2c6050b4ae1214b931"
+      "receipt_sha256": "a1bb3daadce716b6d4fec5a97ec8335c166405d89805104e8f24577c4bc8f2b7"
+    },
+    "caption_frames": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "bc7b4a6c60812040cacc16c1cb7026e5ff180cf8f8629193fafd88c1a35a10e8"
     },
     "technical_video": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "706cc5803aa7f98c89a60921dbb8bf745466c606ba76168a4d7d84b3d5317eaa"
+      "receipt_sha256": "e5e6f0dc000c2309f926f527396b5b35b687a626b15d444b8492b16c540525b6"
     },
     "style_parity": {
       "status": "FAIL",
       "failed_checks": [
         "framewise_style_parity"
       ],
-      "receipt_sha256": "331442ff48cfb43600f02e510806f42439e7d71bc501f3a5765cb23d18bf9c67"
+      "receipt_sha256": "8444c0bf030ac2cc04a8f1ee0bc7b24630dd7b98cc840560951cb1f9b4550aff",
+      "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3324 of 0.3624). This does not assess creative quality or override the required brand style."
     }
   },
   "status": "BLOCKED",
