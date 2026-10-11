@@ -32,12 +32,15 @@ export async function queueWatchResult({queuePath,url,result,now=new Date().toIS
     const record=added.record;
     record.retrieval_attempts??=[];
     record.retrieval_attempts.push({date:now,route:'watch_skill_local',result:'output_collected_unreviewed'});
-    record.unreviewed_watch_output={text:result.stdout.slice(0,20000),truncated:result.stdout.length>20000,review_required:true,verified:false};
-    record.analysis_status='watch_output_pending_evidence_review';
-    record.status='pending_human_or_agent_evidence_review';
+    record.unreviewed_watch_output={text:result.stdout.slice(0,20000),truncated:result.stdout.length>20000,review_required:true,verified:false,collected_at:now,coverage:{full_video:false,full_audio:false}};
+    // A new extraction is not a new review. Preserve previously verified
+    // evidence and routing state when collecting another pass of the same URL.
+    const hasVerifiedEvidence=record.evidence?.some(e=>e.verified===true);
+    if(!hasVerifiedEvidence) {
+      record.analysis_status='watch_output_pending_evidence_review';
+      record.status='pending_human_or_agent_evidence_review';
+    }
     record.coverage??={full_video:false,full_audio:false,segments:[],transcript_segments:[],sampled_frame_seconds:[]};
-    record.coverage.full_video=false;
-    record.coverage.full_audio=false;
     record.publication_enabled=false;
     return {queue:added.queue,record,created:added.created};
   });

@@ -4,6 +4,7 @@ import {mkdtemp,writeFile,readFile,rm,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {buildWatchInvocation,queueWatchResult} from './watch-bridge.mjs';
+import {routeFinding} from '../../social-intake.js';
 
 test('uses fixed argv and local engine without shell',()=>{
  const v=buildWatchInvocation({url:'https://www.instagram.com/reel/DeUlQTQxv5O/?tracking=1',skillDir:'/tmp/trusted-watch'});
@@ -11,6 +12,31 @@ test('uses fixed argv and local engine without shell',()=>{
  assert.deepEqual(v.args.slice(-2),['--engine','local']);
  assert.ok(v.args.includes('--no-whisper'), 'must override configured paid transcription fallback');
  assert.ok(v.args.includes('https://www.instagram.com/reel/DeUlQTQxv5O/'));
+});
+test('repeated extraction preserves reviewed evidence and remains routable without duplicate intake',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'watch-reviewed-'));
+ try{
+  const file=join(dir,'queue.json');
+  const url='https://www.instagram.com/reel/DeUlQTQxv5O/';
+  const record={id:'reviewed',source_url:url,status:'internal_review',analysis_status:'audiovisual_reviewed',publication_enabled:false,
+   coverage:{full_video:true,full_audio:true,segments:[{start_seconds:0,end_seconds:10,video:true,audio:true}]},
+   evidence:[{id:'av-1',kind:'audiovisual',verified:true,start_seconds:0,end_seconds:10}],findings:[]};
+  await writeFile(file,JSON.stringify({version:1,queue:[record]}));
+  for(let i=0;i<2;i++)await queueWatchResult({queuePath:file,url,result:{stdout:'new unreviewed extraction'}});
+  const q=JSON.parse(await readFile(file,'utf8'));
+  assert.equal(q.queue.length,1);
+  const saved=q.queue[0];
+  assert.deepEqual(saved.coverage,record.coverage);
+  assert.deepEqual(saved.evidence,record.evidence);
+  assert.equal(saved.status,record.status);
+  assert.equal(saved.analysis_status,record.analysis_status);
+  assert.equal(saved.retrieval_attempts.length,2);
+  assert.equal(saved.unreviewed_watch_output.verified,false);
+  assert.deepEqual(saved.unreviewed_watch_output.coverage,{full_video:false,full_audio:false});
+  const routed=routeFinding(q,'reviewed',{id:'verified-technique',category:'Content-production technique',project:'Content Control',summary:'Verified observation from an existing completed review.',basis:'audiovisual',evidence_refs:['av-1'],full_analysis:true},{allowedProjects:['Content Control']});
+  assert.equal(routed.finding.full_analysis,true);
+  assert.equal(routed.finding.publication_enabled,false);
+ }finally{await rm(dir,{recursive:true,force:true});}
 });
 test('rejects unsupported hosts',()=>{
  assert.throws(()=>buildWatchInvocation({url:'https://evil.example/video',skillDir:'/tmp/trusted-watch'}),/Unsupported/);
