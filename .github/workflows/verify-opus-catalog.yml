@@ -1,0 +1,30 @@
+name: Verify upstream Opus catalog
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'integrations/awesome-opus-videos/**'
+      - '.github/workflows/verify-opus-catalog.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test integrations/awesome-opus-videos/import-catalog.test.mjs
+      - name: Import public reference catalog
+        run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
+      - name: Validate output
+        run: |
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const d=JSON.parse(readFileSync('/tmp/opus-catalog.json')); if(d.total<100 || d.entries.length!==d.total || d.publication_enabled!==false) process.exit(1); console.log('Validated reference entries:',d.total)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opus-reference-catalog
+          path: /tmp/opus-catalog.json
+          retention-days: 7
