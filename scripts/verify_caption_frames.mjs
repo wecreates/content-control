@@ -53,7 +53,10 @@ export function verifyCaptionFrames(ccsd,track) {
     checks.original_words_bound=true;
     const visible=new Set();
     for(let frame=0;frame<report.frame_count;frame++) {
-      const time=frame/fps,cue=captionAtTime(track,time);
+      const time=frame/fps;
+      // StudioAnimatic returns a blank frame before caption lookup outside scenes.
+      if(!scenes.some(scene=>scene.start<=time&&time<scene.end))continue;
+      const cue=captionAtTime(track,time);
       if(!cue)continue;
       for(const i of cue.display_word_indices) {
         if(time<onsets.get(i))fail('Renderer reveals word before observed onset');

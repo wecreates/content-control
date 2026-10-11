@@ -24,3 +24,10 @@ test('missing frame rate and enabled publication fail closed',()=>{
  ccsd.fps=30;assert.match(verifyCaptionFrames(ccsd,track).reason,/renderer fps/);
  ccsd.fps=24;track.publication_enabled=true;assert.match(verifyCaptionFrames(ccsd,track).reason,/Publication/);
 });
+
+test('caption visible only in scene gap is rejected like the real composition',()=>{
+ const ccsd={fps:24,publication_enabled:false,scenes:[{id:'a',start:1,end:2,audio:{dialogue:[{speaker:'dave',text:'Stop'}]}}]};
+ const track={status:'PASS',publication_enabled:false,cues:[{start:0,end:.1,text:'Stop',word:'Stop',speaker:'dave',scene_id:'a',observed_word_index:0,source_word_indices:[0],display_word_indices:[0]}]};
+ const r=verifyCaptionFrames(ccsd,track);assert.equal(r.status,'BLOCKED');assert.equal(r.visible_word_count,0);assert.deepEqual(r.missing_word_indices,[0]);
+ track.cues[0].start=1;track.cues[0].end=1.1;assert.equal(verifyCaptionFrames(ccsd,track).status,'PASS');
+});
