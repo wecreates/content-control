@@ -82,7 +82,7 @@
     "voice_lock_connected": true,
     "voice_v3_render_path": true,
     "voice_v3_tests": true,
-    "workflow_registry_covers_automatic": false,
+    "workflow_registry_covers_automatic": true,
     "workflow_registry_disjoint": true
   },
   "details": {
@@ -176,17 +176,10 @@
     },
     "missing_cco_agents": [],
     "workflow_registry_duplicates": [],
-    "workflow_violations": [
-      {
-        "path": ".github/workflows/verify-opus-catalog.yml",
-        "reason": "automatic_not_registered"
-      }
-    ]
+    "workflow_violations": []
   },
-  "failed_checks": [
-    "workflow_registry_covers_automatic"
-  ],
+  "failed_checks": [],
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL"
+  "status": "PASS"
 }
