@@ -29,6 +29,15 @@ class WhiteStageReferenceCalibrationTests(unittest.TestCase):
         copies=[cv2.imdecode(cv2.imencode('.jpg',x,[cv2.IMWRITE_JPEG_QUALITY,65])[1],cv2.IMREAD_COLOR) for x in self.white]
         self.assertTrue(self.compare(copies)['framewise_style_parity'])
 
+    def test_shortening_only_reserved_caption_band_preserves_action_evidence(self):
+        copies=[]
+        for image in self.white:
+            copy=image.copy();copy[:image.shape[0]//4]=255;copies.append(copy)
+        original=self.compare(self.white);short=self.compare(copies)
+        self.assertEqual(original['foreground_density_ratio'],short['foreground_density_ratio'])
+        self.assertEqual(original['edge_density_ratio'],short['edge_density_ratio'])
+        self.assertTrue(short['framewise_style_parity'])
+
     def test_bad_reference_perturbations_fail_independently_of_candidate(self):
         tiny=[];erased=[]
         for image in self.white:
