@@ -18,5 +18,5 @@ export function v2FacePerformance({id,beat,time,start,end,slot,motion={}}) {
  const cycle=((time+phase)%3.7+3.7)%3.7;
  const blink=time-start<.35?1:1-Math.max(0,1-Math.abs(cycle-2.8)/.09);
  const alarm=slot.mood==='panic'||slot.mood==='shock';
- return {gazeX:clamp(localX/70,-3,3),gazeY:clamp(localY/70,-2,2),blink,browLift:alarm?3+2*Math.sin(p*Math.PI):0};
+ return {gazeX:clamp(localX/70,-3,3),gazeY:clamp(localY/70,-2,2),blink,browLift:alarm?1+Math.sin(p*Math.PI):0};
 }

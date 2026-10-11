@@ -88,7 +88,7 @@ test('V2 eyes track the action without escaping face bounds and blink over time'
  const {v2SceneActor}=await import('../remotion/StudioLayout.mjs');
  const slot=v2SceneActor('fee-drain','dave',0,1);
  const face=time=>v2FacePerformance({id:'dave',beat:'fee-drain',time,start:11.75,end:16.5,slot,motion:{lean:-10,bob:3}});
- for(let t=11.75;t<16.5;t+=1/24){const f=face(t);assert.ok(f.gazeX>0&&f.gazeX<=3);assert.ok(f.gazeY>=-2&&f.gazeY<=2);assert.ok(f.blink>=0&&f.blink<=1);assert.ok(f.browLift>=3);}
+ for(let t=11.75;t<16.5;t+=1/24){const f=face(t);assert.ok(f.gazeX>0&&f.gazeX<=3);assert.ok(f.gazeY>=-2&&f.gazeY<=2);assert.ok(f.blink>=0&&f.blink<=1);assert.ok(f.browLift>=1&&f.browLift<=2);}
  assert.ok(face(13.9).blink<.01);assert.equal(face(14.2).blink,1);
 });
 test('panic and gaze controls change actual shared character SVG',async()=>{
