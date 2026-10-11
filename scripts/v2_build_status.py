@@ -3,7 +3,7 @@
 import argparse,datetime,hashlib,json,re
 from pathlib import Path
 
-RECEIPTS={'voices':'receipts/voice.json','sound_mix':'receipts/mix.json','transcription':'receipts/transcription.json','captions':'captions.json','technical_video':'receipts/render.json','style_parity':'receipts/visual-parity.json'}
+RECEIPTS={'voices':'receipts/voice.json','sound_mix':'receipts/mix.json','transcription':'receipts/transcription.json','captions':'captions.json','caption_frames':'receipts/caption-frames.json','technical_video':'receipts/render.json','style_parity':'receipts/visual-parity.json'}
 def summarize(root,run_id,source_commit,outcome):
     root=Path(root)
     if not isinstance(run_id,int) or isinstance(run_id,bool) or run_id<=0: raise ValueError('Invalid run ID')

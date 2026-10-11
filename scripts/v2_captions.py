@@ -14,6 +14,36 @@ except ModuleNotFoundError:
     from free_transcription_qa import norm
 
 
+def enforce_frame_visibility(cues,expected,fps,duration):
+    """Mirror ObservedCaptions.mjs's 0.12s hold, capped by the next cue."""
+    if isinstance(fps,bool) or not isinstance(fps,(int,float)) or not math.isfinite(fps) or not 1<=fps<=120:raise ValueError('Invalid caption frame rate')
+    pending=[];visible=set();counts=[]
+    for i,cue in enumerate(cues):
+        until=min(cue['end']+.12,cues[i+1]['start'] if i+1<len(cues) else duration,duration)
+        first=math.ceil(cue['start']*fps)
+        count=max(0,math.ceil(until*fps)-first)
+        counts.append(count)
+        if not count:
+            pending.extend(cue['source_word_indices'])
+            continue
+        if pending:
+            if any(expected[j]['scene_id']!=cue['scene_id'] or expected[j]['speaker']!=cue['speaker'] for j in pending):raise ValueError('Frame-invisible word cannot cross scene or speaker boundary')
+            indices=sorted(set(pending+cue['display_word_indices']))
+            required=set(pending+cue['source_word_indices'])
+            if len(required)>3:raise ValueError('Frame-invisible words exceed short phrase capacity')
+            # Previously visible context can yield space to an unheard-on-screen word.
+            if len(indices)>3:indices=sorted(required)
+            cue['display_word_indices']=indices
+            cue['text']=' '.join(expected[j]['original'] for j in indices)
+            cue['deferred_frame_invisible_indices']=list(pending)
+            pending=[]
+        visible.update(cue['display_word_indices'])
+    if pending:raise ValueError('Terminal frame-invisible word lacks a following visible interval')
+    missing=sorted(set(range(len(expected)))-visible)
+    if missing:raise ValueError('Original words missing from rendered frame visibility: '+str(missing))
+    return {'status':'PASS','fps':fps,'expected_word_count':len(expected),'visible_word_count':len(visible),'missing_word_indices':missing,'cue_frame_counts':counts,'display_hold_seconds':.12,'method':'Exact frame lattice with next-cue-capped display hold; observed timestamps unchanged'}
+
+
 def build_captions(ccsd,transcription,audio):
     if ccsd.get('publication_enabled') is not False or transcription.get('publication_enabled') is not False:raise ValueError('Publication must remain disabled')
     if transcription.get('status')!='PASS' or transcription.get('word_timestamps') is not True:raise ValueError('Passing observed word transcription required')
@@ -31,7 +61,7 @@ def build_captions(ccsd,transcription,audio):
                 expected.append({'original':raw,'normalized':token[0],'speaker':line['speaker'],'scene_id':scene['id']})
     actual=transcription.get('words',[])
     if not expected or len(actual)!=len(expected):raise ValueError('Observed word count does not exactly match script')
-    cues=[];phrase=[];previous_end=0;pending=[]
+    cues=[];phrase=[];phrase_indices=[];previous_end=0;pending=[]
     for i,(source,observed) in enumerate(zip(expected,actual)):
         start,end=observed.get('start'),observed.get('end')
         if norm(observed.get('word',''))!=source['normalized']:raise ValueError(f'Observed word mismatch at index {i}')
@@ -48,12 +78,15 @@ def build_captions(ccsd,transcription,audio):
         boundary=i and (expected[i-1]['scene_id']!=source['scene_id'] or expected[i-1]['speaker']!=source['speaker'] or expected[i-1]['original'].endswith(('.', '?', '!')))
         if pending or not phrase or len(phrase)+len(fresh)>3 or boundary:
             phrase=[]
+            phrase_indices=[]
         phrase.extend(fresh)
-        cues.append({'start':start,'end':end,'text':' '.join(phrase),'word':' '.join(fresh),'speaker':source['speaker'],'scene_id':source['scene_id'],'observed_word_index':i,'source_word_indices':pending+[i],'deferred_zero_duration_indices':list(pending)})
+        phrase_indices.extend(pending+[i])
+        cues.append({'start':start,'end':end,'text':' '.join(phrase),'word':' '.join(fresh),'speaker':source['speaker'],'scene_id':source['scene_id'],'observed_word_index':i,'source_word_indices':pending+[i],'display_word_indices':list(phrase_indices),'deferred_zero_duration_indices':list(pending)})
         pending=[]
         previous_end=end
     if pending:raise ValueError('Terminal zero-duration word lacks a following observed interval')
-    return {'schema_version':1,'status':'PASS','publication_enabled':False,'source_audio_sha256':digest,'timing_source':'faster-whisper observed words; no timing interpolation','display_mode':'progressive_phrase_max_3_words','cues':cues,'scope':'Exact normalized word alignment and observed timing bounds; does not certify ASR alignment accuracy or rendered readability'}
+    visibility=enforce_frame_visibility(cues,expected,ccsd.get('fps',24),duration)
+    return {'frame_visibility':visibility,'schema_version':1,'status':'PASS','publication_enabled':False,'source_audio_sha256':digest,'timing_source':'faster-whisper observed words; no timing interpolation','display_mode':'progressive_phrase_max_3_words','cues':cues,'scope':'Exact normalized word alignment and observed timing bounds; does not certify ASR alignment accuracy or rendered readability'}
 
 
 def main():

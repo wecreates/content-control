@@ -41,6 +41,20 @@ class ObservedCaptionsTests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,'boundary'):self.run_build()
   for i in range(3):self.report['words'][i]['end']=self.report['words'][i]['start']
   with self.assertRaisesRegex(ValueError,'Too many'):self.run_build()
+ def test_between_frame_word_carries_to_next_phrase_without_early_reveal(self):
+  self.cc={'fps':24,'publication_enabled':False,'scenes':[{'id':'a','start':0,'end':30,'audio':{'dialogue':[{'speaker':'points_monk','text':'Plot twist: the winning card.'}]}}]}
+  self.report['words']=[{'word':w,'start':a,'end':b} for w,a,b in [('Plot',25.8,26.32),('twist:',26.32,26.68),('the',27.10,27.12),('winning',27.12,27.3),('card.',27.3,27.7)]]
+  r=self.run_build();cue=r['cues'][3]
+  self.assertEqual(cue['text'],'the winning');self.assertEqual((cue['start'],cue['end']),(27.12,27.3));self.assertEqual(cue['deferred_frame_invisible_indices'],[2])
+  self.assertEqual(r['frame_visibility']['visible_word_count'],5);self.assertEqual(r['frame_visibility']['cue_frame_counts'][2],0)
+  self.assertEqual(' '.join(c['word'] for c in r['cues']),'Plot twist: the winning card.')
+ def test_frame_invisible_terminal_and_cross_scene_block(self):
+  self.cc={'fps':24,'publication_enabled':False,'scenes':[{'id':'a','start':0,'end':.02,'audio':{'dialogue':[{'speaker':'dave','text':'Stop'}]}}]}
+  self.report['words']=[{'word':'Stop','start':.01,'end':.02}]
+  with self.assertRaisesRegex(ValueError,'Terminal frame'):self.run_build()
+  self.cc['scenes'].append({'id':'b','start':.02,'end':1,'audio':{'dialogue':[{'speaker':'dave','text':'now'}]}})
+  self.report['words'].append({'word':'now','start':.02,'end':.5})
+  with self.assertRaisesRegex(ValueError,'boundary'):self.run_build()
  def test_hash_failed_asr_and_publication_block(self):
   for key,value in [('audio_sha256','bad'),('status','FAIL'),('word_timestamps',False),('publication_enabled',True)]:
    old=self.report[key];self.report[key]=value

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, hashlib
+import argparse, json, hashlib, math
 from pathlib import Path
 import cv2
 import numpy as np
@@ -16,14 +16,24 @@ def frame_metrics(img):
     }
 
 def compare_metric_series(refs,cands,threshold=0.14):
+    if not math.isfinite(threshold) or threshold<=0:
+        raise ValueError("threshold must be finite and positive")
+    if len(refs)!=len(cands):
+        raise ValueError("reference and candidate sample counts must match")
     n=min(len(refs),len(cands))
     if n<2:
         return {"framewise_style_parity":False,"mean_frame_distance":1.0,"frame_distances":[],"paired_frames":n}
     distances=[]
+    components={k:[] for k in METRIC_WEIGHTS}
     for r,c in zip(refs[:n],cands[:n]):
         d=0.0
         for k,w in METRIC_WEIGHTS.items():
-            d+=abs(float(r[k])-float(c[k]))*w
+            rv,cv=float(r[k]),float(c[k])
+            if not all(math.isfinite(v) and 0<=v<=1 for v in (rv,cv)):
+                raise ValueError("frame metrics must be finite normalized values")
+            delta=abs(rv-cv)*w
+            d+=delta
+            components[k].append(delta)
         distances.append(d)
     mean=float(np.mean(distances))
     p90=float(np.percentile(distances,90))
@@ -33,7 +43,19 @@ def compare_metric_series(refs,cands,threshold=0.14):
         "p90_frame_distance":p90,
         "frame_distances":distances,
         "paired_frames":n,
+        "weighted_mean_distance_components":{k:float(np.mean(v)) for k,v in components.items()},
     }
+
+def explain_comparison(comp):
+    if not comp.get('paired_frames',0)>=2:
+        return 'Insufficient paired reference frames; no comparison established.'
+    components=comp['weighted_mean_distance_components']
+    key=max(components,key=components.get)
+    if comp['framewise_style_parity']:
+        return 'Sampled brightness and edge statistics match; this does not establish creative or competitive quality.'
+    return (f"Reference frame statistics differ; dominant component: {key} "
+            f"({components[key]:.4f} of {comp['mean_frame_distance']:.4f}). "
+            'This does not assess creative quality or override the required brand style.')
 
 def sample_video(path,count):
     cap=cv2.VideoCapture(str(path))
@@ -58,7 +80,7 @@ def load_reference_metrics(path):
     for p in sorted(Path(path).glob("ref-*.jpg")):
         img=cv2.imread(str(p))
         if img is None:
-            continue
+            raise RuntimeError(f"cannot decode reference frame: {p.name}")
         refs.append(frame_metrics(img))
     if len(refs)<4:
         raise RuntimeError("insufficient reference frames")
@@ -92,6 +114,11 @@ def main():
         "candidate_sha256":sha256(a.candidate_video),
         "candidate_duration_seconds":duration,
         "reference_frames":len(refs),
+        "reference_manifest":[{"file":p.name,"sha256":sha256(p)} for p in sorted(Path(a.reference_dir).glob('ref-*.jpg'))],
+        "threshold":a.threshold,
+        "metric_weights":METRIC_WEIGHTS,
+        "scope":"Sampled pixel statistics only; not a full audiovisual or semantic style review.",
+        "reason":explain_comparison(comp),
         "checks":checks,
         **comp,
         "status":"PASS" if all(checks.values()) else "FAIL",

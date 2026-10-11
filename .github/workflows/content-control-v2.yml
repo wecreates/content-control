@@ -20,6 +20,10 @@ on:
       - 'scripts/v2_sound_mix.py'
       - 'scripts/v2_captions.py'
       - 'scripts/v2_build_status.py'
+      - 'scripts/rendered_visual_parity.py'
+      - 'tests/test_rendered_visual_parity.py'
+      - 'scripts/verify_caption_frames.mjs'
+      - 'tests/verify-caption-frames.test.mjs'
       - 'tests/test_v2_captions.py'
       - 'tests/test_v2_build_status.py'
       - 'tests/test_v2_sound_mix.py'
@@ -125,6 +129,10 @@ jobs:
           python scripts/free_transcription_qa.py --audio state/v2/voice.wav --contract state/v2/transcription-contract.json --output state/v2/receipts/transcription.json --model small.en
       - name: Align captions to actual spoken words
         run: python scripts/v2_captions.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --transcription state/v2/receipts/transcription.json --audio state/v2/voice.wav --out state/v2/captions.json
+      - name: Verify every caption word reaches a rendered frame
+        run: |
+          node --test tests/verify-caption-frames.test.mjs
+          node scripts/verify_caption_frames.mjs --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --captions state/v2/captions.json --out state/v2/receipts/caption-frames.json
       - name: Compile entertainment-first V2 plan
         run: |
           python - <<'PY'
@@ -169,6 +177,7 @@ jobs:
           exit 1
       - name: Inspect rendered candidate
         run: |
+          python -m unittest -v tests/test_rendered_visual_parity.py
           media_status=0
           parity_status=0
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json || media_status=$?
