@@ -65,3 +65,16 @@ for(const [name,payload,status] of [['valid',{ideas:[{id:'linked',source_record:
   if(status===200){assert.equal(data.references.length,1);assert.equal(data.references[0].id,'linked');assert.equal(data.verification_scope,'repository_references_only_not_runtime_routing_or_revenue');assert.equal(data.verified_at,undefined);assert.ok(data.retrieved_at);}
  },{fetchImpl:async()=>({ok:true,json:async()=>payload})}));
 }
+
+test('public status projects connection fields and strips explicit nested credentials without changing evidence prose',()=>fixture(async(base,root)=>{
+ const connection={status:'unverified',connected:false,access_token:'private-access',refreshToken:'private-refresh',client_secret:'private-client',nested:{secret:'private-nested'},read_check:{provider:'vidIQ',observed:'accounts=[]',result:'no_connected_account',credentials:{token:'private-read'}}};
+ const capabilities={platforms:[{id:'instagram',scopes:'instagram_business_basic',actions:{account:{documented:'documented',runtime:'unverified'}},connection}]};
+ const queue={queue:[{id:'record',source_url:'https://instagram.com/reel/example/',connection,evidence:[{kind:'metadata',summary:'Creator explains authentication tokens',accessToken:'private-evidence',details:{Authorization:'private-header',normal:'keep'}}]}]};
+ await fs.writeFile(path.join(root,'social-capabilities.json'),JSON.stringify(capabilities));
+ await fs.writeFile(path.join(root,'capability-queue.json'),JSON.stringify(queue));
+ const response=await fetch(base+'/status');assert.equal(response.status,200);const text=await response.text();assert.ok(!text.includes('private-'));
+ const data=JSON.parse(text);assert.equal(data.capabilities.platforms[0].scopes,'instagram_business_basic');assert.equal(data.capabilities.platforms[0].actions.account.documented,'documented');
+ assert.deepEqual(data.capabilities.platforms[0].connection,{status:'unverified',connected:false,read_check:{provider:'vidIQ',observed:'accounts=[]',result:'no_connected_account'}});
+ assert.equal(data.records[0].evidence[0].summary,'Creator explains authentication tokens');assert.deepEqual(data.records[0].evidence[0].details,{normal:'keep'});
+ assert.deepEqual(JSON.parse(await fs.readFile(path.join(root,'capability-queue.json'),'utf8')),queue);
+}));

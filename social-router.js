@@ -3,6 +3,26 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal} from './social-intake.js';
 
+// Public status is a projection, never a serialization of authorization state.
+const SECRET_FIELDS=new Set(['accesstoken','refreshtoken','idtoken','clientsecret','apikey','token','tokens','secret','secrets','password','authorization','cookie','cookies','credentials','authentication']);
+function publicConnection(value) {
+  if(!value||typeof value!=='object'||Array.isArray(value))return {};
+  const result={};
+  for(const key of ['status','connected','last_read_verified_at','expires_at','renewal_supported','error_code']) {
+    if(['string','boolean','number'].includes(typeof value[key]))result[key]=value[key];
+  }
+  if(value.read_check&&typeof value.read_check==='object') {
+    result.read_check={};
+    for(const key of ['provider','observed','result','checked_at'])if(typeof value.read_check[key]==='string')result.read_check[key]=value.read_check[key];
+  }
+  return result;
+}
+function publicStatusData(value) {
+  if(Array.isArray(value))return value.map(publicStatusData);
+  if(!value||typeof value!=='object')return value;
+  return Object.fromEntries(Object.entries(value).filter(([key])=>!SECRET_FIELDS.has(key.replace(/[^a-z0-9]/gi,'').toLowerCase())).map(([key,item])=>[key,key==='connection'?publicConnection(item):publicStatusData(item)]));
+}
+
 export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
   const router=express.Router();
   const read=async name=>JSON.parse(await fs.readFile(path.join(root,name),'utf8'));
@@ -12,7 +32,7 @@ export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
       const [queue,capabilities]=await Promise.all([read('capability-queue.json'),read('social-capabilities.json')]);
       if(!Array.isArray(queue.queue)||!Array.isArray(capabilities.platforms))throw Error('schema');
       const connection_health=capabilities.platforms.map(p=>({platform:p.id,...connectionStatus(p.connection),renewal:planTokenRenewal(p.connection||{})}));
-      res.json({connection_health,publication_enabled:false,external_actions_enabled:false,storage:'versioned_existing_repository_queue',intake_mode:'chat_assisted_persistent; dashboard_validation_only',automatic_token_renewal:false,capabilities,records:queue.queue,checked_at:new Date().toISOString(),connection_checks_are:'dated_observations_not_live_provider_polling',revenue:{traffic:null,leads:null,sales:null,costs:null,refunds:null,net_profit:null,reason:'No connected attributed financial feed'}});
+      res.json({connection_health,publication_enabled:false,external_actions_enabled:false,storage:'versioned_existing_repository_queue',intake_mode:'chat_assisted_persistent; dashboard_validation_only',automatic_token_renewal:false,capabilities:publicStatusData(capabilities),records:publicStatusData(queue.queue),checked_at:new Date().toISOString(),connection_checks_are:'dated_observations_not_live_provider_polling',revenue:{traffic:null,leads:null,sales:null,costs:null,refunds:null,net_profit:null,reason:'No connected attributed financial feed'}});
     } catch {res.status(503).json({error:'STATUS_SOURCE_UNAVAILABLE',publication_enabled:false});}
   });
   router.get('/project-links',async(req,res)=>{
