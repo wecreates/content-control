@@ -6,11 +6,13 @@
   "creative_directive": {
     "entertainment_first": true,
     "lecture_format_forbidden": true,
-    "concept": "anime boss fight between two major credit-card ecosystems",
+    "concept": "Dave mistakes luxury perks for value, then defends his wallet with a practical checklist; sandwich callback",
     "reference_policy": "extract format mechanics only; create original script, characters, scenes and dialogue",
     "education_rule": "facts must change the action or stakes rather than be delivered as an exposition list",
     "pattern_interrupt_max_seconds": 3.0,
-    "target_seconds": 50
+    "target_seconds": 50,
+    "user_preview_requires_team_review": true,
+    "free_tools_only": true
   },
   "acceptance": {
     "story_locked": true,
@@ -21,5 +23,12 @@
     "creative_qa": false,
     "stream_url": null,
     "stream_verified": false
+  },
+  "creative_revision": {
+    "version": 2,
+    "status": "IMPLEMENTED_PENDING_RENDERED_REVIEW",
+    "full_audiovisual_review": false,
+    "competitive_parity_verified": false,
+    "benchmark_evidence": "projects/v2/amex-vs-chase-boss-fight/competitive-review-evidence.json"
   }
 }

@@ -4,6 +4,9 @@ import hashlib
 import json
 import math
 import subprocess
+import tempfile
+import wave
+import array
 from pathlib import Path
 
 
@@ -61,19 +64,33 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
             t=float(scene['start'])
             if t<duration-.1 and (not cues or t-cues[-1]>=6):cues.append(t)
             if len(cues)==8:break
-    inputs=[];filters=[];labels=[]
-    for i,t in enumerate(cues):
-        inputs+=['-i',str(sources[2+i%2])]
-        label=f'hit{i}';labels.append('['+label+']')
-        filters.append(f'[{i}:a]atrim=duration={min(.65,duration-t)},asetpts=PTS-STARTPTS,volume=0.18,alimiter=limit=0.18:level=false:latency=true,aresample=44100,asetpts=N/SR/TB,afade=t=out:st=0.4:d=0.25,adelay={round(t*1000)}:all=1[{label}]')
-    filters.append(''.join(labels)+f'amix=inputs={len(labels)}:normalize=0,apad=whole_dur={duration},atrim=duration={duration}[sfx]')
-    run(common+inputs+['-filter_complex',';'.join(filters),'-map','[sfx]']+pcm+[str(targets[1])])
+    # Decode short MP3 effects independently, then place samples on an exact PCM
+    # timeline. MP3 encoder timestamps interacting with a multi-input filter graph
+    # previously ended the SFX stem at the first delay (0.5s rather than 50s).
+    frame_count=round(duration*44100)
+    timeline=array.array('h',[0])*(frame_count*2)
+    with tempfile.TemporaryDirectory(prefix='sfx-decode-') as temporary:
+        decoded=[]
+        for i,source in enumerate(sources[2:]):
+            destination=Path(temporary)/f'{i}.wav'
+            run(common+['-i',str(source),'-af','atrim=duration=0.65,asetpts=PTS-STARTPTS,volume=0.18,alimiter=limit=0.18:level=false:latency=true,afade=t=out:st=0.4:d=0.25','-ar','44100','-ac','2','-c:a','pcm_s16le',str(destination)])
+            with wave.open(str(destination),'rb') as w:
+                if (w.getnchannels(),w.getsampwidth(),w.getframerate())!=(2,2,44100):raise ValueError('Invalid decoded effect format')
+                samples=array.array('h');samples.frombytes(w.readframes(w.getnframes()))
+            if not samples or not any(samples):raise ValueError('Decoded effect is silent')
+            decoded.append(samples)
+        for i,t in enumerate(cues):
+            offset=round(t*44100)*2;samples=decoded[i%2]
+            for j,value in enumerate(samples[:max(0,len(timeline)-offset)]):
+                timeline[offset+j]=max(-32768,min(32767,timeline[offset+j]+value))
+    with wave.open(str(targets[1]),'wb') as w:
+        w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(timeline.tobytes())
     # Narration enters exactly once. Low music/SFX stems remain separate for revision.
     run(common+['-i',str(sources[0]),'-i',str(targets[0]),'-i',str(targets[1]),'-filter_complex','[0:a]loudnorm=I=-16:TP=-2:LRA=7[v];[v][1:a][2:a]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=false:latency=true[m]','-map','[m]']+pcm+[str(targets[2])])
     for p in sources:
         if digest(p)!=before[str(p)]:raise ValueError('Source audio changed during mixing')
     durations={p.name:probe(p) for p in targets}
-    if any(abs(v-duration)>.05 for v in durations.values()):raise ValueError('Mixed stem duration mismatch')
+    if any(abs(v-duration)>.05 for v in durations.values()):raise ValueError('Mixed stem duration mismatch: '+json.dumps(durations))
     return {'status':'PASS','publication_enabled':False,'provider_calls':0,'duration':duration,'cue_seconds':cues,'source_sha256':before,'source_duration_seconds':source_durations,'outputs':{p.name:{'path':str(p),'sha256':digest(p),'duration':durations[p.name]} for p in targets},'scope':'Local decode, separate stem assembly, source integrity and duration verification; listening quality and voice identity remain unverified'}
 
 

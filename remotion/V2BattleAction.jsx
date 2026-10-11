@@ -3,9 +3,9 @@ import {v2BattleBeat} from './StudioLayout.mjs';
 const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
 const mix=(a,b,p)=>a+(b-a)*p;
 const ease=p=>p*p*(3-2*p);
-const Word=({x=360,y=620,size=24,children})=><text x={x} y={y} textAnchor="middle" fontFamily="Arial" fontWeight="800" fontSize={size} fill={K}>{children}</text>;
+const Word=({x=360,y=620,size=24,children})=>y===620?null:<text x={x} y={y} textAnchor="middle" fontFamily="Arial" fontWeight="800" fontSize={size} fill={K}>{children}</text>;
 const Card=({x,y,label,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation})`}><rect x="-87" y="-42" width="174" height="84" rx="13" fill={W} stroke={K} strokeWidth="5"/><rect x="-64" y="-19" width="23" height="20" rx="3" fill="none" stroke={K} strokeWidth="3"/><text x="16" y="9" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="23" fill={K}>{label}</text></g>;
-const Wallet=({x=360,y=480,s=1,rotation=0,label=''})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><rect x="-110" y="-66" width="220" height="132" rx="20" fill={W} stroke={K} strokeWidth="6"/><path d="M-85-42H65" stroke={K} strokeWidth="3"/><rect x="45" y="-20" width="79" height="45" rx="9" fill={W} stroke={K} strokeWidth="5"/><circle cx="67" cy="3" r="5" fill={K}/>{label?<text x="-12" y="19" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="25" fill={K}>{label}</text>:null}</g>;
+const Wallet=({x=360,y=480,s=1,rotation=0,label=''})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><rect x="-110" y="-66" width="220" height="132" rx="20" fill={W} stroke={K} strokeWidth="6"/><path d="M-85-42H65" stroke={K} strokeWidth="3"/><rect x="45" y="-20" width="79" height="45" rx="9" fill={W} stroke={K} strokeWidth="5"/><circle cx="67" cy="3" r="5" fill={K}/>{label?<text x="-28" y="19" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="25" fill={K}>{label}</text>:null}</g>;
 const Sandwich=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-56 18L0-38 56 18Z" fill={W} stroke={K} strokeWidth="5" strokeLinejoin="round"/><path d="M-56 18v14H56V18M-47 21l14 7 14-7 14 7 14-7 14 7 15-7" fill={W} stroke={K} strokeWidth="4"/><path d="M-4-16l9 6M-20 2l6 3" stroke={K} strokeWidth="3"/></g>;
 const Coin=({x,y,s=1,opacity=1})=><g opacity={opacity}><circle cx={x} cy={y} r={14*s} fill={W} stroke={K} strokeWidth="4"/><path d={`M${x-4*s} ${y}h${8*s}`} stroke={K} strokeWidth="3"/></g>;
 const Sword=({x,y,rotation=0,s=1})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-94-15H72L112 0 72 15H-94Z" fill={W} stroke={K} strokeWidth="5"/><path d="M-72 0H83M-96-31V31M-124 0H-98" fill="none" stroke={K} strokeWidth="7" strokeLinecap="round"/></g>;
@@ -16,7 +16,7 @@ const Button=({x,label,pressed=false})=><g><rect x={x-122} y="356" width="244" h
 export function V2BattleAction({scene,scenes,time}) {
  const beat=v2BattleBeat(scene.id);if(!beat)return null;
  const same=scenes.filter(s=>v2BattleBeat(s.id)===beat),start=Math.min(...same.map(s=>s.start)),end=Math.max(...same.map(s=>s.end));
- const p=clamp((time-start)/(end-start)),q=ease(p),seconds=time-start;
+ const p=clamp((time-start)/(end-start)),q=ease(p);
  const strike=clamp((p-.12)/.55),contact=Math.max(0,Math.sin(strike*Math.PI));
  return <g data-v2-beat={beat}>
   {beat==='cold-open'?<g>
@@ -40,14 +40,14 @@ export function V2BattleAction({scene,scenes,time}) {
   {beat==='fee-drain'?<g>
    <Sandwich x={220} y={365} s={.7}/>
    <Wallet x={240-contact*18} y={503} s={.82} rotation={contact*-8}/>
-   <FeeJaw x={mix(540,410,q)} y={500} open={.15+.85*Math.abs(Math.sin(p*Math.PI*2))} s={.8}/>
+   <FeeJaw x={mix(540,360,q)} y={500} open={.15+.85*Math.abs(Math.sin(p*Math.PI*2))} s={.8}/>
    <Word>THE SNACK HAS COMPANY.</Word>
   </g>:null}
   {beat==='points-summon'?<g>
    <Sandwich x={mix(150,270,q)} y={430} s={1.05}/>
    <path d="M130 490H390" stroke={K} strokeWidth="4"/>
    <Word x={260} y={527} size={23}>INVITED</Word>
-   <g transform={`translate(${mix(590,488,q)} ${mix(385,468,q)}) rotate(${-12+q*12})`}><rect x="-78" y="-70" width="156" height="138" rx="8" fill={W} stroke={K} strokeWidth="5"/><path d="M-78-70L0-8 78-70" stroke={K} strokeWidth="4" fill="none"/><text x="0" y="40" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="34" fill={K}>FEE</text></g>
+   <g transform={`translate(${mix(550,488,q)} ${mix(385,468,q)}) rotate(${-12+q*12})`}><rect x="-78" y="-70" width="156" height="138" rx="8" fill={W} stroke={K} strokeWidth="5"/><path d="M-78-70L0-8 78-70" stroke={K} strokeWidth="4" fill="none"/><text x="0" y="40" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="34" fill={K}>FEE</text></g>
    <Word>NOT ON THE GUEST LIST.</Word>
   </g>:null}
   {beat==='trap'?<g>
@@ -66,7 +66,7 @@ export function V2BattleAction({scene,scenes,time}) {
   {beat==='finish'?<g>
    <Wallet x={360} y={462} s={1.3} label="BUDGET"/>
    <Sandwich x={360} y={mix(610,582,q)} s={.58}/>
-   <path d={`M205 550Q360 ${mix(545,640,q)} 515 550`} fill="none" stroke={K} strokeWidth="6" strokeLinecap="round"/>
+   <path d="M205 550Q360 730 515 550" fill="none" stroke={K} strokeWidth="6" strokeLinecap="round"/>
    <Word y={349} size={28}>CAPE OPTIONAL.</Word>
   </g>:null}
  </g>;

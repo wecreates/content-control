@@ -38,3 +38,15 @@ test('victory gesture stays inside the character stage and does not reset per cu
  for(let i=0;i<=100;i++){const m=v2VictoryPose(i/100);assert.ok(m.bob>=-30&&m.bob<=0);assert.ok(m.arm>=28&&m.arm<=68);assert.equal(m.mood,'smile');}
  assert.notDeepEqual(v2VictoryPose(.45),v2VictoryPose(.55));
 });
+test('V2 characters are staged for specific props instead of repeated center pose',async()=>{
+ const {v2SceneActor}=await import('../remotion/StudioLayout.mjs');
+ const cold=v2SceneActor('cold-open','dave',0,1),sword=v2SceneActor('chase-strike','points_monk',0,1);
+ assert.notEqual(cold.x,sword.x);
+ assert.ok(cold.rightHandTarget.y<0);
+ const left=v2SceneActor('final-clash','cashback_goblin',0,2),right=v2SceneActor('final-clash','points_monk',1,2);
+ assert.ok(left.x<260&&right.x>460);
+ assert.ok(Math.abs(left.x+left.rightHandTarget.x*left.scale-260)<10);
+ assert.ok(Math.abs(right.x+right.leftHandTarget.x*right.scale-460)<10);
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const layout=fitText(line.text,592,175,34);assert.equal(layout.lines.join(' '),line.text);}
+});

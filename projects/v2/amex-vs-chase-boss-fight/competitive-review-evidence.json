@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "checked_date": "2026-10-11",
+  "publication_enabled": false,
+  "status": "INCOMPLETE_COMPETITOR_AV_EVIDENCE",
+  "scope": "Metadata and existing historical project records only; no full audiovisual viewing in this research.",
+  "current_metrics_verified": false,
+  "full_competitor_av_reviews_independently_verified": 0,
+  "benchmarks": [
+    {
+      "creator": "How Money Works",
+      "title": "How To Buy a Bank for $1",
+      "url": "https://www.youtube.com/watch?v=1OFJM4STSpI",
+      "published": "2021-06-24",
+      "indexed_snapshot": {
+        "views": 70452,
+        "likes": 2200
+      },
+      "evidence_scope": "YouTube indexed title/description metadata; not live metrics or audiovisual access",
+      "supported_observation": "Concrete price-versus-value contradiction; description provides bad-debt mechanism.",
+      "not_verified": [
+        "full video",
+        "editing",
+        "animation",
+        "voice",
+        "retention"
+      ]
+    },
+    {
+      "creator": "How Money Works",
+      "title": "How The Rich Never Need to Pay Tax",
+      "url": "https://www.youtube.com/watch?v=JobSUJXK9J0",
+      "published": "2021-06-14",
+      "indexed_snapshot": {
+        "views": 290470,
+        "likes": 11000
+      },
+      "evidence_scope": "YouTube indexed title metadata only",
+      "supported_observation": "Title frames inequality and curiosity; absolute tax claim is not independently verified and should not be copied.",
+      "not_verified": [
+        "full video",
+        "animation",
+        "financial claim",
+        "retention"
+      ]
+    },
+    {
+      "creator": "Fireship",
+      "title": "Bitcoin in 100 Seconds // Build your Own Blockchain",
+      "url": "https://www.youtube.com/watch?v=qF7dkrce-mQ",
+      "published": "2021-03-01",
+      "indexed_snapshot": {
+        "views": 515885,
+        "likes": 23000
+      },
+      "evidence_scope": "YouTube indexed metadata; direct retrieval failed",
+      "supported_observation": "Specific subject with bounded explainer promise; adjacent explainer, not established vertical Short.",
+      "not_verified": [
+        "full video",
+        "editing cadence",
+        "audio",
+        "Shorts classification"
+      ]
+    }
+  ],
+  "existing_records": [
+    {
+      "path": "control/reference-dna-DbYgvZEMoFn.json",
+      "url": "https://www.instagram.com/reel/DbYgvZEMoFn/",
+      "coverage": "Repository records sampled seconds 0,1,2,3,4 and a transcript; historical self-reported pixel verification, not a current full review."
+    },
+    {
+      "path": "control/viral-instagram-style-benchmark-v2.json",
+      "coverage": "Historical reference summaries and engagement values; current counts and underlying full AV evidence not independently verified."
+    },
+    {
+      "repository": "wecreates/youtube-video-review",
+      "path": "README.md",
+      "sha": "52e8d6ffdc814832741599cd0181117260a6ba40",
+      "evidence": "README describes prior Gemini model observations of Fireship Python in 100 Seconds in five chronological intervals; explicitly not independently verified audiovisual accuracy.",
+      "original_run": 35447166664,
+      "viewer_run": 35447533789,
+      "viewer_job": 105908951787,
+      "verified_now": "GitHub job API confirms historical viewer success; logs confirm artifact download and summary output. Logs do not contain review body.",
+      "artifact_query_now": {
+        "run_id": 35447166664,
+        "artifacts": []
+      },
+      "historical_artifact": {
+        "id": 10585905246,
+        "name": "youtube-review-35447166664",
+        "sha256": "3dd8cd5c154210ac2b3abc4c1e4619bad361e2bad994fd7292b6051a1ac5627e"
+      },
+      "limitation": "No retrievable artifact in current list; successful report-generation pipeline is not proof of fullwatch or competitor parity. No new Gemini calls or paid requests made."
+    }
+  ],
+  "gate_scope": {
+    "path": "control/creator-parity-ruthless-gate.json",
+    "name": "Episode 1 ruthless creator-parity gate",
+    "existing_requirements": {
+      "minimum_competitor_full_av_videos": 7,
+      "minimum_competitor_creators": 5,
+      "minimum_instagram_reel_full_av_reviews": 7
+    },
+    "interpretation": "Explicitly Episode 1 by name. Preserved unchanged; do not silently apply to or weaken for V2."
+  },
+  "creative_findings": [
+    {
+      "source": "Current V2 CCSD at time of inspection",
+      "issue": "Opening introduces arena rather than immediate consequence.",
+      "recommended_change": "Open with visible fee damage or another concrete financial contradiction."
+    },
+    {
+      "issue": "Dave narrates his own action in third person.",
+      "recommended_change": "Use short first-person reaction dialogue."
+    },
+    {
+      "issue": "Generic POWER CARD/BOSS METER alternation lacks visible financial mechanism.",
+      "recommended_change": "Make props demonstrate fee loss, unused benefit, redemption consequence."
+    },
+    {
+      "issue": "Ending summarizes lesson.",
+      "recommended_change": "Deliver original callback payoff while retaining factual clarity."
+    }
+  ],
+  "acceptance_effect": "Research alone cannot approve production or establish competitive viral quality."
+}

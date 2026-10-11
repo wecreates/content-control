@@ -38,3 +38,16 @@ export function v2VictoryPose(progress) {
   const hop=progress<.35?0:Math.abs(Math.sin(hopPhase*Math.PI))*(30-12*progress);
   return {bob:-hop,arm:28+raise*40,lean:0,leg:hop*.6,mood:'smile',leftHandTarget:{x:-66,y:-10-raise*80},rightHandTarget:{x:66,y:-10-raise*80}};
 }
+export function v2SceneActor(beat,id,index,count) {
+  const slots={
+    'cold-open':{x:190,y:680,scale:1.1,rightHandTarget:{x:78,y:-110},mood:'shock'},
+    'chase-strike':{x:540,y:680,scale:1,leftHandTarget:{x:-12,y:-120},mood:'deadpan'},
+    'fee-drain':{x:155,y:710,scale:1,rightHandTarget:{x:90,y:-145},mood:'panic'},
+    'points-summon':{x:360,y:745,scale:1,leftHandTarget:{x:-100,y:-140},rightHandTarget:{x:110,y:-150},mood:'deadpan'},
+    'trap':{x:360,y:755,scale:1,leftHandTarget:{x:-55,y:-184},rightHandTarget:{x:55,y:-184},mood:'shock'},
+    'finish':{x:360,y:770,scale:1.05,leftHandTarget:{x:-60,y:-130},rightHandTarget:{x:60,y:-130},mood:'smile'},
+  };
+  if(beat==='amex-counter')return id==='cashback_goblin'?{x:190,y:730,scale:.95,rightHandTarget:{x:35,y:-165},mood:'smile'}:{x:540,y:660,scale:1,leftHandTarget:{x:-67,y:-158},mood:'deadpan'};
+  if(beat==='final-clash')return index===0?{x:185,y:650,scale:.95,rightHandTarget:{x:85,y:-140},mood:'smile'}:{x:535,y:650,scale:.95,leftHandTarget:{x:-85,y:-140},mood:'smile'};
+  return slots[beat]||characterSlots(count)[index];
+}

@@ -28,6 +28,21 @@ class SoundMixTests(unittest.TestCase):
    w.setpos(23000);self.assertNotEqual(w.readframes(1000),b'\0'*4000)
   self.cc['sound_design']['cue_seconds']=[.2,.4]
   with self.assertRaisesRegex(ValueError,'sparse'):self.call()
+ def test_fifty_second_mp3_cues_keep_exact_pcm_timeline(self):
+  import subprocess
+  with wave.open(str(self.sources[0]),'rb') as w:data=w.readframes(w.getnframes())
+  with wave.open(str(self.sources[0]),'wb') as w:w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(data*25)
+  for i in (2,3):
+   mp3=self.root/f'effect-{i}.mp3'
+   subprocess.run(['ffmpeg','-v','error','-y','-i',str(self.sources[i]),str(mp3)],check=True,timeout=30)
+   self.sources[i]=mp3
+  self.cc={'publication_enabled':False,'scenes':[{'start':0,'end':50}],'sound_design':{'cue_seconds':[.5,7,13.5,20,27,34,41,48]}}
+  r=self.call()
+  for result in r['outputs'].values():self.assertAlmostEqual(result['duration'],50,places=3)
+  with wave.open(str(self.root/'out'/'sfx.wav'),'rb') as w:
+   self.assertEqual(w.getnframes(),50*44100)
+   for cue in self.cc['sound_design']['cue_seconds']:
+    w.setpos(round((cue+.03)*44100));self.assertNotEqual(w.readframes(1000),b'\0'*4000)
  def test_publication_and_missing_voice_fail_closed(self):
   self.cc['publication_enabled']=True
   with self.assertRaisesRegex(ValueError,'Publication'):self.call()

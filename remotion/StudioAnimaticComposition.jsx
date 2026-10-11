@@ -5,7 +5,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction} from "./V2BattleAction";
-import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2VictoryPose} from "./StudioLayout.mjs";
+import {fitText,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34})=>{
@@ -26,26 +26,34 @@ export const StudioAnimaticComposition=({ccsd})=>{
  const pan=(move==='tracking'||move==='guided_track')?(p-.5)*14:0;
  const shake=Math.sin(local*2.7)*impactAmount*3;
  const battle=ccsd?.project_id==='v2-amex-vs-chase-anime-boss-fight' && v2BattleBeat(s.id);
+ const beatScenes=battle?ccsd.scenes.filter(scene=>v2BattleBeat(scene.id)===battle):[];
+ const dialogue=beatScenes.flatMap(scene=>scene.audio?.dialogue||[]).map(line=>line.text).join(' ');
  const title=String(s.story?.beat||'').replace(/^(CONFLICT|ESCALATION|PAYOFF):\s*/i,'');
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={title} y={105}/>
-   {s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
+   <TextBlock text={battle?dialogue:title} y={105} height={175} size={34}/>
+   {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
     <Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>
     {impactAmount>0?<g opacity={impactAmount*.6} stroke="#111" strokeWidth="3">{[-1,1].map(side=><g key={side}><line x1={360+side*230} y1="635" x2={360+side*265} y2="610"/><line x1={360+side*235} y1="675" x2={360+side*275} y2="675"/></g>)}</g>:null}
     {battle?<V2BattleAction scene={s} scenes={ccsd.scenes} time={t}/>:props.map((prop,i)=>{const slot=objects[i];return <PropIcon key={i} id={normalizePropId(prop.id)} x={slot.x} y={slot.y-Math.sin(p*Math.PI)*14} s={slot.scale} rotation={Math.sin(p*Math.PI)*(i%2?4:-4)}/>;})}
     {chars.map((ch,i)=>{
       const id=ch.id||'dave',Character=C[id];if(!Character)throw new Error(`Unknown character: ${id}`);
-      const slot=slots[i],curve=ch.performance_engine?.emotion_curve||[];
+      const slot=battle?v2SceneActor(battle,id,i,chars.length):slots[i],curve=ch.performance_engine?.emotion_curve||[];
       const emotion=[...curve].reverse().find(e=>p*(curve.at(-1)?.t||1)>=e.t);
       const defaults={dave:'recoil',points_monk:'deadpan_point',cashback_goblin:'coin_scamper'};
       const m=resolveMotion(id,ch.motion_clip||ch.pose||defaults[id],p,emotion?.intensity??.8,true);
-      if(battle==='finish'&&id==='dave'){
-        const finishScenes=ccsd.scenes.filter(scene=>v2BattleBeat(scene.id)==='finish');
-        const start=finishScenes[0].start,end=finishScenes.at(-1).end;
-        Object.assign(m,v2VictoryPose(clamp((t-start)/(end-start))));
+      if(battle){
+        if(battle==='finish'&&id==='dave'){
+          const start=beatScenes[0].start,end=beatScenes.at(-1).end;
+          Object.assign(m,v2VictoryPose(clamp((t-start)/(end-start))));
+        }
+        // Keep the deliberate pose/reaction movement, but compensate hand IK so
+        // hands stay on the prop instead of drifting with the body rotation.
+        const angle=(m.lean||0)*Math.PI/180;
+        const contact=target=>{if(!target)return undefined;const y=target.y-(m.bob||0)/slot.scale;return {x:target.x*Math.cos(angle)+y*Math.sin(angle),y:-target.x*Math.sin(angle)+y*Math.cos(angle)};};
+        m.leftHandTarget=contact(slot.leftHandTarget);m.rightHandTarget=contact(slot.rightHandTarget);m.mood=slot.mood;
       }
       return <Character key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}
