@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {normalizeCatalog,buildCatalog} from './import-catalog.mjs';
+import {normalizeCatalog,buildCatalog,DEFAULT_SHA} from './import-catalog.mjs';
+import {createHash} from 'node:crypto';
 
 test('deduplicates and keeps references non-executable',()=>{
  const result=normalizeCatalog([{id:'a',category:'Explainers',prompt_path:'prompts/a.md',url:'https://example.com/a'},{id:'a'},{id:'b',prompt_path:'../secret'}],'main');
@@ -22,6 +23,10 @@ test('imports offline JSON and disables publication',async()=>{
   const parsed=JSON.parse(await readFile(output,'utf8'));
   assert.equal(parsed.publication_enabled,false);
   assert.equal(parsed.entries[0].title,'Test');
+  assert.match(DEFAULT_SHA,/^[0-9a-f]{40}$/);
+  assert.equal(parsed.revision,DEFAULT_SHA);
+  assert.equal(parsed.source_type,'local_file');
+  assert.equal(parsed.source_sha256,createHash('sha256').update(await readFile(input)).digest('hex'));
  }finally{await rm(dir,{recursive:true,force:true});}
 });
 test('rejects missing input without explicit fetch',async()=>{

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {normalizeSocialUrl,addIntake,routeFinding,denyExternalAction,connectionStatus,planTokenRenewal,updateQueueFile} from '../social-intake.js';
+import {normalizeSocialUrl,addIntake,routeFinding,denyExternalAction,connectionStatus,planTokenRenewal,updateQueueFile,fullAnalysisCoverage} from '../social-intake.js';
 const reel='https://www.instagram.com/reel/DeUlQTQxv5O/';
 test('canonical content identities and exact host validation',()=>{
  assert.equal(normalizeSocialUrl(reel+'?tracking=x').canonical_id,normalizeSocialUrl('https://instagram.com/p/DeUlQTQxv5O/').canonical_id);
@@ -85,6 +85,10 @@ test('full analysis requires known media duration and contiguous evidence-backed
  assert.throws(()=>routeFinding(queue,record.id,f,opts),/duration/);
  record.evidence.push({id:'duration',kind:'media_probe',verified:true,duration_seconds:10});record.coverage.duration_evidence_ref='duration';
  assert.equal(routeFinding(queue,record.id,f,opts).finding.full_analysis,true);
+ assert.equal(fullAnalysisCoverage(record).verified,true);
+ record.evidence.push({...record.evidence[0],verified:false});
+ assert.equal(fullAnalysisCoverage(record).verified,false,'ambiguous evidence must not be reported as full review');
+ record.evidence.pop();
  for(const change of [()=>record.coverage.segments[1].start_seconds=4.1,()=>record.coverage.segments[1].end_seconds=9,()=>record.coverage.segments[1].evidence_ref='missing']) {
   const saved=structuredClone(record.coverage);change();assert.throws(()=>routeFinding(queue,record.id,f,opts));record.coverage=saved;
  }

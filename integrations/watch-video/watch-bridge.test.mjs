@@ -19,8 +19,8 @@ test('repeated extraction preserves reviewed evidence and remains routable witho
   const file=join(dir,'queue.json');
   const url='https://www.instagram.com/reel/DeUlQTQxv5O/';
   const record={id:'reviewed',source_url:url,status:'internal_review',analysis_status:'audiovisual_reviewed',publication_enabled:false,
-   coverage:{full_video:true,full_audio:true,segments:[{start_seconds:0,end_seconds:10,video:true,audio:true}]},
-   evidence:[{id:'av-1',kind:'audiovisual',verified:true,start_seconds:0,end_seconds:10}],findings:[]};
+   coverage:{full_video:true,full_audio:true,duration_evidence_ref:'duration',segments:[{start_seconds:0,end_seconds:10,video:true,audio:true,evidence_ref:'av-1'}]},
+   evidence:[{id:'duration',kind:'media_probe',verified:true,duration_seconds:10},{id:'av-1',kind:'audiovisual',verified:true,start_seconds:0,end_seconds:10}],findings:[]};
   await writeFile(file,JSON.stringify({version:1,queue:[record]}));
   for(let i=0;i<2;i++)await queueWatchResult({queuePath:file,url,result:{stdout:'new unreviewed extraction'}});
   const q=JSON.parse(await readFile(file,'utf8'));

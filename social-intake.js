@@ -51,6 +51,7 @@ export function addIntake(queue,raw,options={}) {
 }
 export const upsertIntake=addIntake;
 function assertCompleteCoverage(record) {
+  if(!Array.isArray(record?.evidence)||record.evidence.some(e=>!e||typeof e.id!=='string'||!e.id.trim())||new Set(record.evidence.map(e=>e.id)).size!==record.evidence.length)fail('Unambiguous evidence identifiers required');
   const c=record.coverage;
   if(c?.full_video!==true||c?.full_audio!==true)fail('Complete audiovisual coverage required for full analysis');
   const probe=record.evidence?.find(e=>e.id===c.duration_evidence_ref);

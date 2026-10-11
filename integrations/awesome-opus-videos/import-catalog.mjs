@@ -1,9 +1,10 @@
 import {readFile, writeFile, mkdir} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {resolve, dirname} from 'node:path';
+import {createHash} from 'node:crypto';
 
 export const UPSTREAM = 'https://raw.githubusercontent.com/yihui-dev/awesome-opus5-5-videos';
-const DEFAULT_SHA = 'main';
+export const DEFAULT_SHA = '756290289742535eb0ac3817548f152e9759cc70';
 export function normalizeCatalog(input, revision = DEFAULT_SHA) {
   const rows = Array.isArray(input) ? input : (Array.isArray(input.videos) ? input.videos : Array.isArray(input.items) ? input.items : null);
   if (!rows) throw new Error('Unsupported catalog format: expected array, videos, or items');
@@ -31,7 +32,7 @@ export async function buildCatalog({inputPath, outputPath, revision = DEFAULT_SH
     raw = await response.text();
   }
   const entries = normalizeCatalog(JSON.parse(raw), revision);
-  const output = {schema_version:1, upstream:'yihui-dev/awesome-opus5-5-videos', revision, imported_at:new Date().toISOString(), total:entries.length, mode:'reference_only', publication_enabled:false, entries};
+  const output = {schema_version:1, upstream:'yihui-dev/awesome-opus5-5-videos', revision, source_type:inputPath?'local_file':'upstream_fetch', source_sha256:createHash('sha256').update(raw).digest('hex'), imported_at:new Date().toISOString(), total:entries.length, mode:'reference_only', publication_enabled:false, entries};
   await mkdir(dirname(resolve(outputPath)), {recursive:true});
   await writeFile(outputPath, JSON.stringify(output,null,2)+'\n');
   return {count:entries.length, outputPath};
