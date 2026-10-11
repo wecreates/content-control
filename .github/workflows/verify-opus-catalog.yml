@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'integrations/awesome-opus-videos/**'
+      - 'integrations/watch-video/**'
       - '.github/workflows/verify-opus-catalog.yml'
 permissions:
   contents: read
@@ -17,7 +18,7 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: node --test integrations/awesome-opus-videos/import-catalog.test.mjs
+        run: node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs
       - name: Import public reference catalog
         run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
       - name: Validate output
