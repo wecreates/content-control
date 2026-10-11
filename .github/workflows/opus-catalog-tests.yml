@@ -1,0 +1,18 @@
+name: Opus catalog adapter tests
+on:
+  pull_request:
+    paths:
+      - 'integrations/awesome-opus-videos/**'
+      - '.github/workflows/opus-catalog-tests.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test integrations/awesome-opus-videos/import-catalog.test.mjs
