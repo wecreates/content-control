@@ -17,7 +17,8 @@ def main():
     pkg.mkdir(parents=True,exist_ok=True)
     base=pkg/"reference-base.json"
     optical=pkg/"optical-flow.json"
-    motion=pkg/"motion-summary.json"\n    structure=pkg/"reference-structure.json"
+    motion=pkg/"motion-summary.json"
+    structure=pkg/"reference-structure.json"
     ref=pkg/"reference.json"
     bp=pkg/"clone-blueprint.json"
     sp=pkg/"scene-plan.json"
