@@ -22,7 +22,7 @@
     "test:quality-depth": "python -m unittest -v tests/test_quality_depth.py tests/test_quality_depth_integration.py",
     "test:transcription": "python -m unittest -v tests/test_transcription_similarity.py",
     "test:clone-e2e": "python -m unittest -v tests/test_clone_end_to_end_acceptance.py",
-    "test:social": "node --test tests/social-intake.test.mjs tests/social-router.test.mjs"
+    "test:social": "node --test tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
