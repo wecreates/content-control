@@ -9,6 +9,8 @@ on:
       - 'social-intake.js'
       - 'social-router.js'
       - 'social-automation.js'
+      - 'integrations/social-automation/**'
+      - 'scripts/social_worker_once.mjs'
       - 'production-status.js'
       - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
@@ -23,6 +25,8 @@ on:
       - 'social-intake.js'
       - 'social-router.js'
       - 'social-automation.js'
+      - 'integrations/social-automation/**'
+      - 'scripts/social_worker_once.mjs'
       - 'production-status.js'
       - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
@@ -44,7 +48,7 @@ jobs:
       - name: Unit tests
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
-          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-link-intake.test.mjs tests/production-status.test.mjs
+          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-worker.test.mjs tests/social-link-intake.test.mjs tests/production-status.test.mjs
       - name: Import public reference catalog
         run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
       - name: Validate output
