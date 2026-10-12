@@ -1,49 +1,49 @@
 {
   "schema_version": 1,
-  "run_id": 38196040036,
-  "source_commit": "22d7d784010a90e5525099238a0203ed62007691",
+  "run_id": 38253421657,
+  "source_commit": "59f204700e7752b35e57dfef4c19cf5de4ec3ba7",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-12T02:34:19.900882+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38196040036",
-  "candidate_sha256": "765db099d1cc963d879f075bf7d1ed0bfa6e5833723a53f0b8282d49c9fa81b7",
+  "recorded_at": "2026-10-12T13:10:57.336701+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38253421657",
+  "candidate_sha256": "0f2965ab7115a51bf8df492f95145cdca1b36d83a0df21167b3a37362507414a",
   "candidate_generated": true,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "afe15525f2482f274fcc30c122942251bc4d4d46ec1d126531f075918d6ec042"
+      "receipt_sha256": "aa1248400cbf71fcdc91fd2611bf052bc38bfac74101f94068e26a1448ff88f0"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "1cf0fbd35c5f74b2d98e88394480fc6891c3037b1e0265a93f63a7cf46c492a5"
+      "receipt_sha256": "7d205dc33eb2e5397fa2e5f8112a8dbb7f041864e99121fb7190533e1fa3bd53"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "55f4a87f336ae2f88c87a44c532ee86038ee9bea7f0761dfd970ca0a66b23345"
+      "receipt_sha256": "5a3674e7627dcd70dfb181c1bd09fa1e99274a23f0d3e83bf3a8f3c794edadcf"
     },
     "captions": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "6998925e710e6a84278cababe65840ca2fff824553816c300a2a5deed0d832ce"
+      "receipt_sha256": "d1138918f588753c03c7057377efaac290998a13b16c9f014639fa1ef9752a5a"
     },
     "caption_frames": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "d1bd5456fd5bfe30e2b43c417e4e70472e23b36850ca967a6672f92a30801199"
+      "receipt_sha256": "e1ee23f7804908592a6029a9a7f8638b6326157e0f19747319a07f2661f3b8b4"
     },
     "technical_video": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "365b9fab4dd098725b5eb5708909c4532a7ea56a3a84d7c254fe1d5543ab5a69"
+      "receipt_sha256": "c8ed8a26b33e02fe87e7d3501c5b1014bfc001256ed9a6fcada85e7c9de62799"
     },
     "style_parity": {
       "status": "FAIL",
       "failed_checks": [
         "framewise_style_parity"
       ],
-      "receipt_sha256": "69f4c53c0ecefe6e5b175b20c87c96ddb8202ff5ab74420396514610f5e94754",
+      "receipt_sha256": "27a95ee06ad73d844c5146a02e4e30a38dcc9702777dc019235152680a89381d",
       "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3325 of 0.3624). This does not assess creative quality or override the required brand style."
     }
   },
