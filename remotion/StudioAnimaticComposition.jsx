@@ -35,7 +35,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?(observedCaption?.text||''):title} y={105} height={175} size={34} caption={!!battle}/>
+   <TextBlock text={battle?(observedCaption?.text||''):title} y={battle?230:105} height={175} size={battle?52:34} caption={!!battle}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
     {!battle?<Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>:null}

@@ -83,6 +83,8 @@ def generate(ccsd,out_dir,synth=None):
         for d in entries:
             if d.get('speaker') not in VOICE_ASSIGNMENTS:raise ValueError('Speaker has no approved free voice assignment')
             if len(d['text'])>3000:raise ValueError('Dialogue too long')
+            requested=d.get('performance',{}).get('synthesis_speed',1.0)
+            if isinstance(requested,bool) or not isinstance(requested,(int,float)) or not math.isfinite(requested) or not 1<=requested<=MAX_SPEED:raise ValueError('Invalid synthesis speed')
             dialogue.append((s,d))
     if not dialogue:raise ValueError('No dialogue to synthesize')
     windows=[]
@@ -97,10 +99,11 @@ def generate(ccsd,out_dir,synth=None):
     with tempfile.TemporaryDirectory(prefix='.voice-build-',dir=out) as temp:
         stage=Path(temp)
         for i,((scene,d),window) in enumerate(zip(dialogue,windows)):
-            text=d['text'].strip();voice=VOICE_ASSIGNMENTS[d['speaker']];speed=1.0
+            text=d['text'].strip();voice=VOICE_ASSIGNMENTS[d['speaker']];speed=d.get('performance',{}).get('synthesis_speed',1.0)
             name=f'{i:02d}-{d["speaker"]}.wav'
             key=(scene['id'],d['speaker'],hashlib.sha256(text.encode()).hexdigest(),voice)
             cached=previous.get(key)
+            if cached and 'synthesis_speed' in d.get('performance',{}) and cached.get('speed')!=speed:cached=None
             reused=reuse_clip(out,stage,name,cached,window) if cached else None
             if reused:
                 manifest['clips'].append(reused)

@@ -34,6 +34,7 @@
     ".github/workflows/patched-transformers-smoke.yml",
     ".github/workflows/premium-voice-runtime-smoke.yml",
     ".github/workflows/probe-render-infra.yml",
+    ".github/workflows/production-execution.yml",
     ".github/workflows/python-security-audit.yml",
     ".github/workflows/quarantine-legacy-workflows.yml",
     ".github/workflows/rd-quarantine.yml",

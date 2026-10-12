@@ -42,7 +42,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: python -m unittest -v tests.test_v2_execution tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions
+      - run: npm ci
+      - run: npm run test:system
+      - run: node --test tests/studio-long-layout.test.mjs tests/studio-layout.test.mjs tests/observed-captions.test.mjs
+      - run: python -m unittest -v tests.test_v2_execution tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions tests.test_v2_free_voice tests.test_v2_pacing tests.test_v2_transcription_repair tests.test_production_package
       - run: node --test integrations/watch-video/watch-bridge.test.mjs
   produce:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
@@ -61,13 +64,13 @@ jobs:
             composition: StudioLong
     steps:
       - uses: actions/checkout@v4
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
       - uses: actions/setup-node@v4
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         with:
           node-version: '20'
       - uses: actions/setup-python@v5
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         with:
           python-version: '3.12'
       - name: Restore explicitly selected same-repository production run
@@ -89,7 +92,7 @@ jobs:
           subprocess.run(['gh', 'run', 'download', run_id, '--name', 'production-state-' + os.environ['FORMAT'], '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
           PY
       - name: Install free CPU production dependencies
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         run: |
           npm ci
           sudo apt-get update -qq
@@ -98,7 +101,7 @@ jobs:
           python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy opencv-python-headless
           python -m pip install -r requirements-transcription.txt
       - name: Produce and inspect review candidate
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         env:
           CCSD: ${{ matrix.ccsd }}
           COMPOSITION: ${{ matrix.composition }}
@@ -140,7 +143,7 @@ jobs:
               atomic_json(work / 'recovery-evidence.json', receipt)
           PYRECOVERY
       - name: Verify final candidate through pinned local OpenMontage probe
-        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         env:
           CCSD: ${{ matrix.ccsd }}
           FORMAT: ${{ matrix.format }}
@@ -156,7 +159,7 @@ jobs:
           subprocess.run([sys.executable, 'integrations/openmontage/verify_render.py', '--upstream', os.environ['RUNNER_TEMP'] + '/OpenMontage', '--video', str(work / 'candidate.mp4'), '--expected-duration', str(max(s['end'] for s in doc['scenes'])), '--receipt', str(work / 'openmontage-probe.json')], check=True)
           PYPROBE
       - name: Preserve resumable state and actual output even after failure
-        if: always() && ((github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both')
+        if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
         uses: actions/upload-artifact@v4
         with:
           name: production-state-${{ matrix.format }}

@@ -165,7 +165,12 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
             atomic_json(contract, {'publication_enabled': False, 'narration_text': ' '.join(lines), 'expected_duration_seconds': max(s['end'] for s in ccsd['scenes'])})
             return [contract]
         runner.stage('transcription_contract', [ccsd_path], transcription_contract)
-        runner.stage('transcription', [voice, contract, scripts / 'free_transcription_qa.py', ROOT / 'requirements-transcription.txt'], lambda: python('free_transcription_qa', ['--audio', voice, '--contract', contract, '--output', transcript, '--model', 'small.en'], [transcript]))
+        transcription_options = ['--model', 'medium.en', '--spoken-numbers'] if composition == 'StudioLong' else ['--model', 'small.en']
+        runner.stage('transcription', [voice, contract, scripts / 'free_transcription_qa.py', ROOT / 'requirements-transcription.txt'], lambda: python('free_transcription_qa', ['--audio', voice, '--contract', contract, '--output', transcript, *transcription_options], [transcript]))
+        if composition == 'StudioLong':
+            observed = w / 'transcription-repaired.json'
+            runner.stage('recognition_repair', [ccsd_path, voice, transcript, w / 'assembly.json', scripts / 'v2_transcription_repair.py', scripts / 'free_transcription_qa.py'], lambda: python('v2_transcription_repair', ['--ccsd', ccsd_path, '--transcription', transcript, '--assembly', w / 'assembly.json', '--audio', voice, '--out', observed], [observed]))
+            transcript = observed
         runner.stage('captions', [ccsd_path, voice, transcript, scripts / 'v2_captions.py'], lambda: python('v2_captions', ['--ccsd', ccsd_path, '--transcription', transcript, '--audio', voice, '--out', captions], [captions]))
         runner.stage('caption_frames', [ccsd_path, captions, scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], lambda: command('caption_frames', ['node', scripts / 'verify_caption_frames.mjs', '--ccsd', ccsd_path, '--captions', captions, '--out', w / 'caption-frames.json'], [w / 'caption-frames.json']))
         def render_props():
@@ -176,13 +181,15 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
             return [props]
         runner.stage('props', [ccsd_path, captions], render_props)
         selection = w / 'composition.json'
-        if not selection.exists() or json.loads(selection.read_text()).get('composition') != composition:
-            atomic_json(selection, {'composition': composition})
+        render_concurrency = 2 if os.environ.get('GITHUB_ACTIONS') == 'true' else 1
+        selected = {'composition': composition, 'render_concurrency': render_concurrency}
+        if not selection.exists() or json.loads(selection.read_text()) != selected:
+            atomic_json(selection, selected)
         render_inputs = [selection, props, ROOT / 'package-lock.json', *sorted((ROOT / 'remotion').rglob('*.*')), *sorted(p for p in (ROOT / 'public').rglob('*') if p.is_file())]
         render_inputs += sorted(ROOT.glob('remotion.config.*'))
 
         def render(force=False):
-            runner.stage('render', render_inputs, lambda: command('render', [ROOT / 'node_modules/.bin/remotion', 'render', 'remotion/studio-animatic-index.jsx', composition, silent, '--props=' + str(props), '--codec=h264', '--crf=18', '--concurrency=1'], [silent], timeout=7200), attempts=2, force=force)
+            runner.stage('render', render_inputs, lambda: command('render', [ROOT / 'node_modules/.bin/remotion', 'render', 'remotion/studio-animatic-index.jsx', composition, silent, '--props=' + str(props), '--codec=h264', '--crf=18', '--concurrency=' + str(render_concurrency)], [silent], timeout=7200), attempts=2, force=force)
             runner.stage('mux', [silent, mixdir / 'mix.wav'], lambda: command('mux', ['ffmpeg', '-nostdin', '-y', '-i', silent, '-i', mixdir / 'mix.wav', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', final], [final]), attempts=2, force=force)
 
         def inspect():
@@ -217,7 +224,20 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
             if not source_script.is_relative_to(ROOT):
                 raise ValueError('Source script outside repository')
             memory_inputs.append(source_script)
-        runner.stage('memory', memory_inputs, lambda: python('production_memory', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--candidate', final, '--qa', qa, '--out', w / 'memory.json'], [w / 'memory.json']))
+        memory_path = w / 'memory.json'
+        baseline_args = ['--baseline', memory_path] if memory_path.exists() else []
+        runner.stage('memory', memory_inputs, lambda: python('production_memory', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--candidate', final, '--qa', qa, '--out', memory_path, *baseline_args], [memory_path]))
+        metadata = ccsd_path.parent / 'metadata.json'
+        package_receipt = w / 'review-package.json'
+        def review_package():
+            python('production_package', ['--ccsd', ccsd_path, '--metadata', metadata, '--candidate', final, '--qa', qa, '--captions', captions, '--audio', voice, '--out-dir', w / 'review-packages', '--receipt', package_receipt], [package_receipt])
+            package = json.loads(package_receipt.read_text())
+            paths = [Path(item['path']).resolve() for item in package['outputs'].values()]
+            paths.append(Path(package['manifest_path']).resolve())
+            if any(not path.is_relative_to(w) for path in paths):
+                raise ValueError('Package output outside job directory')
+            return [package_receipt, *paths]
+        runner.stage('package', [ccsd_path, metadata, final, qa, captions, voice, scripts / 'production_package.py', scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], review_package)
         runner.state.update(status='REVIEW_CANDIDATE', candidate=str(final), candidate_sha256=sha(final), creative_review='PENDING', audio_listening_review='PENDING')
         runner.save()
         return runner.state

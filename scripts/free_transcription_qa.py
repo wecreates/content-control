@@ -41,6 +41,10 @@ def norm(s):
     s=re.sub(r"(?<![\w.])(\$?)([+-]?)(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(%?)(?!\w|\.\d)",_numeric_words,s)
     s=re.sub(r'\bdollars\b','dollar',s)
     s=re.sub(r'\bcents\b','cent',s)
+    # Orthographic aliases only: no synonyms, morphology removal, or number
+    # value equivalence that could conceal missing/changed spoken words.
+    for closed,opened in {'signup':'sign up','autopay':'auto pay','trapdoor':'trap door','zeroes':'zeros'}.items():
+        s=re.sub(r'\b'+closed+r'\b',opened,s)
     s=re.sub(r"[^a-z0-9']+"," ",s)
     return " ".join(s.split())
 
@@ -81,12 +85,28 @@ def decode_transcription_audio(path):
     if not np.isfinite(samples).all():raise ValueError("Decoded audio contains nonfinite samples")
     return samples,len(samples)/16000
 
+def spoken_number_suppression(tokenizer):
+    """Constrain ASR output notation, never supply expected narration to decoder.
+
+    Whisper may render "twelve hundred" as "$1,200", inventing a currency unit
+    and losing the actually spoken lexical form. Suppress numeric and currency
+    symbol tokens so the independent recognizer must output words instead.
+    -1 retains faster-whisper's default non-speech token suppression.
+    """
+    ids=set()
+    for token_id in tokenizer.get_vocab().values():
+        text=tokenizer.decode([token_id])
+        if re.search(r'[0-9$%£€¥]',text):ids.add(token_id)
+    return [-1]+sorted(ids)
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
     ap.add_argument("--contract",required=True)
     ap.add_argument("--output",required=True)
     ap.add_argument("--model",default="tiny.en")
+    ap.add_argument("--spoken-numbers",action="store_true",help="Decode numbers as spoken words; no script prompting")
     a=ap.parse_args()
 
     from faster_whisper import WhisperModel
@@ -106,6 +126,7 @@ def main():
         word_timestamps=True,
         vad_filter=True,
         condition_on_previous_text=True,
+        suppress_tokens=spoken_number_suppression(model.hf_tokenizer) if a.spoken_numbers else [-1],
         clip_timestamps=f"0,{narration_end}" if narration_end else "0",
     )
     segs=[]
@@ -166,6 +187,7 @@ def main():
       "engine":"faster-whisper",
       "faster_whisper_version":version("faster-whisper"),
       "model":a.model,
+      "spoken_number_decoding":a.spoken_numbers,
       "language":getattr(info,"language","en"),
       "language_probability":getattr(info,"language_probability",None),
       "expected_text":expected,

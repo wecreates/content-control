@@ -65,6 +65,16 @@ class ObservedCaptionsTests(unittest.TestCase):
   self.cc['scenes'][0]['audio']['dialogue'][0]['text']=script
   self.report['words']=[{'word':w,'start':i*.5,'end':i*.5+.3} for i,w in enumerate(observed)]
   return self.run_build()
+ def test_compound_spelling_preserves_original_text_observed_times(self):
+  result=self.finance('Choose autopay now.', ['Choose','auto','pay','now.'])
+  cue=result['cues'][1]
+  self.assertEqual(cue['word'],'autopay');self.assertEqual(cue['observed_token_indices'],[1,2])
+  self.assertEqual((cue['start'],cue['end']),(1.0,1.3))
+  self.assertEqual(' '.join(c['word'] for c in result['cues']),'Choose autopay now.')
+ def test_spoken_morphology_and_units_cannot_be_normalized_away(self):
+  for script,observed in [('planned purchases',['plan','purchases']),('useful credits',['useful','credit']),('seventy bucks',['seventy','dollars']),('a true zero',['true','zero'])]:
+   with self.subTest(script=script),self.assertRaisesRegex(ValueError,'mismatch'):
+    self.finance(script,observed)
  def test_numeric_asr_groups_original_words_without_invented_times(self):
   result=self.finance('Pay twenty-four percent now.', ['Pay','24%','now.'])
   cue=result['cues'][1]

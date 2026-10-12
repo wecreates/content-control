@@ -65,6 +65,19 @@ class FreeVoiceTests(unittest.TestCase):
   with self.assertRaisesRegex(ValueError,'silent'):
    generate(self.cc,self.out,lambda *args:([0.]*1000,24000))
   self.assertEqual(originals,{p.name:p.read_bytes() for p in self.out.iterdir() if p.is_file()})
+ def test_explicit_speed_starts_synthesis_and_invalidates_changed_speed(self):
+  self.cc['scenes'][0]['audio']['dialogue'][0]['performance']={'synthesis_speed':1.1}
+  generate(self.cc,self.out,self.synth)
+  self.assertEqual(self.calls[1][2],1.1);self.calls.clear()
+  self.cc['scenes'][0]['audio']['dialogue'][0]['performance']['synthesis_speed']=1.2
+  r=generate(self.cc,self.out,self.synth)
+  self.assertEqual(len(self.calls),1);self.assertEqual(self.calls[0][2],1.2)
+  self.assertTrue(r['clips'][0]['reused'])
+ def test_invalid_explicit_speed_fails_before_synthesis(self):
+  for value in [True,0.99,1.46,float('nan'),'1.2']:
+   self.cc['scenes'][0]['audio']['dialogue'][0]['performance']={'synthesis_speed':value}
+   with self.assertRaisesRegex(ValueError,'synthesis speed'):generate(self.cc,self.out,self.synth)
+  self.assertEqual(self.calls,[])
  def test_fit_retries_bounded_without_truncation(self):
   def longer(text,voice,speed):
    self.calls.append(speed);return [math.sin(i*.1)*.1 for i in range(round(24000*1.1/speed))],24000
