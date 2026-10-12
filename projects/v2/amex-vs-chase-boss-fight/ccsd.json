@@ -136,7 +136,7 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "You summoned two cards. Neither summoned a budget.",
+            "text": "Two cards. Still no budget.",
             "performance": {
               "intent": "calm deadpan interruption",
               "sfx_in_narration": false
