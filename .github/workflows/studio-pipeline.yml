@@ -379,6 +379,7 @@ jobs:
           python scripts/voice_provider.py --out state/studio/voice-provider.json
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg espeak-ng
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
           python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy
           python scripts/v2_free_voice.py --ccsd "$S/18-master-ccsd.json" --out-dir qa-output/studio-voice/clips --receipt state/studio/local-voice-generation.json
           python scripts/v2_audio_assemble.py --ccsd "$S/18-master-ccsd.json" --manifest qa-output/studio-voice/clips/approved-manifest.json --out qa-output/studio-voice/kokoro.wav --receipt state/studio/local-voice-assembly.json

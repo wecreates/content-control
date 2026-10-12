@@ -91,5 +91,39 @@ class ResumeTests(unittest.TestCase):
             StageRunner(self.root).stage('test', [self.source], mutation)
 
 
+    def test_identical_repair_forces_qa_preserves_voice(self):
+        voice = self.root / 'voice.wav'
+        qa = self.root / 'qa.json'
+        calls = {'voice': 0, 'render': 0, 'qa': 0}
+        def action(name, path):
+            def run():
+                calls[name] += 1
+                path.write_text('deterministic ' + name)
+                return [path]
+            return run
+        def pipeline():
+            runner = StageRunner(self.root)
+            runner.stage('voice', [self.source], action('voice', voice))
+            runner.stage('render', [voice], action('render', self.output))
+            runner.stage('qa', [self.output], action('qa', qa), force=runner.rebuilt_media())
+        pipeline()
+        pipeline()
+        self.assertEqual(calls, {'voice': 1, 'render': 1, 'qa': 1})
+        self.output.write_text('corrupted media')
+        pipeline()
+        self.assertEqual(calls, {'voice': 1, 'render': 2, 'qa': 2})
+
+    def test_malformed_checkpoints_preserved_and_blocked(self):
+        for payload in ['invalid json', '[]', json.dumps({'schema_version': 1, 'stages': {'qa': []}}), json.dumps({'schema_version': 1, 'stages': {'qa': {'status': 'PASS'}}})]:
+            with self.subTest(payload=payload):
+                (self.root / 'execution.json').write_text(payload)
+                with self.assertRaises(ValueError):
+                    StageRunner(self.root)
+                self.assertEqual((self.root / 'execution.json').read_text(), payload)
+                failure = json.loads((self.root / 'execution-blocked.json').read_text())
+                self.assertEqual(failure['status'], 'BLOCKED')
+                self.assertFalse(failure['publication_enabled'])
+
+
 if __name__ == '__main__':
     unittest.main()

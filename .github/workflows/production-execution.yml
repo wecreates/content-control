@@ -17,6 +17,13 @@ on:
     paths:
       - 'scripts/v2_execution.py'
       - 'tests/test_v2_execution.py'
+      - 'scripts/v2_captions.py'
+      - 'scripts/production_memory.py'
+      - 'tests/test_v2_captions.py'
+      - 'tests/test_production_memory.py'
+      - 'tests/test_studio_free_execution.py'
+      - 'tests/test_historical_runtime_regressions.py'
+      - 'integrations/watch-video/**'
       - '.github/workflows/production-execution.yml'
 permissions:
   contents: read
@@ -32,7 +39,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m unittest -v tests.test_v2_execution
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: python -m unittest -v tests.test_v2_execution tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions
+      - run: node --test integrations/watch-video/watch-bridge.test.mjs
   produce:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs: tests
@@ -50,13 +61,13 @@ jobs:
             composition: StudioLong
     steps:
       - uses: actions/checkout@v4
-        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
       - uses: actions/setup-node@v4
-        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
         with:
           node-version: '20'
       - uses: actions/setup-python@v5
-        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
         with:
           python-version: '3.12'
       - name: Restore explicitly selected same-repository production run
@@ -78,7 +89,7 @@ jobs:
           subprocess.run(['gh', 'run', 'download', run_id, '--name', 'production-state-' + os.environ['FORMAT'], '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
           PY
       - name: Install free CPU production dependencies
-        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
         run: |
           npm ci
           sudo apt-get update -qq
@@ -87,14 +98,65 @@ jobs:
           python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy opencv-python-headless
           python -m pip install -r requirements-transcription.txt
       - name: Produce and inspect review candidate
-        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
         env:
           CCSD: ${{ matrix.ccsd }}
           COMPOSITION: ${{ matrix.composition }}
           FORMAT: ${{ matrix.format }}
         run: python scripts/v2_execution.py --ccsd "$CCSD" --workdir "state/production-$FORMAT" --composition "$COMPOSITION"
+      - name: Verify real Short recovery after generated-render corruption
+        if: matrix.format == 'short' && (github.event_name == 'push' || inputs.format == 'short' || inputs.format == 'both')
+        run: |
+          python - <<'PYRECOVERY'
+          import json, subprocess, sys
+          from pathlib import Path
+          from scripts.v2_execution import atomic_json, sha
+          work = Path('state/production-short')
+          before = json.loads((work / 'execution.json').read_text())
+          if before.get('status') != 'REVIEW_CANDIDATE':
+              raise SystemExit('Successful normal candidate required before recovery test')
+          def attempts(state, stage):
+              record = state['stages'][stage]
+              return record.get('previous_attempts', 0) + record.get('attempts', 0)
+          receipt = {'publication_enabled': False, 'production_approved': False, 'status': 'RUNNING', 'corrupted_output': 'silent.mp4', 'before_candidate_sha256': before['candidate_sha256']}
+          try:
+              (work / 'silent.mp4').write_bytes(b'controlled corruption of generated output only')
+              subprocess.run([sys.executable, 'scripts/v2_execution.py', '--ccsd', 'projects/v2/amex-vs-chase-boss-fight/ccsd.json', '--workdir', str(work)], check=True)
+              after = json.loads((work / 'execution.json').read_text())
+              checks = {
+                  'rerendered': attempts(after, 'render') > attempts(before, 'render'),
+                  'retested_actual_media': attempts(after, 'qa') > attempts(before, 'qa'),
+                  'voice_reused': attempts(after, 'voice') == attempts(before, 'voice'),
+                  'review_candidate': after.get('status') == 'REVIEW_CANDIDATE',
+                  'qa_matches_video': json.loads((work / 'media-qa.json').read_text())['candidate_sha256'] == sha(work / 'candidate.mp4'),
+              }
+              receipt.update(checks=checks, status='PASS' if all(checks.values()) else 'FAIL', after_candidate_sha256=sha(work / 'candidate.mp4'))
+              if not all(checks.values()):
+                  raise RuntimeError('Recovery acceptance failed')
+          except Exception as error:
+              receipt.update(status='FAIL', reason=str(error))
+              raise
+          finally:
+              atomic_json(work / 'recovery-evidence.json', receipt)
+          PYRECOVERY
+      - name: Verify final candidate through pinned local OpenMontage probe
+        if: (github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both'
+        env:
+          CCSD: ${{ matrix.ccsd }}
+          FORMAT: ${{ matrix.format }}
+        run: |
+          git clone --filter=blob:none https://github.com/calesthio/OpenMontage.git "$RUNNER_TEMP/OpenMontage"
+          git -C "$RUNNER_TEMP/OpenMontage" checkout --detach 9327439db69021ab4b0e2776729bf3b58fdb5a87
+          OPENMONTAGE_CHECKOUT="$RUNNER_TEMP/OpenMontage" python integrations/openmontage/test_adapter.py
+          python - <<'PYPROBE'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          work = Path('state/production-' + os.environ['FORMAT'])
+          doc = json.loads(Path(os.environ['CCSD']).read_text())
+          subprocess.run([sys.executable, 'integrations/openmontage/verify_render.py', '--upstream', os.environ['RUNNER_TEMP'] + '/OpenMontage', '--video', str(work / 'candidate.mp4'), '--expected-duration', str(max(s['end'] for s in doc['scenes'])), '--receipt', str(work / 'openmontage-probe.json')], check=True)
+          PYPROBE
       - name: Preserve resumable state and actual output even after failure
-        if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
+        if: always() && ((github.event_name == 'push' && matrix.format == 'short') || inputs.format == matrix.format || inputs.format == 'both')
         uses: actions/upload-artifact@v4
         with:
           name: production-state-${{ matrix.format }}

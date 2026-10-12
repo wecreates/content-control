@@ -43,9 +43,35 @@ class StageRunner:
         self.root = Path(workdir).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.path = self.root / 'execution.json'
-        self.state = json.loads(self.path.read_text()) if self.path.exists() else {'schema_version': 1, 'stages': {}}
+        self.executed = set()
+        try:
+            self.state = json.loads(self.path.read_text()) if self.path.exists() else {'schema_version': 1, 'stages': {}}
+            if not isinstance(self.state, dict) or self.state.get('schema_version') != 1 or not isinstance(self.state.get('stages'), dict):
+                raise ValueError('Malformed execution state')
+            for record in self.state['stages'].values():
+                if not isinstance(record, dict) or record.get('status') not in ('RUNNING', 'PASS', 'FAILED'):
+                    raise ValueError('Malformed stage record')
+                for key in ('attempts', 'previous_attempts'):
+                    value = record.get(key, 0)
+                    if type(value) is not int or value < 0:
+                        raise ValueError('Malformed attempt counter')
+                for key in ('inputs', 'outputs'):
+                    values = record.get(key, {})
+                    if not isinstance(values, dict) or any(not isinstance(p, str) or not isinstance(h, str) or len(h) != 64 or any(c not in '0123456789abcdef' for c in h) for p, h in values.items()):
+                        raise ValueError('Malformed hash manifest')
+                if record['status'] == 'PASS' and (not record.get('inputs') or not record.get('outputs')):
+                    raise ValueError('Passing stage lacks evidence')
+                if any(not Path(p).resolve().is_relative_to(self.root) for p in record.get('outputs', {})):
+                    raise ValueError('Stage output escapes job directory')
+        except (ValueError, OSError) as error:
+            atomic_json(self.root / 'execution-blocked.json', {'status': 'BLOCKED', 'reason': str(error), 'publication_enabled': False, 'production_approved': False})
+            raise
+        (self.root / 'execution-blocked.json').unlink(missing_ok=True)
         self.state.update(publication_enabled=False, production_approved=False, status='RUNNING')
         self.save()
+
+    def rebuilt_media(self):
+        return bool({"render", "mux"} & self.executed)
 
     def save(self):
         atomic_json(self.path, self.state)
@@ -62,6 +88,7 @@ class StageRunner:
         valid = valid and all(Path(p).is_file() and sha(p) == h for p, h in old.get('outputs', {}).items())
         if valid and not force:
             return old
+        self.executed.add(name)
         record = {'status': 'RUNNING', 'inputs': fingerprint, 'attempts': 0, 'previous_attempts': old.get('previous_attempts', 0) + old.get('attempts', 0)}
         self.state['stages'][name] = record
         for attempt in range(1, attempts + 1):
@@ -171,7 +198,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
         render()
         for repair in range(2):
             try:
-                runner.stage('qa', [final, ccsd_path, scripts / 'production_reality_media_qa.py'], inspect, force=bool(repair))
+                runner.stage('qa', [final, ccsd_path, scripts / 'production_reality_media_qa.py'], inspect, force=bool(repair) or runner.rebuilt_media())
                 break
             except ValueError:
                 report = json.loads(qa.read_text()) if qa.exists() else {}
@@ -180,6 +207,17 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
                     raise
                 # One genuine rebuild/retest for corrupt or incomplete media, never creative certification.
                 render(force=True)
+        try:
+            from scripts.production_memory import identity_sources
+        except ModuleNotFoundError:
+            from production_memory import identity_sources
+        memory_inputs = [scripts / 'production_memory.py', ccsd_path, final, qa, *voice_record['outputs'], *[ROOT / name for name in identity_sources()]]
+        if ccsd.get('source_script'):
+            source_script = (ROOT / ccsd['source_script']).resolve()
+            if not source_script.is_relative_to(ROOT):
+                raise ValueError('Source script outside repository')
+            memory_inputs.append(source_script)
+        runner.stage('memory', memory_inputs, lambda: python('production_memory', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--candidate', final, '--qa', qa, '--out', w / 'memory.json'], [w / 'memory.json']))
         runner.state.update(status='REVIEW_CANDIDATE', candidate=str(final), candidate_sha256=sha(final), creative_review='PENDING', audio_listening_review='PENDING')
         runner.save()
         return runner.state
@@ -196,7 +234,21 @@ def main():
         print(json.dumps({k: v for k, v in result.items() if k != 'stages'}))
         return 0
     except Exception as error:
-        print(json.dumps({'status': 'BLOCKED', 'reason': str(error), 'publication_enabled': False, 'production_approved': False}), file=sys.stderr)
+        failure = {'status': 'BLOCKED', 'reason': str(error), 'publication_enabled': False, 'production_approved': False}
+        try:
+            with job_lock(args.workdir):
+                directory = Path(args.workdir)
+                atomic_json(directory / 'execution-blocked.json', failure)
+                state_path = directory / 'execution.json'
+                if state_path.exists():
+                    state = json.loads(state_path.read_text())
+                    if isinstance(state, dict) and state.get('schema_version') == 1 and isinstance(state.get('stages'), dict):
+                        state.update(failure)
+                        atomic_json(state_path, state)
+        except (OSError, ValueError):
+            # Never modify another active execution, nor destroy a malformed file.
+            pass
+        print(json.dumps(failure), file=sys.stderr)
         return 2
 
 
