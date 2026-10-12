@@ -3,7 +3,7 @@
   "title": "2% Cashback Turned Dave's Brain Into a Casino",
   "publication_enabled": false,
   "educational_example": true,
-  "narration_text": "Dave found two percent cashback. His brain immediately became a casino. He almost bought an eighty-dollar gadget he did not need. But I get money back! Yes. One dollar and sixty cents. Congratulations, Dave. You spent eighty dollars to summon this. Would you buy it without the reward? If no, the reward won. Cashback only wins when the purchase already made sense. Buy first. Reward second.",
+  "narration_text": "Cashback turned Dave's brain into a casino. He almost bought an eighty-dollar gadget he did not need. But I get money back! Yes. One dollar and sixty cents. Congratulations, Dave. You spent eighty dollars to summon this. Would you buy it without the reward? If no, the reward won. Cashback only wins when the purchase already made sense. Buy first. Reward second.",
   "claims": {
     "purchase_usd": 80,
     "cashback_rate": 0.02,
@@ -31,7 +31,7 @@
     {
       "start": 0,
       "end": 3.3,
-      "text": "Dave found two percent cashback. His brain immediately became a casino."
+      "text": "Cashback turned Dave's brain into a casino."
     },
     {
       "start": 3.3,
