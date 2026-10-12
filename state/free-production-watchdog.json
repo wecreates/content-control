@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,18 +54,10 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [
-    "runtime_integrity_manifest"
-  ],
-  "integrity_failures": [
-    {
-      "actual": "89e7ce18f10d402142a76c5da6e66d31da6dbf5b352a521bed745b5926eb6678",
-      "expected": "f4d82baead8f6541ecbb1069dfd9d0e42013693f7bb4d7dc8e3eb53896a15d85",
-      "path": "scripts/free_transcription_qa.py"
-    }
-  ],
+  "failed_checks": [],
+  "integrity_failures": [],
   "publication_enabled": false,
-  "repair_action": "route_smallest_failed_invariant",
+  "repair_action": "none",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED"
+  "status": "GREEN"
 }
