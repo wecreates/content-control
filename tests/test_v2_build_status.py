@@ -14,6 +14,14 @@ class BuildStatusTests(unittest.TestCase):
    (root/'render').mkdir();(root/'render/v2-boss-fight.mp4').write_bytes(b'identity fixture')
    r=summarize(root,123,'a'*40,'success');self.assertEqual(r['status'],'REVIEW_REQUIRED');self.assertFalse(r['production_approved']);self.assertFalse(r['publication_enabled'])
    p=root/RECEIPTS['voices'];p.write_text(json.dumps({'status':'PASS','publication_enabled':True}));self.assertEqual(summarize(root,123,'a'*40,'success')['checks']['voices']['status'],'BLOCKED')
+ def test_optional_failed_diagnostic_is_visible_without_approving_or_overriding_checks(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);p=root/'receipts/clip-transcription.json';p.parent.mkdir()
+   p.write_text(json.dumps({'status':'BLOCKED','publication_enabled':False,'reason':'Observed words differ'}))
+   r=summarize(root,123,'a'*40,'failure')
+   self.assertEqual(r['diagnostics']['caption_windows']['status'],'BLOCKED')
+   self.assertEqual(r['diagnostics']['caption_windows']['reason'],'Observed words differ')
+   self.assertNotIn('caption_windows',r['checks']);self.assertFalse(r['production_approved'])
  def test_older_build_cannot_replace_newer_report(self):
   self.assertFalse(should_replace({'run_id':201},{'run_id':200}));self.assertTrue(should_replace({'run_id':200},{'run_id':201}))
  def test_invalid_identity_rejected(self):

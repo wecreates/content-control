@@ -4,13 +4,14 @@ import argparse,datetime,hashlib,json,re
 from pathlib import Path
 
 RECEIPTS={'voices':'receipts/voice.json','sound_mix':'receipts/mix.json','transcription':'receipts/transcription.json','captions':'captions.json','caption_frames':'receipts/caption-frames.json','technical_video':'receipts/render.json','style_parity':'receipts/visual-parity.json'}
+DIAGNOSTICS={'caption_windows':'receipts/clip-transcription.json'}
 def summarize(root,run_id,source_commit,outcome):
     root=Path(root)
     if not isinstance(run_id,int) or isinstance(run_id,bool) or run_id<=0: raise ValueError('Invalid run ID')
     if not re.fullmatch('[0-9a-f]{40}',source_commit): raise ValueError('Invalid source commit')
     if outcome not in {'success','failure','cancelled'}: raise ValueError('Invalid workflow outcome')
     checks={}
-    for name,relative in RECEIPTS.items():
+    for name,relative in {**RECEIPTS,**DIAGNOSTICS}.items():
         p=root/relative
         if not p.exists(): checks[name]={'status':'NOT_RUN'};continue
         try:
@@ -25,9 +26,10 @@ def summarize(root,run_id,source_commit,outcome):
             checks[name]={'status':status,'failed_checks':failed,'receipt_sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
             if isinstance(r.get('reason'),str):checks[name]['reason']=r['reason'][:240]
         except (ValueError,TypeError):checks[name]={'status':'INVALID_RECEIPT'}
+    diagnostics={name:checks.pop(name) for name in DIAGNOSTICS}
     video=root/'render/v2-boss-fight.mp4'
     digest=hashlib.sha256(video.read_bytes()).hexdigest() if video.is_file() else None
-    return {'schema_version':1,'run_id':run_id,'source_commit':source_commit,'workflow_outcome':outcome,'recorded_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'workflow_url':f'https://github.com/wecreates/content-control/actions/runs/{run_id}','candidate_sha256':digest,'candidate_generated':digest is not None,'checks':checks,'status':'REVIEW_REQUIRED' if digest and all(v['status']=='PASS' for v in checks.values()) else 'BLOCKED','production_approved':False,'publication_enabled':False,'scope':'Recorded build result; no full audiovisual or competitor approval.'}
+    return {'schema_version':1,'run_id':run_id,'source_commit':source_commit,'workflow_outcome':outcome,'recorded_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'workflow_url':f'https://github.com/wecreates/content-control/actions/runs/{run_id}','candidate_sha256':digest,'candidate_generated':digest is not None,'checks':checks,'diagnostics':diagnostics,'status':'REVIEW_REQUIRED' if digest and all(v['status']=='PASS' for v in checks.values()) else 'BLOCKED','production_approved':False,'publication_enabled':False,'scope':'Recorded build result; no full audiovisual or competitor approval.'}
 def should_replace(existing,incoming):
     # Never let a delayed retry replace a newer build report.
     if not isinstance(existing,dict):raise ValueError('Invalid existing report')

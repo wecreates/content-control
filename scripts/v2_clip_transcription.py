@@ -26,7 +26,7 @@ def transcribe_windows(ccsd, receipt, audio, samples, observe):
  for (scene,line),window in zip(expected,windows):
   first=round(window['start']*16000);last=round(window['end']*16000)
   local=list(observe(samples[first:last]))
-  if not local or norm(' '.join(w['word'] for w in local))!=norm(line['text']):raise ValueError('Observed words differ from script: '+scene['id'])
+  if not local or norm(' '.join(w['word'] for w in local))!=norm(line['text']):raise ValueError('Observed words differ from script: '+scene['id']+'; expected='+repr(norm(line['text']))+'; observed='+repr(norm(' '.join(w['word'] for w in local))))
   previous=0
   for w in local:
    start,end=w.get('start'),w.get('end')
