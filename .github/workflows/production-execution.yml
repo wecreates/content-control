@@ -78,8 +78,8 @@ jobs:
         if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         with:
           python-version: '3.12'
-      - name: Restore explicitly selected same-repository production run
-        if: (inputs.format == matrix.format || inputs.format == 'both') && inputs.resume_run_id != ''
+      - name: Restore prior same-branch production state
+        if: github.event_name == 'push' || ((inputs.format == matrix.format || inputs.format == 'both') && inputs.resume_run_id != '')
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -88,13 +88,31 @@ jobs:
         run: |
           python - <<'PY'
           import json, os, subprocess
+          from urllib.parse import urlencode
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GH_REPO"]}/' + path]))
           run_id = os.environ['RESUME_RUN']
+          artifact = 'production-state-' + os.environ['FORMAT']
+          if not run_id:
+              query = urlencode({'branch': os.environ['GITHUB_REF_NAME'], 'event': 'push', 'status': 'completed', 'per_page': 10})
+              runs = api('actions/workflows/production-execution.yml/runs?' + query)['workflow_runs']
+              for previous in runs:
+                  if previous['head_branch'] != os.environ['GITHUB_REF_NAME'] or previous['event'] != 'push' or previous['path'] != '.github/workflows/production-execution.yml':
+                      continue
+                  artifacts = api(f'actions/runs/{previous["id"]}/artifacts')['artifacts']
+                  if any(item['name'] == artifact and not item['expired'] for item in artifacts):
+                      run_id = str(previous['id'])
+                      break
+              if not run_id:
+                  print('No retained same-branch production state; starting a new job')
+                  raise SystemExit(0)
           if not run_id.isdigit():
               raise SystemExit('Resume run ID must be numeric')
-          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GH_REPO"]}/actions/runs/{run_id}']))
+          run = api(f'actions/runs/{run_id}')
           if run['event'] not in ('workflow_dispatch', 'push') or run['path'] != '.github/workflows/production-execution.yml' or run['head_branch'] != os.environ['GITHUB_REF_NAME']:
               raise SystemExit('Resume must originate from this production workflow and branch (push or manual)')
-          subprocess.run(['gh', 'run', 'download', run_id, '--name', 'production-state-' + os.environ['FORMAT'], '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
+          subprocess.run(['gh', 'run', 'download', run_id, '--name', artifact, '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
+          print('Restored', artifact, 'from run', run_id, '; current input and output hashes will be revalidated')
           PY
       - name: Install free CPU production dependencies
         if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'

@@ -42,3 +42,10 @@ test('comparison cards fit their own boxes and action doors distinguish terms',(
  const doorScene=ccsd.scenes.find(scene=>scene.visual.action==='doors');
  const doors=render((doorScene.start+doorScene.end)/2);assert.match(doors,/INTRO APR/);assert.match(doors,/DEFERRED/);
 });
+test('formerly static explanations contain continuing causal prop actions',()=>{
+ for(const [time,motion] of [[15,'fee-weight'],[120,'net-value-delivery'],[205,'monthly-statement'],[345,'monthly-payment']]){
+  const first=render(time),later=render(time+.5);
+  assert.match(first,new RegExp('data-causal-motion="'+motion+'"'));
+  assert.notEqual(first,later);
+ }
+});
