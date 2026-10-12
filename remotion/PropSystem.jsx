@@ -32,7 +32,7 @@ export const PropIcon=({id="prop",x=0,y=0,s=1,rotation=0,accent})=>{
    id==="ice_cube"?<g><rect x="-64" y="-64" width="128" height="128" rx="16" fill="#EAF9FF" stroke={K} strokeWidth="5"/><path d="M-34 58 q18 24 36 0 q18 26 36 0" fill="none" stroke={T} strokeWidth="5"/></g>:
    id==="carrot"?<g transform="rotate(20)"><path d="M0 78 L-42 -42 Q0 -70 42 -42 Z" fill="#fff" stroke={K} strokeWidth="5"/><path d="M-10 -54 q-10 -44 -28 -52 M10 -54 q10 -44 28 -52 M0 -58 v-58" fill="none" stroke={K} strokeWidth="6"/></g>:
    id==="magnifying_glass"?<g><circle cx="-20" cy="-20" r="54" {...common}/><line x1="20" y1="20" x2="92" y2="92" stroke={K} strokeWidth="12"/></g>:
-   docIds.includes(id)?<g><rect x="-72" y="-92" width="144" height="184" rx="10" {...common}/>{[-52,-18,16,50].map((yy,i)=><line key={i} x1="-46" y1={yy} x2={i===0?28:46} y2={yy} stroke={K} strokeWidth="4"/>) }{label(id.replaceAll("_"," ").toUpperCase().slice(0,12),82,13)}</g>:
+   docIds.includes(id)?<g><rect x="-72" y="-92" width="144" height="184" rx="10" {...common}/>{[-52,-18,16,50].map((yy,i)=><line key={i} x1="-46" y1={yy} x2={i===0?28:46} y2={yy} stroke={K} strokeWidth="4"/>) }{label(id.replaceAll("_"," ").toUpperCase(),82,Math.min(13,128/(id.length*.68)))}</g>:
    <g><rect x="-72" y="-46" width="144" height="92" rx="16" {...common}/>{label(String(id).replaceAll("_"," ").toUpperCase().slice(0,12),8,16)}</g>}
  </g>;
 };

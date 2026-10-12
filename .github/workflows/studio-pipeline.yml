@@ -6,6 +6,10 @@ on:
     paths:
       - 'production/reference-clones/active/scene-plan.json'
       - 'scripts/ccsd_*.py'
+      - 'scripts/v2_free_voice.py'
+      - 'scripts/v2_audio_assemble.py'
+      - 'scripts/voice_provider.py'
+      - 'tests/test_studio_free_execution.py'
       - 'control/taste-director-v1.json'
       - 'control/audio-depth-v1.json'
       - 'control/acting-depth-v1.json'
@@ -146,13 +150,14 @@ jobs:
         with: {node-version: '22', cache: npm}
 
       - name: Studio contract tests
-        run: python -m unittest -v tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py tests/test_creative_depth_engine.py tests/test_historical_runtime_regressions.py
+        run: python -m unittest -v tests/test_studio_free_execution.py tests/test_studio_stack.py tests/test_character_lock.py tests/test_visual_choreography.py tests/test_quality_depth.py tests/test_quality_depth_integration.py tests/test_creative_depth_engine.py tests/test_historical_runtime_regressions.py
       - name: Verify studio department map
         run: python scripts/verify_studio_department_map.py --out state/studio-department-health.json
 
       - name: Initialize studio state
         run: |
           mkdir -p state/studio
+          rm -f state/studio/story-comprehension-postrepair.json state/studio/performance-spatial-postrepair.json
           printf '%s\n' '{"stage":"BLOCKING","publication_enabled":false}' > state/studio/shot-approval.json
           printf '%s\n' '{"level":"blocking","publication_enabled":false}' > state/studio/render-level.json
 
@@ -217,7 +222,14 @@ jobs:
         run: |
           printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
           python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
-          printf '%s\n' '{"checks":{"boards":true,"animatic":true,"dailies":true,"audience":true}}' > state/studio/render-checks.json
+          python - <<'PYCHECK'
+          import json,pathlib
+          root=pathlib.Path("production/reference-clones/active/studio")
+          names={"boards":"storyboard-manifest.json","animatic":"animatic.json","dailies":"dailies.json","semantic":"semantic-dailies.json","audience":"audience-panel.json"}
+          checks={key:json.loads((root/name).read_text()).get("status")=="PASS" for key,name in names.items()}
+          pathlib.Path("state/studio/render-checks.json").write_text(json.dumps({"checks":checks}))
+          assert all(checks.values()),checks
+          PYCHECK
           python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
 
       - name: Run downstream studio departments
@@ -305,6 +317,15 @@ jobs:
           SCORE=$(python -c 'import json; d=json.load(open("state/studio/rendered-candidate-qa.json")); print((d.get("winner") or {}).get("score",0))')
           python scripts/creative_learning_profile.py --profile state/creative-learning-profile.json --receipt state/studio/rendered-candidate-qa.json --reward "$SCORE" --out state/creative-learning-profile.json
 
+      - name: Revalidate final master after selection and repairs
+        if: steps.active.outputs.ready == 'yes'
+        run: |
+          set -euo pipefail
+          S=production/reference-clones/active/studio
+          python scripts/ccsd_validate.py --input "$S/18-master-ccsd.json" --out state/studio/final-ccsd-health.json
+          python scripts/choreography_qa.py --ccsd "$S/18-master-ccsd.json" --out state/studio/choreography-health.json
+          python scripts/soundscape_render.py --ccsd "$S/18-master-ccsd.json" --out public/audio/studio-soundscape.wav --receipt state/studio/soundscape-health.json
+
       - name: Production support and continuity
         if: steps.active.outputs.ready == 'yes'
         run: |
@@ -331,70 +352,48 @@ jobs:
         run: |
           printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
           python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
-          printf '%s\n' '{"checks":{"layout":true,"animation":true,"fx":true,"lighting":true,"editorial":true,"sound":true,"continuity":true}}' > state/studio/render-checks.json
+          python - <<'PYCHECK'
+          import json,pathlib
+          root=pathlib.Path("production/reference-clones/active/studio")
+          paths={"schema":"state/studio/final-ccsd-health.json","choreography":"state/studio/choreography-health.json","sound":"state/studio/soundscape-health.json"}
+          checks={key:json.load(open(path)).get("status")=="PASS" for key,path in paths.items()}
+          tracker=json.loads((root/"production-tracker.json").read_text())
+          checks["dependencies"]=bool(tracker.get("shots")) and not tracker.get("blocked_scene_ids")
+          for key in ("story-comprehension","performance-spatial"):
+              repaired=pathlib.Path("state/studio/"+key+"-postrepair.json")
+              report=repaired if repaired.exists() else pathlib.Path("state/studio/"+key+".json")
+              checks[key]=json.loads(report.read_text()).get("status")=="PASS"
+          pathlib.Path("state/studio/render-checks.json").write_text(json.dumps({"checks":checks}))
+          assert all(checks.values()),checks
+          PYCHECK
           python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
 
-      - name: Build Cartesia Sonic 3.6 production voice
+      - name: Build free local production voice
         if: steps.active.outputs.ready == 'yes'
-        env:
-          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
-          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
-          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
-          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
-          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
         run: |
           set -euo pipefail
           S=production/reference-clones/active/studio
           mkdir -p state/studio qa-output/studio-voice public/audio
-          rm -f public/audio/reference-clone-voice.mp3 qa-output/studio-voice/cartesia.wav
+          rm -f public/audio/reference-clone-voice.mp3
           python scripts/ccsd_voice_manifest.py --ccsd "$S/18-master-ccsd.json" --out "$S/voice-dialogue.json"
-          STATUS=$(python -c 'import json; print(json.load(open("production/reference-clones/active/studio/voice-dialogue.json"))["status"])')
           python scripts/voice_provider.py --out state/studio/voice-provider.json
-          if [ "$STATUS" = "EMPTY" ]; then
-            printf '%s\n' '{"status":"NO_DIALOGUE","provider":null,"publication_enabled":false}' > state/studio/premium-voice.json
-            exit 0
-          fi
-          STRATEGY=$(python -c 'import json; print(json.load(open("state/studio/voice-provider.json"))["selected_strategy"])')
-          if [ "$STRATEGY" = "required_provider_missing" ]; then
-            printf '%s\n' '{"status":"PROVIDER_REQUIRED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/studio/premium-voice.json
-            echo "Cartesia Sonic 3.6 is required for dialogue-bearing production. CARTESIA_API_KEY is not configured."
-            exit 42
-          fi
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          python scripts/cartesia_sonic_generate.py \
-            --dialogue "$S/voice-dialogue.json" \
-            --out qa-output/studio-voice/cartesia.wav \
-            --receipt state/studio/cartesia-voice.json
-          CSTAT=$(python -c 'import json; print(json.load(open("state/studio/cartesia-voice.json"))["status"])')
-          if [ "$CSTAT" != "PASS" ]; then
-            printf '%s\n' '{"status":"CARTESIA_FAILED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/studio/premium-voice.json
-            exit 43
-          fi
+          sudo apt-get install -y -qq ffmpeg espeak-ng
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy
+          python scripts/v2_free_voice.py --ccsd "$S/18-master-ccsd.json" --out-dir qa-output/studio-voice/clips --receipt state/studio/local-voice-generation.json
+          python scripts/v2_audio_assemble.py --ccsd "$S/18-master-ccsd.json" --manifest qa-output/studio-voice/clips/approved-manifest.json --out qa-output/studio-voice/kokoro.wav --receipt state/studio/local-voice-assembly.json
           python -m pip install -r requirements-transcription.txt
-          python scripts/voice_candidate_qa.py \
-            --audio qa-output/studio-voice/cartesia.wav \
-            --manifest "$S/voice-dialogue.json" \
-            --out qa-output/studio-voice/cartesia.json \
-            --model base.en
-          python - <<'PY'
+          python scripts/voice_candidate_qa.py --audio qa-output/studio-voice/kokoro.wav --manifest "$S/voice-dialogue.json" --out qa-output/studio-voice/transcript.json --model base.en
+          python - <<'PYVOICE'
           import json,pathlib
-          qa=json.load(open("qa-output/studio-voice/cartesia.json"))
-          ok=qa.get("status")=="PASS" or qa.get("verdict")=="PASS"
-          if not ok:
-              raise SystemExit("Cartesia voice candidate failed QA")
-          r={
-            "schema_version":1,
-            "status":"PASS",
-            "provider":"cartesia",
-            "model_id":"sonic-3.6",
-            "audio":"qa-output/studio-voice/cartesia.wav",
-            "qa":qa,
-            "publication_enabled":False,
-          }
-          pathlib.Path("state/studio/premium-voice.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
-          PY
-          ffmpeg -y -i qa-output/studio-voice/cartesia.wav -c:a libmp3lame -b:a 192k public/audio/reference-clone-voice.mp3 >/dev/null 2>&1
+          assembly=json.load(open("state/studio/local-voice-assembly.json"))
+          qa=json.load(open("qa-output/studio-voice/transcript.json"))
+          assert assembly["status"] == qa["status"] == "PASS"
+          r={"schema_version":2,"status":"PASS","provider":"kokoro","model_id":"Kokoro-82M","audio":"qa-output/studio-voice/kokoro.wav","assembly":assembly,"qa":qa,"listening_review":"pending","publication_enabled":False}
+          pathlib.Path("state/studio/premium-voice.json").write_text(json.dumps(r,indent=2)+"\n")
+          PYVOICE
+          ffmpeg -nostdin -y -i qa-output/studio-voice/kokoro.wav -c:a libmp3lame -b:a 192k public/audio/reference-clone-voice.mp3 >/dev/null 2>&1
           test -s public/audio/reference-clone-voice.mp3
 
       - name: Feed studio decisions into scene plan
@@ -407,13 +406,14 @@ jobs:
             --voice-file public/audio/reference-clone-voice.mp3 \
             --voice-public-path audio/reference-clone-voice.mp3 \
             --receipt state/studio/premium-voice.json
+          python scripts/inject_soundscape_path.py --scene-plan "$S/scene-plan-studio.json" --file public/audio/studio-soundscape.wav --public-path audio/studio-soundscape.wav
           cp "$S/scene-plan-studio.json" production/reference-clones/active/scene-plan.json
 
       - name: Final studio gate
         if: steps.active.outputs.ready == 'yes'
         run: |
           python - <<'PY'
-          import json
+          import json,pathlib
           rows=[
             json.load(open("state/studio/final-ccsd-health.json")),
             json.load(open("production/reference-clones/active/studio/dailies.json")),
@@ -424,10 +424,15 @@ jobs:
           ]
           assert all(x["status"]=="PASS" for x in rows),rows
           tracker=json.load(open("production/reference-clones/active/studio/production-tracker.json"))
-          assert not tracker.get("blocked_scene_ids"),tracker
+          assert tracker.get("shots") and not tracker.get("blocked_scene_ids"),tracker
+          plan=json.load(open("production/reference-clones/active/studio/render-plan.json"))
+          localization=json.load(open("production/reference-clones/active/studio/localization.json"))
+          voice=json.load(open("state/studio/premium-voice.json"))
+          checks={"studio_reports":all(x["status"]=="PASS" for x in rows),"render_plan":bool(plan.get("shards")),"localization_plan":bool(localization.get("languages")),"voice":voice.get("status")=="PASS"}
+          pathlib.Path("state/studio/render-checks.json").write_text(json.dumps({"checks":checks}))
+          assert all(checks.values()),checks
           PY
           printf '%s\n' '{"notes":[]}' > state/studio/approval-notes.json
-          printf '%s\n' '{"checks":{"studio_gate":true,"render_plan":true,"accessibility":true,"localization":true}}' > state/studio/render-checks.json
           python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json
           python scripts/render_level_gate.py --state state/studio/render-level.json --checks state/studio/render-checks.json --out state/studio/render-level.json
           python scripts/shot_approval.py --state state/studio/shot-approval.json --notes state/studio/approval-notes.json --out state/studio/shot-approval.json

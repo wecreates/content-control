@@ -137,7 +137,7 @@ test('composition routes observed speech only to the matching visible character'
  // At 8.5s both Monk and Goblin are visible; only Monk speaks in this fixture.
  const draw=speaker=>{const c=structuredClone(original);c.caption_track={status:'PASS',publication_enabled:false,cues:[{start:8,end:9,text:'A spoken word',speaker}]};return renderToStaticMarkup(React.createElement(StudioAnimaticComposition,{ccsd:c}));};
  const spoken=draw('points_monk'),narrated=draw('narrator');
- const caption=spoken.match(/<text x="360" y="105"[^>]*>/)?.[0];
+ const caption=spoken.match(/<text x="360" y="230"[^>]*>/)?.[0];
  assert.ok(caption?.includes('font-size="52"'),'V2 spoken captions use the phone-readable preferred size');
  assert.equal((spoken.match(/data-speaking-mouth="true"/g)||[]).length,1);
  assert.equal((spoken.match(/data-speaking-mouth="false"/g)||[]).length,1);

@@ -1,0 +1,176 @@
+{
+  "title": "Your Credit Card Has DLC (And You\u2019re Paying for It)",
+  "title_alternatives": [
+    "The $200 Credit Card That Lost to a Free One",
+    "Your Credit Card Rewards Have a Spending Problem"
+  ],
+  "description": "Dave buys a fictional premium credit card and discovers four expensive traps: inflated point totals, interest, bonus chasing, and deferred-interest fine print. Original stick-figure finance comedy. All card offers and rewards calculations in this story are illustrative; actual terms vary. No sponsored offer or affiliate recommendation is included.\n\nExample math: 30,000 points \u00d7 $0.007 = $210; $210 + $60 useful credits \u2212 $200 fee = $70; $200 cash back \u2212 $70 = $130 difference. Simplified interest: $1,000 \u00d7 24% \u00d7 30/365 \u2248 $19.73. A $1,200 balance divided over 12 months is $100/month before any applicable fees or other charges.\n\nThe $19.73 estimate assumes a constant $1,000 balance already subject to interest, no applicable grace period, a 365-day year, and simple interest without compounding. Actual issuer calculations can differ. The $100/month illustration assumes all twelve payments reach the promotional principal, no added charges, and payoff before the actual promotional deadline.\n\nSources (CFPB):\nhttps://www.consumerfinance.gov/ask-cfpb/what-is-a-daily-periodic-rate-on-a-credit-card-en-46/\nhttps://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/\nhttps://www.consumerfinance.gov/archive/blog/how-understand-special-promotional-financing-offers-credit-cards/\nhttps://www.consumerfinance.gov/ask-cfpb/i-got-a-credit-card-promising-no-interest-for-a-purchase-if-i-pay-in-full-within-12-months-how-does-this-work-en-40/",
+  "publication_enabled": false,
+  "privacy_status": "private",
+  "category_id": "27",
+  "language": "en-US",
+  "made_for_kids": false,
+  "status": "SCRIPT_METADATA_DRAFT_NOT_PUBLICATION_APPROVED",
+  "thumbnail_brief": {
+    "text": "THE $200 TRAP",
+    "original_art": "Locked Dave crushed under oversized $200 invoice; metal card on white ground; red fee accent; no issuer logos"
+  },
+  "claims": {
+    "fictional_card_math_verified": true,
+    "primary_source_verification": "General APR, grace-period, zero-percent/deferred-interest, deadline and allocation claims verified against listed CFPB pages on 2026-10-12. Fictional card economics checked arithmetically; no current issuer offer claimed.",
+    "interest_basis": "Constant principal already subject to interest; no applicable grace period; 365-day simple interest estimate, not compounded issuer statement calculation.",
+    "no_revenue_promises": true
+  },
+  "arithmetic": {
+    "points_value": 210.0,
+    "premium_net": 70,
+    "free_cashback": 200.0,
+    "free_advantage": 130,
+    "interest_30_days": 19.73,
+    "bonus_extra_spend": 500,
+    "bonus_less_extra_spend": -200,
+    "monthly_payoff_target": 100.0
+  },
+  "source_script": "production/episode1/rebuild-v2/narration-script.txt",
+  "source_visual_timeline": "production/episode1/rebuild-v2/visual-timeline.json",
+  "audio_status": "NOT_GENERATED",
+  "render_status": "NOT_RENDERED",
+  "review_status": "NOT_REVIEWED",
+  "cta": "Next episode: the minimum payment trap. No unverified product CTA.",
+  "source_provenance": {
+    "verified_on": "2026-10-12",
+    "sources": [
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/what-is-a-daily-periodic-rate-on-a-credit-card-en-46/",
+        "supports": "Daily rate uses issuer-dependent 360 or 365 day denominator; compounding may apply."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/",
+        "supports": "Daily balance method, grace period and payment allocation qualifications."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/archive/blog/how-understand-special-promotional-financing-offers-credit-cards/",
+        "supports": "True zero-percent promotion versus deferred interest; no retroactive promotional interest solely because a true zero-percent balance remains."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/i-got-a-credit-card-promising-no-interest-for-a-purchase-if-i-pay-in-full-within-12-months-how-does-this-work-en-40/",
+        "supports": "Deferred-interest payoff deadline, minimum-payment insufficiency, payment allocation, and different promo end dates."
+      }
+    ],
+    "scope": "General educational mechanics only; not a product eligibility assessment or personalized advice."
+  },
+  "money_factory_contract": {
+    "repository": "wecreates/Money-factory",
+    "path": "CONTENT_READINESS.json",
+    "sha256": "44b8c5577bdfb3194a9150496463b10e51acc591717c4e38c114a8c97c71f5a5",
+    "inspected_on": "2026-10-12",
+    "businesses_examined": 15,
+    "eligible_launch_products": [],
+    "decision": "No sales or affiliate CTA. Every listed business is PRELAUNCH and launch_content_allowed=false. Browser fleet enabled flags do not establish product readiness or verified finance-offer eligibility.",
+    "approved_cta_type": "editorial_next_episode_only",
+    "verified_checkout_url": null,
+    "affiliate_url": null
+  },
+  "thumbnail_scene_id": "scene-009",
+  "playlist_proposal": {
+    "status": "DRAFT_NOT_CREATED",
+    "title": "Dave\u2019s Wallet: Personal Finance, Bad Decisions & Better Rules",
+    "description": "Original black-stick-figure stories with Dave and Points Monk about credit-card rewards, borrowing costs, spending decisions, and the fine print.",
+    "playlist_id": null,
+    "channel_id": null,
+    "publication_enabled": false,
+    "suggested_order": [
+      "v2-amex-vs-chase-anime-boss-fight",
+      "credit-card-dlc-long"
+    ],
+    "scope": "Editorial grouping proposal only; no playlist, channel assignment, upload, or publishing action performed."
+  },
+  "chapter_proposal": {
+    "status": "DRAFT_PENDING_MATCHING_RENDER_REVIEW",
+    "source_ccsd": "projects/long/credit-card-dlc/ccsd.json",
+    "source_ccsd_sha256": "2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021",
+    "timeline_duration_seconds": 519.3333333333334,
+    "timing_basis": "Exact current CCSD scene/narration starts; display timestamps floor to whole seconds. Revalidate against the matching rendered candidate before publication.",
+    "chapters": [
+      {
+        "title": "Dave buys the expensive feeling",
+        "source_scene_id": "scene-000",
+        "start_seconds": 0.0,
+        "timestamp": "0:00",
+        "source_narration": "Dave\u2019s new credit card just dented the table. He thinks that means he\u2019s rich."
+      },
+      {
+        "title": "When rewards change your spending",
+        "source_scene_id": "scene-013",
+        "start_seconds": 28.708333333333332,
+        "timestamp": "0:28",
+        "source_narration": "Rule one. If the reward changes what Dave buys, it may not be a reward anymore."
+      },
+      {
+        "title": "The monthly-credit trap",
+        "source_scene_id": "scene-035",
+        "start_seconds": 75.45833333333333,
+        "timestamp": "1:15",
+        "source_narration": "But wait. My premium card has monthly credits. Ten dollars. Every month. Free money, right?"
+      },
+      {
+        "title": "Settle the annual score",
+        "source_scene_id": "scene-056",
+        "start_seconds": 112.375,
+        "timestamp": "1:52",
+        "source_narration": "Now settle the year. Premium rewards: two hundred ten. Useful credits: sixty. Fee: minus two hundred."
+      },
+      {
+        "title": "The real-life spending rematch",
+        "source_scene_id": "extension-audit-01",
+        "start_seconds": 143.45833333333334,
+        "timestamp": "2:23",
+        "source_narration": "Dave demands a rematch. Points Monk agrees, but looking expensive earns no points this time. The contestants must survive on what they actually do for Dave."
+      },
+      {
+        "title": "Interest eats the reward",
+        "source_scene_id": "scene-072",
+        "start_seconds": 266.7083333333333,
+        "timestamp": "4:26",
+        "source_narration": "Now we add the thing rewards hate most."
+      },
+      {
+        "title": "Two very different autopay buttons",
+        "source_scene_id": "scene-096",
+        "start_seconds": 312.25,
+        "timestamp": "5:12",
+        "source_narration": "Dave opens autopay. Two buttons: minimum payment, statement balance."
+      },
+      {
+        "title": "The bonus invents a shopping list",
+        "source_scene_id": "scene-110",
+        "start_seconds": 335.0416666666667,
+        "timestamp": "5:35",
+        "source_narration": "Then the bank waves a signup bonus."
+      },
+      {
+        "title": "Two zero-interest doors",
+        "source_scene_id": "scene-153",
+        "start_seconds": 405.0,
+        "timestamp": "6:45",
+        "source_narration": "Final trap. Two doors."
+      },
+      {
+        "title": "Build a payoff plan",
+        "source_scene_id": "scene-174",
+        "start_seconds": 446.4166666666667,
+        "timestamp": "7:26",
+        "source_narration": "Imagine twelve hundred dollars with twelve months available. Simple planning target: one hundred dollars a month."
+      },
+      {
+        "title": "Dave\u2019s four rules",
+        "source_scene_id": "scene-190",
+        "start_seconds": 476.625,
+        "timestamp": "7:56",
+        "source_narration": "So here are Dave\u2019s four rules."
+      }
+    ],
+    "description_block": "0:00 Dave buys the expensive feeling\n0:28 When rewards change your spending\n1:15 The monthly-credit trap\n1:52 Settle the annual score\n2:23 The real-life spending rematch\n4:26 Interest eats the reward\n5:12 Two very different autopay buttons\n5:35 The bonus invents a shopping list\n6:45 Two zero-interest doors\n7:26 Build a payoff plan\n7:56 Dave\u2019s four rules",
+    "publication_enabled": false
+  }
+}

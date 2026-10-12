@@ -1,5 +1,5 @@
 import unittest
-from scripts.free_transcription_qa import ordered_word_similarity,duration_matches_contract,norm
+from scripts.free_transcription_qa import ordered_word_similarity,duration_matches_contract,norm,spoken_number_suppression
 
 class TranscriptionSimilarityTests(unittest.TestCase):
     def test_numeric_formatting_does_not_destroy_sequence_similarity(self):
@@ -24,6 +24,19 @@ class TranscriptionSimilarityTests(unittest.TestCase):
         for left,right in [('$1.60','$160'),('2%','20%'),('-80','80'),('$1.06','$1.60'),('2','2%')]:
             with self.subTest(left=left,right=right):
                 self.assertNotEqual(norm(left),norm(right))
+
+    def test_compound_orthography_preserves_every_spoken_word(self):
+        for left,right in [('signup','sign up'),('autopay','auto pay'),('trapdoor','trap door'),('zeroes','zeros')]:
+            self.assertEqual(norm(left),norm(right))
+        for left,right in [('credits','credit'),('planned','plan'),('bucks','dollars'),('a true zero','true zero'),('twelve hundred','one thousand two hundred')]:
+            self.assertNotEqual(norm(left),norm(right))
+
+    def test_spoken_number_suppression_blocks_notation_only(self):
+        class Tokenizer:
+            values={0:'twenty',1:'20',2:'$',3:'%',4:' hundred',5:'£',6:'word',7:'1,200'}
+            def get_vocab(self):return {text:i for i,text in self.values.items()}
+            def decode(self,ids):return self.values[ids[0]]
+        self.assertEqual(spoken_number_suppression(Tokenizer()),[-1,1,2,3,5,7])
 
     def test_reordered_words_still_fail(self):
         expected="buy first reward second"

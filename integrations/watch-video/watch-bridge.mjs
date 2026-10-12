@@ -4,14 +4,16 @@ import {resolve} from 'node:path';
 import {normalizeSocialUrl,addIntake,updateQueueFile} from '../../social-intake.js';
 
 const DEFAULT_TIMEOUT_MS = 180000;
-export function buildWatchInvocation({url,skillDir,python='python3',question='Summarize this video with timestamped visual and spoken evidence.'}) {
+export function buildWatchInvocation({url,skillDir,python='python3',transcription='whisperx',question='Summarize this video with timestamped visual and spoken evidence.'}) {
   const normalized=normalizeSocialUrl(url);
   if (!skillDir || typeof skillDir!=='string' || !skillDir.startsWith('/')) throw new Error('Absolute trusted skill directory required');
   if (typeof question!=='string'||question.length>2000) throw new Error('Invalid question');
-  return {command:python,args:[resolve(skillDir,'scripts/watch.py'),normalized.source_url,'--question',question,'--no-whisper','--engine','local'],normalized};
+  if (!['whisperx','none'].includes(transcription)) throw new Error('Only free local transcription or captions-only mode is allowed');
+  const transcriptionArgs=transcription==='whisperx'?['--whisper','whisperx']:['--no-whisper'];
+  return {command:python,args:[resolve(skillDir,'scripts/watch.py'),normalized.source_url,'--question',question,...transcriptionArgs,'--engine','local'],normalized};
 }
-export async function runWatch({url,skillDir,python='python3',question,timeoutMs=DEFAULT_TIMEOUT_MS,runner=spawn}) {
-  const invocation=buildWatchInvocation({url,skillDir,python,question});
+export async function runWatch({url,skillDir,python='python3',transcription='whisperx',question,timeoutMs=DEFAULT_TIMEOUT_MS,runner=spawn}) {
+  const invocation=buildWatchInvocation({url,skillDir,python,transcription,question});
   await access(invocation.args[0]);
   if (!(timeoutMs>0&&timeoutMs<=600000)) throw new Error('Invalid timeout');
   return new Promise((done,reject)=>{

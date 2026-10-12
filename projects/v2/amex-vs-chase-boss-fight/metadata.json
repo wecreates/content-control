@@ -1,0 +1,63 @@
+{
+  "title": "Amex vs Chase: My Wallet Is the Final Boss",
+  "title_alternatives": [
+    "Two Credit Cards. Still No Budget.",
+    "The Lounge Snacks Were Not a Financial Plan"
+  ],
+  "description": "Dave gets caught between rival credit-card perks, points, and a very uninvited fee. Original stick-figure comedy about matching a card to your real spending\u2014not chasing the shiny perks.\n\nThis is a fictional entertainment scenario, not a comparison of current Amex or Chase offers. No current fees, reward rates, eligibility, or benefit entitlements are represented. No sponsorship or affiliate offer is included.\n\nNext in the series: Your Credit Card Has DLC.\n\n#Shorts #CreditCards #PersonalFinance",
+  "tags": [
+    "credit cards",
+    "personal finance",
+    "stick figure animation",
+    "budgeting",
+    "credit card rewards"
+  ],
+  "language": "en-US",
+  "category_id": "27",
+  "made_for_kids": false,
+  "privacy_status": "private",
+  "publication_enabled": false,
+  "status": "METADATA_DRAFT_REQUIRES_FINAL_AV_REVIEW",
+  "thumbnail_brief": {
+    "text": "STILL NO BUDGET",
+    "original_art": "Dave shields a crumpled wallet while two generic perk cards approach from opposite sides; white background, black linework, one red fee warning; no copied issuer graphics"
+  },
+  "cta": "Next in the series: Your Credit Card Has DLC.",
+  "related_longform_project_id": "credit-card-dlc-long",
+  "related_video_id": null,
+  "playlist_ids": [],
+  "channel_id": null,
+  "money_factory_contract": {
+    "repository": "wecreates/Money-factory",
+    "path": "CONTENT_READINESS.json",
+    "sha256": "44b8c5577bdfb3194a9150496463b10e51acc591717c4e38c114a8c97c71f5a5",
+    "inspected_on": "2026-10-12",
+    "businesses_examined": 15,
+    "eligible_launch_products": [],
+    "decision": "No sales or affiliate CTA. Every listed business is PRELAUNCH and launch_content_allowed=false. Browser fleet enabled flags do not establish product readiness or verified finance-offer eligibility.",
+    "approved_cta_type": "editorial_next_episode_only",
+    "verified_checkout_url": null,
+    "affiliate_url": null
+  },
+  "financial_claim_scope": "Fictional scenario and qualitative spending-fit lesson; no present-day product terms or returns promised.",
+  "publication_requirements": [
+    "Final rendered audio and visual QA",
+    "Account authorization and upload capability verification",
+    "Explicit user publication authorization",
+    "Actual published long-form ID before attaching related-video link"
+  ],
+  "thumbnail_scene_id": "cold-open-b-1",
+  "playlist_proposal": {
+    "status": "DRAFT_NOT_CREATED",
+    "title": "Dave\u2019s Wallet: Personal Finance, Bad Decisions & Better Rules",
+    "description": "Original black-stick-figure stories with Dave and Points Monk about credit-card rewards, borrowing costs, spending decisions, and the fine print.",
+    "playlist_id": null,
+    "channel_id": null,
+    "publication_enabled": false,
+    "suggested_order": [
+      "v2-amex-vs-chase-anime-boss-fight",
+      "credit-card-dlc-long"
+    ],
+    "scope": "Editorial grouping proposal only; no playlist, channel assignment, upload, or publishing action performed."
+  }
+}

@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import {mkdtemp,writeFile,readFile,rm,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {buildWatchInvocation,queueWatchResult} from './watch-bridge.mjs';
+import {buildWatchInvocation,runWatch,queueWatchResult} from './watch-bridge.mjs';
+import {EventEmitter} from 'node:events';
 import {routeFinding} from '../../social-intake.js';
 
 test('uses fixed argv and local engine without shell',()=>{
  const v=buildWatchInvocation({url:'https://www.instagram.com/reel/DeUlQTQxv5O/?tracking=1',skillDir:'/tmp/trusted-watch'});
  assert.equal(v.normalized.source_url,'https://www.instagram.com/reel/DeUlQTQxv5O/');
  assert.deepEqual(v.args.slice(-2),['--engine','local']);
- assert.ok(v.args.includes('--no-whisper'), 'must override configured paid transcription fallback');
+ assert.deepEqual(v.args.slice(-4),['--whisper','whisperx','--engine','local'], 'must override configured paid transcription fallback');
  assert.ok(v.args.includes('https://www.instagram.com/reel/DeUlQTQxv5O/'));
 });
 test('repeated extraction preserves reviewed evidence and remains routable without duplicate intake',async()=>{
@@ -53,4 +54,33 @@ test('persists a pending evidence review without fabricating full coverage',asyn
   assert.equal(q.queue[0].coverage.full_video,false);
   assert.equal(q.queue[0].publication_enabled,false);
  }finally{await rm(dir,{recursive:true,force:true});}
+});
+
+test('supports captions-only mode and rejects cloud transcription backends',()=>{
+ const base={url:'https://www.youtube.com/watch?v=abcdefghijk',skillDir:'/tmp/trusted-watch'};
+ assert.ok(buildWatchInvocation({...base,transcription:'none'}).args.includes('--no-whisper'));
+ for(const transcription of ['auto','groq','openai','gemini','']) {
+   assert.throws(()=>buildWatchInvocation({...base,transcription}),/Only free local/);
+ }
+});
+
+test('runner receives local-only backend and never promotes extracted output to verified coverage',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'watch-runtime-'));
+ try {
+  await mkdir(join(dir,'scripts'));
+  await writeFile(join(dir,'scripts','watch.py'),'# test fixture');
+  let captured;
+  const runner=(command,args,options)=>{
+   captured={command,args,options};
+   const child=new EventEmitter();
+   child.stdout=new EventEmitter(); child.stderr=new EventEmitter(); child.kill=()=>{};
+   process.nextTick(()=>{child.stdout.emit('data','Timestamped extracted narration');child.emit('close',0);});
+   return child;
+  };
+  const result=await runWatch({url:'https://www.youtube.com/watch?v=abcdefghijk',skillDir:dir,runner});
+  assert.deepEqual(captured.args.slice(-4),['--whisper','whisperx','--engine','local']);
+  assert.equal(captured.options.shell,false);
+  assert.equal(result.full_audiovisual_verified,false);
+  assert.match(result.stdout,/narration/);
+ } finally {await rm(dir,{recursive:true,force:true});}
 });

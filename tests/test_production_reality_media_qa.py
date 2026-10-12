@@ -73,5 +73,37 @@ class EncodedAudioTests(unittest.TestCase):
         self.assertFalse(audio_covers_video({'audio_start':1,'audio_duration':1},2))
         self.assertFalse(audio_covers_video({'audio_start':0,'audio_duration':float('nan')},2))
 
+class DeclarationSeparationTests(unittest.TestCase):
+    def test_identical_encoded_media_checks_ignore_legacy_install_declaration(self):
+        import contextlib,io,json,shutil,tempfile
+        from pathlib import Path
+        from scripts.production_reality_media_qa import main
+        if not shutil.which('ffmpeg'):self.skipTest('ffmpeg required')
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);video=root/'candidate.mp4'
+            # Real moving pixels and audible encoded audio, held identical in both runs.
+            subprocess.run(['ffmpeg','-v','error','-nostdin','-f','lavfi','-i','testsrc2=s=180x320:r=24:d=1',
+                            '-f','lavfi','-i','sine=frequency=440:sample_rate=44100:duration=1',
+                            '-c:v','libx264','-c:a','aac','-y',str(video)],check=True,capture_output=True,timeout=30)
+            reports=[]
+            for installed in (False,True):
+                doc={'publication_enabled':False,'scenes':[{'end':1}]}
+                if installed:doc['production_reality_v4']={'installed':True}
+                ccsd=root/'ccsd.json';out=root/'qa.json';ccsd.write_text(json.dumps(doc))
+                with patch('sys.argv',['qa','--video',str(video),'--ccsd',str(ccsd),'--out',str(out)]),contextlib.redirect_stdout(io.StringIO()):
+                    with self.assertRaises(SystemExit):main()
+                reports.append(json.loads(out.read_text()))
+            first,second=reports
+            self.assertEqual(first['checks'],second['checks'])
+            self.assertEqual(first['status'],second['status'])
+            self.assertEqual(first['metrics'],second['metrics'])
+            self.assertEqual(first['candidate_sha256'],second['candidate_sha256'])
+            self.assertNotIn('v4_installed',first['checks'])
+            self.assertTrue(first['checks']['complete_av_decode'])
+            self.assertTrue(first['checks']['audio_audible'])
+            self.assertFalse(first['diagnostics']['v4_declared_installed'])
+            self.assertTrue(second['diagnostics']['v4_declared_installed'])
+            self.assertFalse(second['diagnostics']['v4_declaration_is_media_evidence'])
+
 if __name__=="__main__":
     unittest.main()

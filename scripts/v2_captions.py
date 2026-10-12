@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 try:
     from scripts.free_transcription_qa import norm
@@ -44,6 +45,30 @@ def enforce_frame_visibility(cues,expected,fps,duration):
     return {'status':'PASS','fps':fps,'expected_word_count':len(expected),'visible_word_count':len(visible),'missing_word_indices':missing,'cue_frame_counts':counts,'display_hold_seconds':.12,'method':'Exact frame lattice with next-cue-capped display hold; observed timestamps unchanged'}
 
 
+def coalesce_numeric_tokens(actual):
+    """Join only adjacent numeric notation fragments, retaining actual intervals."""
+    result=[];previous_end=0
+    for i,token in enumerate(actual):
+        item=dict(token);item['observed_token_indices']=[i]
+        start,end=item.get('start'),item.get('end')
+        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not math.isfinite(t) for t in (start,end)):raise ValueError('Observed word times missing or invalid')
+        if start<previous_end or end<start:raise ValueError('Observed word timings overlap or leave media bounds')
+        previous_end=end
+        text=item.get('word','').strip()
+        previous=result[-1] if result else None
+        prefix=previous.get('word','').strip() if previous else ''
+        numeric_prefix=bool(re.fullmatch(r'\$?[+-]?\d+(?:,\d{3})*(?:\.\d+)?',prefix))
+        numeric_suffix=bool(re.fullmatch(r'(?:,\d{3}|\.\d+)(?:[%.,!?])?|%[.,!?]?',text))
+        # No overlap or inserted timing: only touching observed intervals qualify.
+        if previous and numeric_prefix and numeric_suffix and isinstance(previous.get('end'),(int,float)) and isinstance(item.get('start'),(int,float)) and abs(previous['end']-item['start'])<1e-6:
+            previous['word']=prefix+text
+            previous['end']=item.get('end')
+            previous['observed_token_indices'].append(i)
+        else:
+            result.append(item)
+    return result
+
+
 def build_captions(ccsd,transcription,audio):
     if ccsd.get('publication_enabled') is not False or transcription.get('publication_enabled') is not False:raise ValueError('Publication must remain disabled')
     if transcription.get('status')!='PASS' or transcription.get('word_timestamps') is not True:raise ValueError('Passing observed word transcription required')
@@ -57,31 +82,60 @@ def build_captions(ccsd,transcription,audio):
         for line in scene.get('audio',{}).get('dialogue',[]):
             for raw in line.get('text','').split():
                 token=norm(raw).split()
-                if len(token)!=1:raise ValueError('Ambiguous script token requires explicit word alignment')
-                expected.append({'original':raw,'normalized':token[0],'speaker':line['speaker'],'scene_id':scene['id']})
-    actual=transcription.get('words',[])
-    if not expected or len(actual)!=len(expected):raise ValueError('Observed word count does not exactly match script')
-    cues=[];phrase=[];phrase_indices=[];previous_end=0;pending=[]
-    for i,(source,observed) in enumerate(zip(expected,actual)):
+                if not token:raise ValueError('Script token has no normalized speech')
+                expected.append({'original':raw,'normalized':token,'speaker':line['speaker'],'scene_id':scene['id']})
+    actual=coalesce_numeric_tokens(transcription.get('words',[]))
+    if not expected or not actual:raise ValueError('Observed word count does not exactly match script')
+    # Match the entire normalized sequence exactly, then join only at boundaries
+    # shared by source tokens and observed tokens. Never split ASR intervals.
+    normalized=[];previous_end=0
+    for observed in actual:
         start,end=observed.get('start'),observed.get('end')
-        if norm(observed.get('word',''))!=source['normalized']:raise ValueError(f'Observed word mismatch at index {i}')
         if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not math.isfinite(t) for t in (start,end)):raise ValueError('Observed word times missing or invalid')
         if not 0<=start<=end<=duration or start<previous_end:raise ValueError('Observed word timings overlap or leave media bounds')
+        words=norm(observed.get('word','')).split()
+        if not words:raise ValueError('Observed token has no normalized speech')
+        normalized.append(words);previous_end=end
+    if [w for source in expected for w in source['normalized']] != [w for words in normalized for w in words]:
+        raise ValueError('Observed word mismatch: exact normalized sequence required')
+    source_ends={};observed_ends={};total=0
+    for i,source in enumerate(expected):
+        total+=len(source['normalized']);source_ends[total]=i
+    total=0
+    for j,words in enumerate(normalized):
+        total+=len(words);observed_ends[total]=j
+    groups=[];si=oi=0
+    for boundary in sorted(source_ends.keys() & observed_ends.keys()):
+        last_source,last_observed=source_ends[boundary],observed_ends[boundary]
+        indices=list(range(si,last_source+1));observed_indices=[index for token in actual[oi:last_observed+1] for index in token['observed_token_indices']]
+        if len(indices)>3:raise ValueError('Normalized group exceeds short phrase capacity')
+        source=expected[last_source]
+        if any(expected[k]['scene_id']!=source['scene_id'] or expected[k]['speaker']!=source['speaker'] for k in indices):
+            raise ValueError('Normalized group cannot cross scene or speaker boundary')
+        # Delay joined source tokens until the final observed token starts. Earlier
+        # subwords have already been heard; all times remain actual ASR boundaries.
+        groups.append((indices,observed_indices,actual[last_observed]['start'],actual[last_observed]['end']))
+        si,oi=last_source+1,last_observed+1
+    cues=[];phrase=[];phrase_indices=[];pending=[]
+    for indices,observed_indices,start,end in groups:
+        i=indices[-1];source=expected[i]
         if pending and any(expected[j]['scene_id']!=source['scene_id'] or expected[j]['speaker']!=source['speaker'] for j in pending):
             raise ValueError('Zero-duration word cannot cross scene or speaker boundary')
         if start==end:
-            pending.append(i)
+            pending.extend(indices)
             if len(pending)>2:raise ValueError('Too many zero-duration words for a short observed phrase')
             previous_end=end
             continue
-        fresh=[expected[j]['original'] for j in pending]+[source['original']]
-        boundary=i and (expected[i-1]['scene_id']!=source['scene_id'] or expected[i-1]['speaker']!=source['speaker'] or expected[i-1]['original'].endswith(('.', '?', '!')))
+        fresh=[expected[j]['original'] for j in pending+indices]
+        if len(fresh)>3:raise ValueError('Normalized group with deferred words exceeds short phrase capacity')
+        first=indices[0]
+        boundary=first and (expected[first-1]['scene_id']!=source['scene_id'] or expected[first-1]['speaker']!=source['speaker'] or expected[first-1]['original'].endswith(('.', '?', '!')))
         if pending or not phrase or len(phrase)+len(fresh)>3 or boundary:
             phrase=[]
             phrase_indices=[]
         phrase.extend(fresh)
-        phrase_indices.extend(pending+[i])
-        cues.append({'start':start,'end':end,'text':' '.join(phrase),'word':' '.join(fresh),'speaker':source['speaker'],'scene_id':source['scene_id'],'observed_word_index':i,'source_word_indices':pending+[i],'display_word_indices':list(phrase_indices),'deferred_zero_duration_indices':list(pending)})
+        phrase_indices.extend(pending+indices)
+        cues.append({'start':start,'end':end,'text':' '.join(phrase),'word':' '.join(fresh),'speaker':source['speaker'],'scene_id':source['scene_id'],'observed_word_index':i,'source_word_indices':pending+indices,'observed_token_indices':observed_indices,'display_word_indices':list(phrase_indices),'deferred_zero_duration_indices':list(pending)})
         pending=[]
         previous_end=end
     if pending:raise ValueError('Terminal zero-duration word lacks a following observed interval')
