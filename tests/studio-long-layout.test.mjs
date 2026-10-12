@@ -66,3 +66,11 @@ test('callback visual matches narrated cutting-board payoff',()=>{
  assert.match(markup,/data-kitchen-knife="original-svg"/);
  assert.doesNotMatch(markup,/hammer|gavel/);
 });
+test('interest physically reaches the reward through the encoded failure interval',()=>{
+ const a=render(276.75),b=render(277.25);
+ assert.match(a,/data-causal-motion="interest-reaches-reward"/);
+ assert.match(b,/data-causal-motion="interest-reaches-reward"/);
+ const action=markup=>markup.match(/<g data-causal-motion="interest-reaches-reward">(.*?)<\/g><g transform=/)?.[1];
+ assert.ok(action(a));assert.notEqual(action(a),action(b));
+ assert.match(a,/\$20 REWARD/);
+});
