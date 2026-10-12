@@ -141,3 +141,22 @@ test('composition routes observed speech only to the matching visible character'
  assert.equal((spoken.match(/data-speaking-mouth="false"/g)||[]).length,1);
  assert.equal((narrated.match(/data-speaking-mouth="true"/g)||[]).length,0);
 });
+
+
+test('V2 camera stays continuous across editorial cuts sharing one move',async()=>{
+ const {v2CameraProgress}=await import('../remotion/V2CameraPerformance.mjs');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ let checked=0;
+ for(let i=1;i<c.scenes.length;i++){
+  const a=c.scenes[i-1],b=c.scenes[i];
+  const {v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
+  if(v2BattleBeat(a.id)!==v2BattleBeat(b.id)||a.camera.move!==b.camera.move)continue;
+  const before=v2CameraProgress(c.scenes,a,b.start-1e-6),after=v2CameraProgress(c.scenes,b,b.start);
+  assert.ok(Math.abs(after-before)<1e-5);assert.ok(after>0&&after<1);checked++;
+ }
+ assert.ok(checked>=4,'actual repeated punch-in cuts were exercised');
+ const scenes=[{id:'trap-a-1',start:0,end:1,camera:{move:'punch_in'}},{id:'trap-a-2',start:1,end:2,camera:{move:'tracking'}}];
+ assert.equal(v2CameraProgress(scenes,scenes[1],1),0,'explicit camera change starts a new move');
+ scenes[1].camera.move='punch_in';scenes[1].start=1.5;
+ assert.equal(v2CameraProgress(scenes,scenes[1],1.5),0,'timeline gaps do not merge moves');
+});

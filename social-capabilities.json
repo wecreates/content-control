@@ -278,18 +278,20 @@
     },
     {
       "id": "tiktok",
-      "documentation_verification": "verified_for_cited_details",
+      "documentation_verification": "partial",
       "eligibility": "Approved Login Kit/Display products and user consent; direct-post separately approved/audited.",
-      "scopes": "user.info.basic; video.list; video.publish only if later authorized",
-      "costs": "No current API price verified",
-      "quota": "Display user/info video/list video/query each default 600/min",
+      "scopes": "user.info.basic; video.list; video.upload for approved native draft upload with user consent (disabled); video.publish only if later authorized",
+      "costs": "Current API costs unknown; free access not verified",
+      "quota": "Display user/info video/list video/query each default 600/min; draft upload initialization 6/min/access token; at most 5 pending shares/24h",
       "renewal": "Access 24h; refresh initially 365d; persist replacement token from refresh response",
-      "limitations": "Display provides authorized profile/video display; arbitrary video bytes, general inbox/comments not established.",
+      "limitations": "Display provides authorized profile/video display; arbitrary video bytes, general inbox/comments not established. Native draft upload does not publish; user continues editing/posting from TikTok inbox notification. Registered app and approved video.upload scope plus user consent required; PULL_FROM_URL requires verified domain or URL prefix.",
       "sources": [
         "https://developers.tiktok.com/docs/en/display-api-get-started",
         "https://developers.tiktok.com/docs/en/tiktok-api-v2-rate-limit",
         "https://developers.tiktok.com/docs/en/oauth-user-access-token-management",
-        "https://developers.tiktok.com/docs/en/content-posting-api-get-started"
+        "https://developers.tiktok.com/docs/en/content-posting-api-get-started",
+        "https://developers.tiktok.com/docs/en/content-posting-api-get-started-upload-content",
+        "https://developers.tiktok.com/docs/en/content-posting-api-reference-upload-video"
       ],
       "publishing": false,
       "connection": {
@@ -326,7 +328,7 @@
           "enabled": false
         },
         "drafts": {
-          "documented": "internal_only_native_not_verified",
+          "documented": "native_upload_draft_requires_approved_video_upload_scope_and_user_consent",
           "runtime": "unverified",
           "enabled": false
         },
@@ -340,7 +342,8 @@
           "runtime": "disabled",
           "enabled": false
         }
-      }
+      },
+      "researched_at": "2026-10-12"
     },
     {
       "id": "x",

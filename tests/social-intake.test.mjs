@@ -73,7 +73,7 @@ test('connection health rejects invalid, future, stale and malformed expiry evid
  assert.equal(connectionStatus(null,now).status,'unverified');
  assert.equal(connectionStatus({last_read_verified_at:'2026-10-09T12:00:00Z'},now).status,'stale');
  assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z',expires_at:'invalid'},now).status,'expiry_unknown');
- assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z'},now).status,'previously_verified');
+ assert.equal(connectionStatus({last_read_verified_at:'2026-10-11T11:00:00Z'},now).status,'unverified');
  assert.equal(planTokenRenewal({renewal_supported:'false',expires_at:'2026-10-11'},now).action,'reauthorization_required');
 });
 
@@ -119,4 +119,23 @@ test('legacy findings and queue data survive idempotent routing without schema r
  const queue=JSON.parse(await fs.readFile(new URL('../capability-queue.json',import.meta.url)));const record=queue.queue.find(r=>r.findings?.length);const before=structuredClone(queue);const finding=record.findings[0];
  const result=routeFinding(queue,record.id,finding,{allowedProjects:[finding.project]});
  assert.deepEqual(result.queue,before);assert.equal(result.finding,result.record.findings[0]);assert.equal(result.created,false);
+});
+
+test('negative connection or read evidence overrides a fresh historical timestamp',()=>{
+ const now=Date.parse('2026-10-12T12:00:00Z');const timestamp='2026-10-12T11:00:00Z';
+ const valid={last_read_verified_at:timestamp,read_check:{provider:'official_api',result:'success',checked_at:timestamp}};
+ for(const extra of [{connected:false},{status:'disconnected'},{status:'revoked'}])assert.equal(connectionStatus({...valid,...extra},now).status,'disconnected');
+ for(const result of ['no_connected_account','no_connected_channel','failed','denied'])assert.equal(connectionStatus({...valid,read_check:{...valid.read_check,result}},now).status,'read_failed');
+ assert.equal(connectionStatus({...valid,read_check:{...valid.read_check,result:'not_tested'}},now).status,'unverified');
+ assert.equal(connectionStatus({...valid,error_code:'TOKEN_EXPIRED'},now).read_verified,false);
+});
+test('a verified read needs a coherent successful provider receipt and remains age aware',()=>{
+ const now=Date.parse('2026-10-12T12:00:00Z');const stamp='2026-10-12T11:00:00Z';
+ const valid={connected:true,provider:'official_api',last_read_verified_at:stamp,read_check:{provider:'official_api',result:'success',checked_at:stamp}};
+ assert.equal(connectionStatus(valid,now).status,'previously_verified');assert.equal(connectionStatus(valid,now).read_verified,true);
+ for(const change of [{provider:''},{provider:'other_provider'},{checked_at:'invalid'},{checked_at:'2026-10-12T10:00:00Z'},{result:'unknown'}])assert.equal(connectionStatus({...valid,read_check:{...valid.read_check,...change}},now).read_verified,false);
+ assert.equal(connectionStatus({...valid,read_check:undefined},now).read_verified,false);
+ assert.equal(connectionStatus(valid,now+2*86400000).status,'stale');
+ assert.equal(connectionStatus({...valid,connected:false},now+2*86400000).status,'disconnected');
+ assert.equal(connectionStatus({...valid,read_check:{...valid.read_check,checked_at:'2026-10-12T04:00:00-07:00'}},now).read_verified,true);
 });

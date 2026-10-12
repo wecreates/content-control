@@ -138,16 +138,28 @@ export function routeFinding(queue,id,finding,{allowedProjects=[]}={}) {
 
 export function denyExternalAction(action) {const error=new Error(`External action disabled: ${String(action)}`);error.code='PUBLICATION_DISABLED';throw error;}
 export function connectionStatus(connection={},now=Date.now()) {
-  if(!connection || typeof connection!=='object')return {status:'unverified',read_verified:false};
+  if(!connection || typeof connection!=='object'||!Number.isFinite(now))return {status:'unverified',read_verified:false};
+  const state=typeof connection.status==='string'?connection.status.trim().toLowerCase():'';
+  if(connection.connected===false||['disconnected','revoked','unauthorized','not_connected'].includes(state))return {status:'disconnected',read_verified:false};
+  if(connection.error_code)return {status:'error',read_verified:false,error_code:String(connection.error_code).replace(/[^A-Z0-9_]/gi,'').slice(0,80)};
+  const receipt=connection.read_check;
+  const result=typeof receipt?.result==='string'?receipt.result.trim().toLowerCase():'';
+  const success=['success','passed','pass','ok','verified','read_verified'].includes(result);
+  if(result&&!success)return {status:['not_tested','pending','unknown','unverified'].includes(result)?'unverified':'read_failed',read_verified:false};
   const expiry=Date.parse(connection.expires_at||'');
   const verified=Date.parse(connection.last_read_verified_at||'');
   if(!Number.isFinite(verified)||verified>now)return {status:'unverified',read_verified:false};
-  if(connection.error_code)return {status:'error',read_verified:false,error_code:String(connection.error_code).replace(/[^A-Z0-9_]/gi,'').slice(0,80)};
   if(Number.isFinite(expiry)&&expiry<=now)return {status:'expired',read_verified:false};
   if(connection.expires_at&&!Number.isFinite(expiry))return {status:'expiry_unknown',read_verified:false};
+  // A dated legacy observation can be stale, but a date alone never proves a read.
   if(now-verified>86400000)return {status:'stale',read_verified:false,last_read_verified_at:connection.last_read_verified_at};
+  const checked=Date.parse(receipt?.checked_at||'');
+  const provider=typeof receipt?.provider==='string'?receipt.provider.trim():'';
+  if(!success||!provider||!Number.isFinite(checked)||checked!==verified||checked>now)return {status:'unverified',read_verified:false,reason:'successful_read_receipt_missing_or_incoherent'};
+  if(connection.provider!==undefined&&(typeof connection.provider!=='string'||connection.provider.trim().toLowerCase()!==provider.toLowerCase()))return {status:'unverified',read_verified:false,reason:'read_receipt_provider_mismatch'};
   return {status:'previously_verified',read_verified:true,last_read_verified_at:connection.last_read_verified_at};
 }
+
 export function planTokenRenewal(connection={},now=Date.now()) {
   const expiry=Date.parse(connection.expires_at||'');
   if(connection.renewal_supported!==true)return {action:'reauthorization_required',automatic:false};
