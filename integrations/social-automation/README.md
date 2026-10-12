@@ -75,3 +75,5 @@ HTTP boundary, Opus and Watch bridge tests. Mock tests do not prove live access.
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
 Existing independent SDK probe: `scripts/instagram_official_read.py`.
+
+Valid short-lived grants remain usable until actual expiry when a provider has no refresh adapter. Supported refresh results need a future expiry and the same account. Provider verification, renewal and reads have a 20-second runtime bound, abort signal and sanitized failure reporting, so stalled reads release the queue transaction. This does not activate OAuth or verify durable hosting.

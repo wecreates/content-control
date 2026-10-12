@@ -9,3 +9,27 @@ test('empty environment and no adapter cannot claim activated runtime',async t=>
 test('refresh failures exhaust retry budget without reading media',async t=>{let reads=0;const x=await setup(t,{refresh:async()=>{throw Error('network')},read_media:async()=>reads++});await x.runtime.connect('instagram',x.grant);x.advance(100000000);await x.runtime.enqueue({id:'refresh-fail',platform:'instagram',operation:'read_media'});for(let i=0;i<4;i++){await x.runtime.tick();x.advance(4000000)}assert.equal(reads,0);const j=(await x.runtime.status()).jobs[0];assert.equal(j.status,'blocked');assert.equal(j.attempts,3)});
 test('revoked authorization blocks subsequent calls',async t=>{const x=await setup(t,{read_media:async()=>{throw Error('REAUTHORIZE')}});await x.runtime.connect('instagram',x.grant);await x.runtime.enqueue({id:'revoked',platform:'instagram',operation:'read_media'});await x.runtime.tick();assert.equal((await x.runtime.status()).connections[0].status,'reauthorization_required');assert.equal((await x.runtime.status()).jobs[0].status,'blocked')});
 test('read results are encrypted and omitted from public status',async t=>{const x=await setup(t,{read_media:async()=>({caption:'PRIVATE_CAPTION'})});await x.runtime.connect('instagram',x.grant);await x.runtime.enqueue({id:'result',platform:'instagram',operation:'read_media'});await x.runtime.tick();assert.equal((await x.store.read()).jobs[0].result.caption,'PRIVATE_CAPTION');assert.ok(!(await fs.readFile(x.file,'utf8')).includes('PRIVATE_CAPTION'));assert.ok(!JSON.stringify(await x.runtime.status()).includes('PRIVATE_CAPTION'))});
+
+
+test('valid short-lived grant reads until expiry without requiring unsupported renewal',async t=>{
+ let reads=0;const x=await setup(t,{read_media:async()=>reads++});x.grant.expires_at=160000;
+ await x.runtime.connect('instagram',x.grant);await x.runtime.enqueue({id:'short',platform:'instagram',operation:'read_media'});await x.runtime.tick();
+ assert.equal(reads,1);assert.equal((await x.runtime.status()).jobs[0].status,'completed');
+ x.advance(60001);await x.runtime.enqueue({id:'expired',platform:'instagram',operation:'read_media'});await x.runtime.tick();
+ assert.equal(reads,1);assert.equal((await x.runtime.status()).jobs[1].reason,'REAUTHORIZE');
+});
+test('renewed short-lived token is usable and account switching is rejected',async t=>{
+ let reads=0;const x=await setup(t,{refresh:async g=>({...g,access_token:'SHORT_NEW',expires_at:200000}),read_media:async g=>{assert.equal(g.access_token,'SHORT_NEW');reads++}});
+ x.grant.expires_at=160000;await x.runtime.connect('instagram',x.grant);await x.runtime.enqueue({id:'short-renew',platform:'instagram',operation:'read_media'});await x.runtime.tick();assert.equal(reads,1);
+ x.runtime.adapters.instagram.refresh=async g=>({...g,account_id:'other',expires_at:250000});await x.runtime.enqueue({id:'wrong-account',platform:'instagram',operation:'read_media'});await x.runtime.tick();assert.equal(reads,1);assert.equal((await x.runtime.status()).jobs[1].status,'blocked');
+});
+test('hanging provider cannot hold the store or tick indefinitely',async t=>{
+ let signal;const x=await setup(t,{read_media:async(_g,_p,ctx)=>{signal=ctx.signal;return new Promise(()=>{})}});x.runtime.providerTimeoutMs=20;
+ await x.runtime.connect('instagram',x.grant);await x.runtime.enqueue({id:'timeout',platform:'instagram',operation:'read_media'});
+ await x.runtime.tick();assert.equal(signal.aborted,true);assert.equal((await x.runtime.status()).jobs[0].status,'retry');
+ await x.runtime.enqueue({id:'next',platform:'instagram',operation:'read_profile'});assert.equal((await x.runtime.status()).jobs.length,2);
+});
+test('hanging identity verification times out without storing a connection',async t=>{
+ const x=await setup(t,{verify:async()=>new Promise(()=>{})});x.runtime.providerTimeoutMs=20;
+ await assert.rejects(x.runtime.connect('instagram',x.grant),/PROVIDER_TIMEOUT/);assert.deepEqual((await x.store.read()).connections,{});
+});

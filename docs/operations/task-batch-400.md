@@ -22,7 +22,7 @@ This is a completion audit, not a second production queue. Existing project queu
 | C400-010 | Official Instagram read receipts can update the existing connection matrix without exposing account data, overwriting newer observations, or claiming full video analysis; owner-only workflow persists both successful and blocked results. | Four recorder tests, five actual-SDK adapter tests and temporary no-authorization end-to-end fixture passed. Live authorized account execution remains unverified. |
 | C400-011 | Completion scheduler retains integration/testing verification work, rejects empty or malformed completion claims, and separates blocked metadata records from runnable work. | Four regression tests and actual 2,500-entry registry returns BLOCKED with zero runnable tasks. Integration workers skip empty plans and verification-only records. |
 
-Count in this batch: 11 verified substantive tasks. Remaining requested count: 389, not claimed complete or prefilled with invented work. Earlier work is not counted again here.
+Count in this batch: 13 verified substantive tasks. Remaining requested count: 387, not claimed complete or prefilled with invented work. Earlier work is not counted again here.
 
 Verification: 50 targeted Python tests passed locally. Real synthetic two-scene media measured successfully, then correctly remained BLOCKED because camera semantics were unreviewed. It is not a competitor reference or approved production content.
 
@@ -31,3 +31,6 @@ Production remains unapproved. Publication remains disabled. Latest inspected pr
 Latest implementation validation: 66 Node tests and 52 targeted Python tests passed locally. Previous implementation commit 41e9226 is verified live on Render. New camera output still needs a fresh render and full audiovisual review; source-level tests do not replace those gates.
 
 Fresh camera render run 38256725387 produced candidate cfbc2e893d3e2bef69e8307cf13bd7f27330b29cc803510d05ab1666f7a68786. Voice, sound mix, transcription, captions, rendered caption frames and technical video checks passed. Sampled style parity failed; full audiovisual/competitor approval remains absent. No preview or publishing approval was granted. The 2,500 legacy registry entries are intermediate labels without sufficient task metadata, not 2,500 completed capabilities.
+
+| C400-012 | Valid short-lived grants work until expiry; supported renewed grants must remain bound to the same account. | Regression tests cover unexpired, expired, renewed short-lived and account-swapped grants. Live OAuth remains unavailable. |
+| C400-013 | Provider verification, refresh and reads have bounded runtime and abort signals, preventing stalled provider calls from indefinitely holding encrypted queue transactions. | Hanging verification persists no connection; hanging read times out and permits subsequent queue updates. |
