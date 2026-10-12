@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
+      has_tasks: ${{ steps.plan.outputs.has_tasks }}
     steps:
       - uses: actions/checkout@v4
         with: {ref: main}
@@ -48,14 +49,17 @@ jobs:
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           p=json.load(open("state/autonomous/plan.json"))
-          shards=sorted(set(x["shard"] for x in p["tasks"]))
+          # Verification-only and blocked records must not enter the integration worker.
+          runnable=[x for x in p["tasks"] if not x.get("blockers") and "integrate" in x.get("required",[])]
+          shards=sorted(set(x["shard"] for x in runnable))
+          print("has_tasks="+str(bool(shards)).lower())
           print("matrix="+json.dumps({"shard":shards},separators=(",",":")))
           PY
       - uses: actions/upload-artifact@v4
         with: {name: autonomous-plan, path: state/autonomous/plan.json, retention-days: 7}
   workers:
     needs: plan
-    if: ${{ needs.plan.outputs.matrix != '' }}
+    if: ${{ needs.plan.outputs.has_tasks == 'true' }}
     strategy:
       fail-fast: false
       max-parallel: 50
@@ -75,14 +79,14 @@ jobs:
           import json,subprocess,sys
           plan=json.load(open(sys.argv[1])); shard=int(sys.argv[2])
           for t in plan["tasks"]:
-            if t["shard"]!=shard: continue
+            if t["shard"]!=shard or t.get("blockers") or "integrate" not in t.get("required",[]): continue
             subprocess.run(["python","scripts/integrate_capability_without_test.py","--task",json.dumps(t),"--out",f"state/autonomous/evidence/{t['capability_id']}.json"],check=False)
           PY
       - uses: actions/upload-artifact@v4
         with: {name: "capability-evidence-${{ matrix.shard }}", path: state/autonomous/evidence, retention-days: 7}
   reconcile:
     needs: [plan,workers]
-    if: always()
+    if: ${{ always() && needs.workers.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/instagram_official_read.py'
       - 'tests/test_instagram_official_read.py'
+      - 'scripts/record_instagram_read.mjs'
+      - 'tests/record-instagram-read.test.mjs'
       - 'integrations/instagram-official/**'
       - '.github/workflows/instagram-official-read.yml'
 permissions:
@@ -21,7 +23,9 @@ jobs:
       - name: Install official Meta SDK
         run: python -m pip install -r integrations/instagram-official/requirements.txt
       - name: Verify SDK adapter without account calls
-        run: python -m unittest -v tests/test_instagram_official_read.py
+        run: |
+          python -m unittest -v tests/test_instagram_official_read.py
+          node --test tests/record-instagram-read.test.mjs
       - name: Read authorized Instagram account
         if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
         env:
@@ -36,3 +40,39 @@ jobs:
           name: instagram-read-status-no-private-media
           path: qa-output/instagram-official-read.json
           retention-days: 7
+
+  record:
+    concurrency:
+      group: instagram-read-status
+      cancel-in-progress: false
+    needs: verify
+    if: always() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && github.triggering_actor == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: main, fetch-depth: 0}
+      - uses: actions/download-artifact@v4
+        with:
+          name: instagram-read-status-no-private-media
+          path: ${{ runner.temp }}/instagram-read
+      - name: Record sanitized account status in existing dashboard matrix
+        env:
+          PUBLICATION_ENABLED: 'false'
+        run: |
+          set -euo pipefail
+          git config user.name content-control-connection-health
+          git config user.email actions@users.noreply.github.com
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            node scripts/record_instagram_read.mjs --receipt "$RUNNER_TEMP/instagram-read/instagram-official-read.json" --capabilities social-capabilities.json
+            git add social-capabilities.json
+            git diff --cached --quiet && exit 0
+            git commit -m "Record sanitized official Instagram read status"
+            if git push origin HEAD:main; then exit 0; fi
+            sleep "$attempt"
+          done
+          exit 1
