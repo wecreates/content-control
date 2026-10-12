@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "updated_on": "2026-10-12",
+  "purpose": "Ordered launch work using the existing V2 execution CLI; this file does not dispatch jobs.",
+  "publication_enabled": false,
+  "production_approved": false,
+  "automatic_dispatch": false,
+  "engine": "scripts/v2_execution.py",
+  "existing_controls": [
+    "control/v4/orchestration/ready-queue.json",
+    "control/v4/orchestration/blocked-queue.json"
+  ],
+  "acceptance_rule": "Each execution must revalidate current input/output hashes. Technical PASS is not creative approval, preview authorization, upload authorization, or publication authorization.",
+  "entries": [
+    {
+      "id": "v2-amex-vs-chase-anime-boss-fight",
+      "priority": 1,
+      "title": "Amex vs Chase: My Wallet Is the Final Boss",
+      "ccsd": "projects/v2/amex-vs-chase-boss-fight/ccsd.json",
+      "ccsd_sha256": "4e2abfff214c0ddc8e3d5145f0db8dd7036cc6a9ce465d2c51a99062e689e4b7",
+      "metadata": "projects/v2/amex-vs-chase-boss-fight/metadata.json",
+      "status": "NEEDS_MERGED_RENDER_QA",
+      "execution_ready": true,
+      "command": [
+        "python",
+        "scripts/v2_execution.py",
+        "--ccsd",
+        "projects/v2/amex-vs-chase-boss-fight/ccsd.json",
+        "--workdir",
+        "state/production-short",
+        "--composition",
+        "StudioAnimatic"
+      ],
+      "observed_technical_evidence": {
+        "status": "PASS",
+        "candidate_sha256": "0474e88e7ee2074a2a3fc5a9146796e88bfd565e6ad34ceb3fb68bbb3e1ed8aa",
+        "duration_seconds": 35.041666666666664,
+        "scope": "Previous candidate only, rendered from the recorded source commit. Does not establish technical PASS for the latest merged camera-continuity implementation. Final creative/listening review also remains pending.",
+        "receipt_artifact": "production-state-short/media-qa.json",
+        "source_commit": "e437646f739959529669385bad718a02e96c807f"
+      },
+      "next_action": "Render the latest merged source and rerun actual media QA, then complete exact-candidate creative and listening review plus required competitor evidence before any user preview handoff.",
+      "publication_enabled": false,
+      "production_approved": false,
+      "prior_render_is_current_evidence": false
+    },
+    {
+      "id": "credit-card-dlc-long",
+      "priority": 2,
+      "title": "Your Credit Card Has DLC (And You\u2019re Paying for It)",
+      "ccsd": "projects/long/credit-card-dlc/ccsd.json",
+      "ccsd_sha256": "2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021",
+      "metadata": "projects/long/credit-card-dlc/metadata.json",
+      "source_script": "production/episode1/rebuild-v2/narration-script.txt",
+      "source_script_sha256": "88bc94a33e895a9fb39251887ed0aeb901366ae7ca89d5b4a682b2649e3369ee",
+      "planned_duration_seconds": 519.3333333333334,
+      "status": "EXPANDED_RENDER_AND_TECHNICAL_QA_PENDING",
+      "execution_ready": true,
+      "command": [
+        "python",
+        "scripts/v2_execution.py",
+        "--ccsd",
+        "projects/long/credit-card-dlc/ccsd.json",
+        "--workdir",
+        "state/production-long",
+        "--composition",
+        "StudioLong"
+      ],
+      "next_action": "Run the expanded 519-second source through fresh cloud rendering, actual narration/caption checks, measured media QA and duration policy; then complete final audiovisual review.",
+      "prior_render_is_current_evidence": false,
+      "publication_enabled": false,
+      "production_approved": false
+    },
+    {
+      "id": "minimum-payment-horror-movie",
+      "priority": 3,
+      "title": "The Minimum Payment Horror Movie",
+      "status": "BLOCKED_UNAUTHORED",
+      "execution_ready": false,
+      "command": null,
+      "concept_provenance": {
+        "source_script": "production/episode1/rebuild-v2/narration-script.txt",
+        "source_script_sha256": "88bc94a33e895a9fb39251887ed0aeb901366ae7ca89d5b4a682b2649e3369ee",
+        "text": "Next episode:\nthe minimum payment button gets its own horror movie."
+      },
+      "required_before_execution": [
+        "Author original script and verified financial claims",
+        "Create CCSD using existing character board and locked voices",
+        "Create metadata with approved noncommercial or verified offer CTAs",
+        "Pass structural and policy validation"
+      ],
+      "publication_enabled": false,
+      "production_approved": false
+    },
+    {
+      "id": "cashback-casino-adaptation",
+      "priority": 4,
+      "title": "2% Cashback Turned Dave's Brain Into a Casino",
+      "status": "BLOCKED_EXISTING_BLUEPRINT_REQUIRES_ADAPTATION",
+      "execution_ready": false,
+      "command": null,
+      "existing_blueprint": "production/episode3/creative-blueprint.json",
+      "existing_blueprint_sha256": "0737aecb2fa388fc291232788ebc6498d82110ba066ed93ab4b129cd811869ae",
+      "existing_dialogue": "production/episode3/voice-dialogue.json",
+      "required_before_execution": [
+        "Adapt existing blueprint and dialogue into executable CCSD; preserve original story",
+        "Resolve cashback_goblin character and voice against the approved board and free voice policy",
+        "Validate finance claims and current content-readiness constraints",
+        "Create matching review metadata and run existing production CLI"
+      ],
+      "publication_enabled": false,
+      "production_approved": false
+    }
+  ]
+}

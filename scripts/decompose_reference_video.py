@@ -77,14 +77,13 @@ def visual_fingerprint(path,duration):
     tri=[round(mean([x[i] for x in thirds]),6) for i in range(3)] if thirds else [0,0,0]
     return {"mean_luma":round(mean(lumas),6),"mean_saturation":round(mean(sats),6),"edge_density":round(mean(edges),6),"white_background_fraction":round(mean(whites),6),"mean_rgb":rgb,"edge_density_thirds":tri}
 
-def infer_scale(index):
-    return ["close","medium","wide"][index%3]
-
-def infer_camera(activity):
-    if activity>=.12:return "whip_pan"
-    if activity>=.07:return "punch_in"
-    if activity>=.035:return "tracking"
-    return "reaction_hold"
+def measured_shot(start, end, activity, follows_cut):
+    # Pixel differences do not identify camera moves, actors, props, or retention.
+    return {"start": start, "end": end, "shot_scale": None, "camera": None,
+            "character_action": None, "prop_action": None,
+            "state_change": activity > .012 or follows_cut,
+            "state_change_scope": "pixel_difference_threshold_or_detected_cut",
+            "motion_activity": round(activity, 6), "why_it_retains": None}
 
 def main():
     ap=argparse.ArgumentParser()
@@ -92,9 +91,9 @@ def main():
     ap.add_argument("--id",required=True)
     ap.add_argument("--source-type",default="chat_upload")
     ap.add_argument("--out",required=True)
-    ap.add_argument("--views",type=float,default=0)
-    ap.add_argument("--likes",type=float,default=0)
-    ap.add_argument("--comments",type=float,default=0)
+    ap.add_argument("--views",type=float,default=None)
+    ap.add_argument("--likes",type=float,default=None)
+    ap.add_argument("--comments",type=float,default=None)
     args=ap.parse_args()
     video=Path(args.video)
     meta=probe(video)
@@ -107,21 +106,30 @@ def main():
     shots=[]
     for i,(a,b) in enumerate(zip(cuts,cuts[1:])):
         act=activity(a,b)
-        shots.append({"start":a,"end":b,"shot_scale":infer_scale(i),"camera":infer_camera(act),"character_action":"measured_reference_action","prop_action":"measured_reference_prop_change","state_change":act>.012 or i>0,"motion_activity":round(act,6),"why_it_retains":"measured visual state change"})
+        shots.append(measured_shot(a,b,act,i>0))
     silence=silence_events(video)
     result={
-      "schema_version":1,
+      "schema_version":2,
+      "analysis_evidence":{
+        "status":"incomplete",
+        "scope":"sampled visual measurements and audio silence detection",
+        "full_audiovisual_review":False,
+        "complete_media_decode_verified":False,
+        "motion_sample_interval_seconds":.5,
+        "visual_fingerprint_requested_frames":5,
+        "reason":"No narration, on-screen text, semantic action, camera, hook, offer, CTA, or payoff review has been performed."
+      },
       "source":{"id":args.id,"type":args.source_type,"duration_seconds":round(duration,3),"sha256":sha256(video)},
       "performance":{"views":args.views,"likes":args.likes,"comments":args.comments},
-      "hook_first_second":{"mechanism":"measured_visual_change","motion_activity":round(activity(0,min(1,duration)),6)},
+      "hook_first_second":{"mechanism":None,"measurement_scope":"sampled_pixel_difference","motion_activity":round(activity(0,min(1,duration)),6)},
       "characters":{"count_estimate":None,"identity_not_copied":True},
       "shot_timeline":shots,
-      "motion_verbs":[x for x in ["anticipation","recoil","prop_chase","impact_pause"] if any(s["motion_activity"]>.02 for s in shots)],
-      "camera_verbs":sorted(set(s["camera"] for s in shots)),
-      "comedy_engine":"to_be_classified_from_visual_sequence",
-      "payoff_timestamp":round(max(0,duration*.82),3),
+      "motion_verbs":[],
+      "camera_verbs":[],
+      "comedy_engine":None,
+      "payoff_timestamp":None,
       "audio_punctuation":silence,
-      "transferable_mechanics":["measured cut timing","measured motion density","camera intensity curve","silence timing"],
+      "transferable_mechanics":["detected cut timing","sampled pixel-difference activity","detected silence timing"],
       "distinctive_creator_elements_not_to_copy":["exact character identity","dialogue wording","signature jokes","logos","shot-for-shot composition"],
       "motion_curve":motion,
       "visual_style_fingerprint":visual_fingerprint(video,duration),

@@ -87,6 +87,7 @@ class StageRunner:
         valid = old.get('status') == 'PASS' and old.get('inputs') == fingerprint and bool(old.get('outputs'))
         valid = valid and all(Path(p).is_file() and sha(p) == h for p, h in old.get('outputs', {}).items())
         if valid and not force:
+            print(json.dumps({'stage': name, 'event': 'REUSED', 'outputs_verified': len(old['outputs'])}), flush=True)
             return old
         self.executed.add(name)
         record = {'status': 'RUNNING', 'inputs': fingerprint, 'attempts': 0, 'previous_attempts': old.get('previous_attempts', 0) + old.get('attempts', 0)}
@@ -94,6 +95,7 @@ class StageRunner:
         for attempt in range(1, attempts + 1):
             record.update(status='RUNNING', attempts=attempt, started=time.time())
             self.save()
+            print(json.dumps({'stage': name, 'event': 'START', 'attempt': attempt}), flush=True)
             try:
                 paths = action()
                 if not paths or any(not Path(p).is_file() or Path(p).stat().st_size == 0 for p in paths):
@@ -102,11 +104,13 @@ class StageRunner:
                     raise ValueError('Stage inputs changed during execution')
                 record.update(status='PASS', outputs={str(Path(p).resolve()): sha(p) for p in paths}, ended=time.time())
                 self.save()
+                print(json.dumps({'stage': name, 'event': 'PASS', 'elapsed_seconds': round(record['ended'] - record['started'], 3)}), flush=True)
                 return record
             except Exception as error:
                 record.update(status='FAILED', error=str(error), ended=time.time())
                 self.state['status'] = 'BLOCKED'
                 self.save()
+                print(json.dumps({'stage': name, 'event': 'FAILED', 'attempt': attempt, 'error_type': type(error).__name__}), flush=True)
                 # Only process errors/timeouts are transient; policy/data failures fail closed.
                 if attempt == attempts or not isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
                     raise
@@ -237,7 +241,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
             if any(not path.is_relative_to(w) for path in paths):
                 raise ValueError('Package output outside job directory')
             return [package_receipt, *paths]
-        runner.stage('package', [ccsd_path, metadata, final, qa, captions, voice, scripts / 'production_package.py', scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], review_package)
+        runner.stage('package', [ccsd_path, metadata, final, qa, captions, voice, ROOT / 'control/long-form-showrunner.json', scripts / 'production_package.py', scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], review_package)
         runner.state.update(status='REVIEW_CANDIDATE', candidate=str(final), candidate_sha256=sha(final), creative_review='PENDING', audio_listening_review='PENDING')
         runner.save()
         return runner.state

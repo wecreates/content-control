@@ -69,6 +69,8 @@ def compile_clone(ref, selected_characters):
         "duration_seconds":duration,
         "source_reference_id":ref.get("source",{}).get("id"),
         "source_type":ref.get("source",{}).get("type"),
+        "analysis_evidence":ref.get("analysis_evidence", {"status":"unverified", "reason":"Legacy reference has no analysis provenance."}),
+        "production_approved":False,
         "character_source":"control/character-bible-v1.json",
         "style_source":"control/style-dna-v3.json",
         "renderer":"remotion/CharacterSystem.jsx",

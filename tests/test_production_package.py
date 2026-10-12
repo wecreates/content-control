@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from scripts.production_package import REQUIRED, caption_files, package, sha, timestamp
+from scripts.production_package import ROOT, REQUIRED, caption_files, package, sha, timestamp, duration_acceptance
 
 
 class PackageTests(unittest.TestCase):
@@ -39,6 +39,7 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);sources={name:root/(name+'.json') for name in ('ccsd','metadata','candidate','qa','captions','audio')}
             for name,path in sources.items():path.write_text(name)
+            sources['duration_policy']=ROOT/'control/long-form-showrunner.json'
             def build(ccsd,metadata,candidate,qa,captions,out,audio):
                 out.mkdir(parents=True)
                 names=['captions.srt','captions.vtt','metadata.json','thumbnail.png']
@@ -55,6 +56,30 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue(Path(first['manifest_path']).exists())
                 Path(repaired['outputs']['thumbnail.png']['path']).write_text('tampered')
                 with self.assertRaisesRegex(ValueError,'hash mismatch'):package(*args)
+
+
+class LongDurationAcceptanceTests(unittest.TestCase):
+    def test_measured_shortfall_is_blocked_even_when_technical_candidate_exists(self):
+        report=duration_acceptance({'format':'long_16x9'},396.0833333333333)
+        self.assertEqual(report['status'],'BLOCKED')
+        self.assertAlmostEqual(report['shortfall_seconds'],113.9166666666667)
+        self.assertEqual(report['minimum_seconds'],510)
+        self.assertFalse(report['production_approved'])
+        self.assertFalse(report['publication_enabled'])
+
+    def test_boundary_and_format_scope_do_not_weaken_minimum(self):
+        self.assertEqual(duration_acceptance({'format':'long_16x9'},509.999)['status'],'BLOCKED')
+        passing=duration_acceptance({'format':'long_16x9'},510)
+        self.assertEqual(passing['status'],'PASS')
+        self.assertFalse(passing['production_approved'])
+        self.assertEqual(duration_acceptance({'format':'short_9x16'},45)['status'],'NOT_APPLICABLE')
+
+    def test_invalid_or_lowered_policy_fails_closed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'policy.json'
+            for minimum in (396,0,True,'510',float('nan')):
+                path.write_text(json.dumps({'minimum_runtime_sec':minimum,'publication_enabled':False}))
+                with self.assertRaises(ValueError):duration_acceptance({'format':'long_16x9'},510,path)
 
 
 if __name__=='__main__':unittest.main()

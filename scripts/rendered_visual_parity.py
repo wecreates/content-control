@@ -58,22 +58,35 @@ def explain_comparison(comp):
             'This does not assess creative quality or override the required brand style.')
 
 def sample_video(path,count):
+    if type(count) is not int or count<2:
+        raise ValueError("at least two candidate samples required")
     cap=cv2.VideoCapture(str(path))
-    fps=float(cap.get(cv2.CAP_PROP_FPS) or 0)
-    total=int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
-    if fps<=0 or total<=0:
-        cap.release(); raise RuntimeError("cannot decode candidate video")
-    out=[]
-    for i in range(count):
-        pos=0 if count==1 else round((total-1)*i/(count-1))
-        cap.set(cv2.CAP_PROP_POS_FRAMES,pos)
-        ok,frame=cap.read()
-        if not ok:
-            cap.release(); raise RuntimeError(f"cannot sample candidate frame {i}")
-        out.append(frame_metrics(frame))
-    duration=total/fps
-    cap.release()
-    return out,duration
+    try:
+        fps=float(cap.get(cv2.CAP_PROP_FPS) or 0)
+        frame_count=float(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+        if not math.isfinite(fps) or fps<=0 or not math.isfinite(frame_count) or frame_count<1 or not frame_count.is_integer():
+            raise RuntimeError("invalid candidate video metadata")
+        total=int(frame_count)
+        if total<count:
+            raise RuntimeError("insufficient distinct candidate frames")
+        out=[]
+        for i in range(count):
+            pos=round((total-1)*i/(count-1))
+            if not cap.set(cv2.CAP_PROP_POS_FRAMES,pos):
+                raise RuntimeError(f"cannot seek candidate frame {pos}")
+            ok,frame=cap.read()
+            if not ok or frame is None:
+                raise RuntimeError(f"cannot sample candidate frame {pos}")
+            # OpenCV reports the next frame index after a successful read.
+            # Unsupported position reporting is not evidence of correct sampling.
+            actual=float(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            if not math.isfinite(actual) or abs(actual-(pos+1))>.5:
+                raise RuntimeError(f"candidate seek position unverified at frame {pos}")
+            out.append(frame_metrics(frame))
+        return out,total/fps
+    finally:
+        cap.release()
+
 
 def load_reference_metrics(path):
     refs=[]

@@ -1,4 +1,5 @@
 import express from 'express';
+import {socialRuntimeReadiness} from './social-automation.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {normalizeSocialUrl,denyExternalAction,connectionStatus,planTokenRenewal,routeFinding,fullAnalysisCoverage} from './social-intake.js';
@@ -43,10 +44,11 @@ function referenceCheck(ref,queue) {
   }catch{return {...result,status:'evidence_invalid'};}
 }
 
-export function createSocialRouter({root=process.cwd(),fetchImpl=fetch}={}) {
+export function createSocialRouter({root=process.cwd(),fetchImpl=fetch,runtimeStatus=()=>socialRuntimeReadiness()}={}) {
   const router=express.Router();
   const read=async name=>JSON.parse(await fs.readFile(path.join(root,name),'utf8'));
   router.use((req,res,next)=>{res.set('Cache-Control','no-store');next();});
+  router.get('/runtime',(_req,res)=>res.json(runtimeStatus()));
   router.get('/status',async(req,res)=>{
     try {
       const [queue,capabilities]=await Promise.all([read('capability-queue.json'),read('social-capabilities.json')]);

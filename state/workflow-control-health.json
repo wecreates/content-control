@@ -37,6 +37,7 @@
     ".github/workflows/full-capability-validation.yml": true,
     ".github/workflows/generate-runtime-locks.yml": true,
     ".github/workflows/hyper-critical-qa.yml": true,
+    ".github/workflows/instagram-official-read.yml": true,
     ".github/workflows/instagram-reel-bridge.yml": true,
     ".github/workflows/live-render-deployment-smoke.yml": true,
     ".github/workflows/long-form-showrunner-gate.yml": true,

@@ -32,9 +32,10 @@ export function createMonitorRouter(store){
     res.json({events:store.events.filter(e=>e.client_id===clientId)});
   });
 
-  router.get('/export',(req,res)=>{
+  // Public full-store export is disabled. Private backup design is a separate change.
+  router.all('/export',(_req,res)=>{
     res.setHeader('Cache-Control','no-store');
-    res.json({watches:store.watches,events:store.events});
+    res.status(404).json({error:'not found'});
   });
 
   return router;

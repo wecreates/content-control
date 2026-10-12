@@ -1,3 +1,4 @@
+import {v2CameraProgress} from './V2CameraPerformance.mjs';
 import React from "react";
 import {v2FacePerformance} from "./V2FacePerformance.mjs";
 import {captionAtTime} from "./ObservedCaptions.mjs";
@@ -23,11 +24,12 @@ export const StudioAnimaticComposition=({ccsd})=>{
  const impact=(s.fx||[]).some(x=>x.type==="story_impact");
  const impactAmount=impact?Math.max(0,1-local/(fps*.3)):0;
  // Camera action stays inside the action region; typography never shakes or zooms.
- const move=s.camera?.move||'static';
- const scale=move==='punch_in'||move==='creeping_push'?1+.035*p:move==='snap_reveal'?1.035-.035*p:1;
- const pan=(move==='tracking'||move==='guided_track')?(p-.5)*14:0;
- const shake=Math.sin(local*2.7)*impactAmount*3;
  const battle=ccsd?.project_id==='v2-amex-vs-chase-anime-boss-fight' && v2BattleBeat(s.id);
+ const cameraP=battle?v2CameraProgress(ccsd.scenes,s,t):p;
+ const move=s.camera?.move||'static';
+ const scale=move==='punch_in'||move==='creeping_push'?1+.035*cameraP:move==='snap_reveal'?1.035-.035*cameraP:1;
+ const pan=(move==='tracking'||move==='guided_track')?(cameraP-.5)*14:0;
+ const shake=Math.sin(local*2.7)*impactAmount*3;
  const beatScenes=battle?ccsd.scenes.filter(scene=>v2BattleBeat(scene.id)===battle):[];
  const dialogue=beatScenes.flatMap(scene=>scene.audio?.dialogue||[]).map(line=>line.text).join(' ');
  const observedCaption=battle?captionAtTime(ccsd.caption_track,t):null;

@@ -105,3 +105,5 @@ test('Money Factory includes secondary Watch references and validates their reco
  assert.equal(rejected.references[0].reference_checks[0].status,'evidence_invalid');
  assert.equal(rejected.references[0].reference_checks[0].evidence_verified,false);
 },{fetchImpl:async()=>({ok:true,json:async()=>({ideas:[{id:'linked',publication_enabled:true,additional_content_reference:{repository:'wecreates/content-control',path:'capability-queue.json',id:'reel',finding_id:'watch',basis:'sampled_frame',full_analysis:false,access_token:'must-not-leak'}}]})})}));
+
+test('runtime endpoint never claims active automation or exposes secrets',()=>fixture(async base=>{const r=await fetch(base+'/runtime');assert.equal(r.status,200);const d=await r.json();assert.equal(d.status,'NOT_ACTIVATED');assert.equal(d.worker_running,false);assert.equal(d.publication_enabled,false);assert.equal(d.oauth_routes_enabled,false);assert.equal(d.durable_storage_verified,false)}));

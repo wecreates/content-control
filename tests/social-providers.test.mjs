@@ -1,0 +1,57 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';import path from 'node:path';import os from 'node:os';
+import {createProviderAdapters,PROVIDERS,providerReadiness} from '../integrations/social-automation/providers.mjs';
+import {EncryptedSocialStore,SocialAutomation} from '../social-automation.js';
+import {SocialOAuthCoordinator} from '../integrations/social-automation/oauth-coordinator.mjs';
+const responses={
+ instagram:[{id:'123',username:'owner'},{data:[{id:'77',media_type:'VIDEO'}]}],
+ facebook:[{id:'123',name:'owner',category:'Creator'}],linkedin:[{sub:'123',name:'owner',email:'SHOULD_DROP'}],
+ threads:[{id:'123',username:'owner'},{data:[{id:'77',media_type:'VIDEO',timestamp:'now'}]}],
+ pinterest:[{username:'123',account_type:'BUSINESS'},{items:[{id:'77',created_at:'now'}]}],
+ tiktok:[{data:{user:{open_id:'123',display_name:'owner'}},error:{code:'ok'}},{data:{videos:[{id:'77',duration:10}]},error:{code:'ok'}}],
+ youtube:[{items:[{id:'123',contentDetails:{relatedPlaylists:{uploads:'UPLOADS'}}}]},{items:[{id:'playlist-entry',contentDetails:{videoId:'77'}}]}]
+};
+for(const [platform,fixture] of Object.entries(responses))test(platform+' adapter validates owned identity and limits result scope',async()=>{
+ const calls=[];const adapters=createProviderAdapters({fetchImpl:async(url,options)=>{calls.push({url,options});return new Response(JSON.stringify(fixture[Math.min(calls.length-1,fixture.length-1)]));}});
+ const g={account_id:'123',access_token:'PRIVATE',scopes:PROVIDERS[platform].required_scopes};const a=adapters[platform];const result=await (a.read_media?a.read_media(g):a.read_profile(g));
+ assert.equal(result.full_analysis,false);assert.ok(!JSON.stringify(result).includes('SHOULD_DROP'));assert.equal(calls.length,fixture.length);
+ for(const c of calls){assert.equal(c.url.protocol,'https:');assert.ok(!String(c.url).includes('PRIVATE'));assert.equal(c.options.redirect,'error');assert.ok(c.options.signal instanceof AbortSignal);assert.ok(c.options.method==='GET'||platform==='tiktok'&&c.url.pathname==='/v2/video/list/'&&c.options.method==='POST');}
+ if(a.read_media)assert.equal(result.pagination_followed,false);assert.equal(a.publish,undefined);
+});
+test('all nine platforms represented without enabling paid or unapproved API calls',async()=>{let calls=0;const a=createProviderAdapters({fetchImpl:async()=>{calls++;}});assert.equal(providerReadiness().length,9);for(const p of ['x','reddit']){await assert.rejects(a[p].verify({}),/POLICY|APPROVAL/);await assert.rejects(a[p].read_media({}),/POLICY|APPROVAL/);}assert.equal(calls,0)});
+test('missing scopes and mismatched identities fail before data is accepted',async()=>{let calls=0;const a=createProviderAdapters({fetchImpl:async()=>{calls++;return new Response(JSON.stringify({sub:'other'}));}});await assert.rejects(a.linkedin.read_profile({account_id:'123',access_token:'PRIVATE',scopes:[]}),/PERMISSION/);assert.equal(calls,0);await assert.rejects(a.linkedin.read_profile({account_id:'123',access_token:'PRIVATE',scopes:['openid','profile']}),/ACCOUNT_VERIFICATION/);});
+test('runtime cancellation propagates to the provider request',async()=>{const controller=new AbortController();controller.abort();let aborted=false;const a=createProviderAdapters({fetchImpl:async(_u,o)=>{aborted=o.signal.aborted;throw Error('PRIVATE');}});await assert.rejects(a.facebook.read_profile({account_id:'123',access_token:'PRIVATE',scopes:['pages_read_engagement']},{},{signal:controller.signal}),/PROVIDER_FAILED/);assert.equal(aborted,true);});
+async function oauthFixture(t){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'oauth-test-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));const store=new EncryptedSocialStore({file:path.join(dir,'vault'),key:'a'.repeat(64)});let now=100000,exchanges=0;const runtime=new SocialAutomation({store,now:()=>now,adapters:{youtube:{verify:async g=>({account_id:g.account_id,verified:true})}}});const providers={youtube:{authorizationUrl:({state,challenge})=>`https://accounts.google.com/o/oauth2/v2/auth?state=${state}&code_challenge=${challenge}`,exchange:async({verifier})=>{exchanges++;assert.equal(verifier.length,43);return {account_id:'123',access_token:'PRIVATE',scopes:['read'],expires_at:now+3600000};}}};const coordinator=new SocialOAuthCoordinator({store,runtime,providers,now:()=>now,authorizeOwner:async c=>c?.authenticatedOwner});return {store,coordinator,providers,runtime,owner:{authenticatedOwner:'owner'},exchanges:()=>exchanges,advance:()=>now+=600001};}
+test('OAuth is owner-bound, provider-bound, single use and persists encrypted pending state',async t=>{const x=await oauthFixture(t);await assert.rejects(x.coordinator.begin('youtube',{}),/OWNER/);const flow=await x.coordinator.begin('youtube',x.owner);const state=new URL(flow.authorization_url).searchParams.get('state');assert.ok(!(await fs.readFile(x.store.file,'utf8')).includes(state));await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},{authenticatedOwner:'other'}),/STATE/);await assert.rejects(x.coordinator.complete('tiktok',{state,code:'code'},x.owner),/STATE/);assert.equal((await x.coordinator.complete('youtube',{state,code:'code'},x.owner)).status,'connected');await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/STATE/);assert.equal(x.exchanges(),1);assert.ok(!JSON.stringify(await x.runtime.status()).includes('PRIVATE'));});
+test('expired or denied OAuth cannot exchange or replay',async t=>{const x=await oauthFixture(t);const first=await x.coordinator.begin('youtube',x.owner);x.advance();await assert.rejects(x.coordinator.complete('youtube',{state:new URL(first.authorization_url).searchParams.get('state'),code:'code'},x.owner),/STATE/);const second=await x.coordinator.begin('youtube',x.owner),state=new URL(second.authorization_url).searchParams.get('state');await assert.rejects(x.coordinator.complete('youtube',{state,error:'denied'},x.owner),/DENIED/);await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/STATE/);assert.equal(x.exchanges(),0);});
+
+
+test('YouTube OAuth exchanges only at fixed token endpoint and refresh preserves refresh token',async()=>{
+ const {createYouTubeOAuth}=await import('../integrations/social-automation/google-oauth.mjs');let now=1000;const calls=[];
+ const client=createYouTubeOAuth({clientId:'client',clientSecret:'SECRET',redirectUri:'https://app.example/oauth/youtube',accountId:'123',now:()=>now,fetchImpl:async(url,options)=>{calls.push({url,options});return new Response(JSON.stringify(url.hostname==='oauth2.googleapis.com'?{access_token:'ACCESS',refresh_token:calls.length===1?'REFRESH':undefined,token_type:'Bearer',expires_in:3600,scope:PROVIDERS.youtube.required_scopes[0]}:{items:[{id:'123'}]}));}});
+ const u=new URL(client.authorizationUrl({state:'random',challenge:'challenge'}));assert.equal(u.searchParams.get('code_challenge_method'),'S256');assert.equal(u.searchParams.get('scope'),PROVIDERS.youtube.required_scopes[0]);assert.ok(!u.href.includes('SECRET'));
+ const g=await client.exchange({code:'CODE',verifier:'VERIFIER'});assert.equal(g.expires_at,3601000);now+=500;const renewed=await client.refresh(g);assert.equal(renewed.refresh_token,'REFRESH');assert.equal(renewed.expires_at,3601500);assert.equal(calls[0].url.href,'https://oauth2.googleapis.com/token');assert.equal(new URLSearchParams(calls[0].options.body).get('code_verifier'),'VERIFIER');
+});
+test('YouTube OAuth rejects insecure redirects and missing read permission',async()=>{const {createYouTubeOAuth}=await import('../integrations/social-automation/google-oauth.mjs');const options={clientId:'client',clientSecret:'SECRET',accountId:'123',redirectUri:'http://app.example/callback'};assert.throws(()=>createYouTubeOAuth(options),/CONFIGURATION/);const client=createYouTubeOAuth({...options,redirectUri:'https://app.example/callback',fetchImpl:async()=>new Response(JSON.stringify({access_token:'PRIVATE',token_type:'Bearer',expires_in:3600,scope:'write'}))});await assert.rejects(client.exchange({code:'x',verifier:'y'}),/PERMISSION/);});
+
+test('OAuth exchange timeout consumes state and never stores a late grant',async t=>{
+ const x=await oauthFixture(t);x.coordinator.exchangeTimeoutMs=15;let resolve,signal;
+ x.providers.youtube.exchange=async(_p,o)=>{signal=o.signal;return new Promise(r=>resolve=r);};
+ const flow=await x.coordinator.begin('youtube',x.owner),state=new URL(flow.authorization_url).searchParams.get('state');
+ await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/OAUTH_EXCHANGE_TIMEOUT/);assert.equal(signal.aborted,true);
+ resolve({account_id:'123',access_token:'LATE',scopes:['read'],expires_at:2000000});await new Promise(r=>setImmediate(r));
+ assert.deepEqual((await x.store.read()).connections,{});await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/STATE/);
+});
+test('shutdown cancels OAuth exchange and rejects subsequent begin/complete',async t=>{
+ const x=await oauthFixture(t),shutdown=new AbortController();x.coordinator.shutdownSignal=shutdown.signal;let ready,signal;const started=new Promise(r=>ready=r);
+ x.providers.youtube.exchange=async(_p,o)=>{signal=o.signal;ready();return new Promise(()=>{});};
+ const flow=await x.coordinator.begin('youtube',x.owner),state=new URL(flow.authorization_url).searchParams.get('state');
+ const completion=x.coordinator.complete('youtube',{state,code:'code'},x.owner);await started;shutdown.abort();await assert.rejects(completion,/OAUTH_STOPPED/);assert.equal(signal.aborted,true);
+ await assert.rejects(x.coordinator.begin('youtube',x.owner),/OAUTH_STOPPED/);await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/OAUTH_STOPPED/);assert.deepEqual((await x.store.read()).connections,{});
+});
+test('Google exchange propagates caller cancellation; stopped hosted service refuses authorization',async()=>{
+ const {createYouTubeOAuth}=await import('../integrations/social-automation/google-oauth.mjs');const c=new AbortController();let observed;
+ const client=createYouTubeOAuth({clientId:'client',clientSecret:'SECRET',accountId:'123',redirectUri:'https://app.example/callback',fetchImpl:async(_u,o)=>{observed=o.signal;return new Promise((_,reject)=>o.signal.addEventListener('abort',()=>reject(Error('raw')),{once:true}));}});
+ const exchange=client.exchange({code:'code',verifier:'verifier'},{signal:c.signal});c.abort();await assert.rejects(exchange,/OAUTH_EXCHANGE_FAILED/);assert.equal(observed.aborted,true);
+ const {initializeSocialService}=await import('../integrations/social-automation/hosted-service.mjs');const service=await initializeSocialService({env:{}});await service.stop();await assert.rejects(service.beginAuthorization('youtube',{}),/OAUTH_STOPPED/);await assert.rejects(service.completeAuthorization('youtube',{},{}),/OAUTH_STOPPED/);
+});

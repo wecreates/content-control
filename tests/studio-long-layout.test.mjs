@@ -43,7 +43,10 @@ test('comparison cards fit their own boxes and action doors distinguish terms',(
  const doors=render((doorScene.start+doorScene.end)/2);assert.match(doors,/INTRO APR/);assert.match(doors,/DEFERRED/);
 });
 test('formerly static explanations contain continuing causal prop actions',()=>{
- for(const [time,motion] of [[15,'fee-weight'],[120,'net-value-delivery'],[205,'monthly-statement'],[345,'monthly-payment']]){
+ for(const [action,motion] of [['fee_drop','fee-weight'],['scoreboard','net-value-delivery'],['autopay','monthly-statement'],['calendar','monthly-payment']]){
+  const scene=ccsd.scenes.find(scene=>scene.visual.action===action);
+  assert.ok(scene,'Required story action exists: '+action);
+  const time=scene.start+Math.min(.1,(scene.end-scene.start)/4);
   const first=render(time),later=render(time+.5);
   assert.match(first,new RegExp('data-causal-motion="'+motion+'"'));
   assert.notEqual(first,later);

@@ -26,6 +26,7 @@
     ".github/workflows/full-capability-validation.yml",
     ".github/workflows/generate-runtime-locks.yml",
     ".github/workflows/hyper-critical-qa.yml",
+    ".github/workflows/instagram-official-read.yml",
     ".github/workflows/live-render-deployment-smoke.yml",
     ".github/workflows/long-form-showrunner-gate.yml",
     ".github/workflows/mobile-playback-compat.yml",

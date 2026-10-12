@@ -44,8 +44,23 @@ def caption_files(track, duration):
     return '\n'.join(srt)+'\n','\n'.join(vtt)+'\n'
 
 
+def duration_acceptance(ccsd, duration, policy_path=ROOT/'control/long-form-showrunner.json'):
+    """Editorial runtime acceptance is separate from measured-media integrity."""
+    if type(duration) not in (int,float) or not math.isfinite(duration) or duration<=0:
+        raise ValueError('Invalid measured duration')
+    if not str(ccsd.get('format','')).startswith('long'):
+        return {'status':'NOT_APPLICABLE','scope':'long_form_minimum_runtime','measured_seconds':duration,'publication_enabled':False,'production_approved':False}
+    policy=json.loads(Path(policy_path).read_text())
+    minimum=policy.get('minimum_runtime_sec')
+    if type(minimum) not in (int,float) or not math.isfinite(minimum) or minimum<510 or policy.get('publication_enabled') is not False:
+        raise ValueError('Invalid or weakened long-form runtime policy')
+    passed=duration>=minimum
+    return {'status':'PASS' if passed else 'BLOCKED','scope':'long_form_minimum_runtime','measured_seconds':duration,'minimum_seconds':minimum,'shortfall_seconds':max(0,minimum-duration),'policy_sha256':sha(policy_path),'reason':None if passed else 'Finished long-form media is shorter than the preserved showrunner minimum','publication_enabled':False,'production_approved':False}
+
+
 def _build_package(ccsd_path, metadata_path, candidate, qa_path, captions_path, outdir, audio=None):
     paths={name:Path(value).resolve() for name,value in [('ccsd',ccsd_path),('metadata',metadata_path),('candidate',candidate),('qa',qa_path),('captions',captions_path)]}
+    paths['duration_policy']=ROOT/'control/long-form-showrunner.json'
     paths['audio']=Path(audio).resolve() if audio else paths['captions'].parent/'voice.wav'
     before={name:sha(path) for name,path in paths.items()}
     ccsd,metadata,qa,track=[json.loads(paths[key].read_text()) for key in ('ccsd','metadata','qa','captions')]
@@ -64,6 +79,7 @@ def _build_package(ccsd_path, metadata_path, candidate, qa_path, captions_path, 
         raise ValueError('Candidate lacks valid audiovisual streams')
     if abs(duration-float(qa['metrics']['duration']))>.2:
         raise ValueError('QA duration differs from actual candidate')
+    acceptance=duration_acceptance(ccsd,duration,paths['duration_policy'])
     srt,vtt=caption_files(track,duration)
     out=Path(outdir).resolve()
     names=['captions.srt','captions.vtt','metadata.json','thumbnail.png','review-package.json']
@@ -82,11 +98,11 @@ def _build_package(ccsd_path, metadata_path, candidate, qa_path, captions_path, 
     if not (out/'thumbnail.png').is_file() or not (out/'thumbnail.png').stat().st_size:
         raise ValueError('Thumbnail extraction failed')
     (out/'captions.srt').write_text(srt);(out/'captions.vtt').write_text(vtt)
-    packaged={**metadata,'privacy_status':'private','publication_enabled':False,'production_approved':False,'status':'REVIEW_PACKAGE_PENDING_APPROVAL','candidate_sha256':before['candidate'],'measured_duration_seconds':duration,'audio_status':'PRESENT_MEASURED','render_status':'RENDERED_TECHNICAL_QA_PASS','review_status':'PENDING_FINAL_AV_REVIEW','thumbnail_type':'actual_candidate_frame','thumbnail_time_seconds':frame_time}
+    packaged={**metadata,'privacy_status':'private','publication_enabled':False,'production_approved':False,'status':'REVIEW_PACKAGE_PENDING_APPROVAL','candidate_sha256':before['candidate'],'measured_duration_seconds':duration,'duration_policy_acceptance':acceptance,'audio_status':'PRESENT_MEASURED','render_status':'RENDERED_TECHNICAL_QA_PASS','review_status':'PENDING_FINAL_AV_REVIEW','thumbnail_type':'actual_candidate_frame','thumbnail_time_seconds':frame_time}
     (out/'metadata.json').write_text(json.dumps(packaged,indent=2)+'\n')
     if any(sha(paths[name])!=digest for name,digest in before.items()):
         raise ValueError('Source changed while packaging')
-    result={'schema_version':1,'generator':'cyzor.production_package.v1','status':'REVIEW_PACKAGE_PENDING_APPROVAL','publication_enabled':False,'production_approved':False,'creative_review':'PENDING','listening_review':'PENDING','upload_performed':False,'inputs':{name:{'path':str(paths[name]),'sha256':digest} for name,digest in before.items()},'measured_duration_seconds':duration,'thumbnail':{'kind':'unaltered_actual_video_frame','scene_id':scene['id'],'time_seconds':frame_time},'outputs':{name:{'path':str(out/name),'sha256':sha(out/name)} for name in names if name!='review-package.json'}}
+    result={'schema_version':1,'generator':'cyzor.production_package.v1','status':'REVIEW_PACKAGE_PENDING_APPROVAL','publication_enabled':False,'production_approved':False,'creative_review':'PENDING','listening_review':'PENDING','upload_performed':False,'inputs':{name:{'path':str(paths[name]),'sha256':digest} for name,digest in before.items()},'measured_duration_seconds':duration,'duration_policy_acceptance':acceptance,'thumbnail':{'kind':'unaltered_actual_video_frame','scene_id':scene['id'],'time_seconds':frame_time},'outputs':{name:{'path':str(out/name),'sha256':sha(out/name)} for name in names if name!='review-package.json'}}
     (out/'review-package.json').write_text(json.dumps(result,indent=2)+'\n')
     return result
 
@@ -94,7 +110,7 @@ def _build_package(ccsd_path, metadata_path, candidate, qa_path, captions_path, 
 def package(ccsd_path, metadata_path, candidate, qa_path, captions_path, outdir, audio=None):
     """Versioned, atomic packages; successful earlier outputs are never replaced."""
     audio=audio or Path(captions_path).resolve().parent/'voice.wav'
-    sources={'ccsd':ccsd_path,'metadata':metadata_path,'candidate':candidate,'qa':qa_path,'captions':captions_path,'audio':audio}
+    sources={'ccsd':ccsd_path,'metadata':metadata_path,'candidate':candidate,'qa':qa_path,'captions':captions_path,'audio':audio,'duration_policy':ROOT/'control/long-form-showrunner.json'}
     hashes={key:sha(value) for key,value in sources.items()}
     identity={**hashes,'packager':sha(__file__)}
     version=hashlib.sha256(json.dumps(identity,sort_keys=True).encode()).hexdigest()[:24]

@@ -25,6 +25,8 @@ on:
       - 'tests/test_v2_clip_transcription.py'
       - 'scripts/v2_build_status.py'
       - 'scripts/rendered_visual_parity.py'
+      - 'scripts/v2_render_receipts.py'
+      - 'tests/test_v2_render_receipts.py'
       - 'scripts/production_reality_media_qa.py'
       - 'tests/test_production_reality_media_qa.py'
       - 'tests/test_rendered_visual_parity.py'
@@ -184,7 +186,7 @@ jobs:
       - name: Inspect rendered candidate
         if: ${{ !cancelled() && steps.render_video.outcome == 'success' }}
         run: |
-          python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py
+          python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py tests/test_v2_render_receipts.py
           media_status=0
           parity_status=0
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json || media_status=$?
@@ -209,10 +211,9 @@ jobs:
           p="state/v2/render/v2-boss-fight.mp4"
           h=hashlib.sha256(open(p,"rb").read()).hexdigest()
           parity=json.load(open("state/v2/receipts/visual-parity.json"))
-          if parity.get("status")!="PASS": raise SystemExit("visual parity QA did not pass")
           media=json.load(open("state/v2/receipts/render.json"))
-          if media.get("status")!="PASS" or media.get("candidate_sha256")!=h: raise SystemExit("Hash-bound complete media decode required")
-          media_evidence={"candidate_sha256":h,"duration_seconds":media["metrics"]["duration"],"verified":True}
+          from scripts.v2_render_receipts import verified_media_evidence
+          media_evidence=verified_media_evidence(h,parity,media)
           review=json.load(open("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))
           if review.get("status")!="PASS" or review.get("candidate_sha256")!=h or review.get("method")!="rendered_video_review": raise SystemExit("Exact rendered video creative review required")
           import subprocess

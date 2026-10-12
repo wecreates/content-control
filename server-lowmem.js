@@ -8,12 +8,16 @@ import {createMonitorRouter} from "./monitor-api.js";
 import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 
 import {createSocialRouter} from "./social-router.js";
+import {initializeSocialService} from "./integrations/social-automation/hosted-service.mjs";
+const socialService=await initializeSocialService();
+import {createRepositoryIntegrationRouter} from "./repository-integrations.js";
 
 import {creativeHandoff} from "./creative-handoff.js";
 
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
 
 const app=express();
+app.use("/api/integrations",createRepositoryIntegrationRouter());
 app.use("/api/production",createProductionStatusRouter());
 app.use("/v2/draft",createDraftPreviewHoldRouter());
 const monitorStore=await loadMonitorStore();
@@ -117,7 +121,7 @@ app.use((req,res,next)=>{
   next();
 });
 
-app.use("/api/social",createSocialRouter());
+app.use("/api/social",createSocialRouter({runtimeStatus:()=>socialService.status()}));
 app.get("/social",(req,res)=>{res.setHeader("Cache-Control","no-store");res.sendFile(path.resolve("social-ui/index.html"));});
 
 app.get("/",(req,res)=>{
@@ -394,7 +398,7 @@ const server=app.listen(PORT,()=>{
 
 function shutdown(signal){
   console.log("shutdown",signal);
-  server.close(()=>process.exit(0));
+  server.close(()=>socialService.stop().finally(()=>process.exit(0)));
   setTimeout(()=>process.exit(1),8000).unref();
 }
 process.on("SIGTERM",()=>shutdown("SIGTERM"));

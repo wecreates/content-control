@@ -1,58 +1,57 @@
 {
   "schema_version": 1,
-  "run_id": 38254152436,
-  "source_commit": "70145863f318151b639d42c0b4398f751c0eb3c4",
+  "run_id": 38262400759,
+  "source_commit": "047c70534fa05a03339de037caa916fb8fd43fa2",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-12T13:17:13.522102+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38254152436",
-  "candidate_sha256": "3b0f2b1a3069aab362332c6993f792a4f7af2d349bcafb5f236eb6f44b3d68cd",
+  "recorded_at": "2026-10-12T14:25:05.532562+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38262400759",
+  "candidate_sha256": "b081cf7eacd8e57aeb37e42015feb0e93943d553041b68baae24cf24458a8939",
   "candidate_generated": true,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "e5c6dd93f4fb56cf1cbbe19a2b5920a02e4575e804f50804895eee437453e5c0"
+      "receipt_sha256": "bfc3d98d1918d50b021c415129868e8ed33df4662d78b029bee94ab71f6313b4"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "2f2208c097d6263ea73f9ce4dc339aca9539ff541a9c1d7b07e1df90bca8b1ef"
+      "receipt_sha256": "d91f63bd5ab13635b225c2b63f8df074259b7f1a7ce7be4f0e1015099fa594aa"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "4a6f6f1820c45c6fdc26a504b5c1160f055d66546102519a2d2ad7f94a5bc343"
+      "receipt_sha256": "11329203f798ec76b016b09b8230c366b37b8de7878e64d0fd4a7dddd8073efd"
     },
     "captions": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "49fbabea67435dab8ccfe50f025c7be17db1931092d15b246cf65deff4e30579"
+      "receipt_sha256": "225ec7b146bdf29027e746702502105cba5f79a36bea5399c355eb3391984722"
     },
     "caption_frames": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "dae513dfd8ab3f31284a0360d51fffddb91cd159b99ac65256c918190e406333"
+      "receipt_sha256": "90897646506f88e5cd2dfc0808a0af1ffc62047391807be21413892a7f963548"
     },
     "technical_video": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "96ed0ad09d441d1d155aee2e672c6a951f54d3948d1f07bb64a1e3d9d3bd5f79"
+      "receipt_sha256": "acf60a53b2d47157bf1466341fb8bffdafb62ead6213fde652efd69455a547f8"
     },
     "style_parity": {
       "status": "FAIL",
       "failed_checks": [
         "framewise_style_parity"
       ],
-      "receipt_sha256": "4eecf0e90c73ab799cfa45f7abc18e99d2609568df7fde60413ee2ad83900c78",
-      "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3325 of 0.3624). This does not assess creative quality or override the required brand style."
+      "receipt_sha256": "81b14395bb7ea74bfde0490f28c735049f04351fb67b3c3ac3cfca66c4841b8c",
+      "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3324 of 0.3622). This does not assess creative quality or override the required brand style."
     }
   },
   "diagnostics": {
     "caption_windows": {
-      "status": "BLOCKED",
+      "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "2b7bc1bad10b2f78faa8fdd2483dc420eb00327c91848d99db0a0b302a7f3200",
-      "reason": "Observed words differ from script: chase-strike-a-1; expected='you summoned two cards neither summoned a budget'; observed='you summon two cards neither summon the budget'"
+      "receipt_sha256": "3b8eb3c3baea6773cc8e7eed9f21c4a0737b6a034fbd8dd49b82901f3ae125e9"
     }
   },
   "status": "BLOCKED",
