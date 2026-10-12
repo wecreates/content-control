@@ -3,8 +3,9 @@ const hash=value=>crypto.createHash('sha256').update(value).digest('hex');
 // Internal coordinator. The host must authenticate the owner independently;
 // arbitrary caller-supplied owner IDs never authorize this service.
 export class SocialOAuthCoordinator {
- constructor({store,runtime,providers={},authorizeOwner=async()=>null,now=()=>Date.now()}){this.store=store;this.runtime=runtime;this.providers=providers;this.authorizeOwner=authorizeOwner;this.now=now;}
- async owner(context){const owner=await this.authorizeOwner(context);if(typeof owner!=='string'||!owner)throw Error('OWNER_AUTHENTICATION_REQUIRED');return hash(owner);}
+ constructor({store,runtime,providers={},authorizeOwner=async()=>null,now=()=>Date.now(),shutdownSignal,exchangeTimeoutMs=20000}){if(!Number.isInteger(exchangeTimeoutMs)||exchangeTimeoutMs<1||exchangeTimeoutMs>120000)throw Error('INVALID_OAUTH_TIMEOUT');this.shutdownSignal=shutdownSignal;this.exchangeTimeoutMs=exchangeTimeoutMs;this.store=store;this.runtime=runtime;this.providers=providers;this.authorizeOwner=authorizeOwner;this.now=now;}
+ assertActive(){if(this.shutdownSignal?.aborted)throw Error('OAUTH_STOPPED');}
+ async owner(context){this.assertActive();const owner=await this.authorizeOwner(context);this.assertActive();if(typeof owner!=='string'||!owner)throw Error('OWNER_AUTHENTICATION_REQUIRED');return hash(owner);}
  async begin(platform,context){
   const owner=await this.owner(context),provider=this.providers[platform];
   if(!provider?.authorizationUrl||!provider?.exchange)throw Error('OAUTH_PROVIDER_NOT_CONFIGURED');
@@ -22,7 +23,17 @@ export class SocialOAuthCoordinator {
   // Consume the state before any exchange, including provider denial/failure.
   if(error||typeof code!=='string'||!code||code.length>4096)throw Error('OAUTH_AUTHORIZATION_DENIED');
   const provider=this.providers[platform];if(!provider?.exchange)throw Error('OAUTH_PROVIDER_NOT_CONFIGURED');
-  let grant;try{grant=await provider.exchange({code,verifier:pending.verifier});}catch{throw Error('OAUTH_EXCHANGE_FAILED');}
+  this.assertActive();
+  const controller=new AbortController();let timer,rejectBound;
+  const bound=new Promise((_,reject)=>{rejectBound=reject;});
+  const abort=()=>{controller.abort();rejectBound(Error('OAUTH_STOPPED'));};
+  this.shutdownSignal?.addEventListener('abort',abort,{once:true});
+  timer=setTimeout(()=>{controller.abort();rejectBound(Error('OAUTH_EXCHANGE_TIMEOUT'));},this.exchangeTimeoutMs);
+  let grant;
+  try{this.assertActive();grant=await Promise.race([bound,Promise.resolve().then(()=>provider.exchange({code,verifier:pending.verifier},{signal:controller.signal}))]);}
+  catch(error){throw Error(['OAUTH_STOPPED','OAUTH_EXCHANGE_TIMEOUT'].includes(error?.message)?error.message:'OAUTH_EXCHANGE_FAILED');}
+  finally{clearTimeout(timer);this.shutdownSignal?.removeEventListener('abort',abort);}
+  this.assertActive();
   await this.runtime.connect(platform,grant);
   return {platform,status:'connected',publication_enabled:false};
  }

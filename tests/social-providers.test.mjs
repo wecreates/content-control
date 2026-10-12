@@ -33,3 +33,25 @@ test('YouTube OAuth exchanges only at fixed token endpoint and refresh preserves
  const g=await client.exchange({code:'CODE',verifier:'VERIFIER'});assert.equal(g.expires_at,3601000);now+=500;const renewed=await client.refresh(g);assert.equal(renewed.refresh_token,'REFRESH');assert.equal(renewed.expires_at,3601500);assert.equal(calls[0].url.href,'https://oauth2.googleapis.com/token');assert.equal(new URLSearchParams(calls[0].options.body).get('code_verifier'),'VERIFIER');
 });
 test('YouTube OAuth rejects insecure redirects and missing read permission',async()=>{const {createYouTubeOAuth}=await import('../integrations/social-automation/google-oauth.mjs');const options={clientId:'client',clientSecret:'SECRET',accountId:'123',redirectUri:'http://app.example/callback'};assert.throws(()=>createYouTubeOAuth(options),/CONFIGURATION/);const client=createYouTubeOAuth({...options,redirectUri:'https://app.example/callback',fetchImpl:async()=>new Response(JSON.stringify({access_token:'PRIVATE',token_type:'Bearer',expires_in:3600,scope:'write'}))});await assert.rejects(client.exchange({code:'x',verifier:'y'}),/PERMISSION/);});
+
+test('OAuth exchange timeout consumes state and never stores a late grant',async t=>{
+ const x=await oauthFixture(t);x.coordinator.exchangeTimeoutMs=15;let resolve,signal;
+ x.providers.youtube.exchange=async(_p,o)=>{signal=o.signal;return new Promise(r=>resolve=r);};
+ const flow=await x.coordinator.begin('youtube',x.owner),state=new URL(flow.authorization_url).searchParams.get('state');
+ await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/OAUTH_EXCHANGE_TIMEOUT/);assert.equal(signal.aborted,true);
+ resolve({account_id:'123',access_token:'LATE',scopes:['read'],expires_at:2000000});await new Promise(r=>setImmediate(r));
+ assert.deepEqual((await x.store.read()).connections,{});await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/STATE/);
+});
+test('shutdown cancels OAuth exchange and rejects subsequent begin/complete',async t=>{
+ const x=await oauthFixture(t),shutdown=new AbortController();x.coordinator.shutdownSignal=shutdown.signal;let ready,signal;const started=new Promise(r=>ready=r);
+ x.providers.youtube.exchange=async(_p,o)=>{signal=o.signal;ready();return new Promise(()=>{});};
+ const flow=await x.coordinator.begin('youtube',x.owner),state=new URL(flow.authorization_url).searchParams.get('state');
+ const completion=x.coordinator.complete('youtube',{state,code:'code'},x.owner);await started;shutdown.abort();await assert.rejects(completion,/OAUTH_STOPPED/);assert.equal(signal.aborted,true);
+ await assert.rejects(x.coordinator.begin('youtube',x.owner),/OAUTH_STOPPED/);await assert.rejects(x.coordinator.complete('youtube',{state,code:'code'},x.owner),/OAUTH_STOPPED/);assert.deepEqual((await x.store.read()).connections,{});
+});
+test('Google exchange propagates caller cancellation; stopped hosted service refuses authorization',async()=>{
+ const {createYouTubeOAuth}=await import('../integrations/social-automation/google-oauth.mjs');const c=new AbortController();let observed;
+ const client=createYouTubeOAuth({clientId:'client',clientSecret:'SECRET',accountId:'123',redirectUri:'https://app.example/callback',fetchImpl:async(_u,o)=>{observed=o.signal;return new Promise((_,reject)=>o.signal.addEventListener('abort',()=>reject(Error('raw')),{once:true}));}});
+ const exchange=client.exchange({code:'code',verifier:'verifier'},{signal:c.signal});c.abort();await assert.rejects(exchange,/OAUTH_EXCHANGE_FAILED/);assert.equal(observed.aborted,true);
+ const {initializeSocialService}=await import('../integrations/social-automation/hosted-service.mjs');const service=await initializeSocialService({env:{}});await service.stop();await assert.rejects(service.beginAuthorization('youtube',{}),/OAUTH_STOPPED/);await assert.rejects(service.completeAuthorization('youtube',{},{}),/OAUTH_STOPPED/);
+});

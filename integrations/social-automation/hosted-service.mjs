@@ -14,8 +14,8 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   const status = {...socialRuntimeReadiness(env), configured_storage_mode: 'unconfigured', providers:providerReadiness()};
   const service = {
     status: () => ({...status, ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})}),
-    beginAuthorization:async(platform,context)=>{if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},
-    completeAuthorization:async(platform,callback,context)=>{if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.complete(platform,callback,context);},
+    beginAuthorization:async(platform,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},
+    completeAuthorization:async(platform,callback,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.complete(platform,callback,context);},
     stop: async () => {shutdown.abort(); if (worker) await worker.stop();},
   };
   if (env.SOCIAL_WORKER_ENABLED !== 'true') return service;
@@ -37,10 +37,10 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     const runtime = new SocialAutomation({store, adapters: createProviderAdapters({fetchImpl, shutdownSignal: shutdown.signal, appSecret: env.META_APP_SECRET})});
     const oauthProviders={};
     if(env.YOUTUBE_OAUTH_CLIENT_ID&&env.YOUTUBE_OAUTH_CLIENT_SECRET&&env.YOUTUBE_OAUTH_REDIRECT_URI&&env.YOUTUBE_CHANNEL_ID){
-      const youtube=createYouTubeOAuth({clientId:env.YOUTUBE_OAUTH_CLIENT_ID,clientSecret:env.YOUTUBE_OAUTH_CLIENT_SECRET,redirectUri:env.YOUTUBE_OAUTH_REDIRECT_URI,accountId:env.YOUTUBE_CHANNEL_ID,fetchImpl});
+      const youtube=createYouTubeOAuth({clientId:env.YOUTUBE_OAUTH_CLIENT_ID,clientSecret:env.YOUTUBE_OAUTH_CLIENT_SECRET,redirectUri:env.YOUTUBE_OAUTH_REDIRECT_URI,accountId:env.YOUTUBE_CHANNEL_ID,fetchImpl,shutdownSignal:shutdown.signal});
       runtime.adapters.youtube.refresh=youtube.refresh;oauthProviders.youtube=youtube;
     }
-    if(typeof authorizeOwner==='function')oauth=new SocialOAuthCoordinator({store,runtime,providers:oauthProviders,authorizeOwner});
+    if(typeof authorizeOwner==='function')oauth=new SocialOAuthCoordinator({store,runtime,providers:oauthProviders,authorizeOwner,shutdownSignal:shutdown.signal});
     worker = new SocialReadWorker({runtime});
     Object.assign(status, {status: 'READ_WORKER_STARTED', configured_storage_mode: 'private_durable', provider_adapters_registered: Object.keys(runtime.adapters).filter(p=>!runtime.adapters[p].blocked_reason), reason: 'Read-only worker started; account results are reported per cycle. OAuth onboarding is unavailable and durable storage has not been independently verified.'});
     worker.start();
