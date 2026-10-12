@@ -18,10 +18,13 @@ export class SocialReadWorker {
     try {
       const state = await this.runtime.store.read();
       for (const [platform, grant] of Object.entries(state.connections)) {
-        if (grant.status !== 'connected' || grant.expires_at <= this.now() || typeof this.runtime.adapters[platform]?.read_media !== 'function') continue;
-        if (state.jobs.some(j => j.platform === platform && j.operation === 'read_media' && ['queued', 'retry'].includes(j.status))) continue;
+        const adapter=this.runtime.adapters[platform];
+        const operation=typeof adapter?.read_media==='function'?'read_media':'read_profile';
+        if (adapter?.blocked_reason) continue;
+        if (grant.status !== 'connected' || grant.expires_at <= this.now() || typeof adapter?.[operation] !== 'function') continue;
+        if (state.jobs.some(j => j.platform === platform && j.operation === operation && ['queued', 'retry'].includes(j.status))) continue;
         const account = crypto.createHash('sha256').update(grant.account_id).digest('hex').slice(0, 16);
-        await this.runtime.enqueue({id: `poll_${platform}_${account}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation: 'read_media'});
+        await this.runtime.enqueue({id: `poll_${platform}_${account}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation});
       }
       const result = await this.runtime.tick();
       this.last = {status: 'CYCLE_COMPLETED', last_completed_at: this.now(), counts: result.counts};

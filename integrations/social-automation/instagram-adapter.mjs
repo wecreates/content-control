@@ -10,7 +10,7 @@ export function createInstagramAdapter({fetchImpl = fetch, appSecret, shutdownSi
     if (appSecret) url.searchParams.set('appsecret_proof', crypto.createHmac('sha256', appSecret).update(grant.access_token).digest('hex'));
     let response, data;
     try {
-      response = await fetchImpl(url, {method: 'GET', headers: {Authorization: `Bearer ${grant.access_token}`}, redirect: 'error', signal: shutdownSignal ? AbortSignal.any([shutdownSignal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs)});
+      response = await fetchImpl(url, {method: 'GET', headers: {Authorization: `Bearer ${grant.access_token}`}, redirect: 'error', signal: AbortSignal.any([shutdownSignal, grant._signal, AbortSignal.timeout(timeoutMs)].filter(Boolean))});
       // Bound the body as well as the network time. Never retain raw errors.
       const reader = response.body.getReader();
       const chunks = []; let bytes = 0;

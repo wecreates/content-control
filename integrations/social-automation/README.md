@@ -51,7 +51,7 @@ has not been independently verified as private and durable. Activation needs:
    Metadata reads alone do not constitute video retrieval, full audio/video
    analysis, competitive review or business-performance evidence.
 
-Other platform adapters and owner-facing OAuth onboarding remain unimplemented.
+Owner-facing OAuth onboarding and provider-specific exchanges other than YouTube remain unimplemented. See the platform matrix below for the implemented read operations.
 No live account or hosted durability/recovery test has passed yet.
 
 ## Recovery and execution limits
@@ -77,3 +77,60 @@ https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
 Existing independent SDK probe: `scripts/instagram_official_read.py`.
 
 Valid short-lived grants remain usable until actual expiry when a provider has no refresh adapter. Supported refresh results need a future expiry and the same account. Provider verification, renewal and reads have a 20-second runtime bound, abort signal and sanitized failure reporting, so stalled reads release the queue transaction. This does not activate OAuth or verify durable hosting.
+
+
+## Unified provider integration — October 12, 2026
+
+All nine requested platforms are represented in `providers.mjs` and the hosted
+readiness response. This is not nine verified account connections.
+
+| Platform | Implemented read operations | Limitation |
+| --- | --- | --- |
+| Instagram | Professional identity and five media metadata records | Facebook Login route; no full reel analysis |
+| Facebook | Page identity, including Page category validation | No Page posts, inbox or analytics adapter |
+| YouTube | Owned channel identity and five upload IDs | No video/audio download or analytics |
+| TikTok | Identity and five public video metadata records | POST is used only for the documented read-only video list |
+| Threads | Identity and five thread metadata records | No replies, inbox or analytics |
+| Pinterest | Account identity and five Pin metadata records | Username is identity key; renaming requires reauthorization |
+| LinkedIn | OpenID profile identity | No posts, inbox, outreach or analytics |
+| X | Explicit blocked adapter | No paid API calls under free-only policy |
+| Reddit | Explicit blocked adapter | Commercial approval and free eligibility not established |
+
+Read adapters check required scopes before network requests, pin service hosts,
+refuse redirects, limit time and response size, recheck account identity, drop
+pagination links and unknown fields, and return full_analysis=false. Results
+remain in the encrypted vault. Required scopes are conservative per-provider
+bundles; profile-only use may require fewer scopes after a later implementation.
+
+The worker now selects media reads when implemented and otherwise profile reads.
+X and Reddit cannot start a request even with a preexisting credential record.
+Publishing and other external writes remain unavailable in every adapter.
+
+### OAuth implementation boundary
+
+`SocialOAuthCoordinator` provides encrypted single-use, owner-bound, ten-minute
+state and S256 PKCE challenges. The host must supply an independently verified
+owner authentication callback. A caller-supplied owner ID alone grants nothing.
+No public OAuth start/callback route or owner login has been activated.
+
+`createYouTubeOAuth` implements the Google web-server authorization URL, code
+exchange, identity-bound grant installation and refresh-token preservation.
+Google app credentials, registered HTTPS redirect URI and expected channel ID
+must be configured privately as YOUTUBE_OAUTH_CLIENT_ID,
+YOUTUBE_OAUTH_CLIENT_SECRET, YOUTUBE_OAUTH_REDIRECT_URI and YOUTUBE_CHANNEL_ID.
+The hosted service wires this client only when those values exist. It does not
+create a Google app or approve its consent screen. YouTube exchange/refresh and
+all added provider operations have passed mock tests only, not live account tests.
+
+References used for endpoint contracts:
+- https://developers.google.com/youtube/v3/docs/channels/list
+- https://developers.google.com/youtube/v3/docs/playlistItems/list
+- https://developers.google.com/identity/protocols/oauth2/web-server
+- https://developers.tiktok.com/docs/en/tiktok-api-v2-get-user-info
+- https://developers.tiktok.com/docs/en/tiktok-api-v2-video-list
+- https://www.postman.com/meta/threads/documentation/dht3nzz/threads-api
+- https://developers.pinterest.com/docs/api/v5/pins-list/
+- https://developers.pinterest.com/docs/getting-started/set-up-authentication-and-authorization/
+- https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2
+- https://docs.x.com/x-api/getting-started/pricing
+- https://redditinc.com/policies/data-api-terms

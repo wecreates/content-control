@@ -1,5 +1,5 @@
 import {EncryptedSocialStore, SocialAutomation} from '../social-automation.js';
-import {createInstagramAdapter} from '../integrations/social-automation/instagram-adapter.mjs';
+import {createProviderAdapters} from '../integrations/social-automation/providers.mjs';
 import {SocialReadWorker} from '../integrations/social-automation/worker.mjs';
 import fs from 'node:fs/promises';
 // Owner-controlled execution only. No grant import, browser password handling,
@@ -10,7 +10,7 @@ try {
   await fs.access(store.file); // Never manufacture an empty production vault.
   const saved = await store.read();
   if (!Object.keys(saved.connections).length) throw Error();
-  const runtime = new SocialAutomation({store, adapters: {instagram: createInstagramAdapter({appSecret: process.env.META_APP_SECRET})}});
+  const runtime = new SocialAutomation({store, adapters: createProviderAdapters({appSecret: process.env.META_APP_SECRET})});
   const result = await new SocialReadWorker({runtime}).cycle();
   console.log(JSON.stringify(result));
   // Success means this cycle executed; blocked/retry jobs are not success.
