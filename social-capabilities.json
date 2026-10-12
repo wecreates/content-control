@@ -72,6 +72,15 @@
           "runtime": "disabled",
           "enabled": false
         }
+      },
+      "read_adapter": {
+        "provider": "official_meta_business_sdk",
+        "version": "26.0.2",
+        "route": "facebook_login_professional_account",
+        "workflow": "https://github.com/wecreates/content-control/actions/workflows/instagram-official-read.yml",
+        "authorization": "required_not_verified",
+        "runtime": "adapter_tests_only_live_account_unverified",
+        "publication_enabled": false
       }
     },
     {
