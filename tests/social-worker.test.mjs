@@ -63,6 +63,8 @@ test('hosted service runs a configured private vault without exposing its result
  await store.update(d=>{d.connections.instagram={...grant,expires_at:Date.now()+172800000,status:'connected'};});
  const service=await initializeSocialService({env:{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:file,SOCIAL_VAULT_KEY:'c'.repeat(64)},fetchImpl:async url=>response(url.pathname.endsWith('/media')?{data:[{id:'55',media_type:'VIDEO'}]}:{id:grant.account_id,username:'PRIVATE_USERNAME'})});
  assert.equal(service.status().status,'READ_WORKER_STARTED');assert.equal(service.status().durable_storage_verified,false);assert.equal(service.status().oauth_routes_enabled,false);
+ for(let turns=0;service.status().last_cycle.last_completed_at===null&&turns<1000;turns++)await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(service.status().last_cycle.status,'CYCLE_COMPLETED');
  await service.stop();const state=await store.read();assert.equal(state.jobs[0].status,'completed');assert.equal(state.jobs[0].result.full_analysis,false);assert.ok(!JSON.stringify(service.status()).includes('PRIVATE_USERNAME'));
 });
 
@@ -71,4 +73,26 @@ test('vault inside application directory cannot be activated',async t=>{
  const {store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id})});
  const service=await initializeSocialService({root:path.dirname(store.file),env:{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:store.file,SOCIAL_VAULT_KEY:'b'.repeat(64)}});
  assert.equal(service.status().status,'ACTIVATION_BLOCKED');assert.equal(service.status().worker_running,false);
+});
+
+test('full queue still drains existing due jobs and reports capacity without deleting history',async t=>{
+ let reads=0;const {runtime,store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_profile:async()=>{reads++;return {};},read_media:async()=>{throw Error('must not enqueue');}});
+ await runtime.enqueue({id:'due-profile',platform:'instagram',operation:'read_profile'});
+ await store.update(d=>{for(let i=0;i<999;i++)d.jobs.push({id:`history-${i}`,platform:'instagram',operation:'read_profile',status:'completed',result:{preserved:i}});});
+ const worker=new SocialReadWorker({runtime,now:()=>100000});const result=await worker.cycle();
+ assert.equal(reads,1);assert.equal(result.status,'CYCLE_BLOCKED');assert.equal(result.reason,'QUEUE_CAPACITY_REACHED');assert.equal(result.publication_enabled,false);
+ const saved=await store.read();assert.equal(saved.jobs.length,1000);assert.equal(saved.jobs[0].status,'completed');assert.deepEqual(saved.jobs[999].result,{preserved:998});
+});
+test('expired refreshable grant schedules renewal while unsupported expiry never calls provider',async t=>{
+ let refreshes=0,reads=0;const {runtime,store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),refresh:async g=>{refreshes++;return {...g,expires_at:200000000};},read_media:async()=>{reads++;return {};}});
+ await store.update(d=>{d.connections.instagram.expires_at=99999;});
+ await new SocialReadWorker({runtime,now:()=>100000}).cycle();assert.equal(refreshes,1);assert.equal(reads,1);assert.equal((await store.read()).jobs[0].status,'completed');
+ delete runtime.adapters.instagram.refresh;await store.update(d=>{d.connections.instagram.expires_at=99999;});
+ await new SocialReadWorker({runtime,now:()=>200000}).cycle();assert.equal(reads,1);
+});
+test('new verified grant recovers blocked same-bucket poll without retrying old failed job',async t=>{
+ let reads=0;const {runtime,store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>{reads++;if(reads===1)throw Error('REAUTHORIZE');return {};}});
+ let now=100000;runtime.now=()=>now;const worker=new SocialReadWorker({runtime,now:()=>now});await worker.cycle();assert.equal((await store.read()).jobs[0].status,'blocked');
+ now++;await runtime.connect('instagram',grant);await worker.cycle();await worker.cycle();
+ const jobs=(await store.read()).jobs;assert.equal(reads,2);assert.equal(jobs.length,2);assert.equal(jobs[0].status,'blocked');assert.equal(jobs[0].attempts,1);assert.equal(jobs[1].status,'completed');
 });

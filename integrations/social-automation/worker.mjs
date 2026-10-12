@@ -17,17 +17,26 @@ export class SocialReadWorker {
   async run() {
     try {
       const state = await this.runtime.store.read();
+      let capacityBlocked = false;
       for (const [platform, grant] of Object.entries(state.connections)) {
-        const adapter=this.runtime.adapters[platform];
-        const operation=typeof adapter?.read_media==='function'?'read_media':'read_profile';
+        const adapter = this.runtime.adapters[platform];
+        const operation = typeof adapter?.read_media === "function" ? "read_media" : "read_profile";
         if (adapter?.blocked_reason) continue;
-        if (grant.status !== 'connected' || grant.expires_at <= this.now() || typeof adapter?.[operation] !== 'function') continue;
+        if (grant.status !== 'connected' || !Number.isFinite(grant.expires_at) || (grant.expires_at <= this.now() && typeof adapter?.refresh !== 'function') || typeof adapter?.[operation] !== 'function') continue;
         if (state.jobs.some(j => j.platform === platform && j.operation === operation && ['queued', 'retry'].includes(j.status))) continue;
         const account = crypto.createHash('sha256').update(grant.account_id).digest('hex').slice(0, 16);
-        await this.runtime.enqueue({id: `poll_${platform}_${account}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation});
+        // A newly verified grant may recover within the same polling bucket,
+        // without resetting old failure history or retry counters.
+        const generation = crypto.createHash('sha256').update(String(grant.verified_at ?? 'legacy')).digest('hex').slice(0, 12);
+        try {
+          await this.runtime.enqueue({id: `poll_${platform}_${account}_${generation}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation});
+        } catch (error) {
+          if (error?.message !== 'QUEUE_CAPACITY_REACHED') throw error;
+          capacityBlocked = true;
+        }
       }
       const result = await this.runtime.tick();
-      this.last = {status: 'CYCLE_COMPLETED', last_completed_at: this.now(), counts: result.counts};
+      this.last = {status: capacityBlocked ? 'CYCLE_BLOCKED' : 'CYCLE_COMPLETED', last_completed_at: this.now(), counts: result.counts, ...(capacityBlocked ? {reason:'QUEUE_CAPACITY_REACHED'} : {})};
     } catch {this.last = {status: 'CYCLE_FAILED', last_completed_at: this.last.last_completed_at, reason: 'PRIVATE_WORKER_UNAVAILABLE'};}
     return this.status();
   }

@@ -22,7 +22,7 @@ This is a completion audit, not a second production queue. Existing project queu
 | C400-010 | Official Instagram read receipts can update the existing connection matrix without exposing account data, overwriting newer observations, or claiming full video analysis; owner-only workflow persists both successful and blocked results. | Four recorder tests, five actual-SDK adapter tests and temporary no-authorization end-to-end fixture passed. Live authorized account execution remains unverified. |
 | C400-011 | Completion scheduler retains integration/testing verification work, rejects empty or malformed completion claims, and separates blocked metadata records from runnable work. | Four regression tests and actual 2,500-entry registry returns BLOCKED with zero runnable tasks. Integration workers skip empty plans and verification-only records. |
 
-Count in this batch: 13 verified substantive tasks. Remaining requested count: 387, not claimed complete or prefilled with invented work. Earlier work is not counted again here.
+Count in this batch: 17 verified substantive tasks. Remaining requested count: 383, not claimed complete or prefilled with invented work. Earlier work is not counted again here.
 
 Verification: 50 targeted Python tests passed locally. Real synthetic two-scene media measured successfully, then correctly remained BLOCKED because camera semantics were unreviewed. It is not a competitor reference or approved production content.
 
@@ -34,3 +34,12 @@ Fresh camera render run 38256725387 produced candidate cfbc2e893d3e2bef69e8307cf
 
 | C400-012 | Valid short-lived grants work until expiry; supported renewed grants must remain bound to the same account. | Regression tests cover unexpired, expired, renewed short-lived and account-swapped grants. Live OAuth remains unavailable. |
 | C400-013 | Provider verification, refresh and reads have bounded runtime and abort signals, preventing stalled provider calls from indefinitely holding encrypted queue transactions. | Hanging verification persists no connection; hanging read times out and permits subsequent queue updates. |
+
+| C400-014 | Worker drains pending jobs at capacity, permits supported renewal of expired grants, and lets a newly verified grant recover within the same polling interval while preserving failed history. | Three lifecycle regressions; live authorization still unavailable. |
+| C400-015 | Instagram adapter propagates cancellation through identity and media requests and treats HTTP 401/403 as permanent authorization errors even with non-JSON bodies. | Four adapter lifecycle tests; no live account calls. |
+| C400-016 | Video parity sampler rejects refused/inaccurate seeks, invalid metadata and insufficient distinct frames. | Mocked decoder regressions and real scratch-video decoding; acceptance thresholds unchanged. |
+| C400-017 | V2 captions use a 52px preferred font within the same reserved region and fit/wrap constraints. | 17 layout tests including rendered markup and all current dialogue bounds. Full video render and audiovisual review remain required. |
+
+2026-10-12 repair validation: 66 social/production Node tests, 17 layout tests and 10 Python parity/receipt tests passed locally. No live social grant, durable storage or full audiovisual approval is claimed.
+
+Production diagnosis for candidate cfbc2e893d3e2bef69e8307cf13bd7f27330b29cc803510d05ab1666f7a68786: ten sampled reference/candidate frames have mean white fractions 0.01801/0.96846. The binary white cutoff accounts for 0.33266 of total distance 0.36278. Reference paper is near-white/beige; requested production background is pure white. These pixel statistics do not measure competitive creative quality. Historical failure remains intact; changing to a structural style metric requires independent calibration against good and bad examples, not a threshold chosen to pass this candidate. Sampling is not full audiovisual review.

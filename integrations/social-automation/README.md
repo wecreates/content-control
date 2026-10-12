@@ -45,7 +45,7 @@ has not been independently verified as private and durable. Activation needs:
    continues to report durable_storage_verified=false. Missing, broad-permission,
    in-repository or locked vaults block startup without a fallback.
 5. Add provider-specific OAuth renewal. The Instagram Facebook Login adapter
-   currently has no refresh method; grants within 24 hours of expiry require
+   currently has no refresh method; expired grants require
    reauthorization. No automatic renewal is claimed for Instagram.
 6. Connect private result consumption to evidence-validated production routing.
    Metadata reads alone do not constitute video retrieval, full audio/video
@@ -134,3 +134,5 @@ References used for endpoint contracts:
 - https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2
 - https://docs.x.com/x-api/getting-started/pricing
 - https://redditinc.com/policies/data-api-terms
+
+Worker recovery fixes: capacity blocks new intake without starving existing jobs; supported refresh adapters can renew expired grants; a newly verified grant can start a new poll without resetting prior failed history. Instagram calls honor caller cancellation, including between identity and media requests. HTTP 401/403 always require authorization repair, including when the response is not JSON.

@@ -137,6 +137,8 @@ test('composition routes observed speech only to the matching visible character'
  // At 8.5s both Monk and Goblin are visible; only Monk speaks in this fixture.
  const draw=speaker=>{const c=structuredClone(original);c.caption_track={status:'PASS',publication_enabled:false,cues:[{start:8,end:9,text:'A spoken word',speaker}]};return renderToStaticMarkup(React.createElement(StudioAnimaticComposition,{ccsd:c}));};
  const spoken=draw('points_monk'),narrated=draw('narrator');
+ const caption=spoken.match(/<text x="360" y="105"[^>]*>/)?.[0];
+ assert.ok(caption?.includes('font-size="52"'),'V2 spoken captions use the phone-readable preferred size');
  assert.equal((spoken.match(/data-speaking-mouth="true"/g)||[]).length,1);
  assert.equal((spoken.match(/data-speaking-mouth="false"/g)||[]).length,1);
  assert.equal((narrated.match(/data-speaking-mouth="true"/g)||[]).length,0);
@@ -159,4 +161,18 @@ test('V2 camera stays continuous across editorial cuts sharing one move',async()
  assert.equal(v2CameraProgress(scenes,scenes[1],1),0,'explicit camera change starts a new move');
  scenes[1].camera.move='punch_in';scenes[1].start=1.5;
  assert.equal(v2CameraProgress(scenes,scenes[1],1.5),0,'timeline gaps do not merge moves');
+});
+
+
+test('larger V2 captions retain every word within the existing text reserve',async()=>{
+ const {fitCaption,captionTextWidth}=await import('../remotion/StudioLayout.mjs');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ const texts=['stops','the winning',...c.scenes.flatMap(scene=>(scene.audio?.dialogue||[]).map(line=>line.text))];
+ for(const text of texts){
+  const layout=fitCaption(text,592,175,52);
+  assert.equal(layout.lines.join(' '),text.trim().replace(/\s+/g,' '));
+  assert.ok(layout.lines.every(line=>captionTextWidth(line,layout.size)<=544));
+  assert.ok(layout.lines.length*layout.lineHeight<=175);
+ }
+ assert.equal(fitCaption('stops',592,175,52).size,52);
 });
