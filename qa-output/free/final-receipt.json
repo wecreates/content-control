@@ -22,11 +22,11 @@
     "verdict": "PASS"
   },
   "audio_source": "repository-local public/audio",
-  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "contact_sheet": "qa-output/free/contact.jpg",
   "credit_cost": 0,
   "deterministic": {
-    "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+    "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "checks": {
       "duration_30s": true,
       "motion_activity": true,
@@ -35,9 +35,9 @@
       "reference_edge_density_ratio": true
     },
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5936676060171352,
+    "edge_density_ratio": 0.5938150292294868,
     "engine": "opencv-free-qa-v1",
-    "mean_candidate_edge_density": 0.01136078559027778,
+    "mean_candidate_edge_density": 0.011363606770833333,
     "mean_reference_edge_density": 0.019136610243055557,
     "motion_active_fraction": 1.0,
     "reference_frames": 10,
@@ -65,7 +65,7 @@
       },
       {
         "offset": 22676,
-        "size": 4029651,
+        "size": 4029848,
         "type": "mdat"
       }
     ],
@@ -106,16 +106,16 @@
   "schema_version": 1,
   "semantic": {
     "best_reference_similarity_by_candidate": [
-      0.4270407557487488,
-      0.450133740901947,
-      0.39411044120788574,
-      0.4375590980052948,
-      0.38434621691703796,
-      0.3808640241622925,
-      0.47470104694366455,
-      0.39926469326019287,
-      0.4028262495994568,
-      0.3987775444984436
+      0.42704087495803833,
+      0.4501335620880127,
+      0.39411091804504395,
+      0.4375593066215515,
+      0.38390156626701355,
+      0.38086432218551636,
+      0.4747011363506317,
+      0.3992650806903839,
+      0.40282636880874634,
+      0.3972346782684326
     ],
     "checks": {
       "florence_completed": true,
@@ -158,8 +158,8 @@
       "status": "PASS"
     },
     "florence_model": "florence-community/Florence-2-base",
-    "global_similarity": 0.3321763277053833,
-    "mean_best_frame_similarity": 0.41496238112449646,
+    "global_similarity": 0.3325476050376892,
+    "mean_best_frame_similarity": 0.41476374864578247,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "schema_version": 1,
     "verdict": "PASS"
