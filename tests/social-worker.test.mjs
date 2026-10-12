@@ -63,7 +63,9 @@ test('hosted service runs a configured private vault without exposing its result
  await store.update(d=>{d.connections.instagram={...grant,expires_at:Date.now()+172800000,status:'connected'};});
  const service=await initializeSocialService({env:{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:file,SOCIAL_VAULT_KEY:'c'.repeat(64)},fetchImpl:async url=>response(url.pathname.endsWith('/media')?{data:[{id:'55',media_type:'VIDEO'}]}:{id:grant.account_id,username:'PRIVATE_USERNAME'})});
  assert.equal(service.status().status,'READ_WORKER_STARTED');assert.equal(service.status().durable_storage_verified,false);assert.equal(service.status().oauth_routes_enabled,false);
- for(let turns=0;service.status().last_cycle.last_completed_at===null&&turns<1000;turns++)await new Promise(resolve=>setImmediate(resolve));
+ t.after(()=>service.stop());
+ const deadline=performance.now()+5000;
+ while(service.status().last_cycle.last_completed_at===null&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,10));
  assert.equal(service.status().last_cycle.status,'CYCLE_COMPLETED');
  await service.stop();const state=await store.read();assert.equal(state.jobs[0].status,'completed');assert.equal(state.jobs[0].result.full_analysis,false);assert.ok(!JSON.stringify(service.status()).includes('PRIVATE_USERNAME'));
 });
