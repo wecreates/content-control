@@ -10,12 +10,14 @@ import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 import {createSocialRouter} from "./social-router.js";
 import {initializeSocialService} from "./integrations/social-automation/hosted-service.mjs";
 const socialService=await initializeSocialService();
+import {createRepositoryIntegrationRouter} from "./repository-integrations.js";
 
 import {creativeHandoff} from "./creative-handoff.js";
 
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
 
 const app=express();
+app.use("/api/integrations",createRepositoryIntegrationRouter());
 app.use("/api/production",createProductionStatusRouter());
 app.use("/v2/draft",createDraftPreviewHoldRouter());
 const monitorStore=await loadMonitorStore();
