@@ -21,6 +21,8 @@ on:
       - 'scripts/persist_v2_artifacts.py'
       - 'tests/test_persist_v2_artifacts.py'
       - 'scripts/v2_captions.py'
+      - 'scripts/v2_clip_transcription.py'
+      - 'tests/test_v2_clip_transcription.py'
       - 'scripts/v2_build_status.py'
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/production_reality_media_qa.py'
@@ -131,6 +133,11 @@ jobs:
           json.dump({"publication_enabled":False,"narration_text":text,"expected_duration_seconds":max(s["end"] for s in c["scenes"])},open("state/v2/transcription-contract.json","w"))
           PYTRANSCRIPT
           python scripts/free_transcription_qa.py --audio state/v2/voice.wav --contract state/v2/transcription-contract.json --output state/v2/receipts/transcription.json --model small.en
+      - name: Diagnose captions within assembled speech windows
+        continue-on-error: true
+        run: |
+          python -m unittest -v tests/test_v2_clip_transcription.py
+          python scripts/v2_clip_transcription.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --assembly state/v2/receipts/voice.json --audio state/v2/voice.wav --out state/v2/receipts/clip-transcription.json --model small.en
       - name: Align captions to actual spoken words
         run: python scripts/v2_captions.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --transcription state/v2/receipts/transcription.json --audio state/v2/voice.wav --out state/v2/captions.json
       - name: Verify every caption word reaches a rendered frame
