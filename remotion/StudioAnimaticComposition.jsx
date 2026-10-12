@@ -63,7 +63,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
         Object.assign(m,resolveBattleHandTargets(m,slot,{freeGesture:battle==='finish'&&id==='dave'}));
         m.mood=slot.mood;
       }
-      const face=battle?v2FacePerformance({id,beat:battle,time:t,start:beatScenes[0].start,end:beatScenes.at(-1).end,slot,motion:m}):{};
+      const face=battle?v2FacePerformance({id,beat:battle,time:t,start:beatScenes[0].start,end:beatScenes.at(-1).end,slot,motion:m,observedCaption}):{};
       return <Character {...face} key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}
    </g>

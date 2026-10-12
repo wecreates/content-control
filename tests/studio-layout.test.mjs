@@ -100,3 +100,44 @@ test('panic and gaze controls change actual shared character SVG',async()=>{
  assert.notEqual(panic,smile);assert.ok(!panic.includes('M-14 12 Q0 24 14 12'));
  assert.notEqual(panic,draw({mood:'panic',gazeX:3,gazeY:-2,blink:.12,browLift:4}));
 });
+
+import {speechMouthActivity,v2FacePerformance} from '../remotion/V2FacePerformance.mjs';
+const caption={speaker:'dave',start:1,end:2};
+test('only the observed on-screen speaker moves within the spoken window',()=>{
+ for(const id of ['dave','points_monk','cashback_goblin']){
+  const c={...caption,speaker:id};assert.ok(speechMouthActivity(id,1.4,c)>0);
+  for(const t of [0,1,2,3])assert.equal(speechMouthActivity(id,t,c),0);
+  for(const other of ['narrator','offscreen','unknown'])assert.equal(speechMouthActivity(id,1.4,{...c,speaker:other}),0);
+ }
+ assert.equal(speechMouthActivity('points_monk',1.4,caption),0);
+ for(const c of [null,{...caption,start:NaN},{...caption,end:1},{...caption,start:'1'}])assert.equal(speechMouthActivity('dave',1.4,c),0);
+});
+test('speech envelope is deterministic bounded and smoothly enters/exits',()=>{
+ for(let t=1;t<=2;t+=1/240){const x=speechMouthActivity('dave',t,caption);assert.ok(x>=0&&x<=1);assert.equal(x,speechMouthActivity('dave',t,caption));}
+ assert.ok(speechMouthActivity('dave',1.001,caption)<.001);assert.ok(speechMouthActivity('dave',1.999,caption)<.001);
+ const args={id:'dave',beat:'finish',time:1.4,start:1,end:2,slot:{x:200,y:550,scale:1,mood:'smile'}};
+ const silent=v2FacePerformance(args),spoken=v2FacePerformance({...args,observedCaption:caption});assert.ok(spoken.mouthOpen>0);
+ for(const key of ['gazeX','gazeY','blink','browLift'])assert.equal(silent[key],spoken[key]);
+});
+test('all complete character SVGs preserve rest moods and render speech aperture',async()=>{
+ const {build}=await import('esbuild');const {renderToStaticMarkup}=await import('react-dom/server');const React=await import('react');
+ const result=await build({entryPoints:['remotion/CharacterSystem.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'}});
+ const chars=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ for(const name of ['Dave','PointsMonk','CashbackGoblin'])for(const mood of ['smile','panic','shock','deadpan','mad']){
+  const draw=props=>renderToStaticMarkup(React.createElement(chars[name],{x:200,y:600,label:'',mood,...props}));
+  const rest=draw({});assert.equal(rest,draw({mouthOpen:0}));assert.notEqual(rest,draw({mouthOpen:.8}));assert.equal(rest,draw({mouthOpen:NaN}));
+  assert.ok(!draw({mouthOpen:.8}).includes('NaN'));assert.ok(draw({mouthOpen:.8}).includes('data-speech-mouth="true"'));
+ }
+});
+test('composition routes observed speech only to the matching visible character',async()=>{
+ const {build}=await import('esbuild');const {renderToStaticMarkup}=await import('react-dom/server');const React=await import('react');
+ const result=await build({entryPoints:['remotion/StudioAnimaticComposition.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'fixed-frame',setup(build){build.onResolve({filter:/^remotion$/},()=>({path:'runtime',namespace:'fixed-frame'}));build.onLoad({filter:/.*/,namespace:'fixed-frame'},()=>({contents:'export const useCurrentFrame=()=>204; export const useVideoConfig=()=>({fps:24}); export const AbsoluteFill=({children})=>children;',loader:'js'}));}}]});
+ const {StudioAnimaticComposition}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+ const original=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ // At 8.5s both Monk and Goblin are visible; only Monk speaks in this fixture.
+ const draw=speaker=>{const c=structuredClone(original);c.caption_track={status:'PASS',publication_enabled:false,cues:[{start:8,end:9,text:'A spoken word',speaker}]};return renderToStaticMarkup(React.createElement(StudioAnimaticComposition,{ccsd:c}));};
+ const spoken=draw('points_monk'),narrated=draw('narrator');
+ assert.equal((spoken.match(/data-speaking-mouth="true"/g)||[]).length,1);
+ assert.equal((spoken.match(/data-speaking-mouth="false"/g)||[]).length,1);
+ assert.equal((narrated.match(/data-speaking-mouth="true"/g)||[]).length,0);
+});
