@@ -19,6 +19,8 @@ export const longActionTiming=(scenes,index,time)=>{
  const start=scenes[first].start,end=scenes[last].end;
  return {action,start,end,progress:clamp((time-start)/(end-start))};
 };
+// Keep the entire rotated invoice below headlines and above its fee badge.
+export const feeReceiptPose=elapsed=>({y:345+45*ease(elapsed/.65),scale:1.15,angle:12*Math.sin(elapsed*2.4),pivotY:225});
 export const longActorPose=(action,elapsed)=>{
  const contact=['fee_drop','cart','callback'].includes(action);
  const strike=Math.max(0,Math.sin(elapsed*5));
@@ -40,14 +42,14 @@ export const StudioLongComposition=({ccsd})=>{
  const cycle=(period,offset=0)=>((elapsed+offset)%period)/period;
  const paymentMonth=Math.min(11,Math.floor(p*12)),paymentPhase=(p*12)%1;
  const monthX=508+(paymentMonth%4)*88,monthY=308+Math.floor(paymentMonth/4)*90;
- const actors=longActorPose(action,elapsed);
+ const actors=longActorPose(action,elapsed),receipt=feeReceiptPose(elapsed);
  const cue=captionAtTime(ccsd.caption_track,time);
  const bob=Math.sin(time*3)*6,reach=Math.sin(p*Math.PI)*24;
  const label=String(v.label||'');
  const prop=(id,x=640,y=390,scale=1.2,rotation=0)=><PropIcon id={id} x={x} y={y} s={scale} rotation={rotation}/>;
  const money=(value,x,y)=><g transform={`translate(${x} ${y})`}><rect x="-95" y="-38" width="190" height="76" rx="12" fill="white" stroke="#111" strokeWidth="4"/><Text x={0} y={10} size={26} maxWidth={164}>{value}</Text></g>;
  let art;
- if(action==='fee_drop')art=<>{<g data-causal-motion="fee-weight" transform={`rotate(${12*Math.sin(elapsed*2.4)} 640 225)`}><path d="M640 220 V270" stroke="#111" strokeWidth="5"/>{prop('receipt',640,240+beat*140,1.4)}</g>}{money('$200 FEE',640,565)}</>;
+ if(action==='fee_drop')art=<>{<g data-causal-motion="fee-weight" transform={`rotate(${receipt.angle} 640 ${receipt.pivotY})`}><path d={`M640 225 V${receipt.y-90*receipt.scale}`} stroke="#111" strokeWidth="5"/>{prop('receipt',640,receipt.y,receipt.scale)}</g>}{money('$200 FEE',640,565)}</>;
  else if(action==='points')art=<>{[0,1,2].map(i=><g key={i}>{prop('coin',520+i*120,390-Math.abs(Math.sin(time*2+i))*60,.85)}</g>)}<Text y={530}>30,000 POINTS</Text></>;
  else if(action==='redemption')art=<>{money('30,000',520-25*p,330)}<Text x={640} y={343}>→</Text>{money('$210',760+25*p,330)}<g data-causal-motion="redemption-conversion">{[0,1].map(i=><g key={i}>{prop('points_counter',450+350*cycle(2.2,i*1.1),500,.65)}</g>)}<path d="M460 570 H805 l-18 -10 m18 10 l-18 10" fill="none" stroke="#111" strokeWidth="4"/><Text y={615} size={23}>30,000 × $0.007 = $210</Text></g></>;
  else if(action==='credit_chase')art=<>{prop('phone',610+Math.sin(time*3)*70,400,1.3,Math.sin(time*3)*9)}{money('$10 CREDIT',650,235)}</>;
