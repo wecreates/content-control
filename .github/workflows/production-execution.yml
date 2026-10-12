@@ -42,6 +42,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install test media dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install --disable-pip-version-check numpy
       - run: npm ci
       - run: npm run test:system
       - run: node --test tests/studio-long-layout.test.mjs tests/studio-layout.test.mjs tests/observed-captions.test.mjs
