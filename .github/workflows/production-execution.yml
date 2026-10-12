@@ -10,7 +10,7 @@ on:
         options: [short, long, both]
         default: short
       resume_run_id:
-        description: Optional previous manual run ID (blank starts fresh)
+        description: Optional previous production run ID (blank starts fresh)
         type: string
         default: ''
   pull_request:
@@ -59,7 +59,7 @@ jobs:
         if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
         with:
           python-version: '3.12'
-      - name: Restore explicitly selected same-repository manual run
+      - name: Restore explicitly selected same-repository production run
         if: (inputs.format == matrix.format || inputs.format == 'both') && inputs.resume_run_id != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -73,8 +73,8 @@ jobs:
           if not run_id.isdigit():
               raise SystemExit('Resume run ID must be numeric')
           run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GH_REPO"]}/actions/runs/{run_id}']))
-          if run['event'] != 'workflow_dispatch' or run['path'] != '.github/workflows/production-execution.yml' or run['head_branch'] != os.environ['GITHUB_REF_NAME']:
-              raise SystemExit('Resume must originate from this manual workflow and branch')
+          if run['event'] not in ('workflow_dispatch', 'push') or run['path'] != '.github/workflows/production-execution.yml' or run['head_branch'] != os.environ['GITHUB_REF_NAME']:
+              raise SystemExit('Resume must originate from this production workflow and branch (push or manual)')
           subprocess.run(['gh', 'run', 'download', run_id, '--name', 'production-state-' + os.environ['FORMAT'], '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
           PY
       - name: Install free CPU production dependencies

@@ -60,4 +60,55 @@ class ObservedCaptionsTests(unittest.TestCase):
    old=self.report[key];self.report[key]=value
    with self.assertRaises(ValueError):self.run_build()
    self.report[key]=old
+ def finance(self,script,observed):
+  self.cc['fps']=24
+  self.cc['scenes'][0]['audio']['dialogue'][0]['text']=script
+  self.report['words']=[{'word':w,'start':i*.5,'end':i*.5+.3} for i,w in enumerate(observed)]
+  return self.run_build()
+ def test_numeric_asr_groups_original_words_without_invented_times(self):
+  result=self.finance('Pay twenty-four percent now.', ['Pay','24%','now.'])
+  cue=result['cues'][1]
+  self.assertEqual(cue['word'],'twenty-four percent')
+  self.assertEqual(cue['source_word_indices'],[1,2])
+  self.assertEqual(cue['observed_token_indices'],[1])
+  self.assertEqual((cue['start'],cue['end']),(.5,.8))
+  self.assertEqual(' '.join(c['word'] for c in result['cues']),'Pay twenty-four percent now.')
+ def test_spelled_asr_waits_until_final_observed_subword(self):
+  result=self.finance('Pay $24 now.', ['Pay','twenty','four','dollars','now.'])
+  cue=result['cues'][1]
+  self.assertEqual(cue['word'],'$24')
+  self.assertEqual(cue['observed_token_indices'],[1,2,3])
+  self.assertEqual((cue['start'],cue['end']),(1.5,1.8))
+  self.assertEqual(cue['source_word_indices'],[1])
+ def test_financial_value_unit_and_sign_mismatches_fail_closed(self):
+  for wrong in ['25%','24','-24%']:
+   with self.assertRaisesRegex(ValueError,'mismatch'):
+    self.finance('twenty-four percent', [wrong])
+ def test_normalized_group_cannot_cross_character_or_scene(self):
+  self.cc['scenes'][0]['audio']['dialogue']=[{'speaker':'dave','text':'twenty-four'},{'speaker':'points_monk','text':'percent'}]
+  self.report['words']=[{'word':'24%','start':0,'end':.5}]
+  with self.assertRaisesRegex(ValueError,'boundary'):self.run_build()
+ def test_grouped_captions_pass_actual_renderer_lookup(self):
+  import json,subprocess
+  result=self.finance('Pay twenty-four percent now.', ['Pay','24%','now.'])
+  c=Path(self.tmp.name)/'ccsd.json';t=Path(self.tmp.name)/'captions.json';out=Path(self.tmp.name)/'frames.json'
+  c.write_text(json.dumps(self.cc));t.write_text(json.dumps(result))
+  subprocess.run(['node','scripts/verify_caption_frames.mjs','--ccsd',str(c),'--captions',str(t),'--out',str(out)],check=True,capture_output=True)
+  self.assertEqual(json.loads(out.read_text())['status'],'PASS')
+ def test_split_numeric_notation_preserves_observed_group_interval(self):
+  from scripts.v2_captions import coalesce_numeric_tokens
+  for fragments,joined in [(['$10',',000'],'$10,000'),(['24','%'],'24%'),(['$19','.73,'],'$19.73,')]:
+   tokens=[{'word':word,'start':i*.2,'end':(i+1)*.2} for i,word in enumerate(fragments)]
+   saved=copy.deepcopy(tokens);result=coalesce_numeric_tokens(tokens)
+   self.assertEqual(tokens,saved);self.assertEqual(len(result),1)
+   self.assertEqual(result[0]['word'],joined)
+   self.assertEqual((result[0]['start'],result[0]['end']),(0,.4))
+   self.assertEqual(result[0]['observed_token_indices'],[0,1])
+ def test_split_numeric_caption_and_nonadjacent_fragment_fail_closed(self):
+  self.cc['scenes'][0]['audio']['dialogue'][0]['text']='twenty-four percent'
+  self.report['words']=[{'word':'24','start':0,'end':.3},{'word':'%','start':.3,'end':.6}]
+  result=self.run_build();self.assertEqual(result['cues'][0]['word'],'twenty-four percent')
+  self.assertEqual(result['cues'][0]['observed_token_indices'],[0,1])
+  self.report['words'][1]['start']=.4
+  with self.assertRaisesRegex(ValueError,'no normalized speech'):self.run_build()
 if __name__=='__main__':unittest.main()

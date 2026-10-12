@@ -4,7 +4,7 @@
     "The $200 Credit Card That Lost to a Free One",
     "Your Credit Card Rewards Have a Spending Problem"
   ],
-  "description": "Dave buys a fictional premium credit card and discovers four expensive traps: inflated point totals, interest, bonus chasing, and deferred-interest fine print. Original stick-figure finance comedy. All card offers and rewards calculations in this story are illustrative; actual terms vary. No sponsored offer or affiliate recommendation is included.\n\nExample math: 30,000 points \u00d7 $0.007 = $210; $210 + $60 useful credits \u2212 $200 fee = $70; $200 cash back \u2212 $70 = $130 difference. Simplified interest: $1,000 \u00d7 24% \u00d7 30/365 \u2248 $19.73. A $1,200 balance divided over 12 months is $100/month before any applicable fees or other charges.",
+  "description": "Dave buys a fictional premium credit card and discovers four expensive traps: inflated point totals, interest, bonus chasing, and deferred-interest fine print. Original stick-figure finance comedy. All card offers and rewards calculations in this story are illustrative; actual terms vary. No sponsored offer or affiliate recommendation is included.\n\nExample math: 30,000 points \u00d7 $0.007 = $210; $210 + $60 useful credits \u2212 $200 fee = $70; $200 cash back \u2212 $70 = $130 difference. Simplified interest: $1,000 \u00d7 24% \u00d7 30/365 \u2248 $19.73. A $1,200 balance divided over 12 months is $100/month before any applicable fees or other charges.\n\nThe $19.73 estimate assumes a constant $1,000 balance already subject to interest, no applicable grace period, a 365-day year, and simple interest without compounding. Actual issuer calculations can differ. The $100/month illustration assumes all twelve payments reach the promotional principal, no added charges, and payoff before the actual promotional deadline.\n\nSources (CFPB):\nhttps://www.consumerfinance.gov/ask-cfpb/what-is-a-daily-periodic-rate-on-a-credit-card-en-46/\nhttps://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/\nhttps://www.consumerfinance.gov/archive/blog/how-understand-special-promotional-financing-offers-credit-cards/\nhttps://www.consumerfinance.gov/ask-cfpb/i-got-a-credit-card-promising-no-interest-for-a-purchase-if-i-pay-in-full-within-12-months-how-does-this-work-en-40/",
   "publication_enabled": false,
   "privacy_status": "private",
   "category_id": "27",
@@ -17,8 +17,8 @@
   },
   "claims": {
     "fictional_card_math_verified": true,
-    "primary_source_verification": "PENDING; do not treat script claims as externally verified",
-    "interest_basis": "Simplified constant principal simple daily estimate; not issuer statement calculation",
+    "primary_source_verification": "General APR, grace-period, zero-percent/deferred-interest, deadline and allocation claims verified against listed CFPB pages on 2026-10-12. Fictional card economics checked arithmetically; no current issuer offer claimed.",
+    "interest_basis": "Constant principal already subject to interest; no applicable grace period; 365-day simple interest estimate, not compounded issuer statement calculation.",
     "no_revenue_promises": true
   },
   "arithmetic": {
@@ -36,5 +36,39 @@
   "audio_status": "NOT_GENERATED",
   "render_status": "NOT_RENDERED",
   "review_status": "NOT_REVIEWED",
-  "cta": "Next episode: the minimum payment trap. No unverified product CTA."
+  "cta": "Next episode: the minimum payment trap. No unverified product CTA.",
+  "source_provenance": {
+    "verified_on": "2026-10-12",
+    "sources": [
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/what-is-a-daily-periodic-rate-on-a-credit-card-en-46/",
+        "supports": "Daily rate uses issuer-dependent 360 or 365 day denominator; compounding may apply."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/how-does-my-credit-card-company-calculate-the-amount-of-interest-i-owe-en-51/",
+        "supports": "Daily balance method, grace period and payment allocation qualifications."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/archive/blog/how-understand-special-promotional-financing-offers-credit-cards/",
+        "supports": "True zero-percent promotion versus deferred interest; no retroactive promotional interest solely because a true zero-percent balance remains."
+      },
+      {
+        "url": "https://www.consumerfinance.gov/ask-cfpb/i-got-a-credit-card-promising-no-interest-for-a-purchase-if-i-pay-in-full-within-12-months-how-does-this-work-en-40/",
+        "supports": "Deferred-interest payoff deadline, minimum-payment insufficiency, payment allocation, and different promo end dates."
+      }
+    ],
+    "scope": "General educational mechanics only; not a product eligibility assessment or personalized advice."
+  },
+  "money_factory_contract": {
+    "repository": "wecreates/Money-factory",
+    "path": "CONTENT_READINESS.json",
+    "sha256": "44b8c5577bdfb3194a9150496463b10e51acc591717c4e38c114a8c97c71f5a5",
+    "inspected_on": "2026-10-12",
+    "businesses_examined": 15,
+    "eligible_launch_products": [],
+    "decision": "No sales or affiliate CTA. Every listed business is PRELAUNCH and launch_content_allowed=false. Browser fleet enabled flags do not establish product readiness or verified finance-offer eligibility.",
+    "approved_cta_type": "editorial_next_episode_only",
+    "verified_checkout_url": null,
+    "affiliate_url": null
+  }
 }
