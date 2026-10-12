@@ -90,7 +90,11 @@ def _build_package(ccsd_path, metadata_path, candidate, qa_path, captions_path, 
     with tempfile.TemporaryDirectory(prefix='package-check-') as temp:
         subprocess.run(['node',str(ROOT/'scripts/verify_caption_frames.mjs'),'--ccsd',str(paths['ccsd']),'--captions',str(paths['captions']),'--out',str(Path(temp)/'frames.json')],check=True,capture_output=True,text=True)
     scenes=sorted(ccsd['scenes'],key=lambda scene:scene['start'])
-    scene=scenes[len(scenes)//2]
+    requested_scene=metadata.get('thumbnail_scene_id')
+    matches=[scene for scene in scenes if scene['id']==requested_scene] if requested_scene else []
+    if requested_scene and len(matches)!=1:
+        raise ValueError('Thumbnail scene must identify one actual scene')
+    scene=matches[0] if matches else scenes[len(scenes)//2]
     frame_time=(float(scene['start'])+float(scene['end']))/2
     if not 0<=frame_time<duration:
         raise ValueError('Representative scene is outside candidate')

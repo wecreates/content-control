@@ -33,7 +33,7 @@
       ],
       "observed_technical_evidence": {
         "status": "PASS",
-        "candidate_sha256": "0474e88e7ee2074a2a3fc5a9146796e88bfd565e6ad34ceb3fb68bbb3e1ed8aa",
+        "candidate_sha256": "e16692594b604a8adb70ba71cb22497dde739c48f63c3d88fe9262bb4a5dfc36",
         "duration_seconds": 35.041666666666664,
         "scope": "Previous candidate only, rendered from the recorded source commit. Does not establish technical PASS for the latest merged camera-continuity implementation. Final creative/listening review also remains pending.",
         "receipt_artifact": "production-state-short/media-qa.json",

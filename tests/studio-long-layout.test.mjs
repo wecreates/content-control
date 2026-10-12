@@ -6,7 +6,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 const ccsd=JSON.parse(fs.readFileSync('projects/long/credit-card-dlc/ccsd.json','utf8'));
 const result=await build({entryPoints:['remotion/StudioLongComposition.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'frame-fixture',setup(build){build.onResolve({filter:/^remotion$/},()=>({path:'remotion',namespace:'frame'}));build.onLoad({filter:/.*/,namespace:'frame'},()=>({contents:'export const useCurrentFrame=()=>globalThis.__longTestFrame;export const useVideoConfig=()=>({fps:24});export const AbsoluteFill="div";'}));}}]});
-const {StudioLongComposition,longActionTiming}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const {StudioLongComposition,longActionTiming,longActorPose}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const render=(time,doc=ccsd)=>{globalThis.__longTestFrame=time*24;return renderToStaticMarkup(React.createElement(StudioLongComposition,{ccsd:doc}));};
 test('physical actions remain continuous across narration cuts',()=>{
  for(let i=1;i<ccsd.scenes.length;i++){
@@ -51,4 +51,18 @@ test('formerly static explanations contain continuing causal prop actions',()=>{
   assert.match(first,new RegExp('data-causal-motion="'+motion+'"'));
   assert.notEqual(first,later);
  }
+});
+
+test('causal acting approaches relevant objects while identity remains shared',()=>{
+ const neutral=longActorPose('points',1);
+ for(const action of ['fee_drop','cart','callback']){const pose=longActorPose(action,1);assert.ok(pose.dave.x>neutral.dave.x);assert.ok(pose.dave.hand.x>0);}
+ for(const action of ['scoreboard','autopay','doors']){const pose=longActorPose(action,1);assert.ok(pose.monk.x<neutral.monk.x);assert.ok(pose.monk.hand.x<0);}
+});
+
+test('callback visual matches narrated cutting-board payoff',()=>{
+ const scene=ccsd.scenes.find(s=>s.visual.action==='callback');
+ const markup=render(scene.start+.7);
+ assert.match(markup,/card-cutting-board-callback/);
+ assert.match(markup,/data-kitchen-knife="original-svg"/);
+ assert.doesNotMatch(markup,/hammer|gavel/);
 });

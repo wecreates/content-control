@@ -45,5 +45,19 @@
     "Account authorization and upload capability verification",
     "Explicit user publication authorization",
     "Actual published long-form ID before attaching related-video link"
-  ]
+  ],
+  "thumbnail_scene_id": "cold-open-b-1",
+  "playlist_proposal": {
+    "status": "DRAFT_NOT_CREATED",
+    "title": "Dave\u2019s Wallet: Personal Finance, Bad Decisions & Better Rules",
+    "description": "Original black-stick-figure stories with Dave and Points Monk about credit-card rewards, borrowing costs, spending decisions, and the fine print.",
+    "playlist_id": null,
+    "channel_id": null,
+    "publication_enabled": false,
+    "suggested_order": [
+      "v2-amex-vs-chase-anime-boss-fight",
+      "credit-card-dlc-long"
+    ],
+    "scope": "Editorial grouping proposal only; no playlist, channel assignment, upload, or publishing action performed."
+  }
 }
