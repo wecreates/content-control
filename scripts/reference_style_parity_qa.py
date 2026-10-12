@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 import argparse,json,math
 from pathlib import Path
+def known_grammar(value):
+    """Missing/unclassified labels are not a measured grammar match."""
+    if not isinstance(value,str) or not value.strip():return False
+    label=value.strip().lower().replace(' ','_').replace('-','_')
+    return label not in {'unknown','unverified','unmeasured','not_measured','not_analyzed','unclassified','none','null','n/a'} and not label.startswith('to_be_classified')
+
 def qa(ref,clone):
     r=ref.get("shot_timeline",[]); c=clone.get("shot_timeline",clone.get("shots",clone.get("beats",[])))
     checks={}
     checks["shot_count_close"]=abs(len(r)-len(c))<=max(1,round(len(r)*.15))
+    checks["camera_evidence_available"]=bool(r) and bool(c) and all(known_grammar(row.get("camera")) for row in r+c)
+    checks["shot_scale_evidence_available"]=bool(r) and bool(c) and all(known_grammar(row.get("shot_scale")) for row in r+c)
     n=min(len(r),len(c))
     timing=[]
     camera=[]
@@ -12,7 +20,7 @@ def qa(ref,clone):
     timing_bad=[];camera_bad=[];scale_bad=[]
     for i in range(n):
         rd=float(r[i]["end"])-float(r[i]["start"]); cd=float(c[i]["end"])-float(c[i]["start"])
-        tok=abs(rd-cd)<=max(.18,rd*.18); cok=r[i].get("camera")==c[i].get("camera"); sok=r[i].get("shot_scale")==c[i].get("shot_scale")
+        tok=abs(rd-cd)<=max(.18,rd*.18); cok=known_grammar(r[i].get("camera")) and known_grammar(c[i].get("camera")) and r[i].get("camera")==c[i].get("camera"); sok=known_grammar(r[i].get("shot_scale")) and known_grammar(c[i].get("shot_scale")) and r[i].get("shot_scale")==c[i].get("shot_scale")
         timing.append(tok);camera.append(cok);scale.append(sok)
         if not tok: timing_bad.append(i)
         if not cok: camera_bad.append(i)
