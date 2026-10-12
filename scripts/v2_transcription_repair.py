@@ -27,7 +27,6 @@ def repair(ccsd,report,assembly,audio,samples,observe):
   if tag!='equal':
    for n,(start,end) in enumerate(ranges):
     if max(start,i)<min(end,j) or i==j and start<=i<=end:affected.add(n)
- if not affected:return copy.deepcopy(report)
  def mapped_boundary(index):
   choices={k+index-i for tag,i,j,k,l in ops if tag=='equal' and i<=index<=j}
   if index==0:choices.add(0)
@@ -36,6 +35,22 @@ def repair(ccsd,report,assembly,audio,samples,observe):
   mapped=choices.pop()
   if mapped not in boundaries:raise ValueError('Cannot split observed token at scene boundary')
   return boundaries[mapped]
+ # Exact words can still carry unusable ASR intervals: a zero-duration
+ # terminal word cannot borrow visibility from another scene or speaker.
+ # Three consecutive zero-duration tokens also exceed the short-phrase guard.
+ reasons={n:['lexical_mismatch'] for n in affected}
+ def timing_issue(words):
+  if words and words[-1].get('start')==words[-1].get('end'):return 'zero_duration_scene_terminal'
+  run=0
+  for word in words:
+   run=run+1 if word.get('start')==word.get('end') else 0
+   if run>=3:return 'zero_duration_run_exceeds_phrase_capacity'
+  return None
+ for n,bounds in enumerate(ranges):
+  lo,hi=map(mapped_boundary,bounds)
+  issue=timing_issue(report['words'][lo:hi])
+  if issue:affected.add(n);reasons.setdefault(n,[]).append(issue)
+ if not affected:return copy.deepcopy(report)
  replacements=[];proof=[]
  for n in sorted(affected):
   scene,w=scenes[n],windows[n];line=scene['audio']['dialogue'][0]
@@ -43,13 +58,14 @@ def repair(ccsd,report,assembly,audio,samples,observe):
   if not 0<=first<last<=len(samples):raise ValueError('Invalid crop sample bounds')
   crop=samples[first:last];local=list(observe(crop))
   if norm(' '.join(x['word'] for x in local))!=norm(line['text']):raise ValueError('Independent crop still differs: '+scene['id'])
+  if timing_issue(local):raise ValueError('Independent crop still has unusable zero-duration boundary: '+scene['id'])
   previous=0;absolute=[]
   for word in local:
    start,end=word.get('start'),word.get('end')
    if any(type(t) not in (int,float) or not math.isfinite(t) for t in (start,end)) or not previous<=start<=end<=len(crop)/16000:raise ValueError('Observed crop time outside actual samples')
    absolute.append({**word,'start':start+first/16000,'end':end+first/16000,'scene_id':scene['id'],'speaker':line['speaker']});previous=end
   lo,hi=map(mapped_boundary,ranges[n]);replacements.append((lo,hi,absolute))
-  proof.append({'scene_id':scene['id'],'audio_sha256':digest,'sample_rate':16000,'sample_start':first,'sample_end':last,'decoded_crop_sha256':hashlib.sha256(crop.tobytes()).hexdigest(),'original_observed_word_range':[lo,hi],'original_observed_words':report['words'][lo:hi],'local_observed_words':local,'actual_transcript':' '.join(x['word'] for x in local),'absolute_offset_seconds':first/16000})
+  proof.append({'scene_id':scene['id'],'repair_reasons':reasons[n],'audio_sha256':digest,'sample_rate':16000,'sample_start':first,'sample_end':last,'decoded_crop_sha256':hashlib.sha256(crop.tobytes()).hexdigest(),'original_observed_word_range':[lo,hi],'original_observed_words':report['words'][lo:hi],'local_observed_words':local,'actual_transcript':' '.join(x['word'] for x in local),'absolute_offset_seconds':first/16000})
  words=copy.deepcopy(report['words'])
  for lo,hi,absolute in reversed(replacements):words[lo:hi]=absolute
  if [w for x in words for w in norm(x['word']).split()]!=expected:raise ValueError('Repaired full transcript does not exactly match')

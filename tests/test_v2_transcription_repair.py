@@ -21,6 +21,28 @@ class RecognitionRepairTests(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,'still differs'):repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:words)
  def test_exact_input_does_not_call_model(self):
   self.report['words'][1]['word']='credits';result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,self.observe);self.assertEqual(self.calls,[]);self.assertEqual(result,self.report)
+ def test_exact_words_with_zero_duration_scene_terminal_are_reobserved(self):
+  self.report['words'][1].update(word='credits',start=.8,end=.8)
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,self.observe)
+  self.assertEqual(self.calls,[14400]);self.assertEqual(result['words'][1]['start'],.5)
+  self.assertEqual(result['recognition_repair']['windows'][0]['repair_reasons'],['zero_duration_scene_terminal'])
+  self.assertEqual(result['original_full_transcription']['words'][1]['start'],.8)
+ def test_terminal_zero_crop_cannot_borrow_from_next_speaker(self):
+  self.report['words'][1].update(word='credits',start=.8,end=.8)
+  def zero(crop):return [{'word':'Useful','start':0.,'end':.3},{'word':'credits','start':.8,'end':.8}]
+  with self.assertRaisesRegex(ValueError,'still has unusable zero-duration'):
+   repair(self.cc,self.report,self.assembly,self.audio,self.samples,zero)
+ def test_safe_zero_prefix_does_not_trigger_reobservation(self):
+  self.report['words'][0].update(start=0.,end=0.);self.report['words'][1]['word']='credits'
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,self.observe)
+  self.assertEqual(self.calls,[]);self.assertEqual(result,self.report)
+ def test_terminal_retry_preserves_actual_nonzero_sample_offset(self):
+  self.report['words'][1]['word']='credits';self.report['words'][3].update(start=1.8,end=1.8)
+  local=[{'word':'Continue','start':.1,'end':.3},{'word':'now','start':.5,'end':.8}]
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:local)
+  proof=result['recognition_repair']['windows'][0]
+  self.assertEqual(proof['scene_id'],'b');self.assertEqual(proof['sample_start'],16000)
+  self.assertEqual(result['words'][2]['start'],1.1);self.assertEqual(result['words'][3]['end'],1.8)
  def test_changed_source_and_fabricated_out_of_range_time_block(self):
   with self.assertRaisesRegex(ValueError,'outside actual samples'):
    repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:[{'word':'Useful credits','start':0.,'end':2.}])
