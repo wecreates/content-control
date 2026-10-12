@@ -16,6 +16,13 @@ on:
       - 'scripts/validate_creative_blueprint.py'
       - 'scripts/verify_episode3_layout.py'
       - 'scripts/free_transcription_qa.py'
+      - 'scripts/episode3_voice_plan.py'
+      - 'scripts/v2_free_voice.py'
+      - 'scripts/v2_audio_assemble.py'
+      - 'scripts/verify_rendered_handoff.mjs'
+      - 'tests/test_episode3_voice_plan.py'
+      - 'control/free-voice-policy.json'
+      - 'production/episode3/voice-dialogue.json'
       - '.github/workflows/episode3-cashback-casino.yml'
 permissions:
   contents: write
@@ -64,66 +71,31 @@ jobs:
         run: python scripts/verify_episode3_layout.py remotion/CashbackCasinoVisual.jsx
       - name: Bundle composition preflight
         run: npx remotion compositions remotion/episode3-index.jsx
-      - name: Cartesia Sonic 3.6 voice
+      - name: Generate free locked character voices
         env:
-          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
-          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
-          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
-          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
-          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
+          HF_HUB_DISABLE_TELEMETRY: "1"
+          DO_NOT_TRACK: "1"
         run: |
           set -euo pipefail
-          mkdir -p public/audio qa-output/episode3/voice-candidates public-review state
-          rm -f public/audio/episode3-cashback.mp3 public/audio/episode3-cartesia.wav
+          mkdir -p public/audio qa-output/episode3/free-voice public-review state
+          python -m unittest -v tests/test_episode3_voice_plan.py tests/test_v2_free_voice.py tests/test_v2_audio_assemble.py
+          sudo apt-get install -y -qq espeak-ng
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy
           python scripts/voice_provider.py --out state/episode3-voice-provider.json
-          STRATEGY=$(python -c 'import json; print(json.load(open("state/episode3-voice-provider.json"))["selected_strategy"])')
-          if [ "$STRATEGY" = "required_provider_missing" ]; then
-            printf '%s\n' '{"status":"PROVIDER_REQUIRED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/episode3-premium-voice.json
-            echo "Cartesia Sonic 3.6 is required. CARTESIA_API_KEY is not configured."
-            exit 42
-          fi
-          python scripts/cartesia_sonic_generate.py \
-            --dialogue production/episode3/voice-dialogue.json \
-            --out public/audio/episode3-cartesia.wav \
-            --receipt state/episode3-cartesia-voice.json
-          CSTAT=$(python -c 'import json; print(json.load(open("state/episode3-cartesia-voice.json"))["status"])')
-          if [ "$CSTAT" != "PASS" ]; then
-            printf '%s\n' '{"status":"CARTESIA_FAILED","provider":"cartesia","model_id":"sonic-3.6","publication_enabled":false}' > state/episode3-premium-voice.json
-            exit 43
-          fi
-          python -m pip install -r requirements-transcription.txt
-          python scripts/voice_candidate_qa.py \
-            --audio public/audio/episode3-cartesia.wav \
-            --manifest production/episode3/voice-dialogue.json \
-            --out qa-output/episode3/voice-candidates/cartesia.json \
-            --model base.en
-          python - <<'PY'
-          import json,pathlib
-          qa=json.load(open("qa-output/episode3/voice-candidates/cartesia.json"))
-          ok=qa.get("status")=="PASS" or qa.get("verdict")=="PASS"
-          if not ok:
-              raise SystemExit("Cartesia voice failed QA")
-          r={
-            "schema_version":1,
-            "status":"PASS",
-            "provider":"cartesia",
-            "model_id":"sonic-3.6",
-            "audio":"public/audio/episode3-cartesia.wav",
-            "qa":qa,
-            "publication_enabled":False,
-          }
-          pathlib.Path("state/episode3-premium-voice.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
-          PY
-          ffmpeg -y -i public/audio/episode3-cartesia.wav -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
+          python scripts/episode3_voice_plan.py --dialogue production/episode3/voice-dialogue.json --contract state/episode3-factual-contract.json --out qa-output/episode3/free-voice/ccsd.json
+          python scripts/v2_free_voice.py --ccsd qa-output/episode3/free-voice/ccsd.json --out-dir qa-output/episode3/free-voice/clips --receipt state/episode3-free-voice.json
+          python scripts/v2_audio_assemble.py --ccsd qa-output/episode3/free-voice/ccsd.json --manifest qa-output/episode3/free-voice/clips/approved-manifest.json --out qa-output/episode3/free-voice/narration.wav --receipt qa-output/episode3/free-voice/assembly.json
+          ffmpeg -nostdin -y -i qa-output/episode3/free-voice/narration.wav -c:a libmp3lame -b:a 192k public/audio/episode3-cashback.mp3 >/dev/null 2>&1
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,sample_rate,channels -show_entries format=duration -of json public/audio/episode3-cashback.mp3 > qa-output/episode3/voice-probe.json
-          python - <<'PY'
+          python - <<'PYVOICE'
           import json
           d=json.load(open("qa-output/episode3/voice-probe.json"))
-          dur=float(d["format"]["duration"])
-          assert dur <= 30.25, f"narration would be truncated by 30s composition: {dur:.3f}s"
-          assert d.get("streams"), d
-          print({"narration_duration_seconds":dur,"provider":"cartesia","model":"sonic-3.6"})
-          PY
+          duration=float(d["format"]["duration"])
+          assert abs(duration-30)<=.1, f"Complete 30-second audio required: {duration}"
+          assert d.get("streams"),d
+          print({"duration":duration,"provider":"kokoro","paid_provider_calls":0,"listening_review":"pending"})
+          PYVOICE
 
       - name: Render
         run: |
@@ -185,6 +157,8 @@ jobs:
           assert p.read_text().startswith("WEBVTT")
           print(hashlib.sha256(p.read_bytes()).hexdigest())
           PY
+      - name: Require complete rendered creative review
+        run: node scripts/verify_rendered_handoff.mjs public-review/episode3-cashback-casino.mp4 production/episode3/rendered-creative-review.json qa-output/episode3/creative-handoff.json
       - name: Bind receipt
         run: |
           python - <<'PY'
@@ -194,12 +168,12 @@ jobs:
           parts={k:json.load(open(f"qa-output/episode3/{k}.json")) for k in ["audio","deterministic","semantic","mobile","factual"]}
           transcription=json.load(open("state/episode3-transcription-health.json"))
           voice_provider=json.load(open("state/episode3-voice-provider.json"))
-          premium_voice=json.load(open("state/episode3-premium-voice.json"))
+          voice_generation=json.load(open("state/episode3-free-voice.json"))
           ok=parts["audio"]["verdict"]=="PASS" and parts["deterministic"]["verdict"]=="PASS" and parts["semantic"]["verdict"]=="PASS" and parts["mobile"]["status"]=="PASS" and parts["factual"]["status"]=="PASS" and transcription["status"]=="PASS"
           captions=pathlib.Path("public-review/episode3-cashback-casino.vtt")
           caption_sha=hashlib.sha256(captions.read_bytes()).hexdigest()
           ok=ok and captions.is_file() and captions.read_text().startswith("WEBVTT")
-          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts,"transcription":transcription,"voice_provider":voice_provider,"premium_voice":premium_voice}
+          r={"schema_version":1,"status":"GREEN" if ok else "FAIL","candidate_sha256":h,"caption_sha256":caption_sha,"title":"2% Cashback Turned Dave's Brain Into a Casino","publication_enabled":False,"credit_cost":0,"video_path":"public-review/episode3-cashback-casino.mp4","caption_path":"public-review/episode3-cashback-casino.vtt","contact_sheet":"qa-output/episode3/contact.jpg","parts":parts,"transcription":transcription,"voice_provider":voice_provider,"voice_generation":voice_generation}
           pathlib.Path("state/episode3-health.json").write_text(json.dumps(r,indent=2,sort_keys=True)+"\n")
           print(json.dumps({"status":r["status"],"candidate_sha256":h}))
           if not ok: raise SystemExit(3)
@@ -239,7 +213,7 @@ jobs:
           set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json state/episode3-voice-provider.json state/episode3-premium-voice.json state/episode3-cartesia-voice.json state/episode3-eleven-voice.json
+          git add -f public/audio/episode3-cashback.mp3 public-review/episode3-cashback-casino.mp4 public-review/episode3-cashback-casino.vtt qa-output/episode3 state/episode3-health.json state/episode3-transcription-health.json state/episode3-voice-provider.json state/episode3-free-voice.json
           git diff --cached --quiet || git commit -m "Persist entertainment-first cashback casino candidate"
           for attempt in 1 2 3 4; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
@@ -263,7 +237,9 @@ jobs:
             state/episode3-health.json
             state/episode3-transcription-health.json
             state/episode3-voice-provider.json
-            state/episode3-premium-voice.json
+            state/episode3-free-voice.json
+            qa-output/episode3/free-voice
+            qa-output/episode3/creative-handoff.json
             qa-output/episode3/audio.json
             qa-output/episode3/deterministic.json
             qa-output/episode3/semantic.json

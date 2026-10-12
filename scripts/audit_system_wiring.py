@@ -362,12 +362,11 @@ def audit_root(root: Path):
         "production_reality_media_qa.py", "rendered-creative-review.json",
     ]) and not any(x in v2_voice_text for x in ["scripts/cartesia_sonic_generate.py", "scripts/eleven_v3_generate.py"])
     checks["free_voice_tests_wired"]="tests/test_v2_free_voice.py" in v2_voice_text and "test:voice" in scripts and "test_voice_provider.py" in scripts.get("test:voice","")
-    # Older studio/Episode 3 callers remain structurally present, but cannot call a
-    # paid provider. They are blocked pending explicit migration, not live-ready.
+    # The legacy studio remains blocked; Episode 3 uses the free path with review gates.
     checks["legacy_studio_voice_callers_preserved"]=all(x in studio_text for x in ["ccsd_voice_manifest.py","voice_candidate_qa.py","inject_voiceover_path.py"]) and "voiceover_path" in ref_comp
     episode3_voice=episode3_text
-    checks["legacy_episode3_voice_qa_preserved"]="voice_candidate_qa.py" in episode3_voice and checks["paid_voice_network_boundaries_locked"]
-    details["free_voice_readiness"]={"structural_wiring_only":True,"local_generation":"not_verified_by_this_audit","listening_and_transcript_quality":"not_verified_by_this_audit","legacy_studio_and_episode3":"paid_generation_blocked_pending_route_migration"}
+    checks["free_episode3_voice_qa_connected"]=all(x in episode3_voice for x in ["scripts/episode3_voice_plan.py", "scripts/v2_free_voice.py", "scripts/v2_audio_assemble.py", "scripts/free_transcription_qa.py", "scripts/verify_rendered_handoff.mjs", "state/episode3-free-voice.json"]) and not any(x in episode3_voice for x in ["scripts/cartesia_sonic_generate.py", "scripts/eleven_v3_generate.py"]) and checks["paid_voice_network_boundaries_locked"]
+    details["free_voice_readiness"]={"structural_wiring_only":True,"local_generation":"not_verified_by_this_audit","listening_and_transcript_quality":"not_verified_by_this_audit","legacy_studio":"paid_generation_blocked_pending_route_migration","episode3":"free_pipeline_wired_runtime_and_creative_review_separate"}
     short_comp=ref_comp
     long_comp=(root/"remotion/ReferenceCloneLongComposition.jsx").read_text() if (root/"remotion/ReferenceCloneLongComposition.jsx").is_file() else ""
     checks["voice_v3_render_path"]="voiceover_path" in short_comp and "voiceover_path" in long_comp
