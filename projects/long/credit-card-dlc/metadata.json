@@ -1,0 +1,40 @@
+{
+  "title": "Your Credit Card Has DLC (And You\u2019re Paying for It)",
+  "title_alternatives": [
+    "The $200 Credit Card That Lost to a Free One",
+    "Your Credit Card Rewards Have a Spending Problem"
+  ],
+  "description": "Dave buys a fictional premium credit card and discovers four expensive traps: inflated point totals, interest, bonus chasing, and deferred-interest fine print. Original stick-figure finance comedy. All card offers and rewards calculations in this story are illustrative; actual terms vary. No sponsored offer or affiliate recommendation is included.\n\nExample math: 30,000 points \u00d7 $0.007 = $210; $210 + $60 useful credits \u2212 $200 fee = $70; $200 cash back \u2212 $70 = $130 difference. Simplified interest: $1,000 \u00d7 24% \u00d7 30/365 \u2248 $19.73. A $1,200 balance divided over 12 months is $100/month before any applicable fees or other charges.",
+  "publication_enabled": false,
+  "privacy_status": "private",
+  "category_id": "27",
+  "language": "en-US",
+  "made_for_kids": false,
+  "status": "SCRIPT_METADATA_DRAFT_NOT_PUBLICATION_APPROVED",
+  "thumbnail_brief": {
+    "text": "THE $200 TRAP",
+    "original_art": "Locked Dave crushed under oversized $200 invoice; metal card on white ground; red fee accent; no issuer logos"
+  },
+  "claims": {
+    "fictional_card_math_verified": true,
+    "primary_source_verification": "PENDING; do not treat script claims as externally verified",
+    "interest_basis": "Simplified constant principal simple daily estimate; not issuer statement calculation",
+    "no_revenue_promises": true
+  },
+  "arithmetic": {
+    "points_value": 210.0,
+    "premium_net": 70,
+    "free_cashback": 200.0,
+    "free_advantage": 130,
+    "interest_30_days": 19.73,
+    "bonus_extra_spend": 500,
+    "bonus_less_extra_spend": -200,
+    "monthly_payoff_target": 100.0
+  },
+  "source_script": "production/episode1/rebuild-v2/narration-script.txt",
+  "source_visual_timeline": "production/episode1/rebuild-v2/visual-timeline.json",
+  "audio_status": "NOT_GENERATED",
+  "render_status": "NOT_RENDERED",
+  "review_status": "NOT_REVIEWED",
+  "cta": "Next episode: the minimum payment trap. No unverified product CTA."
+}

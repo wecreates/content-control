@@ -1,0 +1,103 @@
+name: Resumable production execution
+on:
+  push:
+    branches: [codex/production-completion-20261012]
+  workflow_dispatch:
+    inputs:
+      format:
+        description: Production format
+        type: choice
+        options: [short, long, both]
+        default: short
+      resume_run_id:
+        description: Optional previous manual run ID (blank starts fresh)
+        type: string
+        default: ''
+  pull_request:
+    paths:
+      - 'scripts/v2_execution.py'
+      - 'tests/test_v2_execution.py'
+      - '.github/workflows/production-execution.yml'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: production-execution-${{ github.ref }}-${{ inputs.format || 'tests' }}
+  cancel-in-progress: false
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest -v tests.test_v2_execution
+  produce:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    needs: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - format: short
+            ccsd: projects/v2/amex-vs-chase-boss-fight/ccsd.json
+            composition: StudioAnimatic
+          - format: long
+            ccsd: projects/long/credit-card-dlc/ccsd.json
+            composition: StudioLong
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        with:
+          python-version: '3.12'
+      - name: Restore explicitly selected same-repository manual run
+        if: (inputs.format == matrix.format || inputs.format == 'both') && inputs.resume_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESUME_RUN: ${{ inputs.resume_run_id }}
+          FORMAT: ${{ matrix.format }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          run_id = os.environ['RESUME_RUN']
+          if not run_id.isdigit():
+              raise SystemExit('Resume run ID must be numeric')
+          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{os.environ["GH_REPO"]}/actions/runs/{run_id}']))
+          if run['event'] != 'workflow_dispatch' or run['path'] != '.github/workflows/production-execution.yml' or run['head_branch'] != os.environ['GITHUB_REF_NAME']:
+              raise SystemExit('Resume must originate from this manual workflow and branch')
+          subprocess.run(['gh', 'run', 'download', run_id, '--name', 'production-state-' + os.environ['FORMAT'], '--dir', 'state/production-' + os.environ['FORMAT']], check=True)
+          PY
+      - name: Install free CPU production dependencies
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        run: |
+          npm ci
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg espeak-ng
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy opencv-python-headless
+          python -m pip install -r requirements-transcription.txt
+      - name: Produce and inspect review candidate
+        if: github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both'
+        env:
+          CCSD: ${{ matrix.ccsd }}
+          COMPOSITION: ${{ matrix.composition }}
+          FORMAT: ${{ matrix.format }}
+        run: python scripts/v2_execution.py --ccsd "$CCSD" --workdir "state/production-$FORMAT" --composition "$COMPOSITION"
+      - name: Preserve resumable state and actual output even after failure
+        if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-state-${{ matrix.format }}
+          path: state/production-${{ matrix.format }}/
+          retention-days: 14
+          if-no-files-found: warn

@@ -1,0 +1,204 @@
+"""Run the existing free V2 production stages with crash-safe, verifiable resume.
+
+python scripts/v2_execution.py --ccsd projects/v2/amex-vs-chase-boss-fight/ccsd.json --workdir state/production
+Local workdir must be retained by the host between runs. This does not publish.
+"""
+import argparse
+import contextlib
+import fcntl
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def sha(path):
+    with Path(path).open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def atomic_json(path, value):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix='.checkpoint-')
+    try:
+        with os.fdopen(fd, 'w') as stream:
+            json.dump(value, stream, indent=2, allow_nan=False)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(name, path)
+    finally:
+        if os.path.exists(name):
+            os.unlink(name)
+
+
+class StageRunner:
+    def __init__(self, workdir):
+        self.root = Path(workdir).resolve()
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.path = self.root / 'execution.json'
+        self.state = json.loads(self.path.read_text()) if self.path.exists() else {'schema_version': 1, 'stages': {}}
+        self.state.update(publication_enabled=False, production_approved=False, status='RUNNING')
+        self.save()
+
+    def save(self):
+        atomic_json(self.path, self.state)
+
+    def stage(self, name, inputs, action, attempts=1, force=False):
+        try:
+            fingerprint = {str(Path(p).resolve()): sha(p) for p in [Path(__file__), *inputs]}
+        except OSError as error:
+            self.state.update(status='BLOCKED', error=str(error))
+            self.save()
+            raise
+        old = self.state['stages'].get(name, {})
+        valid = old.get('status') == 'PASS' and old.get('inputs') == fingerprint and bool(old.get('outputs'))
+        valid = valid and all(Path(p).is_file() and sha(p) == h for p, h in old.get('outputs', {}).items())
+        if valid and not force:
+            return old
+        record = {'status': 'RUNNING', 'inputs': fingerprint, 'attempts': 0, 'previous_attempts': old.get('previous_attempts', 0) + old.get('attempts', 0)}
+        self.state['stages'][name] = record
+        for attempt in range(1, attempts + 1):
+            record.update(status='RUNNING', attempts=attempt, started=time.time())
+            self.save()
+            try:
+                paths = action()
+                if not paths or any(not Path(p).is_file() or Path(p).stat().st_size == 0 for p in paths):
+                    raise ValueError('Stage did not produce nonempty outputs')
+                if any(sha(p) != h for p, h in fingerprint.items()):
+                    raise ValueError('Stage inputs changed during execution')
+                record.update(status='PASS', outputs={str(Path(p).resolve()): sha(p) for p in paths}, ended=time.time())
+                self.save()
+                return record
+            except Exception as error:
+                record.update(status='FAILED', error=str(error), ended=time.time())
+                self.state['status'] = 'BLOCKED'
+                self.save()
+                # Only process errors/timeouts are transient; policy/data failures fail closed.
+                if attempt == attempts or not isinstance(error, (subprocess.CalledProcessError, subprocess.TimeoutExpired)):
+                    raise
+
+
+@contextlib.contextmanager
+def job_lock(workdir):
+    Path(workdir).mkdir(parents=True, exist_ok=True)
+    with (Path(workdir) / 'execution.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        yield
+
+
+def execute(ccsd_path, workdir, composition="StudioAnimatic"):
+    if composition not in ("StudioAnimatic", "StudioLong"):
+        raise ValueError("Unsupported composition")
+    ccsd_path = Path(ccsd_path).resolve()
+    ccsd = json.loads(ccsd_path.read_text())
+    if ccsd.get('publication_enabled') is not False:
+        raise ValueError('Publication must be explicitly disabled')
+    if not ccsd.get('scenes'):
+        raise ValueError('Scenes are required')
+    with job_lock(workdir):
+        runner = StageRunner(workdir)
+        w = runner.root
+        clips, mixdir = w / 'clips', w / 'mix'
+        voice, silent, final = w / 'voice.wav', w / 'silent.mp4', w / 'candidate.mp4'
+        props, qa = w / 'props.json', w / 'media-qa.json'
+        scripts = ROOT / 'scripts'
+
+        def command(name, args, outputs, timeout=1800, check=True):
+            with (w / (name + '.log')).open('a') as log:
+                result = subprocess.run([str(a) for a in args], cwd=ROOT, stdout=log, stderr=log, timeout=timeout)
+            if check:
+                result.check_returncode()
+            return outputs
+
+        def python(name, args, outputs):
+            return command(name, [sys.executable, scripts / (name + '.py'), *args], outputs)
+
+        def generate():
+            python('v2_free_voice', ['--ccsd', ccsd_path, '--out-dir', clips], [clips / 'approved-manifest.json'])
+            manifest = json.loads((clips / 'approved-manifest.json').read_text())
+            paths = [(clips / item['file']).resolve() for item in manifest['clips']]
+            if any(not p.is_relative_to(clips) for p in paths):
+                raise ValueError('Clip outside job directory')
+            return [clips / 'approved-manifest.json', *paths]
+
+        voice_record = runner.stage('voice', [ccsd_path, scripts / 'v2_free_voice.py', ROOT / 'control/free-voice-policy.json', ROOT / 'control/audio-sync-policy.json'], generate)
+        runner.stage('assembly', [ccsd_path, scripts / 'v2_audio_assemble.py', *voice_record['outputs']], lambda: python('v2_audio_assemble', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--out', voice, '--receipt', w / 'assembly.json'], [voice, w / 'assembly.json']))
+        stems = [ROOT / 'public/audio' / name for name in ('episode1-music.mp3', 'episode1-sfx-1.mp3', 'episode1-sfx-2.mp3')]
+        runner.stage('mix', [ccsd_path, voice, scripts / 'v2_sound_mix.py', *stems], lambda: python('v2_sound_mix', ['--ccsd', ccsd_path, '--voice', voice, '--out-dir', mixdir, '--receipt', w / 'mix.json'], [mixdir / 'mix.wav', w / 'mix.json']))
+        contract, transcript, captions = w / 'transcription-contract.json', w / 'transcription.json', w / 'captions.json'
+        def transcription_contract():
+            lines = [d['text'] for scene in sorted(ccsd['scenes'], key=lambda s: s['start']) for d in scene.get('audio', {}).get('dialogue', [])]
+            atomic_json(contract, {'publication_enabled': False, 'narration_text': ' '.join(lines), 'expected_duration_seconds': max(s['end'] for s in ccsd['scenes'])})
+            return [contract]
+        runner.stage('transcription_contract', [ccsd_path], transcription_contract)
+        runner.stage('transcription', [voice, contract, scripts / 'free_transcription_qa.py', ROOT / 'requirements-transcription.txt'], lambda: python('free_transcription_qa', ['--audio', voice, '--contract', contract, '--output', transcript, '--model', 'small.en'], [transcript]))
+        runner.stage('captions', [ccsd_path, voice, transcript, scripts / 'v2_captions.py'], lambda: python('v2_captions', ['--ccsd', ccsd_path, '--transcription', transcript, '--audio', voice, '--out', captions], [captions]))
+        runner.stage('caption_frames', [ccsd_path, captions, scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], lambda: command('caption_frames', ['node', scripts / 'verify_caption_frames.mjs', '--ccsd', ccsd_path, '--captions', captions, '--out', w / 'caption-frames.json'], [w / 'caption-frames.json']))
+        def render_props():
+            track = json.loads(captions.read_text())
+            if track.get('status') != 'PASS':
+                raise ValueError('Observed captions required')
+            atomic_json(props, {'ccsd': {**ccsd, 'caption_track': track}})
+            return [props]
+        runner.stage('props', [ccsd_path, captions], render_props)
+        selection = w / 'composition.json'
+        if not selection.exists() or json.loads(selection.read_text()).get('composition') != composition:
+            atomic_json(selection, {'composition': composition})
+        render_inputs = [selection, props, ROOT / 'package-lock.json', *sorted((ROOT / 'remotion').rglob('*.*')), *sorted(p for p in (ROOT / 'public').rglob('*') if p.is_file())]
+        render_inputs += sorted(ROOT.glob('remotion.config.*'))
+
+        def render(force=False):
+            runner.stage('render', render_inputs, lambda: command('render', [ROOT / 'node_modules/.bin/remotion', 'render', 'remotion/studio-animatic-index.jsx', composition, silent, '--props=' + str(props), '--codec=h264', '--crf=18', '--concurrency=1'], [silent], timeout=7200), attempts=2, force=force)
+            runner.stage('mux', [silent, mixdir / 'mix.wav'], lambda: command('mux', ['ffmpeg', '-nostdin', '-y', '-i', silent, '-i', mixdir / 'mix.wav', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', final], [final]), attempts=2, force=force)
+
+        def inspect():
+            qa.unlink(missing_ok=True)
+            command('qa', [sys.executable, scripts / 'production_reality_media_qa.py', '--video', final, '--ccsd', ccsd_path, '--out', qa], [qa], check=False)
+            report = json.loads(qa.read_text())
+            if report.get('candidate_sha256') != sha(final):
+                raise ValueError('QA receipt does not match candidate')
+            if report.get('status') != 'PASS' or not report.get('checks') or not all(v is True for v in report['checks'].values()):
+                raise ValueError('Media QA failed: ' + ', '.join(k for k, v in report.get('checks', {}).items() if v is not True))
+            return [qa]
+
+        render()
+        for repair in range(2):
+            try:
+                runner.stage('qa', [final, ccsd_path, scripts / 'production_reality_media_qa.py'], inspect, force=bool(repair))
+                break
+            except ValueError:
+                report = json.loads(qa.read_text()) if qa.exists() else {}
+                failed = {k for k, v in report.get('checks', {}).items() if v is not True}
+                if repair or not failed or not failed <= {'decodes', 'complete_av_decode', 'audio_present', 'audio_audible', 'audio_covers_video', 'duration_match'}:
+                    raise
+                # One genuine rebuild/retest for corrupt or incomplete media, never creative certification.
+                render(force=True)
+        runner.state.update(status='REVIEW_CANDIDATE', candidate=str(final), candidate_sha256=sha(final), creative_review='PENDING', audio_listening_review='PENDING')
+        runner.save()
+        return runner.state
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--ccsd', required=True)
+    parser.add_argument('--workdir', required=True)
+    parser.add_argument('--composition', choices=['StudioAnimatic', 'StudioLong'], default='StudioAnimatic')
+    args = parser.parse_args()
+    try:
+        result = execute(args.ccsd, args.workdir, args.composition)
+        print(json.dumps({k: v for k, v in result.items() if k != 'stages'}))
+        return 0
+    except Exception as error:
+        print(json.dumps({'status': 'BLOCKED', 'reason': str(error), 'publication_enabled': False, 'production_approved': False}), file=sys.stderr)
+        return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
