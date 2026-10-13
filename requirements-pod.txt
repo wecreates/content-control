@@ -1,0 +1,5 @@
+# Install alongside requirements-free-qa.lock.txt in a separate Python worker.
+# OCR uses the tesseract system executable; no pytesseract wrapper is necessary.
+# Versions used for the local Python 3.12 PDF tests; validate target clean build.
+reportlab==4.4.9
+PyMuPDF==1.26.6

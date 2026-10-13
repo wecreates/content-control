@@ -1,0 +1,115 @@
+import crypto from 'node:crypto';
+import {assertBridge,enforceBrief,verifyEnvelope,enforceQA} from './integrations/pod/policy.mjs';
+export async function createPodPool(env=process.env) {
+ const {default:pg}=await import('pg');
+ let u;try{u=new URL(env.POD_DATABASE_URL);}catch{throw Error('POD_DATABASE_REQUIRED');}
+ if(!['postgres:','postgresql:'].includes(u.protocol)||!u.username||!u.password||u.pathname.length<2||
+  u.hash||[...u.searchParams.keys()].some(k=>k!=='sslmode')||
+  (u.searchParams.has('sslmode')&&!['require','verify-full'].includes(u.searchParams.get('sslmode')))) throw Error('POD_DATABASE_INVALID');
+ return new pg.Pool({host:u.hostname,port:Number(u.port||5432),user:decodeURIComponent(u.username),
+  password:decodeURIComponent(u.password),database:decodeURIComponent(u.pathname.slice(1)),
+  ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:10000,query_timeout:15000,idleTimeoutMillis:10000});
+}
+export class PodDB {
+ constructor({pool,bridge,upstreamKey,qaKey,expiresAt}) {
+  assertBridge(bridge);Object.assign(this,{pool,upstreamKey,qaKey,expiresAt:Date.parse(expiresAt)});
+ }
+ active(){if(!Number.isFinite(this.expiresAt)||this.expiresAt-Date.now()<=86400000)throw Error('POD_STORAGE_EXPIRING');}
+ async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
+  if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
+  const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
+  if(intake.concept_id!==id||intake.business_id!==businessId||!intake.fingerprint||
+    !['PASS','FAIL','UNKNOWN'].includes(intake.rights_state))throw Error('INTAKE_SCOPE_INVALID');
+  return this.tx(async c=>{
+   // Serialize fingerprint deduplication so duplicate retries never consume unique-concept budget.
+   await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[intake.fingerprint]);
+   const found=await c.query('SELECT id FROM pod_concepts WHERE fingerprint=$1',[intake.fingerprint]);
+   if(found.rows.length)return found.rows[0];
+   await c.query("INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,(now() AT TIME ZONE 'UTC')::date) ON CONFLICT DO NOTHING",[businessId]);
+   const budget=await c.query("UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date AND used<$2 RETURNING used",[businessId,dailyLimit]);
+   if(!budget.rows.length)throw Error('DAILY_CONCEPT_LIMIT');
+   await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished) VALUES($1,$2,$3,$4,$5)',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']);
+   return {id};
+  });
+ }
+ async requeueRepair(jobId,upstream){
+  const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
+  return this.tx(async c=>{
+   const j=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q",[jobId])).rows[0];
+   if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),j.id,'pod.repair.archived',{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope}]);
+   await c.query("UPDATE pod_production_queue SET state='raw',manifest=NULL,qa_envelope=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
+  });
+ }
+ async tx(fn){
+  this.active();const c=await this.pool.connect();let bad=false;
+  try{await c.query('BEGIN');await c.query("SET LOCAL lock_timeout='2s'");
+   await c.query("SET LOCAL statement_timeout='10s'");const r=await fn(c);this.active();await c.query('COMMIT');return r;
+  }catch(e){try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
+ }
+ async enqueue({job,upstream,conceptId,revision}) {
+  const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
+  const brief=enforceBrief(grant,job);
+  return this.tx(async c=>{
+   const {rows}=await c.query('SELECT * FROM pod_concepts WHERE id=$1 FOR SHARE',[conceptId]);
+   if(rows[0]?.rights_state!=='PASS'||rows[0]?.permanently_unpublished||rows[0]?.business_id!==job.business_id)throw Error('RIGHTS_BLOCKED');
+   const key=crypto.createHash('sha256').update(JSON.stringify([conceptId,job.account_id,revision])).digest('hex');
+   const r=await c.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(idempotency_key) DO NOTHING RETURNING id`,
+    [job.id,conceptId,job.account_id,job.platform,revision,brief,upstream,key]);
+   if(!r.rows.length)throw Error('DUPLICATE_JOB');return r.rows[0];
+  });
+ }
+ async listReady(){this.active();return (await this.pool.query("SELECT id,platform,state FROM pod_production_queue WHERE state='qa_passed' ORDER BY created_at LIMIT 20")).rows;}
+ async failProduction(job,reason){return this.tx(async c=>{
+  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' RETURNING id",[reason,job.id,job.fencing_token]);
+  if(!r.rows.length)throw Error('LEASE_LOST');
+ });}
+ async claimProduction(){return this.tx(async c=>{
+  const r=await c.query(`UPDATE pod_production_queue SET state='processing',lease_until=now()+interval '30 minutes',
+   fencing_token=fencing_token+1,attempt=attempt+1,updated_at=now()
+   WHERE id=(SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+    WHERE q.state='raw' AND q.next_attempt_at<=now() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+    ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1) RETURNING *`);return r.rows[0]||null;
+ });}
+ async completeProduction(job,manifest,qaEnvelope){
+  const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+  const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256);return true;}catch{return false;}})();
+  return this.tx(async c=>{
+   const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
+    WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>now() RETURNING id`,
+    [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
+   if(!r.rows.length)throw Error('LEASE_LOST');return {pass};
+  });
+ }
+ async claimPublish(accountId,delaySeconds){return this.tx(async c=>{
+  const a=(await c.query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=now() FOR UPDATE",[accountId])).rows[0];
+  if(!a)return null;
+  const busy=await c.query("SELECT 1 FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]);
+  if(busy.rows.length)return null;
+  const count=(await c.query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>now()-interval '24 hours'",[accountId])).rows[0].n;
+  if(count>=a.daily_cap)return null;
+  const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   WHERE q.account_id=$1 AND q.state='qa_passed' AND q.next_attempt_at<=now() AND p.rights_state='PASS'
+   AND NOT p.permanently_unpublished ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId])).rows[0];
+  if(!j)return null;
+  const r=await c.query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=now()+interval '5 minutes',updated_at=now() WHERE id=$1 RETURNING *",[j.id]);
+  await c.query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id) VALUES($1,$2,$3)',[j.id,r.rows[0].attempt,accountId]);
+  await c.query("UPDATE pod_accounts SET next_allowed_at=now()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
+  return r.rows[0];
+ });}
+ async finish(job,state,receipt={},reason=null){
+  if(!['blocked','ambiguous','submitted'].includes(state))throw Error('INVALID_FINISH');
+  return this.tx(async c=>{
+   const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
+    WHERE id=$4 AND fencing_token=$5 AND state='publishing' RETURNING id`,[state,receipt.id||null,reason,job.id,job.fencing_token]);
+   if(!r.rows.length)throw Error('LEASE_LOST');
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.'+state,receipt]);
+  });
+ }
+ async recover(){return this.tx(async c=>{
+  await c.query("UPDATE pod_production_queue SET state='ambiguous',reason_code='LEASE_EXPIRED' WHERE state='publishing' AND lease_until<now()");
+  await c.query("UPDATE pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED' WHERE state='processing' AND lease_until<now()");
+ });}
+ async close(){await this.pool.end();}
+}

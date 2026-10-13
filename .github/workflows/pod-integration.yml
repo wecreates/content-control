@@ -1,0 +1,38 @@
+name: POD integration gates
+on:
+  pull_request:
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod.py','.github/workflows/pod-integration.yml','server-lowmem.js']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: pod_test_only
+          POSTGRES_DB: pod_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PUBLICATION_ENABLED: 'false'
+      POD_PUBLICATION_ENABLED: 'false'
+      POD_TEST_DATABASE_URL: postgresql://postgres:pod_test_only@localhost:5432/pod_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts
+      - run: npm run test:pod
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr fonts-dejavu-core
+      - run: pip install Pillow==12.3.0 numpy==2.3.5 opencv-python-headless==5.0.0.93 reportlab==4.4.9 PyMuPDF==1.26.6
+      - run: npm run test:pod-python
+      - run: node --check server-lowmem.js

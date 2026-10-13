@@ -242,8 +242,23 @@
         }
       ],
       "analysis_status": "prior_transcript_plus_watch_sampled_frames",
-      "title": "Duolingo retention breakdown — limited evidence review",
+      "title": "Duolingo retention breakdown \u2014 limited evidence review",
       "incomplete_reason": "Public media retrieved at 52.1 seconds and 16 additional sampled frames inspected. Prior transcript evidence preserved. Continuous audiovisual review and signed-in account test remain unverified."
+    },
+    {
+      "id": "pod-kdp-production",
+      "status": "implementation_pending_live_verification",
+      "platforms": [
+        "kdp",
+        "redbubble",
+        "teepublic",
+        "zazzle",
+        "spreadshirt"
+      ],
+      "publication_enabled": false,
+      "runtime_queue": "PostgreSQL pod_production_queue",
+      "readiness_source": "Money Factory CONTENT_READINESS.json",
+      "verification": "POD_IMPLEMENTATION_STATUS.md"
     }
   ]
 }

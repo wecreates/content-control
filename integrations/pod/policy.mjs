@@ -1,0 +1,55 @@
+import crypto from 'node:crypto';
+export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
+const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
+export const BRIDGE_RULES = Object.freeze([
+ 'Content Control may never exceed the business max_mode',
+ 'LAUNCH CTA is blocked unless launch_content_allowed=true',
+ 'Unverified facts are converted to questions/hypotheses or omitted',
+ 'Physical product shipping/safety/warranty claims require verified provider data',
+ 'Verified revenue/profit claims require Money Factory verified events',
+ 'Publication remains false unless explicitly enabled'
+]);
+export function assertBridge(bridge) {
+ if(bridge?.producer!=='CYZOR Money Factory'||bridge?.consumer!=='Content Control'||
+  !BRIDGE_RULES.every(x=>bridge?.contract?.fail_closed_rules?.includes(x))) throw Error('BRIDGE_CONTRACT_INVALID');
+}
+export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
+ if(typeof key!=='string'||Buffer.byteLength(key)<32) throw Error('SIGNING_KEY_REQUIRED');
+ if(typeof envelope?.payload!=='string'||envelope.payload.length>262144||
+  !/^[a-f0-9]{64}$/.test(envelope?.signature||'')) throw Error('ENVELOPE_INVALID');
+ const expected=crypto.createHmac('sha256',key).update(envelope.payload).digest();
+ if(!crypto.timingSafeEqual(expected,Buffer.from(envelope.signature,'hex'))) throw Error('SIGNATURE_INVALID');
+ const p=JSON.parse(envelope.payload);
+ if(p.audience!==audience||p.schema_version!==1||!Number.isFinite(p.issued_at_ms)||
+  !Number.isFinite(p.expires_at_ms)||p.issued_at_ms>now||p.expires_at_ms<=now||
+  p.expires_at_ms-p.issued_at_ms>900000) throw Error('ENVELOPE_EXPIRED_OR_INVALID');
+ return p;
+}
+export function enforceBrief(grant,job,{publishing=false}={}) {
+ if(!PLATFORMS.includes(job?.platform)||job.destination_platform!==job.platform) throw Error('PLATFORM_BLOCKED');
+ if(!job.id||!job.account_id||!job.business_id||grant.job_id!==job.id||
+  grant.account_id!==job.account_id||grant.platform!==job.platform||grant.business_id!==job.business_id) throw Error('GRANT_SCOPE_MISMATCH');
+ if(grant.publication_permission!==true||grant.revoked!==false) throw Error('PUBLICATION_PERMISSION_REQUIRED');
+ if(!Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
+ if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
+ if(publishing&&(job.mode!=='LAUNCH'||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
+ const facts=grant.verified_facts&&typeof grant.verified_facts==='object'?grant.verified_facts:{};
+ // Downstream metadata comes ONLY from the signed upstream allowlist, never arbitrary client text.
+ const forbidden=new Set(Array.isArray(grant.forbidden_claims)?grant.forbidden_claims:[]);
+ const approved=Object.fromEntries(Object.entries(facts).filter(([k,v])=>v?.verified===true&&
+  typeof v.value==='string'&&!forbidden.has(k)&&!forbidden.has(v.value)&&Array.isArray(v.evidence_ids)&&v.evidence_ids.length>0));
+ for(const [k,v] of Object.entries(approved)) {
+  if(['shipping','safety','warranty'].includes(k)&&v.provider_verified!==true) delete approved[k];
+  if(['revenue','profit'].includes(k)&&v.money_factory_event_verified!==true) delete approved[k];
+ }
+ return {id:job.id,account_id:job.account_id,business_id:job.business_id,platform:job.platform,
+  destination_platform:job.platform,mode:job.mode,package_sha256:job.package_sha256,
+  facts:approved,price:grant.price?.verified===true&&grant.price?.evidence_id&&
+   Number.isSafeInteger(grant.price.amount_minor)&&grant.price.amount_minor>=0&&
+   /^[A-Z]{3}$/.test(grant.price.currency||'')?grant.price:null};
+}
+export const REQUIRED_QA=['text','geometry','resolution','rights','competitive','print_preflight'];
+export function enforceQA(qa,packageHash,templateHash) {
+ if(qa?.verdict!=='PASS'||qa.package_sha256!==packageHash||qa.template_sha256!==templateHash||
+  !REQUIRED_QA.every(k=>qa.checks?.[k]===true)) throw Error('QA_BLOCKED');
+}

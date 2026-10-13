@@ -1,3 +1,5 @@
+import {initializePodService} from './integrations/pod/service.mjs';
+const podService=await initializePodService();
 import express from "express";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -18,6 +20,7 @@ import {creativeHandoff} from "./creative-handoff.js";
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
 
 const app=express();
+app.use("/api/print",podService.router);
 app.use("/api/integrations",createRepositoryIntegrationRouter());
 app.use("/api/production",createProductionStatusRouter());
 app.use("/v2/draft",createDraftPreviewHoldRouter());
@@ -401,8 +404,9 @@ const server=app.listen(PORT,()=>{
 
 function shutdown(signal){
   console.log("shutdown",signal);
-  server.close(()=>socialService.stop().finally(()=>process.exit(0)));
+  server.close(()=>Promise.allSettled([socialService.stop(),podService.stop()]).finally(()=>process.exit(0)));
   setTimeout(()=>process.exit(1),8000).unref();
 }
 process.on("SIGTERM",()=>shutdown("SIGTERM"));
 process.on("SIGINT",()=>shutdown("SIGINT"));
+
