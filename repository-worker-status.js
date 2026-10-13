@@ -35,7 +35,8 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
       persistent_worker_configured:false,
       status_scope:'Hosted CPU verification only; GPU generation, provider workflows and persistent project state remain unverified',
       repositories:registry.repositories.map(e=>({id:e.id,order:e.order,revision:e.revision,capability:e.capability,
-        runtime_status:e.id==='wan21'?'BLOCKED_CUDA_AND_MODEL_REQUIRED':'HOSTED_EXECUTION_NOT_VERIFIED',
+        required_for_production:e.required_for_production!==false,
+        runtime_status:e.id==='wan21'?(e.required_for_production===false?'OPTIONAL_DISABLED':'BLOCKED_CUDA_AND_MODEL_REQUIRED'):'HOSTED_EXECUTION_NOT_VERIFIED',
         verified_operations:[]}))};
     if(!latest)return result;
     if(latest.path!==workflow || latest.head_branch!=='main' || !Number.isSafeInteger(latest.id))throw Error('INVALID_WORKFLOW');

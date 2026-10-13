@@ -63,3 +63,13 @@ test('concurrent readers share a cached upstream request',async()=>{
   }});
   await Promise.all([read(),read(),read()]);await read();assert.equal(calls,3);
 });
+
+test('optional Wan is skipped without granting production approval',async()=>{
+  const data=fixture();data.registry.repositories[0].required_for_production=false;
+  const result=await reader(data)();
+  assert.equal(result.repositories[0].runtime_status,'OPTIONAL_DISABLED');
+  assert.equal(result.repositories[0].required_for_production,false);
+  assert.equal(result.production_ready,false);
+  assert.equal(result.publication_enabled,false);
+  assert.equal(result.repositories.flatMap(e=>e.verified_operations).length,8);
+});
