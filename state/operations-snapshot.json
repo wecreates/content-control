@@ -34,7 +34,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -44,7 +44,7 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "component_checks_passed": true,
+  "component_checks_passed": false,
   "dependency_vulnerabilities": {
     "critical": 0,
     "high": 0,
@@ -55,7 +55,9 @@
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
   "mobile_playback_status": "PASS",
@@ -70,7 +72,7 @@
   "review_server_smoke_status": "PASS",
   "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "schema_version": 1,
-  "status": "COMPONENT_CHECKS_PASSED",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",
   "sync_retention_status": "PASS",
   "system_wiring_status": "PASS",

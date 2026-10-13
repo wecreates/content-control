@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,12 +54,30 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "f02b116f5a5e50f8fc222f82c6f5d59a99403e644aaf72a69628519a0a88c223",
+      "expected": "930fde4d188e343b56513ac6b3865f19986fa60853516295d491fb5276610c48",
+      "path": "package.json"
+    },
+    {
+      "actual": "89eb65c503992f6b14557a33915b8bf319a8d1fbcd2bf8fc9e5217cc23fb8d91",
+      "expected": "2f92cd3f0599eabe328aa099bb3b2e4ef5f9d7e83dde23dff3308e4aa22484b3",
+      "path": "render.yaml"
+    },
+    {
+      "actual": "a72ce54a11d1775e49d48ceeae72f98278818df8537cfdfe025b36b30d4731a8",
+      "expected": "66382c7701263b1886a2fef2f029e6a138b96135a4014be75bdef1f9178c8260",
+      "path": "server-lowmem.js"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
-  "status": "GREEN",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
