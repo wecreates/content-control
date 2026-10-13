@@ -62,6 +62,7 @@
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,
     ".github/workflows/runtime-security-audit.yml": true,
+    ".github/workflows/semantic-visual-analysis.yml": true,
     ".github/workflows/shot-render-farm.yml": true,
     ".github/workflows/social-link-intake.yml": true,
     ".github/workflows/source-refresh.yml": true,
@@ -92,27 +93,13 @@
     ".github/workflows/verify-opus-catalog.yml": true,
     ".github/workflows/verify-render-monitor.yml": true,
     ".github/workflows/video-playback-contract.yml": true,
+    ".github/workflows/visual-analysis.yml": true,
     "canonical_generation_exists": true,
-    "deny_unlisted_automatic_workflows": false,
+    "deny_unlisted_automatic_workflows": true,
     "publication_disabled": true
   },
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL",
-  "violations": [
-    {
-      "path": ".github/workflows/semantic-visual-analysis.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": true,
-      "workflow_run": true
-    },
-    {
-      "path": ".github/workflows/visual-analysis.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": true,
-      "workflow_run": false
-    }
-  ]
+  "status": "PASS",
+  "violations": []
 }
