@@ -11,6 +11,7 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'server-lowmem.js'
+      - 'validation-process.js'
       - 'render.yaml'
       - 'package.json'
       - 'state/canonical-workflow-registry.json'

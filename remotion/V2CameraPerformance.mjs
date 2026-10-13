@@ -23,7 +23,8 @@ export function v2ImpactAmount(scenes,scene,time) {
 // Beat-specific actor framing leaves captions, props and environment fixed.
 // Feet and held-object contact points remain in world space while faces enlarge.
 export function v2FrameActor(beat,slot) {
- const multiplier={'amex-counter':1.25,'final-clash':1.25,'trap':1.2,'finish':1.2}[beat]||1;
+ // Finish retains its established scale: further enlargement hides the sandwich payoff.
+ const multiplier={'amex-counter':1.25,'final-clash':1.25,'trap':1.2}[beat]||1;
  if(multiplier===1)return {...slot};
  const scale=slot.scale*multiplier;
  const framed={...slot,scale,x:slot.x+(beat==='amex-counter'||beat==='final-clash'?(slot.x<360?12:-12):0),y:slot.y+152*(slot.scale-scale)};
