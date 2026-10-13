@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,10 +54,23 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "3a3a48e8a27d5c6ee5bafccc796d94c283f277a8d37b54a998e1d22a035b2844",
+      "expected": "6128d0044eeb5b6f6f3ed933a982985142f55a7a2db19563b68ad247b21a3f1c",
+      "path": "package.json"
+    },
+    {
+      "actual": "2ec857c22b6b5777e7af239b2a347494a7901ed4a924002c8a512c074da1d873",
+      "expected": "c14da01dc7caa4a16dc4038a1e236ad978cb682416d8560c719e0850c6a85d03",
+      "path": "server-lowmem.js"
+    }
+  ],
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "REPAIR_REQUIRED"
 }
