@@ -34,7 +34,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -48,19 +48,19 @@
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": false,
+    "system_wiring_green": true,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
     "zero_credit": true
   },
   "failed_checks": [
-    "system_wiring_green"
+    "provenance_inputs_current"
   ],
   "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "audit_system_wiring",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
