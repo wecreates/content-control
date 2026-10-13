@@ -39,7 +39,7 @@ export function V2BattleAction({scene,scenes,time}) {
   </g>:null}
   {beat==='chase-strike'?<g>
    <Card x={180} y={434} label="CHASE"/><Card x={540} y={434} label="AMEX"/>
-   <Sword x={mix(250,435,strike)-rebound*145} y={480-contact*22-rebound*36} rotation={mix(-24,12,strike)-rebound*42} s={1.15}/>
+   <Sword x={mix(250,435,strike)-rebound*145} y={525-contact*22-rebound*36} rotation={mix(-24,12,strike)-rebound*42} s={1.15}/>
    <Wallet x={530+contact*18} y={530+contact*24} s={.38} rotation={contact*30}/>
    <Word size={26}>SWORD: HUGE. BUDGET: MISSING.</Word>
   </g>:null}
