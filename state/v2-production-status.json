@@ -39,12 +39,10 @@
       "receipt_sha256": "5dfb8a34a62e4f1ad12ea0eeb660e6bb74d01d6a2aa997b2302af4692dc96893"
     },
     "style_parity": {
-      "status": "BLOCKED",
-      "failed_checks": [
-        "framewise_style_parity"
-      ],
-      "receipt_sha256": "15a415b703243b0df25cb3cbe1dd24146d973a23f9fb890c81ca03874570204a",
-      "reason": "Review candidate hash does not match exact video"
+      "status": "PASS",
+      "failed_checks": [],
+      "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+      "receipt_sha256": "b8e0c657db2842184833d6319962514da1e9c963bb8f076be481b43b93cae13f"
     },
     "character_binding": {
       "status": "PASS",
@@ -64,8 +62,31 @@
       "receipt_sha256": "0aa2928eaa96ff604879de05784a15f887c3a5e5a4eff44a71ffd9d3c86c07f6"
     }
   },
-  "status": "BLOCKED",
+  "status": "REVIEW_REQUIRED",
   "production_approved": false,
   "publication_enabled": false,
-  "scope": "Recorded build result; no full audiovisual or competitor approval."
+  "scope": "Recorded build result; no full audiovisual or competitor approval.",
+  "original_build_checks": {
+    "style_parity": {
+      "status": "BLOCKED",
+      "failed_checks": [
+        "framewise_style_parity"
+      ],
+      "receipt_sha256": "15a415b703243b0df25cb3cbe1dd24146d973a23f9fb890c81ca03874570204a",
+      "reason": "Review candidate hash does not match exact video"
+    }
+  },
+  "remaining_review": {
+    "full_audiovisual": "NOT_APPROVED",
+    "competitive_motion": "NOT_VERIFIED"
+  },
+  "review_reconciliation": {
+    "run_id": 38475379030,
+    "source_commit": "ea3ba0fde03d692f0b97bd0d68b73b1dba21682b",
+    "source_report_sha256": "127757e5b69974d1d27b118af28622aaa3398022f9c38d6831d04fbb7f04c2db",
+    "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+    "technical_receipt_sha256": "5dfb8a34a62e4f1ad12ea0eeb660e6bb74d01d6a2aa997b2302af4692dc96893",
+    "review_sha256": "d0174839e5b639def50c68b9f5f1e5a0d0cc5f2bea91e60674c0c10683ce7f18",
+    "recorded_at": "2026-10-13T22:06:01.938666+00:00"
+  }
 }

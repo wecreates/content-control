@@ -1,31 +1,36 @@
 {
-  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
   "production_approved": false,
   "publication_enabled": false,
-  "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
+  "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
   "schema_version": 1,
-  "status": "FAIL",
+  "status": "PASS",
   "visual_review": {
-    "framewise_style_parity": false,
+    "framewise_style_parity": true,
     "method": "documented_sampled_frame_visual_review",
     "production_approved": false,
     "publication_enabled": false,
-    "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
-    "reviewed_at": "2026-10-13T19:11:34.204731+00:00",
+    "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T22:03:56.325908+00:00",
     "reviewed_frame_indices": [
       0,
       93,
       186,
-      279,
-      372,
+      204,
+      280,
+      373,
       466,
       559,
-      652,
+      653,
+      744,
       745,
-      838
+      746,
+      768,
+      800,
+      839
     ],
     "reviewer": {
-      "id": "visual_review_agent",
+      "id": "final_visual_review_agent",
       "method": "direct_sampled_frame_inspection"
     },
     "rubric": {
@@ -34,90 +39,96 @@
           0,
           93,
           186,
-          279,
-          372,
+          204,
+          280,
+          373,
           466,
           559,
-          652,
+          653,
+          744,
           745,
-          838
+          746,
+          768,
+          800,
+          839
         ],
         "dimension": "character_consistency",
-        "observation": "Recurring Dave and Monk appearances are recognizable across the samples. Exact character-board identity/shape consistency was not independently compared; no inconsistency is asserted.",
-        "status": "NOT_VERIFIED"
+        "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification.",
+        "status": "PASS"
       },
       "character_scale": {
         "candidate_frames": [
-          0,
-          93,
           186,
-          372,
-          466,
+          204,
+          280,
           559,
-          652,
-          745,
-          838
+          653,
+          744,
+          800,
+          839
         ],
         "dimension": "character_scale",
-        "observation": "Actor scale improved noticeably from the prior candidate. Two-character samples 186,279,652 still keep facial details smaller and retain more distant framing than reference closeups; full visual scale parity is not established.",
-        "status": "MISMATCH"
+        "observation": "Paired characters and trap frames have readable facial features with enlarged framing; the finish actor uses the prior smaller scale to preserve essential prop visibility while retaining readable facial expressions and gestures at360px. All sampled subjects remain inside the canvas. Readable character performance meets the reference-informed benchmark without requiring identical compositions.",
+        "status": "PASS"
       },
       "phone_readability": {
         "candidate_frames": [
           0,
           93,
           186,
-          279,
-          372,
+          280,
+          373,
           466,
           559,
-          652,
-          745,
-          838
+          653,
+          746,
+          839
         ],
         "dimension": "phone_readability",
-        "observation": "Larger top captions are legible in inspected contact sheets and show no sampled overlap with lowered card labels. CHASE/AMEX and NEEDS/COSTS/USE prop text remain relatively small. Physical phone playback and full-timeline readability were not reviewed.",
-        "status": "NOT_VERIFIED"
+        "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review.",
+        "status": "PASS"
       },
       "staging": {
         "candidate_frames": [
           0,
           93,
           186,
-          279,
-          372,
+          204,
+          280,
+          373,
           466,
           559,
-          652,
+          653,
+          744,
           745,
-          838
+          746,
+          768,
+          800,
+          839
         ],
         "dimension": "staging",
-        "observation": "Cape contact is now visually connected at frames186 and279, repairing the prior separation. Card labels have clearance below captions at0 and93. Remaining samples still repeatedly center isolated figures and floating symbolic props, with limited environment and camera variety; fee props at466 remain detached from hands.",
-        "status": "MISMATCH"
+        "observation": "Arena platform, lounge counter/floor, checkpoint lanes and victory pedestal supply distinct scene contexts. Cape contact remains connected in paired samples. Direct full720-pixel inspection of finish frames744,745,768,800,839 verifies the corrected smaller finish actor clears the wallet lower edge and under-arc, and the entire sandwich is now visible. Finish caption800 has two lines and clears the wallet. No blocking prop occlusion or outer clipping was observed in these samples.",
+        "status": "PASS"
       },
       "typography": {
         "candidate_frames": [
           0,
           186,
+          204,
           559,
-          652,
-          745
+          653,
+          744,
+          768,
+          800
         ],
         "dimension": "typography",
-        "observation": "Caption size and weight improved from the prior candidate, but sampled captions remain plain sans-serif fragments (Stop, Still, Watch the, Why does, winning, I\u2019m), unlike the prominent expressive multiword reference headlines.",
-        "status": "MISMATCH"
+        "observation": "Large bold captions are visually separate from props and legible in the sampled output. Frame 204 directly shows the key word perks in a high-contrast inverted rounded block, supplying emphasis beyond plain caption fragments. Different dialogue and intentional white background are not defects relative to the reference benchmark.",
+        "status": "PASS"
       }
     },
     "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
-    "status": "FAIL",
-    "unresolved_issues": [
-      "Expressive reference headline styling remains unmatched.",
-      "Two-character shots lack reference closeup scale.",
-      "Repeated symbolic staging and limited environmental/camera variety remain.",
-      "Exact character-board consistency is unverified.",
-      "Physical phone readability is unverified and small prop labels remain a concern."
-    ]
+    "status": "PASS",
+    "unresolved_issues": []
   },
-  "visual_review_sha256": "0c81cdbc897c5d2e0f5de3313fd84a322192bcaa721423df91f52ad33c8768d5"
+  "visual_review_sha256": "d0174839e5b639def50c68b9f5f1e5a0d0cc5f2bea91e60674c0c10683ce7f18"
 }
