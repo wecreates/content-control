@@ -16,6 +16,16 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   let activationStage = 'policy';
   const shutdown = new AbortController();
   const status = {...socialRuntimeReadiness(env), configured_storage_mode: 'unconfigured', providers:providerReadiness()};
+  // Configuration names are safe to report; values and account identifiers never leave the vault.
+  const configurationGroups = {
+    owner: ['SOCIAL_PUBLIC_ORIGIN','OWNER_GITHUB_CLIENT_ID','OWNER_GITHUB_CLIENT_SECRET','OWNER_GITHUB_ID'],
+    youtube: ['YOUTUBE_OAUTH_CLIENT_ID','YOUTUBE_OAUTH_CLIENT_SECRET','YOUTUBE_OAUTH_REDIRECT_URI','YOUTUBE_CHANNEL_ID'],
+    instagram: ['META_APP_ID','META_APP_SECRET','INSTAGRAM_OAUTH_REDIRECT_URI','INSTAGRAM_ACCOUNT_ID'],
+  };
+  status.authorization_configuration = Object.fromEntries(Object.entries(configurationGroups).map(([name, keys]) => {
+    const missing = keys.filter(key => !env[key]);
+    return [name, {status: missing.length ? 'INCOMPLETE' : 'PRESENT_UNVERIFIED', missing_configuration: missing, live_verified: false}];
+  }));
   const service = {
     status: () => ({...status, ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})}),
     beginAuthorization:async(platform,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},

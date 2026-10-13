@@ -8,7 +8,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction,v2WalletMotion} from "./V2BattleAction";
-import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,resolveBattleHandTargets} from "./StudioLayout.mjs";
+import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,resolveBattleHandTargets,v2TrapTapHand} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34,caption=false})=>{
@@ -54,7 +54,10 @@ export const StudioAnimaticComposition=({ccsd})=>{
           const start=beatScenes[0].start,end=beatScenes.at(-1).end;
           const wallet=v2WalletMotion('trap',clamp((t-start)/(end-start))),a=wallet.rotation*Math.PI/180;
           const anchor=x=>({x:(wallet.x+wallet.s*(x*Math.cos(a)-72*Math.sin(a))-slot.x)/slot.scale,y:(wallet.y+wallet.s*(x*Math.sin(a)+72*Math.cos(a))-slot.y)/slot.scale});
-          slot.leftHandTarget=anchor(-102);slot.rightHandTarget=anchor(102);
+          const left=anchor(-102);
+          const tap=v2TrapTapHand(clamp((t-start)/(end-start)),{x:slot.x+left.x*slot.scale,y:slot.y+left.y*slot.scale});
+          slot.leftHandTarget={x:(tap.x-slot.x)/slot.scale,y:(tap.y-slot.y)/slot.scale};
+          slot.rightHandTarget=anchor(102);
         }
         if(battle==='finish'&&id==='dave'){
           const start=beatScenes[0].start,end=beatScenes.at(-1).end;

@@ -136,11 +136,24 @@ test('activation reports safe failure stages while all external writes remain di
   assert.equal(status.activation_stage,stage);assert.equal(status.reason_code,code);
   assert.equal(status.publication_enabled,false);assert.equal(status.external_writes_enabled,false);
   assert.equal(status.worker_running,false);assert.equal(status.oauth_routes_enabled,false);
-  assert.ok(!JSON.stringify(status).includes('SECRET'));assert.ok(!JSON.stringify(status).includes('unsupported-secret-value'));
+  assert.ok(!JSON.stringify(status).includes('/missing/SECRET-vault'));assert.ok(!JSON.stringify(status).includes('unsupported-secret-value'));
  }
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'invalid-vault-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
  const file=path.join(dir,'vault');await fs.writeFile(file,'broken-private-envelope',{mode:0o600});
  const service=await initializeSocialService({env:{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:file,SOCIAL_VAULT_KEY:'c'.repeat(64)}});t.after(()=>service.stop());
  assert.equal(service.status().activation_stage,'storage_read');assert.equal(service.status().status,'ACTIVATION_BLOCKED');
  assert.ok(!JSON.stringify(service.status()).includes('broken-private-envelope'));
+});
+
+
+test('readiness exposes missing authorization settings without treating present secrets as verified',async()=>{
+ const {initializeSocialService}=await import('../integrations/social-automation/hosted-service.mjs');
+ const env={YOUTUBE_OAUTH_CLIENT_ID:'PRIVATE_CLIENT',YOUTUBE_OAUTH_CLIENT_SECRET:'PRIVATE_SECRET',YOUTUBE_OAUTH_REDIRECT_URI:'PRIVATE_REDIRECT',YOUTUBE_CHANNEL_ID:'PRIVATE_ACCOUNT',META_APP_ID:'PRIVATE_META'};
+ const service=await initializeSocialService({env});const status=service.status();
+ assert.equal(status.authorization_configuration.youtube.status,'PRESENT_UNVERIFIED');
+ assert.equal(status.authorization_configuration.youtube.live_verified,false);
+ assert.deepEqual(status.authorization_configuration.youtube.missing_configuration,[]);
+ assert.deepEqual(status.authorization_configuration.instagram.missing_configuration,['META_APP_SECRET','INSTAGRAM_OAUTH_REDIRECT_URI','INSTAGRAM_ACCOUNT_ID']);
+ assert.equal(status.oauth_routes_enabled,false);assert.equal(status.worker_running,false);
+ for(const value of Object.values(env))assert.ok(!JSON.stringify(status).includes(value));
 });

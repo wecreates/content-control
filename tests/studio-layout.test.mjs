@@ -191,3 +191,15 @@ test('V2 editorial cuts do not retrigger physical impact rays or camera shake',a
  assert.equal(continuations,16);
  const first=c.scenes[0];assert.equal(v2ImpactAmount(c.scenes,{...first,fx:[]},first.start),0);
 });
+
+
+test('Dave physically taps PANIC TAP then returns to wallet grip',async()=>{
+ const {v2TrapTapHand}=await import('../remotion/StudioLayout.mjs');
+ const grip={x:305,y:571};
+ assert.deepEqual(v2TrapTapHand(0,grip),grip);
+ for(const p of [.12,.14,.17])assert.deepEqual(v2TrapTapHand(p,grip),{x:210,y:423});
+ assert.deepEqual(v2TrapTapHand(.32,grip),grip);
+ assert.deepEqual(v2TrapTapHand(1,grip),grip);
+ for(let p=0;p<=1;p+=1/240){const hand=v2TrapTapHand(p,grip);assert.ok(hand.x>=210&&hand.x<=305);assert.ok(hand.y>=423&&hand.y<=571);}
+ assert.ok(Math.abs(v2TrapTapHand(.11999,grip).x-v2TrapTapHand(.12001,grip).x)<.001);
+});
