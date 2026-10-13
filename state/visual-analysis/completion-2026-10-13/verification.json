@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "run_id": 38473857671,
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "verification_status": "PASS",
+  "scope": "Technical, source binding, observed caption browser geometry, actual frame lattice and local phone viewport playback only",
+  "checks": {
+    "technical_pass": true,
+    "character_source_binding_pass": true,
+    "phone_viewport_playback_pass": true,
+    "receipt_candidate_hashes_match": true,
+    "caption_geometry_pass": true,
+    "caption_geometry_source_matches_hosted": true,
+    "caption_bytes_match_hosted_receipt": true,
+    "all_words_and_cues_on_actual_frame_lattice": true,
+    "faststart": true,
+    "transcription_pass": true,
+    "clip_transcription_pass": true,
+    "voice_assembly_pass": true,
+    "mix_pass": true
+  },
+  "actual_video_frames": 840,
+  "fps": 24,
+  "video_duration_seconds": 35.0,
+  "container_duration_seconds": 35.040998,
+  "planned_caption_lattice_frames": 841,
+  "caption_geometry": {
+    "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+    "captions_sha256": "fed34f6ed1c8f227ee1ee5476fca255f79a658f88c93899ade1983f97e957ed8",
+    "textblock_source_sha256": "d2ff9ef30edd2ded4d9a5beed03b706d37802d32c3f20715af3d476c29300432",
+    "scope": "All observed caption cues at 3 animation ages, Chromium SVG bounds; not full audiovisual approval",
+    "full_av_review": false,
+    "production_approved": false,
+    "status": "PASS",
+    "cues": 68,
+    "samples": 204,
+    "minLeft": 97.7109375,
+    "maxRight": 622.2890625,
+    "minTop": 162.27499389648438,
+    "maxBottom": 335.1199951171875,
+    "publication_enabled": false
+  },
+  "actual_caption_visibility": {
+    "status": "PASS",
+    "decoded_frame_count": 840,
+    "observed_cue_count": 68,
+    "visible_cue_count": 68,
+    "expected_word_count": 71,
+    "visible_word_count": 71,
+    "scope": "Actual MP4 frame lattice evaluated with renderer caption lookup"
+  },
+  "fresh_motion_receipt": "motion.json",
+  "faststart_atoms": {
+    "ftyp": 0,
+    "moov": 32,
+    "free": 28875,
+    "mdat": 28883
+  },
+  "receipt_statuses": {
+    "phone-viewport": "PASS",
+    "free-voice": "GENERATED_PENDING_LISTENING_REVIEW",
+    "mix": "PASS",
+    "render": "PASS",
+    "transcription": "PASS",
+    "clip-transcription": "PASS",
+    "caption-frames": "PASS",
+    "voice": "PASS",
+    "visual-parity": "BLOCKED",
+    "character-binding": "PASS"
+  },
+  "publication_enabled": false,
+  "production_approved": false,
+  "full_av_review": false,
+  "physical_android_test": false,
+  "remaining": "Full audiovisual approval, physical Android test, and source competitor motion review remain separate and unverified; fresh static review is saved alongside this receipt.",
+  "tests": {
+    "node_focused": {
+      "passed": 38,
+      "failed": 0
+    },
+    "python_review_evidence": {
+      "passed": 17,
+      "failed": 0
+    }
+  }
+}

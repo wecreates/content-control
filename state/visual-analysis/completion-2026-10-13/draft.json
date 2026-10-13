@@ -1,0 +1,10 @@
+{
+  "run_id": 38473857671,
+  "source_commit": "e9fb2d8711f0b3a3aca5787ebcf06e367382aadd",
+  "status": "DRAFT",
+  "publication_enabled": false,
+  "production_approved": false,
+  "voice_provider": "kokoro_local_cpu",
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "full_av_review": false
+}

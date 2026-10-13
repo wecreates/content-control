@@ -1,0 +1,616 @@
+{
+  "actual_transcript": "Stop attacking my wallet. Two cards, still no budget. Watch the shiny perks. That's where Dave stops reading. Lounge snacks, finally. A financial plan with tiny sandwiches. The snacks arrived. So did the fee. Dave only invited one. I'll pay with points. Why does this button say bad idea? Plot twist. The winning card fits your life. The cape is optional. I'm choosing a budget. Does it come with tiny sandwiches?",
+  "audio_sha256": "5ce1e3e1d6cd05db276441ca969ee95f6fb7548d839e056afb26e5cdbe3d589e",
+  "checks": {
+    "content_token_recall_ok": true,
+    "duration_plausible": true,
+    "no_post_narration_hallucination": true,
+    "publication_disabled": true,
+    "semantic_recall_ok": true,
+    "sequence_similarity_ok": true,
+    "transcript_coverage_ok": true,
+    "transcript_nonempty": true
+  },
+  "content_token_recall": 1.0,
+  "engine": "faster-whisper",
+  "expected_text": "Stop attacking my wallet! Two cards. Still no budget. Watch the shiny perks. That's where Dave stops reading. Lounge snacks? Finally, a financial plan with tiny sandwiches. The snacks arrived. So did the fee. Dave only invited one. I'll pay with points! Why does this button say bad idea? Plot twist: the winning card fits your life. The cape is optional. I'm choosing a budget. Does it come with tiny sandwiches?",
+  "failed_checks": [],
+  "faster_whisper_version": "1.2.1",
+  "language": "en",
+  "language_probability": 1,
+  "media_duration_seconds": 35.042,
+  "model": "small.en",
+  "publication_enabled": false,
+  "schema_version": 1,
+  "segments": [
+    {
+      "end": 1.32,
+      "start": 0.0,
+      "text": "Stop attacking my wallet."
+    },
+    {
+      "end": 4.6,
+      "start": 3.26,
+      "text": "Two cards, still no budget."
+    },
+    {
+      "end": 8.57,
+      "start": 7.53,
+      "text": "Watch the shiny perks."
+    },
+    {
+      "end": 10.65,
+      "start": 9.11,
+      "text": "That's where Dave stops reading."
+    },
+    {
+      "end": 13.15,
+      "start": 12.21,
+      "text": "Lounge snacks, finally."
+    },
+    {
+      "end": 15.21,
+      "start": 13.45,
+      "text": "A financial plan with tiny sandwiches."
+    },
+    {
+      "end": 17.77,
+      "start": 16.93,
+      "text": "The snacks arrived."
+    },
+    {
+      "end": 18.91,
+      "start": 18.21,
+      "text": "So did the fee."
+    },
+    {
+      "end": 20.75,
+      "start": 19.61,
+      "text": "Dave only invited one."
+    },
+    {
+      "end": 22.89,
+      "start": 22.05,
+      "text": "I'll pay with points."
+    },
+    {
+      "end": 24.63,
+      "start": 23.17,
+      "text": "Why does this button say bad idea?"
+    },
+    {
+      "end": 26.67,
+      "start": 26.19,
+      "text": "Plot twist."
+    },
+    {
+      "end": 28.39,
+      "start": 27.03,
+      "text": "The winning card fits your life."
+    },
+    {
+      "end": 29.83,
+      "start": 28.79,
+      "text": "The cape is optional."
+    },
+    {
+      "end": 32.15,
+      "start": 30.83,
+      "text": "I'm choosing a budget."
+    },
+    {
+      "end": 33.73,
+      "start": 32.45,
+      "text": "Does it come with tiny sandwiches?"
+    }
+  ],
+  "semantic_hits": [
+    {
+      "pass": true,
+      "terms": [
+        "stop"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "attacking"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "wallet"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "cards"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "still"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "budget"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "watch"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "shiny"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "perks"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "that's"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "where"
+      ]
+    },
+    {
+      "pass": true,
+      "terms": [
+        "dave"
+      ]
+    }
+  ],
+  "semantic_recall": 1.0,
+  "sequence_similarity": 1.0,
+  "spoken_number_decoding": false,
+  "status": "PASS",
+  "transcribed_duration_seconds": 33.73,
+  "transcript_coverage_ratio": 0.962568,
+  "word_timestamps": true,
+  "words": [
+    {
+      "end": 0.4,
+      "probability": 0.35335883498191833,
+      "start": 0.0,
+      "word": " Stop"
+    },
+    {
+      "end": 0.76,
+      "probability": 0.983991265296936,
+      "start": 0.4,
+      "word": " attacking"
+    },
+    {
+      "end": 0.98,
+      "probability": 0.9979075193405151,
+      "start": 0.76,
+      "word": " my"
+    },
+    {
+      "end": 1.32,
+      "probability": 0.9938409328460693,
+      "start": 0.98,
+      "word": " wallet."
+    },
+    {
+      "end": 3.26,
+      "probability": 0.04603082314133644,
+      "start": 3.26,
+      "word": " Two"
+    },
+    {
+      "end": 3.7,
+      "probability": 0.9942790269851685,
+      "start": 3.26,
+      "word": " cards,"
+    },
+    {
+      "end": 4.0,
+      "probability": 0.997297465801239,
+      "start": 3.88,
+      "word": " still"
+    },
+    {
+      "end": 4.28,
+      "probability": 0.9924023151397705,
+      "start": 4.0,
+      "word": " no"
+    },
+    {
+      "end": 4.6,
+      "probability": 0.9910411238670349,
+      "start": 4.28,
+      "word": " budget."
+    },
+    {
+      "end": 7.71,
+      "probability": 0.983735203742981,
+      "start": 7.53,
+      "word": " Watch"
+    },
+    {
+      "end": 7.95,
+      "probability": 0.9386829733848572,
+      "start": 7.71,
+      "word": " the"
+    },
+    {
+      "end": 8.25,
+      "probability": 0.9783884882926941,
+      "start": 7.95,
+      "word": " shiny"
+    },
+    {
+      "end": 8.57,
+      "probability": 0.9955289959907532,
+      "start": 8.25,
+      "word": " perks."
+    },
+    {
+      "end": 9.39,
+      "probability": 0.9950709044933319,
+      "start": 9.11,
+      "word": " That's"
+    },
+    {
+      "end": 9.51,
+      "probability": 0.9965294003486633,
+      "start": 9.39,
+      "word": " where"
+    },
+    {
+      "end": 9.77,
+      "probability": 0.9897037148475647,
+      "start": 9.51,
+      "word": " Dave"
+    },
+    {
+      "end": 10.15,
+      "probability": 0.979670524597168,
+      "start": 9.77,
+      "word": " stops"
+    },
+    {
+      "end": 10.65,
+      "probability": 0.9987897276878357,
+      "start": 10.15,
+      "word": " reading."
+    },
+    {
+      "end": 12.21,
+      "probability": 0.7603660225868225,
+      "start": 12.21,
+      "word": " Lounge"
+    },
+    {
+      "end": 12.55,
+      "probability": 0.9609276056289673,
+      "start": 12.21,
+      "word": " snacks,"
+    },
+    {
+      "end": 13.15,
+      "probability": 0.9956610798835754,
+      "start": 12.91,
+      "word": " finally."
+    },
+    {
+      "end": 13.49,
+      "probability": 0.9905055165290833,
+      "start": 13.45,
+      "word": " A"
+    },
+    {
+      "end": 13.81,
+      "probability": 0.9955350160598755,
+      "start": 13.49,
+      "word": " financial"
+    },
+    {
+      "end": 14.23,
+      "probability": 0.9992049336433411,
+      "start": 13.81,
+      "word": " plan"
+    },
+    {
+      "end": 14.43,
+      "probability": 0.9894586801528931,
+      "start": 14.23,
+      "word": " with"
+    },
+    {
+      "end": 14.75,
+      "probability": 0.9913581609725952,
+      "start": 14.43,
+      "word": " tiny"
+    },
+    {
+      "end": 15.21,
+      "probability": 0.9979287385940552,
+      "start": 14.75,
+      "word": " sandwiches."
+    },
+    {
+      "end": 16.97,
+      "probability": 0.7951261401176453,
+      "start": 16.93,
+      "word": " The"
+    },
+    {
+      "end": 17.29,
+      "probability": 0.9985001087188721,
+      "start": 16.97,
+      "word": " snacks"
+    },
+    {
+      "end": 17.77,
+      "probability": 0.996650755405426,
+      "start": 17.29,
+      "word": " arrived."
+    },
+    {
+      "end": 18.31,
+      "probability": 0.9954580068588257,
+      "start": 18.21,
+      "word": " So"
+    },
+    {
+      "end": 18.49,
+      "probability": 0.9752061367034912,
+      "start": 18.31,
+      "word": " did"
+    },
+    {
+      "end": 18.65,
+      "probability": 0.9984949827194214,
+      "start": 18.49,
+      "word": " the"
+    },
+    {
+      "end": 18.91,
+      "probability": 0.9923230409622192,
+      "start": 18.65,
+      "word": " fee."
+    },
+    {
+      "end": 19.61,
+      "probability": 0.9942412376403809,
+      "start": 19.61,
+      "word": " Dave"
+    },
+    {
+      "end": 19.91,
+      "probability": 0.9974199533462524,
+      "start": 19.61,
+      "word": " only"
+    },
+    {
+      "end": 20.43,
+      "probability": 0.9995392560958862,
+      "start": 19.91,
+      "word": " invited"
+    },
+    {
+      "end": 20.75,
+      "probability": 0.9983727931976318,
+      "start": 20.43,
+      "word": " one."
+    },
+    {
+      "end": 22.25,
+      "probability": 0.9665948748588562,
+      "start": 22.05,
+      "word": " I'll"
+    },
+    {
+      "end": 22.41,
+      "probability": 0.9963560104370117,
+      "start": 22.25,
+      "word": " pay"
+    },
+    {
+      "end": 22.61,
+      "probability": 0.998744010925293,
+      "start": 22.41,
+      "word": " with"
+    },
+    {
+      "end": 22.89,
+      "probability": 0.9986751675605774,
+      "start": 22.61,
+      "word": " points."
+    },
+    {
+      "end": 23.27,
+      "probability": 0.9963580965995789,
+      "start": 23.17,
+      "word": " Why"
+    },
+    {
+      "end": 23.39,
+      "probability": 0.9967494010925293,
+      "start": 23.27,
+      "word": " does"
+    },
+    {
+      "end": 23.55,
+      "probability": 0.9950243830680847,
+      "start": 23.39,
+      "word": " this"
+    },
+    {
+      "end": 23.79,
+      "probability": 0.9935584664344788,
+      "start": 23.55,
+      "word": " button"
+    },
+    {
+      "end": 24.03,
+      "probability": 0.9957892298698425,
+      "start": 23.79,
+      "word": " say"
+    },
+    {
+      "end": 24.25,
+      "probability": 0.30956754088401794,
+      "start": 24.03,
+      "word": " bad"
+    },
+    {
+      "end": 24.63,
+      "probability": 0.9987493753433228,
+      "start": 24.25,
+      "word": " idea?"
+    },
+    {
+      "end": 26.35,
+      "probability": 0.9730955362319946,
+      "start": 26.19,
+      "word": " Plot"
+    },
+    {
+      "end": 26.67,
+      "probability": 0.9823271036148071,
+      "start": 26.35,
+      "word": " twist."
+    },
+    {
+      "end": 27.13,
+      "probability": 0.9946560859680176,
+      "start": 27.03,
+      "word": " The"
+    },
+    {
+      "end": 27.31,
+      "probability": 0.9971221089363098,
+      "start": 27.13,
+      "word": " winning"
+    },
+    {
+      "end": 27.67,
+      "probability": 0.9957990050315857,
+      "start": 27.31,
+      "word": " card"
+    },
+    {
+      "end": 27.91,
+      "probability": 0.9962728023529053,
+      "start": 27.67,
+      "word": " fits"
+    },
+    {
+      "end": 28.11,
+      "probability": 0.9983823299407959,
+      "start": 27.91,
+      "word": " your"
+    },
+    {
+      "end": 28.39,
+      "probability": 0.9996203184127808,
+      "start": 28.11,
+      "word": " life."
+    },
+    {
+      "end": 28.95,
+      "probability": 0.9963088631629944,
+      "start": 28.79,
+      "word": " The"
+    },
+    {
+      "end": 29.13,
+      "probability": 0.7309860587120056,
+      "start": 28.95,
+      "word": " cape"
+    },
+    {
+      "end": 29.35,
+      "probability": 0.9988755583763123,
+      "start": 29.13,
+      "word": " is"
+    },
+    {
+      "end": 29.83,
+      "probability": 0.9987720847129822,
+      "start": 29.35,
+      "word": " optional."
+    },
+    {
+      "end": 31.37,
+      "probability": 0.777724951505661,
+      "start": 30.83,
+      "word": " I'm"
+    },
+    {
+      "end": 31.65,
+      "probability": 0.9921272993087769,
+      "start": 31.37,
+      "word": " choosing"
+    },
+    {
+      "end": 31.89,
+      "probability": 0.9937886595726013,
+      "start": 31.65,
+      "word": " a"
+    },
+    {
+      "end": 32.15,
+      "probability": 0.9924671053886414,
+      "start": 31.89,
+      "word": " budget."
+    },
+    {
+      "end": 32.49,
+      "probability": 0.9882450103759766,
+      "start": 32.45,
+      "word": " Does"
+    },
+    {
+      "end": 32.61,
+      "probability": 0.9963341951370239,
+      "start": 32.49,
+      "word": " it"
+    },
+    {
+      "end": 32.75,
+      "probability": 0.996278703212738,
+      "start": 32.61,
+      "word": " come"
+    },
+    {
+      "end": 32.93,
+      "probability": 0.9985018968582153,
+      "start": 32.75,
+      "word": " with"
+    },
+    {
+      "end": 33.25,
+      "probability": 0.9903912544250488,
+      "start": 32.93,
+      "word": " tiny"
+    },
+    {
+      "end": 33.73,
+      "probability": 0.997087299823761,
+      "start": 33.25,
+      "word": " sandwiches?"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "checks": {
+    "audio_audible": true,
+    "audio_covers_video": true,
+    "audio_present": true,
+    "complete_av_decode": true,
+    "decodes": true,
+    "duration_match": true,
+    "motion_alive": true,
+    "no_black": true,
+    "no_duplicate_run": true,
+    "publication_disabled": true,
+    "safe_border": true
+  },
+  "diagnostics": {
+    "v4_declaration_is_media_evidence": false,
+    "v4_declared_installed": true
+  },
+  "metrics": {
+    "audio_audible": true,
+    "audio_duration": 35.040998,
+    "audio_mean_db": -20.8,
+    "audio_start": 0.0,
+    "black_samples": 0,
+    "complete_av_decode": true,
+    "complete_video_decode": true,
+    "decoded_frames": 840,
+    "duplicate_pairs": 10,
+    "duration": 35.0,
+    "fps": 24.0,
+    "frames": 840,
+    "has_audio": true,
+    "has_video": true,
+    "max_border": 0.0034403669724770644,
+    "max_duplicate_run_pairs": 2,
+    "max_duplicate_run_seconds": 0.25,
+    "mean_motion": 0.021483359004693076
+  },
+  "publication_enabled": false,
+  "schema_version": 1,
+  "status": "PASS"
+}

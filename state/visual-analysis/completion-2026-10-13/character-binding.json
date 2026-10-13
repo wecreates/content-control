@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "source_renderer_binding",
+  "checks": {
+    "board_imports_shared_renderer": true,
+    "board_renders_all_identities": true,
+    "video_imports_shared_renderer": true,
+    "video_dispatches_all_identities": true,
+    "lock_names_same_renderer": true,
+    "publication_disabled": true
+  },
+  "source_files": {
+    "board_component": {
+      "path": "remotion/CharacterBoardComposition.jsx",
+      "sha256": "9dd065f617741b342498452f89edf256d3720097292366db81e08aa9ea1fea34"
+    },
+    "video_component": {
+      "path": "remotion/StudioAnimaticComposition.jsx",
+      "sha256": "d2ff9ef30edd2ded4d9a5beed03b706d37802d32c3f20715af3d476c29300432"
+    },
+    "character_system": {
+      "path": "remotion/CharacterSystem.jsx",
+      "sha256": "4c3da5256b4d950d69dd9c05041245061d7bc063fe4a6f40ba223dcdb226d143"
+    },
+    "board_lock": {
+      "path": "control/character-board-lock-v1.json",
+      "sha256": "f390272fbf100001e64113ac354880d6fba0f881d89667cf75f220c43bee6674"
+    }
+  },
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "rendered_pixel_identity_verified": false,
+  "full_av_review": false,
+  "production_approved": false,
+  "publication_enabled": false,
+  "limitation": "Shared source geometry verified. Scene transforms, occlusion, expression, and pose differ intentionally; this receipt does not prove rendered visibility or audiovisual quality."
+}

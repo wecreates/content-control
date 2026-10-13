@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "review_type": "independent_sampled_frame_visual_analysis",
+  "reviewed_at": "2026-10-13T21:51:48.278330+00:00",
+  "candidate": {
+    "path": "public-review/v2-draft.mp4",
+    "sha256": "a80cf3ae4a6c5d284962c33412dd703c32fa6c2e8855c23d40f0773263a8eb1a",
+    "frame_count": 839,
+    "fps": 24.0,
+    "duration_seconds": 34.958333333333336
+  },
+  "coverage": {
+    "sample_count": 11,
+    "sampled_frame_indices": [
+      0,
+      93,
+      186,
+      204,
+      279,
+      372,
+      466,
+      559,
+      652,
+      745,
+      838
+    ],
+    "full_video_watched": false,
+    "audio_reviewed": false,
+    "motion_parity_verified": false,
+    "temporal_alignment_with_reference": false
+  },
+  "reference_frames": [
+    {
+      "path": "reference/frames/ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "path": "reference/frames/ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "path": "reference/frames/ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "path": "reference/frames/ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "path": "reference/frames/ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "path": "reference/frames/ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "path": "reference/frames/ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "path": "reference/frames/ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "path": "reference/frames/ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "path": "reference/frames/ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "reviewer": {
+    "id": "final_visual_review_agent",
+    "method": "direct_sampled_frame_inspection"
+  },
+  "method": "Independently inspected all three comparison sheets covering ten candidate frames and ten stored reference stills, one additional decoded emphasis frame 204, ten candidate frames at 360px width, and the canonical character board. References serve as a readable visual-quality benchmark, not a demand for identical wording, paper texture or story.",
+  "findings": [
+    {
+      "dimension": "typography",
+      "status": "PASS",
+      "candidate_frames": [
+        0,
+        186,
+        204,
+        559,
+        652,
+        745
+      ],
+      "observation": "Large bold captions are visually separate from props and legible in the sampled output. Frame 204 directly shows the key word perks in a high-contrast inverted rounded block, supplying emphasis beyond plain caption fragments. Different dialogue and intentional white background are not defects relative to the reference benchmark."
+    },
+    {
+      "dimension": "character_scale",
+      "status": "PASS",
+      "candidate_frames": [
+        186,
+        204,
+        279,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "The enlarged paired characters have readable eyes, mouths and distinct silhouettes, while trap and finish frames use visibly closer subject framing than the prior reviewed candidate. Feet, ears and gestures remain inside the sampled canvas. Reference-like readable character performance is present without requiring identical scene composition."
+    },
+    {
+      "dimension": "staging",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        745,
+        838
+      ],
+      "observation": "Finish frame 745 enlarged Dave head overlaps the BUDGET wallet lower edge and hides the small sandwich beneath it. This is an unintended foreground occlusion, confirmed by direct inspection of the full 720px decoded frame. Other sampled environment repairs remain visible but this scene is not acceptable."
+    },
+    {
+      "dimension": "character_consistency",
+      "status": "PASS",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        204,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification."
+    },
+    {
+      "dimension": "phone_readability",
+      "status": "PASS",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review."
+    }
+  ],
+  "decision": "FAIL",
+  "verdict": "CREATIVE_OCCLUSION_IDENTIFIED",
+  "scope": {
+    "kind": "sampled_visual",
+    "full_audiovisual_review": false,
+    "sampled_frames": 11
+  },
+  "unresolved_issues": [
+    "Finish actor head occludes wallet lower edge and sandwich; restore clearance and rerender."
+  ],
+  "production_approved": false,
+  "publication_enabled": false,
+  "limitations": [
+    "Sampled visual pass does not establish full audiovisual quality, every-frame continuity or motion parity.",
+    "Stored reference stills have no independently verified source-video/timestamp linkage; comparison is not temporally aligned.",
+    "No physical-phone playback, retention result or competitive performance claim."
+  ],
+  "rubric": {
+    "typography": {
+      "pass": true,
+      "evidence": "Large bold captions are visually separate from props and legible in the sampled output. Frame 204 directly shows the key word perks in a high-contrast inverted rounded block, supplying emphasis beyond plain caption fragments. Different dialogue and intentional white background are not defects relative to the reference benchmark."
+    },
+    "character_scale": {
+      "pass": true,
+      "evidence": "The enlarged paired characters have readable eyes, mouths and distinct silhouettes, while trap and finish frames use visibly closer subject framing than the prior reviewed candidate. Feet, ears and gestures remain inside the sampled canvas. Reference-like readable character performance is present without requiring identical scene composition."
+    },
+    "staging": {
+      "pass": false,
+      "evidence": "Finish frame 745 enlarged Dave head overlaps the BUDGET wallet lower edge and hides the small sandwich beneath it. This is an unintended foreground occlusion, confirmed by direct inspection of the full 720px decoded frame. Other sampled environment repairs remain visible but this scene is not acceptable."
+    },
+    "character_consistency": {
+      "pass": true,
+      "evidence": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification."
+    },
+    "phone_readability": {
+      "pass": true,
+      "evidence": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review."
+    }
+  },
+  "character_board": {
+    "path": "reference/characters/content-control-character-board.svg",
+    "sha256": "fbcc307d2514c2f7a691da966971ba84186f90078209542f0933dc2decf5704e"
+  },
+  "review_artifacts": {
+    "comparison_sheets": [
+      "state/visual-analysis/all-blocks-repair/comparison-evidence/comparison-01.jpg",
+      "state/visual-analysis/all-blocks-repair/comparison-evidence/comparison-02.jpg",
+      "state/visual-analysis/all-blocks-repair/comparison-evidence/comparison-03.jpg"
+    ],
+    "supplemental_emphasis_frame": "state/visual-analysis/all-blocks-repair/frame-204.png",
+    "phone_raster_sheets": [
+      "state/visual-analysis/all-blocks-repair/phone-0.png",
+      "state/visual-analysis/all-blocks-repair/phone-5.png"
+    ]
+  },
+  "review_correction": "Earlier sampled PASS missed finish prop occlusion. This FAIL supersedes that verdict for the same candidate hash."
+}
