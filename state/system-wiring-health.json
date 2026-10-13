@@ -62,7 +62,7 @@
     "render_autodeploy_and_publication_lock": true,
     "renderer_backed_character_memory": true,
     "review_server_nonblank_shell": true,
-    "review_server_status_safe": false,
+    "review_server_status_safe": true,
     "rig_motion_library_connected": true,
     "shot_render_farm_connected": true,
     "storyboard_animatic_dailies_connected": true,
@@ -179,10 +179,8 @@
     "workflow_registry_duplicates": [],
     "workflow_violations": []
   },
-  "failed_checks": [
-    "review_server_status_safe"
-  ],
+  "failed_checks": [],
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL"
+  "status": "PASS"
 }

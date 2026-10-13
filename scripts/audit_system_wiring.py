@@ -4,6 +4,41 @@ from pathlib import Path
 
 AUTO_RE=re.compile(r"(?m)^  (push|schedule|workflow_run):")
 
+def _review_server_status_safe(root, server_text):
+    """Verify the actual extracted process-state wiring, not an obsolete inline initializer."""
+    # Strip comments/space for formatting tolerance; require the known local module
+    # and binding so an unrelated helper cannot satisfy the server's contract.
+    compact = lambda text: re.sub(r"\s+", "", re.sub(r"//[^\n]*", "", text))
+    server = compact(server_text)
+    wiring = [
+        'import{createValidationProcess}from"./validation-process.js";',
+        'constvalidationProcess=createValidationProcess();',
+        'constrenderState=validationProcess.state;',
+        'logs:renderState.logs.slice(-20)',
+        'logs:renderState.logs.slice(-40)',
+        'running:validationProcess.running',
+    ]
+    # Normalize quote style only; never search arbitrary imported source paths.
+    if not all(token in server.replace("'", '"') for token in wiring):
+        return False
+    helper = root / 'validation-process.js'
+    if not helper.is_file():
+        return False
+    source = compact(helper.read_text()).replace('"', "'")
+    contract = [
+        'exportfunctioncreateValidationProcess(',
+        "conststate={status:'booting',logs:[]}",
+        'if(running)returnfalse;',
+        'String(value).slice(-4096)',
+        'state.logs.splice(0,Math.max(0,state.logs.length-40))',
+        "PUBLICATION_ENABLED:'false'",
+        "child.once('error',", "child.once('close',",
+        'timer=setTimeout(', "child.kill('SIGKILL')",
+        'return{state,run,getrunning(){returnrunning;}}',
+    ]
+    return all(token in source for token in contract)
+
+
 def _read_json(path, default=None):
     try:
         return json.loads(path.read_text())
@@ -81,7 +116,7 @@ def audit_root(root: Path):
     checks["review_server_nonblank_shell"]=all(x in server_text for x in [
         'app.get("/",','app.get("/latest"',"color-scheme:light","loadingCard"
     ])
-    checks["review_server_status_safe"]=('logs:[]' in server_text or 'logs: []' in server_text) and "renderState.logs.slice" in server_text
+    checks["review_server_status_safe"]=_review_server_status_safe(root,server_text)
     checks["episode3_hash_bound_captions"]=all(x in server_text for x in [
         "episode3CaptionsPath","captionReady","/episode3/captions",'src="/episode3/captions"'
     ])

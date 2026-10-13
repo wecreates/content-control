@@ -1,74 +1,71 @@
 {
   "schema_version": 1,
-  "run_id": 38452208211,
-  "source_commit": "6810581ff756dd20d96d03631527f4c82fb20ef9",
+  "run_id": 38472946937,
+  "source_commit": "93b317efbfbd4d70eaa6de308902d0856ff92a0b",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-13T19:10:29.756910+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38452208211",
-  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "recorded_at": "2026-10-13T21:49:46.067412+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38472946937",
+  "candidate_sha256": "a80cf3ae4a6c5d284962c33412dd703c32fa6c2e8855c23d40f0773263a8eb1a",
   "candidate_generated": true,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "b8259ab409c157ee58e164e8b63a95e21c3cc8575a81c08b340a9cf80ab54fa0"
+      "receipt_sha256": "456a32c64aedd41039384fe60ecbd84bd6f8601e9aa9bf6c6a70392306851afb"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "279cf28461d5f833f294c21b7daa4ef46bae63b0488818e35c6703cf5790ec19"
+      "receipt_sha256": "798e4ca823e81546b70b70c65317c5b22be2f0c8c9c7f529f9205dccba40a107"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "72f82b91335f7694dc72e767a1e14a7e2db03c860aa6f461db3282303741c50b"
+      "receipt_sha256": "ed1385e14375c298fd98cb6f1117173ce98fa9b63a77147f93a7aacd4b0a2363"
     },
     "captions": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "3d0c290b9912dd11d32a038e476297aaeb9c942b183f903295f6966bee739845"
+      "receipt_sha256": "06ccf47f293fcfa415758fe2eb0b704d7caabae8be371b489e1e48897bb407c8"
     },
     "caption_frames": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "7434d3c1203f1165a3611dec28582393a28256854d8b616abf3c0487a7b17d6c"
+      "receipt_sha256": "955fe2be47dcb5dbb1d765683b69947a5bcd261579237a31e32b29911d972772"
     },
     "technical_video": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "e4b1140891ac90ed1bcc42418a008d69880f9c24a47d07a3ab5088d91b4c0a76"
+      "receipt_sha256": "d7ce549fbf48a91a819ae6a231d3ba068ead15c20fccf344c4011b726b75eb49"
     },
     "style_parity": {
-      "status": "FAIL",
+      "status": "BLOCKED",
       "failed_checks": [
         "framewise_style_parity"
       ],
-      "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
-      "receipt_sha256": "037d49be6f84597b61751ef40b832c6823661c0bea1ded3de150c9056bb92f89"
+      "receipt_sha256": "62b9baf4ef874786f0d071ee68b9ac0266f58d34b23643d4e8aa64c2cb2ecb41",
+      "reason": "Review candidate hash does not match exact video"
+    },
+    "character_binding": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "881596f19ecb85bbf8fd34c2ca0f8e5c08f12e4c9a7be2c1fe4706bba1a6148f"
+    },
+    "phone_viewport": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "296ec033712763d795b6dd76675e8f3a504bb0ee908706413c6c97b668e480b5"
     }
   },
   "diagnostics": {
     "caption_windows": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "cd7e75d56f2ad4a497ef6cb88f2a9ff71d05944abf4ce55840e2f0c55ff1131f"
+      "receipt_sha256": "205e2d641c8acd3bc7bdf46d2ca886f718a23be604c7f1954e267eb8552e61ef"
     }
   },
   "status": "BLOCKED",
   "production_approved": false,
   "publication_enabled": false,
-  "scope": "Recorded build result; no full audiovisual or competitor approval.",
-  "remaining_review": {
-    "full_audiovisual": "NOT_APPROVED",
-    "competitive_motion": "NOT_VERIFIED"
-  },
-  "review_reconciliation": {
-    "run_id": 38472947022,
-    "source_commit": "93b317efbfbd4d70eaa6de308902d0856ff92a0b",
-    "source_report_sha256": "b707f48b8627190fa9884a2244538e9aad221d06cc9b08d642ef7e2b84d6e397",
-    "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
-    "technical_receipt_sha256": "e4b1140891ac90ed1bcc42418a008d69880f9c24a47d07a3ab5088d91b4c0a76",
-    "review_sha256": "0c81cdbc897c5d2e0f5de3313fd84a322192bcaa721423df91f52ad33c8768d5",
-    "recorded_at": "2026-10-13T21:45:39.372494+00:00"
-  }
+  "scope": "Recorded build result; no full audiovisual or competitor approval."
 }

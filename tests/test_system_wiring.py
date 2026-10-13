@@ -1,8 +1,26 @@
 import json, tempfile, unittest
 from pathlib import Path
-from scripts.audit_system_wiring import audit_root, _paid_boundary_locked
+from scripts.audit_system_wiring import audit_root, _paid_boundary_locked, _review_server_status_safe
 
 class SystemWiringAuditTests(unittest.TestCase):
+    def test_extracted_validation_status_wiring_remains_guarded(self):
+        repository=Path(__file__).resolve().parents[1]
+        server=(repository/'server-lowmem.js').read_text()
+        helper=(repository/'validation-process.js').read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            target=root/'validation-process.js'
+            target.write_text(helper)
+            self.assertTrue(_review_server_status_safe(root,server))
+            self.assertFalse(_review_server_status_safe(root,server.replace('./validation-process.js','./unrelated.js')))
+            self.assertFalse(_review_server_status_safe(root,server.replace('renderState=validationProcess.state','renderState={}')))
+            for before,after in [("child.once('error',", "child.once('ignored',"), ("PUBLICATION_ENABLED:'false'", "PUBLICATION_ENABLED:'true'"), ('state.logs.length-40','state.logs.length-40000'), ("child.kill('SIGKILL')",'void 0')]:
+                with self.subTest(guard=before):
+                    target.write_text(helper.replace(before,after))
+                    self.assertFalse(_review_server_status_safe(root,server))
+            target.unlink()
+            self.assertFalse(_review_server_status_safe(root,server))
+
     def test_paid_guard_must_precede_all_work(self):
         with tempfile.TemporaryDirectory() as td:
             source=Path(td)/"provider.py"

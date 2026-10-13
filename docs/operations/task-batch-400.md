@@ -72,3 +72,17 @@ Three additional substantive outcomes verified (seven total toward this request)
 | N300-008 | Ordered execution and reconciliation cannot promote generic domain-test receipts into completed capabilities, default missing domains, skip missing suites or report success on an empty blocked plan. | Focused executor/reconciliation regressions; existing evidence preserved without state promotions. |
 
 Eight substantive outcomes are now implemented toward the additional 300 request. This does not certify the 2,500 generated registry labels. The ordered job must report BLOCKED until real capability definitions and task-specific proof exist.
+
+
+## Next 300 request — 2026-10-13 afternoon Pacific
+
+Four substantive outcomes implemented in this pass, not 300. Test cases, tool calls, repeated checks and historical work are not counted as additional tasks. Existing queues remain authoritative.
+
+| Outcome | Verification |
+| --- | --- |
+| Expiry-aware storage monitoring keeps historical startup reads separate from current availability and blocks status at the 24-hour cutoff or failed startup. | Clock-boundary/failure tests and live `/api/social/runtime` on commit 63b1ea58 show the actual October 26 expiry and startup observation age. |
+| Existing phone dashboard displays storage limitations, missing authorization configuration and exact-candidate creative blockers without media links. | Safe display/projection regressions; exact candidate revalidation endpoint rejects stale media, review and run evidence. |
+| Money Factory monitors Content Control storage, authorization, publication flags and existing evidence references. | Commit 7fa4be79, hosted job 38472630493 success; 16 local Python tests; live check 2026-10-13T21:45:49Z returns all three social endpoints HTTP200 and two of two repository references verified. Runtime routing and revenue are not verified. |
+| Saved V2 candidate can be revalidated against original render evidence without rerendering or production approval. | Actual original artifact 11841506547 from run 38452208211, candidate e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8 and all seven receipt digests matched. Current sampled review remains BLOCKED on typography, scale, staging and unverified character/phone checks. Five Python regressions pass. Manual hosted workflow dispatch remains untested. |
+
+Acceptance link DeUlQTQxv5O returned its existing canonical record with duplicate=true, saved=false and publication_enabled=false. No full Reel video/audio retrieval is claimed. Owner OAuth app, YouTube/Meta app configuration and consent remain missing. The temporary database must be replaced before its cutoff. No paid services, posting, messages, ads, preview release, creative approval or revenue claims were introduced.
