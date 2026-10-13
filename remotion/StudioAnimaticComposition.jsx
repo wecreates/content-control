@@ -13,7 +13,7 @@ const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34,caption=false})=>{
  const layout=(caption?fitCaption:fitText)(text,592,height,size);
- return <text x="360" y={y} textAnchor="middle" fontFamily="Arial Black,Arial" fontWeight="700" fontSize={layout.size} fill="#111">{layout.lines.map((line,i)=><tspan key={i} x="360" dy={i?layout.lineHeight:0}>{line}</tspan>)}</text>;
+ return <text x="360" y={y} textAnchor="middle" fontFamily="Arial Black,Arial,DejaVu Sans,sans-serif" fontWeight="900" fontSize={layout.size} fill="#111" stroke={caption?"#111":"none"} strokeWidth={caption?1.2:0} strokeLinejoin="round" paintOrder="stroke">{layout.lines.map((line,i)=><tspan key={i} x="360" dy={i?layout.lineHeight:0}>{line}</tspan>)}</text>;
 };
 export const StudioAnimaticComposition=({ccsd})=>{
  const frame=useCurrentFrame(),{fps}=useVideoConfig(),t=frame/fps;
@@ -37,7 +37,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?(observedCaption?.text||''):title} y={battle?230:105} height={175} size={battle?52:34} caption={!!battle}/>
+   <TextBlock text={battle?(observedCaption?.text||''):title} y={battle?230:105} height={175} size={battle?72:34} caption={!!battle}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
    <g transform={`translate(${360+pan+shake} 690) scale(${scale}) translate(-360 -690)`}>
     {!battle?<Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>:null}

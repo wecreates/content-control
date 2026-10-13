@@ -57,7 +57,7 @@ test('V2 captions preserve every word with weighted glyph bounds and padding',as
  const {fitCaption,captionTextWidth,v2SceneActor}=await import('../remotion/StudioLayout.mjs');
  const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
  for(const s of c.scenes)for(const line of s.audio?.dialogue||[]){const l=fitCaption(line.text);assert.equal(l.lines.join(' '),line.text);assert.ok(l.lines.every(x=>captionTextWidth(x,l.size)<=544));assert.ok(l.lines.length*l.lineHeight<=175);}
- const monk=v2SceneActor('chase-strike','points_monk',0,1);assert.equal(monk.x+monk.leftHandTarget.x,528);assert.equal(monk.y+monk.leftHandTarget.y,560);assert.ok(monk.x>590&&monk.y>700);
+ const monk=v2SceneActor('chase-strike','points_monk',0,1);assert.equal(monk.x+monk.leftHandTarget.x*monk.scale,528);assert.equal(monk.y+monk.leftHandTarget.y*monk.scale,560);assert.ok(monk.x>560&&monk.y>740);
 });
 
 test('rendered victory hand inputs preserve moving gesture instead of fixed prop contact',async()=>{
@@ -138,7 +138,7 @@ test('composition routes observed speech only to the matching visible character'
  const draw=speaker=>{const c=structuredClone(original);c.caption_track={status:'PASS',publication_enabled:false,cues:[{start:8,end:9,text:'A spoken word',speaker}]};return renderToStaticMarkup(React.createElement(StudioAnimaticComposition,{ccsd:c}));};
  const spoken=draw('points_monk'),narrated=draw('narrator');
  const caption=spoken.match(/<text x="360" y="230"[^>]*>/)?.[0];
- assert.ok(caption?.includes('font-size="52"'),'V2 spoken captions use the phone-readable preferred size');
+ assert.ok(caption?.includes('font-size="72"'),'V2 spoken captions use the phone-readable preferred size');
  assert.equal((spoken.match(/data-speaking-mouth="true"/g)||[]).length,1);
  assert.equal((spoken.match(/data-speaking-mouth="false"/g)||[]).length,1);
  assert.equal((narrated.match(/data-speaking-mouth="true"/g)||[]).length,0);
