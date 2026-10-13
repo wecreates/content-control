@@ -35,6 +35,20 @@ class SystemWiringAuditTests(unittest.TestCase):
         structural_failures=[x for x in report.get("failed_checks",[]) if x not in runtime_only]
         self.assertEqual(structural_failures,[],structural_failures)
 
+    def test_review_logs_follow_extracted_validation_state(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            server=root/"server-lowmem.js"
+            helper=root/"validation-process.js"
+            server.write_text('import {createValidationProcess} from "./validation-process.js";\nconst validationProcess=createValidationProcess();\nconst renderState=validationProcess.state;\nlogs:renderState.logs.slice(-20)')
+            helper.write_text("const state={status:'booting',logs:[]}; return {state,run};")
+            self.assertTrue(audit_root(root)["checks"]["review_server_status_safe"])
+            helper.unlink()
+            self.assertFalse(audit_root(root)["checks"]["review_server_status_safe"])
+            helper.write_text("const state={status:'booting',logs:[]}; return {state,run};")
+            server.write_text(server.read_text().replace('slice(-20)','slice()'))
+            self.assertFalse(audit_root(root)["checks"]["review_server_status_safe"])
+
     def test_detects_missing_character_renderer(self):
         with tempfile.TemporaryDirectory() as td:
             root=Path(td)

@@ -81,7 +81,15 @@ def audit_root(root: Path):
     checks["review_server_nonblank_shell"]=all(x in server_text for x in [
         'app.get("/",','app.get("/latest"',"color-scheme:light","loadingCard"
     ])
-    checks["review_server_status_safe"]=('logs:[]' in server_text or 'logs: []' in server_text) and "renderState.logs.slice" in server_text
+    validation_path=root/"validation-process.js"
+    validation_text=validation_path.read_text() if validation_path.is_file() else ""
+    inline_logs=bool(re.search(r"logs\s*:\s*\[\s*\]",server_text))
+    delegated_logs=all(fragment in server_text for fragment in [
+        'import {createValidationProcess} from "./validation-process.js"',
+        'const validationProcess=createValidationProcess()',
+        'const renderState=validationProcess.state',
+    ]) and bool(re.search(r"logs\s*:\s*\[\s*\]",validation_text)) and "return {state,run" in validation_text
+    checks["review_server_status_safe"]=(inline_logs or delegated_logs) and bool(re.search(r"renderState\.logs\.slice\(-[1-9][0-9]*\)",server_text))
     checks["episode3_hash_bound_captions"]=all(x in server_text for x in [
         "episode3CaptionsPath","captionReady","/episode3/captions",'src="/episode3/captions"'
     ])
