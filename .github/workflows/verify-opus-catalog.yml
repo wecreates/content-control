@@ -11,6 +11,7 @@ on:
       - 'social-automation.js'
       - 'integrations/social-automation/**'
       - 'scripts/social_worker_once.mjs'
+      - 'scripts/social_storage_initialize.mjs'
       - 'production-status.js'
       - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
@@ -27,6 +28,7 @@ on:
       - 'social-automation.js'
       - 'integrations/social-automation/**'
       - 'scripts/social_worker_once.mjs'
+      - 'scripts/social_storage_initialize.mjs'
       - 'production-status.js'
       - 'tests/production-status.test.mjs'
       - 'scripts/social_link_intake.mjs'
@@ -40,6 +42,22 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: social_test
+          POSTGRES_PASSWORD: disposable_ci_only
+          POSTGRES_DB: social_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      SOCIAL_TEST_DATABASE_URL: postgres://social_test:disposable_ci_only@localhost:5432/social_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -48,7 +66,7 @@ jobs:
       - name: Unit tests
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
-          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-worker.test.mjs tests/social-adapter-lifecycle.test.mjs tests/social-providers.test.mjs tests/social-owner-auth.test.mjs tests/social-link-intake.test.mjs tests/production-status.test.mjs
+          node --test integrations/awesome-opus-videos/import-catalog.test.mjs integrations/watch-video/watch-bridge.test.mjs tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-worker.test.mjs tests/social-adapter-lifecycle.test.mjs tests/social-providers.test.mjs tests/social-owner-auth.test.mjs tests/social-postgres.test.mjs tests/social-meta-oauth.test.mjs tests/social-link-intake.test.mjs tests/production-status.test.mjs
       - name: Import public reference catalog
         run: node integrations/awesome-opus-videos/import-catalog.mjs --fetch --output /tmp/opus-catalog.json
       - name: Validate output
