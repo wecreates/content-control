@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from tests.test_revalidate_v2_candidate import RevalidationTests
-from scripts.accept_existing_v2 import assess, promote, REVIEW_PATH
+from scripts.accept_existing_v2 import assess, promote, REVIEW_PATH, validate_promoted_runtime
 from scripts.revalidate_v2_candidate import digest
 
 
@@ -39,6 +39,21 @@ class ExistingAcceptanceTests(RevalidationTests):
         review['full_audio_review']=False;self.write(REVIEW_PATH,review)
         self.assertEqual(self.assessment()[0]['status'],'BLOCKED')
         with self.assertRaises(ValueError):promote(self.root,candidate,health)
+    def test_real_runtime_validator_binds_promoted_bytes_and_blocks_changed_video(self):
+        self.write(REVIEW_PATH,self.review())
+        _,health,candidate=self.assessment();promote(self.root,candidate,health)
+        with patch.dict('os.environ',{'PUBLICATION_ENABLED':'false'}):
+            result=validate_promoted_runtime(self.root)
+            self.assertEqual(result['status'],'READY')
+            self.assertEqual(result['candidate_sha256'],self.hash)
+            self.assertFalse(result['render_attempted'])
+            self.write('public-review/v2-boss-fight.mp4',b'changed after acceptance')
+            with self.assertRaisesRegex(ValueError,'candidate_sha256_mismatch'):
+                validate_promoted_runtime(self.root)
+        recorded=json.loads((self.root/'state/v2-runtime-validation.json').read_text())
+        self.assertEqual(recorded['status'],'BLOCKED')
+        self.assertFalse(recorded['publication_enabled'])
+
     def test_promotion_creates_missing_output_directory(self):
         self.write(REVIEW_PATH,self.review())
         _,health,candidate=self.assessment()

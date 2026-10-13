@@ -59,6 +59,21 @@ def promote(root,candidate,health):
     temporary.write_text(json.dumps(health,indent=2)+'\n');os.replace(temporary,destination)
 
 
+def validate_promoted_runtime(root):
+    """Use the deployed runtime's actual byte validator before persisting preview."""
+    from scripts.v2_runtime_tick import validate_candidate
+    root=Path(root)
+    result=validate_candidate(root/'state/v2-health.json',root/'public-review/v2-boss-fight.mp4',
+                              publication_enabled=os.getenv('PUBLICATION_ENABLED','false').lower()!='false')
+    destination=root/'state/v2-runtime-validation.json'
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    temporary=destination.with_suffix('.tmp')
+    temporary.write_text(json.dumps(result,indent=2)+'\n');os.replace(temporary,destination)
+    if result.get('status')!='READY':
+        raise ValueError('Promoted runtime validation blocked: '+','.join(result.get('reasons',[])))
+    return result
+
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--root',default='.');parser.add_argument('--artifact',required=True);parser.add_argument('--run-metadata',required=True);parser.add_argument('--out',required=True);parser.add_argument('--promote',action='store_true');args=parser.parse_args()
     try:
