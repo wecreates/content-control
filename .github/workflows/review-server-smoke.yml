@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'server-lowmem.js'
+      - 'validation-process.js'
+      - 'tests/validation-process.test.mjs'
       - 'server.js'
       - 'state/content-control-health.json'
       - 'public-review/episode1-v10-free.mp4'
@@ -41,6 +43,8 @@ jobs:
           cache: npm
       - name: Install exact runtime
         run: npm ci --ignore-scripts
+      - name: Verify validator failure isolation
+        run: node --test tests/validation-process.test.mjs
       - name: Start canonical review server
         run: |
           set -euo pipefail
