@@ -176,3 +176,30 @@ test('larger V2 captions retain every word within the existing text reserve',asy
  }
  assert.equal(fitCaption('stops',592,175,52).size,52);
 });
+
+
+test('V2 editorial cuts do not retrigger physical impact rays or camera shake',async()=>{
+ const {v2ImpactAmount}=await import('../remotion/V2CameraPerformance.mjs');
+ const {v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ let continuations=0;
+ for(let i=0;i<c.scenes.length;i++){
+  const scene=c.scenes[i],samePrevious=i>0&&v2BattleBeat(c.scenes[i-1].id)===v2BattleBeat(scene.id);
+  if(samePrevious){assert.equal(v2ImpactAmount(c.scenes,scene,scene.start),0);continuations++;}
+  else {assert.equal(v2ImpactAmount(c.scenes,scene,scene.start),1);assert.ok(Math.abs(v2ImpactAmount(c.scenes,scene,scene.start+.15)-.5)<1e-8);}
+ }
+ assert.equal(continuations,16);
+ const first=c.scenes[0];assert.equal(v2ImpactAmount(c.scenes,{...first,fx:[]},first.start),0);
+});
+
+
+test('Dave physically taps PANIC TAP then returns to wallet grip',async()=>{
+ const {v2TrapTapHand}=await import('../remotion/StudioLayout.mjs');
+ const grip={x:305,y:571};
+ assert.deepEqual(v2TrapTapHand(0,grip),grip);
+ for(const p of [.12,.14,.17])assert.deepEqual(v2TrapTapHand(p,grip),{x:210,y:423});
+ assert.deepEqual(v2TrapTapHand(.32,grip),grip);
+ assert.deepEqual(v2TrapTapHand(1,grip),grip);
+ for(let p=0;p<=1;p+=1/240){const hand=v2TrapTapHand(p,grip);assert.ok(hand.x>=210&&hand.x<=305);assert.ok(hand.y>=423&&hand.y<=571);}
+ assert.ok(Math.abs(v2TrapTapHand(.11999,grip).x-v2TrapTapHand(.12001,grip).x)<.001);
+});

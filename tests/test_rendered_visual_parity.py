@@ -1,10 +1,51 @@
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 import cv2
-from scripts.rendered_visual_parity import compare_metric_series,explain_comparison,sample_video
+from scripts.rendered_visual_parity import compare_metric_series,explain_comparison,sample_video,compare_aligned_images,qualified_structure_comparison,sha256
 
 class RenderedVisualParityTests(unittest.TestCase):
+    def test_missing_reference_qualification_blocks_instead_of_claiming_style_failure(self):
+        result=qualified_structure_comparison('unused','unused',None)
+        self.assertEqual(result['status'],'BLOCKED')
+        self.assertEqual(result['blocker'],'BLOCKED_UNSUPPORTED_REFERENCE')
+        self.assertFalse(result['framewise_style_parity'])
+        self.assertIn('diagnostic only',result['reason'])
+
+    def test_background_normalization_never_promotes_synthetic_match_to_approval(self):
+        white=np.full((320,180,3),255,dtype=np.uint8)
+        nearwhite=np.full_like(white,242)
+        for image in (white,nearwhite):cv2.line(image,(30,40),(140,280),(10,10,10),6)
+        result=compare_aligned_images(white,nearwhite)
+        self.assertLess(result['foreground_distance'],.01)
+        self.assertEqual(result['acceptance_effect'],'none')
+        self.assertFalse(result['calibrated'])
+        self.assertNotIn('match',result)
+        self.assertFalse(compare_aligned_images(white,np.full_like(white,255))['foreground_present_in_both'])
+
+    def test_even_identical_qualified_pairs_cannot_pass_without_calibration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'fixture.avi'
+            image=np.full((80,80,3),255,dtype=np.uint8)
+            cv2.line(image,(10,10),(65,65),(10,10,10),5)
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),24,(80,80))
+            self.assertTrue(writer.isOpened())
+            pairs=[]
+            for i in range(4):
+                writer.write(image);frame=root/f'ref-{i}.jpg';cv2.imwrite(str(frame),image)
+                pairs.append({'reference_file':frame.name,'reference_sha256':sha256(frame),'candidate_frame':i,'source_seconds':i/24})
+            writer.release()
+            contract={'method':'aligned_line_art','status':'VERIFIED','candidate_sha256':sha256(video),'source_url':'https://example.org/source','pairs':pairs}
+            result=qualified_structure_comparison(root,video,contract)
+            self.assertEqual(result['status'],'BLOCKED')
+            self.assertEqual(result['blocker'],'STRUCTURE_CALIBRATION_REQUIRED')
+            self.assertEqual(len(result['pairs']),4)
+            self.assertFalse(result['framewise_style_parity'])
+            contract['pairs'][0]['reference_sha256']='a'*64
+            self.assertEqual(qualified_structure_comparison(root,video,contract)['blocker'],'BLOCKED_UNSUPPORTED_REFERENCE')
+
     def test_sampling_checks_seek_and_releases_decoder_on_failure(self):
         class Decoder:
             released=False
@@ -68,5 +109,42 @@ class RenderedVisualParityTests(unittest.TestCase):
         self.assertTrue(result['framewise_style_parity'])
         self.assertLess(result['mean_frame_distance'],0.08)
 
-if __name__=='__main__':
+
+class OperationalAnalysisTests(unittest.TestCase):
+    def test_real_decodes_produce_hashed_review_sheets_without_approval(self):
+        from scripts.rendered_visual_parity import analyze_comparison
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'candidate.avi';refs=root/'refs';refs.mkdir()
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),8,(80,80))
+            self.assertTrue(writer.isOpened())
+            for i in range(8):
+                image=np.full((80,80,3),255,dtype=np.uint8)
+                cv2.line(image,(10+i,10),(60,65),(0,0,0),4)
+                writer.write(image)
+                if i<4:cv2.imwrite(str(refs/f'ref-{i:02}.jpg'),image)
+            writer.release()
+            result=analyze_comparison(refs,video,root/'evidence')
+            self.assertEqual(result['status'],'COMPLETE')
+            self.assertFalse(result['production_approved'])
+            self.assertEqual(result['acceptance_effect'],'none')
+            self.assertEqual([p['candidate_frame'] for p in result['samples']],[0,2,5,7])
+            self.assertEqual(result['candidate_sha256'],sha256(video))
+            sheet=result['contact_sheets'][0];path=root/'evidence'/sheet['file']
+            self.assertEqual(sheet['sha256'],sha256(path))
+            decoded=cv2.imread(str(path));self.assertEqual(decoded.shape[:2],(1584,640))
+            import json
+            manifest={'frames':[{'file':p.name,'sha256':sha256(p)} for p in sorted(refs.glob('ref-*.jpg'))]}
+            (refs/'reference-manifest.json').write_text(json.dumps(manifest))
+            verified=analyze_comparison(refs,video,root/'manifest-evidence')
+            self.assertEqual(verified['reference_provenance']['status'],'FRAME_HASHES_VERIFIED')
+            self.assertFalse(verified['reference_provenance']['source_url_attribution_verified'])
+            manifest['frames'][0]['sha256']='0'*64
+            (refs/'reference-manifest.json').write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,'hash mismatch'):analyze_comparison(refs,video,root/'tampered')
+            (refs/'reference-manifest.json').unlink()
+            (refs/'ref-00.jpg').write_bytes(b'corrupt')
+            with self.assertRaises(ValueError):analyze_comparison(refs,video,root/'invalid')
+
+
+if __name__ == "__main__":
     unittest.main()

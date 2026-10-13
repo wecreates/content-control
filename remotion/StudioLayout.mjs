@@ -80,3 +80,10 @@ export function resolveBattleHandTargets(motion,slot,{freeGesture=false}={}) {
  };
  return {leftHandTarget:contact(slot.leftHandTarget),rightHandTarget:contact(slot.rightHandTarget)};
 }
+
+// Reach the actual button before the wallet spills; return to the grip afterward.
+export function v2TrapTapHand(progress,grip) {
+ const ease=value=>{const p=Math.max(0,Math.min(1,value));return p*p*(3-2*p);};
+ const reach=ease((progress-.02)/.10)*(1-ease((progress-.17)/.15));
+ return {x:grip.x+(210-grip.x)*reach,y:grip.y+(423-grip.y)*reach};
+}

@@ -21,3 +21,25 @@ It does not assert runtime health or production readiness. A Render web process 
 The low-memory web service must not install all ML runtimes during its normal build.
 Full Wan inference requires a separate provisioned CUDA host and downloaded weights.
 The CPU tools need their own persistent worker storage; no new paid infrastructure is authorized by this change.
+
+## Free hosted CPU verification
+
+Money Factory's `repository-integrations.yml` runs all eight CPU checks through this
+repository's pinned bridge on standard GitHub-hosted runners. It is restricted to
+the existing public repository, supplies no provider secrets, and keeps publication
+disabled. Installations execute in the requested order, skipping Wan because the
+standard runner has no CUDA GPU. This is reproducible hosted verification, not an
+always-on production worker or persistent Toonflow/Ruflo service.
+
+Set `REPOSITORY_WORKER_BACKEND=github-actions` on the existing Render web service to
+read the public workflow state and hash-bound operation receipts. The status endpoint
+checks the latest run, attempt, source revision, all eight operation receipts, source
+pins, and a seven-day evidence limit. A failed latest run, missing evidence or a GitHub
+outage cannot become a passing status. Results are cached for one minute. The endpoint
+never dispatches jobs or exposes a public command executor.
+
+Rerun the hosted checks using GitHub's **Run workflow** button on
+https://github.com/wecreates/Money-factory/actions/workflows/repository-integrations.yml.
+Access is controlled by the existing GitHub account; no new application password is
+required. Source changes automatically run the relevant checks. All reported passes
+remain limited to the named operations; production readiness remains false.

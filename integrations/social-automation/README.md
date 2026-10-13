@@ -51,7 +51,7 @@ has not been independently verified as private and durable. Activation needs:
    Metadata reads alone do not constitute video retrieval, full audio/video
    analysis, competitive review or business-performance evidence.
 
-Owner-facing GitHub sign-in and YouTube onboarding routes are implemented but disabled until configured. Provider-specific exchanges other than YouTube remain unimplemented. See the platform matrix below for the implemented read operations.
+Owner-facing GitHub sign-in and YouTube onboarding routes are implemented but disabled until configured. YouTube and Instagram exchanges are implemented; other provider exchanges remain unimplemented. See the platform matrix below for the implemented read operations.
 No live account or hosted durability/recovery test has passed yet.
 
 ## Recovery and execution limits
@@ -165,3 +165,51 @@ SOCIAL_WORKER_ENABLED remains a separate opt-in. Live login, provider consent,
 durability/recovery and full video analysis are NOT proven by unit tests.
 Instagram browser-login diagnosis and Meta app authorization remain unresolved.
 Reference: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
+
+## Encrypted PostgreSQL storage — October 13, 2026
+
+The hosted service now supports SOCIAL_STORAGE_MODE=postgres_encrypted. It
+requires SOCIAL_DATABASE_URL, SOCIAL_VAULT_KEY and SOCIAL_STORAGE_EXPIRES_AT.
+The URL is parsed into explicit connection fields and certificate verification
+cannot be disabled with URL parameters. The full vault is encrypted with the
+same AES-256-GCM envelope as the file store. Database transactions lock the
+single owner row, serialize writers across processes, and roll back failures.
+Database errors are sanitized; no connection string or decrypted record is
+written to logs. Startup refuses a missing table/row instead of inventing a
+replacement vault. The existing file-store mode remains supported.
+
+Initialize only a deliberately selected database with these private environment
+values and SOCIAL_STORAGE_INITIALIZE=true, then run `npm run social:storage-init`.
+Initialization is idempotent and refuses a wrong encryption key without replacing
+existing data. It creates only the dedicated cyzor_social_vault table. Never put
+the database URL or encryption key in a repository or chat. The runtime refuses
+new reads/writes during the last 24 hours before the configured storage expiry.
+This guard does not back up or extend the database; migration must precede expiry.
+
+The existing Render free database was observed available on October 13, 2026,
+with a provider expiry of October 26, 2026 at 20:02:09 UTC. No production vault has
+been initialized in it and no database credentials have been transferred.
+This is a possible temporary backend, not verified permanent free storage.
+CI uses a disposable PostgreSQL 18 service to test restart persistence,
+concurrent updates, rollback, encryption and wrong-key initialization. Local runs
+without SOCIAL_TEST_DATABASE_URL explicitly skip that integration test.
+
+## Instagram authorization implementation
+
+The owner-protected /api/social/oauth/instagram/start and callback routes now
+use createInstagramOAuth when META_APP_ID, META_APP_SECRET,
+INSTAGRAM_OAUTH_REDIRECT_URI and INSTAGRAM_ACCOUNT_ID are configured privately.
+The callback must exactly match <SOCIAL_PUBLIC_ORIGIN>/api/social/oauth/instagram/callback.
+The configured account must be a professional Instagram account eligible for the
+existing Facebook Login API route. Requested permissions are instagram_basic,
+pages_read_engagement and pages_show_list; publishing permissions are excluded.
+
+The server exchanges the code, requests a long-lived token, checks granted
+permissions, then uses the existing runtime's account identity verification
+before installing the grant. This confidential-client Meta flow uses client
+secret authentication and single-use owner-bound state; PKCE support is not
+claimed. Token expiry comes from the response. There is no automatic Instagram
+refresh or permanent-login promise. Browser password/challenge loops are a
+separate issue; this implementation neither diagnoses nor bypasses them.
+Mock tests do not establish Meta app approval, eligible account setup, successful
+live consent, full reel retrieval, audio transcription or video analysis.

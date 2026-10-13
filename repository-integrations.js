@@ -1,15 +1,22 @@
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {createHostedWorkerStatus} from './repository-worker-status.js';
 
 // Read-only projection. No arbitrary command execution is exposed on the web service.
-export function createRepositoryIntegrationRouter({moneyFactoryRoot=process.env.MONEY_FACTORY_ROOT}={}) {
+export function createRepositoryIntegrationRouter({moneyFactoryRoot=process.env.MONEY_FACTORY_ROOT,
+  backend=process.env.REPOSITORY_WORKER_BACKEND, hostedStatus=createHostedWorkerStatus()}={}) {
   const router=express.Router();
   router.get('/status',async(_req,res)=>{
     res.set('Cache-Control','no-store');
     const base={publication_enabled:false,paid_generation_enabled:false,
       production_ready:false,status_scope:'Source and adapter configuration, not live provider health',
       repository:'https://github.com/wecreates/Money-factory/tree/main/integrations'};
+    if(backend==='github-actions') {
+      const status=await hostedStatus();
+      const ok=status.status==='HOSTED_CPU_OPERATIONS_VERIFIED';
+      return res.status(ok?200:503).json({...base,...status});
+    }
     if(!moneyFactoryRoot)return res.status(503).json({...base,status:'WORKER_NOT_CONFIGURED'});
     try {
       const registry=JSON.parse(await fs.readFile(path.join(moneyFactoryRoot,'integrations/repositories.json'),'utf8'));

@@ -8,6 +8,8 @@ on:
     paths:
       - 'scripts/load_remaining_task_queue.py'
       - 'scripts/complete_task_one_by_one.py'
+      - 'scripts/upgrade_and_test_capability.py'
+      - 'scripts/autonomous_completion_scheduler.py'
       - '.github/workflows/ordered-capability-completion.yml'
 permissions:
   contents: read
@@ -22,11 +24,14 @@ jobs:
         run: |
           mkdir -p state/ordered/evidence
           python scripts/load_remaining_task_queue.py --progress state/capability-progress.json --out state/ordered/queue.json
-      - name: Complete tasks sequentially until first blocker
+      - name: Run ordered diagnostics until first unresolved capability
         run: |
           python - <<'PY'
           import json,subprocess,pathlib
           q=json.load(open("state/ordered/queue.json"))
+          if q.get("status")!="READY" or q.get("publication_enabled") is not False or q.get("blocked_tasks") or not q.get("tasks"):
+            pathlib.Path("state/ordered/blocker.json").write_text(json.dumps({"status":"BLOCKED","reason":"queue_not_ready_or_empty","completion_verified":False,"publication_enabled":False},indent=2)+"\n")
+            raise SystemExit(2)
           for i,t in enumerate(q["tasks"]):
             out=f"state/ordered/evidence/{t['capability_id']}.json"
             rc=subprocess.run(["python","scripts/complete_task_one_by_one.py","--queue","state/ordered/queue.json","--index",str(i),"--out",out]).returncode
