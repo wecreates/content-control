@@ -40,3 +40,26 @@ test('explicit initialization takes precedence over check flag; checks still enf
  const f=fixture();const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_CHECK_ENABLED:'true'},...f});assert.equal(service.status().storage_bootstrap.status,'INITIALIZED_READ_VERIFIED');assert.ok(f.calls.includes('initialize'));assert.ok(f.calls.includes('update'));
  const blocked=fixture();const result=await initializeSocialService({env:{...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true',PUBLICATION_ENABLED:'true'},...blocked});assert.deepEqual(blocked.calls,[]);assert.equal(result.status().reason_code,'PUBLICATION_POLICY_BLOCKED');
 });
+
+test('clock-derived health crosses expiry cutoff without extra database calls or rewriting probe proof',async()=>{
+ const f=fixture();f.state.storage_probe={id:'12345678-1234-4234-8234-123456789abc',created_at:'2026-10-13T00:00:00.000Z'};
+ const expiry=Date.parse('2030-01-03T00:00:00.000Z');let clock=expiry-86400001;
+ const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true',SOCIAL_STORAGE_EXPIRES_AT:new Date(expiry).toISOString()},now:()=>clock,...f});
+ const initial=service.status(),calls=[...f.calls];assert.equal(initial.storage_health.status,'STARTUP_OBSERVATION_ONLY');assert.equal(initial.storage_health.live_database_checked,false);assert.equal(initial.storage_health.availability_verified,false);assert.equal(initial.storage_health.operations_blocked,false);assert.equal(initial.storage_expires_at,new Date(expiry).toISOString());
+ clock++;let current=service.status();assert.equal(current.storage_health.status,'EXPIRING');assert.equal(current.storage_health.operations_blocked,true);assert.equal(current.storage_health.reason_code,'STORAGE_EXPIRING');assert.equal(current.storage_health.observation_age_ms,1);
+ clock=expiry;current=service.status();assert.equal(current.storage_health.status,'EXPIRED');assert.deepEqual(current.storage_bootstrap,initial.storage_bootstrap);assert.deepEqual(f.calls,calls);assert.equal(current.durable_storage_verified,false);assert.equal(current.publication_enabled,false);
+ await service.stop();assert.equal(service.status().storage_health.status,'STOPPED');
+});
+test('status observations cannot mutate retained bootstrap proof and malformed expiry stays sanitized',async()=>{
+ const f=fixture();const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_EXPIRES_AT:'INVALID_PRIVATE_EXPIRY'},...f});const first=service.status();first.storage_bootstrap.probe_id='tampered';const next=service.status();assert.notEqual(next.storage_bootstrap.probe_id,'tampered');assert.equal(next.storage_health.status,'CONFIGURATION_REQUIRED');assert.equal(next.storage_health.operations_blocked,true);assert.equal(next.storage_expires_at,null);assert.ok(!JSON.stringify(next).includes('INVALID_PRIVATE_EXPIRY'));
+});
+
+test('failed storage startup remains blocked despite a successful decrypt before invalid probe',async()=>{
+ for(const failure of ['probe','read']){
+  const f=fixture();if(failure==='read')f.store.read=async()=>{throw Error('PRIVATE_STORE_UNAVAILABLE');};
+  const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true',SOCIAL_STORAGE_EXPIRES_AT:'2035-01-01T00:00:00Z'},...f});
+  const s=service.status();assert.equal(s.storage_health.status,'BLOCKED');assert.equal(s.storage_health.operations_blocked,true);assert.equal(s.storage_health.reason_code,failure==='probe'?'PRIVATE_STORE_INTEGRITY_FAILED':'PRIVATE_STORE_UNAVAILABLE');assert.equal(s.storage_health.availability_verified,false);
+  if(failure==='probe')assert.ok(s.storage_health.last_read_verified_at);else assert.equal(s.storage_health.last_read_verified_at,null);
+ }
+ const off=await initializeSocialService({env:{}});assert.equal(off.status().storage_health.operations_blocked,true);assert.equal(off.status().storage_health.status,'NOT_VERIFIED');
+});

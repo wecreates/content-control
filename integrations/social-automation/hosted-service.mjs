@@ -12,9 +12,12 @@ import {createPostgresStore,initializePostgresVault} from './postgres-store.mjs'
 
 // No paid provisioning, fallback storage or public import. Database initialization requires explicit operator opt-in.
 // Operator configuration is NOT independent proof of durable storage.
-export async function initializeSocialService({env = process.env, fetchImpl = fetch, root = process.cwd(), authorizeOwner, postgresStoreFactory = createPostgresStore, initializeVault = initializePostgresVault} = {}) {
+export async function initializeSocialService({env = process.env, fetchImpl = fetch, root = process.cwd(), authorizeOwner, postgresStoreFactory = createPostgresStore, initializeVault = initializePostgresVault, now = Date.now} = {}) {
   let worker,oauth,store;
   let activationStage = 'policy';
+  let storageReadAt = null;
+  const expiry = Date.parse(env.SOCIAL_STORAGE_EXPIRES_AT);
+  const normalizedExpiry = Number.isFinite(expiry) ? new Date(expiry).toISOString() : null;
   const shutdown = new AbortController();
   const status = {...socialRuntimeReadiness(env), configured_storage_mode: 'unconfigured', providers:providerReadiness()};
   // Configuration names are safe to report; values and account identifiers never leave the vault.
@@ -28,7 +31,22 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     return [name, {status: missing.length ? 'INCOMPLETE' : 'PRESENT_UNVERIFIED', missing_configuration: missing, live_verified: false}];
   }));
   const service = {
-    status: () => ({...status, ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})}),
+    status: () => {
+      const current = now();
+      const postgres = env.SOCIAL_STORAGE_MODE === 'postgres_encrypted';
+      const expired = postgres && Number.isFinite(expiry) && expiry <= current;
+      const cutoff = postgres && Number.isFinite(expiry) && expiry - current <= 86400000;
+      const storageFailed = status.status === 'ACTIVATION_BLOCKED' && ['policy','storage_configuration','storage_bootstrap','storage_read','storage_probe'].includes(status.activation_stage);
+      const healthStatus = shutdown.signal.aborted ? 'STOPPED' : storageFailed ? 'BLOCKED' : postgres && !Number.isFinite(expiry) ? 'CONFIGURATION_REQUIRED' : expired ? 'EXPIRED' : cutoff ? 'EXPIRING' : storageReadAt !== null ? 'STARTUP_OBSERVATION_ONLY' : 'NOT_VERIFIED';
+      return {...status, storage_bootstrap:{...status.storage_bootstrap}, storage_expires_at:normalizedExpiry,
+        storage_health:{status:healthStatus, live_database_checked:false, availability_verified:false,
+          last_read_verified_at:storageReadAt === null ? null : new Date(storageReadAt).toISOString(),
+          observation_age_ms:storageReadAt === null ? null : Math.max(0,current-storageReadAt),
+          operations_blocked:shutdown.signal.aborted || storageFailed || storageReadAt === null || cutoff || (postgres && !Number.isFinite(expiry)),
+          reason_code:storageFailed ? status.reason_code : expired || cutoff ? 'STORAGE_EXPIRING' : postgres && !Number.isFinite(expiry) ? 'STORAGE_EXPIRY_REQUIRED' : null,
+          scope:'Storage policy and recorded startup failures; operations_blocked=false does not verify live availability; no database polling',publication_enabled:false},
+        ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})};
+    },
     beginAuthorization:async(platform,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},
     completeAuthorization:async(platform,callback,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.complete(platform,callback,context);},
     stop: async () => {shutdown.abort(); if (worker) await worker.stop(); if(store?.close)await store.close();},
@@ -65,6 +83,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     }
     activationStage = 'storage_read';
     const saved = await store.read();
+    storageReadAt = now();
     if(storageRequested) {
       activationStage = 'storage_probe';
       const validProbe = probe => probe && typeof probe === 'object' &&
@@ -78,7 +97,8 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       if (!validProbe(expected)) throw Error('PRIVATE_STORE_INTEGRITY_FAILED');
       const observed = bootstrapRequested ? (await store.read()).storage_probe : saved.storage_probe;
       if (!validProbe(observed) || observed.id !== expected.id || observed.created_at !== expected.created_at) throw Error('PRIVATE_STORE_INTEGRITY_FAILED');
-      status.storage_bootstrap = {status:bootstrapRequested?'INITIALIZED_READ_VERIFIED':'EXISTING_READ_VERIFIED',read_verified:true,write_read_verified:bootstrapRequested,probe_id:expected.id,runtime_boot_id:runtimeBootId,durable_storage_verified:false,scope:bootstrapRequested?'Encrypted probe write and separate read verified; restart persistence requires independent comparison':'Existing encrypted vault and probe read only; restart persistence requires independent comparison'};
+      storageReadAt = now();
+      status.storage_bootstrap = {checked_at:new Date(storageReadAt).toISOString(),status:bootstrapRequested?'INITIALIZED_READ_VERIFIED':'EXISTING_READ_VERIFIED',read_verified:true,write_read_verified:bootstrapRequested,probe_id:expected.id,runtime_boot_id:runtimeBootId,durable_storage_verified:false,scope:bootstrapRequested?'Encrypted probe write and separate read verified; restart persistence requires independent comparison':'Existing encrypted vault and probe read only; restart persistence requires independent comparison'};
       status.configured_storage_mode = env.SOCIAL_STORAGE_MODE;
       if(env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') {
         await store.close();store=undefined;
