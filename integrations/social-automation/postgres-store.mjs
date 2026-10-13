@@ -47,22 +47,22 @@ export class PostgresSocialStore {
       let client;
       try {client = await this.pool.connect();} catch {throw Error('PRIVATE_STORE_UNAVAILABLE');}
       let committed = false, discard = false;
+      const query = async (...args) => {
+        try {return await client.query(...args);}
+        catch(error) {throw Error(error?.code === '55P03' ? 'PRIVATE_STORE_BUSY' : 'PRIVATE_STORE_UNAVAILABLE');}
+      };
       try {
-        await client.query('BEGIN');
-        await client.query("SET LOCAL lock_timeout='2s'");
-        await client.query("SET LOCAL statement_timeout='15s'");
-        const result = await client.query(`SELECT envelope FROM ${TABLE} WHERE id=$1 FOR UPDATE`, [ID]);
+        await query('BEGIN');
+        await query("SET LOCAL lock_timeout='2s'");
+        await query("SET LOCAL statement_timeout='15s'");
+        const result = await query(`SELECT envelope FROM ${TABLE} WHERE id=$1 FOR UPDATE`, [ID]);
         if (result.rows.length !== 1) throw Error('PRIVATE_STORE_NOT_INITIALIZED');
         const data = this.open(result.rows[0].envelope);
         const value = await fn(data);
         this.active();
-        await client.query(`UPDATE ${TABLE} SET envelope=$1, updated_at=now() WHERE id=$2`, [this.seal(data), ID]);
-        await client.query('COMMIT'); committed = true;
+        await query(`UPDATE ${TABLE} SET envelope=$1, updated_at=now() WHERE id=$2`, [this.seal(data), ID]);
+        await query('COMMIT'); committed = true;
         return value;
-      } catch (error) {
-        if (error.code) throw Error(error.code === '55P03' ? 'PRIVATE_STORE_BUSY' : 'PRIVATE_STORE_UNAVAILABLE');
-        // Application errors contain fixed codes; database errors never escape.
-        throw error;
       } finally {
         if (!committed) try {await client.query('ROLLBACK');} catch {discard = true;}
         client.release(discard);
@@ -88,14 +88,23 @@ export function createPostgresStore(env) {
 // Explicit operator initialization only; hosted startup never creates an empty replacement vault.
 export async function initializePostgresVault(store) {
   store.active();
-  const client = await store.pool.connect();
+  let client;
+  try {client = await store.pool.connect();} catch {throw Error('PRIVATE_STORE_INITIALIZATION_FAILED');}
+  let committed = false, discard = false;
   try {
     await client.query('BEGIN');
+    await client.query("SET LOCAL lock_timeout='2s'");
+    await client.query("SET LOCAL statement_timeout='15s'");
     await client.query(`CREATE TABLE IF NOT EXISTS ${TABLE} (id text PRIMARY KEY CHECK (id='owner'), envelope jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now())`);
     await client.query(`INSERT INTO ${TABLE} (id,envelope) VALUES ($1,$2) ON CONFLICT (id) DO NOTHING`, [ID, store.seal({version: 1, connections: {}, jobs: []})]);
     const found = await client.query(`SELECT envelope FROM ${TABLE} WHERE id=$1`, [ID]);
+    if(found.rows.length !== 1) throw Error('PRIVATE_STORE_NOT_INITIALIZED');
     store.open(found.rows[0].envelope); // Wrong key must fail even on repeated initialization.
-    await client.query('COMMIT');
-  } catch {await client.query('ROLLBACK').catch(() => {}); throw Error('PRIVATE_STORE_INITIALIZATION_FAILED');}
-  finally {client.release();}
+    store.active(); // Expiry or shutdown during initialization cannot commit a replacement vault.
+    await client.query('COMMIT'); committed = true;
+  } catch {throw Error('PRIVATE_STORE_INITIALIZATION_FAILED');}
+  finally {
+    if(!committed) try {await client.query('ROLLBACK');} catch {discard = true;}
+    client.release(discard);
+  }
 }

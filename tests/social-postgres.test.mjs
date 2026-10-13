@@ -41,3 +41,30 @@ test('real PostgreSQL: restart persistence, idempotent initialization, rollback,
   } finally{await other.close();}
  } finally{await store.close();}
 });
+
+test('uncoded database failures are sanitized while application errors remain intact',async()=>{
+ const commands=[];const client={query:async sql=>{commands.push(sql);if(sql.includes('FOR UPDATE'))throw Error('PRIVATE_DATABASE_CONNECTION_DETAIL');},release:discard=>commands.push(discard)};
+ const store=new PostgresSocialStore({pool:{connect:async()=>client},key,expiresAt:future});
+ await assert.rejects(store.update(()=>{}),error=>error.message==='PRIVATE_STORE_UNAVAILABLE');assert.ok(commands.includes('ROLLBACK'));assert.equal(commands.at(-1),false);
+});
+test('initialization sanitizes pool acquisition and destroys connection after failed rollback',async()=>{
+ const unavailable=new PostgresSocialStore({pool:{connect:async()=>{throw Error('PRIVATE_URL');}},key,expiresAt:future});
+ await assert.rejects(initializePostgresVault(unavailable),error=>error.message==='PRIVATE_STORE_INITIALIZATION_FAILED');
+ const commands=[];const client={query:async sql=>{commands.push(sql);if(sql.startsWith('CREATE')||sql==='ROLLBACK')throw Error('PRIVATE_URL');},release:discard=>commands.push(discard)};
+ const store=new PostgresSocialStore({pool:{connect:async()=>client},key,expiresAt:future});
+ await assert.rejects(initializePostgresVault(store),error=>error.message==='PRIVATE_STORE_INITIALIZATION_FAILED');
+ assert.ok(commands.includes("SET LOCAL lock_timeout='2s'"));assert.ok(commands.includes("SET LOCAL statement_timeout='15s'"));assert.equal(commands.at(-1),true);assert.ok(!commands.includes('COMMIT'));
+});
+test('initialization refuses commit when storage expires during work and preserves existing encrypted data',async()=>{
+ let now=Date.parse('2029-12-29T00:00:00Z'),store;const commands=[];let original;
+ const client={query:async sql=>{commands.push(sql);if(sql.startsWith('SELECT')){now=Date.parse('2029-12-31T00:00:00Z');return {rows:[{envelope:original}]};}return {rows:[]};},release:discard=>commands.push(discard)};
+ store=new PostgresSocialStore({pool:{connect:async()=>client},key,expiresAt:future,now:()=>now});original=store.seal({version:1,connections:{youtube:{access_token:'PRIVATE'}},jobs:[]});const snapshot=JSON.stringify(original);
+ await assert.rejects(initializePostgresVault(store),/INITIALIZATION_FAILED/);assert.ok(!commands.includes('COMMIT'));assert.ok(commands.includes('ROLLBACK'));assert.equal(JSON.stringify(original),snapshot);assert.equal(commands.at(-1),false);
+});
+
+test('transaction preserves fixed application errors and rolls back without updating the vault',async()=>{
+ let store;const commands=[];const client={query:async sql=>{commands.push(sql);return {rows:sql.includes('FOR UPDATE')?[{envelope:store.seal({version:1,connections:{},jobs:[]})}]:[]};},release:()=>{}};
+ store=new PostgresSocialStore({pool:{connect:async()=>client},key,expiresAt:future});
+ await assert.rejects(store.update(()=>{throw Error('IDEMPOTENCY_CONFLICT');}),/^Error: IDEMPOTENCY_CONFLICT$/);
+ assert.ok(commands.includes('ROLLBACK'));assert.ok(!commands.some(sql=>sql.startsWith('UPDATE')));assert.ok(!commands.includes('COMMIT'));
+});

@@ -123,3 +123,24 @@ test('bounded tick backlog reports pending work until all due reads finish',asyn
  const worker=new SocialReadWorker({runtime,now:()=>100000});let result=await worker.cycle();assert.equal(result.status,'CYCLE_WORK_PENDING');assert.equal(result.pending_jobs,1);
  result=await worker.cycle();assert.equal(result.status,'CYCLE_COMPLETED');assert.equal(result.pending_jobs,0);
 });
+
+test('activation reports safe failure stages while all external writes remain disabled',async t=>{
+ const {initializeSocialService}=await import('../integrations/social-automation/hosted-service.mjs');
+ const cases=[
+  [{SOCIAL_WORKER_ENABLED:'true',PUBLICATION_ENABLED:'true'},'policy','PUBLICATION_POLICY_BLOCKED'],
+  [{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'unsupported-secret-value'},'storage_configuration','ACTIVATION_CONFIGURATION_INVALID'],
+  [{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:'/missing/SECRET-vault'},'storage_configuration','ACTIVATION_CONFIGURATION_INVALID'],
+ ];
+ for(const [env,stage,code] of cases){
+  const service=await initializeSocialService({env});t.after(()=>service.stop());const status=service.status();
+  assert.equal(status.activation_stage,stage);assert.equal(status.reason_code,code);
+  assert.equal(status.publication_enabled,false);assert.equal(status.external_writes_enabled,false);
+  assert.equal(status.worker_running,false);assert.equal(status.oauth_routes_enabled,false);
+  assert.ok(!JSON.stringify(status).includes('SECRET'));assert.ok(!JSON.stringify(status).includes('unsupported-secret-value'));
+ }
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'invalid-vault-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const file=path.join(dir,'vault');await fs.writeFile(file,'broken-private-envelope',{mode:0o600});
+ const service=await initializeSocialService({env:{SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:file,SOCIAL_VAULT_KEY:'c'.repeat(64)}});t.after(()=>service.stop());
+ assert.equal(service.status().activation_stage,'storage_read');assert.equal(service.status().status,'ACTIVATION_BLOCKED');
+ assert.ok(!JSON.stringify(service.status()).includes('broken-private-envelope'));
+});

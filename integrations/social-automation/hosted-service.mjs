@@ -13,6 +13,7 @@ import {createPostgresStore} from './postgres-store.mjs';
 // Operator configuration is NOT independent proof of durable storage.
 export async function initializeSocialService({env = process.env, fetchImpl = fetch, root = process.cwd(), authorizeOwner} = {}) {
   let worker,oauth,store;
+  let activationStage = 'policy';
   const shutdown = new AbortController();
   const status = {...socialRuntimeReadiness(env), configured_storage_mode: 'unconfigured', providers:providerReadiness()};
   const service = {
@@ -23,7 +24,8 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   };
   if (env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
   try {
-    if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error();
+    if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error('PUBLICATION_POLICY_BLOCKED');
+    activationStage = 'storage_configuration';
     if(env.SOCIAL_STORAGE_MODE === 'postgres_encrypted') {
       store=createPostgresStore(env);
     } else {
@@ -39,7 +41,9 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     // A leftover lock requires deliberate recovery, never automatic deletion.
     try {await fs.access(file + '.lock'); throw Error('LOCKED');} catch (e) {if (e.code !== 'ENOENT') throw e;}
     }
+    activationStage = 'storage_read';
     const saved = await store.read();
+    activationStage = 'owner_configuration';
     let ownerAuth;
     if (env.SOCIAL_OAUTH_ENABLED === 'true') {
       ownerAuth = new OwnerAuthentication({store, origin: env.SOCIAL_PUBLIC_ORIGIN, clientId: env.OWNER_GITHUB_CLIENT_ID, clientSecret: env.OWNER_GITHUB_CLIENT_SECRET, ownerId: env.OWNER_GITHUB_ID, fetchImpl, shutdownSignal: shutdown.signal});
@@ -47,6 +51,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     }
     if (!Object.keys(saved.connections).length && typeof authorizeOwner!=='function') throw Error();
     const runtime = new SocialAutomation({store, adapters: createProviderAdapters({fetchImpl, shutdownSignal: shutdown.signal, appSecret: env.META_APP_SECRET})});
+    activationStage = 'provider_configuration';
     const oauthProviders={};
     if(env.YOUTUBE_OAUTH_CLIENT_ID&&env.YOUTUBE_OAUTH_CLIENT_SECRET&&env.YOUTUBE_OAUTH_REDIRECT_URI&&env.YOUTUBE_CHANNEL_ID){
       if(ownerAuth && env.YOUTUBE_OAUTH_REDIRECT_URI !== ownerAuth.origin + '/api/social/oauth/youtube/callback') throw Error();
@@ -64,9 +69,13 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     worker = new SocialReadWorker({runtime});
     Object.assign(status, {status: 'READ_WORKER_STARTED', configured_storage_mode: env.SOCIAL_STORAGE_MODE, provider_adapters_registered: Object.keys(runtime.adapters).filter(p=>!runtime.adapters[p].blocked_reason), reason: 'Read-only worker started; account results are reported per cycle. OAuth availability is reported separately; durable storage has not been independently verified.'});
     worker.start();
-  } catch {
+  } catch (error) {
+    const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
+    const reasonCode = safeCodes.has(error?.message) ? error.message : 'ACTIVATION_CONFIGURATION_INVALID';
+    oauth = undefined;
+    delete service.ownerAuth;
     if(store?.close)await store.close().catch(()=>{});
-    Object.assign(status, {status: 'ACTIVATION_BLOCKED', reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires TLS and an unexpired storage deadline; no fallback was created.'});
+    Object.assign(status, {status: 'ACTIVATION_BLOCKED', activation_stage: activationStage, reason_code: reasonCode, oauth_routes_enabled: false, owner_login_enabled: false, worker_running: false, reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires TLS and an unexpired storage deadline; no fallback was created.'});
   }
   return service;
 }
