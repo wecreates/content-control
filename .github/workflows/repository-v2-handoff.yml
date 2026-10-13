@@ -63,10 +63,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg build-essential python3-dev
-          for tool in youtube-automation-agent toonflow-app ruflo; do
+          for tool in youtube-clipper-skill openshorts claude-seo youtube-automation-agent toonflow-app ruflo; do
             python money-factory-adapters/integrations/setup.py "$tool" --runtime "$RUNNER_TEMP/repository-runtime"
           done
-      - name: Execute actual audit, brief import and canonical memory through existing bridge
+      - name: Execute six repository adapters on the actual candidate through existing bridge
         run: python scripts/repository_v2_handoff.py execute --money-factory money-factory-adapters --runtime "$RUNNER_TEMP/repository-runtime" --out state/repository-v2-handoff
       - uses: actions/upload-artifact@v4
         if: always()
@@ -74,6 +74,7 @@ jobs:
           name: bound-v2-money-factory-handoff
           path: |
             state/repository-v2-handoff/handoff.json
-            state/repository-v2-handoff/*-input.json
+            state/repository-v2-handoff/*-input.*
+            state/repository-v2-handoff/teaser.srt
             state/repository-v2-handoff/*/result*
           retention-days: 30
