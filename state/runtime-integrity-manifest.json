@@ -7,8 +7,8 @@
       "sha256": "4cd8e1ae1b1dda4ab3e02bbaf16e98e9caed022e2fd4de1c3c8072133290aea9"
     },
     "package.json": {
-      "bytes": 3215,
-      "sha256": "6128d0044eeb5b6f6f3ed933a982985142f55a7a2db19563b68ad247b21a3f1c"
+      "bytes": 3248,
+      "sha256": "3a3a48e8a27d5c6ee5bafccc796d94c283f277a8d37b54a998e1d22a035b2844"
     },
     "public-review/episode1-v10-free.vtt": {
       "bytes": 673,
@@ -115,8 +115,8 @@
       "sha256": "a86a5fc38fa2ab2bcc305821cd47a713c5f678281a75d24ba1d99621429b8bf8"
     },
     "server-lowmem.js": {
-      "bytes": 26028,
-      "sha256": "c14da01dc7caa4a16dc4038a1e236ad978cb682416d8560c719e0850c6a85d03"
+      "bytes": 26244,
+      "sha256": "2ec857c22b6b5777e7af239b2a347494a7901ed4a924002c8a512c074da1d873"
     },
     "server.js": {
       "bytes": 29,
