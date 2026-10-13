@@ -56,8 +56,10 @@
   },
   "failed_checks": [],
   "integrity_failures": [],
+  "production_ready": false,
   "publication_enabled": false,
   "repair_action": "none",
   "schema_version": 1,
-  "status": "GREEN"
+  "status": "GREEN",
+  "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
