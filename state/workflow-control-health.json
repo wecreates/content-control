@@ -1,5 +1,6 @@
 {
   "checks": {
+    ".github/workflows/accept-existing-v2.yml": true,
     ".github/workflows/airport-lounge-vault-heist-short.yml": true,
     ".github/workflows/always-on-resolver.yml": true,
     ".github/workflows/analytics-feedback.yml": true,
