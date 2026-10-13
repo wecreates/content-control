@@ -44,22 +44,31 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
-    "system_wiring_green": true,
+    "system_wiring_green": false,
     "video_exists": true,
     "video_hash_bound": true,
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest",
+    "system_wiring_green"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "66382c7701263b1886a2fef2f029e6a138b96135a4014be75bdef1f9178c8260",
+      "expected": "3867b7584a9de15600519e319df036fdafbd21436721726538b88fae16207960",
+      "path": "server-lowmem.js"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "audit_system_wiring",
   "schema_version": 1,
-  "status": "GREEN",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
