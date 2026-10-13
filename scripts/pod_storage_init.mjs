@@ -1,0 +1,39 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {createPodPool} from '../pod-db-bridge.js';
+
+export async function migrate(pool, runtimeRole, directory=new URL('../migrations/',import.meta.url)) {
+ if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
+ const client=await pool.connect();
+ try {
+  await client.query('BEGIN');
+  await client.query("SET LOCAL lock_timeout='10s'");
+  await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
+  const role=(await client.query('SELECT rolsuper,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0];
+  if(!role||role.rolsuper||role.rolcreatedb||role.rolcreaterole)throw Error('RUNTIME_ROLE_PRIVILEGED');
+  const current=(await client.query('SELECT current_user AS name')).rows[0].name;
+  if(current===runtimeRole)throw Error('MIGRATION_ROLE_MUST_DIFFER');
+  await client.query('CREATE TABLE IF NOT EXISTS pod_schema_version(version text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');
+  for(const name of (await fs.readdir(directory)).filter(n=>/^\d+_pod\.sql$/.test(n)).sort()){
+   const sql=await fs.readFile(new URL(name,directory),'utf8');
+   const hash=crypto.createHash('sha256').update(sql).digest('hex');
+   const prior=(await client.query('SELECT sha256 FROM pod_schema_version WHERE version=$1',[name])).rows[0];
+   if(prior){if(prior.sha256!==hash)throw Error('MIGRATION_CHECKSUM_MISMATCH');continue;}
+   await client.query(sql);
+   await client.query('INSERT INTO pod_schema_version(version,sha256) VALUES($1,$2)',[name,hash]);
+  }
+  // Explicit lane-owned objects only. Never grant access to cyzor_social_vault.
+  const tables=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
+  await client.query(`GRANT SELECT,INSERT,UPDATE ON ${tables.join(',')} TO "${runtimeRole}"`);
+  await client.query(`GRANT SELECT ON pod_schema_version TO "${runtimeRole}"`);
+  await client.query('COMMIT');
+ }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
+}
+if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ let pool;
+ try{pool=await createPodPool({...process.env,POD_DATABASE_URL:process.env.DATABASE_MIGRATION_URL});await migrate(pool,process.env.DATABASE_RUNTIME_USER);console.log(JSON.stringify({status:'MIGRATED'}));}
+ catch{console.error(JSON.stringify({status:'BLOCKED',reason:'POD_MIGRATION_FAILED'}));process.exitCode=1;}
+ finally{if(pool)await pool.end();}
+}

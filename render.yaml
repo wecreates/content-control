@@ -11,3 +11,10 @@ services:
         value: production
       - key: PUBLICATION_ENABLED
         value: "false"
+      - key: POD_SERVICE_ENABLED
+        value: "false"
+      - key: POD_PRODUCTION_ENABLED
+        value: "false"
+      - key: POD_PUBLICATION_ENABLED
+        value: "false"
+

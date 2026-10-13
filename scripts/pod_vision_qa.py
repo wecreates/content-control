@@ -1,0 +1,153 @@
+"""Print QA. Similarity measurements never masquerade as visual superiority."""
+import argparse
+import hashlib
+import subprocess
+import sys
+import tempfile
+import time
+import unicodedata
+from pathlib import Path
+import cv2
+import numpy as np
+from PIL import Image
+from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign
+
+def ocr(image, language='eng'):
+    with tempfile.TemporaryDirectory(prefix='pod-ocr-') as tmp:
+        path=Path(tmp)/'crop.png'
+        image.save(path)
+        result=subprocess.run(['tesseract',str(path),'stdout','-l',language,'--psm','6'],
+                              capture_output=True,text=True,timeout=45,check=True)
+    return unicodedata.normalize('NFC',result.stdout.strip())
+
+def spatial_checks(manifest,image,art_mask,text_mask):
+    w,h=image.size
+    safe=np.zeros((h,w),dtype=np.uint8)
+    sx,sy,sw,sh=manifest['template']['safe_box_px']
+    if any(not isinstance(v,int) for v in (sx,sy,sw,sh)) or min(sx,sy)<0 or min(sw,sh)<=0 or sx+sw>w or sy+sh>h:
+        return False
+    safe[sy:sy+sh,sx:sx+sw]=1
+    text=np.asarray(text_mask)>0
+    art=np.asarray(art_mask)>0
+    if text.shape!=(h,w) or art.shape!=(h,w):
+        return False
+    if np.any(text & (safe==0)):
+        return False
+    if manifest['template'].get('art_is_critical',True) and np.any(art & (safe==0)):
+        return False
+    # Dilation creates a one-pixel clearance; require dedicated text space.
+    if np.any(cv2.dilate(text.astype(np.uint8),np.ones((3,3),np.uint8)).astype(bool)&art):
+        return False
+    ow,oh=manifest['source_size_px']
+    nw,nh=manifest['placed_size_px']
+    # Integer raster rounding is bounded to one pixel, never unconstrained warping.
+    if min(ow,oh,nw,nh)<=0 or abs(nw/ow-nh/oh)>max(1/ow,1/oh):
+        return False
+    return True
+
+def similarity(candidate,reference):
+    import torch
+    import open_clip
+    torch.set_num_threads(2)
+    model,_,preprocess=open_clip.create_model_and_transforms('ViT-B-32',pretrained='laion2b_s34b_b79k',device='cpu')
+    model.eval()
+    with Image.open(candidate) as a, Image.open(reference) as b:
+        batch=torch.stack([preprocess(a.convert('RGB')),preprocess(b.convert('RGB'))])
+    with torch.inference_mode():
+        z=model.encode_image(batch)
+        z=z/z.norm(dim=-1,keepdim=True).clamp_min(1e-12)
+        cosine=float((z[0]*z[1]).sum())
+    if not np.isfinite(cosine):
+        raise ValueError('SIMILARITY_NONFINITE')
+    return cosine
+
+def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators):
+    root=Path(root)
+    report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
+            'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
+    try:
+        m=read_json(root/'manifest.json')
+        expected=m.pop('package_sha256')
+        actual=hashlib.sha256(canonical(m).encode()).hexdigest()
+        m['package_sha256']=expected
+        if expected!=actual or m['template_sha256']!=hashlib.sha256(canonical(m['template']).encode()).hexdigest():
+            raise ValueError('MANIFEST_HASH_MISMATCH')
+        for name,sha in m['files'].items():
+            if digest(scoped_file(root,name))!=sha:
+                raise ValueError('FILE_HASH_MISMATCH')
+        report.update({'package_sha256':actual,'template_sha256':m['template_sha256'],
+                       'candidate_sha256':m['files']['print.png'],'reference_sha256':digest(reference)})
+        with Image.open(root/'print.png') as f:
+            image=f.convert('RGB')
+            stored_dpi=f.info.get('dpi',(0,0))
+        with Image.open(root/'art-mask.png') as f:
+            art=f.convert('L')
+        with Image.open(root/'text-mask.png') as f:
+            text=f.convert('L')
+        report['checks']['geometry']=spatial_checks(m,image,art,text)
+        report['checks']['resolution']=list(image.size)==m['size_px'] and min(stored_dpi)>=299.99 and m['effective_native_ppi']>=300
+        text_ok=True
+        for layer in m['expected_text']:
+            box=layer['box_px']
+            crop=image.crop((max(0,box[0]-12),max(0,box[1]-12),min(image.width,box[2]+12),min(image.height,box[3]+12)))
+            text_ok &= ocr(crop)==unicodedata.normalize('NFC',layer['text'])
+        # Whole-art OCR catches accidental extra lettering; no expected text requires empty OCR.
+        observed=ocr(image)
+        intended='\n'.join(x['text'] for x in m['expected_text'])
+        report['checks']['text']=bool(text_ok and observed==unicodedata.normalize('NFC',intended))
+        rights=verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
+        report['checks']['rights']=rights.get('status')=='PASS' and rights.get('package_sha256')==actual and rights.get('permanently_unpublished') is False
+        preflight=True
+        if m['platform']=='kdp':
+            import fitz
+            with fitz.open(root/'cover.pdf') as pdf:
+                page=pdf[0]
+                preflight=len(pdf)==1 and abs(page.rect.width-image.width*72/m['dpi'])<.02 and abs(page.rect.height-image.height*72/m['dpi'])<.02
+                pix=page.get_pixmap(matrix=fitz.Matrix(m['dpi']/72,m['dpi']/72),alpha=False)
+                raster=Image.frombytes('RGB',(pix.width,pix.height),pix.samples)
+                preflight &= raster.size==image.size
+                if preflight:
+                    preflight &= float(np.abs(np.asarray(raster,dtype=float)-np.asarray(image,dtype=float)).mean())<1
+        report['checks']['print_preflight']=bool(preflight)
+        report['openclip']={'cosine_similarity':similarity(root/'print.png',reference),'scope':'descriptive_only_not_superiority'}
+        comparative=verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
+        # A reviewer/model service with independently calibrated criteria must attest the strict win.
+        # Merely choosing a larger CLIP threshold cannot produce this attestation.
+        report['checks']['competitive']=bool(comparative.get('package_sha256')==actual and
+            comparative.get('reference_sha256')==report['reference_sha256'] and
+            comparative.get('evaluator_id') in approved_evaluators and comparative.get('winner')=='candidate' and
+            comparative.get('all_dimensions_noninferior') is True and comparative.get('swapped_order_consistent') is True and
+            isinstance(comparative.get('weighted_margin'),(int,float)) and comparative['weighted_margin']>=.5)
+    except Exception as exc:
+        report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
+    required=('text','geometry','resolution','rights','competitive','print_preflight')
+    ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
+    report.update({'verdict':'PASS' if ok else 'FAIL','binary_pass':int(ok),'production_ready':ok})
+    return report
+
+def main():
+    p=argparse.ArgumentParser()
+    for name in ('package-dir','reference','rights','competitive-review','output'):
+        p.add_argument('--'+name,required=True)
+    p.add_argument('--approved-evaluator',action='append',default=[])
+    p.add_argument('--signed-output')
+    a=p.parse_args()
+    try:
+        report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator)
+    except Exception as exc:
+        report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
+    save_json(a.output,report)
+    if a.signed_output:
+        now=int(time.time()*1000)
+        receipt={**report,'audience':'content-control:pod:qa','issued_at_ms':now,'expires_at_ms':now+900000}
+        try:
+            save_json(a.signed_output,sign(receipt,'POD_QA_KEY'))
+        except Exception:
+            report.update({'verdict':'FAIL','binary_pass':0,'production_ready':False})
+            report.setdefault('errors',[]).append('QA_SIGNING_FAILED')
+            save_json(a.output,report)
+    print(canonical(report))
+    return 0 if report['binary_pass']==1 else 2
+
+if __name__=='__main__':
+    sys.exit(main())

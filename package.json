@@ -24,7 +24,11 @@
     "test:clone-e2e": "python -m unittest -v tests/test_clone_end_to_end_acceptance.py",
     "social:read-once": "node scripts/social_worker_once.mjs",
     "test:social": "node --test tests/social-*.test.mjs",
-    "social:storage-init": "node scripts/social_storage_initialize.mjs"
+    "social:storage-init": "node scripts/social_storage_initialize.mjs",
+    "pod:storage-init": "node scripts/pod_storage_init.mjs",
+    "pod:publish-once": "node scripts/pod_publisher_cli.mjs",
+    "test:pod": "node --test tests/pod*.test.mjs",
+    "test:pod-python": "python3 -m unittest discover -s tests -p test_pod.py"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
