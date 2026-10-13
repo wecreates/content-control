@@ -68,3 +68,7 @@ Three additional substantive outcomes verified (seven total toward this request)
 | N300-007 | V2 camera shake and impact rays decay across cuts within a continuous story beat instead of restarting without a new event. | Actual 24-scene regression covers 16 internal cut boundaries; 18 layout tests. Fresh render and full audiovisual approval still required. |
 
 112 relevant JavaScript tests and seven Python registry/scheduler tests passed locally. Live social authorization/private storage and video approval remain unresolved. No publication, messaging, ads, purchases or preview approval occurred.
+
+| N300-008 | Ordered execution and reconciliation cannot promote generic domain-test receipts into completed capabilities, default missing domains, skip missing suites or report success on an empty blocked plan. | Focused executor/reconciliation regressions; existing evidence preserved without state promotions. |
+
+Eight substantive outcomes are now implemented toward the additional 300 request. This does not certify the 2,500 generated registry labels. The ordered job must report BLOCKED until real capability definitions and task-specific proof exist.
