@@ -3,7 +3,7 @@
   "caption_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "caption_file_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
   "critical_file_count": 30,
-  "critical_integrity_manifest_sha256": "ecb351b21e8dc7b49448c702e2560650aedfcccda24d03c76bb053005d55f3eb",
+  "critical_integrity_manifest_sha256": "732bb145d02f2474019b61274d2f26b693bbebef273ec3f0a5a63544941f1c31",
   "locks": {
     "package_lock_sha256": "4cd8e1ae1b1dda4ab3e02bbaf16e98e9caed022e2fd4de1c3c8072133290aea9",
     "python_lock_sha256": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6"
@@ -21,6 +21,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "25ad3a628dddec8787ee220f1dc3333ee1623dfa",
+  "source_commit": "2c1e10aedbdf83c713fcdf0930b84e60b872bca6",
   "zero_credit_runtime": true
 }
