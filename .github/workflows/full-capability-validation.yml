@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'scripts/full_validation_scheduler.py'
+      - 'scripts/autonomous_completion_scheduler.py'
+      - 'scripts/run_validation_shard.py'
+      - 'scripts/upgrade_and_test_capability.py'
+      - 'scripts/complete_task_one_by_one.py'
+      - 'tests/test_full_capability_validation.py'
       - 'scripts/render_proof_capability.py'
       - '.github/workflows/full-capability-validation.yml'
   schedule:
@@ -21,8 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.m.outputs.matrix }}
+      ready: ${{ steps.m.outputs.ready }}
     steps:
       - uses: actions/checkout@v4
+      - name: Test fail-closed validation
+        run: python -m unittest discover -s tests -p test_full_capability_validation.py -v
       - id: m
         run: |
           mkdir -p state/validation
@@ -31,11 +39,14 @@ jobs:
           import json
           p=json.load(open("state/validation/plan.json"));s=sorted(set(x["shard"] for x in p["tasks"]))
           print("matrix="+json.dumps({"shard":s},separators=(",",":")))
+          print("ready=true")
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with: {name: validation-plan, path: state/validation/plan.json, retention-days: 7}
   validate:
     needs: plan
+    if: needs.plan.outputs.ready == 'true'
     strategy:
       fail-fast: false
       max-parallel: 50
@@ -48,13 +59,7 @@ jobs:
       - name: Test validation shard
         run: |
           mkdir -p state/validation/evidence
-          python - "${{ matrix.shard }}" <<'PY'
-          import json,subprocess,sys,pathlib
-          shard=int(sys.argv[1]);p=json.load(open("state/validation/plan.json"))
-          for t in p["tasks"]:
-            if t["shard"]!=shard:continue
-            out=f"state/validation/evidence/{t['capability_id']}.json"
-            subprocess.run(["python","scripts/upgrade_and_test_capability.py","--task",json.dumps(t),"--out",out],check=False)
-          PY
+          python scripts/run_validation_shard.py --plan state/validation/plan.json --shard "${{ matrix.shard }}" --out-dir state/validation/evidence
       - uses: actions/upload-artifact@v4
+        if: always()
         with: {name: "validation-evidence-${{ matrix.shard }}", path: state/validation/evidence, retention-days: 7}
