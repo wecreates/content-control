@@ -31,8 +31,24 @@ def validate_inputs(root, artifact, run):
     from scripts.v2_build_status import RECEIPTS
     for name, relative in RECEIPTS.items():
         recorded = report.get('checks', {}).get(name, {})
+        if name == 'style_parity' and 'review_reconciliation' in report:
+            recorded = report.get('original_build_checks', {}).get(name, {})
         if digest(artifact/relative) != recorded.get('receipt_sha256'):
             raise ValueError(f'Original {name} receipt hash mismatch')
+    if 'review_reconciliation' in report:
+        reconciliation = report['review_reconciliation']
+        review_path = root/'state/visual-analysis/frame-review.json'
+        evidence_path = root/'state/visual-analysis/reconciled-review.json'
+        evidence = read(evidence_path)
+        current_style = report.get('checks', {}).get('style_parity', {})
+        if (reconciliation.get('candidate_sha256') != expected or
+            reconciliation.get('review_sha256') != digest(review_path) or
+            evidence.get('visual_review_sha256') != digest(review_path) or
+            evidence.get('candidate_sha256') != expected or
+            evidence.get('publication_enabled') is not False or evidence.get('production_approved') is not False or
+            current_style.get('receipt_sha256') != digest(evidence_path) or
+            current_style.get('status') != evidence.get('status')):
+            raise ValueError('Reconciled current review evidence mismatch')
     media = read(artifact/'receipts/render.json')
     if media.get('status') != 'PASS' or media.get('candidate_sha256') != expected or media.get('publication_enabled') is not False:
         raise ValueError('Exact-candidate technical media evidence required')

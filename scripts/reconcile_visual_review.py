@@ -25,6 +25,9 @@ def reconcile(video, references, review_path, report_path, draft_path, technical
               'publication_enabled':False,'production_approved':False}
     payload=(json.dumps(evidence,indent=2,sort_keys=True)+'\n').encode()
     updated=copy.deepcopy(report)
+    # Keep the original build receipt immutable across repeated review updates.
+    updated.setdefault('original_build_checks',{})
+    updated['original_build_checks'].setdefault('style_parity',copy.deepcopy(report['checks']['style_parity']))
     updated['checks']['style_parity']={'status':judgment['status'],'failed_checks':[] if judgment['status']=='PASS' else ['framewise_style_parity'],
                                      'reason':judgment['reason'],'receipt_sha256':hashlib.sha256(payload).hexdigest()}
     updated['status']='REVIEW_REQUIRED' if all(v.get('status')=='PASS' for v in updated['checks'].values()) else 'BLOCKED'

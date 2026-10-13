@@ -41,6 +41,25 @@ class RevalidationTests(unittest.TestCase):
             for flag in ('production_approved','publication_enabled','full_av_review','render_attempted'):
                 self.assertIs(result[flag],False)
 
+    def test_reconciled_review_preserves_original_receipts_and_binds_current_review(self):
+        path=self.root/'state/v2-production-status.json';report=json.loads(path.read_text())
+        self.write('state/visual-analysis/frame-review.json',{'candidate':{'sha256':self.hash},'decision':'FAIL'})
+        review_hash=digest(self.root/'state/visual-analysis/frame-review.json')
+        evidence={'candidate_sha256':self.hash,'status':'FAIL','visual_review_sha256':review_hash,'publication_enabled':False,'production_approved':False}
+        self.write('state/visual-analysis/reconciled-review.json',evidence)
+        report['original_build_checks']={'style_parity':dict(report['checks']['style_parity'])}
+        report['checks']['style_parity']={'status':'FAIL','receipt_sha256':digest(self.root/'state/visual-analysis/reconciled-review.json')}
+        report['review_reconciliation']={'candidate_sha256':self.hash,'review_sha256':review_hash}
+        self.write('state/v2-production-status.json',report)
+        self.assertEqual(validate_inputs(self.root,self.artifact,self.run)[0],self.hash)
+        report['original_build_checks']['style_parity']['receipt_sha256']='0'*64
+        self.write('state/v2-production-status.json',report)
+        with self.assertRaisesRegex(ValueError,'Original style_parity receipt hash mismatch'):validate_inputs(self.root,self.artifact,self.run)
+        report['original_build_checks']['style_parity']['receipt_sha256']=digest(self.artifact/'receipts/visual-parity.json')
+        self.write('state/v2-production-status.json',report)
+        self.write('state/visual-analysis/frame-review.json',{'decision':'PASS'})
+        with self.assertRaisesRegex(ValueError,'Reconciled current review evidence mismatch'):validate_inputs(self.root,self.artifact,self.run)
+
     def test_changed_or_missing_receipt_fails_closed(self):
         p=self.artifact/'receipts/render.json';p.write_text('{}')
         with self.assertRaises(ValueError):validate_inputs(self.root,self.artifact,self.run)

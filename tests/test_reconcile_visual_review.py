@@ -15,6 +15,7 @@ class ReconcileTests(unittest.TestCase):
    with patch('scripts.reconcile_visual_review.evaluate_visual_review',return_value={'status':'FAIL','reason':'Observed typography mismatch'}):
     out,payload=reconcile(*args)
    self.assertEqual(out['checks']['style_parity']['status'],'FAIL');self.assertEqual(out['run_id'],123)
+   self.assertEqual(out['original_build_checks']['style_parity'],checks['style_parity'])
    self.assertEqual(out['checks']['technical_video'],checks['technical_video']);self.assertEqual(out['checks']['voices'],checks['voices'])
    self.assertFalse(out['production_approved']);self.assertEqual(out['status'],'BLOCKED');self.assertEqual(out['remaining_review']['full_audiovisual'],'NOT_APPROVED')
    self.assertEqual(out['checks']['style_parity']['receipt_sha256'],hashlib.sha256(payload).hexdigest())
