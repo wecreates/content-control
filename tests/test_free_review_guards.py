@@ -27,7 +27,7 @@ class FreeReviewGuardTests(unittest.TestCase):
 
     def test_inline_review_blocks_fail_before_any_instructions(self):
         count=0
-        for filename in ['exact-av-review.yml','dropbox-review-bridge.yml']:
+        for filename in ['dropbox-review-bridge.yml']:
             lines=(ROOT/'.github/workflows'/filename).read_text().splitlines()
             for i,line in enumerate(lines):
                 if "python - <<'PY'" not in line:
@@ -44,6 +44,17 @@ class FreeReviewGuardTests(unittest.TestCase):
                         exec(compile(tree,filename,'exec'),{})
                     network.assert_not_called()
                 count+=1
-        self.assertEqual(count,3)
+        self.assertEqual(count,1)
+
+    def test_exact_review_uses_local_probe_and_existing_evidence_without_paid_inference(self):
+        workflow=(ROOT/'.github/workflows/exact-av-review.yml').read_text()
+        reviewer=(ROOT/'scripts/exact_av_review.mjs').read_text()
+        for forbidden in ['GEMINI_API_KEY','generativelanguage.googleapis.com','gemini_upload','gemini_analyze']:
+            self.assertNotIn(forbidden,workflow+reviewer)
+        self.assertIn('node scripts/exact_av_review.mjs prepare',workflow)
+        self.assertIn("'scripts/exact_av_review.mjs','validate'",workflow)
+        self.assertIn("PUBLICATION_ENABLED: 'false'",workflow)
+        self.assertIn('production-execution.yml',workflow)
+        self.assertIn('ffprobe',reviewer)
 
 if __name__=='__main__':unittest.main()
