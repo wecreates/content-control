@@ -1,0 +1,17 @@
+{
+  "id": "lemo-opuscar",
+  "upstream": "https://github.com/lemomo-ai/lemo-opuscar",
+  "pinned_commit": "fdc46d7f0e20cc953a71d56241a92d1b4cb7298e",
+  "license": "MIT",
+  "license_review": "Verify licenses of music, fonts, media and third-party dependencies separately",
+  "mode": "optional_reference_and_render_research",
+  "status": "awaiting_execution_test",
+  "enabled_in_production": false,
+  "publication_enabled": false,
+  "paid_providers_enabled": false,
+  "compatible_uses": ["original whiteboard finance explainers", "one-line character animation", "emotional picture storytelling", "kinetic text", "code-rendered scene transitions"],
+  "integration_target": "existing Content Control Remotion pipeline",
+  "requirements": ["Node.js 20+", "Python 3.11+", "FFmpeg", "reviewed pinned source"],
+  "verification": ["install dependencies in free isolated runner", "run one original code-generated animation", "validate frames, audio and output codec", "inspect character consistency and overlaps", "connect evidence-backed render results to existing QA"],
+  "source_note": "43 original styles and 98 showcase styles are documented upstream; these are not a promise that all styles will work on this runner."
+}
