@@ -58,6 +58,7 @@
     ".github/workflows/reference-clone-render.yml": true,
     ".github/workflows/reference-clone-repair.yml": true,
     ".github/workflows/render-monitor-tests.yml": true,
+    ".github/workflows/revalidate-v2-candidate.yml": true,
     ".github/workflows/review-server-smoke.yml": true,
     ".github/workflows/runtime-integrity-manifest.yml": true,
     ".github/workflows/runtime-provenance.yml": true,

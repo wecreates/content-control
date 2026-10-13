@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,12 +54,25 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "930fde4d188e343b56513ac6b3865f19986fa60853516295d491fb5276610c48",
+      "expected": "3549d3d80b36c00ad93ceaed817ff24fafb22fc6ec5e474595c780683a492f69",
+      "path": "package.json"
+    },
+    {
+      "actual": "3867b7584a9de15600519e319df036fdafbd21436721726538b88fae16207960",
+      "expected": "2ec857c22b6b5777e7af239b2a347494a7901ed4a924002c8a512c074da1d873",
+      "path": "server-lowmem.js"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
-  "status": "GREEN",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
