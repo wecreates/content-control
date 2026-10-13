@@ -37,12 +37,12 @@ jobs:
         run: python -m unittest tests.test_rendered_visual_parity tests.test_visual_motion_analysis tests.test_reference_frame_manifest
       - name: Analyze actual candidate and compare reference images
         run: |
-          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 --out state/visual-analysis/comparison.json --analysis-only
-          python scripts/visual_motion_analysis.py --video public-review/v2-draft.mp4 --out state/visual-analysis/motion.json
+          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 --out state/visual-analysis-run/comparison.json --analysis-only
+          python scripts/visual_motion_analysis.py --video public-review/v2-draft.mp4 --out state/visual-analysis-run/motion.json
           python - <<'PY'
           import hashlib,json,os
           from pathlib import Path
-          root=Path('state/visual-analysis')
+          root=Path('state/visual-analysis-run')
           digest=hashlib.sha256(Path('public-review/v2-draft.mp4').read_bytes()).hexdigest()
           for name in ('comparison','motion'):
               r=json.loads((root/(name+'.json')).read_text())
@@ -57,13 +57,13 @@ jobs:
         if: always()
         with:
           name: visual-analysis-evidence
-          path: state/visual-analysis
+          path: state/visual-analysis-run
           retention-days: 30
       - name: Record analysis summary
         run: |
           python - <<'PY'
           import json,os
-          c=json.load(open('state/visual-analysis/comparison.json'));m=json.load(open('state/visual-analysis/motion.json'))
+          c=json.load(open('state/visual-analysis-run/comparison.json'));m=json.load(open('state/visual-analysis-run/motion.json'))
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write(f"Visual analysis: {c['analysis_status']}\n\nDecoded {m['decoded_frames']} frames. Comparison contact sheets and measurements are attached. Creative approval remains separate; publication disabled.\n")
           PY

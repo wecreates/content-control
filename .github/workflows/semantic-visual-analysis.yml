@@ -46,12 +46,12 @@ jobs:
         run: python -m unittest tests.test_free_semantic_qa
       - name: Compare actual extracted candidate frames with reference images
         run: |
-          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir state/visual-analysis/semantic-frames --candidate-video public-review/v2-draft.mp4 --extract-candidate --analysis-only --output state/visual-analysis/semantic.json
+          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir state/visual-analysis-run/semantic-frames --candidate-video public-review/v2-draft.mp4 --extract-candidate --analysis-only --output state/visual-analysis-run/semantic.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: semantic-visual-evidence
           path: |
-            state/visual-analysis/semantic.json
-            state/visual-analysis/semantic-frames
+            state/visual-analysis-run/semantic.json
+            state/visual-analysis-run/semantic-frames
           retention-days: 30
