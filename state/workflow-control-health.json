@@ -105,7 +105,7 @@
       "push": true,
       "reason": "unlisted_automatic_workflow",
       "schedule": true,
-      "workflow_run": false
+      "workflow_run": true
     },
     {
       "path": ".github/workflows/visual-analysis.yml",
