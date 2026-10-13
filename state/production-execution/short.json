@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "format": "short",
+  "run_id": 38472504826,
+  "run_attempt": 1,
+  "recorded_at": "2026-10-13T21:55:09.717142+00:00",
+  "source_commit": "89f02aaa10036df57283982fcf727b443dcc306e",
+  "workflow_outcome": "success",
+  "candidate_sha256": "b67bf2cdb74026f39c62f6e187ffb3fd362fdc820d009f01f9401c5dd70a5884",
+  "candidate_generated": true,
+  "technical_status": "PASS",
+  "status": "REVIEW_PENDING",
+  "checks": {
+    "technical_video": {
+      "status": "PASS",
+      "hash_bound": true
+    },
+    "openmontage_probe": {
+      "status": "PASS",
+      "hash_bound": true
+    }
+  },
+  "creative_review": "PENDING",
+  "audio_listening_review": "PENDING",
+  "production_approved": false,
+  "publication_enabled": false,
+  "scope": "Recorded execution artifact checks only; creative and listening review remain pending"
+}
