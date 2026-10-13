@@ -65,7 +65,7 @@ def generate(source_path, template, text_layers, output_dir):
         # Optional explicit dependency; failure blocks KDP rather than producing a fake PDF.
         from reportlab.pdfgen import canvas as pdfcanvas
         from reportlab.lib.utils import ImageReader
-        pdf = pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(w*72/dpi,h*72/dpi))
+        pdf = pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(w*72/dpi,h*72/dpi),invariant=1)
         pdf.drawImage(ImageReader(canvas.convert('RGB')),0,0,width=w*72/dpi,height=h*72/dpi)
         pdf.showPage()
         pdf.save()

@@ -79,7 +79,11 @@ export class PodDB {
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>now() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
-   if(!r.rows.length)throw Error('LEASE_LOST');return {pass};
+   if(!r.rows.length)throw Error('LEASE_LOST');
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+    [crypto.randomUUID(),job.id,pass?'pod.production.qa_passed':'pod.production.qa_failed',
+     {package_sha256:manifest.package_sha256,fencing_token:job.fencing_token,publication_enabled:false}]);
+   return {pass};
   });
  }
  async claimPublish(accountId,delaySeconds){return this.tx(async c=>{

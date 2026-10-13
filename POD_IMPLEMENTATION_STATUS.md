@@ -76,3 +76,32 @@ KDP upload/Print Previewer and AI disclosure requirements must be satisfied thro
 its documented publishing flow:
 https://kdp.amazon.com/en_US/help/topic/G200641240
 https://kdp.amazon.com/en_US/help/topic/G200672390
+
+## Runtime and cross-repository review lane
+
+`initializePodService({production: {resolveTask, resolveGrant}})` now owns an awaited
+production-only worker lifecycle. Missing authoritative resolvers block startup of
+that worker; setting a flag alone does not fabricate readiness. Shutdown drains
+in-flight work before closing the pool. No publisher is invoked by this lifecycle.
+Production QA completion atomically emits an outbox event, with duplicate fenced
+completion rejected. The public status endpoint distinguishes requested publication
+from actual enabled capability.
+
+`node scripts/pod_review_cli.mjs INPUT FONT OUTPUT` creates original procedural art,
+cover/interior PDFs, supplied metadata, research notes and provenance using the
+existing Python modules. The paired Money Factory `integrations/pod/production_agent.py`
+invokes this fixed coordinator and checks every returned artifact hash. This is a
+local/runner review lane; it returns REVIEW_REQUIRED, never marketplace-ready.
+Manuscripts and metadata must be supplied; it does not invent authors, research,
+rights clearances or editorial approvals. Output directories must be new.
+
+CLIP is now explicitly optional (`pod_vision_qa.py --descriptive-similarity`); it is
+descriptive and cannot replace the mandatory independently signed comparative
+review. Standard QA no longer downloads a model merely to compute this extra score.
+The fixture test demonstrates technical QA with test-only signed attestations,
+not real editorial or rights approval.
+
+The first follow-up passed PostgreSQL 18 CI without skips:
+https://github.com/wecreates/content-control/actions/runs/38477814168
+The live Render read-only database connector still failed TLS/connectivity during
+the follow-up; no network allowlist was broadened and no production SQL was run.

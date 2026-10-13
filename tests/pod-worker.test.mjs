@@ -16,3 +16,23 @@ test('production-only grant reaches task resolution without publishing',async()=
   resolveTask:async()=>{resolved=true;return {rights_verified:false};}});
  assert.equal(resolved,true);assert.equal(failed,true);assert.equal(result.status,'BLOCKED');
 });
+import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
+test('enabled worker without authority resolvers fails closed',async()=>{
+ const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true'},db:{recover(){throw Error('must not access');}}});
+ assert.equal(runtime.status(),'BLOCKED_PRODUCTION_CONFIGURATION');await runtime.stop();
+});
+test('worker awaits its in-flight cycle before shutdown',async()=>{
+ let entered,finish;const entry=new Promise(r=>entered=r),pending=new Promise(r=>finish=r);
+ const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
+  db:{recover:async()=>{},claimProduction:async()=>{entered();await pending;return null;}},
+  production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+ await entry;let stopped=false;const shutdown=runtime.stop().then(()=>stopped=true);
+ await new Promise(r=>setImmediate(r));assert.equal(stopped,false);finish();await shutdown;
+ assert.equal(runtime.status(),'STOPPED');
+});
+test('already aborted production does not claim a job',async()=>{
+ const controller=new AbortController();controller.abort();
+ const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
+  db:{claimProduction(){throw Error('must not claim');}}});
+ assert.equal(result.status,'STOPPED');
+});

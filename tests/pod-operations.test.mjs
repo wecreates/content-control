@@ -28,3 +28,12 @@ test('template safe box uses x y width height consistently with Python QA',()=>{
  record.template.safe_box_px=[400,400,300,300];
  assert.throws(()=>validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}),/TEMPLATE_SAFE_ZONE_INVALID/);
 });
+test('requested publication cannot masquerade as enabled without an adapter',async()=>{
+ const app=express();app.use(createPodRouter({env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},
+  status:()=>({status:'DISABLED',production_status:'BLOCKED_PRODUCTION_CONFIGURATION'})}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const r=await fetch(`http://127.0.0.1:${server.address().port}/status`);const state=await r.json();
+  assert.equal(state.publication_enabled,false);assert.equal(state.publication_requested,true);
+  assert.equal(state.production_status,'BLOCKED_PRODUCTION_CONFIGURATION');
+ }finally{await new Promise(r=>server.close(r));}
+});
