@@ -1,0 +1,38 @@
+name: Capability Validation Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/capability-validation-tests.yml'
+      - '.github/workflows/full-capability-validation.yml'
+      - 'scripts/full_validation_scheduler.py'
+      - 'scripts/run_validation_shard.py'
+      - 'scripts/autonomous_completion_scheduler.py'
+      - 'scripts/load_remaining_task_queue.py'
+      - 'scripts/initialize_capability_progress.py'
+      - 'scripts/complete_task_one_by_one.py'
+      - 'scripts/upgrade_and_test_capability.py'
+      - 'tests/test_full_capability_validation.py'
+      - 'tests/test_autonomous_completion_scheduler.py'
+      - 'tests/test_task_registry_loading.py'
+      - 'tests/test_ordered_capability_diagnostics.py'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PUBLICATION_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run local-only capability regression tests
+        run: |
+          python3 -m unittest discover -s tests -p test_full_capability_validation.py -v
+          python3 -m unittest discover -s tests -p test_autonomous_completion_scheduler.py -v
+          python3 -m unittest discover -s tests -p test_task_registry_loading.py -v
+          python3 -m unittest discover -s tests -p test_ordered_capability_diagnostics.py -v
