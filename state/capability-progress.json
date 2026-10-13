@@ -1,21 +1,27 @@
 {
   "capabilities": {
     "1": {
+      "capability": "character_renderer_01",
       "evidence": [
         "state/autonomous/evidence/1.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "10": {
+      "capability": "character_renderer_10",
       "evidence": [
         "state/autonomous/evidence/10.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "100": {
+      "capability": "physical_props_20",
       "evidence": [
         "state/autonomous/evidence/100.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1000": {
@@ -99,9 +105,11 @@
       "state": "INTEGRATED"
     },
     "101": {
+      "capability": "physical_props_21",
       "evidence": [
         "state/autonomous/evidence/101.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1010": {
@@ -185,9 +193,11 @@
       "state": "INTEGRATED"
     },
     "102": {
+      "capability": "physical_props_22",
       "evidence": [
         "state/autonomous/evidence/102.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1020": {
@@ -271,9 +281,11 @@
       "state": "INTEGRATED"
     },
     "103": {
+      "capability": "physical_props_23",
       "evidence": [
         "state/autonomous/evidence/103.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1030": {
@@ -357,9 +369,11 @@
       "state": "INTEGRATED"
     },
     "104": {
+      "capability": "physical_props_24",
       "evidence": [
         "state/autonomous/evidence/104.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1040": {
@@ -443,9 +457,11 @@
       "state": "INTEGRATED"
     },
     "105": {
+      "capability": "physical_props_25",
       "evidence": [
         "state/autonomous/evidence/105.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1050": {
@@ -529,9 +545,11 @@
       "state": "INTEGRATED"
     },
     "106": {
+      "capability": "physical_props_26",
       "evidence": [
         "state/autonomous/evidence/106.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1060": {
@@ -615,9 +633,11 @@
       "state": "INTEGRATED"
     },
     "107": {
+      "capability": "physical_props_27",
       "evidence": [
         "state/autonomous/evidence/107.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1070": {
@@ -701,9 +721,11 @@
       "state": "INTEGRATED"
     },
     "108": {
+      "capability": "physical_props_28",
       "evidence": [
         "state/autonomous/evidence/108.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1080": {
@@ -787,9 +809,11 @@
       "state": "INTEGRATED"
     },
     "109": {
+      "capability": "physical_props_29",
       "evidence": [
         "state/autonomous/evidence/109.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1090": {
@@ -873,15 +897,19 @@
       "state": "INTEGRATED"
     },
     "11": {
+      "capability": "character_renderer_11",
       "evidence": [
         "state/autonomous/evidence/11.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "110": {
+      "capability": "physical_props_30",
       "evidence": [
         "state/autonomous/evidence/110.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1100": {
@@ -965,9 +993,11 @@
       "state": "INTEGRATED"
     },
     "111": {
+      "capability": "physical_props_31",
       "evidence": [
         "state/autonomous/evidence/111.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1110": {
@@ -1051,9 +1081,11 @@
       "state": "INTEGRATED"
     },
     "112": {
+      "capability": "physical_props_32",
       "evidence": [
         "state/autonomous/evidence/112.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1120": {
@@ -1137,9 +1169,11 @@
       "state": "INTEGRATED"
     },
     "113": {
+      "capability": "physical_props_33",
       "evidence": [
         "state/autonomous/evidence/113.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1130": {
@@ -1223,9 +1257,11 @@
       "state": "INTEGRATED"
     },
     "114": {
+      "capability": "physical_props_34",
       "evidence": [
         "state/autonomous/evidence/114.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1140": {
@@ -1309,9 +1345,11 @@
       "state": "INTEGRATED"
     },
     "115": {
+      "capability": "physical_props_35",
       "evidence": [
         "state/autonomous/evidence/115.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "1150": {
@@ -1395,9 +1433,11 @@
       "state": "INTEGRATED"
     },
     "116": {
+      "capability": "cinematography_01",
       "evidence": [
         "state/autonomous/evidence/116.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1160": {
@@ -1481,9 +1521,11 @@
       "state": "INTEGRATED"
     },
     "117": {
+      "capability": "cinematography_02",
       "evidence": [
         "state/autonomous/evidence/117.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1170": {
@@ -1567,9 +1609,11 @@
       "state": "INTEGRATED"
     },
     "118": {
+      "capability": "cinematography_03",
       "evidence": [
         "state/autonomous/evidence/118.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1180": {
@@ -1653,9 +1697,11 @@
       "state": "INTEGRATED"
     },
     "119": {
+      "capability": "cinematography_04",
       "evidence": [
         "state/autonomous/evidence/119.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1190": {
@@ -1739,15 +1785,19 @@
       "state": "INTEGRATED"
     },
     "12": {
+      "capability": "character_renderer_12",
       "evidence": [
         "state/autonomous/evidence/12.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "120": {
+      "capability": "cinematography_05",
       "evidence": [
         "state/autonomous/evidence/120.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1200": {
@@ -1831,9 +1881,11 @@
       "state": "INTEGRATED"
     },
     "121": {
+      "capability": "cinematography_06",
       "evidence": [
         "state/autonomous/evidence/121.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1210": {
@@ -1917,9 +1969,11 @@
       "state": "INTEGRATED"
     },
     "122": {
+      "capability": "cinematography_07",
       "evidence": [
         "state/autonomous/evidence/122.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1220": {
@@ -2003,9 +2057,11 @@
       "state": "INTEGRATED"
     },
     "123": {
+      "capability": "cinematography_08",
       "evidence": [
         "state/autonomous/evidence/123.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1230": {
@@ -2089,9 +2145,11 @@
       "state": "INTEGRATED"
     },
     "124": {
+      "capability": "cinematography_09",
       "evidence": [
         "state/autonomous/evidence/124.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1240": {
@@ -2175,9 +2233,11 @@
       "state": "INTEGRATED"
     },
     "125": {
+      "capability": "cinematography_10",
       "evidence": [
         "state/autonomous/evidence/125.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1250": {
@@ -2261,9 +2321,11 @@
       "state": "INTEGRATED"
     },
     "126": {
+      "capability": "cinematography_11",
       "evidence": [
         "state/autonomous/evidence/126.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1260": {
@@ -2347,9 +2409,11 @@
       "state": "INTEGRATED"
     },
     "127": {
+      "capability": "cinematography_12",
       "evidence": [
         "state/autonomous/evidence/127.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1270": {
@@ -2433,9 +2497,11 @@
       "state": "INTEGRATED"
     },
     "128": {
+      "capability": "cinematography_13",
       "evidence": [
         "state/autonomous/evidence/128.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1280": {
@@ -2519,9 +2585,11 @@
       "state": "INTEGRATED"
     },
     "129": {
+      "capability": "cinematography_14",
       "evidence": [
         "state/autonomous/evidence/129.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1290": {
@@ -2605,15 +2673,19 @@
       "state": "INTEGRATED"
     },
     "13": {
+      "capability": "character_renderer_13",
       "evidence": [
         "state/autonomous/evidence/13.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "130": {
+      "capability": "cinematography_15",
       "evidence": [
         "state/autonomous/evidence/130.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1300": {
@@ -2697,9 +2769,11 @@
       "state": "INTEGRATED"
     },
     "131": {
+      "capability": "cinematography_16",
       "evidence": [
         "state/autonomous/evidence/131.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1310": {
@@ -2783,9 +2857,11 @@
       "state": "INTEGRATED"
     },
     "132": {
+      "capability": "cinematography_17",
       "evidence": [
         "state/autonomous/evidence/132.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1320": {
@@ -2869,9 +2945,11 @@
       "state": "INTEGRATED"
     },
     "133": {
+      "capability": "cinematography_18",
       "evidence": [
         "state/autonomous/evidence/133.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1330": {
@@ -2955,9 +3033,11 @@
       "state": "INTEGRATED"
     },
     "134": {
+      "capability": "cinematography_19",
       "evidence": [
         "state/autonomous/evidence/134.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1340": {
@@ -3041,9 +3121,11 @@
       "state": "INTEGRATED"
     },
     "135": {
+      "capability": "cinematography_20",
       "evidence": [
         "state/autonomous/evidence/135.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1350": {
@@ -3127,9 +3209,11 @@
       "state": "INTEGRATED"
     },
     "136": {
+      "capability": "cinematography_21",
       "evidence": [
         "state/autonomous/evidence/136.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1360": {
@@ -3213,9 +3297,11 @@
       "state": "INTEGRATED"
     },
     "137": {
+      "capability": "cinematography_22",
       "evidence": [
         "state/autonomous/evidence/137.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1370": {
@@ -3299,9 +3385,11 @@
       "state": "INTEGRATED"
     },
     "138": {
+      "capability": "cinematography_23",
       "evidence": [
         "state/autonomous/evidence/138.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1380": {
@@ -3385,9 +3473,11 @@
       "state": "INTEGRATED"
     },
     "139": {
+      "capability": "cinematography_24",
       "evidence": [
         "state/autonomous/evidence/139.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1390": {
@@ -3471,15 +3561,19 @@
       "state": "INTEGRATED"
     },
     "14": {
+      "capability": "character_renderer_14",
       "evidence": [
         "state/autonomous/evidence/14.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "140": {
+      "capability": "cinematography_25",
       "evidence": [
         "state/autonomous/evidence/140.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1400": {
@@ -3563,9 +3657,11 @@
       "state": "INTEGRATED"
     },
     "141": {
+      "capability": "cinematography_26",
       "evidence": [
         "state/autonomous/evidence/141.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1410": {
@@ -3649,9 +3745,11 @@
       "state": "INTEGRATED"
     },
     "142": {
+      "capability": "cinematography_27",
       "evidence": [
         "state/autonomous/evidence/142.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1420": {
@@ -3735,9 +3833,11 @@
       "state": "INTEGRATED"
     },
     "143": {
+      "capability": "cinematography_28",
       "evidence": [
         "state/autonomous/evidence/143.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1430": {
@@ -3821,9 +3921,11 @@
       "state": "INTEGRATED"
     },
     "144": {
+      "capability": "cinematography_29",
       "evidence": [
         "state/autonomous/evidence/144.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1440": {
@@ -3907,9 +4009,11 @@
       "state": "INTEGRATED"
     },
     "145": {
+      "capability": "cinematography_30",
       "evidence": [
         "state/autonomous/evidence/145.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1450": {
@@ -3993,9 +4097,11 @@
       "state": "INTEGRATED"
     },
     "146": {
+      "capability": "cinematography_31",
       "evidence": [
         "state/autonomous/evidence/146.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1460": {
@@ -4079,9 +4185,11 @@
       "state": "INTEGRATED"
     },
     "147": {
+      "capability": "cinematography_32",
       "evidence": [
         "state/autonomous/evidence/147.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1470": {
@@ -4165,9 +4273,11 @@
       "state": "INTEGRATED"
     },
     "148": {
+      "capability": "cinematography_33",
       "evidence": [
         "state/autonomous/evidence/148.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1480": {
@@ -4251,9 +4361,11 @@
       "state": "INTEGRATED"
     },
     "149": {
+      "capability": "cinematography_34",
       "evidence": [
         "state/autonomous/evidence/149.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1490": {
@@ -4337,15 +4449,19 @@
       "state": "INTEGRATED"
     },
     "15": {
+      "capability": "character_renderer_15",
       "evidence": [
         "state/autonomous/evidence/15.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "150": {
+      "capability": "cinematography_35",
       "evidence": [
         "state/autonomous/evidence/150.json"
       ],
+      "group": "cinematography",
       "state": "TESTED"
     },
     "1500": {
@@ -4429,9 +4545,11 @@
       "state": "INTEGRATED"
     },
     "151": {
+      "capability": "composition_sets_depth_01",
       "evidence": [
         "state/autonomous/evidence/151.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1510": {
@@ -4515,9 +4633,11 @@
       "state": "INTEGRATED"
     },
     "152": {
+      "capability": "composition_sets_depth_02",
       "evidence": [
         "state/autonomous/evidence/152.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1520": {
@@ -4601,9 +4721,11 @@
       "state": "INTEGRATED"
     },
     "153": {
+      "capability": "composition_sets_depth_03",
       "evidence": [
         "state/autonomous/evidence/153.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1530": {
@@ -4687,9 +4809,11 @@
       "state": "INTEGRATED"
     },
     "154": {
+      "capability": "composition_sets_depth_04",
       "evidence": [
         "state/autonomous/evidence/154.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1540": {
@@ -4773,9 +4897,11 @@
       "state": "INTEGRATED"
     },
     "155": {
+      "capability": "composition_sets_depth_05",
       "evidence": [
         "state/autonomous/evidence/155.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1550": {
@@ -4859,9 +4985,11 @@
       "state": "INTEGRATED"
     },
     "156": {
+      "capability": "composition_sets_depth_06",
       "evidence": [
         "state/autonomous/evidence/156.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1560": {
@@ -4945,9 +5073,11 @@
       "state": "INTEGRATED"
     },
     "157": {
+      "capability": "composition_sets_depth_07",
       "evidence": [
         "state/autonomous/evidence/157.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1570": {
@@ -5031,9 +5161,11 @@
       "state": "INTEGRATED"
     },
     "158": {
+      "capability": "composition_sets_depth_08",
       "evidence": [
         "state/autonomous/evidence/158.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1580": {
@@ -5117,9 +5249,11 @@
       "state": "INTEGRATED"
     },
     "159": {
+      "capability": "composition_sets_depth_09",
       "evidence": [
         "state/autonomous/evidence/159.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1590": {
@@ -5203,15 +5337,19 @@
       "state": "INTEGRATED"
     },
     "16": {
+      "capability": "character_renderer_16",
       "evidence": [
         "state/autonomous/evidence/16.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "160": {
+      "capability": "composition_sets_depth_10",
       "evidence": [
         "state/autonomous/evidence/160.json"
       ],
+      "group": "composition_sets_depth",
       "state": "TESTED"
     },
     "1600": {
@@ -6087,9 +6225,11 @@
       "state": "INTEGRATED"
     },
     "17": {
+      "capability": "character_renderer_17",
       "evidence": [
         "state/autonomous/evidence/17.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "170": {
@@ -6973,9 +7113,11 @@
       "state": "INTEGRATED"
     },
     "18": {
+      "capability": "character_renderer_18",
       "evidence": [
         "state/autonomous/evidence/18.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "180": {
@@ -7859,9 +8001,11 @@
       "state": "INTEGRATED"
     },
     "19": {
+      "capability": "character_renderer_19",
       "evidence": [
         "state/autonomous/evidence/19.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "190": {
@@ -8745,15 +8889,19 @@
       "state": "INTEGRATED"
     },
     "2": {
+      "capability": "character_renderer_02",
       "evidence": [
         "state/autonomous/evidence/2.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "20": {
+      "capability": "character_renderer_20",
       "evidence": [
         "state/autonomous/evidence/20.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "200": {
@@ -9637,9 +9785,11 @@
       "state": "INTEGRATED"
     },
     "21": {
+      "capability": "character_renderer_21",
       "evidence": [
         "state/autonomous/evidence/21.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "210": {
@@ -10523,9 +10673,11 @@
       "state": "INTEGRATED"
     },
     "22": {
+      "capability": "character_renderer_22",
       "evidence": [
         "state/autonomous/evidence/22.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "220": {
@@ -11409,9 +11561,11 @@
       "state": "INTEGRATED"
     },
     "23": {
+      "capability": "character_renderer_23",
       "evidence": [
         "state/autonomous/evidence/23.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "230": {
@@ -12295,9 +12449,11 @@
       "state": "INTEGRATED"
     },
     "24": {
+      "capability": "character_renderer_24",
       "evidence": [
         "state/autonomous/evidence/24.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "240": {
@@ -13181,9 +13337,11 @@
       "state": "INTEGRATED"
     },
     "25": {
+      "capability": "character_renderer_25",
       "evidence": [
         "state/autonomous/evidence/25.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "250": {
@@ -13275,9 +13433,11 @@
       "state": "INTEGRATED"
     },
     "26": {
+      "capability": "character_renderer_26",
       "evidence": [
         "state/autonomous/evidence/26.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "260": {
@@ -13361,9 +13521,11 @@
       "state": "INTEGRATED"
     },
     "27": {
+      "capability": "character_renderer_27",
       "evidence": [
         "state/autonomous/evidence/27.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "270": {
@@ -13447,9 +13609,11 @@
       "state": "INTEGRATED"
     },
     "28": {
+      "capability": "character_renderer_28",
       "evidence": [
         "state/autonomous/evidence/28.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "280": {
@@ -13533,9 +13697,11 @@
       "state": "INTEGRATED"
     },
     "29": {
+      "capability": "character_renderer_29",
       "evidence": [
         "state/autonomous/evidence/29.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "290": {
@@ -13619,15 +13785,19 @@
       "state": "INTEGRATED"
     },
     "3": {
+      "capability": "character_renderer_03",
       "evidence": [
         "state/autonomous/evidence/3.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "30": {
+      "capability": "character_renderer_30",
       "evidence": [
         "state/autonomous/evidence/30.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "300": {
@@ -13711,9 +13881,11 @@
       "state": "INTEGRATED"
     },
     "31": {
+      "capability": "character_renderer_31",
       "evidence": [
         "state/autonomous/evidence/31.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "310": {
@@ -13797,9 +13969,11 @@
       "state": "INTEGRATED"
     },
     "32": {
+      "capability": "character_renderer_32",
       "evidence": [
         "state/autonomous/evidence/32.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "320": {
@@ -13883,9 +14057,11 @@
       "state": "INTEGRATED"
     },
     "33": {
+      "capability": "character_renderer_33",
       "evidence": [
         "state/autonomous/evidence/33.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "330": {
@@ -13969,9 +14145,11 @@
       "state": "INTEGRATED"
     },
     "34": {
+      "capability": "character_renderer_34",
       "evidence": [
         "state/autonomous/evidence/34.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "340": {
@@ -14055,9 +14233,11 @@
       "state": "INTEGRATED"
     },
     "35": {
+      "capability": "character_renderer_35",
       "evidence": [
         "state/autonomous/evidence/35.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "350": {
@@ -14141,9 +14321,11 @@
       "state": "INTEGRATED"
     },
     "36": {
+      "capability": "character_renderer_36",
       "evidence": [
         "state/autonomous/evidence/36.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "360": {
@@ -14227,9 +14409,11 @@
       "state": "INTEGRATED"
     },
     "37": {
+      "capability": "character_renderer_37",
       "evidence": [
         "state/autonomous/evidence/37.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "370": {
@@ -14313,9 +14497,11 @@
       "state": "INTEGRATED"
     },
     "38": {
+      "capability": "character_renderer_38",
       "evidence": [
         "state/autonomous/evidence/38.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "380": {
@@ -14399,9 +14585,11 @@
       "state": "INTEGRATED"
     },
     "39": {
+      "capability": "character_renderer_39",
       "evidence": [
         "state/autonomous/evidence/39.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "390": {
@@ -14485,15 +14673,19 @@
       "state": "INTEGRATED"
     },
     "4": {
+      "capability": "character_renderer_04",
       "evidence": [
         "state/autonomous/evidence/4.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "40": {
+      "capability": "character_renderer_40",
       "evidence": [
         "state/autonomous/evidence/40.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "400": {
@@ -14577,9 +14769,11 @@
       "state": "INTEGRATED"
     },
     "41": {
+      "capability": "procedural_animation_01",
       "evidence": [
         "state/autonomous/evidence/41.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "410": {
@@ -14663,9 +14857,11 @@
       "state": "INTEGRATED"
     },
     "42": {
+      "capability": "procedural_animation_02",
       "evidence": [
         "state/autonomous/evidence/42.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "420": {
@@ -14749,9 +14945,11 @@
       "state": "INTEGRATED"
     },
     "43": {
+      "capability": "procedural_animation_03",
       "evidence": [
         "state/autonomous/evidence/43.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "430": {
@@ -14835,9 +15033,11 @@
       "state": "INTEGRATED"
     },
     "44": {
+      "capability": "procedural_animation_04",
       "evidence": [
         "state/autonomous/evidence/44.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "440": {
@@ -14921,9 +15121,11 @@
       "state": "INTEGRATED"
     },
     "45": {
+      "capability": "procedural_animation_05",
       "evidence": [
         "state/autonomous/evidence/45.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "450": {
@@ -15007,9 +15209,11 @@
       "state": "INTEGRATED"
     },
     "46": {
+      "capability": "procedural_animation_06",
       "evidence": [
         "state/autonomous/evidence/46.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "460": {
@@ -15093,9 +15297,11 @@
       "state": "INTEGRATED"
     },
     "47": {
+      "capability": "procedural_animation_07",
       "evidence": [
         "state/autonomous/evidence/47.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "470": {
@@ -15179,9 +15385,11 @@
       "state": "INTEGRATED"
     },
     "48": {
+      "capability": "procedural_animation_08",
       "evidence": [
         "state/autonomous/evidence/48.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "480": {
@@ -15265,9 +15473,11 @@
       "state": "INTEGRATED"
     },
     "49": {
+      "capability": "procedural_animation_09",
       "evidence": [
         "state/autonomous/evidence/49.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "490": {
@@ -15351,15 +15561,19 @@
       "state": "INTEGRATED"
     },
     "5": {
+      "capability": "character_renderer_05",
       "evidence": [
         "state/autonomous/evidence/5.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "50": {
+      "capability": "procedural_animation_10",
       "evidence": [
         "state/autonomous/evidence/50.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "500": {
@@ -15443,9 +15657,11 @@
       "state": "INTEGRATED"
     },
     "51": {
+      "capability": "procedural_animation_11",
       "evidence": [
         "state/autonomous/evidence/51.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "510": {
@@ -15529,9 +15745,11 @@
       "state": "INTEGRATED"
     },
     "52": {
+      "capability": "procedural_animation_12",
       "evidence": [
         "state/autonomous/evidence/52.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "520": {
@@ -15615,9 +15833,11 @@
       "state": "INTEGRATED"
     },
     "53": {
+      "capability": "procedural_animation_13",
       "evidence": [
         "state/autonomous/evidence/53.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "530": {
@@ -15701,9 +15921,11 @@
       "state": "INTEGRATED"
     },
     "54": {
+      "capability": "procedural_animation_14",
       "evidence": [
         "state/autonomous/evidence/54.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "540": {
@@ -15787,9 +16009,11 @@
       "state": "INTEGRATED"
     },
     "55": {
+      "capability": "procedural_animation_15",
       "evidence": [
         "state/autonomous/evidence/55.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "550": {
@@ -15873,9 +16097,11 @@
       "state": "INTEGRATED"
     },
     "56": {
+      "capability": "procedural_animation_16",
       "evidence": [
         "state/autonomous/evidence/56.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "560": {
@@ -15959,9 +16185,11 @@
       "state": "INTEGRATED"
     },
     "57": {
+      "capability": "procedural_animation_17",
       "evidence": [
         "state/autonomous/evidence/57.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "570": {
@@ -16045,9 +16273,11 @@
       "state": "INTEGRATED"
     },
     "58": {
+      "capability": "procedural_animation_18",
       "evidence": [
         "state/autonomous/evidence/58.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "580": {
@@ -16131,9 +16361,11 @@
       "state": "INTEGRATED"
     },
     "59": {
+      "capability": "procedural_animation_19",
       "evidence": [
         "state/autonomous/evidence/59.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "590": {
@@ -16217,15 +16449,19 @@
       "state": "INTEGRATED"
     },
     "6": {
+      "capability": "character_renderer_06",
       "evidence": [
         "state/autonomous/evidence/6.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "60": {
+      "capability": "procedural_animation_20",
       "evidence": [
         "state/autonomous/evidence/60.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "600": {
@@ -16309,9 +16545,11 @@
       "state": "INTEGRATED"
     },
     "61": {
+      "capability": "procedural_animation_21",
       "evidence": [
         "state/autonomous/evidence/61.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "610": {
@@ -16395,9 +16633,11 @@
       "state": "INTEGRATED"
     },
     "62": {
+      "capability": "procedural_animation_22",
       "evidence": [
         "state/autonomous/evidence/62.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "620": {
@@ -16481,9 +16721,11 @@
       "state": "INTEGRATED"
     },
     "63": {
+      "capability": "procedural_animation_23",
       "evidence": [
         "state/autonomous/evidence/63.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "630": {
@@ -16567,9 +16809,11 @@
       "state": "INTEGRATED"
     },
     "64": {
+      "capability": "procedural_animation_24",
       "evidence": [
         "state/autonomous/evidence/64.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "640": {
@@ -16653,9 +16897,11 @@
       "state": "INTEGRATED"
     },
     "65": {
+      "capability": "procedural_animation_25",
       "evidence": [
         "state/autonomous/evidence/65.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "650": {
@@ -16739,9 +16985,11 @@
       "state": "INTEGRATED"
     },
     "66": {
+      "capability": "procedural_animation_26",
       "evidence": [
         "state/autonomous/evidence/66.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "660": {
@@ -16825,9 +17073,11 @@
       "state": "INTEGRATED"
     },
     "67": {
+      "capability": "procedural_animation_27",
       "evidence": [
         "state/autonomous/evidence/67.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "670": {
@@ -16911,9 +17161,11 @@
       "state": "INTEGRATED"
     },
     "68": {
+      "capability": "procedural_animation_28",
       "evidence": [
         "state/autonomous/evidence/68.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "680": {
@@ -16997,9 +17249,11 @@
       "state": "INTEGRATED"
     },
     "69": {
+      "capability": "procedural_animation_29",
       "evidence": [
         "state/autonomous/evidence/69.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "690": {
@@ -17083,15 +17337,19 @@
       "state": "INTEGRATED"
     },
     "7": {
+      "capability": "character_renderer_07",
       "evidence": [
         "state/autonomous/evidence/7.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "70": {
+      "capability": "procedural_animation_30",
       "evidence": [
         "state/autonomous/evidence/70.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "700": {
@@ -17175,9 +17433,11 @@
       "state": "INTEGRATED"
     },
     "71": {
+      "capability": "procedural_animation_31",
       "evidence": [
         "state/autonomous/evidence/71.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "710": {
@@ -17261,9 +17521,11 @@
       "state": "INTEGRATED"
     },
     "72": {
+      "capability": "procedural_animation_32",
       "evidence": [
         "state/autonomous/evidence/72.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "720": {
@@ -17347,9 +17609,11 @@
       "state": "INTEGRATED"
     },
     "73": {
+      "capability": "procedural_animation_33",
       "evidence": [
         "state/autonomous/evidence/73.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "730": {
@@ -17433,9 +17697,11 @@
       "state": "INTEGRATED"
     },
     "74": {
+      "capability": "procedural_animation_34",
       "evidence": [
         "state/autonomous/evidence/74.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "740": {
@@ -17519,9 +17785,11 @@
       "state": "INTEGRATED"
     },
     "75": {
+      "capability": "procedural_animation_35",
       "evidence": [
         "state/autonomous/evidence/75.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "750": {
@@ -17605,9 +17873,11 @@
       "state": "INTEGRATED"
     },
     "76": {
+      "capability": "procedural_animation_36",
       "evidence": [
         "state/autonomous/evidence/76.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "760": {
@@ -17691,9 +17961,11 @@
       "state": "INTEGRATED"
     },
     "77": {
+      "capability": "procedural_animation_37",
       "evidence": [
         "state/autonomous/evidence/77.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "770": {
@@ -17777,9 +18049,11 @@
       "state": "INTEGRATED"
     },
     "78": {
+      "capability": "procedural_animation_38",
       "evidence": [
         "state/autonomous/evidence/78.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "780": {
@@ -17863,9 +18137,11 @@
       "state": "INTEGRATED"
     },
     "79": {
+      "capability": "procedural_animation_39",
       "evidence": [
         "state/autonomous/evidence/79.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "790": {
@@ -17949,15 +18225,19 @@
       "state": "INTEGRATED"
     },
     "8": {
+      "capability": "character_renderer_08",
       "evidence": [
         "state/autonomous/evidence/8.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "80": {
+      "capability": "procedural_animation_40",
       "evidence": [
         "state/autonomous/evidence/80.json"
       ],
+      "group": "procedural_animation",
       "state": "TESTED"
     },
     "800": {
@@ -18041,9 +18321,11 @@
       "state": "INTEGRATED"
     },
     "81": {
+      "capability": "physical_props_01",
       "evidence": [
         "state/autonomous/evidence/81.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "810": {
@@ -18127,9 +18409,11 @@
       "state": "INTEGRATED"
     },
     "82": {
+      "capability": "physical_props_02",
       "evidence": [
         "state/autonomous/evidence/82.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "820": {
@@ -18213,9 +18497,11 @@
       "state": "INTEGRATED"
     },
     "83": {
+      "capability": "physical_props_03",
       "evidence": [
         "state/autonomous/evidence/83.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "830": {
@@ -18299,9 +18585,11 @@
       "state": "INTEGRATED"
     },
     "84": {
+      "capability": "physical_props_04",
       "evidence": [
         "state/autonomous/evidence/84.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "840": {
@@ -18385,9 +18673,11 @@
       "state": "INTEGRATED"
     },
     "85": {
+      "capability": "physical_props_05",
       "evidence": [
         "state/autonomous/evidence/85.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "850": {
@@ -18471,9 +18761,11 @@
       "state": "INTEGRATED"
     },
     "86": {
+      "capability": "physical_props_06",
       "evidence": [
         "state/autonomous/evidence/86.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "860": {
@@ -18557,9 +18849,11 @@
       "state": "INTEGRATED"
     },
     "87": {
+      "capability": "physical_props_07",
       "evidence": [
         "state/autonomous/evidence/87.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "870": {
@@ -18643,9 +18937,11 @@
       "state": "INTEGRATED"
     },
     "88": {
+      "capability": "physical_props_08",
       "evidence": [
         "state/autonomous/evidence/88.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "880": {
@@ -18729,9 +19025,11 @@
       "state": "INTEGRATED"
     },
     "89": {
+      "capability": "physical_props_09",
       "evidence": [
         "state/autonomous/evidence/89.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "890": {
@@ -18815,15 +19113,19 @@
       "state": "INTEGRATED"
     },
     "9": {
+      "capability": "character_renderer_09",
       "evidence": [
         "state/autonomous/evidence/9.json"
       ],
+      "group": "character_renderer",
       "state": "TESTED"
     },
     "90": {
+      "capability": "physical_props_10",
       "evidence": [
         "state/autonomous/evidence/90.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "900": {
@@ -18907,9 +19209,11 @@
       "state": "INTEGRATED"
     },
     "91": {
+      "capability": "physical_props_11",
       "evidence": [
         "state/autonomous/evidence/91.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "910": {
@@ -18993,9 +19297,11 @@
       "state": "INTEGRATED"
     },
     "92": {
+      "capability": "physical_props_12",
       "evidence": [
         "state/autonomous/evidence/92.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "920": {
@@ -19079,9 +19385,11 @@
       "state": "INTEGRATED"
     },
     "93": {
+      "capability": "physical_props_13",
       "evidence": [
         "state/autonomous/evidence/93.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "930": {
@@ -19165,9 +19473,11 @@
       "state": "INTEGRATED"
     },
     "94": {
+      "capability": "physical_props_14",
       "evidence": [
         "state/autonomous/evidence/94.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "940": {
@@ -19251,9 +19561,11 @@
       "state": "INTEGRATED"
     },
     "95": {
+      "capability": "physical_props_15",
       "evidence": [
         "state/autonomous/evidence/95.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "950": {
@@ -19337,9 +19649,11 @@
       "state": "INTEGRATED"
     },
     "96": {
+      "capability": "physical_props_16",
       "evidence": [
         "state/autonomous/evidence/96.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "960": {
@@ -19423,9 +19737,11 @@
       "state": "INTEGRATED"
     },
     "97": {
+      "capability": "physical_props_17",
       "evidence": [
         "state/autonomous/evidence/97.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "970": {
@@ -19509,9 +19825,11 @@
       "state": "INTEGRATED"
     },
     "98": {
+      "capability": "physical_props_18",
       "evidence": [
         "state/autonomous/evidence/98.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "980": {
@@ -19595,9 +19913,11 @@
       "state": "INTEGRATED"
     },
     "99": {
+      "capability": "physical_props_19",
       "evidence": [
         "state/autonomous/evidence/99.json"
       ],
+      "group": "physical_props",
       "state": "TESTED"
     },
     "990": {

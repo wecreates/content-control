@@ -1,4 +1,4 @@
-import {v2CameraProgress} from './V2CameraPerformance.mjs';
+import {v2CameraProgress,v2ImpactAmount} from './V2CameraPerformance.mjs';
 import React from "react";
 import {v2FacePerformance} from "./V2FacePerformance.mjs";
 import {captionAtTime} from "./ObservedCaptions.mjs";
@@ -21,10 +21,10 @@ export const StudioAnimaticComposition=({ccsd})=>{
  if(!s)return <AbsoluteFill style={{background:"#fff"}}/>;
  const local=Math.max(0,frame-Math.round(s.start*fps)),p=clamp(local/Math.max(1,(s.end-s.start)*fps));
  const chars=s.characters||[],props=s.props||[],slots=characterSlots(chars.length),objects=propSlots(props.length);
- const impact=(s.fx||[]).some(x=>x.type==="story_impact");
- const impactAmount=impact?Math.max(0,1-local/(fps*.3)):0;
- // Camera action stays inside the action region; typography never shakes or zooms.
  const battle=ccsd?.project_id==='v2-amex-vs-chase-anime-boss-fight' && v2BattleBeat(s.id);
+ const impact=(s.fx||[]).some(x=>x.type==="story_impact");
+ const impactAmount=battle?v2ImpactAmount(ccsd.scenes,s,t):(impact?Math.max(0,1-local/(fps*.3)):0);
+ // Camera action stays inside the action region; typography never shakes or zooms.
  const cameraP=battle?v2CameraProgress(ccsd.scenes,s,t):p;
  const move=s.camera?.move||'static';
  const scale=move==='punch_in'||move==='creeping_push'?1+.035*cameraP:move==='snap_reveal'?1.035-.035*cameraP:1;

@@ -56,3 +56,15 @@ Status: incomplete. Four substantive outcomes implemented in this pass; 296 requ
 | N300-004 | Background-normalized line-art diagnostic is measured in the existing wiring audit and retained as an explicitly uncalibrated artifact. | Five fixtures cover near-white paper, geometry differences, blank/dark inputs and resolution; no acceptance effect. |
 
 Latest candidate 5cc727aa7357cb7fe4baf142e995e6835f1c1a15cc9ef52fb58182c64f85b988: ten sampled frames have mean normalized mask IoU 0.04876 and reference/candidate foreground coverage 0.08535/0.03627. Different story layouts prevent treating this as competitive approval or failure. Full audiovisual review, live account authorization and durable private storage remain unverified. Publication stays disabled.
+
+## Continued 300-task request — 2026-10-13 Pacific
+
+Three additional substantive outcomes verified (seven total toward this request). The number 300 is a requested workload, not an independently defined executable task list. Existing registry entries cannot be counted as implemented features.
+
+| ID | Outcome | Evidence |
+| --- | --- | --- |
+| N300-005 | Reconcile missing registry metadata from existing definitions and stop the loader inventing runnable work or silently dropping unverified terminal states. | Restored names/groups on 160 existing records without state/evidence changes; seven loader/scheduler tests. All 2,500 entries still lack authoritative execution domains. |
+| N300-006 | Empty/primitive provider responses cannot mark a social read completed or update its verified-read timestamp. | Regression covers undefined, null, boolean, number, string and array responses; live connections not claimed. |
+| N300-007 | V2 camera shake and impact rays decay across cuts within a continuous story beat instead of restarting without a new event. | Actual 24-scene regression covers 16 internal cut boundaries; 18 layout tests. Fresh render and full audiovisual approval still required. |
+
+112 relevant JavaScript tests and seven Python registry/scheduler tests passed locally. Live social authorization/private storage and video approval remain unresolved. No publication, messaging, ads, purchases or preview approval occurred.

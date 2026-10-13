@@ -176,3 +176,18 @@ test('larger V2 captions retain every word within the existing text reserve',asy
  }
  assert.equal(fitCaption('stops',592,175,52).size,52);
 });
+
+
+test('V2 editorial cuts do not retrigger physical impact rays or camera shake',async()=>{
+ const {v2ImpactAmount}=await import('../remotion/V2CameraPerformance.mjs');
+ const {v2BattleBeat}=await import('../remotion/StudioLayout.mjs');
+ const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
+ let continuations=0;
+ for(let i=0;i<c.scenes.length;i++){
+  const scene=c.scenes[i],samePrevious=i>0&&v2BattleBeat(c.scenes[i-1].id)===v2BattleBeat(scene.id);
+  if(samePrevious){assert.equal(v2ImpactAmount(c.scenes,scene,scene.start),0);continuations++;}
+  else {assert.equal(v2ImpactAmount(c.scenes,scene,scene.start),1);assert.ok(Math.abs(v2ImpactAmount(c.scenes,scene,scene.start+.15)-.5)<1e-8);}
+ }
+ assert.equal(continuations,16);
+ const first=c.scenes[0];assert.equal(v2ImpactAmount(c.scenes,{...first,fx:[]},first.start),0);
+});
