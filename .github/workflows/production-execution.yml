@@ -2,6 +2,8 @@ name: Resumable production execution
 on:
   push:
     branches: [codex/production-completion-20261012]
+    paths-ignore:
+      - 'state/production-execution/**'
   workflow_dispatch:
     inputs:
       format:
@@ -15,6 +17,10 @@ on:
         default: ''
   pull_request:
     paths:
+      - 'scripts/record_production_execution.py'
+      - 'tests/test_record_production_execution.py'
+      - 'production-status.js'
+      - 'tests/production-status.test.mjs'
       - 'scripts/v2_execution.py'
       - 'tests/test_v2_execution.py'
       - 'scripts/v2_captions.py'
@@ -48,6 +54,8 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
           python -m pip install --disable-pip-version-check numpy
       - run: npm ci
+      - run: python -m unittest tests.test_record_production_execution -v
+      - run: node --test tests/production-status.test.mjs
       - run: npm run test:system
       - run: node --test tests/studio-long-layout.test.mjs tests/studio-layout.test.mjs tests/observed-captions.test.mjs
       - run: python -m unittest -v tests.test_v2_execution tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions tests.test_v2_free_voice tests.test_v2_pacing tests.test_v2_transcription_repair tests.test_production_package
@@ -181,6 +189,20 @@ jobs:
           doc = json.loads(Path(os.environ['CCSD']).read_text())
           subprocess.run([sys.executable, 'integrations/openmontage/verify_render.py', '--upstream', os.environ['RUNNER_TEMP'] + '/OpenMontage', '--video', str(work / 'candidate.mp4'), '--expected-duration', str(max(s['end'] for s in doc['scenes'])), '--receipt', str(work / 'openmontage-probe.json')], check=True)
           PYPROBE
+      - name: Record actual format execution without playback approval
+        if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
+        env:
+          FORMAT: ${{ matrix.format }}
+          OUTCOME: ${{ job.status }}
+        run: python scripts/record_production_execution.py --workdir "state/production-$FORMAT" --format "$FORMAT" --run-id "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" --source-commit "$GITHUB_SHA" --outcome "$OUTCOME" --out "state/execution-summary/$FORMAT.json"
+      - name: Preserve format summary
+        if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
+        uses: actions/upload-artifact@v4
+        with:
+          name: execution-summary-${{ matrix.format }}
+          path: state/execution-summary/${{ matrix.format }}.json
+          retention-days: 14
+          if-no-files-found: error
       - name: Preserve resumable state and actual output even after failure
         if: always() && (github.event_name == 'push' || inputs.format == matrix.format || inputs.format == 'both')
         uses: actions/upload-artifact@v4
@@ -189,3 +211,57 @@ jobs:
           path: state/production-${{ matrix.format }}/
           retention-days: 14
           if-no-files-found: warn
+
+  record-status:
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    needs: [tests, produce]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Record selected formats, including missing or failed execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORMAT: ${{ inputs.format || 'both' }}
+          PRODUCTION_OUTCOME: ${{ needs.produce.result }}
+        run: |
+          python - <<'PYRECORD'
+          import json, os, subprocess
+          from pathlib import Path
+          from scripts.record_production_execution import summarize
+          run_id = int(os.environ['GITHUB_RUN_ID']); attempt = int(os.environ['GITHUB_RUN_ATTEMPT'])
+          formats = ['short', 'long'] if os.environ['FORMAT'] == 'both' else [os.environ['FORMAT']]
+          for format in formats:
+              dest = Path('state/production-execution') / (format + '.json')
+              incoming = Path(os.environ['RUNNER_TEMP']) / ('execution-summary-' + format)
+              downloaded = subprocess.run(['gh', 'run', 'download', str(run_id), '--name', 'execution-summary-' + format, '--dir', str(incoming)]).returncode == 0
+              try:
+                  report = json.loads((incoming / (format + '.json')).read_text()) if downloaded else {}
+                  valid = report.get('run_id') == run_id and report.get('run_attempt') == attempt and report.get('source_commit') == os.environ['GITHUB_SHA'] and report.get('format') == format and report.get('publication_enabled') is False and report.get('production_approved') is False
+              except (OSError, ValueError):
+                  valid = False
+              if not valid:
+                  report = summarize(incoming / 'missing', format, run_id, attempt, os.environ['GITHUB_SHA'], 'summary_unavailable')
+              # A failed final upload or matrix job must not leave an all-green execution summary.
+              if os.environ['PRODUCTION_OUTCOME'] != 'success':
+                  report.update(status='BLOCKED', technical_status='BLOCKED', workflow_outcome=os.environ['PRODUCTION_OUTCOME'])
+              previous = json.loads(dest.read_text()) if dest.exists() else {}
+              if (previous.get('run_id', 0), previous.get('run_attempt', 0)) > (run_id, attempt):
+                  continue
+              dest.parent.mkdir(parents=True, exist_ok=True)
+              dest.write_text(json.dumps(report, indent=2) + '\n')
+          PYRECORD
+      - name: Persist only execution summaries
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- state/production-execution/short.json state/production-execution/long.json 2>/dev/null || git add -- state/production-execution
+          if ! git diff --cached --quiet; then
+            git commit -m "Record format-specific production execution evidence"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
