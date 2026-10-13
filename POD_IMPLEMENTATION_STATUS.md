@@ -24,7 +24,10 @@ PostgreSQL tables; cyzor_social_vault is never accessed by this lane.
 `npm run test:pod` runs Node unit/HTTP tests. The PostgreSQL test runs only when
 POD_TEST_DATABASE_URL points to a disposable test database; never use production.
 `npm run test:pod-python` exercises actual OCR, geometry and PDF rendering.
-`.github/workflows/pod-integration.yml` supplies PostgreSQL 16 and Python 3.12.
+`.github/workflows/pod-integration.yml` supplies PostgreSQL 18 and Python 3.12,
+matching the database version verified in the owner's Render workspace.
+POD_DEPLOYMENT_READINESS.json records the inspected service/database configuration
+and the blocked live-schema inspection. The earlier PostgreSQL 16 CI also passed.
 The full model QA additionally requires requirements-free-qa.txt/lock dependencies.
 
 Run `npm run pod:storage-init` as a separate deployment step with

@@ -1,0 +1,37 @@
+{
+  "observed_at": "2026-10-13T21:47:00Z",
+  "workspace_confirmed_by_owner": true,
+  "workspace_name": "My Workspace",
+  "content_control": {
+    "service": "content-control-render-worker",
+    "branch": "main",
+    "runtime": "node",
+    "plan": "free",
+    "start_command": "npm start",
+    "actual_build_command": "npm install",
+    "repository_build_command": "npm ci --ignore-scripts",
+    "pod_branch_deployed": false
+  },
+  "database": {
+    "name": "content-control-state",
+    "version": "18",
+    "plan": "free",
+    "status": "available",
+    "expires_at": "2026-10-26T20:02:09.446632Z",
+    "network_restrictions_preserved": true,
+    "live_pod_schema_verified": false,
+    "inspection_result": "Render read-only connector failed TLS/connectivity; no SQL executed successfully"
+  },
+  "money_factory_service_found_in_workspace": false,
+  "publication_enabled_by_this_change": false,
+  "deployment_ready": false,
+  "blocking_requirements": [
+    "Run read-only schema and restricted-role verification from an authorized TLS-capable host within the database network boundary",
+    "Apply migrations using a separate DDL owner; never put owner credentials in the web worker",
+    "Establish non-expiring durable storage before claiming continuous operation",
+    "Locate and mount the actual Money Factory readiness/event authority",
+    "Configure production resolvers, approved source/template/rights evidence and comparative review",
+    "Implement authorized marketplace adapters and verified listing reconciliation",
+    "Verify worker hosting and capacity; free web hosting is not accepted as proof of 24/7 operation"
+  ]
+}
