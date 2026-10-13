@@ -81,12 +81,15 @@
     "competitive_motion": "NOT_VERIFIED"
   },
   "review_reconciliation": {
-    "run_id": 38476947231,
-    "source_commit": "77eef6eb984ab7c8a42f7d9eec791306aaa49048",
-    "source_report_sha256": "28442742e4f287f95bb55a80bdc300bd007c6ab66b224eea508895f4cf551c17",
+    "run_id": 38478218765,
+    "source_commit": "78f5cfceab88338dcebe2aeb2a7a49e8fd1fdf9f",
+    "source_report_sha256": "3badef503ef64c678f45d2a270af00a716c600aa694268bf81f5c6fd22a60012",
     "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
     "technical_receipt_sha256": "9d5c57eaf7ec7522b7f7a80d23a2fa4ffad5aa9af76d70fe7e6d8576fdc563ba",
     "review_sha256": "f55c9171456d6a7a546198114f5ab0cf89634955b52152f46bf55488e762ec5a",
-    "recorded_at": "2026-10-13T22:19:17.296098+00:00"
-  }
+    "recorded_at": "2026-10-13T22:30:29.111639+00:00"
+  },
+  "technical_status": "PASS",
+  "review_status": "FULL_AUDIOVISUAL_REVIEW_REQUIRED",
+  "next_action": "Apply authentic full audiovisual and competitor review to these existing candidate bytes; do not regenerate to apply review."
 }
