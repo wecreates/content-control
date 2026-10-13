@@ -1,0 +1,139 @@
+{
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "production_approved": false,
+  "publication_enabled": false,
+  "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+  "schema_version": 1,
+  "status": "PASS",
+  "visual_review": {
+    "framewise_style_parity": true,
+    "method": "documented_sampled_frame_visual_review",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T22:17:04.054530+00:00",
+    "reviewed_frame_indices": [
+      0,
+      93,
+      186,
+      204,
+      280,
+      372,
+      373,
+      420,
+      450,
+      466,
+      500,
+      559,
+      653,
+      744,
+      746,
+      768,
+      800,
+      839
+    ],
+    "reviewer": {
+      "id": "final_visual_review_agent",
+      "method": "direct_sampled_frame_inspection"
+    },
+    "rubric": {
+      "character_consistency": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          373,
+          466,
+          559,
+          653,
+          744,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "character_consistency",
+        "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification.",
+        "status": "PASS"
+      },
+      "character_scale": {
+        "candidate_frames": [
+          186,
+          204,
+          280,
+          559,
+          653,
+          744,
+          800,
+          839
+        ],
+        "dimension": "character_scale",
+        "observation": "Sampled faces, expressions, gestures and identity silhouettes are readable. Paired scenes and fee reaction have enlarged subjects; finish preserves prop clearance. This passes functional sampled subject readability, not closeup diversity or competitor-polish parity.",
+        "status": "PASS"
+      },
+      "phone_readability": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          280,
+          373,
+          466,
+          559,
+          653,
+          746,
+          839
+        ],
+        "dimension": "phone_readability",
+        "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review.",
+        "status": "PASS"
+      },
+      "staging": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          372,
+          373,
+          420,
+          450,
+          466,
+          500,
+          559,
+          653,
+          744,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "staging",
+        "observation": "Distinct arena, lounge counter/doorway, checkpoint lanes and victory pedestal are visible. Newly grounded invitation scene frames420,450,466,500 shows hand meeting FEE envelope at doorway; captions remain separate. Fee reaction frame372 has larger face while limbs remain inside sampled frame. Finish full720px frames744,768,800,839 retains fully visible sandwich and separation of Dave head from wallet/under-arc. No blocking occlusion or clipping observed in inspected samples. Floating sandwich symbols and mostly full-body compositions remain creative-polish limitations outside this layout pass.",
+        "status": "PASS"
+      },
+      "typography": {
+        "candidate_frames": [
+          0,
+          186,
+          204,
+          559,
+          653,
+          744,
+          768,
+          800
+        ],
+        "dimension": "typography",
+        "observation": "Bold captions are readable and separate from props in inspected frames; frame204 perks and frame768 budget use inverted emphasis, while frame420 two-line text clears sandwich. This is sampled legibility/hierarchy approval; sans-serif styling is not a claim of expressive-font or competitor creative parity.",
+        "status": "PASS"
+      }
+    },
+    "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
+    "status": "PASS",
+    "unresolved_issues": []
+  },
+  "visual_review_sha256": "f55c9171456d6a7a546198114f5ab0cf89634955b52152f46bf55488e762ec5a"
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": 38476455606,
+  "job_id": 115569238137,
+  "conclusion": "success",
+  "artifact_id": 11854831791,
+  "artifact_sha256": "8713d91420c6a6f107728ed1a341ff767be1f7945f0bc445e84abc83fe7b92c4",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "all_eight_output_hashes_verified": true,
+  "verification_scope": "ZIP and every output byte digest match operation receipts; no audiovisual approval",
+  "production_approved": false,
+  "publication_enabled": false
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tool": "youtube-automation-agent",
+  "operation": "audit",
+  "revision": "e26792ae00dc1ec2434faf32632896609396dfad",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:23:29Z",
+  "output_sha256": "1b501a8c92d6317edf06d39b14b7f065e143cf637cc77750514323531e40345c",
+  "media": null,
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

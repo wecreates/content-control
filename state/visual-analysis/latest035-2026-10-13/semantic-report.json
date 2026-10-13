@@ -1,0 +1,278 @@
+{
+  "analysis_status": "COMPLETE",
+  "artistic_acceptance": "UNASSESSED",
+  "best_reference_similarity_by_candidate": [
+    0.40361523628234863,
+    0.4705384373664856,
+    0.4245344400405884,
+    0.4871719479560852,
+    0.48749271035194397,
+    0.4612175226211548,
+    0.40000954270362854,
+    0.3490164875984192,
+    0.32807767391204834,
+    0.5052443742752075,
+    0.4981084167957306,
+    0.5113416314125061
+  ],
+  "checks": {
+    "florence_completed": true,
+    "openclip_global_similarity": true,
+    "openclip_mean_best_similarity": true
+  },
+  "checks_scope": "Legacy heuristic screening only; not artistic parity or production approval",
+  "engine": "openclip-florence-free-qa-v2",
+  "errors": [],
+  "florence": {
+    "captions": {
+      "candidate": [
+        {
+          "caption": "The image is a black and white line drawing of a stick figure standing on a weighing scale. The stick figure is holding two rectangular boxes with the word \"CHASE\" and \"AMEX\" written on them. The boxes are connected by a horizontal bar, which is used to measure the weight of the scale. On the left side of the stick figure, there is a small smiley face with a big smile. The scale is rectangular in shape and has a flat",
+          "file": "cand-000001.jpg"
+        },
+        {
+          "caption": "The image is a black and white line drawing of a stick figure standing in front of a door with an envelope on it. The stick figure is holding up a sign that reads \"INVITED\" with its arms raised in the air. On the left side of the image, there is a small table with a cup of coffee on it, and on the right side, there are two boxes with the word \"FEEL\" written on them. Above the stick figure",
+          "file": "cand-000007.jpg"
+        },
+        {
+          "caption": "The image is a black and white line drawing of a stick figure holding up a sign that reads \"BUDGET\". The stick figure has a big smile on its face and its arms are raised in the air. The sign is rectangular in shape and has a small triangle on top. The background is plain white.",
+          "file": "cand-000012.jpg"
+        }
+      ],
+      "reference": [
+        {
+          "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. Above the stick figures, there is a text that reads \"If you're 17\" in a bold, cursive font. The background is plain white",
+          "file": "ref-01.jpg"
+        },
+        {
+          "caption": "The image is a black and white illustration of a living room scene. In the center of the image, there is a couch with a television on it. The television is turned on and the screen is turned off. On the couch, there are various items scattered around, including a bowl of food, a bottle of wine, and a few other items. The background is plain white. Above the couch is a text that reads \"Waste This year\".",
+          "file": "ref-05.jpg"
+        },
+        {
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+          "file": "ref-10.jpg"
+        }
+      ]
+    },
+    "status": "COMPLETE"
+  },
+  "florence_model": "florence-community/Florence-2-base",
+  "frame_matches": [
+    {
+      "candidate": "cand-000001.jpg",
+      "cosine_similarity": 0.40361523628234863,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000002.jpg",
+      "cosine_similarity": 0.4705384373664856,
+      "reference": "ref-09.jpg"
+    },
+    {
+      "candidate": "cand-000003.jpg",
+      "cosine_similarity": 0.4245344400405884,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000004.jpg",
+      "cosine_similarity": 0.4871719479560852,
+      "reference": "ref-02.jpg"
+    },
+    {
+      "candidate": "cand-000005.jpg",
+      "cosine_similarity": 0.48749271035194397,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000006.jpg",
+      "cosine_similarity": 0.4612175226211548,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000007.jpg",
+      "cosine_similarity": 0.40000954270362854,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000008.jpg",
+      "cosine_similarity": 0.3490164875984192,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000009.jpg",
+      "cosine_similarity": 0.32807767391204834,
+      "reference": "ref-08.jpg"
+    },
+    {
+      "candidate": "cand-000010.jpg",
+      "cosine_similarity": 0.5052443742752075,
+      "reference": "ref-09.jpg"
+    },
+    {
+      "candidate": "cand-000011.jpg",
+      "cosine_similarity": 0.4981084167957306,
+      "reference": "ref-09.jpg"
+    },
+    {
+      "candidate": "cand-000012.jpg",
+      "cosine_similarity": 0.5113416314125061,
+      "reference": "ref-09.jpg"
+    }
+  ],
+  "global_similarity": 0.6367143392562866,
+  "limitations": [
+    "Embedding similarity is descriptive, not calibrated artistic parity.",
+    "Sampled frames do not establish timing, animation quality, or full-video parity.",
+    "Captions may omit details or hallucinate; they are not visual approval."
+  ],
+  "mean_best_frame_similarity": 0.44386401772499084,
+  "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
+  "openclip_status": "COMPLETE",
+  "production_ready": false,
+  "provenance": {
+    "candidate_extraction": {
+      "derived_from_candidate_video": true,
+      "engine": "ffmpeg",
+      "filter": "fps=1/3",
+      "sample_interval_seconds": 3,
+      "sequence_start": 1
+    },
+    "candidate_frames": [
+      {
+        "file": "cand-000001.jpg",
+        "sha256": "6983dfdc76695327a2eee9118ca8b1e2df60805a9e5da3934c816e744d8395d2"
+      },
+      {
+        "file": "cand-000002.jpg",
+        "sha256": "24a7d425c6baedfd54823046d2223b45a9e6d27aba943ca8e94ae41187c62c63"
+      },
+      {
+        "file": "cand-000003.jpg",
+        "sha256": "c1783860281f96c1b43cb5736171402101bc5f8f5a590946dba76ac8cb057cc6"
+      },
+      {
+        "file": "cand-000004.jpg",
+        "sha256": "4100b6b9396c6fb299776525e9557be823cce8d35666625fcfa226231ba6f4c8"
+      },
+      {
+        "file": "cand-000005.jpg",
+        "sha256": "37fd43672658eaf9420f55c0f39c4f2ce39d32acdb1cc9aa4ce991197678bead"
+      },
+      {
+        "file": "cand-000006.jpg",
+        "sha256": "cca298d030061b7afe4ccb559801a3527a93f9e313e462304e1258600a71557e"
+      },
+      {
+        "file": "cand-000007.jpg",
+        "sha256": "f219c12281f2e57b37935b6643cbc4ba0c193136a5f7198181fdf23b1df51b64"
+      },
+      {
+        "file": "cand-000008.jpg",
+        "sha256": "d5b1bc2ea96eb7767f5ace110842bec3794cab564f86e8d4f9fc2217295f1cf4"
+      },
+      {
+        "file": "cand-000009.jpg",
+        "sha256": "675543f57f91b5a91bbb9ef66ae316c27630126d173641f446dcae9090a4ce64"
+      },
+      {
+        "file": "cand-000010.jpg",
+        "sha256": "b1a30672cf704ad6eb94a72b688bc5579af215ec733d01b360d756523a0e7d6e"
+      },
+      {
+        "file": "cand-000011.jpg",
+        "sha256": "d4aa70cdeb0ecb43a3c737aa6a78733bfe4678b29fad529901c6a30d33921d2c"
+      },
+      {
+        "file": "cand-000012.jpg",
+        "sha256": "63a3150e8408336b144c9bb6ba79519f114cbced169560af95a83abbfca9cfa8"
+      }
+    ],
+    "candidate_frames_video_binding_verified": true,
+    "candidate_video": {
+      "file": "public-review/v2-draft.mp4",
+      "sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34"
+    },
+    "reference_frames": [
+      {
+        "file": "ref-01.jpg",
+        "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+      },
+      {
+        "file": "ref-02.jpg",
+        "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+      },
+      {
+        "file": "ref-03.jpg",
+        "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+      },
+      {
+        "file": "ref-04.jpg",
+        "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+      },
+      {
+        "file": "ref-05.jpg",
+        "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+      },
+      {
+        "file": "ref-06.jpg",
+        "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+      },
+      {
+        "file": "ref-07.jpg",
+        "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+      },
+      {
+        "file": "ref-08.jpg",
+        "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+      },
+      {
+        "file": "ref-09.jpg",
+        "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+      },
+      {
+        "file": "ref-10.jpg",
+        "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+      }
+    ],
+    "run_id": "38476455563",
+    "source_revision": "9b18e6f5505c1e0dd3fe7510b6183cb35b920f6a"
+  },
+  "publication_enabled": false,
+  "runtime_versions": {
+    "Pillow": "12.3.0",
+    "open_clip_torch": "3.3.0",
+    "torch": "2.14.1+cpu",
+    "torchvision": "0.29.1+cpu",
+    "transformers": "5.19.0"
+  },
+  "sampled_frames": {
+    "candidate": [
+      "cand-000001.jpg",
+      "cand-000002.jpg",
+      "cand-000003.jpg",
+      "cand-000004.jpg",
+      "cand-000005.jpg",
+      "cand-000006.jpg",
+      "cand-000007.jpg",
+      "cand-000008.jpg",
+      "cand-000009.jpg",
+      "cand-000010.jpg",
+      "cand-000011.jpg",
+      "cand-000012.jpg"
+    ],
+    "reference": [
+      "ref-01.jpg",
+      "ref-02.jpg",
+      "ref-03.jpg",
+      "ref-04.jpg",
+      "ref-05.jpg",
+      "ref-06.jpg",
+      "ref-07.jpg",
+      "ref-08.jpg",
+      "ref-09.jpg",
+      "ref-10.jpg"
+    ]
+  },
+  "schema_version": 2,
+  "verdict": "ANALYSIS_COMPLETE"
+}

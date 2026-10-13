@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "tool": "openshorts",
+  "operation": "vertical",
+  "revision": "0240abeccc0e18463f6fd3f881767c4bc33ae3a6",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:23:28Z",
+  "output_sha256": "6a21909c0b21383855770dd9ecfb418099500fab72891781b3b2f7e2ff301d35",
+  "media": {
+    "duration": 10.791667,
+    "streams": [
+      {
+        "codec_type": "video",
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1920
+      },
+      {
+        "codec_type": "audio",
+        "codec_name": "aac"
+      }
+    ]
+  },
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

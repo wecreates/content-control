@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tool": "toonflow-app",
+  "operation": "import-brief",
+  "revision": "2c7fb257affb65777110fe4c6e60cd3c09187d9b",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:23:30Z",
+  "output_sha256": "65df8bd26c6a94c28a8eb9a051306312484d28423fb3be176ca11e515664b568",
+  "media": null,
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

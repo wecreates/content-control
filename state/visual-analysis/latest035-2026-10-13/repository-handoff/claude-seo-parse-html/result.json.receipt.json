@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tool": "claude-seo",
+  "operation": "parse-html",
+  "revision": "4b99de2f7de7e7d5247042e5fb5b4ea9368ef734",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:23:28Z",
+  "output_sha256": "3ecdca85a210d65494bd085952f3f16544d4964a11dc784780638dad8d1dbce3",
+  "media": null,
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

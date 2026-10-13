@@ -1,0 +1,36 @@
+{
+  "verification_status": "PASS",
+  "scope": "Semantic inference execution and artifact integrity; not creative approval",
+  "run_id": 38476455563,
+  "job_id": 115568727877,
+  "job_conclusion": "success",
+  "artifact_id": 11854127060,
+  "artifact_name": "semantic-visual-evidence",
+  "artifact_sha256": "d09740687f93d23db88972745b1a6834b793247fa29ae4fc7f65e54144b07f47",
+  "report_sha256": "442c1f1e98d1da6ff7a6887fa6e0e946697bb7c1b64d6b202f9fac698e3e71e2",
+  "source_revision": "9b18e6f5505c1e0dd3fe7510b6183cb35b920f6a",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "candidate_hash_matches_expected": true,
+  "candidate_frame_hashes_verified": 12,
+  "reference_frame_count": 10,
+  "video_frame_binding_verified": true,
+  "analysis_status": "COMPLETE",
+  "openclip_status": "COMPLETE",
+  "florence_status": "COMPLETE",
+  "caption_counts": {
+    "candidate": 3,
+    "reference": 3
+  },
+  "mean_best_frame_similarity": 0.44386401772499084,
+  "global_similarity": 0.6367143392562866,
+  "runtime_versions": {
+    "Pillow": "12.3.0",
+    "open_clip_torch": "3.3.0",
+    "torch": "2.14.1+cpu",
+    "torchvision": "0.29.1+cpu",
+    "transformers": "5.19.0"
+  },
+  "artistic_acceptance": "UNASSESSED",
+  "production_ready": false,
+  "publication_enabled": false
+}
