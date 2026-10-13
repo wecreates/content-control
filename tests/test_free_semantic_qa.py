@@ -28,6 +28,12 @@ class SemanticTest(unittest.TestCase):
             self.assertFalse(report['publication_enabled'])
             self.assertEqual(len(report['provenance']['reference_frames'][0]['sha256']), 64)
 
+    def test_extraction_rejects_existing_unrelated_frames(self):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / 'cand-000001.jpg').write_bytes(b'unrelated')
+            with self.assertRaisesRegex(ValueError, 'must be empty'):
+                semantic.extract_candidate('other.mp4', root)
+
     def test_video_hash_tracks_actual_bytes(self):
         with tempfile.TemporaryDirectory() as root:
             video = Path(root) / 'test.mp4'
