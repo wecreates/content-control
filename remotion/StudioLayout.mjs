@@ -131,3 +131,10 @@ export function v2InvitationGrip(progress) {
  const envelope=v2InvitationMotion(progress);
  return {x:envelope.x-78*envelope.s,y:envelope.y+45*envelope.s};
 }
+
+// Keep the FEE label above the complete upper-jaw control-point envelope,
+// including its 2.5px stroke and up to 6px text descent, at every opening.
+export function v2FeeLabelBaseline(open) {
+ const amount=Number.isFinite(open)?Math.max(0,Math.min(1,open)):1;
+ return -90-27*amount-14;
+}

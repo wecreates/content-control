@@ -1,0 +1,38 @@
+{
+  "status": "SAMPLED_LABEL_CLEARANCE_VERIFIED",
+  "original_candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "original_issue_frame": 372,
+  "ccsd_sha256": "2e1d0b87bcc72128466a896712988da91d53e2ab6af6b4d26d6870b9559c5a1d",
+  "source_sha256": {
+    "remotion/StudioLayout.mjs": "04c73f54c4bd998686a7d6f2c4ef126a649312a80af0a02f09db8c42e690661e",
+    "remotion/V2BattleAction.jsx": "d93739647f858650a8cc446e9a0d7cedbd06e7469be2786efdd1f1837249c94d"
+  },
+  "rendered_stills": [
+    {
+      "frame": 311,
+      "seconds": 12.958333333333334,
+      "path": "/tmp/fee-clearance-311.png",
+      "sha256": "a7dfc711d0755516063d71b33b70547e2a591f642fa565b4e094c46dae08e4b3"
+    },
+    {
+      "frame": 368,
+      "seconds": 15.333333333333334,
+      "path": "/tmp/fee-clearance-368.png",
+      "sha256": "36fab8756d475a5138c77040d8b5d342df9ed4b2d676f8a24b4d6795f5fb7ba4"
+    },
+    {
+      "frame": 372,
+      "seconds": 15.5,
+      "path": "/tmp/fee-clearance-372.png",
+      "sha256": "cb0586959bcb765516770eb7d6cc4f72049cf449db9c835c4ccdbf5969ef10a2"
+    }
+  ],
+  "observations": [
+    "FEE lettering visibly clears upper jaw at both near-maximum openings and original issue frame.",
+    "Caption words Finally, and sandwiches. remain separated from label; no new sampled overlap with sandwich, wallet or actor."
+  ],
+  "full_video_reviewed": false,
+  "audio_reviewed": false,
+  "production_approved": false,
+  "publication_enabled": false
+}

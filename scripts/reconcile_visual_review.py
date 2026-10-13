@@ -30,7 +30,8 @@ def reconcile(video, references, review_path, report_path, draft_path, technical
     updated['original_build_checks'].setdefault('style_parity',copy.deepcopy(report['checks']['style_parity']))
     updated['checks']['style_parity']={'status':judgment['status'],'failed_checks':[] if judgment['status']=='PASS' else ['framewise_style_parity'],
                                      'reason':judgment['reason'],'receipt_sha256':hashlib.sha256(payload).hexdigest()}
-    from scripts.v2_build_status import classify_readiness
+    try:from scripts.v2_build_status import classify_readiness
+    except ModuleNotFoundError:from v2_build_status import classify_readiness
     updated.update(classify_readiness(updated['checks'],bool(candidate)))
     updated['remaining_review']={'full_audiovisual':'NOT_APPROVED','competitive_motion':'NOT_VERIFIED'}
     updated['review_reconciliation']={'run_id':run_id,'source_commit':source_commit,'source_report_sha256':digest(report_path),

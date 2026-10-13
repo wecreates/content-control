@@ -54,7 +54,9 @@ class FreeReviewGuardTests(unittest.TestCase):
         self.assertIn('node scripts/exact_av_review.mjs prepare',workflow)
         self.assertIn("'scripts/exact_av_review.mjs','validate'",workflow)
         self.assertIn("PUBLICATION_ENABLED: 'false'",workflow)
-        self.assertIn('production-execution.yml',workflow)
+        self.assertIn('reviewSource(run,',workflow)
+        self.assertIn('production-execution.yml',reviewer)
+        self.assertIn('content-control-v2.yml',reviewer)
         self.assertIn('ffprobe',reviewer)
 
 if __name__=='__main__':unittest.main()

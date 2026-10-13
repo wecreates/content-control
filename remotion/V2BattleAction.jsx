@@ -1,6 +1,6 @@
 import React from 'react';
 import {V2StageEnvironment} from './V2StageEnvironment.jsx';
-import {v2BattleBeat,v2CapeMotion,v2InvitationMotion} from './StudioLayout.mjs';
+import {v2BattleBeat,v2CapeMotion,v2InvitationMotion,v2FeeLabelBaseline} from './StudioLayout.mjs';
 const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
 const mix=(a,b,p)=>a+(b-a)*p;
 const ease=p=>p*p*(3-2*p);
@@ -11,7 +11,7 @@ const Sandwich=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotat
 const Coin=({x,y,s=1,opacity=1})=><g opacity={opacity}><circle cx={x} cy={y} r={14*s} fill={W} stroke={K} strokeWidth="4"/><path d={`M${x-4*s} ${y}h${8*s}`} stroke={K} strokeWidth="3"/></g>;
 const Sword=({x,y,rotation=0,s=1})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-94-15H72L112 0 72 15H-94Z" fill={W} stroke={K} strokeWidth="5"/><path d="M-72 0H83M-96-31V31M-124 0H-98" fill="none" stroke={K} strokeWidth="7" strokeLinecap="round"/></g>;
 const Cape=({x,y,s=1,rotation=0})=><g transform={`translate(${x} ${y}) rotate(${rotation}) scale(${s})`}><path d="M-35-75L-105 90Q-42 65 0 95Q45 65 105 90L35-75Q0-55-35-75Z" fill={K}/><path d="M-25-49L-58 66M25-49L58 66" stroke={W} strokeWidth="3"/></g>;
-const FeeJaw=({x,y,open=1,s=1})=><g transform={`translate(${x} ${y}) scale(${s})`}><text x="0" y="-80" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="31" fill={K}>FEE</text><g transform={`translate(0 ${-open*27})`}><path d="M-80-28Q0-90 80-28L60-5 40-28 20-5 0-28-20-5-40-28-60-5Z" fill={W} stroke={K} strokeWidth="5"/></g><g transform={`translate(0 ${open*27})`}><path d="M-80 28Q0 90 80 28L60 5 40 28 20 5 0 28-20 5-40 28-60 5Z" fill={W} stroke={K} strokeWidth="5"/></g></g>;
+const FeeJaw=({x,y,open=1,s=1})=><g transform={`translate(${x} ${y}) scale(${s})`}><text x="0" y={v2FeeLabelBaseline(open)} textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="31" fill={K}>FEE</text><g transform={`translate(0 ${-open*27})`}><path d="M-80-28Q0-90 80-28L60-5 40-28 20-5 0-28-20-5-40-28-60-5Z" fill={W} stroke={K} strokeWidth="5"/></g><g transform={`translate(0 ${open*27})`}><path d="M-80 28Q0 90 80 28L60 5 40 28 20 5 0 28-20 5-40 28-60 5Z" fill={W} stroke={K} strokeWidth="5"/></g></g>;
 const Button=({x,label,pressed=false})=><g><rect x={x-122} y="356" width="244" height="72" rx="12" fill={pressed?K:W} stroke={K} strokeWidth="5"/><text x={x} y="400" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="23" fill={pressed?W:K}>{label}</text></g>;
 
 export function v2WalletMotion(beat,p) {
