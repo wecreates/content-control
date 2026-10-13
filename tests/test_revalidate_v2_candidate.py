@@ -1,8 +1,10 @@
 import json
 import tempfile
 import unittest
+import types
+from unittest.mock import patch
 from pathlib import Path
-from scripts.revalidate_v2_candidate import validate_inputs, digest
+from scripts.revalidate_v2_candidate import validate_inputs, digest, revalidate
 from scripts.v2_build_status import RECEIPTS
 
 
@@ -28,6 +30,17 @@ class RevalidationTests(unittest.TestCase):
     def test_exact_original_evidence_is_accepted_for_revalidation_only(self):
         self.assertEqual(validate_inputs(self.root,self.artifact,self.run)[0],self.hash)
         self.assertFalse(json.loads((self.root/'state/v2-draft.json').read_text())['production_approved'])
+    def test_visual_outcome_never_grants_production_or_full_av_approval(self):
+        self.write('state/visual-analysis/frame-review.json',{'candidate':{'sha256':self.hash}})
+        for visual_status,expected in [('PASS','VISUAL_REVALIDATED'),('FAIL','BLOCKED'),('BLOCKED','BLOCKED')]:
+            module=types.ModuleType('scripts.rendered_visual_parity')
+            module.evaluate_visual_review=lambda *args, status=visual_status: {'status':status}
+            with patch.dict('sys.modules',{'scripts.rendered_visual_parity':module}):
+                result=revalidate(self.root,self.artifact,self.run)
+            self.assertEqual(result['status'],expected)
+            for flag in ('production_approved','publication_enabled','full_av_review','render_attempted'):
+                self.assertIs(result[flag],False)
+
     def test_changed_or_missing_receipt_fails_closed(self):
         p=self.artifact/'receipts/render.json';p.write_text('{}')
         with self.assertRaises(ValueError):validate_inputs(self.root,self.artifact,self.run)

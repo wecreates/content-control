@@ -21,3 +21,33 @@ test('preview hold blocks every method before downstream media handlers',async()
   const r=await fetch(`http://127.0.0.1:${s.address().port}/draft/${route}`,{method});assert.equal(r.status,409,`${method} ${route}`);assert.equal(r.headers.get('cache-control'),'no-store');
  }}finally{await new Promise(r=>s.close(r));}
 });
+
+
+async function revalidationFixture(change,fn){
+ const {createHash}=await import('node:crypto');const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'revalidation-status-'));
+ const candidate=Buffer.from('fixture bytes'),candidateHash=hash(candidate);
+ const rubric=Object.fromEntries(['typography','character_scale','staging','character_consistency','phone_readability'].map(key=>[key,{pass:false,evidence:'Observed issue '+key}]));
+ const review={candidate:{sha256:candidateHash},decision:'FAIL',rubric,unresolved_issues:['Needs creative repair']};
+ const reviewBytes=JSON.stringify(review);
+ const draft={status:'DRAFT',candidate_sha256:candidateHash,run_id:123,production_approved:false,publication_enabled:false};
+ const report={schema_version:1,status:'BLOCKED',candidate_sha256:candidateHash,original_run_id:123,visual_review_sha256:hash(reviewBytes),production_approved:false,publication_enabled:false,full_av_review:false,render_attempted:false,visual_review:{status:'FAIL',rubric:Object.fromEntries(Object.entries(rubric).map(([k,v])=>[k,{status:'MISMATCH',observation:v.evidence}]))},media_url:'/unsafe',watch_url:'/unsafe'};
+ const files={'state/v2-revalidation.json':JSON.stringify(report),'state/v2-draft.json':JSON.stringify(draft),'state/visual-analysis/frame-review.json':reviewBytes,'public-review/v2-draft.mp4':candidate};
+ if(change)change(files,report,draft);
+ for(const [name,bytes] of Object.entries(files)){const file=path.join(root,name);await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,bytes);}
+ const app=express();app.use(createProductionStatusRouter({root}));const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
+ try{await fn(`http://127.0.0.1:${server.address().port}/v2/revalidation`);}finally{await new Promise(resolve=>server.close(resolve));await fs.rm(root,{recursive:true,force:true});}
+}
+test('exact revalidation exposes safe findings without media or approval',()=>revalidationFixture(null,async url=>{
+ const response=await fetch(url),data=await response.json();assert.equal(response.status,200);assert.equal(data.status,'BLOCKED');assert.equal(data.rubric.staging.status,'MISMATCH');assert.deepEqual(data.blockers,['Needs creative repair']);assert.equal(data.watch_url,null);assert.equal(data.media_url,undefined);assert.equal(data.full_av_review,false);assert.equal(data.production_approved,false);
+}));
+test('stale candidate, review, run and forged approval fail closed',async()=>{
+ for(const mutate of [
+ files=>files['public-review/v2-draft.mp4']='changed video',
+ files=>files['state/visual-analysis/frame-review.json']+=' ',
+ (files,report)=>{report.original_run_id=124;files['state/v2-revalidation.json']=JSON.stringify(report);},
+ (files,report)=>{report.status='VISUAL_REVALIDATED';files['state/v2-revalidation.json']=JSON.stringify(report);},
+ (files,report)=>{report.production_approved=true;files['state/v2-revalidation.json']=JSON.stringify(report);},
+ (files,report)=>{report.visual_review.rubric.staging.observation='forged';files['state/v2-revalidation.json']=JSON.stringify(report);}
+ ])await revalidationFixture(mutate,async url=>{const response=await fetch(url),data=await response.json();assert.equal(response.status,503);assert.equal(data.watch_url,null);assert.equal(data.rubric,undefined);assert.equal(data.production_approved,false);});
+});

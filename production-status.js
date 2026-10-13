@@ -1,8 +1,38 @@
+import crypto from 'node:crypto';
 import express from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 export function createProductionStatusRouter({root=process.cwd()}={}) {
  const router=express.Router();
+ router.get('/v2/revalidation',async(req,res)=>{
+  res.setHeader('Cache-Control','no-store');
+  const locked={publication_enabled:false,production_approved:false,full_av_review:false,watch_url:null};
+  try {
+   const read=relative=>fs.readFile(path.join(root,relative));
+   const [reportBytes,draftBytes,videoBytes,reviewBytes]=await Promise.all([
+    read('state/v2-revalidation.json'),read('state/v2-draft.json'),read('public-review/v2-draft.mp4'),read('state/visual-analysis/frame-review.json')]);
+   const report=JSON.parse(reportBytes),draft=JSON.parse(draftBytes),review=JSON.parse(reviewBytes);
+   const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
+   const candidate=hash(videoBytes),decision=review.decision;
+   if(!videoBytes.length||report.schema_version!==1||!['BLOCKED','VISUAL_REVALIDATED'].includes(report.status)||
+      [report,draft].some(x=>x.publication_enabled!==false||x.production_approved!==false)||
+      report.full_av_review!==false||report.render_attempted!==false||draft.status!=='DRAFT'||
+      report.candidate_sha256!==candidate||draft.candidate_sha256!==candidate||review.candidate?.sha256!==candidate||
+      report.visual_review_sha256!==hash(reviewBytes)||!Number.isSafeInteger(report.original_run_id)||report.original_run_id<=0||report.original_run_id!==draft.run_id||
+      !['PASS','FAIL','BLOCKED'].includes(decision)||report.visual_review?.status!==decision||
+      (report.status==='VISUAL_REVALIDATED')!==(decision==='PASS'))throw Error('stale_or_invalid');
+   const rubric={};
+   for(const key of ['typography','character_scale','staging','character_consistency','phone_readability']){
+    const item=report.visual_review.rubric?.[key];
+    if(!item||typeof item.observation!=='string'||item.observation!==review.rubric?.[key]?.evidence||!['MATCH','MISMATCH','NOT_VERIFIED'].includes(item.status)||(item.status==='MATCH')!==(review.rubric?.[key]?.pass===true))throw Error('invalid_rubric');
+    rubric[key]={status:item.status,observation:item.observation};
+   }
+   const blockers=Array.isArray(review.unresolved_issues)?review.unresolved_issues.filter(x=>typeof x==='string'):[];
+   res.json({schema_version:1,status:report.status,...locked,candidate_sha256:candidate,original_run_id:report.original_run_id,
+    visual_status:decision,rubric,blockers,scope:'Exact existing candidate revalidation; sampled visual findings only. Full audiovisual and competitor approval remain required.'});
+  }catch{res.status(503).json({status:'UNAVAILABLE',...locked,error:'REVALIDATION_STALE_OR_UNAVAILABLE'});}
+ });
+
  router.get('/v2',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   try {
