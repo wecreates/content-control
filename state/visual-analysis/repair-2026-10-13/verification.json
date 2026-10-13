@@ -1,0 +1,32 @@
+{
+  "source_commit": "6810581ff756dd20d96d03631527f4c82fb20ef9",
+  "hosted_run_id": 38452208211,
+  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "focused_tests": {
+    "passed": 25,
+    "failed": 0,
+    "command": "node --test tests/studio-layout.test.mjs tests/observed-captions.test.mjs tests/v2-actor-staging.test.mjs"
+  },
+  "actual_caption_bounds": {
+    "cues": 67,
+    "clipped": 0,
+    "minimum_font_px": 70,
+    "maximum_lower_edge_px": 333.9999938964844
+  },
+  "sword_label_sweep": {
+    "samples": 1001,
+    "intersections": 0,
+    "scope": "conservative geometry raster sweep, not full scene approval"
+  },
+  "decoded_frames": 839,
+  "sampled_visual_frames": 10,
+  "artistic_decision": "FAIL",
+  "production_approved": false,
+  "publication_enabled": false,
+  "remaining": [
+    "Expressive headline styling and more close framing",
+    "More varied staging and scene context",
+    "Exact character-board and real phone playback verification",
+    "Full audiovisual review"
+  ]
+}

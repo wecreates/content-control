@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "analysis_status": "COMPLETE",
+  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "decoded_frames": 839,
+  "fps": 24.0,
+  "duration_seconds": 34.958333333333336,
+  "coverage": "every decoded frame",
+  "observations": {
+    "mean_frame_change": 0.005843597016836435,
+    "p95_frame_change": 0.015066772194989099,
+    "low_change_intervals_seconds": [],
+    "large_change_timestamps_seconds": []
+  },
+  "parameters": {
+    "analysis_resolution": [
+      180,
+      320
+    ],
+    "low_change_threshold": 0.001,
+    "large_change_threshold": 0.15,
+    "minimum_low_change_seconds": 1
+  },
+  "scope": "Pixel motion diagnostics only. Camera motion, meaning, pacing quality and competitor motion parity are not inferred.",
+  "production_approved": false,
+  "publication_enabled": false
+}
