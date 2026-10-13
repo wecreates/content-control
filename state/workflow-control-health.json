@@ -101,6 +101,13 @@
   "status": "FAIL",
   "violations": [
     {
+      "path": ".github/workflows/semantic-visual-analysis.yml",
+      "push": true,
+      "reason": "unlisted_automatic_workflow",
+      "schedule": true,
+      "workflow_run": false
+    },
+    {
       "path": ".github/workflows/visual-analysis.yml",
       "push": true,
       "reason": "unlisted_automatic_workflow",
