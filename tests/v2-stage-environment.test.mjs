@@ -23,4 +23,6 @@ test('scene setting is rendered behind all primary props',async()=>{
  const scene={id:'cold-open-a',start:0,end:1};
  const svg=renderToStaticMarkup(React.createElement(V2BattleAction,{scene,scenes:[scene],time:.5}));
  assert.ok(svg.indexOf('data-v2-setting')<svg.indexOf('CHASE'));
+ const propsOnly=renderToStaticMarkup(React.createElement(V2BattleAction,{scene,scenes:[scene],time:.5,includeEnvironment:false}));
+ assert.ok(!propsOnly.includes('data-v2-setting'));assert.ok(propsOnly.includes('CHASE')); // reaction camera can keep furniture outside the zoom
 });

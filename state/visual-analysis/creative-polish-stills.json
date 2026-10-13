@@ -1,0 +1,46 @@
+{
+  "status": "SAMPLED_LAYOUT_INSPECTED",
+  "publication_enabled": false,
+  "production_approved": false,
+  "full_video_watched": false,
+  "audio_reviewed": false,
+  "ccsd_sha256": "bd42150cd7b2574a9a3092f829c2e1635f2de57580aa27c7e4ba181aef1d1985",
+  "renderer_source_sha256": {
+    "remotion/StudioAnimaticComposition.jsx": "faf1f1aa84a490fb8bca1263236bc89f71e7baa585e07429390ba210a0ab27e5",
+    "remotion/StudioLayout.mjs": "ecf1d6519dcfeb344a42bcb24355b63e1bc1dd22c630aecc08a57656ea20364d",
+    "remotion/V2BattleAction.jsx": "45c984390404da40ed958fd1efeca58819797a9f64ed8458d533847060afae2b",
+    "remotion/V2CameraPerformance.mjs": "534a4d56fe1d66baa41ae537f6aa45a5939a45967f3f13f98deb5d840225759e",
+    "remotion/V2StageEnvironment.jsx": "822f62ab950705245b9448c4c82477a85cd92f93bce121fab65af8938d2fb594"
+  },
+  "stills": [
+    {
+      "frame": 342,
+      "seconds": 14.25,
+      "sha256": "cbaf2ab2e33d04e81b764a29a04ca48a319a75169e9647f56b2fdaa546eaf7cc"
+    },
+    {
+      "frame": 395,
+      "seconds": 16.458333333333332,
+      "sha256": "2b63944f0f790f707505b48a7c5334842a5c48511d53feda074a53cfcf92ace6"
+    },
+    {
+      "frame": 396,
+      "seconds": 16.5,
+      "sha256": "a24f6ba6fca898e907c8e28803b8884f4991126796f4e9d99b2069ee8eb9647a"
+    },
+    {
+      "frame": 524,
+      "seconds": 21.833333333333332,
+      "sha256": "574569e0feb40218b5e68f056cd00b45ce5a711abc68849bbe8c87ead66b25f7"
+    }
+  ],
+  "observations": [
+    "Envelope grip meets receiving hand at invitation start/end; doorway remains inside right edge with no face overlap in these samples.",
+    "Fee reaction midpoint caption clears sandwich; end wallet grip remains visibly connected.",
+    "Initial zoom clipped platform sides; corrected by keeping platform outside reaction camera and re-rendered final sampled fee frame confirming full platform."
+  ],
+  "limitations": [
+    "Only four stills; no continuous-motion or full audiovisual approval.",
+    "Caption typography remains a modest tilt polish, not reference font parity."
+  ]
+}

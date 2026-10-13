@@ -1,6 +1,6 @@
 import React from 'react';
 import {V2StageEnvironment} from './V2StageEnvironment.jsx';
-import {v2BattleBeat,v2CapeMotion} from './StudioLayout.mjs';
+import {v2BattleBeat,v2CapeMotion,v2InvitationMotion} from './StudioLayout.mjs';
 const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
 const mix=(a,b,p)=>a+(b-a)*p;
 const ease=p=>p*p*(3-2*p);
@@ -25,14 +25,15 @@ export function v2WalletMotion(beat,p) {
  }
  return null;
 }
-export function V2BattleAction({scene,scenes,time}) {
+export function V2BattleAction({scene,scenes,time,includeEnvironment=true}) {
  const beat=v2BattleBeat(scene.id);if(!beat)return null;
  const same=scenes.filter(s=>v2BattleBeat(s.id)===beat),start=Math.min(...same.map(s=>s.start)),end=Math.max(...same.map(s=>s.end));
  const p=clamp((time-start)/(end-start)),q=ease(p);
  const strike=clamp((p-.12)/.55),contact=Math.max(0,Math.sin(strike*Math.PI));
  const rebound=ease(clamp((p-.67)/.33));
+ const invitation=v2InvitationMotion(p);
  return <g data-v2-beat={beat}>
-  <V2StageEnvironment beat={beat}/>
+  {includeEnvironment?<V2StageEnvironment beat={beat}/>:null}
   {beat==='cold-open'?<g>
    <Card x={175+q*32} y={434} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={434} label="AMEX" rotation={-q*12}/>
    <Wallet x={360} y={510} s={.76} rotation={Math.sin(p*Math.PI*2)*7}/>
@@ -58,10 +59,10 @@ export function V2BattleAction({scene,scenes,time}) {
    <Word>THE SNACK HAS COMPANY.</Word>
   </g>:null}
   {beat==='points-summon'?<g>
-   <Sandwich x={mix(150,270,q)} y={430} s={1.05}/>
+   <Sandwich x={150} y={430} s={1.05}/>
    <path d="M130 490H390" stroke={K} strokeWidth="4"/>
    <Word x={260} y={527} size={23}>INVITED</Word>
-   <g transform={`translate(${mix(550,488,q)} ${mix(385,468,q)}) rotate(${-12+q*12})`}><rect x="-78" y="-70" width="156" height="138" rx="8" fill={W} stroke={K} strokeWidth="5"/><path d="M-78-70L0-8 78-70" stroke={K} strokeWidth="4" fill="none"/><text x="0" y="40" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="34" fill={K}>FEE</text></g>
+   <g data-v2-envelope="received" transform={`translate(${invitation.x} ${invitation.y}) scale(${invitation.s})`}><rect x="-78" y="-70" width="156" height="138" rx="8" fill={W} stroke={K} strokeWidth="5"/><path d="M-78-70L0-8 78-70" stroke={K} strokeWidth="4" fill="none"/><text x="0" y="40" textAnchor="middle" fontFamily="Arial" fontWeight="900" fontSize="34" fill={K}>FEE</text></g>
    <Word>NOT ON THE GUEST LIST.</Word>
   </g>:null}
   {beat==='trap'?<g>

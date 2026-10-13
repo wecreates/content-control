@@ -34,3 +34,11 @@ export function v2FrameActor(beat,slot) {
  }
  return framed;
 }
+
+// A restrained reaction push at the fee bite, shared by actors and props.
+// The upper sandwich stays below the caption reserve; no rig rescaling or IK drift.
+export function v2ReactionScale(beat,progress) {
+ if(beat!=='fee-drain'||!Number.isFinite(progress))return 1;
+ const p=Math.max(0,Math.min(1,(progress-.35)/.3));
+ return 1+.14*p*p*(3-2*p);
+}

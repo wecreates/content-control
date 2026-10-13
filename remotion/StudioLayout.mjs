@@ -121,3 +121,13 @@ export function v2CapeGrip(progress) {
  // The central hem vertex is local (0,95) in the Cape SVG path.
  return {x:cape.x-cape.s*95*Math.sin(a),y:cape.y+cape.s*95*Math.cos(a)};
 }
+
+// Envelope arrives through the lounge doorway; the receiving hand shares its grip.
+export function v2InvitationMotion(progress) {
+ const p=Math.max(0,Math.min(1,progress)),q=p*p*(3-2*p);
+ return {x:610-120*q,y:650,s:.72,rotation:0};
+}
+export function v2InvitationGrip(progress) {
+ const envelope=v2InvitationMotion(progress);
+ return {x:envelope.x-78*envelope.s,y:envelope.y+45*envelope.s};
+}

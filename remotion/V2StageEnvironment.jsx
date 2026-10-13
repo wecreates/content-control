@@ -11,7 +11,7 @@ export function V2StageEnvironment({beat}) {
  if(!arena&&!lounge&&!checkpoint&&beat!=='finish')return null;
  return <g data-v2-setting={arena?'arena':lounge?'snack-lounge':checkpoint?'value-checkpoint':'victory-platform'}>
   {arena?<Deck><path d="M250 1085L300 1030M470 1085L420 1030"/><path d="M55 1027V976M665 1027V976M45 976H65M655 976H675" strokeWidth="5"/>{beat==='fee-drain'?<path d="M340 1045L325 1060 350 1068 335 1085M385 1045L395 1060 375 1076"/>:null}</Deck>:null}
-  {lounge?<g><path d="M40 1060H680M50 1080H670" fill="none" stroke={K} strokeWidth="3"/><SnackCounter x={beat==='amex-counter'?365:135}/></g>:null}
+  {lounge?<g><path d="M40 1060H680M50 1080H670" fill="none" stroke={K} strokeWidth="3"/><SnackCounter x={beat==='amex-counter'?365:135}/>{beat==='points-summon'?<g data-v2-doorway="fee-entry" stroke={K} strokeWidth="4" fill="none"><path d="M558 1038V550H684V1038M578 1038V570H684"/><circle cx="666" cy="786" r="5"/></g>:null}</g>:null}
   {checkpoint?<g stroke={K} fill={W} strokeWidth="4"><path d="M220 944L130 1110M500 944L590 1110M85 1110H635" fill="none"/><path d="M60 1040V914M660 1040V914"/>{beat==='trap'?<path d="M88 428V958M632 428V958M88 445H632" fill="none" strokeWidth="3"/>:null}<circle cx="60" cy="906" r="10"/><circle cx="660" cy="906" r="10"/><path d="M60 1024H118M602 1024H660" fill="none"/>{beat==='final-clash'?<path d="M314 1084l25 20 65-47" fill="none" strokeWidth="6"/>:null}</g>:null}
   {beat==='finish'?<g stroke={K} strokeWidth="4" fill={W}><path d="M240 1080H480L515 1108H205Z"/><path d="M205 1108V1150H515V1108M240 1080V1120H480V1080"/><path d="M341 1134l12 10 27-24" fill="none"/></g>:null}
  </g>;
