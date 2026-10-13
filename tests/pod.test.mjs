@@ -53,3 +53,9 @@ test('timeout after submission is ambiguous and never retried',async()=>{
   resolveGrant:async()=>signed(f.grant),verifyArtifacts:async()=>({package_sha256:f.job.package_sha256,template_sha256:template,release_checks_passed:true}),upstreamKey:key,qaKey:key});
  assert.equal(calls,1);assert.equal(state,'ambiguous');
 });
+test('production permission permits PRELAUNCH but never publication',()=>{
+ const {job,grant}=fixture();job.mode='PRELAUNCH';grant.publication_permission=false;grant.production_permission=true;
+ assert.equal(enforceBrief(grant,job).mode,'PRELAUNCH');
+ assert.throws(()=>enforceBrief(grant,job,{publishing:true}),/PUBLICATION_PERMISSION_REQUIRED/);
+ grant.revoked=true;assert.throws(()=>enforceBrief(grant,job),/APPROVAL_REVOKED/);
+});

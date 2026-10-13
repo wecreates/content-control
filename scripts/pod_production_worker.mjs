@@ -1,5 +1,7 @@
 import {spawn} from 'node:child_process';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 async function python(script,args,{root,signal,env=process.env}){
@@ -26,6 +28,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
    '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output],{root,signal,env});
+  if(job.brief.platform==='kdp'){
+   if(!task.interior)throw Error('INTERIOR_REQUIRED');
+   await python('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
+    '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
+  }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
   const manifest=JSON.parse(await fs.readFile(path.join(task.output,'manifest.json'),'utf8'));
   const attestation=await task.reviewPackage(manifest);
@@ -35,6 +42,15 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // A failed QA process still emits a signed FAIL when signing is available.
   try{await python('pod_vision_qa.py',args,{root,signal,env});}catch{}
   const qa=JSON.parse(await fs.readFile(task.qaSignedOutput,'utf8'));
+  // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
+  const store=new ArtifactStore(db);
+  for(const [name,sha] of Object.entries(manifest.files)){
+   const base=await fs.realpath(task.output),file=await fs.realpath(path.resolve(base,name));
+   if(!file.startsWith(base+path.sep))throw Error('ARTIFACT_PATH_INVALID');
+   const body=await fs.readFile(file);
+   if(crypto.createHash('sha256').update(body).digest('hex')!==sha)throw Error('ARTIFACT_HASH_MISMATCH');
+   await store.put(body,name.endsWith('.pdf')?'application/pdf':name.endsWith('.json')?'application/json':'image/png');
+  }
   const result=await db.completeProduction(job,manifest,qa);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch{

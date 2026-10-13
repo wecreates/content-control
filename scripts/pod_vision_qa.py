@@ -100,6 +100,19 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         preflight=True
         if m['platform']=='kdp':
             import fitz
+            interior=m['interior']
+            spec=interior['template']
+            receipt=interior['receipt']
+            if (receipt['interior_sha256']!=m['files']['interior.pdf'] or
+                receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
+                receipt['technical_checks_passed'] is not True or
+                spec['page_count']!=m['template']['kdp']['page_count']):
+                raise ValueError('INTERIOR_INVALID')
+            with fitz.open(scoped_file(root,'interior.pdf')) as book:
+                if len(book)!=spec['page_count'] or any(
+                    abs(p.rect.width-spec['trim_inches'][0]*72)>.02 or
+                    abs(p.rect.height-spec['trim_inches'][1]*72)>.02 for p in book):
+                    raise ValueError('INTERIOR_INVALID')
             with fitz.open(root/'cover.pdf') as pdf:
                 page=pdf[0]
                 preflight=len(pdf)==1 and abs(page.rect.width-image.width*72/m['dpi'])<.02 and abs(page.rect.height-image.height*72/m['dpi'])<.02

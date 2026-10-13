@@ -22,3 +22,9 @@ test('operations endpoints require auth and redact unavailable DB errors',async(
  const url=`http://127.0.0.1:${server.address().port}/api/print`;
  try{assert.equal((await fetch(url+'/metrics')).status,401);const response=await fetch(url+'/metrics',{headers:{Authorization:`Bearer ${key}`}});assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'});assert.equal((await fetch(url+'/dashboard')).status,200);}finally{await new Promise(r=>server.close(r));}
 });
+test('template safe box uses x y width height consistently with Python QA',()=>{
+ const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
+ assert.deepEqual(validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}).safe_box_px,[400,400,100,100]);
+ record.template.safe_box_px=[400,400,300,300];
+ assert.throws(()=>validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}),/TEMPLATE_SAFE_ZONE_INVALID/);
+});

@@ -12,8 +12,33 @@ from pod_vision_qa import spatial_checks, ocr, evaluate
 from pod_common import digest, canonical
 from pod_original_art import create_art
 from pod_book_interior import render_book
+from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
+    def test_combined_kdp_package_and_mismatch(self):
+        font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        spec={'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],
+              'page_count':2,'margins_inches':dict(inside=.25,outside=.25,top=.25,bottom=.25),
+              'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
+        template={'platform':'kdp','dpi':300,'size_inches':[4.35,2.25],
+                  'art_box_px':[100,100,300,300],'safe_box_px':[25,25,1200,600],
+                  'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':2}}
+        # Synthetic geometry is a pipeline fixture, not an approved KDP product.
+        with tempfile.TemporaryDirectory() as tmp:
+            source=Path(tmp)/'art.png'
+            create_art({'concept_id':'fixture','size_px':[600,600],
+                        'palette':[[0,0,0,255],[80,90,120,255]]},source)
+            before=generate(source,template,[],Path(tmp)/'package')
+            with self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                assemble(Path(tmp)/'package',{**spec,'page_count':3},[],font)
+            result=assemble(Path(tmp)/'package',spec,[{'lines':['First page']},{'lines':['Second page']}],font)
+            self.assertNotEqual(before['package_sha256'],result['package_sha256'])
+            self.assertEqual(result['files']['interior.pdf'],digest(Path(tmp)/'package/interior.pdf'))
+            self.assertFalse(result['publication_enabled'])
+            Path(tmp,'package/print.png').write_bytes(b'corrupt')
+            with self.assertRaisesRegex(ValueError,'FILE_HASH_MISMATCH'):
+                assemble(Path(tmp)/'package',spec,[],font)
+
     def test_original_art_repeatable_and_concept_specific(self):
         with tempfile.TemporaryDirectory() as tmp:
             spec={'concept_id':'one','size_px':[600,600],'palette':[[0,0,0,255],[80,90,120,255]]}
