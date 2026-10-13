@@ -169,12 +169,12 @@ test('larger V2 captions retain every word within the existing text reserve',asy
  const c=JSON.parse(fs.readFileSync(new URL('../projects/v2/amex-vs-chase-boss-fight/ccsd.json',import.meta.url)));
  const texts=['stops','the winning',...c.scenes.flatMap(scene=>(scene.audio?.dialogue||[]).map(line=>line.text))];
  for(const text of texts){
-  const layout=fitCaption(text,592,175,52);
+  const layout=fitCaption(text,592,175,72);
   assert.equal(layout.lines.join(' '),text.trim().replace(/\s+/g,' '));
   assert.ok(layout.lines.every(line=>captionTextWidth(line,layout.size)<=544));
   assert.ok(layout.lines.length*layout.lineHeight<=175);
  }
- assert.equal(fitCaption('stops',592,175,52).size,52);
+ assert.equal(fitCaption('stops',592,175,72).size,72);
 });
 
 

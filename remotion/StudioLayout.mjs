@@ -110,3 +110,14 @@ export function v2TrapTapHand(progress,grip) {
  const reach=ease((progress-.02)/.10)*(1-ease((progress-.17)/.15));
  return {x:grip.x+(210-grip.x)*reach,y:grip.y+(423-grip.y)*reach};
 }
+
+// One transform owns both the cape artwork and the hand gripping its lower hem.
+export function v2CapeMotion(progress) {
+ const p=Math.max(0,Math.min(1,progress)),q=p*p*(3-2*p);
+ return {x:360-q*140,y:452,s:1.05,rotation:-q*18};
+}
+export function v2CapeGrip(progress) {
+ const cape=v2CapeMotion(progress),a=cape.rotation*Math.PI/180;
+ // The central hem vertex is local (0,95) in the Cape SVG path.
+ return {x:cape.x-cape.s*95*Math.sin(a),y:cape.y+cape.s*95*Math.cos(a)};
+}

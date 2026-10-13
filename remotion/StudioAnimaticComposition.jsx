@@ -8,7 +8,7 @@ import {Environment} from "./EnvironmentSystem";
 import {PropIcon} from "./PropSystem";
 import {resolveMotion} from "./MotionLibrary";
 import {V2BattleAction,v2WalletMotion} from "./V2BattleAction";
-import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,resolveBattleHandTargets,v2TrapTapHand} from "./StudioLayout.mjs";
+import {fitText,fitCaption,normalizePropId,characterSlots,propSlots,v2BattleBeat,v2SceneActor,v2VictoryPose,resolveBattleHandTargets,v2TrapTapHand,v2CapeGrip} from "./StudioLayout.mjs";
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 const TextBlock=({text,y,height=144,size=34,caption=false})=>{
@@ -50,6 +50,11 @@ export const StudioAnimaticComposition=({ccsd})=>{
       const defaults={dave:'recoil',points_monk:'deadpan_point',cashback_goblin:'coin_scamper'};
       const m=resolveMotion(id,ch.motion_clip||ch.pose||defaults[id],p,emotion?.intensity??.8,true);
       if(battle){
+        if(battle==='amex-counter'&&id==='cashback_goblin'){
+          const start=beatScenes[0].start,end=beatScenes.at(-1).end;
+          const grip=v2CapeGrip(clamp((t-start)/(end-start)));
+          slot.rightHandTarget={x:(grip.x-slot.x)/slot.scale,y:(grip.y-slot.y)/slot.scale};
+        }
         if(battle==='trap'){
           const start=beatScenes[0].start,end=beatScenes.at(-1).end;
           const wallet=v2WalletMotion('trap',clamp((t-start)/(end-start))),a=wallet.rotation*Math.PI/180;

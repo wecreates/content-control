@@ -1,5 +1,5 @@
 import React from 'react';
-import {v2BattleBeat} from './StudioLayout.mjs';
+import {v2BattleBeat,v2CapeMotion} from './StudioLayout.mjs';
 const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
 const mix=(a,b,p)=>a+(b-a)*p;
 const ease=p=>p*p*(3-2*p);
@@ -32,19 +32,19 @@ export function V2BattleAction({scene,scenes,time}) {
  const rebound=ease(clamp((p-.67)/.33));
  return <g data-v2-beat={beat}>
   {beat==='cold-open'?<g>
-   <Card x={175+q*32} y={375} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={375} label="AMEX" rotation={-q*12}/>
+   <Card x={175+q*32} y={434} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={434} label="AMEX" rotation={-q*12}/>
    <Wallet x={360} y={510} s={.76} rotation={Math.sin(p*Math.PI*2)*7}/>
-   {[0,1].map(i=><path key={i} d={`M${i?510:210} 422L${mix(i?500:220,360,q)} ${mix(438,483,q)}`} stroke={K} strokeWidth="10" strokeLinecap="round"/>)}
+   {[0,1].map(i=><path key={i} d={`M${i?510:210} 487L${mix(i?500:220,360,q)} ${mix(490,483,q)}`} stroke={K} strokeWidth="10" strokeLinecap="round"/>)}
    <Word>WHY IS MY WALLET THE BOSS?</Word>
   </g>:null}
   {beat==='chase-strike'?<g>
-   <Card x={180} y={366} label="CHASE"/><Card x={540} y={366} label="AMEX"/>
+   <Card x={180} y={434} label="CHASE"/><Card x={540} y={434} label="AMEX"/>
    <Sword x={mix(250,435,strike)-rebound*145} y={480-contact*22-rebound*36} rotation={mix(-24,12,strike)-rebound*42} s={1.15}/>
    <Wallet x={530+contact*18} y={530+contact*24} s={.38} rotation={contact*30}/>
    <Word size={26}>SWORD: HUGE. BUDGET: MISSING.</Word>
   </g>:null}
   {beat==='amex-counter'?<g>
-   <Cape x={360-q*140} y={452} s={1.05} rotation={-q*18}/>
+   <Cape {...v2CapeMotion(p)}/>
    <path d="M460 330L355 566H610Z" fill="none" stroke={K} strokeWidth="2" strokeDasharray="8 8" opacity={q}/>
    <Sandwich x={470} y={492-q*32} s={.65+q*.4} rotation={-8+q*8}/>
    <Word>THE PERK HAS A CRUST.</Word>
