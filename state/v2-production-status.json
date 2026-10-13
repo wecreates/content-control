@@ -39,12 +39,12 @@
       "receipt_sha256": "e4b1140891ac90ed1bcc42418a008d69880f9c24a47d07a3ab5088d91b4c0a76"
     },
     "style_parity": {
-      "status": "BLOCKED",
+      "status": "FAIL",
       "failed_checks": [
         "framewise_style_parity"
       ],
-      "receipt_sha256": "1a43b98d78e13d87be90377336e49163bff88dfa7964714ab40b33459e3c65f5",
-      "reason": "Review candidate hash does not match exact video"
+      "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
+      "receipt_sha256": "037d49be6f84597b61751ef40b832c6823661c0bea1ded3de150c9056bb92f89"
     }
   },
   "diagnostics": {
@@ -57,5 +57,18 @@
   "status": "BLOCKED",
   "production_approved": false,
   "publication_enabled": false,
-  "scope": "Recorded build result; no full audiovisual or competitor approval."
+  "scope": "Recorded build result; no full audiovisual or competitor approval.",
+  "remaining_review": {
+    "full_audiovisual": "NOT_APPROVED",
+    "competitive_motion": "NOT_VERIFIED"
+  },
+  "review_reconciliation": {
+    "run_id": 38472947022,
+    "source_commit": "93b317efbfbd4d70eaa6de308902d0856ff92a0b",
+    "source_report_sha256": "b707f48b8627190fa9884a2244538e9aad221d06cc9b08d642ef7e2b84d6e397",
+    "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+    "technical_receipt_sha256": "e4b1140891ac90ed1bcc42418a008d69880f9c24a47d07a3ab5088d91b4c0a76",
+    "review_sha256": "0c81cdbc897c5d2e0f5de3313fd84a322192bcaa721423df91f52ad33c8768d5",
+    "recorded_at": "2026-10-13T21:45:39.372494+00:00"
+  }
 }
