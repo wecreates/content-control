@@ -1,3 +1,4 @@
+import {parseVaultKey} from './integrations/social-automation/vault-key.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -12,7 +13,7 @@ async function providerCall(operation, timeoutMs, parentSignal) {
 }
 const platforms=new Set(['instagram','facebook','youtube','tiktok','threads','x','pinterest','linkedin','reddit']);
 export class EncryptedSocialStore {
- constructor({file,key}) {if(!path.isAbsolute(file)||!/^[a-f0-9]{64}$/i.test(key||''))throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');this.file=file;this.key=Buffer.from(key,'hex');this.serial=Promise.resolve();}
+ constructor({file,key}) {if(!path.isAbsolute(file))throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');this.file=file;this.key=parseVaultKey(key);this.serial=Promise.resolve();}
  async read(){let raw;try{raw=await fs.readFile(this.file,'utf8')}catch(e){if(e.code==='ENOENT')return {version:1,connections:{},jobs:[]};throw Error('PRIVATE_STORE_UNAVAILABLE')}
   try{const e=JSON.parse(raw);if(e.version!==1)throw Error();const decipher=crypto.createDecipheriv('aes-256-gcm',this.key,Buffer.from(e.iv,'base64'));decipher.setAAD(Buffer.from('cyzor-social-v1'));decipher.setAuthTag(Buffer.from(e.tag,'base64'));const d=JSON.parse(Buffer.concat([decipher.update(Buffer.from(e.data,'base64')),decipher.final()]).toString());if(d.version!==1||!d.connections||!Array.isArray(d.jobs))throw Error();return d}catch{throw Error('PRIVATE_STORE_INTEGRITY_FAILED')}
  }

@@ -1,3 +1,4 @@
+import {parseVaultKey} from './vault-key.mjs';
 import crypto from 'node:crypto';
 import pg from 'pg';
 const TABLE = 'cyzor_social_vault';
@@ -5,10 +6,10 @@ const ID = 'owner';
 // Dedicated encrypted row. No provider credentials, sessions or media are stored as plaintext SQL fields.
 export class PostgresSocialStore {
   constructor({pool, key, expiresAt, now = Date.now}) {
-    if (!pool || !/^[a-f0-9]{64}$/i.test(key || '')) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
+    if (!pool) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
     const expiry = Date.parse(expiresAt);
     if (!Number.isFinite(expiry)) throw Error('STORAGE_EXPIRY_REQUIRED');
-    Object.assign(this, {pool, key: Buffer.from(key, 'hex'), expiry, now});
+    Object.assign(this, {pool, key: parseVaultKey(key), expiry, now});
     this.serial = Promise.resolve(); this.closed = false;
   }
   active() {

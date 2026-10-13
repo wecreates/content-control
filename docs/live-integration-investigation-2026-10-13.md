@@ -32,3 +32,27 @@ No Render settings, service plan, paid infrastructure, rendering engine, charact
 Full end-to-end production acceptance FAILS: the current candidate fails framewise style parity and lacks completed creative acceptance. The Render process serves/validates persisted media; it is not a resident GPU generation worker. Hosted CPU checks cover eight named operations, not every upstream product feature. Provider-backed generation and persistent hosted project state remain unverified. Wan needs a CUDA-capable host and model weights absent from this free Node deployment and standard CPU runner. No paid host was provisioned. Publication remains disabled.
 
 Evidence: Money-factory/integrations/live-content-control-2026-10-13.json, reproducible with python integrations/check_live_content_control.py.
+
+## Follow-up: storage and reference qualification
+
+Render dashboard inspection confirmed no Blueprint instances exist; the signed-in
+workspace recognizes content-control-render-worker as an existing service that
+can be associated, rather than duplicated. No association was applied. A
+fromDatabase connectionString injects the internal URL; Render documents that
+internal TLS uses self-signed certificates and does not support verify-full.
+The current adapter requires verified TLS. Therefore the proposed automatic
+binding is not a verified compatible configuration. External access is currently
+blocked by the database's empty IP allowlist. No network rule or TLS protection
+was weakened. Existing free database expires 2026-10-26T20:02:09.446632Z.
+Sources: https://render.com/docs/blueprint-spec and
+https://render.com/docs/postgresql-creating-connecting .
+
+The key parser now accepts both existing 64-character hex and Render's canonical
+base64 encoding of exactly 32 bytes. Equivalent keys preserve existing encrypted
+records; malformed encodings fail closed. This does not configure a live vault.
+
+Raw brightness/edge statistics are now explicitly diagnostic, not evidence of
+creative equivalence. The unqualified reference set blocks acceptance with
+BLOCKED_UNSUPPORTED_REFERENCE. Even a hash-bound aligned-frame contract only
+permits experimental structure measurements, pending independent calibration.
+No replacement threshold or automatic creative approval was introduced.

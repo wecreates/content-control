@@ -1,10 +1,51 @@
 import unittest
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 import cv2
-from scripts.rendered_visual_parity import compare_metric_series,explain_comparison,sample_video
+from scripts.rendered_visual_parity import compare_metric_series,explain_comparison,sample_video,compare_aligned_images,qualified_structure_comparison,sha256
 
 class RenderedVisualParityTests(unittest.TestCase):
+    def test_missing_reference_qualification_blocks_instead_of_claiming_style_failure(self):
+        result=qualified_structure_comparison('unused','unused',None)
+        self.assertEqual(result['status'],'BLOCKED')
+        self.assertEqual(result['blocker'],'BLOCKED_UNSUPPORTED_REFERENCE')
+        self.assertFalse(result['framewise_style_parity'])
+        self.assertIn('diagnostic only',result['reason'])
+
+    def test_background_normalization_never_promotes_synthetic_match_to_approval(self):
+        white=np.full((320,180,3),255,dtype=np.uint8)
+        nearwhite=np.full_like(white,242)
+        for image in (white,nearwhite):cv2.line(image,(30,40),(140,280),(10,10,10),6)
+        result=compare_aligned_images(white,nearwhite)
+        self.assertLess(result['foreground_distance'],.01)
+        self.assertEqual(result['acceptance_effect'],'none')
+        self.assertFalse(result['calibrated'])
+        self.assertNotIn('match',result)
+        self.assertFalse(compare_aligned_images(white,np.full_like(white,255))['foreground_present_in_both'])
+
+    def test_even_identical_qualified_pairs_cannot_pass_without_calibration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'fixture.avi'
+            image=np.full((80,80,3),255,dtype=np.uint8)
+            cv2.line(image,(10,10),(65,65),(10,10,10),5)
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),24,(80,80))
+            self.assertTrue(writer.isOpened())
+            pairs=[]
+            for i in range(4):
+                writer.write(image);frame=root/f'ref-{i}.jpg';cv2.imwrite(str(frame),image)
+                pairs.append({'reference_file':frame.name,'reference_sha256':sha256(frame),'candidate_frame':i,'source_seconds':i/24})
+            writer.release()
+            contract={'method':'aligned_line_art','status':'VERIFIED','candidate_sha256':sha256(video),'source_url':'https://example.org/source','pairs':pairs}
+            result=qualified_structure_comparison(root,video,contract)
+            self.assertEqual(result['status'],'BLOCKED')
+            self.assertEqual(result['blocker'],'STRUCTURE_CALIBRATION_REQUIRED')
+            self.assertEqual(len(result['pairs']),4)
+            self.assertFalse(result['framewise_style_parity'])
+            contract['pairs'][0]['reference_sha256']='a'*64
+            self.assertEqual(qualified_structure_comparison(root,video,contract)['blocker'],'BLOCKED_UNSUPPORTED_REFERENCE')
+
     def test_sampling_checks_seek_and_releases_decoder_on_failure(self):
         class Decoder:
             released=False
