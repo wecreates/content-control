@@ -9,6 +9,7 @@ import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
 
 import {createSocialRouter} from "./social-router.js";
 import {initializeSocialService} from "./integrations/social-automation/hosted-service.mjs";
+import {createOAuthRouter, connectionPage} from "./integrations/social-automation/oauth-router.mjs";
 const socialService=await initializeSocialService();
 import {createRepositoryIntegrationRouter} from "./repository-integrations.js";
 
@@ -121,6 +122,8 @@ app.use((req,res,next)=>{
   next();
 });
 
+app.get("/social/connect",connectionPage(socialService));
+app.use("/api/social",createOAuthRouter(socialService));
 app.use("/api/social",createSocialRouter({runtimeStatus:()=>socialService.status()}));
 app.get("/social",(req,res)=>{res.setHeader("Cache-Control","no-store");res.sendFile(path.resolve("social-ui/index.html"));});
 

@@ -51,7 +51,7 @@ has not been independently verified as private and durable. Activation needs:
    Metadata reads alone do not constitute video retrieval, full audio/video
    analysis, competitive review or business-performance evidence.
 
-Owner-facing OAuth onboarding and provider-specific exchanges other than YouTube remain unimplemented. See the platform matrix below for the implemented read operations.
+Owner-facing GitHub sign-in and YouTube onboarding routes are implemented but disabled until configured. Provider-specific exchanges other than YouTube remain unimplemented. See the platform matrix below for the implemented read operations.
 No live account or hosted durability/recovery test has passed yet.
 
 ## Recovery and execution limits
@@ -136,3 +136,32 @@ References used for endpoint contracts:
 - https://redditinc.com/policies/data-api-terms
 
 Worker recovery fixes: capacity blocks new intake without starving existing jobs; supported refresh adapters can renew expired grants; a newly verified grant can start a new poll without resetting prior failed history. Instagram calls honor caller cancellation, including between identity and media requests. HTTP 401/403 always require authorization repair, including when the response is not JSON.
+
+
+## Owner authorization routes — October 13, 2026
+
+`/social/connect` provides phone-accessible owner sign-in and YouTube consent.
+It shows an explicit unavailable state until configured; no login is simulated.
+GitHub authenticates the configured numeric owner ID, never a supplied email.
+The app requests read:user only, uses S256 PKCE and a browser-bound ten-minute
+single-use state, and does not persist the GitHub access token. Opaque owner
+sessions expire after eight hours; only their hashes are stored in the encrypted
+vault. Cookies are Secure, HttpOnly, SameSite=Lax and __Host-prefixed. Start and
+logout POST requests require the exact configured Origin. Logout revokes the
+session. OAuth endpoints return generic errors and no-store responses.
+
+Configuration via private hosted secret management:
+- SOCIAL_OAUTH_ENABLED=true (independent of SOCIAL_WORKER_ENABLED)
+- SOCIAL_PUBLIC_ORIGIN: exact HTTPS origin, with no trailing slash or path
+- OWNER_GITHUB_CLIENT_ID and OWNER_GITHUB_CLIENT_SECRET: registered OAuth app
+- OWNER_GITHUB_ID: verified numeric GitHub user ID of the owner
+- Owner callback: <SOCIAL_PUBLIC_ORIGIN>/api/social/auth/callback
+- YouTube callback: <SOCIAL_PUBLIC_ORIGIN>/api/social/oauth/youtube/callback
+- Existing vault requirements above still apply, including an already-created
+  encrypted file outside the repository. An empty valid vault may now bootstrap
+  onboarding. No ephemeral or public storage fallback is created.
+
+SOCIAL_WORKER_ENABLED remains a separate opt-in. Live login, provider consent,
+durability/recovery and full video analysis are NOT proven by unit tests.
+Instagram browser-login diagnosis and Meta app authorization remain unresolved.
+Reference: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps

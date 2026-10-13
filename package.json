@@ -23,7 +23,7 @@
     "test:transcription": "python -m unittest -v tests/test_transcription_similarity.py",
     "test:clone-e2e": "python -m unittest -v tests/test_clone_end_to_end_acceptance.py",
     "social:read-once": "node scripts/social_worker_once.mjs",
-    "test:social": "node --test tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-worker.test.mjs tests/social-adapter-lifecycle.test.mjs tests/social-providers.test.mjs"
+    "test:social": "node --test tests/social-intake.test.mjs tests/social-router.test.mjs tests/social-automation.test.mjs tests/social-worker.test.mjs tests/social-adapter-lifecycle.test.mjs tests/social-providers.test.mjs tests/social-owner-auth.test.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.529",
