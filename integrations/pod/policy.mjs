@@ -29,7 +29,10 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  if(!PLATFORMS.includes(job?.platform)||job.destination_platform!==job.platform) throw Error('PLATFORM_BLOCKED');
  if(!job.id||!job.account_id||!job.business_id||grant.job_id!==job.id||
   grant.account_id!==job.account_id||grant.platform!==job.platform||grant.business_id!==job.business_id) throw Error('GRANT_SCOPE_MISMATCH');
- if(grant.publication_permission!==true||grant.revoked!==false) throw Error('PUBLICATION_PERMISSION_REQUIRED');
+ if(grant.revoked!==false) throw Error('APPROVAL_REVOKED');
+ if(publishing||job.mode==='LAUNCH'){
+  if(grant.publication_permission!==true)throw Error('PUBLICATION_PERMISSION_REQUIRED');
+ }else if(grant.production_permission!==true&&grant.publication_permission!==true)throw Error('PRODUCTION_PERMISSION_REQUIRED');
  if(!Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
  if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
  if(publishing&&(job.mode!=='LAUNCH'||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');

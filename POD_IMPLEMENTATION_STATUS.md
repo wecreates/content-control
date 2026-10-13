@@ -54,3 +54,25 @@ all data endpoints require a bearer operations key. Keep that key off URLs/logs.
 The free-tier-first package provides no always-on hosting guarantee. Queue
 backpressure stops before storage/quota exhaustion. No paid resources, platform
 accounts, marketplace listings or live revenue were created by this change.
+
+## Follow-up: production/package integration
+
+Production-only signed grants now permit internal PRELAUNCH generation without
+publication permission; LAUNCH and submit still require publication permission.
+The worker assembles a supplied, signed KDP interior specification and manuscript
+into the cover manifest before independent review. The package hash binds both
+PDFs and the interior receipt. KDP QA rejects missing/corrupt interiors. Generated
+package files are written to the existing bounded ArtifactStore before queue
+completion; no reliance on ephemeral Render files for completed packages.
+Template safe boxes consistently use x/y/width/height in Node and Python.
+
+Local verification: 39 Node tests passed across both repositories, one PostgreSQL
+test skipped (no disposable database configured), and 18 Python tests passed,
+including real PDF assembly and OCR. Synthetic test dimensions are not approved
+marketplace templates. No live deployment or marketplace publication was tested.
+The production resolver, authoritative MF runtime, current rights/editorial
+review, database provisioning and platform adapters remain acceptance blockers.
+KDP upload/Print Previewer and AI disclosure requirements must be satisfied through
+its documented publishing flow:
+https://kdp.amazon.com/en_US/help/topic/G200641240
+https://kdp.amazon.com/en_US/help/topic/G200672390

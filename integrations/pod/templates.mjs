@@ -8,6 +8,6 @@ export function validateTemplate(envelope,key,{platform,product,country},now=Dat
  const [w,h]=t.size_inches.map(n=>Math.ceil(n*t.dpi));
  if(w*h>100000000)throw Error('TEMPLATE_TOO_LARGE');
  const b=t.safe_box_px;
- if(!Array.isArray(b)||b.length!==4||b.some(n=>!Number.isInteger(n))||b[0]<0||b[1]<0||b[2]<=b[0]||b[3]<=b[1]||b[2]>w||b[3]>h)throw Error('TEMPLATE_SAFE_ZONE_INVALID');
+ if(!Array.isArray(b)||b.length!==4||b.some(n=>!Number.isInteger(n))||b[0]<0||b[1]<0||b[2]<=0||b[3]<=0||b[0]+b[2]>w||b[1]+b[3]>h)throw Error('TEMPLATE_SAFE_ZONE_INVALID');
  return t;
 }
