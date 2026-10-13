@@ -17,6 +17,8 @@ on:
       - 'control/publication-owner-gate.json'
       - 'control/publication-separation.json'
       - 'scripts/verify_free_production_health.py'
+      - 'scripts/watchdog_scope.py'
+      - 'tests/test_watchdog_scope.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -76,7 +78,9 @@ jobs:
       - name: Verify accepted production state
         id: verify
         continue-on-error: true
-        run: python scripts/verify_free_production_health.py
+        run: |
+          python -m unittest tests/test_watchdog_scope.py
+          python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
         run: |
           set -euo pipefail

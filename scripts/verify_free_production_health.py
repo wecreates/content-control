@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import hashlib, json
 from pathlib import Path
+from watchdog_scope import completion_scope
 
 ROOT=Path(".")
 health=json.loads((ROOT/"state/content-control-health.json").read_text())
@@ -151,6 +152,8 @@ else:
 report={
     "schema_version":1,
     "status":status,
+    "status_scope":"Accepted V10 artifact and recorded component checks only",
+    "production_ready":False,
     "candidate_sha256":health.get("candidate_sha256"),
     "candidate_converged":candidate_converged,
     "candidate_hashes":candidate_hashes,
@@ -165,8 +168,7 @@ out=ROOT/"state/free-production-watchdog.json"
 out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
 completion={
     "schema_version":1,
-    "machine_system_complete":status=="GREEN",
-    "status":"COMPLETE" if status=="GREEN" else "REPAIR_REQUIRED",
+    **completion_scope(status),
     "candidate_sha256":health.get("candidate_sha256"),
     "publication_enabled":False,
     "publication_separate":True,
@@ -213,7 +215,6 @@ completion={
     },
     "source_receipt":"qa-output/free/final-receipt.json",
     "watchdog_receipt":"state/free-production-watchdog.json",
-    "remaining_user_gate":"watch/approve exact artifact before any publication",
 }
 (ROOT/"state/system-completion.json").write_text(json.dumps(completion,indent=2,sort_keys=True)+"\n")
 candidate_hashes={
@@ -229,6 +230,7 @@ candidate_hashes={
 candidate_converged=len({v for v in candidate_hashes.values() if v})==1 and all(candidate_hashes.values())
 ops={
     "schema_version":1,
+    **completion_scope(status),
     "status":completion["status"],
     "machine_system_complete":completion["machine_system_complete"],
     "candidate_sha256":health.get("candidate_sha256"),
