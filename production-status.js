@@ -22,12 +22,20 @@ export function createProductionStatusRouter({root=process.cwd()}={}) {
       !['PASS','FAIL','BLOCKED'].includes(decision)||report.visual_review?.status!==decision||
       (report.status==='VISUAL_REVALIDATED')!==(decision==='PASS'))throw Error('stale_or_invalid');
    const rubric={};
+   const dimensions=['typography','character_scale','staging','character_consistency','phone_readability'];
+   const findings=Array.isArray(review.findings)?review.findings.filter(x=>dimensions.includes(x?.dimension)):null;
+   if(findings&&(findings.length!==dimensions.length||new Set(findings.map(x=>x.dimension)).size!==dimensions.length))throw Error('invalid_findings');
    for(const key of ['typography','character_scale','staging','character_consistency','phone_readability']){
     const item=report.visual_review.rubric?.[key];
-    if(!item||typeof item.observation!=='string'||item.observation!==review.rubric?.[key]?.evidence||!['MATCH','MISMATCH','NOT_VERIFIED'].includes(item.status)||(item.status==='MATCH')!==(review.rubric?.[key]?.pass===true))throw Error('invalid_rubric');
+    const source=findings?.find(x=>x.dimension===key);
+    if(!item||typeof item.observation!=='string')throw Error('invalid_rubric');
+    if(findings){
+     if(!['PASS','MISMATCH','NOT_VERIFIED'].includes(item.status)||item.status!==source.status||item.observation!==source.observation||JSON.stringify(item.candidate_frames)!==JSON.stringify(source.candidate_frames))throw Error('invalid_rubric');
+    }else if(item.observation!==review.rubric?.[key]?.evidence||!['MATCH','MISMATCH','NOT_VERIFIED'].includes(item.status)||(item.status==='MATCH')!==(review.rubric?.[key]?.pass===true))throw Error('invalid_rubric');
     rubric[key]={status:item.status,observation:item.observation};
    }
    const blockers=Array.isArray(review.unresolved_issues)?review.unresolved_issues.filter(x=>typeof x==='string'):[];
+   if(decision==='PASS'&&(blockers.length||Object.values(rubric).some(x=>!['PASS','MATCH'].includes(x.status))))throw Error('contradictory_pass');
    res.json({schema_version:1,status:report.status,...locked,candidate_sha256:candidate,original_run_id:report.original_run_id,
     visual_status:decision,rubric,blockers,scope:'Exact existing candidate revalidation; sampled visual findings only. Full audiovisual and competitor approval remain required.'});
   }catch{res.status(503).json({status:'UNAVAILABLE',...locked,error:'REVALIDATION_STALE_OR_UNAVAILABLE'});}

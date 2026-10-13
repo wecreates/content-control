@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "review_type": "independent_sampled_frame_visual_analysis",
+  "reviewed_at": "2026-10-13T22:04:34.429774+00:00",
+  "candidate": {
+    "path": "public-review/v2-draft.mp4",
+    "sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+    "frame_count": 840,
+    "fps": 24.0,
+    "duration_seconds": 35.0
+  },
+  "coverage": {
+    "sample_count": 36,
+    "sampled_frame_indices": [
+      0,
+      24,
+      48,
+      72,
+      96,
+      120,
+      144,
+      168,
+      192,
+      216,
+      240,
+      264,
+      288,
+      312,
+      336,
+      360,
+      384,
+      408,
+      432,
+      456,
+      480,
+      504,
+      528,
+      552,
+      576,
+      600,
+      624,
+      648,
+      672,
+      696,
+      720,
+      744,
+      768,
+      792,
+      816,
+      839
+    ],
+    "sampled_frame_seconds": [
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0,
+      20.0,
+      21.0,
+      22.0,
+      23.0,
+      24.0,
+      25.0,
+      26.0,
+      27.0,
+      28.0,
+      29.0,
+      30.0,
+      31.0,
+      32.0,
+      33.0,
+      34.0,
+      34.958333333333336
+    ],
+    "full_video_watched": false,
+    "audio_reviewed": false,
+    "motion_parity_verified": false,
+    "temporal_alignment_with_reference": false
+  },
+  "reference_frames": [
+    {
+      "path": "reference/frames/ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "path": "reference/frames/ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "path": "reference/frames/ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "path": "reference/frames/ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "path": "reference/frames/ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "path": "reference/frames/ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "path": "reference/frames/ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "path": "reference/frames/ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "path": "reference/frames/ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "path": "reference/frames/ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "character_board": {
+    "path": "reference/characters/content-control-character-board.svg",
+    "sha256": "fbcc307d2514c2f7a691da966971ba84186f90078209542f0933dc2decf5704e",
+    "inspection": "Rasterized SVG visually compared; exact pixel identity not verified"
+  },
+  "method": "Direct visual inspection of 36 candidate frames at one-second intervals plus final frame, all 10 stored reference frames, and canonical SVG character board. One candidate shield frame also inspected at full 720x1280 resolution. Contact sheets are sampling evidence only.",
+  "findings": [
+    {
+      "dimension": "typography",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        24,
+        192,
+        240,
+        312,
+        336,
+        408,
+        456,
+        528,
+        576,
+        672,
+        744,
+        768
+      ],
+      "observation": "At 0/10/13/14/28/31 seconds the visible captions include isolated Stop/stops/Finally,/plan/your/I\u2019m. At 1/17/19/32 seconds selective black highlight pills appear. Reference frames instead use expressive rounded lettering, larger multiword headline blocks and selective colored emphasis. Candidate uses a conventional heavy sans-serif. This is a visible styling difference, not evidence of missing caption words or early/late timing.",
+      "action": "Use a consistent expressive headline type treatment and hold already-spoken short phrases where measured timing permits; preserve no-early-reveal caption constraints."
+    },
+    {
+      "dimension": "character_scale",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        72,
+        120,
+        192,
+        408,
+        528,
+        624,
+        744,
+        839
+      ],
+      "observation": "All inspected candidate samples retain near-full-body staging. Opening and sword sequences devote substantial width to separated actor/cards; no face-dominant reaction closeup appears in the sampled sequence. Reference ref-02 uses a large foreground face/book and ref-03 a tightly framed bed scene; candidate lacks comparable shot-size variety in these observations. Individual faces remain recognizable; this is not a claim that every shot must be enlarged.",
+      "action": "Introduce one motivated reaction closeup at the wallet bite or panic payoff, maintaining safe caption clearance rather than globally enlarging characters."
+    },
+    {
+      "dimension": "staging",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        192,
+        288,
+        360,
+        408,
+        480,
+        528,
+        624,
+        672,
+        744
+      ],
+      "observation": "There is meaningful scene-specific staging now: arena platform at0s, counter/bin at8s, invitation setup at17s, choice lane at22s, shield at26s, podium at31s. Wallet/raised hand and shield/raised hand contact are visible. The snack invitation at17\u201321s still places sandwich and envelope as separate floating diagram objects above a neutral standing pose; reference ref-02/ref-05/ref-09 places actors in readable concrete interactions. This limits the physical clarity of the uninvited-fee gag.",
+      "action": "Stage the invitation as a concrete hand-to-envelope or door-entry action with the fee interrupting the snack; avoid changing other repaired prop contacts."
+    },
+    {
+      "dimension": "character_consistency",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        72,
+        192,
+        408,
+        624,
+        672,
+        744,
+        839
+      ],
+      "observation": "Direct comparison with canonical SVG shows recognizable round-headed Dave, neutral/deadpan Monk and pointed-ear shorter Goblin; expressions and poses change. Goblin ears, head emphasis and relative shortness remain visible in sampled two-character shots. Exact zero-drift proportions/line weights across every rendered frame have not been measured; source binding alone does not establish rendered pixel identity.",
+      "action": "Retain current identities; perform rendered board/pose comparison for exact tolerance before asserting zero-drift compliance."
+    },
+    {
+      "dimension": "phone_readability",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        72,
+        288,
+        408,
+        528,
+        624,
+        672,
+        744
+      ],
+      "observation": "Main captions and NEEDS/COSTS/USE shield are readable in inspected digital images, and no clipping is apparent in these sampled frames. CHASE/AMEX labels at0\u20137s and PANIC TAP/CHECK VALUE at22\u201325s are noticeably smaller than narration captions in contact-sheet view. Physical Android playback and complete-timeline readability were not tested.",
+      "action": "Verify these small prop labels in actual phone playback; enlarge label type or simplify labels if they cannot be read during their measured screen time."
+    }
+  ],
+  "reviewer": {
+    "id": "inspect_content_independent_review",
+    "method": "direct_sampled_frame_inspection"
+  },
+  "decision": "FAIL",
+  "unresolved_issues": [
+    "At 0/10/13/14/28/31 seconds the visible captions include isolated Stop/stops/Finally,/plan/your/I\u2019m. At 1/17/19/32 seconds selective black highlight pills appear. Reference frames instead use expressive rounded lettering, larger multiword headline blocks and selective colored emphasis. Candidate uses a conventional heavy sans-serif. This is a visible styling difference, not evidence of missing caption words or early/late timing.",
+    "All inspected candidate samples retain near-full-body staging. Opening and sword sequences devote substantial width to separated actor/cards; no face-dominant reaction closeup appears in the sampled sequence. Reference ref-02 uses a large foreground face/book and ref-03 a tightly framed bed scene; candidate lacks comparable shot-size variety in these observations. Individual faces remain recognizable; this is not a claim that every shot must be enlarged.",
+    "There is meaningful scene-specific staging now: arena platform at0s, counter/bin at8s, invitation setup at17s, choice lane at22s, shield at26s, podium at31s. Wallet/raised hand and shield/raised hand contact are visible. The snack invitation at17\u201321s still places sandwich and envelope as separate floating diagram objects above a neutral standing pose; reference ref-02/ref-05/ref-09 places actors in readable concrete interactions. This limits the physical clarity of the uninvited-fee gag.",
+    "Direct comparison with canonical SVG shows recognizable round-headed Dave, neutral/deadpan Monk and pointed-ear shorter Goblin; expressions and poses change. Goblin ears, head emphasis and relative shortness remain visible in sampled two-character shots. Exact zero-drift proportions/line weights across every rendered frame have not been measured; source binding alone does not establish rendered pixel identity.",
+    "Main captions and NEEDS/COSTS/USE shield are readable in inspected digital images, and no clipping is apparent in these sampled frames. CHASE/AMEX labels at0\u20137s and PANIC TAP/CHECK VALUE at22\u201325s are noticeably smaller than narration captions in contact-sheet view. Physical Android playback and complete-timeline readability were not tested."
+  ],
+  "scope": {
+    "kind": "sampled_visual",
+    "full_audiovisual_review": false,
+    "sampled_frames": 36,
+    "canonical_sampled_review_replaced": false,
+    "purpose": "Independent competitor-oriented polish assessment; preserves separately recorded sampled readability/layout review."
+  },
+  "production_approved": false,
+  "publication_enabled": false,
+  "limitations": [
+    "No full audiovisual playback, listening judgment, continuous-motion judgment or physical phone test.",
+    "White background is an intentional approved brand difference and is not counted as a mismatch.",
+    "Static reference frames are not temporally equivalent candidate scenes."
+  ]
+}

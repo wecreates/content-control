@@ -68,3 +68,29 @@ test('stale or failed format summaries cannot claim current success',async()=>{
 test('missing or invalid execution summaries fail closed',async()=>{
  for(const report of [null,{...executionBase,publication_enabled:true},{...executionBase,format:'short'},{...executionBase,candidate_sha256:'bad'}])await executionFixture(report,async url=>{assert.equal((await fetch(url)).status,503)});
 });
+
+async function canonicalFindingsFixture(tamper,fn){
+ const {createHash}=await import('node:crypto');
+ return revalidationFixture((files,report)=>{
+  const review=JSON.parse(files['state/visual-analysis/frame-review.json']);
+  review.findings=Object.entries(review.rubric).map(([dimension,item])=>({dimension,status:'MISMATCH',candidate_frames:[0],observation:item.evidence}));delete review.rubric;
+  report.visual_review.rubric=Object.fromEntries(review.findings.map(item=>[item.dimension,{...item}]));
+  if(tamper)tamper(review,report);
+  files['state/visual-analysis/frame-review.json']=JSON.stringify(review);
+  report.visual_review_sha256=createHash('sha256').update(files['state/visual-analysis/frame-review.json']).digest('hex');
+  files['state/v2-revalidation.json']=JSON.stringify(report);
+ },fn);
+}
+test('canonical sampled findings schema exposes exact current findings',()=>canonicalFindingsFixture(null,async url=>{
+ const response=await fetch(url),data=await response.json();assert.equal(response.status,200);assert.equal(data.rubric.typography.status,'MISMATCH');assert.equal(data.production_approved,false);assert.equal(data.watch_url,null);
+}));
+test('canonical findings reject forged status, observation, frames and duplicate dimensions',async()=>{
+ for(const tamper of [
+ (review,report)=>report.visual_review.rubric.typography.status='PASS',
+ (review,report)=>report.visual_review.rubric.typography.observation='invented observation',
+ (review,report)=>report.visual_review.rubric.typography.candidate_frames=[1],
+ review=>review.findings[1]={...review.findings[0]},
+ review=>review.findings.pop(),
+ (review,report)=>{review.decision='PASS';report.status='VISUAL_REVALIDATED';report.visual_review.status='PASS';}
+ ])await canonicalFindingsFixture(tamper,async url=>{const response=await fetch(url);assert.equal(response.status,503);assert.equal((await response.json()).production_approved,false);});
+});

@@ -63,6 +63,7 @@
     ".github/workflows/visual-analysis.yml"
   ],
   "manual_only": [
+    ".github/workflows/accept-existing-v2.yml",
     ".github/workflows/always-on-resolver.yml",
     ".github/workflows/bottleneck-resolver.yml",
     ".github/workflows/competitor-intelligence.yml",

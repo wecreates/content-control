@@ -39,6 +39,10 @@ on:
       - 'creative-handoff.js'
       - 'tests/creative-handoff.test.mjs'
       - '.github/workflows/content-control-v2.yml'
+      # Review-only records apply to existing bytes; never regenerate them.
+      - '!projects/v2/**/rendered-creative-review.json'
+      - '!projects/v2/**/revision-review.json'
+      - '!projects/v2/**/competitive-review-evidence.json'
 permissions:
   contents: write
 env:
