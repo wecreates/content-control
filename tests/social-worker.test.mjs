@@ -98,3 +98,28 @@ test('new verified grant recovers blocked same-bucket poll without retrying old 
  now++;await runtime.connect('instagram',grant);await worker.cycle();await worker.cycle();
  const jobs=(await store.read()).jobs;assert.equal(reads,2);assert.equal(jobs.length,2);assert.equal(jobs[0].status,'blocked');assert.equal(jobs[0].attempts,1);assert.equal(jobs[1].status,'completed');
 });
+
+test('worker reports retry waiting, then successful recovery without hiding history',async t=>{
+ let now=100000,reads=0;const {runtime}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>{if(++reads===1)throw Error('PRIVATE_FAILURE');return {};}});runtime.now=()=>now;
+ const worker=new SocialReadWorker({runtime,now:()=>now});
+ let status=await worker.cycle();assert.equal(status.status,'CYCLE_RETRY_PENDING');assert.equal(status.pending_jobs,1);assert.ok(!JSON.stringify(status).includes('PRIVATE_FAILURE'));
+ status=await worker.cycle();assert.equal(status.status,'CYCLE_RETRY_PENDING');assert.equal(reads,1);
+ now+=120001;status=await worker.cycle();assert.equal(status.status,'CYCLE_COMPLETED');assert.equal(status.pending_jobs,0);assert.equal(status.current_counts.completed,1);assert.equal(status.publication_enabled,false);
+});
+test('blocked authorization stays blocked until new grant succeeds, retaining old failure counts',async t=>{
+ let now=100000,reads=0;const {runtime}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>{if(++reads===1)throw Error('REAUTHORIZE');return {};}});runtime.now=()=>now;
+ const worker=new SocialReadWorker({runtime,now:()=>now});assert.equal((await worker.cycle()).status,'CYCLE_BLOCKED');assert.equal((await worker.cycle()).status,'CYCLE_BLOCKED');
+ now++;await runtime.connect('instagram',grant);const result=await worker.cycle();assert.equal(result.status,'CYCLE_COMPLETED');assert.equal(result.counts.blocked,1);assert.equal(result.counts_scope,'all_retained_jobs');assert.equal(result.current_counts.blocked,undefined);assert.equal(result.current_counts.completed,1);
+});
+test('expired connection with no work cannot report completed; empty worker is idle',async t=>{
+ const {runtime,store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>{throw Error('must not run');}});
+ await store.update(d=>{d.connections.instagram.expires_at=99999;});const worker=new SocialReadWorker({runtime,now:()=>100000});assert.equal((await worker.cycle()).status,'CYCLE_BLOCKED');
+ await store.update(d=>{d.connections={};});assert.equal((await worker.cycle()).status,'CYCLE_IDLE');
+});
+
+test('bounded tick backlog reports pending work until all due reads finish',async t=>{
+ const {runtime}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>({})});
+ for(let i=0;i<11;i++)await runtime.enqueue({id:`backlog-${i}`,platform:'instagram',operation:'read_media'});
+ const worker=new SocialReadWorker({runtime,now:()=>100000});let result=await worker.cycle();assert.equal(result.status,'CYCLE_WORK_PENDING');assert.equal(result.pending_jobs,1);
+ result=await worker.cycle();assert.equal(result.status,'CYCLE_COMPLETED');assert.equal(result.pending_jobs,0);
+});

@@ -33,3 +33,16 @@ test('hanging identity verification times out without storing a connection',asyn
  const x=await setup(t,{verify:async()=>new Promise(()=>{})});x.runtime.providerTimeoutMs=20;
  await assert.rejects(x.runtime.connect('instagram',x.grant),/PROVIDER_TIMEOUT/);assert.deepEqual((await x.store.read()).connections,{});
 });
+
+test('authorization cancellation during identity verification never persists a late grant',async t=>{
+ let release,started;const ready=new Promise(r=>started=r);const controller=new AbortController();
+ const x=await setup(t,{verify:async(g,{signal})=>{started();await new Promise(r=>release=r);assert.equal(signal.aborted,true);return {verified:true,account_id:g.account_id};}});
+ const pending=x.runtime.connect('instagram',x.grant,{signal:controller.signal});await ready;controller.abort();
+ await assert.rejects(pending,/AUTHORIZATION_CANCELLED/);release();await new Promise(r=>setImmediate(r));
+ assert.deepEqual((await x.store.read()).connections,{});
+});
+test('grant expiring during verification cannot be persisted as connected',async t=>{
+ const x=await setup(t);x.runtime.adapters.instagram.verify=async g=>{x.advance(200000000);return {verified:true,account_id:g.account_id};};
+ await assert.rejects(x.runtime.connect('instagram',x.grant),/INVALID_AUTHORIZATION/);
+ assert.deepEqual((await x.store.read()).connections,{});
+});

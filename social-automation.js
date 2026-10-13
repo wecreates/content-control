@@ -1,10 +1,14 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-async function providerCall(operation, timeoutMs) {
- const controller=new AbortController();let timer;
- const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();const error=new Error('PROVIDER_TIMEOUT');error.code='PROVIDER_TIMEOUT';reject(error)},timeoutMs)});
- try{return await Promise.race([Promise.resolve().then(()=>operation(controller.signal)),timeout])}finally{clearTimeout(timer)}
+async function providerCall(operation, timeoutMs, parentSignal) {
+ const controller=new AbortController();let timer,rejectBound;
+ const bound=new Promise((_,reject)=>{rejectBound=reject;});
+ const abort=()=>{controller.abort();rejectBound(Error('AUTHORIZATION_CANCELLED'));};
+ if(parentSignal?.aborted)throw Error('AUTHORIZATION_CANCELLED');
+ parentSignal?.addEventListener('abort',abort,{once:true});
+ timer=setTimeout(()=>{controller.abort();const error=new Error('PROVIDER_TIMEOUT');error.code='PROVIDER_TIMEOUT';rejectBound(error)},timeoutMs);
+ try{return await Promise.race([Promise.resolve().then(()=>operation(controller.signal)),bound])}finally{clearTimeout(timer);parentSignal?.removeEventListener('abort',abort)}
 }
 const platforms=new Set(['instagram','facebook','youtube','tiktok','threads','x','pinterest','linkedin','reddit']);
 export class EncryptedSocialStore {
@@ -38,7 +42,7 @@ export class EncryptedSocialStore {
 }
 export class SocialAutomation {
  constructor({store,adapters={},now=()=>Date.now(),providerTimeoutMs=20000}){if(!Number.isInteger(providerTimeoutMs)||providerTimeoutMs<1||providerTimeoutMs>120000)throw Error('INVALID_PROVIDER_TIMEOUT');this.store=store;this.adapters=adapters;this.now=now;this.running=null;this.providerTimeoutMs=providerTimeoutMs;}
- async connect(platform,grant){if(!platforms.has(platform)||!grant||typeof grant.access_token!=='string'||!grant.access_token||typeof grant.account_id!=='string'||!grant.account_id||!Array.isArray(grant.scopes)||!grant.scopes.every(x=>typeof x==='string')||!Number.isFinite(grant.expires_at)||grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');if(!this.adapters[platform]?.verify)throw Error('PROVIDER_ADAPTER_REQUIRED');const proof=await providerCall(signal=>this.adapters[platform].verify({...grant},{signal}),this.providerTimeoutMs);if(proof.account_id!==grant.account_id||proof.verified!==true)throw Error('ACCOUNT_VERIFICATION_FAILED');await this.store.update(d=>{d.connections[platform]={...grant,verified_at:this.now(),status:'connected'};});}
+ async connect(platform,grant,{signal:connectionSignal}={}){if(!platforms.has(platform)||!grant||typeof grant.access_token!=='string'||!grant.access_token||typeof grant.account_id!=='string'||!grant.account_id||!Array.isArray(grant.scopes)||!grant.scopes.every(x=>typeof x==='string')||!Number.isFinite(grant.expires_at)||grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');if(!this.adapters[platform]?.verify)throw Error('PROVIDER_ADAPTER_REQUIRED');const proof=await providerCall(signal=>this.adapters[platform].verify({...grant},{signal}),this.providerTimeoutMs,connectionSignal);if(proof.account_id!==grant.account_id||proof.verified!==true)throw Error('ACCOUNT_VERIFICATION_FAILED');await this.store.update(d=>{if(connectionSignal?.aborted)throw Error('AUTHORIZATION_CANCELLED');if(grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');d.connections[platform]={...grant,verified_at:this.now(),status:'connected'};});}
  async enqueue({id,platform,operation,payload={}}){if(!platforms.has(platform)||!['read_profile','read_media','read_analytics'].includes(operation))throw Error('EXTERNAL_WRITE_DISABLED');if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('INVALID_JOB_ID');const digest=crypto.createHash('sha256').update(JSON.stringify({platform,operation,payload})).digest('hex');return this.store.update(d=>{const old=d.jobs.find(j=>j.id===id);if(old){if(old.digest!==digest)throw Error('IDEMPOTENCY_CONFLICT');return {id,status:old.status,created:false}}if(d.jobs.length>=1000)throw Error('QUEUE_CAPACITY_REACHED');d.jobs.push({id,platform,operation,payload,digest,account_id:d.connections[platform]?.account_id||null,status:'queued',attempts:0,due_at:this.now()});return {id,status:'queued',created:true}});}
  tick(){if(this.running)return this.running;this.running=this.run().finally(()=>{this.running=null});return this.running;}
  async run(){return this.store.update(async d=>{for(const job of d.jobs.filter(j=>['queued','retry'].includes(j.status)&&j.due_at<=this.now()).slice(0,10)){const connection=d.connections[job.platform],adapter=this.adapters[job.platform];if(!connection||!adapter){job.status='blocked';job.reason='AUTHORIZATION_OR_ADAPTER_REQUIRED';continue}if(adapter.blocked_reason){job.status='blocked';job.reason=adapter.blocked_reason;continue}if(job.account_id!==connection.account_id){job.status='blocked';job.reason='ACCOUNT_CHANGED';continue}if(connection.status==='reauthorization_required'){job.status='blocked';job.reason='REAUTHORIZE';continue}

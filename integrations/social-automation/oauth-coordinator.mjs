@@ -13,7 +13,7 @@ export class SocialOAuthCoordinator {
   const challenge=crypto.createHash('sha256').update(verifier).digest('base64url');
   const url=await provider.authorizationUrl({state,challenge});
   if(new URL(url).protocol!=='https:')throw Error('INVALID_AUTHORIZATION_URL');
-  await this.store.update(d=>{d.oauth_pending??={};for(const [k,v] of Object.entries(d.oauth_pending))if(v.expires_at<=this.now())delete d.oauth_pending[k];if(Object.keys(d.oauth_pending).length>=20)throw Error('OAUTH_CAPACITY');d.oauth_pending[hash(state)]={owner,platform,verifier,expires_at:this.now()+600000};});
+  await this.store.update(d=>{this.assertActive();d.oauth_pending??={};for(const [k,v] of Object.entries(d.oauth_pending))if(v.expires_at<=this.now())delete d.oauth_pending[k];if(Object.keys(d.oauth_pending).length>=20)throw Error('OAUTH_CAPACITY');d.oauth_pending[hash(state)]={owner,platform,verifier,expires_at:this.now()+600000};});
   return {authorization_url:url,expires_in_seconds:600};
  }
  async complete(platform,{state,code,error},context){
@@ -34,7 +34,7 @@ export class SocialOAuthCoordinator {
   catch(error){throw Error(['OAUTH_STOPPED','OAUTH_EXCHANGE_TIMEOUT'].includes(error?.message)?error.message:'OAUTH_EXCHANGE_FAILED');}
   finally{clearTimeout(timer);this.shutdownSignal?.removeEventListener('abort',abort);}
   this.assertActive();
-  await this.runtime.connect(platform,grant);
+  await this.runtime.connect(platform,grant,{signal:this.shutdownSignal});
   return {platform,status:'connected',publication_enabled:false};
  }
 }

@@ -33,6 +33,18 @@ jobs:
         with: {python-version: '3.12'}
       - name: Run wiring unit tests
         run: python -m unittest -v tests/test_system_wiring.py tests/test_creative_blueprint.py tests/test_free_review_guards.py tests/test_free_voice_policy.py tests/test_reference_entrypoints.py tests/test_reference_evidence.py tests/test_reference_parity_evidence.py tests/test_reference_intake_status.py tests/test_reference_activation.py tests/test_v2_render_receipts.py tests/test_autonomous_completion_scheduler.py
+      - name: Measure line-art structure without granting approval
+        run: |
+          python -m pip install --disable-pip-version-check numpy opencv-python-headless
+          python -m unittest -v tests.test_style_structure_diagnostic
+          mkdir -p /tmp/structure-diagnostic
+          python scripts/style_structure_diagnostic.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 > /tmp/structure-diagnostic/measurement.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: experimental-structure-diagnostic-not-approval
+          path: /tmp/structure-diagnostic/
+          retention-days: 7
       - name: Audit complete production graph
         id: audit
         if: always()

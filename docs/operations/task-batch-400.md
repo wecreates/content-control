@@ -43,3 +43,16 @@ Fresh camera render run 38256725387 produced candidate cfbc2e893d3e2bef69e8307cf
 2026-10-12 repair validation: 66 social/production Node tests, 17 layout tests and 10 Python parity/receipt tests passed locally. No live social grant, durable storage or full audiovisual approval is claimed.
 
 Production diagnosis for candidate cfbc2e893d3e2bef69e8307cf13bd7f27330b29cc803510d05ab1666f7a68786: ten sampled reference/candidate frames have mean white fractions 0.01801/0.96846. The binary white cutoff accounts for 0.33266 of total distance 0.36278. Reference paper is near-white/beige; requested production background is pure white. These pixel statistics do not measure competitive creative quality. Historical failure remains intact; changing to a structural style metric requires independent calibration against good and bad examples, not a threshold chosen to pass this candidate. Sampling is not full audiovisual review.
+
+## Additional 300-task request — 2026-10-12 Pacific
+
+Status: incomplete. Four substantive outcomes implemented in this pass; 296 requested outcomes are not claimed complete. This audit does not create another production queue.
+
+| ID | Outcome | Evidence |
+| --- | --- | --- |
+| N300-001 | Cancelled authorization cannot persist a late identity-verification result. | Runtime cancellation regression and OAuth signal propagation. |
+| N300-002 | A grant that expires during verification cannot be saved as connected. | Expiry-during-verification regression. |
+| N300-003 | Worker health distinguishes blocked, retrying, pending, idle and completed cycles, while retaining historical failures after recovery. | Worker lifecycle regressions; 89 social/production Node tests pass locally. |
+| N300-004 | Background-normalized line-art diagnostic is measured in the existing wiring audit and retained as an explicitly uncalibrated artifact. | Five fixtures cover near-white paper, geometry differences, blank/dark inputs and resolution; no acceptance effect. |
+
+Latest candidate 5cc727aa7357cb7fe4baf142e995e6835f1c1a15cc9ef52fb58182c64f85b988: ten sampled frames have mean normalized mask IoU 0.04876 and reference/candidate foreground coverage 0.08535/0.03627. Different story layouts prevent treating this as competitive approval or failure. Full audiovisual review, live account authorization and durable private storage remain unverified. Publication stays disabled.

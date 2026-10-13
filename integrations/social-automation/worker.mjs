@@ -36,7 +36,30 @@ export class SocialReadWorker {
         }
       }
       const result = await this.runtime.tick();
-      this.last = {status: capacityBlocked ? 'CYCLE_BLOCKED' : 'CYCLE_COMPLETED', last_completed_at: this.now(), counts: result.counts, ...(capacityBlocked ? {reason:'QUEUE_CAPACITY_REACHED'} : {})};
+      const current = await this.runtime.store.read();
+      // Queue counts include history. Health uses outstanding work plus the latest
+      // result for each current account/operation, so recovery clears old failures.
+      const latest = new Map();
+      for (const job of current.jobs) {
+        const grant = current.connections[job.platform];
+        if (grant && job.account_id !== grant.account_id) continue;
+        latest.set(`${job.platform}:${job.operation}`, job);
+      }
+      const currentCounts = {};
+      for (const job of latest.values()) currentCounts[job.status] = (currentCounts[job.status] || 0) + 1;
+      const pending = current.jobs.filter(j => ['queued','retry'].includes(j.status));
+      const connectionBlocked = Object.entries(current.connections).some(([platform, grant]) => {
+        const adapter = this.runtime.adapters[platform];
+        return grant.status !== 'connected' || !Number.isFinite(grant.expires_at) ||
+          (grant.expires_at <= this.now() && typeof adapter?.refresh !== 'function') ||
+          !adapter || adapter.blocked_reason ||
+          (typeof adapter.read_media !== 'function' && typeof adapter.read_profile !== 'function');
+      });
+      const blocked = capacityBlocked || connectionBlocked || currentCounts.blocked > 0;
+      const retry = pending.some(j => j.status === 'retry');
+      const status = blocked ? 'CYCLE_BLOCKED' : retry ? 'CYCLE_RETRY_PENDING' : pending.length ? 'CYCLE_WORK_PENDING' : latest.size ? 'CYCLE_COMPLETED' : 'CYCLE_IDLE';
+      const reason = capacityBlocked ? 'QUEUE_CAPACITY_REACHED' : connectionBlocked ? 'CONNECTION_UNAVAILABLE' : currentCounts.blocked > 0 ? 'JOBS_BLOCKED' : retry ? 'PROVIDER_RETRY_PENDING' : pending.length ? 'JOBS_PENDING' : null;
+      this.last = {status, last_completed_at: this.now(), counts: result.counts, counts_scope:'all_retained_jobs', current_counts:currentCounts, pending_jobs:pending.length, ...(reason ? {reason} : {})};
     } catch {this.last = {status: 'CYCLE_FAILED', last_completed_at: this.last.last_completed_at, reason: 'PRIVATE_WORKER_UNAVAILABLE'};}
     return this.status();
   }
