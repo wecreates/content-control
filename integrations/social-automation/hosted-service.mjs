@@ -34,9 +34,11 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     stop: async () => {shutdown.abort(); if (worker) await worker.stop(); if(store?.close)await store.close();},
   };
   const bootstrapRequested = env.SOCIAL_STORAGE_INITIALIZE === 'true';
+  const checkRequested = !bootstrapRequested && env.SOCIAL_STORAGE_CHECK_ENABLED === 'true';
+  const storageRequested = bootstrapRequested || checkRequested;
   const runtimeBootId = crypto.randomUUID();
   status.storage_bootstrap = {status:'NOT_REQUESTED',read_verified:false,durable_storage_verified:false};
-  if (!bootstrapRequested && env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
+  if (!storageRequested && env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
   try {
     if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error('PUBLICATION_POLICY_BLOCKED');
     activationStage = 'storage_configuration';
@@ -48,7 +50,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
         await initializeVault(store);
       }
     } else {
-    if (bootstrapRequested) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
+    if (storageRequested) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
     if (env.SOCIAL_STORAGE_MODE !== 'private_durable') throw Error();
     if (!env.SOCIAL_VAULT_FILE || !path.isAbsolute(env.SOCIAL_VAULT_FILE)) throw Error();
     const file = await fs.realpath(env.SOCIAL_VAULT_FILE);
@@ -63,23 +65,24 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     }
     activationStage = 'storage_read';
     const saved = await store.read();
-    if(bootstrapRequested) {
+    if(storageRequested) {
       activationStage = 'storage_probe';
       const validProbe = probe => probe && typeof probe === 'object' &&
         typeof probe.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(probe.id) &&
         typeof probe.created_at === 'string' && Number.isFinite(Date.parse(probe.created_at));
-      const expected = await store.update(data => {
+      const expected = bootstrapRequested ? await store.update(data => {
         if (!Object.hasOwn(data,'storage_probe')) data.storage_probe = {id:crypto.randomUUID(),created_at:new Date().toISOString()};
         if (!validProbe(data.storage_probe)) throw Error('PRIVATE_STORE_INTEGRITY_FAILED');
         return {id:data.storage_probe.id,created_at:data.storage_probe.created_at};
-      });
-      const observed = (await store.read()).storage_probe;
+      }) : saved.storage_probe;
+      if (!validProbe(expected)) throw Error('PRIVATE_STORE_INTEGRITY_FAILED');
+      const observed = bootstrapRequested ? (await store.read()).storage_probe : saved.storage_probe;
       if (!validProbe(observed) || observed.id !== expected.id || observed.created_at !== expected.created_at) throw Error('PRIVATE_STORE_INTEGRITY_FAILED');
-      status.storage_bootstrap = {status:'INITIALIZED_READ_VERIFIED',read_verified:true,write_read_verified:true,probe_id:expected.id,runtime_boot_id:runtimeBootId,durable_storage_verified:false,scope:'Encrypted probe write and separate read verified; restart persistence requires independent comparison'};
+      status.storage_bootstrap = {status:bootstrapRequested?'INITIALIZED_READ_VERIFIED':'EXISTING_READ_VERIFIED',read_verified:true,write_read_verified:bootstrapRequested,probe_id:expected.id,runtime_boot_id:runtimeBootId,durable_storage_verified:false,scope:bootstrapRequested?'Encrypted probe write and separate read verified; restart persistence requires independent comparison':'Existing encrypted vault and probe read only; restart persistence requires independent comparison'};
       status.configured_storage_mode = env.SOCIAL_STORAGE_MODE;
       if(env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') {
         await store.close();store=undefined;
-        status.reason = 'Storage initialization and read verified; OAuth and worker remain disabled.';
+        status.reason = bootstrapRequested ? 'Storage initialization and read verified; OAuth and worker remain disabled.' : 'Existing storage read verified; OAuth and worker remain disabled.';
         return service;
       }
     }
@@ -112,7 +115,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   } catch (error) {
     const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'PRIVATE_STORE_INITIALIZATION_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
     const reasonCode = safeCodes.has(error?.message) ? error.message : 'ACTIVATION_CONFIGURATION_INVALID';
-    if(bootstrapRequested && !status.storage_bootstrap.read_verified)status.storage_bootstrap = {status:'BLOCKED',read_verified:false,durable_storage_verified:false,reason_code:reasonCode};
+    if(storageRequested && !status.storage_bootstrap.read_verified)status.storage_bootstrap = {status:'BLOCKED',read_verified:false,durable_storage_verified:false,reason_code:reasonCode};
     oauth = undefined;
     delete service.ownerAuth;
     if(store?.close)await store.close().catch(()=>{});

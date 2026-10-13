@@ -25,3 +25,18 @@ test('invalid existing probe is never overwritten or reflected in status',async(
 test('probe must survive separate read before verification is reported',async()=>{
  const f=fixture();f.store.update=async fn=>fn(structuredClone(f.state));const service=await initializeSocialService({env,...f});assert.equal(service.status().storage_bootstrap.status,'BLOCKED');assert.equal(service.status().storage_bootstrap.read_verified,false);
 });
+
+test('read-only monitoring preserves existing probe across boots without any initialization or writes',async()=>{
+ const f=fixture();f.state.storage_probe={id:'12345678-1234-4234-8234-123456789abc',created_at:'2026-10-13T00:00:00.000Z'};const before=structuredClone(f.state),boots=new Set();
+ f.initializeVault=async()=>assert.fail('unexpected initialization');f.store.update=async()=>assert.fail('unexpected update');
+ const settings={...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true'};
+ for(let i=0;i<2;i++){const service=await initializeSocialService({env:settings,...f});const status=service.status();assert.equal(status.storage_bootstrap.status,'EXISTING_READ_VERIFIED');assert.equal(status.storage_bootstrap.probe_id,before.storage_probe.id);boots.add(status.storage_bootstrap.runtime_boot_id);assert.equal(status.storage_bootstrap.write_read_verified,false);assert.equal(status.durable_storage_verified,false);assert.equal(status.oauth_routes_enabled,false);assert.equal(status.worker_running,false);}
+ assert.deepEqual(f.calls,['create','read','close','create','read','close']);assert.deepEqual(f.state,before);assert.equal(boots.size,2);
+});
+test('read-only monitoring blocks absent or malformed probe without repairing data',async()=>{
+ for(const probe of [undefined,null,{id:'PRIVATE_INVALID_PROBE',created_at:'invalid'}]){const f=fixture();if(probe!==undefined)f.state.storage_probe=probe;const before=structuredClone(f.state);f.initializeVault=async()=>assert.fail('unexpected initialization');f.store.update=async()=>assert.fail('unexpected update');const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true'},...f});assert.equal(service.status().storage_bootstrap.status,'BLOCKED');assert.deepEqual(f.state,before);assert.deepEqual(f.calls,['create','read','close']);assert.ok(!JSON.stringify(service.status()).includes('PRIVATE_INVALID_PROBE'));}
+});
+test('explicit initialization takes precedence over check flag; checks still enforce publication lock',async()=>{
+ const f=fixture();const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_CHECK_ENABLED:'true'},...f});assert.equal(service.status().storage_bootstrap.status,'INITIALIZED_READ_VERIFIED');assert.ok(f.calls.includes('initialize'));assert.ok(f.calls.includes('update'));
+ const blocked=fixture();const result=await initializeSocialService({env:{...env,SOCIAL_STORAGE_INITIALIZE:'false',SOCIAL_STORAGE_CHECK_ENABLED:'true',PUBLICATION_ENABLED:'true'},...blocked});assert.deepEqual(blocked.calls,[]);assert.equal(result.status().reason_code,'PUBLICATION_POLICY_BLOCKED');
+});
