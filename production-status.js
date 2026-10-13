@@ -33,6 +33,20 @@ export function createProductionStatusRouter({root=process.cwd()}={}) {
   }catch{res.status(503).json({status:'UNAVAILABLE',...locked,error:'REVALIDATION_STALE_OR_UNAVAILABLE'});}
  });
 
+ router.get('/execution/:format',async(req,res)=>{
+  res.setHeader('Cache-Control','no-store');
+  if(!['short','long'].includes(req.params.format))return res.status(404).json({error:'UNKNOWN_FORMAT'});
+  try {
+   const report=JSON.parse(await fs.readFile(path.join(root,`state/production-execution/${req.params.format}.json`),'utf8'));
+   const when=Date.parse(report.recorded_at);
+   if(report.schema_version!==1||report.format!==req.params.format||!/^[a-f0-9]{40}$/.test(report.source_commit)||!Number.isSafeInteger(report.run_id)||report.run_id<=0||!Number.isSafeInteger(report.run_attempt)||report.run_attempt<=0||report.publication_enabled!==false||report.production_approved!==false||!Number.isFinite(when)||when>Date.now()+60000||!['PASS','BLOCKED'].includes(report.technical_status)||report.candidate_sha256!==null&&!/^[a-f0-9]{64}$/.test(report.candidate_sha256))throw Error('invalid');
+   const checks=Object.fromEntries(['technical_video','openmontage_probe'].map(key=>[key,{status:report.checks?.[key]?.status==='PASS'?'PASS':'BLOCKED',hash_bound:report.checks?.[key]?.hash_bound===true}]));
+   const stale=Date.now()-when>86400000;
+   const technical=report.technical_status==='PASS'&&report.workflow_outcome==='success'&&report.candidate_generated===true&&!!report.candidate_sha256&&Object.values(checks).every(check=>check.status==='PASS'&&check.hash_bound);
+   const build=Object.fromEntries(['schema_version','format','run_id','run_attempt','recorded_at','source_commit','workflow_outcome','candidate_sha256','candidate_generated'].map(key=>[key,report[key]]));
+   res.json({...build,checks,technical_status:technical?'PASS':'BLOCKED',status:technical&&!stale?'REVIEW_PENDING':'BLOCKED',creative_review:'PENDING',audio_listening_review:'PENDING',publication_enabled:false,production_approved:false,watch_url:null,media_url:null,report_age_seconds:Math.max(0,Math.floor((Date.now()-when)/1000)),report_stale:stale,status_scope:'Last recorded execution; not a live job poll or playback approval'});
+  } catch {res.status(503).json({status:'UNAVAILABLE',publication_enabled:false,production_approved:false,watch_url:null,media_url:null,error:'EXECUTION_REPORT_UNAVAILABLE'});}
+ });
  router.get('/v2',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   try {

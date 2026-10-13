@@ -51,3 +51,20 @@ test('stale candidate, review, run and forged approval fail closed',async()=>{
  (files,report)=>{report.visual_review.rubric.staging.observation='forged';files['state/v2-revalidation.json']=JSON.stringify(report);}
  ])await revalidationFixture(mutate,async url=>{const response=await fetch(url),data=await response.json();assert.equal(response.status,503);assert.equal(data.watch_url,null);assert.equal(data.rubric,undefined);assert.equal(data.production_approved,false);});
 });
+
+async function executionFixture(report,fn){
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'execution-status-'));await fs.mkdir(path.join(root,'state/production-execution'),{recursive:true});
+ if(report)await fs.writeFile(path.join(root,'state/production-execution/long.json'),JSON.stringify(report));
+ const app=express();app.use(createProductionStatusRouter({root}));const s=await new Promise(resolve=>{const server=app.listen(0,'127.0.0.1',()=>resolve(server));});
+ try{await fn(`http://127.0.0.1:${s.address().port}/execution/long`)}finally{await new Promise(r=>s.close(r));await fs.rm(root,{recursive:true,force:true});}
+}
+const executionBase={...base,format:'long',source_commit:'b'.repeat(40),run_attempt:1,candidate_sha256:'a'.repeat(64),candidate_generated:true,workflow_outcome:'success',technical_status:'PASS',checks:{technical_video:{status:'PASS',hash_bound:true},openmontage_probe:{status:'PASS',hash_bound:true}}};
+test('format-specific technical evidence stays pending review with no playback',()=>executionFixture({...executionBase,production_ready:true,watch_url:'https://bad',creative_review:'APPROVED'},async url=>{
+ const r=await fetch(url);const d=await r.json();assert.equal(r.status,200);assert.equal(d.technical_status,'PASS');assert.equal(d.status,'REVIEW_PENDING');assert.equal(d.creative_review,'PENDING');assert.equal(d.audio_listening_review,'PENDING');assert.equal(d.watch_url,null);assert.equal(d.media_url,null);assert.equal(d.production_approved,false);assert.equal(Object.hasOwn(d,'production_ready'),false);
+}));
+test('stale or failed format summaries cannot claim current success',async()=>{
+ for(const change of [{recorded_at:'2020-01-01T00:00:00Z'},{workflow_outcome:'failure'},{checks:{}}])await executionFixture({...executionBase,...change},async url=>{assert.equal((await(await fetch(url)).json()).status,'BLOCKED')});
+});
+test('missing or invalid execution summaries fail closed',async()=>{
+ for(const report of [null,{...executionBase,publication_enabled:true},{...executionBase,format:'short'},{...executionBase,candidate_sha256:'bad'}])await executionFixture(report,async url=>{assert.equal((await fetch(url)).status,503)});
+});
