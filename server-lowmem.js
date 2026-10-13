@@ -2,7 +2,7 @@ import express from "express";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import {spawn} from "node:child_process";
+import {createValidationProcess} from "./validation-process.js";
 import {infraStatus} from "./monitor-infra.js";
 import {createMonitorRouter} from "./monitor-api.js";
 import {loadMonitorStore,checkMonitorStore} from "./monitor-runtime.js";
@@ -38,16 +38,9 @@ const v2Output=path.resolve("public-review/v2-boss-fight.mp4");
 const v2HealthPath=path.resolve("state/v2-health.json");
 fs.mkdirSync(path.dirname(output),{recursive:true});
 
-const renderState={status:"booting",logs:[]};
-let v2TickRunning=false;
-function runV2Tick(){
-  if(v2TickRunning)return;
-  v2TickRunning=true;renderState.status="v2-validation-running";
-  const p=spawn("python",["scripts/v2_runtime_tick.py"],{env:{...process.env,PUBLICATION_ENABLED:"false"}});
-  p.stdout.on("data",d=>renderState.logs.push(String(d).trim()));
-  p.stderr.on("data",d=>renderState.logs.push(String(d).trim()));
-  p.on("close",code=>{renderState.status=code===0?"v2-validation-complete":"v2-validation-error";v2TickRunning=false;});
-}
+const validationProcess=createValidationProcess();
+const renderState=validationProcess.state;
+const runV2Tick=()=>validationProcess.run();
 function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
 function readHealth(){return readJson(healthPath);}
 function readCaptionHealth(){return readJson(captionHealthPath);}
@@ -340,11 +333,11 @@ app.get("/episode3/watch",(req,res)=>{
   </script></body></html>`);
 });
 app.post("/v2/run",(req,res)=>{
-  if(v2TickRunning)return res.status(202).json({ok:true,status:"already-running",publication:false});
+  if(validationProcess.running)return res.status(202).json({ok:true,status:"already-running",publication:false});
   runV2Tick();
   return res.status(202).json({ok:true,status:"started",publication:false});
 });
-app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:v2TickRunning,logs:renderState.logs.slice(-40),publication:false});});
+app.get("/v2/runtime",(req,res)=>{res.setHeader("Cache-Control","no-store");res.json({status:renderState.status,running:validationProcess.running,logs:renderState.logs.slice(-40),publication:false});});
 function v2Draft(){
  const health=readJson(path.resolve("state/v2-draft.json"));
  const output=path.resolve("public-review/v2-draft.mp4"),actual=fileHash(output);
