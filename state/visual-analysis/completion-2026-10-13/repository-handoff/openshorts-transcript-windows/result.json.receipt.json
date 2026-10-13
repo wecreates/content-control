@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tool": "openshorts",
+  "operation": "transcript-windows",
+  "revision": "0240abeccc0e18463f6fd3f881767c4bc33ae3a6",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:10:36Z",
+  "output_sha256": "7bc2d5770587a95c83d26fb8a1b48ab90258204dff5b8aad8361a04b2084d472",
+  "media": null,
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

@@ -1,0 +1,12 @@
+{
+  "run_id": 38474835778,
+  "job_id": 115564685848,
+  "conclusion": "success",
+  "artifact_id": 11854090952,
+  "artifact_sha256": "de2b7fabc675f07d609a1c7322febee9fa2e551527542c03f74393ca8f1ab05e",
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "all_eight_output_hashes_verified": true,
+  "verified_by": "visual_gate_agent",
+  "production_approved": false,
+  "publication_enabled": false
+}

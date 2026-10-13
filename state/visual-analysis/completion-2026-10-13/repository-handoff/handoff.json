@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "build_run_id": 38473857671,
+  "build_source_commit": "e9fb2d8711f0b3a3aca5787ebcf06e367382aadd",
+  "money_factory_revision": "d8a7038a3fd6c7ac5e51dd66400c9e0f081de3c3",
+  "source_ccsd_sha256": "bd42150cd7b2574a9a3092f829c2e1635f2de57580aa27c7e4ba181aef1d1985",
+  "source_metadata_sha256": "6055681473838d367fd573e9b4e759c61f83e34e709640a0779eddc698e4c551",
+  "technical_receipt_sha256": "5dfb8a34a62e4f1ad12ea0eeb660e6bb74d01d6a2aa997b2302af4692dc96893",
+  "source_transcription_sha256": "8653f434f6281dd8480cec509b6d0bd9d8f528587890eaf1ca126af4fb1b4ae0",
+  "source_captions_sha256": "fed34f6ed1c8f227ee1ee5476fca255f79a658f88c93899ade1983f97e957ed8",
+  "teaser_end_seconds": 10.65,
+  "inputs": {
+    "audit-input.json": "f96fb39082ca934ad0f4ff1f49b64db0f3fd3d16f2961560a2d31e39110b5631",
+    "brief-input.json": "2534288611cc7e5a4db68fac0a1427665e9d908154fe8ad8b069741bb12d8910",
+    "transcript-input.json": "b684fd984282dbaa981ca0a20bfb89110d2018c9765c8ae997491981d968d20c",
+    "teaser.srt": "1fc33ac69c1e2c402506ea7e8a5f5048eef4544430bc92e3dc704c6309a47a48",
+    "metadata-input.html": "c4cfc3373dea37ab427b3be3f5cdba353665a9435d553eca5516402b216969f0"
+  },
+  "production_approved": false,
+  "publication_enabled": false,
+  "status": "OPERATIONS_VERIFIED",
+  "operations": [
+    {
+      "tool": "youtube-clipper-skill",
+      "operation": "clip",
+      "input_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+      "output_sha256": "07f0f8eba0bf04d610d22f4cb4b3872b60cea9319246e20e9294ede145d2a05b",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "youtube-clipper-skill",
+        "operation": "clip",
+        "revision": "f31f077ee0905c95a510a6f34bbd0c3c85b15129",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:20Z",
+        "output_sha256": "07f0f8eba0bf04d610d22f4cb4b3872b60cea9319246e20e9294ede145d2a05b",
+        "media": {
+          "duration": 10.75,
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 720,
+              "height": 1280
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac"
+            }
+          ]
+        },
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      }
+    },
+    {
+      "tool": "youtube-clipper-skill",
+      "operation": "captions",
+      "input_sha256": "07f0f8eba0bf04d610d22f4cb4b3872b60cea9319246e20e9294ede145d2a05b",
+      "output_sha256": "751da5681cd5cee92d48f87832dc2d239f8b98eaa4a0bf2c2eba9772e08a0c28",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "youtube-clipper-skill",
+        "operation": "captions",
+        "revision": "f31f077ee0905c95a510a6f34bbd0c3c85b15129",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:22Z",
+        "output_sha256": "751da5681cd5cee92d48f87832dc2d239f8b98eaa4a0bf2c2eba9772e08a0c28",
+        "media": {
+          "duration": 10.791667,
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 720,
+              "height": 1280
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac"
+            }
+          ]
+        },
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      },
+      "subtitle_sha256": "1fc33ac69c1e2c402506ea7e8a5f5048eef4544430bc92e3dc704c6309a47a48"
+    },
+    {
+      "tool": "openshorts",
+      "operation": "vertical",
+      "input_sha256": "07f0f8eba0bf04d610d22f4cb4b3872b60cea9319246e20e9294ede145d2a05b",
+      "output_sha256": "bfb4b88e9e7576f41e8fb4d9669c91413c798d24c5ca3dd86c40e238d29f1704",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "openshorts",
+        "operation": "vertical",
+        "revision": "0240abeccc0e18463f6fd3f881767c4bc33ae3a6",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:36Z",
+        "output_sha256": "bfb4b88e9e7576f41e8fb4d9669c91413c798d24c5ca3dd86c40e238d29f1704",
+        "media": {
+          "duration": 10.791667,
+          "streams": [
+            {
+              "codec_type": "video",
+              "codec_name": "h264",
+              "width": 1080,
+              "height": 1920
+            },
+            {
+              "codec_type": "audio",
+              "codec_name": "aac"
+            }
+          ]
+        },
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      }
+    },
+    {
+      "tool": "openshorts",
+      "operation": "transcript-windows",
+      "input_sha256": "b684fd984282dbaa981ca0a20bfb89110d2018c9765c8ae997491981d968d20c",
+      "output_sha256": "7bc2d5770587a95c83d26fb8a1b48ab90258204dff5b8aad8361a04b2084d472",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "openshorts",
+        "operation": "transcript-windows",
+        "revision": "0240abeccc0e18463f6fd3f881767c4bc33ae3a6",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:36Z",
+        "output_sha256": "7bc2d5770587a95c83d26fb8a1b48ab90258204dff5b8aad8361a04b2084d472",
+        "media": null,
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      }
+    },
+    {
+      "tool": "claude-seo",
+      "operation": "parse-html",
+      "input_sha256": "c4cfc3373dea37ab427b3be3f5cdba353665a9435d553eca5516402b216969f0",
+      "output_sha256": "3ecdca85a210d65494bd085952f3f16544d4964a11dc784780638dad8d1dbce3",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "claude-seo",
+        "operation": "parse-html",
+        "revision": "4b99de2f7de7e7d5247042e5fb5b4ea9368ef734",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:36Z",
+        "output_sha256": "3ecdca85a210d65494bd085952f3f16544d4964a11dc784780638dad8d1dbce3",
+        "media": null,
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      }
+    },
+    {
+      "tool": "youtube-automation-agent",
+      "operation": "audit",
+      "input_sha256": "f96fb39082ca934ad0f4ff1f49b64db0f3fd3d16f2961560a2d31e39110b5631",
+      "output_sha256": "8d8ba3193c74dcd0c4cabe69bf768b8bd37c6915c1048f20dc9882a6318edef5",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "youtube-automation-agent",
+        "operation": "audit",
+        "revision": "e26792ae00dc1ec2434faf32632896609396dfad",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:36Z",
+        "output_sha256": "8d8ba3193c74dcd0c4cabe69bf768b8bd37c6915c1048f20dc9882a6318edef5",
+        "media": null,
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      }
+    },
+    {
+      "tool": "toonflow-app",
+      "operation": "import-brief",
+      "input_sha256": "2534288611cc7e5a4db68fac0a1427665e9d908154fe8ad8b069741bb12d8910",
+      "output_sha256": "65df8bd26c6a94c28a8eb9a051306312484d28423fb3be176ca11e515664b568",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "toonflow-app",
+        "operation": "import-brief",
+        "revision": "2c7fb257affb65777110fe4c6e60cd3c09187d9b",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:37Z",
+        "output_sha256": "65df8bd26c6a94c28a8eb9a051306312484d28423fb3be176ca11e515664b568",
+        "media": null,
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      },
+      "brief_readback_sha256": "f547cee0b1e920b2d7d98a341f70f2ad8447ddb7ca651a9fd9b877d353288c6f"
+    },
+    {
+      "tool": "ruflo",
+      "operation": "remember-project",
+      "input_sha256": null,
+      "output_sha256": "be990abe5619e340ffc4bdcb337f3a839e98a71d4a08e7a4c72e1bdf7244825d",
+      "receipt": {
+        "schema_version": 1,
+        "tool": "ruflo",
+        "operation": "remember-project",
+        "revision": "3209ba266750908ea88fb0bc69672e106478bbef",
+        "status": "PASS",
+        "verified_at": "2026-10-13T22:10:40Z",
+        "output_sha256": "be990abe5619e340ffc4bdcb337f3a839e98a71d4a08e7a4c72e1bdf7244825d",
+        "media": null,
+        "publication_enabled": false,
+        "scope": "This operation only; not complete product or hosted readiness"
+      },
+      "memory_scope": "Rehydrated canonical Money Factory PROJECT_MEMORY.md; no claim of persistent SQLite or current-video memory"
+    }
+  ],
+  "scope": "Exact public candidate CPU repurposing derivatives, observed transcript windows, metadata HTML parsing, audit and brief rehydration; derivatives are not final approved edits, stream-copy teaser bounds may vary by keyframe, and audiovisual quality/publishing approval remain separate"
+}

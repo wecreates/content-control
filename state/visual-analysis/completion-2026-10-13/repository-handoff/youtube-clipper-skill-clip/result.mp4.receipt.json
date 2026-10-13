@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "tool": "youtube-clipper-skill",
+  "operation": "clip",
+  "revision": "f31f077ee0905c95a510a6f34bbd0c3c85b15129",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:10:20Z",
+  "output_sha256": "07f0f8eba0bf04d610d22f4cb4b3872b60cea9319246e20e9294ede145d2a05b",
+  "media": {
+    "duration": 10.75,
+    "streams": [
+      {
+        "codec_type": "video",
+        "codec_name": "h264",
+        "width": 720,
+        "height": 1280
+      },
+      {
+        "codec_type": "audio",
+        "codec_name": "aac"
+      }
+    ]
+  },
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

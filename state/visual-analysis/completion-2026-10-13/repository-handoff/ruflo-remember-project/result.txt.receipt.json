@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "tool": "ruflo",
+  "operation": "remember-project",
+  "revision": "3209ba266750908ea88fb0bc69672e106478bbef",
+  "status": "PASS",
+  "verified_at": "2026-10-13T22:10:40Z",
+  "output_sha256": "be990abe5619e340ffc4bdcb337f3a839e98a71d4a08e7a4c72e1bdf7244825d",
+  "media": null,
+  "publication_enabled": false,
+  "scope": "This operation only; not complete product or hosted readiness"
+}

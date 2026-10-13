@@ -1,0 +1,134 @@
+{
+  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "production_approved": false,
+  "publication_enabled": false,
+  "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+  "schema_version": 1,
+  "status": "PASS",
+  "visual_review": {
+    "framewise_style_parity": true,
+    "method": "documented_sampled_frame_visual_review",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T22:03:56.325908+00:00",
+    "reviewed_frame_indices": [
+      0,
+      93,
+      186,
+      204,
+      280,
+      373,
+      466,
+      559,
+      653,
+      744,
+      745,
+      746,
+      768,
+      800,
+      839
+    ],
+    "reviewer": {
+      "id": "final_visual_review_agent",
+      "method": "direct_sampled_frame_inspection"
+    },
+    "rubric": {
+      "character_consistency": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          373,
+          466,
+          559,
+          653,
+          744,
+          745,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "character_consistency",
+        "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification.",
+        "status": "PASS"
+      },
+      "character_scale": {
+        "candidate_frames": [
+          186,
+          204,
+          280,
+          559,
+          653,
+          744,
+          800,
+          839
+        ],
+        "dimension": "character_scale",
+        "observation": "Paired characters and trap frames have readable facial features with enlarged framing; the finish actor uses the prior smaller scale to preserve essential prop visibility while retaining readable facial expressions and gestures at360px. All sampled subjects remain inside the canvas. Readable character performance meets the reference-informed benchmark without requiring identical compositions.",
+        "status": "PASS"
+      },
+      "phone_readability": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          280,
+          373,
+          466,
+          559,
+          653,
+          746,
+          839
+        ],
+        "dimension": "phone_readability",
+        "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review.",
+        "status": "PASS"
+      },
+      "staging": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          373,
+          466,
+          559,
+          653,
+          744,
+          745,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "staging",
+        "observation": "Arena platform, lounge counter/floor, checkpoint lanes and victory pedestal supply distinct scene contexts. Cape contact remains connected in paired samples. Direct full720-pixel inspection of finish frames744,745,768,800,839 verifies the corrected smaller finish actor clears the wallet lower edge and under-arc, and the entire sandwich is now visible. Finish caption800 has two lines and clears the wallet. No blocking prop occlusion or outer clipping was observed in these samples.",
+        "status": "PASS"
+      },
+      "typography": {
+        "candidate_frames": [
+          0,
+          186,
+          204,
+          559,
+          653,
+          744,
+          768,
+          800
+        ],
+        "dimension": "typography",
+        "observation": "Large bold captions are visually separate from props and legible in the sampled output. Frame 204 directly shows the key word perks in a high-contrast inverted rounded block, supplying emphasis beyond plain caption fragments. Different dialogue and intentional white background are not defects relative to the reference benchmark.",
+        "status": "PASS"
+      }
+    },
+    "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
+    "status": "PASS",
+    "unresolved_issues": []
+  },
+  "visual_review_sha256": "d0174839e5b639def50c68b9f5f1e5a0d0cc5f2bea91e60674c0c10683ce7f18"
+}
