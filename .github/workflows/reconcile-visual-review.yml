@@ -1,0 +1,69 @@
+name: Reconcile existing draft visual review
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'state/visual-analysis/frame-review.json'
+      - 'scripts/reconcile_visual_review.py'
+      - 'tests/test_reconcile_visual_review.py'
+      - '.github/workflows/reconcile-visual-review.yml'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: reconcile-visual-review
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install opencv-python-headless==5.0.0.93 numpy==2.3.5
+      - name: Test evidence binding and fail-closed reconciliation
+        run: python -m unittest tests.test_reconcile_visual_review tests.test_persist_v2_artifacts
+      - name: Identify the existing build without rerendering
+        id: build
+        run: |
+          python - <<'PY'
+          import json,os
+          r=json.load(open('state/v2-production-status.json'))
+          assert type(r['run_id']) is int and r['run_id']>0
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write(f"run_id={r['run_id']}\n")
+          PY
+      - name: Fetch original technical evidence from the recorded build
+        uses: actions/download-artifact@v4
+        with:
+          name: content-control-v2-acceptance
+          run-id: ${{ steps.build.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: /tmp/original-v2-build
+      - name: Reconcile exact candidate review
+        run: |
+          python scripts/reconcile_visual_review.py \
+            --video public-review/v2-draft.mp4 --references reference/frames \
+            --review state/visual-analysis/frame-review.json \
+            --report state/v2-production-status.json --draft state/v2-draft.json \
+            --technical /tmp/original-v2-build/receipts/render.json \
+            --run-id "$GITHUB_RUN_ID" --source-commit "$(git rev-parse HEAD)" \
+            --out-report state/v2-production-status.json \
+            --out-evidence state/visual-analysis/reconciled-review.json
+      - name: Persist only if original build and draft are still current
+        run: |
+          git config user.name content-control-review
+          git config user.email actions@users.noreply.github.com
+          python scripts/persist_v2_artifacts.py --kind review
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reconciled-visual-review
+          path: |
+            state/visual-analysis/reconciled-review.json
+            state/v2-production-status.json
+          retention-days: 30

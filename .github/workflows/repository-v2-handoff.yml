@@ -1,0 +1,79 @@
+name: Existing V2 to Money Factory handoff
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Content Control V2 Acceptance']
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ['scripts/repository_v2_handoff.py', 'tests/test_repository_v2_handoff.py', '.github/workflows/repository-v2-handoff.yml']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: repository-v2-handoff
+  cancel-in-progress: false
+jobs:
+  handoff:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      PUBLICATION_ENABLED: 'false'
+      PAID_GENERATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: wecreates/Money-factory
+          ref: d8a7038a3fd6c7ac5e51dd66400c9e0f081de3c3
+          submodules: true
+          path: money-factory-adapters
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test public data binding
+        run: python -m unittest tests.test_repository_v2_handoff
+      - name: Identify current existing build
+        id: build
+        run: |
+          python - <<'PY'
+          import json,os
+          r=json.load(open('state/v2-production-status.json'))
+          assert type(r['run_id']) is int and r['run_id']>0
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write(f"run_id={r['run_id']}\n")
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: content-control-v2-acceptance
+          run-id: ${{ steps.build.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: /tmp/v2-source-build
+      - name: Bind current video, original dialogue and source metadata
+        run: python scripts/repository_v2_handoff.py prepare --artifact /tmp/v2-source-build --out state/repository-v2-handoff
+      - name: Install existing free CPU adapters
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg build-essential python3-dev
+          for tool in youtube-automation-agent toonflow-app ruflo; do
+            python money-factory-adapters/integrations/setup.py "$tool" --runtime "$RUNNER_TEMP/repository-runtime"
+          done
+      - name: Execute actual audit, brief import and canonical memory through existing bridge
+        run: python scripts/repository_v2_handoff.py execute --money-factory money-factory-adapters --runtime "$RUNNER_TEMP/repository-runtime" --out state/repository-v2-handoff
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bound-v2-money-factory-handoff
+          path: |
+            state/repository-v2-handoff/handoff.json
+            state/repository-v2-handoff/*-input.json
+            state/repository-v2-handoff/*/result*
+          retention-days: 30

@@ -55,4 +55,15 @@ class PersistenceTests(unittest.TestCase):
   report['run_id']=8;path.write_text(json.dumps(report));self.assertEqual(module.persist(self.repo,'report')['status'],'SUPERSEDED')
   report['publication_enabled']=True;path.write_text(json.dumps(report))
   with self.assertRaisesRegex(ValueError,'publication-disabled'):module.persist(self.repo,'report')
+ def test_review_preserves_bound_build_and_cannot_replay_on_new_state(self):
+  path=self.repo/'state/v2-production-status.json';candidate=hashlib.sha256(b'old').hexdigest()
+  original={'run_id':1,'candidate_sha256':candidate,'production_approved':False,'publication_enabled':False}
+  path.write_text(json.dumps(original));self.assertEqual(module.persist(self.repo,'report')['status'],'SAVED')
+  receipt=self.repo/'state/visual-analysis/reconciled-review.json';receipt.parent.mkdir();receipt.write_text('{"status":"FAIL"}')
+  updated={**original,'checks':{'style_parity':{'status':'FAIL','receipt_sha256':hashlib.sha256(receipt.read_bytes()).hexdigest()}},
+           'review_reconciliation':{'source_report_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}}
+  path.write_text(json.dumps(updated));self.assertEqual(module.persist(self.repo,'review')['status'],'SAVED')
+  self.assertEqual(json.loads(self.remote_file('state/v2-production-status.json'))['checks']['style_parity']['status'],'FAIL')
+  self.assertEqual(self.remote_file('public-review/v2-draft.mp4'),b'old')
+  self.assertEqual(module.persist(self.repo,'review')['status'],'SUPERSEDED')
 if __name__=='__main__':unittest.main()

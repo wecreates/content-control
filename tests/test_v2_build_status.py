@@ -1,4 +1,4 @@
-import json,tempfile,unittest
+import json,tempfile,unittest,hashlib
 from pathlib import Path
 from scripts.v2_build_status import summarize,should_replace,RECEIPTS
 class BuildStatusTests(unittest.TestCase):
@@ -10,7 +10,7 @@ class BuildStatusTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp)
    for rel in RECEIPTS.values():
-    p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps({'status':'PASS','publication_enabled':False}))
+    p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps({'status':'PASS','publication_enabled':False,'candidate_sha256':hashlib.sha256(b'identity fixture').hexdigest()}))
    (root/'render').mkdir();(root/'render/v2-boss-fight.mp4').write_bytes(b'identity fixture')
    r=summarize(root,123,'a'*40,'success');self.assertEqual(r['status'],'REVIEW_REQUIRED');self.assertFalse(r['production_approved']);self.assertFalse(r['publication_enabled'])
    p=root/RECEIPTS['voices'];p.write_text(json.dumps({'status':'PASS','publication_enabled':True}));self.assertEqual(summarize(root,123,'a'*40,'success')['checks']['voices']['status'],'BLOCKED')

@@ -1,4 +1,5 @@
 import React from 'react';
+import {V2StageEnvironment} from './V2StageEnvironment.jsx';
 import {v2BattleBeat,v2CapeMotion} from './StudioLayout.mjs';
 const K='#111',W='#fff',clamp=v=>Math.max(0,Math.min(1,v));
 const mix=(a,b,p)=>a+(b-a)*p;
@@ -31,6 +32,7 @@ export function V2BattleAction({scene,scenes,time}) {
  const strike=clamp((p-.12)/.55),contact=Math.max(0,Math.sin(strike*Math.PI));
  const rebound=ease(clamp((p-.67)/.33));
  return <g data-v2-beat={beat}>
+  <V2StageEnvironment beat={beat}/>
   {beat==='cold-open'?<g>
    <Card x={175+q*32} y={434} label="CHASE" rotation={q*12}/><Card x={545-q*32} y={434} label="AMEX" rotation={-q*12}/>
    <Wallet x={360} y={510} s={.76} rotation={Math.sin(p*Math.PI*2)*7}/>
@@ -78,7 +80,6 @@ export function V2BattleAction({scene,scenes,time}) {
    <Wallet {...v2WalletMotion('finish',p)} label="BUDGET"/>
    <Sandwich x={360} y={mix(610,582,q)} s={.58}/>
    <path d="M205 550Q360 730 515 550" fill="none" stroke={K} strokeWidth="6" strokeLinecap="round"/>
-   <Word y={349} size={28}>CAPE OPTIONAL.</Word>
   </g>:null}
  </g>;
 }

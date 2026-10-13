@@ -5,12 +5,15 @@ from pathlib import Path
 
 RECEIPTS={'voices':'receipts/voice.json','sound_mix':'receipts/mix.json','transcription':'receipts/transcription.json','captions':'captions.json','caption_frames':'receipts/caption-frames.json','technical_video':'receipts/render.json','style_parity':'receipts/visual-parity.json'}
 DIAGNOSTICS={'caption_windows':'receipts/clip-transcription.json'}
+RECEIPTS.update(character_binding='receipts/character-binding.json',phone_viewport='receipts/phone-viewport.json')
 def summarize(root,run_id,source_commit,outcome):
     root=Path(root)
     if not isinstance(run_id,int) or isinstance(run_id,bool) or run_id<=0: raise ValueError('Invalid run ID')
     if not re.fullmatch('[0-9a-f]{40}',source_commit): raise ValueError('Invalid source commit')
     if outcome not in {'success','failure','cancelled'}: raise ValueError('Invalid workflow outcome')
     checks={}
+    video=root/'render/v2-boss-fight.mp4'
+    digest=hashlib.sha256(video.read_bytes()).hexdigest() if video.is_file() else None
     for name,relative in {**RECEIPTS,**DIAGNOSTICS}.items():
         p=root/relative
         if not p.exists(): checks[name]={'status':'NOT_RUN'};continue
@@ -23,6 +26,8 @@ def summarize(root,run_id,source_commit,outcome):
             if failed and status=='PASS':status='INVALID_RECEIPT'
             if r.get('publication_enabled') is not False:
                 status='BLOCKED';failed.append('publication_disabled_not_verified')
+            if name in {'character_binding','phone_viewport'} and (not digest or r.get('candidate_sha256')!=digest):
+                status='BLOCKED';failed.append('exact_candidate_binding_missing')
             checks[name]={'status':status,'failed_checks':failed,'receipt_sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
             if isinstance(r.get('reason'),str):checks[name]['reason']=r['reason'][:240]
         except (ValueError,TypeError):checks[name]={'status':'INVALID_RECEIPT'}

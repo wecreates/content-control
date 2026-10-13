@@ -1,0 +1,6 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {analyzeSource,verifyBinding} from '../scripts/verify_character_renderer_binding.mjs';
+const imported="import {Dave,PointsMonk,CashbackGoblin} from './CharacterSystem';";
+test('real board and V2 sources bind to shared renderer without pixel approval',()=>{const r=verifyBinding();assert.equal(r.status,'PASS');assert.equal(r.rendered_pixel_identity_verified,false);assert.equal(r.production_approved,false);assert.equal(Object.keys(r.source_files).length,4);});
+test('comments and strings do not fake renderer imports or JSX',()=>{assert.deepEqual(analyzeSource(`// ${imported}\nconst text='<Dave/><PointsMonk/><CashbackGoblin/>';`),{shared_renderer_imports:false,character_dispatch:false});});
+test('dynamic registry requires every correct identity plus actual dispatch',()=>{const source=imported+"const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin}; const Character=C[id]; const scene=<Character/>;";assert.equal(analyzeSource(source,{dynamic:true}).character_dispatch,true);assert.equal(analyzeSource(source.replace('dave:Dave','dave:CashbackGoblin'),{dynamic:true}).character_dispatch,false);assert.equal(analyzeSource(source.replace('<Character/>','<div/>'),{dynamic:true}).character_dispatch,false);});

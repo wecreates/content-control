@@ -1,8 +1,6 @@
 name: Content Control V2 Acceptance
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '17 * * * *'
   push:
     branches: [main]
     paths:
@@ -80,7 +78,7 @@ jobs:
       - name: Test stage layout
         run: |
           npm ci
-          node --test tests/studio-layout.test.mjs
+          node --test tests/studio-layout.test.mjs tests/v2-actor-staging.test.mjs tests/v2-framing.test.mjs tests/v2-stage-environment.test.mjs
       - name: Render diagnostic stills (not accepted production)
         run: |
           mkdir -p state/v2/visual-diagnostics
@@ -171,7 +169,7 @@ jobs:
           python scripts/ccsd_voice_manifest.py --ccsd state/v2/ccsd.json --out state/v2/dialogue.json
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/v2/ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx StudioAnimatic state/v2/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
-          ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/mix/mix.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -shortest state/v2/render/v2-boss-fight.mp4
+          ffmpeg -y -i state/v2/render/silent.mp4 -i state/v2/mix/mix.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -movflags +faststart -shortest state/v2/render/v2-boss-fight.mp4
       - name: Preserve internal draft for phone review
         run: |
           cp state/v2/render/v2-boss-fight.mp4 public-review/v2-draft.mp4
@@ -186,6 +184,9 @@ jobs:
       - name: Inspect rendered candidate
         if: ${{ !cancelled() && steps.render_video.outcome == 'success' }}
         run: |
+          node --test tests/character-renderer-binding.test.mjs
+          node scripts/verify_character_renderer_binding.mjs --candidate state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/character-binding.json
+          node scripts/verify_phone_viewport_playback.mjs --video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/phone-viewport.json
           python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py tests/test_v2_render_receipts.py
           media_status=0
           parity_status=0
