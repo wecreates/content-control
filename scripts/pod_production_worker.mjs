@@ -19,6 +19,7 @@ async function python(script,args,{root,signal,env=process.env}){
 }
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
+ if(signal?.aborted)return {status:'STOPPED'};
  const job=await db.claimProduction();if(!job)return {status:'IDLE'};
  try{
   const grant=verifyEnvelope(await resolveGrant(job),upstreamKey,'content-control:pod');

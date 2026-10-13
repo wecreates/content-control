@@ -5,12 +5,12 @@ import {recordFinancialEvent} from './finance.mjs';
 import {ArtifactStore} from './artifacts.mjs';
 import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
-export function createPodRouter({db,authorize,env=process.env}) {
+export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'");next();});
  router.get('/dashboard',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.html',import.meta.url))));
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
- router.get('/status',(_req,res)=>res.json({publication_enabled:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
+ router.get('/status',(_req,res)=>res.json({...status?.(),publication_enabled:false,publication_requested:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
  router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
  router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json'],limit:'16mb'}),async(req,res)=>{
   try{const store=new ArtifactStore(db,{budgetBytes:Number(env.POD_ARTIFACT_BUDGET_BYTES||134217728)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}

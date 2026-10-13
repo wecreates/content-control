@@ -61,7 +61,7 @@ def similarity(candidate,reference):
         raise ValueError('SIMILARITY_NONFINITE')
     return cosine
 
-def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators):
+def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -122,7 +122,10 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 if preflight:
                     preflight &= float(np.abs(np.asarray(raster,dtype=float)-np.asarray(image,dtype=float)).mean())<1
         report['checks']['print_preflight']=bool(preflight)
-        report['openclip']={'cosine_similarity':similarity(root/'print.png',reference),'scope':'descriptive_only_not_superiority'}
+        # Descriptive similarity is optional; the independent signed review remains mandatory.
+        report['openclip']={'status':'NOT_REQUESTED','scope':'descriptive_only_not_superiority'}
+        if descriptive_similarity:
+            report['openclip']={'status':'MEASURED','cosine_similarity':similarity(root/'print.png',reference),'scope':'descriptive_only_not_superiority'}
         comparative=verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
         # A reviewer/model service with independently calibrated criteria must attest the strict win.
         # Merely choosing a larger CLIP threshold cannot produce this attestation.
@@ -144,9 +147,10 @@ def main():
         p.add_argument('--'+name,required=True)
     p.add_argument('--approved-evaluator',action='append',default=[])
     p.add_argument('--signed-output')
+    p.add_argument('--descriptive-similarity',action='store_true')
     a=p.parse_args()
     try:
-        report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator)
+        report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

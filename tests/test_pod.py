@@ -4,17 +4,38 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_asset_generator import generate
 from pod_market_intake import ProductParser, products, screen
 from pod_vision_qa import spatial_checks, ocr, evaluate
-from pod_common import digest, canonical
+from pod_common import digest, canonical, sign
 from pod_original_art import create_art
 from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
+    def test_qa_requires_independent_review_without_model_download(self):
+        import time
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48}):
+            src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
+            m=generate(src,self.template(),[],Path(tmp)/'package')
+            now=int(time.time()*1000)
+            common={'schema_version':1,'issued_at_ms':now-1,'expires_at_ms':now+60000,
+                    'package_sha256':m['package_sha256']}
+            rights=sign({**common,'audience':'pod:package-rights','status':'PASS','permanently_unpublished':False},'POD_RIGHTS_KEY')
+            review=sign({**common,'audience':'pod:competitive-review','reference_sha256':digest(src),
+                         'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
+                         'swapped_order_consistent':True,'weighted_margin':1},'POD_REVIEW_KEY')
+            with patch('pod_vision_qa.similarity',side_effect=AssertionError('must not download')):
+                result=evaluate(Path(tmp)/'package',src,rights,review,['test-fixture'])
+                self.assertEqual(result['verdict'],'PASS',result)
+                self.assertEqual(result['openclip']['status'],'NOT_REQUESTED')
+                blocked=evaluate(Path(tmp)/'package',src,rights,review,[])
+                self.assertEqual(blocked['verdict'],'FAIL')
+                self.assertFalse(blocked['checks']['competitive'])
+
     def test_combined_kdp_package_and_mismatch(self):
         font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         spec={'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],
