@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "PASS",
+  "scope": "local_browser_mobile_viewport_decode_playback",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "duration": 35.040998,
+  "videoWidth": 720,
+  "videoHeight": 1280,
+  "timeAdvanced": 1.4601490000000001,
+  "viewportWidth": 360,
+  "videoCssWidth": 360,
+  "horizontalOverflow": false,
+  "mediaError": null,
+  "physical_android_test": false,
+  "audio_listened": false,
+  "full_av_review": false,
+  "production_approved": false,
+  "publication_enabled": false
+}

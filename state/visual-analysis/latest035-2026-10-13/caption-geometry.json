@@ -1,0 +1,16 @@
+{
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "captions_sha256": "2cd8e066dc2e2e3cb7cf72dfbedeb6785a0985c5b3caf9c9109a9587abaa7d60",
+  "textblock_source_sha256": "faf1f1aa84a490fb8bca1263236bc89f71e7baa585e07429390ba210a0ab27e5",
+  "scope": "All observed caption cues at 3 animation ages, Chromium SVG bounds; not full audiovisual approval",
+  "full_av_review": false,
+  "production_approved": false,
+  "status": "PASS",
+  "cues": 68,
+  "samples": 204,
+  "minLeft": 97.7109375,
+  "maxRight": 622.2890625,
+  "minTop": 156.7184600830078,
+  "maxBottom": 339.800048828125,
+  "publication_enabled": false
+}

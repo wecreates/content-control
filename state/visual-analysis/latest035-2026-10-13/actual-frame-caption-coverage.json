@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "decoded_frame_count": 840,
+  "observed_cue_count": 68,
+  "visible_cue_count": 68,
+  "expected_word_count": 71,
+  "visible_word_count": 71,
+  "scope": "Actual MP4 frame lattice evaluated with source035a caption lookup"
+}

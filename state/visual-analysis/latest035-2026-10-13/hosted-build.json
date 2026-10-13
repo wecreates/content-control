@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "run_id": 38476039821,
+  "source_commit": "035a0a28eaafaf06c1e60dbcb74d9a798b473af6",
+  "workflow_outcome": "failure",
+  "recorded_at": "2026-10-13T22:14:38.451129+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38476039821",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "candidate_generated": true,
+  "checks": {
+    "voices": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "b62d2800d934e1b2c872d228cf079f38ac4f3d2bd04c530c4e7e8769fb79ea5d"
+    },
+    "sound_mix": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "f69f1c5f9f92e139eb78283206675f0e38ccc5accbeaa41b3c835826be4c0325"
+    },
+    "transcription": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "92f876c4949063d42c5534d4816db6b6e8c82e1792cb312ed793584b2468cbc7"
+    },
+    "captions": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "2cd8e066dc2e2e3cb7cf72dfbedeb6785a0985c5b3caf9c9109a9587abaa7d60"
+    },
+    "caption_frames": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "f4fcca678bab31e20fca20f55b6658b762b5c3ddcff5b35fd7a272a147db4887"
+    },
+    "technical_video": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "9d5c57eaf7ec7522b7f7a80d23a2fa4ffad5aa9af76d70fe7e6d8576fdc563ba"
+    },
+    "style_parity": {
+      "status": "BLOCKED",
+      "failed_checks": [
+        "framewise_style_parity"
+      ],
+      "receipt_sha256": "3a7264967307cef29336460e41d82fe4bc1c132bb6cbf05ab15c41d0157030ce",
+      "reason": "Review candidate hash does not match exact video"
+    },
+    "character_binding": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "6abe5de6982d681bb98a1127cc7d8a102ba6b8acd807f6cc7a6fd32472b52c05"
+    },
+    "phone_viewport": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "8b23f53be5973216fca27ec1bfba7b66cc1e291974db9f83b538d10fd2c6f98a"
+    }
+  },
+  "diagnostics": {
+    "caption_windows": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "19f1dfe1abd310b299f5d17a0bfd6b14bd03daf2a292eae7e6725a1fa41154ac"
+    }
+  },
+  "status": "BLOCKED",
+  "production_approved": false,
+  "publication_enabled": false,
+  "scope": "Recorded build result; no full audiovisual or competitor approval."
+}

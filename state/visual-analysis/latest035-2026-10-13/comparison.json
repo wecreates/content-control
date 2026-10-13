@@ -1,0 +1,486 @@
+{
+  "analysis_status": "COMPLETE",
+  "candidate_duration_seconds": 35.0,
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "checks": {
+    "candidate_decodes": true,
+    "framewise_style_parity": true,
+    "reference_frames_present": true
+  },
+  "engine": "reference-qualified-parity-v2",
+  "frame_distances": [
+    0.345443785105188,
+    0.35416589371425655,
+    0.3283480679381128,
+    0.32913615387561274,
+    0.3670453405841503,
+    0.3519195203993055,
+    0.3425645871629902,
+    0.33711404845792486,
+    0.35208269122753266,
+    0.3538306678921568
+  ],
+  "framewise_style_parity": true,
+  "mean_frame_distance": 0.3461650756357231,
+  "metric_weights": {
+    "edge_density": 0.35,
+    "mean_brightness": 0.3,
+    "white_fraction": 0.35
+  },
+  "p90_frame_distance": 0.35545383840124595,
+  "paired_frames": 10,
+  "publication_enabled": false,
+  "qualified_structure": {
+    "blocker": "BLOCKED_UNSUPPORTED_REFERENCE",
+    "framewise_style_parity": false,
+    "reason": "Reference provenance and exact-candidate aligned-frame contract required; raw background difference is diagnostic only.",
+    "status": "BLOCKED"
+  },
+  "raw_pixel_diagnostic": {
+    "acceptance_effect": "none",
+    "frame_distances": [
+      0.345443785105188,
+      0.35416589371425655,
+      0.3283480679381128,
+      0.32913615387561274,
+      0.3670453405841503,
+      0.3519195203993055,
+      0.3425645871629902,
+      0.33711404845792486,
+      0.35208269122753266,
+      0.3538306678921568
+    ],
+    "framewise_style_parity": false,
+    "mean_frame_distance": 0.3461650756357231,
+    "p90_frame_distance": 0.35545383840124595,
+    "paired_frames": 10,
+    "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3239 of 0.3462). This does not assess creative quality or override the required brand style.",
+    "weighted_mean_distance_components": {
+      "edge_density": 0.002164219835069444,
+      "mean_brightness": 0.020144670904820264,
+      "white_fraction": 0.32385618489583334
+    }
+  },
+  "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+  "reference_frames": 10,
+  "reference_manifest": [
+    {
+      "file": "ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "file": "ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "file": "ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "file": "ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "file": "ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "file": "ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "file": "ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "file": "ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "file": "ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "file": "ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "schema_version": 2,
+  "scope": "Sampled visual analysis and optional documented static-frame review; full audiovisual approval remains separate.",
+  "status": "PASS",
+  "threshold": 0.14,
+  "visual_analysis": {
+    "acceptance_effect": "none",
+    "appearance_distributions": {
+      "edge_density": {
+        "candidate_mean": 0.015444661458333332,
+        "candidate_range": [
+          0.011745876736111112,
+          0.017883029513888888
+        ],
+        "mean_difference": -0.003691948784722225,
+        "reference_mean": 0.019136610243055557,
+        "reference_range": [
+          0.009833984375,
+          0.03473198784722222
+        ]
+      },
+      "mean_brightness": {
+        "candidate_mean": 0.9546302921602668,
+        "candidate_range": [
+          0.9297981430419391,
+          0.9683114617374727
+        ],
+        "mean_difference": 0.06714890301606746,
+        "reference_mean": 0.8874813891441994,
+        "reference_range": [
+          0.8470487642973856,
+          0.9027008357162308
+        ]
+      },
+      "white_fraction": {
+        "candidate_mean": 0.9433134765624999,
+        "candidate_range": [
+          0.9158181423611111,
+          0.9589507378472222
+        ],
+        "mean_difference": 0.9253033854166666,
+        "reference_mean": 0.01801009114583333,
+        "reference_range": [
+          0.010738932291666666,
+          0.02702907986111111
+        ]
+      }
+    },
+    "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+    "contact_sheets": [
+      {
+        "file": "comparison-01.jpg",
+        "first_pair": 0,
+        "pair_count": 4,
+        "sha256": "18f0b30fa05e7504cbda6cf2e91c77160faf66c2caaf7eccefde6bc915128f09"
+      },
+      {
+        "file": "comparison-02.jpg",
+        "first_pair": 4,
+        "pair_count": 4,
+        "sha256": "38a957927b7a714e67859cc9e7a4c10958aab6c5d5730a6ff44622e05ac15542"
+      },
+      {
+        "file": "comparison-03.jpg",
+        "first_pair": 8,
+        "pair_count": 2,
+        "sha256": "7bf57806241452cab6022e73a446640c73b0fadaf894dee49e24477972c1b55f"
+      }
+    ],
+    "pairing": "duration-normalized display order; not semantic or same-art alignment",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reference_provenance": {
+      "reason": "Reference images have no source-video extraction manifest; analysis is diagnostic only.",
+      "source_url": null,
+      "status": "UNVERIFIED_LEGACY_FRAMES"
+    },
+    "sample_count": 10,
+    "samples": [
+      {
+        "candidate_frame": 0,
+        "candidate_metrics": {
+          "edge_density": 0.01676215277777778,
+          "mean_brightness": 0.9629934427764162,
+          "white_fraction": 0.9513704427083334
+        },
+        "candidate_seconds": 0.0,
+        "reference_file": "ref-01.jpg",
+        "reference_metrics": {
+          "edge_density": 0.019764539930555554,
+          "mean_brightness": 0.8997004655160675,
+          "white_fraction": 0.021641710069444445
+        },
+        "reference_sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+      },
+      {
+        "candidate_frame": 93,
+        "candidate_metrics": {
+          "edge_density": 0.015256076388888888,
+          "mean_brightness": 0.9676104302832245,
+          "white_fraction": 0.9571299913194444
+        },
+        "candidate_seconds": 3.875,
+        "reference_file": "ref-02.jpg",
+        "reference_metrics": {
+          "edge_density": 0.018546006944444443,
+          "mean_brightness": 0.8864774816176471,
+          "white_fraction": 0.018059895833333332
+        },
+        "reference_sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+      },
+      {
+        "candidate_frame": 186,
+        "candidate_metrics": {
+          "edge_density": 0.016049262152777778,
+          "mean_brightness": 0.9297981430419391,
+          "white_fraction": 0.9158181423611111
+        },
+        "candidate_seconds": 7.75,
+        "reference_file": "ref-03.jpg",
+        "reference_metrics": {
+          "edge_density": 0.022534722222222223,
+          "mean_brightness": 0.8856324550653595,
+          "white_fraction": 0.022022569444444445
+        },
+        "reference_sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+      },
+      {
+        "candidate_frame": 280,
+        "candidate_metrics": {
+          "edge_density": 0.015602213541666667,
+          "mean_brightness": 0.9329496825639978,
+          "white_fraction": 0.9196983506944445
+        },
+        "candidate_seconds": 11.666666666666666,
+        "reference_file": "ref-04.jpg",
+        "reference_metrics": {
+          "edge_density": 0.011193576388888888,
+          "mean_brightness": 0.899558010791122,
+          "white_fraction": 0.012339409722222222
+        },
+        "reference_sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+      },
+      {
+        "candidate_frame": 373,
+        "candidate_metrics": {
+          "edge_density": 0.015658637152777776,
+          "mean_brightness": 0.9666812363834423,
+          "white_fraction": 0.9566861979166666
+        },
+        "candidate_seconds": 15.541666666666666,
+        "reference_file": "ref-05.jpg",
+        "reference_metrics": {
+          "edge_density": 0.027584635416666666,
+          "mean_brightness": 0.8470487642973856,
+          "white_fraction": 0.022453342013888888
+        },
+        "reference_sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+      },
+      {
+        "candidate_frame": 466,
+        "candidate_metrics": {
+          "edge_density": 0.015696614583333334,
+          "mean_brightness": 0.9672040398624728,
+          "white_fraction": 0.9580154079861111
+        },
+        "candidate_seconds": 19.416666666666668,
+        "reference_file": "ref-06.jpg",
+        "reference_metrics": {
+          "edge_density": 0.016376953125,
+          "mean_brightness": 0.8944071648624728,
+          "white_fraction": 0.015608723958333333
+        },
+        "reference_sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+      },
+      {
+        "candidate_frame": 559,
+        "candidate_metrics": {
+          "edge_density": 0.017834201388888887,
+          "mean_brightness": 0.9394751455269608,
+          "white_fraction": 0.9258018663194445
+        },
+        "candidate_seconds": 23.291666666666668,
+        "reference_file": "ref-07.jpg",
+        "reference_metrics": {
+          "edge_density": 0.03473198784722222,
+          "mean_brightness": 0.8658755233864379,
+          "white_fraction": 0.02702907986111111
+        },
+        "reference_sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+      },
+      {
+        "candidate_frame": 653,
+        "candidate_metrics": {
+          "edge_density": 0.017883029513888888,
+          "mean_brightness": 0.9435866396037581,
+          "white_fraction": 0.9308279079861111
+        },
+        "candidate_seconds": 27.208333333333332,
+        "reference_file": "ref-08.jpg",
+        "reference_metrics": {
+          "edge_density": 0.009833984375,
+          "mean_brightness": 0.9027008357162308,
+          "white_fraction": 0.010738932291666666
+        },
+        "reference_sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+      },
+      {
+        "candidate_frame": 746,
+        "candidate_metrics": {
+          "edge_density": 0.011958550347222222,
+          "mean_brightness": 0.9683114617374727,
+          "white_fraction": 0.9588357204861111
+        },
+        "candidate_seconds": 31.083333333333332,
+        "reference_file": "ref-09.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015412326388888889,
+          "mean_brightness": 0.899582409960512,
+          "white_fraction": 0.015249565972222223
+        },
+        "reference_sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+      },
+      {
+        "candidate_frame": 839,
+        "candidate_metrics": {
+          "edge_density": 0.011745876736111112,
+          "mean_brightness": 0.9676926998229847,
+          "white_fraction": 0.9589507378472222
+        },
+        "candidate_seconds": 34.958333333333336,
+        "reference_file": "ref-10.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015387369791666666,
+          "mean_brightness": 0.8938307802287582,
+          "white_fraction": 0.014957682291666666
+        },
+        "reference_sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+      }
+    ],
+    "scope": "Decoded sampled visual evidence and cross-story appearance distributions; no full audiovisual review, motion, retention, or competitive-quality approval.",
+    "status": "COMPLETE"
+  },
+  "visual_review": {
+    "framewise_style_parity": true,
+    "method": "documented_sampled_frame_visual_review",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T22:17:04.054530+00:00",
+    "reviewed_frame_indices": [
+      0,
+      93,
+      186,
+      204,
+      280,
+      372,
+      373,
+      420,
+      450,
+      466,
+      500,
+      559,
+      653,
+      744,
+      746,
+      768,
+      800,
+      839
+    ],
+    "reviewer": {
+      "id": "final_visual_review_agent",
+      "method": "direct_sampled_frame_inspection"
+    },
+    "rubric": {
+      "character_consistency": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          373,
+          466,
+          559,
+          653,
+          744,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "character_consistency",
+        "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification.",
+        "status": "PASS"
+      },
+      "character_scale": {
+        "candidate_frames": [
+          186,
+          204,
+          280,
+          559,
+          653,
+          744,
+          800,
+          839
+        ],
+        "dimension": "character_scale",
+        "observation": "Sampled faces, expressions, gestures and identity silhouettes are readable. Paired scenes and fee reaction have enlarged subjects; finish preserves prop clearance. This passes functional sampled subject readability, not closeup diversity or competitor-polish parity.",
+        "status": "PASS"
+      },
+      "phone_readability": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          280,
+          373,
+          466,
+          559,
+          653,
+          746,
+          839
+        ],
+        "dimension": "phone_readability",
+        "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review.",
+        "status": "PASS"
+      },
+      "staging": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          204,
+          280,
+          372,
+          373,
+          420,
+          450,
+          466,
+          500,
+          559,
+          653,
+          744,
+          746,
+          768,
+          800,
+          839
+        ],
+        "dimension": "staging",
+        "observation": "Distinct arena, lounge counter/doorway, checkpoint lanes and victory pedestal are visible. Newly grounded invitation scene frames420,450,466,500 shows hand meeting FEE envelope at doorway; captions remain separate. Fee reaction frame372 has larger face while limbs remain inside sampled frame. Finish full720px frames744,768,800,839 retains fully visible sandwich and separation of Dave head from wallet/under-arc. No blocking occlusion or clipping observed in inspected samples. Floating sandwich symbols and mostly full-body compositions remain creative-polish limitations outside this layout pass.",
+        "status": "PASS"
+      },
+      "typography": {
+        "candidate_frames": [
+          0,
+          186,
+          204,
+          559,
+          653,
+          744,
+          768,
+          800
+        ],
+        "dimension": "typography",
+        "observation": "Bold captions are readable and separate from props in inspected frames; frame204 perks and frame768 budget use inverted emphasis, while frame420 two-line text clears sandwich. This is sampled legibility/hierarchy approval; sans-serif styling is not a claim of expressive-font or competitor creative parity.",
+        "status": "PASS"
+      }
+    },
+    "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
+    "status": "PASS",
+    "unresolved_issues": []
+  },
+  "visual_review_sha256": "f55c9171456d6a7a546198114f5ab0cf89634955b52152f46bf55488e762ec5a",
+  "weighted_mean_distance_components": {
+    "edge_density": 0.002164219835069444,
+    "mean_brightness": 0.020144670904820264,
+    "white_fraction": 0.32385618489583334
+  }
+}

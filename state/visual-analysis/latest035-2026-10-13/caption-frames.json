@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "publication_enabled": false,
+  "checks": {
+    "publication_disabled": true,
+    "frame_rate_valid": true,
+    "original_words_bound": true,
+    "no_early_reveal": true,
+    "all_words_visible": true
+  },
+  "frame_count": 841,
+  "expected_word_count": 71,
+  "visible_word_count": 71,
+  "missing_word_indices": [],
+  "caption_sha256": "2cd8e066dc2e2e3cb7cf72dfbedeb6785a0985c5b3caf9c9109a9587abaa7d60",
+  "ccsd_sha256": "4e2abfff214c0ddc8e3d5145f0db8dd7036cc6a9ce465d2c51a99062e689e4b7"
+}

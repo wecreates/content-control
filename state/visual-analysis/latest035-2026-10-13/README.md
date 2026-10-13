@@ -1,0 +1,9 @@
+# Latest concurrent-render verification
+
+Candidate `db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34`, source `035a0a28eaafaf06c1e60dbcb74d9a798b473af6`, build [38476039821](https://github.com/wecreates/content-control/actions/runs/38476039821). This supersedes the intermediate 6fc5a9d and previously reviewed 896006c7 candidate for current status; their historical evidence remains intact.
+
+The source adds a hand-bound invitation through a doorway and a restrained fee-reaction camera push. Eight hosted technical checks pass. Independent verification on the exact new source passes14 checks: actual840 decoded frames,68 caption cues,71 words,204 geometry samples, faststart, source binding and phone-sized browser playback. Seventeen additional current-source tests cover these changes and the status endpoint.
+
+Eighteen inspected frames pass the limited layout, legibility and sampled identity rubric. Full-resolution fee/invitation/ending samples verify contact and prop clearance. `revalidation.json` independently binds every original receipt, source run, candidate and review; the actual-data local status endpoint returns HTTP200/VISUAL_REVALIDATED with no playback link. The same record is saved as `state/v2-revalidation.json` for the production route.
+
+This review does not override the separate competitor-oriented polish assessment in `creative-comparison-896006c7.json`. That assessment has broader typography/shot-variety/physical staging concerns and different coverage. The new invitation and fee shot address specific observed issues, but full competitor polish, audiovisual review and physical Android testing are not certified here. Publishing and customer handoff remain disabled. Historical model inference and handoff results must not be relabeled as this new candidate.

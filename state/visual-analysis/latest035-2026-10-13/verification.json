@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "run_id": 38476039821,
+  "source_commit": "035a0a28eaafaf06c1e60dbcb74d9a798b473af6",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "verification_status": "PASS",
+  "scope": "Technical/sourcebinding/captiongeometry/phoneviewport only; no full audiovisual approval",
+  "checks": {
+    "technical_pass": true,
+    "character_source_binding_pass": true,
+    "phone_viewport_playback_pass": true,
+    "receipt_candidate_hashes_match": true,
+    "caption_geometry_pass": true,
+    "caption_geometry_source_matches_hosted": true,
+    "caption_bytes_match_hosted_receipt": true,
+    "full_decode_frame_count": true,
+    "actual_frame_caption_coverage": true,
+    "faststart": true,
+    "transcription_pass": true,
+    "clip_transcription_pass": true,
+    "voice_assembly_pass": true,
+    "mix_pass": true
+  },
+  "video_metadata": {
+    "avg_frame_rate": "24/1",
+    "duration": "35.000000",
+    "nb_frames": "840",
+    "nb_read_frames": "840",
+    "side_data_list": [
+      {}
+    ]
+  },
+  "caption_geometry": {
+    "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+    "captions_sha256": "2cd8e066dc2e2e3cb7cf72dfbedeb6785a0985c5b3caf9c9109a9587abaa7d60",
+    "textblock_source_sha256": "faf1f1aa84a490fb8bca1263236bc89f71e7baa585e07429390ba210a0ab27e5",
+    "scope": "All observed caption cues at 3 animation ages, Chromium SVG bounds; not full audiovisual approval",
+    "full_av_review": false,
+    "production_approved": false,
+    "status": "PASS",
+    "cues": 68,
+    "samples": 204,
+    "minLeft": 97.7109375,
+    "maxRight": 622.2890625,
+    "minTop": 156.7184600830078,
+    "maxBottom": 339.800048828125,
+    "publication_enabled": false
+  },
+  "actual_caption_visibility": {
+    "status": "PASS",
+    "decoded_frame_count": 840,
+    "observed_cue_count": 68,
+    "visible_cue_count": 68,
+    "expected_word_count": 71,
+    "visible_word_count": 71,
+    "scope": "Actual MP4 frame lattice evaluated with source035a caption lookup"
+  },
+  "faststart_atoms": {
+    "ftyp": 0,
+    "moov": 32,
+    "free": 28867,
+    "mdat": 28875
+  },
+  "receipt_statuses": {
+    "phone-viewport": "PASS",
+    "free-voice": "GENERATED_PENDING_LISTENING_REVIEW",
+    "mix": "PASS",
+    "render": "PASS",
+    "transcription": "PASS",
+    "clip-transcription": "PASS",
+    "caption-frames": "PASS",
+    "voice": "PASS",
+    "visual-parity": "BLOCKED",
+    "character-binding": "PASS"
+  },
+  "publication_enabled": false,
+  "production_approved": false,
+  "full_av_review": false,
+  "physical_android_test": false,
+  "fresh_motion_receipt": "motion.json",
+  "additional_current_source_tests": {
+    "passed": 17,
+    "failed": 0,
+    "scope": "competitor polish, stage environments, production-status and exact-review endpoint"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "http_status": 200,
+  "schema_version": 1,
+  "status": "VISUAL_REVALIDATED",
+  "publication_enabled": false,
+  "production_approved": false,
+  "full_av_review": false,
+  "watch_url": null,
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+  "original_run_id": 38476039821,
+  "visual_status": "PASS",
+  "rubric": {
+    "typography": {
+      "status": "PASS",
+      "observation": "Bold captions are readable and separate from props in inspected frames; frame204 perks and frame768 budget use inverted emphasis, while frame420 two-line text clears sandwich. This is sampled legibility/hierarchy approval; sans-serif styling is not a claim of expressive-font or competitor creative parity."
+    },
+    "character_scale": {
+      "status": "PASS",
+      "observation": "Sampled faces, expressions, gestures and identity silhouettes are readable. Paired scenes and fee reaction have enlarged subjects; finish preserves prop clearance. This passes functional sampled subject readability, not closeup diversity or competitor-polish parity."
+    },
+    "staging": {
+      "status": "PASS",
+      "observation": "Distinct arena, lounge counter/doorway, checkpoint lanes and victory pedestal are visible. Newly grounded invitation scene frames420,450,466,500 shows hand meeting FEE envelope at doorway; captions remain separate. Fee reaction frame372 has larger face while limbs remain inside sampled frame. Finish full720px frames744,768,800,839 retains fully visible sandwich and separation of Dave head from wallet/under-arc. No blocking occlusion or clipping observed in inspected samples. Floating sandwich symbols and mostly full-body compositions remain creative-polish limitations outside this layout pass."
+    },
+    "character_consistency": {
+      "status": "PASS",
+      "observation": "Direct comparison with reference/characters/content-control-character-board.svg confirms recurring visible identity: Dave round head and anxious facial acting, tallest slim Points Monk, and shortest oversized-head Goblin with triangular ears. Expressions and articulated poses vary as performance while those distinguishing forms persist. This is sampled visual consistency, not every-frame geometry certification."
+    },
+    "phone_readability": {
+      "status": "PASS",
+      "observation": "Directly inspected these ten decoded frames resized to 360 by 640 pixels. Captions and essential CHASE/AMEX, FEE, PANIC TAP/CHECK VALUE, NEEDS/COSTS/USE and BUDGET labels are readable with separated hierarchy. No sampled caption is clipped. This is a 360-pixel raster readability review, not physical-device playback or every-caption review."
+    }
+  },
+  "blockers": [],
+  "scope": "Exact existing candidate revalidation; sampled visual findings only. Full audiovisual and competitor approval remain required.",
+  "verification_scope": "Actual exact-candidate files served by current production-status router locally; live deployment is separate"
+}

@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "publication_enabled": false,
+  "provider_calls": 0,
+  "duration": 35.041666666666664,
+  "dialogue": [
+    {
+      "scene_id": "cold-open-a-1",
+      "speaker": "dave",
+      "start": 0.0,
+      "end": 1.8750113378684807,
+      "audio_sha256": "594b823b6f3f50bd7e7c8efc2f2db9f6479f6137d9638491090a4370dbec6832",
+      "rms": 1575.58
+    },
+    {
+      "scene_id": "chase-strike-a-1",
+      "speaker": "points_monk",
+      "start": 2.75,
+      "end": 5.22501133786848,
+      "audio_sha256": "bdeece678a7b631184eb2786335acbdae2e1fef55d3e375371b8469f0bb07675",
+      "rms": 945.53
+    },
+    {
+      "scene_id": "amex-counter-a-1",
+      "speaker": "points_monk",
+      "start": 7.083333333333333,
+      "end": 11.283333333333333,
+      "audio_sha256": "64170a97b9c0b39793fb0f4c6ef80ffd4ff7c4616885b20185d4247b1f15bd9f",
+      "rms": 1011.22
+    },
+    {
+      "scene_id": "fee-drain-a-1",
+      "speaker": "dave",
+      "start": 11.75,
+      "end": 16.05,
+      "audio_sha256": "3ea75a2c9bcfe1f937640a71701dc11232de4657066db5c466fda45997f3d2a5",
+      "rms": 1630.78
+    },
+    {
+      "scene_id": "points-summon-a-1",
+      "speaker": "points_monk",
+      "start": 16.5,
+      "end": 21.4,
+      "audio_sha256": "e7c7ca36b25653902d150cf4580b450f241899a628ae43182e154217c6a12f8d",
+      "rms": 936.08
+    },
+    {
+      "scene_id": "trap-a-1",
+      "speaker": "dave",
+      "start": 21.875,
+      "end": 25.275,
+      "audio_sha256": "e80e218a60f74965f58a8ea5e4a16cd198c2e162840983fc06b97c560a206bef",
+      "rms": 1696.36
+    },
+    {
+      "scene_id": "final-clash-a-1",
+      "speaker": "points_monk",
+      "start": 25.75,
+      "end": 30.55,
+      "audio_sha256": "0b3584a126114701a561cbffdc3ca0582348dfb9e7d1cc94d2ac73d04fdfbb79",
+      "rms": 981.21
+    },
+    {
+      "scene_id": "finish-a-1",
+      "speaker": "dave",
+      "start": 31.0,
+      "end": 34.57501133786848,
+      "audio_sha256": "217cbb42c3be31d115836e1132c8daa8b1aca5459f98cfa23acfe0f3edd5e455",
+      "rms": 1668.46
+    }
+  ],
+  "audio_sha256": "29383663b24f3f7d41260c2d12926ec37bab1f3e4d1070d221950f21c4b4718c",
+  "scope": "Timing, declared voice assignment, integrity and audibility; does not certify voice identity or creative quality"
+}

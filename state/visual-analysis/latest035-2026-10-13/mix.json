@@ -1,0 +1,94 @@
+{
+  "status": "PASS",
+  "publication_enabled": false,
+  "provider_calls": 0,
+  "duration": 35.041666666666664,
+  "cue_seconds": [
+    0.5,
+    7.5,
+    14.0,
+    22.25,
+    28.5,
+    34.5
+  ],
+  "resolved_cue_events": [
+    {
+      "id": "cold-open-accent",
+      "beat": "cold-open",
+      "phase": 0.18181818181818182,
+      "beat_start": 0.0,
+      "beat_end": 2.75,
+      "seconds": 0.5
+    },
+    {
+      "id": "amex-counter-accent",
+      "beat": "amex-counter",
+      "phase": 0.08928571428571434,
+      "beat_start": 7.083333333333333,
+      "beat_end": 11.75,
+      "seconds": 7.5
+    },
+    {
+      "id": "fee-drain-accent",
+      "beat": "fee-drain",
+      "phase": 0.47368421052631576,
+      "beat_start": 11.75,
+      "beat_end": 16.5,
+      "seconds": 14.0
+    },
+    {
+      "id": "trap-accent",
+      "beat": "trap",
+      "phase": 0.0967741935483871,
+      "beat_start": 21.875,
+      "beat_end": 25.75,
+      "seconds": 22.25
+    },
+    {
+      "id": "final-clash-accent",
+      "beat": "final-clash",
+      "phase": 0.5238095238095238,
+      "beat_start": 25.75,
+      "beat_end": 31.0,
+      "seconds": 28.5
+    },
+    {
+      "id": "finish-accent",
+      "beat": "finish",
+      "phase": 0.8659793814432994,
+      "beat_start": 31.0,
+      "beat_end": 35.041666666666664,
+      "seconds": 34.5
+    }
+  ],
+  "source_sha256": {
+    "/home/runner/work/content-control/content-control/state/v2/voice.wav": "29383663b24f3f7d41260c2d12926ec37bab1f3e4d1070d221950f21c4b4718c",
+    "/home/runner/work/content-control/content-control/public/audio/episode1-music.mp3": "793a326d5072d3b4c2116a74f29bd631fe4d4003edb071110dbc4df6a72d0d40",
+    "/home/runner/work/content-control/content-control/public/audio/episode1-sfx-1.mp3": "3f0f191065173c87c654a3ac66cc6a1738be71aa7ab832ec7695d4ac305b3d30",
+    "/home/runner/work/content-control/content-control/public/audio/episode1-sfx-2.mp3": "b01175ca689242371869320806d52f2935686cfd77eabfd9eda691eb2fc30d40"
+  },
+  "source_duration_seconds": {
+    "/home/runner/work/content-control/content-control/state/v2/voice.wav": 35.041678,
+    "/home/runner/work/content-control/content-control/public/audio/episode1-music.mp3": 38.9485,
+    "/home/runner/work/content-control/content-control/public/audio/episode1-sfx-1.mp3": 1.227755,
+    "/home/runner/work/content-control/content-control/public/audio/episode1-sfx-2.mp3": 1.515102
+  },
+  "outputs": {
+    "music.wav": {
+      "path": "/home/runner/work/content-control/content-control/state/v2/mix/music.wav",
+      "sha256": "d4da4fdbd7bae8b6c9608e5321245cdded7add4389c4950fa1e378c4a388a759",
+      "duration": 35.041655
+    },
+    "sfx.wav": {
+      "path": "/home/runner/work/content-control/content-control/state/v2/mix/sfx.wav",
+      "sha256": "9ccfa9affc3fd987492006a8cc3fcd59dd41856ce4880f0b5fc0f8fad2ea5130",
+      "duration": 35.041678
+    },
+    "mix.wav": {
+      "path": "/home/runner/work/content-control/content-control/state/v2/mix/mix.wav",
+      "sha256": "a9a8753f55326dfebb2f1adefcbf5ae1724d2a662730368affaa57b41dea835a",
+      "duration": 35.041655
+    }
+  },
+  "scope": "Local decode, separate stem assembly, source integrity and duration verification; listening quality and voice identity remain unverified"
+}
