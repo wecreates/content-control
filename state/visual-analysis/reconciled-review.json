@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "896006c7af0571fa98f2f17e22aafa7030a424c9c47f2f85d130c7173f181edf",
+  "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
   "production_approved": false,
   "publication_enabled": false,
   "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
@@ -11,19 +11,22 @@
     "production_approved": false,
     "publication_enabled": false,
     "reason": "Documented exact-artifact sampled visual review pass. Full audiovisual approval remains separate.",
-    "reviewed_at": "2026-10-13T22:03:56.325908+00:00",
+    "reviewed_at": "2026-10-13T22:17:04.054530+00:00",
     "reviewed_frame_indices": [
       0,
       93,
       186,
       204,
       280,
+      372,
       373,
+      420,
+      450,
       466,
+      500,
       559,
       653,
       744,
-      745,
       746,
       768,
       800,
@@ -46,7 +49,6 @@
           559,
           653,
           744,
-          745,
           746,
           768,
           800,
@@ -68,7 +70,7 @@
           839
         ],
         "dimension": "character_scale",
-        "observation": "Paired characters and trap frames have readable facial features with enlarged framing; the finish actor uses the prior smaller scale to preserve essential prop visibility while retaining readable facial expressions and gestures at360px. All sampled subjects remain inside the canvas. Readable character performance meets the reference-informed benchmark without requiring identical compositions.",
+        "observation": "Sampled faces, expressions, gestures and identity silhouettes are readable. Paired scenes and fee reaction have enlarged subjects; finish preserves prop clearance. This passes functional sampled subject readability, not closeup diversity or competitor-polish parity.",
         "status": "PASS"
       },
       "phone_readability": {
@@ -95,19 +97,22 @@
           186,
           204,
           280,
+          372,
           373,
+          420,
+          450,
           466,
+          500,
           559,
           653,
           744,
-          745,
           746,
           768,
           800,
           839
         ],
         "dimension": "staging",
-        "observation": "Arena platform, lounge counter/floor, checkpoint lanes and victory pedestal supply distinct scene contexts. Cape contact remains connected in paired samples. Direct full720-pixel inspection of finish frames744,745,768,800,839 verifies the corrected smaller finish actor clears the wallet lower edge and under-arc, and the entire sandwich is now visible. Finish caption800 has two lines and clears the wallet. No blocking prop occlusion or outer clipping was observed in these samples.",
+        "observation": "Distinct arena, lounge counter/doorway, checkpoint lanes and victory pedestal are visible. Newly grounded invitation scene frames420,450,466,500 shows hand meeting FEE envelope at doorway; captions remain separate. Fee reaction frame372 has larger face while limbs remain inside sampled frame. Finish full720px frames744,768,800,839 retains fully visible sandwich and separation of Dave head from wallet/under-arc. No blocking occlusion or clipping observed in inspected samples. Floating sandwich symbols and mostly full-body compositions remain creative-polish limitations outside this layout pass.",
         "status": "PASS"
       },
       "typography": {
@@ -122,7 +127,7 @@
           800
         ],
         "dimension": "typography",
-        "observation": "Large bold captions are visually separate from props and legible in the sampled output. Frame 204 directly shows the key word perks in a high-contrast inverted rounded block, supplying emphasis beyond plain caption fragments. Different dialogue and intentional white background are not defects relative to the reference benchmark.",
+        "observation": "Bold captions are readable and separate from props in inspected frames; frame204 perks and frame768 budget use inverted emphasis, while frame420 two-line text clears sandwich. This is sampled legibility/hierarchy approval; sans-serif styling is not a claim of expressive-font or competitor creative parity.",
         "status": "PASS"
       }
     },
@@ -130,5 +135,5 @@
     "status": "PASS",
     "unresolved_issues": []
   },
-  "visual_review_sha256": "d0174839e5b639def50c68b9f5f1e5a0d0cc5f2bea91e60674c0c10683ce7f18"
+  "visual_review_sha256": "f55c9171456d6a7a546198114f5ab0cf89634955b52152f46bf55488e762ec5a"
 }
