@@ -109,5 +109,42 @@ class RenderedVisualParityTests(unittest.TestCase):
         self.assertTrue(result['framewise_style_parity'])
         self.assertLess(result['mean_frame_distance'],0.08)
 
-if __name__=='__main__':
+
+class OperationalAnalysisTests(unittest.TestCase):
+    def test_real_decodes_produce_hashed_review_sheets_without_approval(self):
+        from scripts.rendered_visual_parity import analyze_comparison
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'candidate.avi';refs=root/'refs';refs.mkdir()
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),8,(80,80))
+            self.assertTrue(writer.isOpened())
+            for i in range(8):
+                image=np.full((80,80,3),255,dtype=np.uint8)
+                cv2.line(image,(10+i,10),(60,65),(0,0,0),4)
+                writer.write(image)
+                if i<4:cv2.imwrite(str(refs/f'ref-{i:02}.jpg'),image)
+            writer.release()
+            result=analyze_comparison(refs,video,root/'evidence')
+            self.assertEqual(result['status'],'COMPLETE')
+            self.assertFalse(result['production_approved'])
+            self.assertEqual(result['acceptance_effect'],'none')
+            self.assertEqual([p['candidate_frame'] for p in result['samples']],[0,2,5,7])
+            self.assertEqual(result['candidate_sha256'],sha256(video))
+            sheet=result['contact_sheets'][0];path=root/'evidence'/sheet['file']
+            self.assertEqual(sheet['sha256'],sha256(path))
+            decoded=cv2.imread(str(path));self.assertEqual(decoded.shape[:2],(1584,640))
+            import json
+            manifest={'frames':[{'file':p.name,'sha256':sha256(p)} for p in sorted(refs.glob('ref-*.jpg'))]}
+            (refs/'reference-manifest.json').write_text(json.dumps(manifest))
+            verified=analyze_comparison(refs,video,root/'manifest-evidence')
+            self.assertEqual(verified['reference_provenance']['status'],'FRAME_HASHES_VERIFIED')
+            self.assertFalse(verified['reference_provenance']['source_url_attribution_verified'])
+            manifest['frames'][0]['sha256']='0'*64
+            (refs/'reference-manifest.json').write_text(json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError,'hash mismatch'):analyze_comparison(refs,video,root/'tampered')
+            (refs/'reference-manifest.json').unlink()
+            (refs/'ref-00.jpg').write_bytes(b'corrupt')
+            with self.assertRaises(ValueError):analyze_comparison(refs,video,root/'invalid')
+
+
+if __name__ == "__main__":
     unittest.main()

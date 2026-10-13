@@ -1,0 +1,355 @@
+{
+  "analysis_status": "COMPLETE",
+  "candidate_duration_seconds": 34.958333333333336,
+  "candidate_sha256": "8d8b0559f8f0b49dd5875e4c81e19d9005c15933faf22adce10968ef3169743b",
+  "checks": {
+    "candidate_decodes": true,
+    "framewise_style_parity": false,
+    "reference_frames_present": true
+  },
+  "engine": "reference-qualified-parity-v2",
+  "frame_distances": [
+    0.3614180740655637,
+    0.36722417853860295,
+    0.3541011520884395,
+    0.34861082771650326,
+    0.38502985536662576,
+    0.3679254257301878,
+    0.36338482051674836,
+    0.3549144863153595,
+    0.36005856821895427,
+    0.3615269263174019
+  ],
+  "framewise_style_parity": false,
+  "mean_frame_distance": 0.3624194314874387,
+  "metric_weights": {
+    "edge_density": 0.35,
+    "mean_brightness": 0.3,
+    "white_fraction": 0.35
+  },
+  "p90_frame_distance": 0.36963586869383164,
+  "paired_frames": 10,
+  "publication_enabled": false,
+  "qualified_structure": {
+    "blocker": "BLOCKED_UNSUPPORTED_REFERENCE",
+    "framewise_style_parity": false,
+    "reason": "Reference provenance and exact-candidate aligned-frame contract required; raw background difference is diagnostic only.",
+    "status": "BLOCKED"
+  },
+  "raw_pixel_diagnostic": {
+    "acceptance_effect": "none",
+    "frame_distances": [
+      0.3614180740655637,
+      0.36722417853860295,
+      0.3541011520884395,
+      0.34861082771650326,
+      0.38502985536662576,
+      0.3679254257301878,
+      0.36338482051674836,
+      0.3549144863153595,
+      0.36005856821895427,
+      0.3615269263174019
+    ],
+    "framewise_style_parity": false,
+    "mean_frame_distance": 0.3624194314874387,
+    "p90_frame_distance": 0.36963586869383164,
+    "paired_frames": 10,
+    "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3325 of 0.3624). This does not assess creative quality or override the required brand style.",
+    "weighted_mean_distance_components": {
+      "edge_density": 0.0037735134548611106,
+      "mean_brightness": 0.02613585401348039,
+      "white_fraction": 0.33251006401909716
+    }
+  },
+  "reason": "Reference provenance and exact-candidate aligned-frame contract required; raw background difference is diagnostic only.",
+  "reference_frames": 10,
+  "reference_manifest": [
+    {
+      "file": "ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "file": "ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "file": "ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "file": "ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "file": "ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "file": "ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "file": "ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "file": "ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "file": "ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "file": "ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "schema_version": 2,
+  "scope": "Sampled pixel statistics only; not a full audiovisual or semantic style review.",
+  "status": "BLOCKED",
+  "threshold": 0.14,
+  "visual_analysis": {
+    "acceptance_effect": "none",
+    "appearance_distributions": {
+      "edge_density": {
+        "candidate_mean": 0.008628797743055553,
+        "candidate_range": [
+          0.0069097222222222225,
+          0.011202256944444445
+        ],
+        "mean_difference": -0.010507812500000003,
+        "reference_mean": 0.019136610243055557,
+        "reference_range": [
+          0.009833984375,
+          0.03473198784722222
+        ]
+      },
+      "mean_brightness": {
+        "candidate_mean": 0.9746009025224673,
+        "candidate_range": [
+          0.9606030730868736,
+          0.9866355868736383
+        ],
+        "mean_difference": 0.08711951337826795,
+        "reference_mean": 0.8874813891441994,
+        "reference_range": [
+          0.8470487642973856,
+          0.9027008357162308
+        ]
+      },
+      "white_fraction": {
+        "candidate_mean": 0.9680388454861111,
+        "candidate_range": [
+          0.9531998697916667,
+          0.9822178819444445
+        ],
+        "mean_difference": 0.9500287543402778,
+        "reference_mean": 0.01801009114583333,
+        "reference_range": [
+          0.010738932291666666,
+          0.02702907986111111
+        ]
+      }
+    },
+    "candidate_sha256": "8d8b0559f8f0b49dd5875e4c81e19d9005c15933faf22adce10968ef3169743b",
+    "contact_sheets": [
+      {
+        "file": "comparison-01.jpg",
+        "first_pair": 0,
+        "pair_count": 4,
+        "sha256": "52cc6d3554b6b92f334dde2659fc4f5b7acdb7649b8ad5dfe02dc3883929d86f"
+      },
+      {
+        "file": "comparison-02.jpg",
+        "first_pair": 4,
+        "pair_count": 4,
+        "sha256": "dfa7b4a735f6d7b79c0ad9edd63659412ab697124a76c08f246d048bcd83b0ee"
+      },
+      {
+        "file": "comparison-03.jpg",
+        "first_pair": 8,
+        "pair_count": 2,
+        "sha256": "795716c88b3d005731158516e395869986d7f65d18c8086675dc084cbe055157"
+      }
+    ],
+    "pairing": "duration-normalized display order; not semantic or same-art alignment",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reference_provenance": {
+      "reason": "Reference images have no source-video extraction manifest; analysis is diagnostic only.",
+      "source_url": null,
+      "status": "UNVERIFIED_LEGACY_FRAMES"
+    },
+    "sample_count": 10,
+    "samples": [
+      {
+        "candidate_frame": 0,
+        "candidate_metrics": {
+          "edge_density": 0.008938802083333334,
+          "mean_brightness": 0.980494183176743,
+          "white_fraction": 0.9741872829861111
+        },
+        "candidate_seconds": 0.0,
+        "reference_file": "ref-01.jpg",
+        "reference_metrics": {
+          "edge_density": 0.019764539930555554,
+          "mean_brightness": 0.8997004655160675,
+          "white_fraction": 0.021641710069444445
+        },
+        "reference_sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+      },
+      {
+        "candidate_frame": 93,
+        "candidate_metrics": {
+          "edge_density": 0.008135850694444445,
+          "mean_brightness": 0.9812928496051199,
+          "white_fraction": 0.9755913628472223
+        },
+        "candidate_seconds": 3.875,
+        "reference_file": "ref-02.jpg",
+        "reference_metrics": {
+          "edge_density": 0.018546006944444443,
+          "mean_brightness": 0.8864774816176471,
+          "white_fraction": 0.018059895833333332
+        },
+        "reference_sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+      },
+      {
+        "candidate_frame": 186,
+        "candidate_metrics": {
+          "edge_density": 0.0076812065972222225,
+          "mean_brightness": 0.961387199584695,
+          "white_fraction": 0.9539539930555555
+        },
+        "candidate_seconds": 7.75,
+        "reference_file": "ref-03.jpg",
+        "reference_metrics": {
+          "edge_density": 0.022534722222222223,
+          "mean_brightness": 0.8856324550653595,
+          "white_fraction": 0.022022569444444445
+        },
+        "reference_sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+      },
+      {
+        "candidate_frame": 279,
+        "candidate_metrics": {
+          "edge_density": 0.008347439236111111,
+          "mean_brightness": 0.9606030730868736,
+          "white_fraction": 0.9531998697916667
+        },
+        "candidate_seconds": 11.625,
+        "reference_file": "ref-04.jpg",
+        "reference_metrics": {
+          "edge_density": 0.011193576388888888,
+          "mean_brightness": 0.899558010791122,
+          "white_fraction": 0.012339409722222222
+        },
+        "reference_sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+      },
+      {
+        "candidate_frame": 372,
+        "candidate_metrics": {
+          "edge_density": 0.0069097222222222225,
+          "mean_brightness": 0.9866355868736383,
+          "white_fraction": 0.9822178819444445
+        },
+        "candidate_seconds": 15.5,
+        "reference_file": "ref-05.jpg",
+        "reference_metrics": {
+          "edge_density": 0.027584635416666666,
+          "mean_brightness": 0.8470487642973856,
+          "white_fraction": 0.022453342013888888
+        },
+        "reference_sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+      },
+      {
+        "candidate_frame": 466,
+        "candidate_metrics": {
+          "edge_density": 0.007284071180555555,
+          "mean_brightness": 0.9850203099468954,
+          "white_fraction": 0.9800629340277778
+        },
+        "candidate_seconds": 19.416666666666668,
+        "reference_file": "ref-06.jpg",
+        "reference_metrics": {
+          "edge_density": 0.016376953125,
+          "mean_brightness": 0.8944071648624728,
+          "white_fraction": 0.015608723958333333
+        },
+        "reference_sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+      },
+      {
+        "candidate_frame": 559,
+        "candidate_metrics": {
+          "edge_density": 0.009310980902777778,
+          "mean_brightness": 0.9638929227941176,
+          "white_fraction": 0.9558355034722222
+        },
+        "candidate_seconds": 23.291666666666668,
+        "reference_file": "ref-07.jpg",
+        "reference_metrics": {
+          "edge_density": 0.03473198784722222,
+          "mean_brightness": 0.8658755233864379,
+          "white_fraction": 0.02702907986111111
+        },
+        "reference_sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+      },
+      {
+        "candidate_frame": 652,
+        "candidate_metrics": {
+          "edge_density": 0.011202256944444445,
+          "mean_brightness": 0.9719926130174291,
+          "white_fraction": 0.9640190972222222
+        },
+        "candidate_seconds": 27.166666666666668,
+        "reference_file": "ref-08.jpg",
+        "reference_metrics": {
+          "edge_density": 0.009833984375,
+          "mean_brightness": 0.9027008357162308,
+          "white_fraction": 0.010738932291666666
+        },
+        "reference_sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+      },
+      {
+        "candidate_frame": 745,
+        "candidate_metrics": {
+          "edge_density": 0.00933810763888889,
+          "mean_brightness": 0.9777167287922114,
+          "white_fraction": 0.9709418402777777
+        },
+        "candidate_seconds": 31.041666666666668,
+        "reference_file": "ref-09.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015412326388888889,
+          "mean_brightness": 0.899582409960512,
+          "white_fraction": 0.015249565972222223
+        },
+        "reference_sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+      },
+      {
+        "candidate_frame": 838,
+        "candidate_metrics": {
+          "edge_density": 0.009139539930555555,
+          "mean_brightness": 0.9769735583469499,
+          "white_fraction": 0.9703786892361111
+        },
+        "candidate_seconds": 34.916666666666664,
+        "reference_file": "ref-10.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015387369791666666,
+          "mean_brightness": 0.8938307802287582,
+          "white_fraction": 0.014957682291666666
+        },
+        "reference_sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+      }
+    ],
+    "scope": "Decoded sampled visual evidence and cross-story appearance distributions; no full audiovisual review, motion, retention, or competitive-quality approval.",
+    "status": "COMPLETE"
+  },
+  "weighted_mean_distance_components": {
+    "edge_density": 0.0037735134548611106,
+    "mean_brightness": 0.02613585401348039,
+    "white_fraction": 0.33251006401909716
+  }
+}

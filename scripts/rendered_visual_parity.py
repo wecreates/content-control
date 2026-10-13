@@ -157,6 +157,92 @@ def qualified_structure_comparison(reference_dir, candidate_video, contract, thr
             'reason':'Aligned measurements available, but no independently validated structural acceptance calibration exists. Full audiovisual and competitor review remain mandatory.'}
 
 
+def analyze_comparison(reference_dir, candidate_video, output_dir):
+    """Produce inspectable cross-story evidence without treating similarity as approval.
+
+    Reference order and candidate duration-normalized order are paired only for
+    display. They are not asserted to depict the same story beat or geometry.
+    """
+    files=sorted(Path(reference_dir).glob('ref-*.jpg'))
+    if len(files)<4:
+        raise ValueError('At least four decoded reference frames required')
+    manifest_path=Path(reference_dir)/'reference-manifest.json'
+    provenance={'status':'UNVERIFIED_LEGACY_FRAMES','source_url':None,
+                'reason':'Reference images have no source-video extraction manifest; analysis is diagnostic only.'}
+    if manifest_path.exists():
+        manifest=json.loads(manifest_path.read_text())
+        entries=manifest.get('frames')
+        if not isinstance(entries,list) or len(entries)!=len(files):
+            raise ValueError('Reference manifest frame set does not match images')
+        indexed={entry.get('file'):entry for entry in entries if isinstance(entry,dict)}
+        if len(indexed)!=len(files) or set(indexed)!={path.name for path in files}:
+            raise ValueError('Reference manifest has duplicate or missing frame entries')
+        for path in files:
+            if indexed[path.name].get('sha256')!=sha256(path):
+                raise ValueError(f'Reference manifest hash mismatch: {path.name}')
+        provenance={'status':'FRAME_HASHES_VERIFIED','manifest_sha256':sha256(manifest_path),
+                    'source_url':manifest.get('source_url'),
+                    'source_url_attribution_verified':False,
+                    'source_video_sha256':manifest.get('source_video_sha256'),
+                    'reason':'Frame bytes match extraction manifest; source URL attribution is not independently verified.'}
+    output_dir=Path(output_dir)
+    output_dir.mkdir(parents=True,exist_ok=True)
+    cap=cv2.VideoCapture(str(candidate_video))
+    rows=[]; records=[]; references=[]; candidates=[]
+    try:
+        total=float(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps=float(cap.get(cv2.CAP_PROP_FPS))
+        if not math.isfinite(total) or not total.is_integer() or total<len(files) or not math.isfinite(fps) or fps<=0:
+            raise ValueError('Invalid or insufficient candidate frames')
+        for i,path in enumerate(files):
+            reference=cv2.imread(str(path))
+            if reference is None:raise ValueError(f'Cannot decode reference {path.name}')
+            index=round((int(total)-1)*i/(len(files)-1))
+            if not cap.set(cv2.CAP_PROP_POS_FRAMES,index):raise ValueError('Candidate seek failed')
+            ok,candidate=cap.read(); actual=float(cap.get(cv2.CAP_PROP_POS_FRAMES))
+            if not ok or candidate is None or not math.isfinite(actual) or abs(actual-index-1)>.5:
+                raise ValueError('Candidate sampling position unverified')
+            references.append(frame_metrics(reference));candidates.append(frame_metrics(candidate))
+            records.append({'reference_file':path.name,'reference_sha256':sha256(path),
+                            'candidate_frame':index,'candidate_seconds':index/fps,
+                            'reference_metrics':references[-1],'candidate_metrics':candidates[-1]})
+            # Letterbox rather than distort mixed source aspect ratios.
+            def tile(image,label):
+                width,height=320,360
+                canvas=np.full((height+36,width,3),245,dtype=np.uint8)
+                h,w=image.shape[:2];scale=min(width/w,height/h)
+                resized=cv2.resize(image,(max(1,round(w*scale)),max(1,round(h*scale))),interpolation=cv2.INTER_AREA)
+                rh,rw=resized.shape[:2];x=(width-rw)//2;y=36+(height-rh)//2
+                canvas[y:y+rh,x:x+rw]=resized
+                cv2.putText(canvas,label,(8,24),cv2.FONT_HERSHEY_SIMPLEX,.48,(20,20,20),1,cv2.LINE_AA)
+                return canvas
+            rows.append(np.concatenate([tile(reference,path.name),tile(candidate,f'Candidate {index/fps:.2f}s / frame {index}')],axis=1))
+    finally:
+        cap.release()
+    sheets=[]
+    for start in range(0,len(rows),4):
+        path=output_dir/f'comparison-{start//4+1:02d}.jpg'
+        if not cv2.imwrite(str(path),np.concatenate(rows[start:start+4],axis=0)):
+            raise RuntimeError('Could not write comparison sheet')
+        sheets.append({'file':path.name,'sha256':sha256(path),'first_pair':start,'pair_count':len(rows[start:start+4])})
+    # Distributional descriptors remain useful across different story beats;
+    # frame-to-frame deltas must not be represented as motion or retention.
+    distributions={}
+    for key in METRIC_WEIGHTS:
+        r=np.array([m[key] for m in references]);c=np.array([m[key] for m in candidates])
+        distributions[key]={'reference_mean':float(r.mean()),'candidate_mean':float(c.mean()),
+                            'reference_range':[float(r.min()),float(r.max())],
+                            'candidate_range':[float(c.min()),float(c.max())],
+                            'mean_difference':float(c.mean()-r.mean())}
+    return {'status':'COMPLETE','acceptance_effect':'none','production_approved':False,
+            'publication_enabled':False,'candidate_sha256':sha256(candidate_video),
+            'pairing':'duration-normalized display order; not semantic or same-art alignment',
+            'scope':'Decoded sampled visual evidence and cross-story appearance distributions; no full audiovisual review, motion, retention, or competitive-quality approval.',
+            'reference_provenance':provenance,
+            'sample_count':len(records),'samples':records,'contact_sheets':sheets,
+            'appearance_distributions':distributions}
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--reference-dir",required=True)
@@ -164,19 +250,23 @@ def main():
     ap.add_argument("--out",required=True)
     ap.add_argument("--threshold",type=float,default=0.14)
     ap.add_argument("--reference-contract",help="Verified exact-candidate aligned-frame provenance JSON; absent contract blocks approval")
+    ap.add_argument("--analysis-only",action="store_true",help="Exit successfully for completed diagnostic analysis; never changes approval status")
     a=ap.parse_args()
     refs=load_reference_metrics(a.reference_dir)
     cands,duration=sample_video(a.candidate_video,len(refs))
     comp=compare_metric_series(refs,cands,a.threshold)
     contract=json.loads(Path(a.reference_contract).read_text()) if a.reference_contract else None
     structural=qualified_structure_comparison(a.reference_dir,a.candidate_video,contract,a.threshold)
+    analysis=analyze_comparison(a.reference_dir,a.candidate_video,Path(a.out).parent / (Path(a.out).stem+"-evidence"))
     checks={
         "candidate_decodes":duration>0,
         "reference_frames_present":len(refs)>=4,
         "framewise_style_parity":structural["framewise_style_parity"],
     }
     report={
-        "schema_version":1,
+        "schema_version":2,
+        "analysis_status":analysis["status"],
+        "visual_analysis":analysis,
         "engine":"reference-qualified-parity-v2",
         "candidate_sha256":sha256(a.candidate_video),
         "candidate_duration_seconds":duration,
@@ -197,7 +287,7 @@ def main():
     Path(a.out).parent.mkdir(parents=True,exist_ok=True)
     Path(a.out).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
     print(json.dumps({"status":report["status"],"mean_frame_distance":comp["mean_frame_distance"],"p90_frame_distance":comp["p90_frame_distance"]},sort_keys=True))
-    raise SystemExit(0 if report["status"]=="PASS" else 2)
+    raise SystemExit(0 if report["status"]=="PASS" or (a.analysis_only and analysis["status"]=="COMPLETE") else 2)
 
 if __name__=="__main__":
     main()
