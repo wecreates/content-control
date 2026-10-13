@@ -94,3 +94,10 @@ test('canonical findings reject forged status, observation, frames and duplicate
  (review,report)=>{review.decision='PASS';report.status='VISUAL_REVALIDATED';report.visual_review.status='PASS';}
  ])await canonicalFindingsFixture(tamper,async url=>{const response=await fetch(url);assert.equal(response.status,503);assert.equal((await response.json()).production_approved,false);});
 });
+
+test('complete recorded technical checks distinguish review work from render failure',async()=>{
+ const checks=Object.fromEntries(['voices','sound_mix','transcription','captions','caption_frames','technical_video','character_binding','phone_viewport'].map(name=>[name,{status:'PASS'}]));
+ for(const [visual,status,review] of [['PASS','REVIEW_REQUIRED','FULL_AUDIOVISUAL_REVIEW_REQUIRED'],['BLOCKED','AWAITING_REVIEW','CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED'],['FAIL','BLOCKED','CREATIVE_REPAIR_REQUIRED']])await fixture({...base,candidate_generated:true,candidate_sha256:'a'.repeat(64),checks:{...checks,style_parity:{status:visual}},technical_status:'FORGED'},async url=>{
+  const d=await(await fetch(url)).json();assert.equal(d.status,status);assert.equal(d.review_status,review);assert.equal(d.technical_status,'PASS');assert.equal(d.production_approved,false);assert.equal(d.watch_url,null);
+ });
+});

@@ -22,3 +22,14 @@ test('symlink output, symlink parent and hardlink aliases reject',t=>{const {dir
 test('input symlinks also protect their real file',t=>{const {dir,video}=fixture(t);const input=join(dir,'input-link');symlinkSync(video,input);assert.throws(()=>safeOutputPath(video,[input]),/must not overwrite/);});
 test('media mutation during ffprobe rejects stale hash binding',t=>{const {video}=fixture(t);const probe=()=>{writeFileSync(video,'modified media');return JSON.stringify({format:{duration:1},streams:[{codec_type:'video'},{codec_type:'audio'}]});};assert.throws(()=>inspectMedia(video,probe),/Media changed during probe/);});
 test('unchanged media probe binds exact bytes',t=>{const {video}=fixture(t);const probe=()=>JSON.stringify({format:{duration:1},streams:[{codec_type:'video'},{codec_type:'audio'}]});assert.equal(inspectMedia(video,probe).duration_seconds,1);});
+
+import {reviewSource} from '../scripts/exact_av_review.mjs';
+const sourceRun=()=>({id:123,repository:{full_name:'wecreates/content-control'},head_repository:{full_name:'wecreates/content-control'},head_branch:'main',path:'.github/workflows/content-control-v2.yml',event:'workflow_dispatch',status:'completed',conclusion:'failure',head_sha:'a'.repeat(40)});
+const sourceRequest={repository:'wecreates/content-control',runId:'123',format:'v2'};
+test('V2 failed QA artifacts can be reviewed without approval or publication',()=>{const r=reviewSource(sourceRun(),sourceRequest);assert.equal(r.artifact,'content-control-v2-acceptance');assert.equal(r.media,'render/v2-boss-fight.mp4');assert.equal(r.production_approved,false);assert.equal(r.publication_enabled,false);});
+test('short and long retain their exact existing artifact paths',()=>{for(const format of ['short','long']){const run=sourceRun();run.path='.github/workflows/production-execution.yml';run.conclusion='success';const r=reviewSource(run,{...sourceRequest,format});assert.equal(r.artifact,'production-state-'+format);assert.equal(r.media,'candidate.mp4');}});
+test('foreign repository, fork, PR, other branch, workflow and incomplete runs rejected',()=>{
+ const changes=[{repository:{full_name:'other/repo'}},{head_repository:{full_name:'fork/repo'}},{head_branch:'untrusted'},{path:'.github/workflows/other.yml'},{event:'pull_request'},{status:'in_progress'},{conclusion:'cancelled'},{head_sha:'bad'},{id:124}];
+ for(const change of changes)assert.throws(()=>reviewSource({...sourceRun(),...change},sourceRequest),/Untrusted/);
+});
+test('format and run identifier cannot select arbitrary artifacts or inject paths',()=>{for(const format of ['../v2','constructor','unknown','short'])assert.throws(()=>reviewSource(sourceRun(),{...sourceRequest,format}));for(const runId of ['123\nmedia=evil','0','123/../../'])assert.throws(()=>reviewSource(sourceRun(),{...sourceRequest,runId}));});

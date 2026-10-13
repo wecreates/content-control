@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "status": "REVIEW_REQUIRED",
+  "publication_enabled": false,
+  "production_approved": false,
+  "media": {
+    "verified": true,
+    "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+    "duration_seconds": 35.040998,
+    "byte_length": 6283469
+  },
+  "scope": "Preparation only. No external upload, inference, creative approval, or listening certification performed.",
+  "prompt": "Review the exact supplied video AND audio end to end (35.040998 seconds; SHA256 db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34). Do not infer review from a script, contact sheet, transcript, or technical metrics. If any portion is inaccessible, report BLOCKED and describe the gap. Inspect hook, story escalation, visual storytelling, character consistency, voice performance, sound mix, pacing, phone readability, payoff and factual accuracy. Record time-located defects and full reviewed intervals. Independently review at least two distinct competitor videos with audio before claiming comparison. Return JSON in this schema; only return PASS when actual complete review supports every check and there are no unresolved issues. Never invent evidence, reference access or listening.",
+  "response_schema": {
+    "candidate_sha256": "db60b8c4820012a497e42920b122d70aed5895ca8ffed03154998d0db2d31e34",
+    "duration_seconds": 35.040998,
+    "status": "PASS | REPAIR | BLOCKED",
+    "method": "rendered_video_review",
+    "full_video_review": "boolean",
+    "full_audio_review": "boolean",
+    "reviewer": {
+      "identity": "reviewer identifier",
+      "method": "actual audiovisual inspection method",
+      "evidence": "traceable review session or response identifier"
+    },
+    "reviewed_intervals": "[[start,end], ...]",
+    "checks": {
+      "hook": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "story_escalation": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "visual_storytelling": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "character_consistency": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "voice_performance": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "sound_mix": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "pacing": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "phone_readability": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "payoff": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      },
+      "factual_accuracy": {
+        "pass": "boolean",
+        "evidence": "concrete observed evidence"
+      }
+    },
+    "comparisons": [
+      {
+        "url": "https://...",
+        "full_video_review": "boolean",
+        "full_audio_review": "boolean",
+        "access_scope": "full audiovisual review",
+        "observation": "specific observed evidence",
+        "applied_difference": "specific difference"
+      }
+    ],
+    "findings": [
+      {
+        "start_sec": "number",
+        "end_sec": "number",
+        "severity": "critical | major | minor",
+        "category": "string",
+        "evidence": "observed defect",
+        "repair": "required change",
+        "resolved": "boolean"
+      }
+    ],
+    "critical_count": "integer",
+    "major_count": "integer",
+    "unresolved_issues": "array",
+    "publication_enabled": false
+  }
+}

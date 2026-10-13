@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
     inputs:
       production_run_id:
-        description: Existing production execution run containing exact candidate artifacts
+        description: Existing completed production execution or V2 run containing exact candidate artifacts
         required: true
         type: string
       format:
         description: Exact candidate format
         required: true
         type: choice
-        options: [short, long]
+        options: [short, long, v2]
       review_json_path:
         description: Optional committed reviewer JSON path; blank prepares review only
         type: string
@@ -25,6 +25,7 @@ permissions:
   actions: read
 jobs:
   tests:
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +33,7 @@ jobs:
         with: {node-version: '20'}
       - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs
   prepare-or-validate:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false && github.ref == 'refs/heads/main'
     needs: tests
     runs-on: ubuntu-latest
     env:
@@ -42,39 +43,48 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
       - name: Validate production provenance
+        id: source
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RUN_ID: ${{ inputs.production_run_id }}
+          REVIEW_FORMAT: ${{ inputs.format }}
         run: |
-          python - <<'PY'
-          import json,os,subprocess
-          run=os.environ['RUN_ID']
-          if not run.isdigit(): raise SystemExit('Numeric production run ID required')
-          d=json.loads(subprocess.check_output(['gh','api',f'repos/{os.environ["GH_REPO"]}/actions/runs/{run}']))
-          if d['path']!='.github/workflows/production-execution.yml' or d['event'] not in ('push','workflow_dispatch'):
-              raise SystemExit('Expected existing production execution workflow')
-          PY
+          node --input-type=module <<'JS'
+          import {execFileSync} from 'node:child_process';
+          import {appendFileSync,mkdirSync,writeFileSync} from 'node:fs';
+          import {reviewSource} from './scripts/exact_av_review.mjs';
+          const {RUN_ID,GH_REPO,REVIEW_FORMAT}=process.env;
+          if(!/^[1-9][0-9]*$/.test(RUN_ID))throw Error('Numeric production run ID required');
+          const run=JSON.parse(execFileSync('gh',['api',`repos/${GH_REPO}/actions/runs/${RUN_ID}`],{encoding:'utf8'}));
+          const source=reviewSource(run,{repository:GH_REPO,runId:RUN_ID,format:REVIEW_FORMAT});
+          mkdirSync('receipts',{recursive:true});
+          writeFileSync('receipts/source-provenance.json',JSON.stringify(source,null,2)+'\n');
+          appendFileSync(process.env.GITHUB_OUTPUT,`artifact=${source.artifact}\nmedia=review-input/current/${source.media}\n`);
+          JS
       - uses: actions/download-artifact@v4
         with:
-          name: production-state-${{ inputs.format }}
+          name: ${{ steps.source.outputs.artifact }}
           run-id: ${{ inputs.production_run_id }}
           github-token: ${{ github.token }}
           path: review-input/current
       - name: Install local media probe
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Prepare current exact audiovisual review
-        run: node scripts/exact_av_review.mjs prepare review-input/current/candidate.mp4 receipts/review-request.json
+        env:
+          MEDIA_PATH: ${{ steps.source.outputs.media }}
+        run: node scripts/exact_av_review.mjs prepare "$MEDIA_PATH" receipts/review-request.json
       - name: Validate supplied review against exact media and existing handoff gate
         if: inputs.review_json_path != ''
         env:
           REVIEW_PATH: ${{ inputs.review_json_path }}
+          MEDIA_PATH: ${{ steps.source.outputs.media }}
         run: |
           python - <<'PY'
           import os,pathlib,subprocess
           root=pathlib.Path.cwd().resolve();p=(root/os.environ['REVIEW_PATH']).resolve()
           if not p.is_relative_to(root) or p.suffix!='.json' or not p.is_file():raise SystemExit('Existing repository JSON review required')
-          subprocess.run(['node','scripts/exact_av_review.mjs','validate','review-input/current/candidate.mp4','receipts/review-validation.json',str(p)],check=True)
+          subprocess.run(['node','scripts/exact_av_review.mjs','validate',os.environ['MEDIA_PATH'],'receipts/review-validation.json',str(p)],check=True)
           PY
       - name: Preserve review preparation and validation only
         if: always()

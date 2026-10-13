@@ -7,6 +7,18 @@ import {execFileSync} from 'node:child_process';
 import {creativeHandoff,CREATIVE_CHECKS} from '../creative-handoff.js';
 
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+export function reviewSource(run, {repository, runId, format}) {
+ const sources = {
+  short: {workflow:'.github/workflows/production-execution.yml',artifact:'production-state-short',media:'candidate.mp4'},
+  long: {workflow:'.github/workflows/production-execution.yml',artifact:'production-state-long',media:'candidate.mp4'},
+  v2: {workflow:'.github/workflows/content-control-v2.yml',artifact:'content-control-v2-acceptance',media:'render/v2-boss-fight.mp4'},
+ };
+ const source=Object.hasOwn(sources,format)?sources[format]:null;
+ if(!source || !/^[1-9][0-9]*$/.test(String(runId)) || !/^[^/]+\/[^/]+$/.test(repository||''))throw Error('Invalid review source request');
+ if(!run || String(run.id)!==String(runId) || run.repository?.full_name!==repository || run.head_repository?.full_name!==repository || run.head_branch!=='main' || run.path!==source.workflow || !['push','workflow_dispatch'].includes(run.event) || run.status!=='completed' || !['success','failure'].includes(run.conclusion) || !/^[a-f0-9]{40}$/.test(run.head_sha||''))throw Error('Untrusted or incomplete review source run');
+ // Failed creative QA is a valid source for repair review, never evidence of acceptance.
+ return {...source,run_id:String(runId),source_sha:run.head_sha,conclusion:run.conclusion,publication_enabled:false,production_approved:false};
+}
 export function inspectMedia(path,probe=execFileSync) {
  const bytes=readFileSync(path);
  const data=JSON.parse(probe('ffprobe',['-v','error','-show_streams','-show_format','-of','json',path],{encoding:'utf8'}));

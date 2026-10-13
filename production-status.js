@@ -64,7 +64,14 @@ export function createProductionStatusRouter({root=process.cwd()}={}) {
    // This endpoint describes an unapproved build, never a handoff authorization.
    // Project known fields so persisted preview links/ready flags cannot leak through.
    const build=Object.fromEntries(['schema_version','run_id','recorded_at','source_commit','workflow_outcome','workflow_url','candidate_sha256','candidate_generated','checks','scope'].filter(key=>Object.hasOwn(report,key)).map(key=>[key,report[key]]));
-   res.json({...build,status:'BLOCKED',publication_enabled:false,production_approved:false,report_age_seconds:Math.max(0,Math.floor((Date.now()-when)/1000)),report_stale:Date.now()-when>86400000,status_scope:'Last recorded build; not a live running-job poll',watch_url:null});
+   const technicalNames=['voices','sound_mix','transcription','captions','caption_frames','technical_video','character_binding','phone_viewport'];
+   const stale=Date.now()-when>86400000;
+   const technical=report.candidate_generated===true&&/^[a-f0-9]{64}$/.test(report.candidate_sha256)&&technicalNames.every(name=>report.checks[name]?.status==='PASS');
+   const visual=report.checks.style_parity;
+   const invalid=visual?.failed_checks?.some(name=>['publication_disabled_not_verified','exact_candidate_binding_missing'].includes(name));
+   const reviewStatus=!technical?'TECHNICAL_PREREQUISITES_MISSING':visual?.status==='PASS'?'FULL_AUDIOVISUAL_REVIEW_REQUIRED':visual?.status==='FAIL'?'CREATIVE_REPAIR_REQUIRED':!invalid&&['BLOCKED','NOT_RUN'].includes(visual?.status)?'CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED':'REVIEW_EVIDENCE_INVALID';
+   const status=stale||!technical?'BLOCKED':reviewStatus==='FULL_AUDIOVISUAL_REVIEW_REQUIRED'?'REVIEW_REQUIRED':reviewStatus==='CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED'?'AWAITING_REVIEW':'BLOCKED';
+   res.json({...build,status,technical_status:technical?'PASS':'BLOCKED',review_status:reviewStatus,publication_enabled:false,production_approved:false,report_age_seconds:Math.max(0,Math.floor((Date.now()-when)/1000)),report_stale:stale,status_scope:'Last recorded build; not a live running-job poll or creative approval',watch_url:null});
   } catch {res.status(503).json({status:'UNAVAILABLE',publication_enabled:false,production_approved:false,watch_url:null,error:'BUILD_REPORT_UNAVAILABLE'});}
  });
  return router;
