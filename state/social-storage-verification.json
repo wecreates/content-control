@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-13T16:51:15.445Z",
+  "scope": "Encrypted PostgreSQL marker survived a live Render redeploy; not an indefinite durability, backup, OAuth, or production-readiness claim",
+  "publication_enabled": false,
+  "external_writes_enabled": false,
+  "storage_mode": "postgres_encrypted",
+  "tls_certificate_verification": true,
+  "storage_expires_at": "2026-10-26T20:02:09.446632Z",
+  "before": {
+    "probe_id": "d2867471-289c-43a2-8d66-502a93773720",
+    "runtime_boot_id": "f3431a65-5f83-44fc-bb7e-f66c0f79a89e",
+    "deployment": "dep-db761cfclcms73eprk90"
+  },
+  "after": {
+    "deployment": "dep-db76273bc2fs73fdc0o0",
+    "status": "EXISTING_READ_VERIFIED",
+    "read_verified": true,
+    "write_read_verified": false,
+    "probe_id": "d2867471-289c-43a2-8d66-502a93773720",
+    "runtime_boot_id": "5413e54e-3efa-4a35-9af1-cafe1bc85727",
+    "durable_storage_verified": false,
+    "scope": "Existing encrypted vault and probe read only; restart persistence requires independent comparison"
+  },
+  "checks": {
+    "same_persisted_probe": true,
+    "different_runtime_boot": true,
+    "existing_vault_read_only": true
+  },
+  "configuration": {
+    "SOCIAL_STORAGE_INITIALIZE": false,
+    "SOCIAL_STORAGE_CHECK_ENABLED": true
+  },
+  "tests": {
+    "social_integration": {
+      "passed": 133,
+      "failed": 0,
+      "skipped": 0,
+      "run_id": 38432897850
+    },
+    "system_wiring": {
+      "conclusion": "success",
+      "run_id": 38433713321
+    }
+  },
+  "remaining_dependencies": {
+    "owner": {
+      "status": "INCOMPLETE",
+      "missing_configuration": [
+        "OWNER_GITHUB_CLIENT_ID",
+        "OWNER_GITHUB_CLIENT_SECRET",
+        "OWNER_GITHUB_ID"
+      ],
+      "live_verified": false
+    },
+    "youtube": {
+      "status": "INCOMPLETE",
+      "missing_configuration": [
+        "YOUTUBE_OAUTH_CLIENT_ID",
+        "YOUTUBE_OAUTH_CLIENT_SECRET",
+        "YOUTUBE_CHANNEL_ID"
+      ],
+      "live_verified": false
+    },
+    "instagram": {
+      "status": "INCOMPLETE",
+      "missing_configuration": [
+        "META_APP_ID",
+        "META_APP_SECRET",
+        "INSTAGRAM_ACCOUNT_ID"
+      ],
+      "live_verified": false
+    }
+  }
+}

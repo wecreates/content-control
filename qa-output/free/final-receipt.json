@@ -105,63 +105,249 @@
   "reference_source": "repository-local reference/frames",
   "schema_version": 1,
   "semantic": {
+    "analysis_status": "COMPLETE",
+    "artistic_acceptance": "UNASSESSED",
     "best_reference_similarity_by_candidate": [
       0.4270407557487488,
-      0.450133740901947,
+      0.4501338303089142,
       0.39411044120788574,
-      0.4375590980052948,
+      0.4375591278076172,
       0.38434621691703796,
       0.3808640241622925,
-      0.47470104694366455,
-      0.39926469326019287,
-      0.4028262495994568,
-      0.3987775444984436
+      0.4747009873390198,
+      0.39926478266716003,
+      0.402826189994812,
+      0.39877745509147644
     ],
     "checks": {
       "florence_completed": true,
       "openclip_global_similarity": true,
       "openclip_mean_best_similarity": true
     },
-    "engine": "openclip-florence-free-qa-v1",
+    "checks_scope": "Legacy heuristic screening only; not artistic parity or production approval",
+    "engine": "openclip-florence-free-qa-v2",
+    "errors": [],
     "florence": {
       "captions": {
         "candidate": [
           {
-            "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head that reads \"The fee shows up.\" Below the stick figure, there is a text that says \"MAILBOX: 1 - JOY: 0\". On the left side of the image, there are two icons - an envelope with a price tag of $695",
+            "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head. The stick figure is standing on four legs and is holding a microphone. The background is white and there is a text above the stick figure that reads \"The fee shows up.\" Below the text, there is an envelope with a price tag of $695. The text below the envelope reads \"MAILBOX: 1 - JOY: 0\".",
             "file": "cand-01.jpg"
           },
           {
-            "caption": "The image is a simple illustration of a stick figure with a speech bubble above it. The speech bubble has the text \"Do the actual math.\" Below the speech bubble, there is a text that reads \"$80 - $20 $60\". The stick figure is drawn in a simple, cartoon-like style with two arms and two legs. The background",
-            "file": "cand-06.jpg"
+            "caption": "The image is a simple illustration of a stick figure with a red cross over its head and arms. The stick figure is standing on four legs and has a sad expression on its face. Above the stick figure, there is text that reads \"Points Monk interrupts.\" The background is white.",
+            "file": "cand-05.jpg"
           },
           {
-            "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style. The background is white and the text \"One rule",
+            "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue border around the image. Above the figures, there is text that reads \"One rule.",
             "file": "cand-10.jpg"
           }
         ],
         "reference": [
           {
-            "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. Above the figure, there is a text that reads \"If you're 17\". The background is plain white.",
+            "caption": "The image is a simple line drawing of a stick figure standing in the center with a big smile on its face. Surrounding the stick figure are six smaller stick figures of different sizes and shapes. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. Above the stick figures, there is a text that reads \"If you're 17\" in a bold, cursive font. The background is plain white",
             "file": "ref-01.jpg"
           },
           {
-            "caption": "The image is a simple illustration of a stick figure holding an alarm clock. The stick figure is drawn in a simple, cartoon-like style with thin lines and is standing on all fours. The clock is round and has a white face with black numbers and hands. Above the stick figure, there is a blue text that reads \"The Easiest",
-            "file": "ref-06.jpg"
+            "caption": "The image is a black and white illustration of a living room scene. In the center of the image, there is a couch with a television on it. The television is turned on and the screen is turned off. On the couch, there are various items scattered around, including a bowl of food, a bottle of wine, and a few other items. The background is plain white. Above the couch is a text that reads \"Waste This year\".",
+            "file": "ref-05.jpg"
           },
           {
-            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of",
+            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
             "file": "ref-10.jpg"
           }
         ]
       },
-      "error": null,
-      "status": "PASS"
+      "status": "COMPLETE"
     },
     "florence_model": "florence-community/Florence-2-base",
-    "global_similarity": 0.3321763277053833,
+    "frame_matches": [
+      {
+        "candidate": "cand-01.jpg",
+        "cosine_similarity": 0.4270407557487488,
+        "reference": "ref-09.jpg"
+      },
+      {
+        "candidate": "cand-02.jpg",
+        "cosine_similarity": 0.4501338303089142,
+        "reference": "ref-09.jpg"
+      },
+      {
+        "candidate": "cand-03.jpg",
+        "cosine_similarity": 0.39411044120788574,
+        "reference": "ref-08.jpg"
+      },
+      {
+        "candidate": "cand-04.jpg",
+        "cosine_similarity": 0.4375591278076172,
+        "reference": "ref-09.jpg"
+      },
+      {
+        "candidate": "cand-05.jpg",
+        "cosine_similarity": 0.38434621691703796,
+        "reference": "ref-01.jpg"
+      },
+      {
+        "candidate": "cand-06.jpg",
+        "cosine_similarity": 0.3808640241622925,
+        "reference": "ref-07.jpg"
+      },
+      {
+        "candidate": "cand-07.jpg",
+        "cosine_similarity": 0.4747009873390198,
+        "reference": "ref-09.jpg"
+      },
+      {
+        "candidate": "cand-08.jpg",
+        "cosine_similarity": 0.39926478266716003,
+        "reference": "ref-09.jpg"
+      },
+      {
+        "candidate": "cand-09.jpg",
+        "cosine_similarity": 0.402826189994812,
+        "reference": "ref-08.jpg"
+      },
+      {
+        "candidate": "cand-10.jpg",
+        "cosine_similarity": 0.39877745509147644,
+        "reference": "ref-01.jpg"
+      }
+    ],
+    "global_similarity": 0.6317602396011353,
+    "limitations": [
+      "Embedding similarity is descriptive, not calibrated artistic parity.",
+      "Sampled frames do not establish timing, animation quality, or full-video parity.",
+      "Captions may omit details or hallucinate; they are not visual approval."
+    ],
     "mean_best_frame_similarity": 0.41496238112449646,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
-    "schema_version": 1,
+    "openclip_status": "COMPLETE",
+    "production_ready": false,
+    "provenance": {
+      "candidate_extraction": null,
+      "candidate_frames": [
+        {
+          "file": "cand-01.jpg",
+          "sha256": "a24af53e882a8fa3ce9c378c56a827afd53888392c0241de1a2e1e120944938c"
+        },
+        {
+          "file": "cand-02.jpg",
+          "sha256": "8f8071a5f43820270a98e66fc9810a02a404ed99daa46bd6f067b8267412f8c0"
+        },
+        {
+          "file": "cand-03.jpg",
+          "sha256": "f6a92d32dc8a677ab4c33e6910e22d68808e032d30a181aa8e5fecfc902d5564"
+        },
+        {
+          "file": "cand-04.jpg",
+          "sha256": "2afd11712c85ccf93231ed4c9fd84a6cb6a37d8c1bbab68e65bcf9f893be45bf"
+        },
+        {
+          "file": "cand-05.jpg",
+          "sha256": "4ef6be313416dd66ec5d4314469ba8abed3b548216aba1049a012ce611e677ba"
+        },
+        {
+          "file": "cand-06.jpg",
+          "sha256": "19aa65ad9f998f0f7775ab272a57161c26efcccc07dc7899a717e2ab12dd3b30"
+        },
+        {
+          "file": "cand-07.jpg",
+          "sha256": "057b6305ab2565f684d0d21c30978adffa6a9f0e5a0567934604523bfb29af21"
+        },
+        {
+          "file": "cand-08.jpg",
+          "sha256": "62f5199db5dd8f168af0f1cbbc88821645d01856872eb9370bbda51367cd87e5"
+        },
+        {
+          "file": "cand-09.jpg",
+          "sha256": "c5f323f4847b46ad81c5b68ac50dfb01dd310368e179c9be65239590c295a184"
+        },
+        {
+          "file": "cand-10.jpg",
+          "sha256": "8b6a8af2862bd7532bcc83b6042d9a6d26342b288839436883a8681dc58ed799"
+        }
+      ],
+      "candidate_frames_video_binding_verified": false,
+      "reference_frames": [
+        {
+          "file": "ref-01.jpg",
+          "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+        },
+        {
+          "file": "ref-02.jpg",
+          "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+        },
+        {
+          "file": "ref-03.jpg",
+          "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+        },
+        {
+          "file": "ref-04.jpg",
+          "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+        },
+        {
+          "file": "ref-05.jpg",
+          "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+        },
+        {
+          "file": "ref-06.jpg",
+          "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+        },
+        {
+          "file": "ref-07.jpg",
+          "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+        },
+        {
+          "file": "ref-08.jpg",
+          "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+        },
+        {
+          "file": "ref-09.jpg",
+          "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+        },
+        {
+          "file": "ref-10.jpg",
+          "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+        }
+      ],
+      "run_id": "38440085624",
+      "source_revision": "22aab955e1042d40acf260f2ec9b042b0dce5dab"
+    },
+    "publication_enabled": false,
+    "runtime_versions": {
+      "Pillow": "12.3.0",
+      "open_clip_torch": "3.3.0",
+      "torch": "2.14.0",
+      "torchvision": "0.29.0",
+      "transformers": "5.10.0"
+    },
+    "sampled_frames": {
+      "candidate": [
+        "cand-01.jpg",
+        "cand-02.jpg",
+        "cand-03.jpg",
+        "cand-04.jpg",
+        "cand-05.jpg",
+        "cand-06.jpg",
+        "cand-07.jpg",
+        "cand-08.jpg",
+        "cand-09.jpg",
+        "cand-10.jpg"
+      ],
+      "reference": [
+        "ref-01.jpg",
+        "ref-02.jpg",
+        "ref-03.jpg",
+        "ref-04.jpg",
+        "ref-05.jpg",
+        "ref-06.jpg",
+        "ref-07.jpg",
+        "ref-08.jpg",
+        "ref-09.jpg",
+        "ref-10.jpg"
+      ]
+    },
+    "schema_version": 2,
     "verdict": "PASS"
   },
   "status": "FREE_QA_GREEN"

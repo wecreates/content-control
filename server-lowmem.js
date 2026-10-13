@@ -126,6 +126,7 @@ app.get("/social/connect",connectionPage(socialService));
 app.use("/api/social",createOAuthRouter(socialService));
 app.use("/api/social",createSocialRouter({runtimeStatus:()=>socialService.status()}));
 app.get("/social",(req,res)=>{res.setHeader("Cache-Control","no-store");res.sendFile(path.resolve("social-ui/index.html"));});
+app.get("/social/runtime-view.mjs",(req,res)=>{res.setHeader("Cache-Control","no-store");res.type('text/javascript').sendFile(path.resolve("social-ui/runtime-view.mjs"));});
 
 app.get("/",(req,res)=>{
   const canonical=acceptance();

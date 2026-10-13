@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "check": "V2 chase-strike sword vs conservative card-label rectangles",
+  "checked_at_utc": "2026-10-13T19:07:07.190896+00:00",
+  "source_change_commit": "6810581ff756dd20d96d03631527f4c82fb20ef9",
+  "script_path": "state/visual-analysis/repair-evidence/check-sword.py",
+  "script_sha256": "e888e9681cec17e37be805fcfda19e59dbbe07d50c89b7d04391b039682b9dc2",
+  "method": "PIL raster sweep of sword polygon and stroked guard/handle at 3x SVG resolution. 1001 uniformly spaced beat progress samples p=0..1. Both sword and card share scene camera transform, so check performed in shared local coordinates. Conservative card label rectangles include padding around uppercase text.",
+  "label_rectangles": {
+    "CHASE": [
+      142,
+      415,
+      250,
+      447
+    ],
+    "AMEX": [
+      501,
+      415,
+      610,
+      447
+    ]
+  },
+  "samples_per_variant": 1001,
+  "old_y_base": 480,
+  "new_y_base": 525,
+  "old_intersecting_sample_rectangle_pairs": 210,
+  "new_intersecting_sample_rectangle_pairs": 0,
+  "status": "PASS",
+  "scope": "label occlusion only; does not certify whole scene visual quality",
+  "stdout": "0 210 [(0.312, 0), (0.313, 0), (0.314, 0)] [(0.998, 0), (0.999, 0), (1.0, 0)]\n45 0 [] []\n",
+  "publication_enabled": false
+}

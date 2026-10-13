@@ -86,7 +86,7 @@ export function createPostgresStore(env) {
   try {return new PostgresSocialStore({pool, key: env.SOCIAL_VAULT_KEY, expiresAt: env.SOCIAL_STORAGE_EXPIRES_AT});}
   catch (error) {void pool.end(); throw error;}
 }
-// Explicit operator initialization only; hosted startup never creates an empty replacement vault.
+// Explicit operator initialization only; hosted startup calls this solely with SOCIAL_STORAGE_INITIALIZE=true.
 export async function initializePostgresVault(store) {
   store.active();
   let client;

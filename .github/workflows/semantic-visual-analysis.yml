@@ -1,0 +1,57 @@
+name: Semantic visual analysis
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Content Control V2 Acceptance']
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/free_semantic_qa.py'
+      - 'tests/test_free_semantic_qa.py'
+      - '.github/workflows/semantic-visual-analysis.yml'
+  schedule:
+    - cron: '45 10 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: semantic-visual-analysis
+  cancel-in-progress: true
+jobs:
+  analyze:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HF_HOME: /home/runner/.cache/huggingface
+      PUBLICATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/huggingface
+          key: visual-models-clip-florence-v1
+      - name: Install free CPU model runtime
+        run: |
+          python -m pip install torch==2.14.1 torchvision==0.29.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install open_clip_torch==3.3.0 transformers==5.19.0 pillow==12.3.0
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Verify semantic report failure boundaries
+        run: python -m unittest tests.test_free_semantic_qa
+      - name: Compare actual extracted candidate frames with reference images
+        run: |
+          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir state/visual-analysis-run/semantic-frames --candidate-video public-review/v2-draft.mp4 --extract-candidate --analysis-only --output state/visual-analysis-run/semantic.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semantic-visual-evidence
+          path: |
+            state/visual-analysis-run/semantic.json
+            state/visual-analysis-run/semantic-frames
+          retention-days: 30

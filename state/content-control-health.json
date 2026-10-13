@@ -27,7 +27,7 @@
     "duration_seconds": 30.0,
     "edge_density_ratio": 0.5936676060171352,
     "motion_active_fraction": 1.0,
-    "openclip_global_similarity": 0.3321763277053833,
+    "openclip_global_similarity": 0.6317602396011353,
     "openclip_mean_best_similarity": 0.41496238112449646
   },
   "paid_vision_dependency": false,

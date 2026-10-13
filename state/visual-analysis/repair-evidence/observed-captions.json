@@ -1,0 +1,1432 @@
+{
+  "frame_visibility": {
+    "status": "PASS",
+    "fps": 24,
+    "expected_word_count": 71,
+    "visible_word_count": 71,
+    "missing_word_indices": [],
+    "cue_frame_counts": [
+      10,
+      9,
+      5,
+      11,
+      10,
+      7,
+      7,
+      11,
+      5,
+      5,
+      7,
+      11,
+      6,
+      4,
+      6,
+      9,
+      15,
+      11,
+      10,
+      2,
+      8,
+      10,
+      5,
+      7,
+      15,
+      7,
+      15,
+      2,
+      4,
+      4,
+      9,
+      7,
+      13,
+      10,
+      4,
+      4,
+      5,
+      10,
+      2,
+      3,
+      4,
+      5,
+      6,
+      6,
+      11,
+      3,
+      10,
+      3,
+      4,
+      9,
+      5,
+      5,
+      10,
+      3,
+      5,
+      5,
+      14,
+      13,
+      7,
+      6,
+      9,
+      1,
+      3,
+      3,
+      5,
+      7,
+      15
+    ],
+    "display_hold_seconds": 0.12,
+    "method": "Exact frame lattice with next-cue-capped display hold; observed timestamps unchanged"
+  },
+  "schema_version": 1,
+  "status": "PASS",
+  "publication_enabled": false,
+  "source_audio_sha256": "bbd17748a4b9e65a950adfbfccc0319ac00c0ee9a32abff53d24cbeaea99ff33",
+  "timing_source": "faster-whisper observed words; no timing interpolation",
+  "display_mode": "progressive_phrase_max_3_words",
+  "cues": [
+    {
+      "start": 0.0,
+      "end": 0.4,
+      "text": "Stop",
+      "word": "Stop",
+      "speaker": "dave",
+      "scene_id": "cold-open-a-1",
+      "observed_word_index": 0,
+      "source_word_indices": [
+        0
+      ],
+      "observed_token_indices": [
+        0
+      ],
+      "display_word_indices": [
+        0
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 0.4,
+      "end": 0.76,
+      "text": "Stop attacking",
+      "word": "attacking",
+      "speaker": "dave",
+      "scene_id": "cold-open-a-1",
+      "observed_word_index": 1,
+      "source_word_indices": [
+        1
+      ],
+      "observed_token_indices": [
+        1
+      ],
+      "display_word_indices": [
+        0,
+        1
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 0.76,
+      "end": 1.0,
+      "text": "Stop attacking my",
+      "word": "my",
+      "speaker": "dave",
+      "scene_id": "cold-open-a-1",
+      "observed_word_index": 2,
+      "source_word_indices": [
+        2
+      ],
+      "observed_token_indices": [
+        2
+      ],
+      "display_word_indices": [
+        0,
+        1,
+        2
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 1.0,
+      "end": 1.32,
+      "text": "wallet!",
+      "word": "wallet!",
+      "speaker": "dave",
+      "scene_id": "cold-open-a-1",
+      "observed_word_index": 3,
+      "source_word_indices": [
+        3
+      ],
+      "observed_token_indices": [
+        3
+      ],
+      "display_word_indices": [
+        3
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 3.26,
+      "end": 3.7,
+      "text": "Two cards.",
+      "word": "Two cards.",
+      "speaker": "points_monk",
+      "scene_id": "chase-strike-a-1",
+      "observed_word_index": 5,
+      "source_word_indices": [
+        4,
+        5
+      ],
+      "observed_token_indices": [
+        5
+      ],
+      "display_word_indices": [
+        4,
+        5
+      ],
+      "deferred_zero_duration_indices": [
+        4
+      ]
+    },
+    {
+      "start": 3.7,
+      "end": 4.0,
+      "text": "Still",
+      "word": "Still",
+      "speaker": "points_monk",
+      "scene_id": "chase-strike-a-1",
+      "observed_word_index": 6,
+      "source_word_indices": [
+        6
+      ],
+      "observed_token_indices": [
+        6
+      ],
+      "display_word_indices": [
+        6
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 4.0,
+      "end": 4.28,
+      "text": "Still no",
+      "word": "no",
+      "speaker": "points_monk",
+      "scene_id": "chase-strike-a-1",
+      "observed_word_index": 7,
+      "source_word_indices": [
+        7
+      ],
+      "observed_token_indices": [
+        7
+      ],
+      "display_word_indices": [
+        6,
+        7
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 4.28,
+      "end": 4.6,
+      "text": "Still no budget.",
+      "word": "budget.",
+      "speaker": "points_monk",
+      "scene_id": "chase-strike-a-1",
+      "observed_word_index": 8,
+      "source_word_indices": [
+        8
+      ],
+      "observed_token_indices": [
+        8
+      ],
+      "display_word_indices": [
+        6,
+        7,
+        8
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 7.51,
+      "end": 7.71,
+      "text": "Watch",
+      "word": "Watch",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 9,
+      "source_word_indices": [
+        9
+      ],
+      "observed_token_indices": [
+        9
+      ],
+      "display_word_indices": [
+        9
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 7.71,
+      "end": 7.95,
+      "text": "Watch the",
+      "word": "the",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 10,
+      "source_word_indices": [
+        10
+      ],
+      "observed_token_indices": [
+        10
+      ],
+      "display_word_indices": [
+        9,
+        10
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 7.95,
+      "end": 8.25,
+      "text": "Watch the shiny",
+      "word": "shiny",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 11,
+      "source_word_indices": [
+        11
+      ],
+      "observed_token_indices": [
+        11
+      ],
+      "display_word_indices": [
+        9,
+        10,
+        11
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 8.25,
+      "end": 8.57,
+      "text": "perks.",
+      "word": "perks.",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 12,
+      "source_word_indices": [
+        12
+      ],
+      "observed_token_indices": [
+        12
+      ],
+      "display_word_indices": [
+        12
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 9.11,
+      "end": 9.37,
+      "text": "That's",
+      "word": "That's",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 13,
+      "source_word_indices": [
+        13
+      ],
+      "observed_token_indices": [
+        13
+      ],
+      "display_word_indices": [
+        13
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 9.37,
+      "end": 9.51,
+      "text": "That's where",
+      "word": "where",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 14,
+      "source_word_indices": [
+        14
+      ],
+      "observed_token_indices": [
+        14
+      ],
+      "display_word_indices": [
+        13,
+        14
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 9.51,
+      "end": 9.77,
+      "text": "That's where Dave",
+      "word": "Dave",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 15,
+      "source_word_indices": [
+        15
+      ],
+      "observed_token_indices": [
+        15
+      ],
+      "display_word_indices": [
+        13,
+        14,
+        15
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 9.77,
+      "end": 10.15,
+      "text": "stops",
+      "word": "stops",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 16,
+      "source_word_indices": [
+        16
+      ],
+      "observed_token_indices": [
+        16
+      ],
+      "display_word_indices": [
+        16
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 10.15,
+      "end": 10.65,
+      "text": "stops reading.",
+      "word": "reading.",
+      "speaker": "points_monk",
+      "scene_id": "amex-counter-a-1",
+      "observed_word_index": 17,
+      "source_word_indices": [
+        17
+      ],
+      "observed_token_indices": [
+        17
+      ],
+      "display_word_indices": [
+        16,
+        17
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 12.21,
+      "end": 12.57,
+      "text": "Lounge snacks?",
+      "word": "Lounge snacks?",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 19,
+      "source_word_indices": [
+        18,
+        19
+      ],
+      "observed_token_indices": [
+        19
+      ],
+      "display_word_indices": [
+        18,
+        19
+      ],
+      "deferred_zero_duration_indices": [
+        18
+      ]
+    },
+    {
+      "start": 12.91,
+      "end": 13.19,
+      "text": "Finally,",
+      "word": "Finally,",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 20,
+      "source_word_indices": [
+        20
+      ],
+      "observed_token_indices": [
+        20
+      ],
+      "display_word_indices": [
+        20
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 13.39,
+      "end": 13.49,
+      "text": "Finally, a",
+      "word": "a",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 21,
+      "source_word_indices": [
+        21
+      ],
+      "observed_token_indices": [
+        21
+      ],
+      "display_word_indices": [
+        20,
+        21
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 13.49,
+      "end": 13.83,
+      "text": "Finally, a financial",
+      "word": "financial",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 22,
+      "source_word_indices": [
+        22
+      ],
+      "observed_token_indices": [
+        22
+      ],
+      "display_word_indices": [
+        20,
+        21,
+        22
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 13.83,
+      "end": 14.23,
+      "text": "plan",
+      "word": "plan",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 23,
+      "source_word_indices": [
+        23
+      ],
+      "observed_token_indices": [
+        23
+      ],
+      "display_word_indices": [
+        23
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 14.23,
+      "end": 14.43,
+      "text": "plan with",
+      "word": "with",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 24,
+      "source_word_indices": [
+        24
+      ],
+      "observed_token_indices": [
+        24
+      ],
+      "display_word_indices": [
+        23,
+        24
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 14.43,
+      "end": 14.75,
+      "text": "plan with tiny",
+      "word": "tiny",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 25,
+      "source_word_indices": [
+        25
+      ],
+      "observed_token_indices": [
+        25
+      ],
+      "display_word_indices": [
+        23,
+        24,
+        25
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 14.75,
+      "end": 15.23,
+      "text": "sandwiches.",
+      "word": "sandwiches.",
+      "speaker": "dave",
+      "scene_id": "fee-drain-a-1",
+      "observed_word_index": 26,
+      "source_word_indices": [
+        26
+      ],
+      "observed_token_indices": [
+        26
+      ],
+      "display_word_indices": [
+        26
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 16.97,
+      "end": 17.29,
+      "text": "The snacks",
+      "word": "The snacks",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 28,
+      "source_word_indices": [
+        27,
+        28
+      ],
+      "observed_token_indices": [
+        28
+      ],
+      "display_word_indices": [
+        27,
+        28
+      ],
+      "deferred_zero_duration_indices": [
+        27
+      ]
+    },
+    {
+      "start": 17.29,
+      "end": 17.77,
+      "text": "The snacks arrived.",
+      "word": "arrived.",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 29,
+      "source_word_indices": [
+        29
+      ],
+      "observed_token_indices": [
+        29
+      ],
+      "display_word_indices": [
+        27,
+        28,
+        29
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 18.21,
+      "end": 18.31,
+      "text": "So",
+      "word": "So",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 30,
+      "source_word_indices": [
+        30
+      ],
+      "observed_token_indices": [
+        30
+      ],
+      "display_word_indices": [
+        30
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 18.31,
+      "end": 18.49,
+      "text": "So did",
+      "word": "did",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 31,
+      "source_word_indices": [
+        31
+      ],
+      "observed_token_indices": [
+        31
+      ],
+      "display_word_indices": [
+        30,
+        31
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 18.49,
+      "end": 18.65,
+      "text": "So did the",
+      "word": "the",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 32,
+      "source_word_indices": [
+        32
+      ],
+      "observed_token_indices": [
+        32
+      ],
+      "display_word_indices": [
+        30,
+        31,
+        32
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 18.65,
+      "end": 18.91,
+      "text": "fee.",
+      "word": "fee.",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 33,
+      "source_word_indices": [
+        33
+      ],
+      "observed_token_indices": [
+        33
+      ],
+      "display_word_indices": [
+        33
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 19.61,
+      "end": 19.91,
+      "text": "Dave only",
+      "word": "Dave only",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 35,
+      "source_word_indices": [
+        34,
+        35
+      ],
+      "observed_token_indices": [
+        35
+      ],
+      "display_word_indices": [
+        34,
+        35
+      ],
+      "deferred_zero_duration_indices": [
+        34
+      ]
+    },
+    {
+      "start": 19.91,
+      "end": 20.43,
+      "text": "Dave only invited",
+      "word": "invited",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 36,
+      "source_word_indices": [
+        36
+      ],
+      "observed_token_indices": [
+        36
+      ],
+      "display_word_indices": [
+        34,
+        35,
+        36
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 20.43,
+      "end": 20.75,
+      "text": "one.",
+      "word": "one.",
+      "speaker": "points_monk",
+      "scene_id": "points-summon-a-1",
+      "observed_word_index": 37,
+      "source_word_indices": [
+        37
+      ],
+      "observed_token_indices": [
+        37
+      ],
+      "display_word_indices": [
+        37
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 22.07,
+      "end": 22.25,
+      "text": "I'll",
+      "word": "I'll",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 38,
+      "source_word_indices": [
+        38
+      ],
+      "observed_token_indices": [
+        38
+      ],
+      "display_word_indices": [
+        38
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 22.25,
+      "end": 22.41,
+      "text": "I'll pay",
+      "word": "pay",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 39,
+      "source_word_indices": [
+        39
+      ],
+      "observed_token_indices": [
+        39
+      ],
+      "display_word_indices": [
+        38,
+        39
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 22.41,
+      "end": 22.61,
+      "text": "I'll pay with",
+      "word": "with",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 40,
+      "source_word_indices": [
+        40
+      ],
+      "observed_token_indices": [
+        40
+      ],
+      "display_word_indices": [
+        38,
+        39,
+        40
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 22.61,
+      "end": 22.89,
+      "text": "points!",
+      "word": "points!",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 41,
+      "source_word_indices": [
+        41
+      ],
+      "observed_token_indices": [
+        41
+      ],
+      "display_word_indices": [
+        41
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 23.17,
+      "end": 23.27,
+      "text": "Why",
+      "word": "Why",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 42,
+      "source_word_indices": [
+        42
+      ],
+      "observed_token_indices": [
+        42
+      ],
+      "display_word_indices": [
+        42
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 23.27,
+      "end": 23.39,
+      "text": "Why does",
+      "word": "does",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 43,
+      "source_word_indices": [
+        43
+      ],
+      "observed_token_indices": [
+        43
+      ],
+      "display_word_indices": [
+        42,
+        43
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 23.39,
+      "end": 23.55,
+      "text": "Why does this",
+      "word": "this",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 44,
+      "source_word_indices": [
+        44
+      ],
+      "observed_token_indices": [
+        44
+      ],
+      "display_word_indices": [
+        42,
+        43,
+        44
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 23.55,
+      "end": 23.79,
+      "text": "button",
+      "word": "button",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 45,
+      "source_word_indices": [
+        45
+      ],
+      "observed_token_indices": [
+        45
+      ],
+      "display_word_indices": [
+        45
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 23.79,
+      "end": 24.03,
+      "text": "button say",
+      "word": "say",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 46,
+      "source_word_indices": [
+        46
+      ],
+      "observed_token_indices": [
+        46
+      ],
+      "display_word_indices": [
+        45,
+        46
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 24.03,
+      "end": 24.27,
+      "text": "button say bad",
+      "word": "bad",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 47,
+      "source_word_indices": [
+        47
+      ],
+      "observed_token_indices": [
+        47
+      ],
+      "display_word_indices": [
+        45,
+        46,
+        47
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 24.27,
+      "end": 24.63,
+      "text": "idea?",
+      "word": "idea?",
+      "speaker": "dave",
+      "scene_id": "trap-a-1",
+      "observed_word_index": 48,
+      "source_word_indices": [
+        48
+      ],
+      "observed_token_indices": [
+        48
+      ],
+      "display_word_indices": [
+        48
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 26.23,
+      "end": 26.35,
+      "text": "Plot",
+      "word": "Plot",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 49,
+      "source_word_indices": [
+        49
+      ],
+      "observed_token_indices": [
+        49
+      ],
+      "display_word_indices": [
+        49
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 26.35,
+      "end": 26.67,
+      "text": "Plot twist:",
+      "word": "twist:",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 50,
+      "source_word_indices": [
+        50
+      ],
+      "observed_token_indices": [
+        50
+      ],
+      "display_word_indices": [
+        49,
+        50
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 27.03,
+      "end": 27.13,
+      "text": "Plot twist: the",
+      "word": "the",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 51,
+      "source_word_indices": [
+        51
+      ],
+      "observed_token_indices": [
+        51
+      ],
+      "display_word_indices": [
+        49,
+        50,
+        51
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 27.13,
+      "end": 27.31,
+      "text": "winning",
+      "word": "winning",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 52,
+      "source_word_indices": [
+        52
+      ],
+      "observed_token_indices": [
+        52
+      ],
+      "display_word_indices": [
+        52
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 27.31,
+      "end": 27.67,
+      "text": "winning card",
+      "word": "card",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 53,
+      "source_word_indices": [
+        53
+      ],
+      "observed_token_indices": [
+        53
+      ],
+      "display_word_indices": [
+        52,
+        53
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 27.67,
+      "end": 27.91,
+      "text": "winning card fits",
+      "word": "fits",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 54,
+      "source_word_indices": [
+        54
+      ],
+      "observed_token_indices": [
+        54
+      ],
+      "display_word_indices": [
+        52,
+        53,
+        54
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 27.91,
+      "end": 28.11,
+      "text": "your",
+      "word": "your",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 55,
+      "source_word_indices": [
+        55
+      ],
+      "observed_token_indices": [
+        55
+      ],
+      "display_word_indices": [
+        55
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 28.11,
+      "end": 28.39,
+      "text": "your life.",
+      "word": "life.",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 56,
+      "source_word_indices": [
+        56
+      ],
+      "observed_token_indices": [
+        56
+      ],
+      "display_word_indices": [
+        55,
+        56
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 28.81,
+      "end": 28.93,
+      "text": "The",
+      "word": "The",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 57,
+      "source_word_indices": [
+        57
+      ],
+      "observed_token_indices": [
+        57
+      ],
+      "display_word_indices": [
+        57
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 28.93,
+      "end": 29.13,
+      "text": "The cape",
+      "word": "cape",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 58,
+      "source_word_indices": [
+        58
+      ],
+      "observed_token_indices": [
+        58
+      ],
+      "display_word_indices": [
+        57,
+        58
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 29.13,
+      "end": 29.35,
+      "text": "The cape is",
+      "word": "is",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 59,
+      "source_word_indices": [
+        59
+      ],
+      "observed_token_indices": [
+        59
+      ],
+      "display_word_indices": [
+        57,
+        58,
+        59
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 29.35,
+      "end": 29.83,
+      "text": "optional.",
+      "word": "optional.",
+      "speaker": "points_monk",
+      "scene_id": "final-clash-a-1",
+      "observed_word_index": 60,
+      "source_word_indices": [
+        60
+      ],
+      "observed_token_indices": [
+        60
+      ],
+      "display_word_indices": [
+        60
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 30.83,
+      "end": 31.37,
+      "text": "I'm",
+      "word": "I'm",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 61,
+      "source_word_indices": [
+        61
+      ],
+      "observed_token_indices": [
+        61
+      ],
+      "display_word_indices": [
+        61
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 31.37,
+      "end": 31.65,
+      "text": "I'm choosing",
+      "word": "choosing",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 62,
+      "source_word_indices": [
+        62
+      ],
+      "observed_token_indices": [
+        62
+      ],
+      "display_word_indices": [
+        61,
+        62
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 31.65,
+      "end": 31.89,
+      "text": "I'm choosing a",
+      "word": "a",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 63,
+      "source_word_indices": [
+        63
+      ],
+      "observed_token_indices": [
+        63
+      ],
+      "display_word_indices": [
+        61,
+        62,
+        63
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 31.89,
+      "end": 32.15,
+      "text": "budget.",
+      "word": "budget.",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 64,
+      "source_word_indices": [
+        64
+      ],
+      "observed_token_indices": [
+        64
+      ],
+      "display_word_indices": [
+        64
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 32.45,
+      "end": 32.49,
+      "text": "Does",
+      "word": "Does",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 65,
+      "source_word_indices": [
+        65
+      ],
+      "observed_token_indices": [
+        65
+      ],
+      "display_word_indices": [
+        65
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 32.49,
+      "end": 32.61,
+      "text": "Does it",
+      "word": "it",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 66,
+      "source_word_indices": [
+        66
+      ],
+      "observed_token_indices": [
+        66
+      ],
+      "display_word_indices": [
+        65,
+        66
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 32.61,
+      "end": 32.75,
+      "text": "Does it come",
+      "word": "come",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 67,
+      "source_word_indices": [
+        67
+      ],
+      "observed_token_indices": [
+        67
+      ],
+      "display_word_indices": [
+        65,
+        66,
+        67
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 32.75,
+      "end": 32.93,
+      "text": "with",
+      "word": "with",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 68,
+      "source_word_indices": [
+        68
+      ],
+      "observed_token_indices": [
+        68
+      ],
+      "display_word_indices": [
+        68
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 32.93,
+      "end": 33.25,
+      "text": "with tiny",
+      "word": "tiny",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 69,
+      "source_word_indices": [
+        69
+      ],
+      "observed_token_indices": [
+        69
+      ],
+      "display_word_indices": [
+        68,
+        69
+      ],
+      "deferred_zero_duration_indices": []
+    },
+    {
+      "start": 33.25,
+      "end": 33.73,
+      "text": "with tiny sandwiches?",
+      "word": "sandwiches?",
+      "speaker": "dave",
+      "scene_id": "finish-a-1",
+      "observed_word_index": 70,
+      "source_word_indices": [
+        70
+      ],
+      "observed_token_indices": [
+        70
+      ],
+      "display_word_indices": [
+        68,
+        69,
+        70
+      ],
+      "deferred_zero_duration_indices": []
+    }
+  ],
+  "scope": "Exact normalized word alignment and observed timing bounds; does not certify ASR alignment accuracy or rendered readability"
+}

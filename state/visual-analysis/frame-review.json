@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "review_type": "independent_sampled_frame_visual_analysis",
+  "reviewed_at": "2026-10-13T19:11:34.204731+00:00",
+  "candidate": {
+    "path": "public-review/v2-draft.mp4",
+    "sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+    "frame_count": 839,
+    "fps": 24.0,
+    "duration_seconds": 34.958333333333336
+  },
+  "coverage": {
+    "sample_count": 10,
+    "sampled_frame_indices": [
+      0,
+      93,
+      186,
+      279,
+      372,
+      466,
+      559,
+      652,
+      745,
+      838
+    ],
+    "full_video_watched": false,
+    "audio_reviewed": false,
+    "motion_parity_verified": false,
+    "temporal_alignment_with_reference": false
+  },
+  "reference_frames": [
+    {
+      "path": "reference/frames/ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "path": "reference/frames/ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "path": "reference/frames/ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "path": "reference/frames/ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "path": "reference/frames/ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "path": "reference/frames/ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "path": "reference/frames/ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "path": "reference/frames/ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "path": "reference/frames/ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "path": "reference/frames/ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "method": "Direct visual inspection of 10 decoded candidate frames and all 10 stored reference frames in contact sheets; comparison of typography, character scale, composition, staging and visible clipping. This is independent visual judgment, not an automated metric verdict.",
+  "findings": [
+    {
+      "dimension": "typography",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        186,
+        559,
+        652,
+        745
+      ],
+      "observation": "Caption size and weight improved from the prior candidate, but sampled captions remain plain sans-serif fragments (Stop, Still, Watch the, Why does, winning, I\u2019m), unlike the prominent expressive multiword reference headlines."
+    },
+    {
+      "dimension": "character_scale",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Actor scale improved noticeably from the prior candidate. Two-character samples 186,279,652 still keep facial details smaller and retain more distant framing than reference closeups; full visual scale parity is not established."
+    },
+    {
+      "dimension": "staging",
+      "status": "MISMATCH",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Cape contact is now visually connected at frames186 and279, repairing the prior separation. Card labels have clearance below captions at0 and93. Remaining samples still repeatedly center isolated figures and floating symbolic props, with limited environment and camera variety; fee props at466 remain detached from hands."
+    },
+    {
+      "dimension": "background_palette",
+      "status": "INTENTIONAL_BRAND_DIFFERENCE",
+      "observation": "Candidate background is white; references use beige paper. White is an explicit target style and must not be treated as a parity failure by itself."
+    },
+    {
+      "dimension": "visible_clipping",
+      "status": "NO_ISSUE_OBSERVED_IN_SAMPLES",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "No visible text or character clipping observed in the sampled frames. This does not certify unsampled frames."
+    },
+    {
+      "dimension": "motion_and_audio",
+      "status": "NOT_REVIEWED",
+      "observation": "Still reference frames and sampled candidate frames cannot establish motion parity, acting continuity, audio quality, or full pacing."
+    },
+    {
+      "dimension": "character_consistency",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Recurring Dave and Monk appearances are recognizable across the samples. Exact character-board identity/shape consistency was not independently compared; no inconsistency is asserted."
+    },
+    {
+      "dimension": "phone_readability",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Larger top captions are legible in inspected contact sheets and show no sampled overlap with lowered card labels. CHASE/AMEX and NEEDS/COSTS/USE prop text remain relatively small. Physical phone playback and full-timeline readability were not reviewed."
+    }
+  ],
+  "verdict": "CREATIVE_MISMATCHES_IDENTIFIED",
+  "production_approved": false,
+  "publication_enabled": false,
+  "limitations": [
+    "Stored reference-frame provenance and timestamps were not independently revalidated against source video in this review.",
+    "No full audiovisual watch-through.",
+    "No retention or competitive performance claim.",
+    "Static comparisons are not temporally aligned scene equivalents."
+  ],
+  "review_artifacts": {
+    "comparison_sheets": [
+      "state/visual-analysis/repair-2026-10-13/comparison-evidence/comparison-01.jpg",
+      "state/visual-analysis/repair-2026-10-13/comparison-evidence/comparison-02.jpg",
+      "state/visual-analysis/repair-2026-10-13/comparison-evidence/comparison-03.jpg"
+    ]
+  },
+  "reviewer": {
+    "id": "visual_review_agent",
+    "method": "direct_sampled_frame_inspection"
+  },
+  "decision": "FAIL",
+  "scope": {
+    "kind": "sampled_visual",
+    "full_audiovisual_review": false,
+    "sampled_frames": 10
+  },
+  "unresolved_issues": [
+    "Expressive reference headline styling remains unmatched.",
+    "Two-character shots lack reference closeup scale.",
+    "Repeated symbolic staging and limited environmental/camera variety remain.",
+    "Exact character-board consistency is unverified.",
+    "Physical phone readability is unverified and small prop labels remain a concern."
+  ],
+  "rubric": {
+    "typography": {
+      "pass": false,
+      "evidence": "Caption size and weight improved from the prior candidate, but sampled captions remain plain sans-serif fragments (Stop, Still, Watch the, Why does, winning, I\u2019m), unlike the prominent expressive multiword reference headlines."
+    },
+    "character_scale": {
+      "pass": false,
+      "evidence": "Actor scale improved noticeably from the prior candidate. Two-character samples 186,279,652 still keep facial details smaller and retain more distant framing than reference closeups; full visual scale parity is not established."
+    },
+    "staging": {
+      "pass": false,
+      "evidence": "Cape contact is now visually connected at frames186 and279, repairing the prior separation. Card labels have clearance below captions at0 and93. Remaining samples still repeatedly center isolated figures and floating symbolic props, with limited environment and camera variety; fee props at466 remain detached from hands."
+    },
+    "character_consistency": {
+      "pass": false,
+      "evidence": "Recurring Dave and Monk appearances are recognizable across the samples. Exact character-board identity/shape consistency was not independently compared; no inconsistency is asserted."
+    },
+    "phone_readability": {
+      "pass": false,
+      "evidence": "Larger top captions are legible in inspected contact sheets and show no sampled overlap with lowered card labels. CHASE/AMEX and NEEDS/COSTS/USE prop text remain relatively small. Physical phone playback and full-timeline readability were not reviewed."
+    }
+  },
+  "verified_repairs": [
+    {
+      "dimension": "hand_prop_contact",
+      "candidate_frames": [
+        186,
+        279
+      ],
+      "observation": "Raised actor arm visibly meets the cape in these sampled frames."
+    },
+    {
+      "dimension": "caption_card_clearance",
+      "candidate_frames": [
+        0,
+        93
+      ],
+      "observation": "Lowered card labels visibly clear the actual caption text in these sampled frames."
+    }
+  ]
+}

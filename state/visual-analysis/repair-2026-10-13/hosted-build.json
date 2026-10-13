@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_id": 38452208211,
+  "source_commit": "6810581ff756dd20d96d03631527f4c82fb20ef9",
+  "workflow_outcome": "failure",
+  "recorded_at": "2026-10-13T19:10:29.756910+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/38452208211",
+  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "candidate_generated": true,
+  "checks": {
+    "voices": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "b8259ab409c157ee58e164e8b63a95e21c3cc8575a81c08b340a9cf80ab54fa0"
+    },
+    "sound_mix": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "279cf28461d5f833f294c21b7daa4ef46bae63b0488818e35c6703cf5790ec19"
+    },
+    "transcription": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "72f82b91335f7694dc72e767a1e14a7e2db03c860aa6f461db3282303741c50b"
+    },
+    "captions": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "3d0c290b9912dd11d32a038e476297aaeb9c942b183f903295f6966bee739845"
+    },
+    "caption_frames": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "7434d3c1203f1165a3611dec28582393a28256854d8b616abf3c0487a7b17d6c"
+    },
+    "technical_video": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "e4b1140891ac90ed1bcc42418a008d69880f9c24a47d07a3ab5088d91b4c0a76"
+    },
+    "style_parity": {
+      "status": "BLOCKED",
+      "failed_checks": [
+        "framewise_style_parity"
+      ],
+      "receipt_sha256": "1a43b98d78e13d87be90377336e49163bff88dfa7964714ab40b33459e3c65f5",
+      "reason": "Review candidate hash does not match exact video"
+    }
+  },
+  "diagnostics": {
+    "caption_windows": {
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "cd7e75d56f2ad4a497ef6cb88f2a9ff71d05944abf4ce55840e2f0c55ff1131f"
+    }
+  },
+  "status": "BLOCKED",
+  "production_approved": false,
+  "publication_enabled": false,
+  "scope": "Recorded build result; no full audiovisual or competitor approval."
+}

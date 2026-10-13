@@ -190,7 +190,7 @@ jobs:
           media_status=0
           parity_status=0
           python scripts/production_reality_media_qa.py --video state/v2/render/v2-boss-fight.mp4 --ccsd state/v2/ccsd.json --out state/v2/receipts/render.json || media_status=$?
-          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json || parity_status=$?
+          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video state/v2/render/v2-boss-fight.mp4 --out state/v2/receipts/visual-parity.json --visual-review state/visual-analysis/frame-review.json || parity_status=$?
           test "$media_status" -eq 0 && test "$parity_status" -eq 0
       - name: Enforce structural preflight (not rendered creative review)
         run: |

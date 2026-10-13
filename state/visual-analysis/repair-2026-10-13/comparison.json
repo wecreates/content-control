@@ -1,0 +1,470 @@
+{
+  "analysis_status": "COMPLETE",
+  "candidate_duration_seconds": 34.958333333333336,
+  "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+  "checks": {
+    "candidate_decodes": true,
+    "framewise_style_parity": false,
+    "reference_frames_present": true
+  },
+  "engine": "reference-qualified-parity-v2",
+  "frame_distances": [
+    0.35547232817606206,
+    0.3609219835069444,
+    0.34262279156454245,
+    0.3410498276654412,
+    0.38138817976409317,
+    0.3637412907220179,
+    0.35556863319546567,
+    0.34661658560559644,
+    0.35446349251940357,
+    0.3561603241166258
+  ],
+  "framewise_style_parity": false,
+  "mean_frame_distance": 0.35580054368361924,
+  "metric_weights": {
+    "edge_density": 0.35,
+    "mean_brightness": 0.3,
+    "white_fraction": 0.35
+  },
+  "p90_frame_distance": 0.3655059796262254,
+  "paired_frames": 10,
+  "publication_enabled": false,
+  "qualified_structure": {
+    "blocker": "BLOCKED_UNSUPPORTED_REFERENCE",
+    "framewise_style_parity": false,
+    "reason": "Reference provenance and exact-candidate aligned-frame contract required; raw background difference is diagnostic only.",
+    "status": "BLOCKED"
+  },
+  "raw_pixel_diagnostic": {
+    "acceptance_effect": "none",
+    "frame_distances": [
+      0.35547232817606206,
+      0.3609219835069444,
+      0.34262279156454245,
+      0.3410498276654412,
+      0.38138817976409317,
+      0.3637412907220179,
+      0.35556863319546567,
+      0.34661658560559644,
+      0.35446349251940357,
+      0.3561603241166258
+    ],
+    "framewise_style_parity": false,
+    "mean_frame_distance": 0.35580054368361924,
+    "p90_frame_distance": 0.3655059796262254,
+    "paired_frames": 10,
+    "reason": "Reference frame statistics differ; dominant component: white_fraction (0.3289 of 0.3558). This does not assess creative quality or override the required brand style.",
+    "weighted_mean_distance_components": {
+      "edge_density": 0.0034134874131944437,
+      "mean_brightness": 0.02349726677389706,
+      "white_fraction": 0.3288897894965278
+    }
+  },
+  "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
+  "reference_frames": 10,
+  "reference_manifest": [
+    {
+      "file": "ref-01.jpg",
+      "sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+    },
+    {
+      "file": "ref-02.jpg",
+      "sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+    },
+    {
+      "file": "ref-03.jpg",
+      "sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+    },
+    {
+      "file": "ref-04.jpg",
+      "sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+    },
+    {
+      "file": "ref-05.jpg",
+      "sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+    },
+    {
+      "file": "ref-06.jpg",
+      "sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+    },
+    {
+      "file": "ref-07.jpg",
+      "sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+    },
+    {
+      "file": "ref-08.jpg",
+      "sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+    },
+    {
+      "file": "ref-09.jpg",
+      "sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+    },
+    {
+      "file": "ref-10.jpg",
+      "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+    }
+  ],
+  "schema_version": 2,
+  "scope": "Sampled visual analysis and optional documented static-frame review; full audiovisual approval remains separate.",
+  "status": "FAIL",
+  "threshold": 0.14,
+  "visual_analysis": {
+    "acceptance_effect": "none",
+    "appearance_distributions": {
+      "edge_density": {
+        "candidate_mean": 0.010045464409722222,
+        "candidate_range": [
+          0.007727864583333333,
+          0.013142361111111112
+        ],
+        "mean_difference": -0.009091145833333335,
+        "reference_mean": 0.019136610243055557,
+        "reference_range": [
+          0.009833984375,
+          0.03473198784722222
+        ]
+      },
+      "mean_brightness": {
+        "candidate_mean": 0.9658056117238563,
+        "candidate_range": [
+          0.9465188291462419,
+          0.9819149263003814
+        ],
+        "mean_difference": 0.07832422257965688,
+        "reference_mean": 0.8874813891441994,
+        "reference_range": [
+          0.8470487642973856,
+          0.9027008357162308
+        ]
+      },
+      "white_fraction": {
+        "candidate_mean": 0.9576952039930557,
+        "candidate_range": [
+          0.9365212673611111,
+          0.9766775173611111
+        ],
+        "mean_difference": 0.9396851128472224,
+        "reference_mean": 0.01801009114583333,
+        "reference_range": [
+          0.010738932291666666,
+          0.02702907986111111
+        ]
+      }
+    },
+    "candidate_sha256": "e8fd5b0b51930c662d89a8d4ad2348b0b81f414bf51ffa0e637afc0618b6d2d8",
+    "contact_sheets": [
+      {
+        "file": "comparison-01.jpg",
+        "first_pair": 0,
+        "pair_count": 4,
+        "sha256": "ab26de89061530e75ff5a0676c4f48f4e0b880e93e17ef03d08fe7a8f86744ab"
+      },
+      {
+        "file": "comparison-02.jpg",
+        "first_pair": 4,
+        "pair_count": 4,
+        "sha256": "a4ca71d72cd1de124760c399f5a5b746a713425c8cd2ddbff63a1ddf82a9eb61"
+      },
+      {
+        "file": "comparison-03.jpg",
+        "first_pair": 8,
+        "pair_count": 2,
+        "sha256": "b0ad270deb4f5b9397d0523d7b73c4a130611aec80166121a695e8d9e2a3895f"
+      }
+    ],
+    "pairing": "duration-normalized display order; not semantic or same-art alignment",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reference_provenance": {
+      "reason": "Reference images have no source-video extraction manifest; analysis is diagnostic only.",
+      "source_url": null,
+      "status": "UNVERIFIED_LEGACY_FRAMES"
+    },
+    "sample_count": 10,
+    "samples": [
+      {
+        "candidate_frame": 0,
+        "candidate_metrics": {
+          "edge_density": 0.010144314236111111,
+          "mean_brightness": 0.9726467822372005,
+          "white_fraction": 0.9651312934027778
+        },
+        "candidate_seconds": 0.0,
+        "reference_file": "ref-01.jpg",
+        "reference_metrics": {
+          "edge_density": 0.019764539930555554,
+          "mean_brightness": 0.8997004655160675,
+          "white_fraction": 0.021641710069444445
+        },
+        "reference_sha256": "03df9ca9f3deca4843a4863b22c26ffe97b42beb0ae175990d83af841fda4740"
+      },
+      {
+        "candidate_frame": 93,
+        "candidate_metrics": {
+          "edge_density": 0.009646267361111112,
+          "mean_brightness": 0.9735231992102397,
+          "white_fraction": 0.9657552083333333
+        },
+        "candidate_seconds": 3.875,
+        "reference_file": "ref-02.jpg",
+        "reference_metrics": {
+          "edge_density": 0.018546006944444443,
+          "mean_brightness": 0.8864774816176471,
+          "white_fraction": 0.018059895833333332
+        },
+        "reference_sha256": "7e7a70a25399c19b21b77fecd88d9fab1790b48f63fad5935788fe4252d4c8a8"
+      },
+      {
+        "candidate_frame": 186,
+        "candidate_metrics": {
+          "edge_density": 0.010299479166666667,
+          "mean_brightness": 0.9465188291462419,
+          "white_fraction": 0.9365212673611111
+        },
+        "candidate_seconds": 7.75,
+        "reference_file": "ref-03.jpg",
+        "reference_metrics": {
+          "edge_density": 0.022534722222222223,
+          "mean_brightness": 0.8856324550653595,
+          "white_fraction": 0.022022569444444445
+        },
+        "reference_sha256": "a2411f994e1377c14366f9df825b03ccae4fd6d1a8a30b0ea1cf648ec3fa2a34"
+      },
+      {
+        "candidate_frame": 279,
+        "candidate_metrics": {
+          "edge_density": 0.009860026041666666,
+          "mean_brightness": 0.9507502170138888,
+          "white_fraction": 0.9415549045138889
+        },
+        "candidate_seconds": 11.625,
+        "reference_file": "ref-04.jpg",
+        "reference_metrics": {
+          "edge_density": 0.011193576388888888,
+          "mean_brightness": 0.899558010791122,
+          "white_fraction": 0.012339409722222222
+        },
+        "reference_sha256": "e577ca54754f11c21b8ec2c299ecf9e2f15977093a34c1ab14407c70b2b6087b"
+      },
+      {
+        "candidate_frame": 372,
+        "candidate_metrics": {
+          "edge_density": 0.007727864583333333,
+          "mean_brightness": 0.9819149263003814,
+          "white_fraction": 0.9766775173611111
+        },
+        "candidate_seconds": 15.5,
+        "reference_file": "ref-05.jpg",
+        "reference_metrics": {
+          "edge_density": 0.027584635416666666,
+          "mean_brightness": 0.8470487642973856,
+          "white_fraction": 0.022453342013888888
+        },
+        "reference_sha256": "1e1d4031bdfa541beb239abef486f8185a74b6240aa35631bbb8ef85a1e070da"
+      },
+      {
+        "candidate_frame": 466,
+        "candidate_metrics": {
+          "edge_density": 0.008088107638888889,
+          "mean_brightness": 0.9795117783224401,
+          "white_fraction": 0.9736338975694444
+        },
+        "candidate_seconds": 19.416666666666668,
+        "reference_file": "ref-06.jpg",
+        "reference_metrics": {
+          "edge_density": 0.016376953125,
+          "mean_brightness": 0.8944071648624728,
+          "white_fraction": 0.015608723958333333
+        },
+        "reference_sha256": "1d794a57adfa9c5ef2c521470be32118c5ed50b29bd3136d5ce936b7f4b5f251"
+      },
+      {
+        "candidate_frame": 559,
+        "candidate_metrics": {
+          "edge_density": 0.010675998263888889,
+          "mean_brightness": 0.9535021233319716,
+          "white_fraction": 0.9437749565972222
+        },
+        "candidate_seconds": 23.291666666666668,
+        "reference_file": "ref-07.jpg",
+        "reference_metrics": {
+          "edge_density": 0.03473198784722222,
+          "mean_brightness": 0.8658755233864379,
+          "white_fraction": 0.02702907986111111
+        },
+        "reference_sha256": "787cd1fee222fb64c781578144c501cca07635d6d638e2e9e667f17aa68d16a2"
+      },
+      {
+        "candidate_frame": 652,
+        "candidate_metrics": {
+          "edge_density": 0.013142361111111112,
+          "mean_brightness": 0.9592568082788671,
+          "white_fraction": 0.949287109375
+        },
+        "candidate_seconds": 27.166666666666668,
+        "reference_file": "ref-08.jpg",
+        "reference_metrics": {
+          "edge_density": 0.009833984375,
+          "mean_brightness": 0.9027008357162308,
+          "white_fraction": 0.010738932291666666
+        },
+        "reference_sha256": "9ede5a35ecebcbf8e05c86e810ef97773d2b958041959fbc122cee8a98a78d38"
+      },
+      {
+        "candidate_frame": 745,
+        "candidate_metrics": {
+          "edge_density": 0.010591362847222223,
+          "mean_brightness": 0.9704483123978759,
+          "white_fraction": 0.9624392361111112
+        },
+        "candidate_seconds": 31.041666666666668,
+        "reference_file": "ref-09.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015412326388888889,
+          "mean_brightness": 0.899582409960512,
+          "white_fraction": 0.015249565972222223
+        },
+        "reference_sha256": "daaf5e73411a17a7caf90ccc9bb0970ef2c324c9254976d92b96725279a0386e"
+      },
+      {
+        "candidate_frame": 838,
+        "candidate_metrics": {
+          "edge_density": 0.010278862847222223,
+          "mean_brightness": 0.9699831409994554,
+          "white_fraction": 0.9621766493055556
+        },
+        "candidate_seconds": 34.916666666666664,
+        "reference_file": "ref-10.jpg",
+        "reference_metrics": {
+          "edge_density": 0.015387369791666666,
+          "mean_brightness": 0.8938307802287582,
+          "white_fraction": 0.014957682291666666
+        },
+        "reference_sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
+      }
+    ],
+    "scope": "Decoded sampled visual evidence and cross-story appearance distributions; no full audiovisual review, motion, retention, or competitive-quality approval.",
+    "status": "COMPLETE"
+  },
+  "visual_review": {
+    "framewise_style_parity": false,
+    "method": "documented_sampled_frame_visual_review",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T19:11:34.204731+00:00",
+    "reviewed_frame_indices": [
+      0,
+      93,
+      186,
+      279,
+      372,
+      466,
+      559,
+      652,
+      745,
+      838
+    ],
+    "reviewer": {
+      "id": "visual_review_agent",
+      "method": "direct_sampled_frame_inspection"
+    },
+    "rubric": {
+      "character_consistency": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "character_consistency",
+        "observation": "Recurring Dave and Monk appearances are recognizable across the samples. Exact character-board identity/shape consistency was not independently compared; no inconsistency is asserted.",
+        "status": "NOT_VERIFIED"
+      },
+      "character_scale": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "character_scale",
+        "observation": "Actor scale improved noticeably from the prior candidate. Two-character samples 186,279,652 still keep facial details smaller and retain more distant framing than reference closeups; full visual scale parity is not established.",
+        "status": "MISMATCH"
+      },
+      "phone_readability": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "phone_readability",
+        "observation": "Larger top captions are legible in inspected contact sheets and show no sampled overlap with lowered card labels. CHASE/AMEX and NEEDS/COSTS/USE prop text remain relatively small. Physical phone playback and full-timeline readability were not reviewed.",
+        "status": "NOT_VERIFIED"
+      },
+      "staging": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "staging",
+        "observation": "Cape contact is now visually connected at frames186 and279, repairing the prior separation. Card labels have clearance below captions at0 and93. Remaining samples still repeatedly center isolated figures and floating symbolic props, with limited environment and camera variety; fee props at466 remain detached from hands.",
+        "status": "MISMATCH"
+      },
+      "typography": {
+        "candidate_frames": [
+          0,
+          186,
+          559,
+          652,
+          745
+        ],
+        "dimension": "typography",
+        "observation": "Caption size and weight improved from the prior candidate, but sampled captions remain plain sans-serif fragments (Stop, Still, Watch the, Why does, winning, I\u2019m), unlike the prominent expressive multiword reference headlines.",
+        "status": "MISMATCH"
+      }
+    },
+    "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
+    "status": "FAIL",
+    "unresolved_issues": [
+      "Expressive reference headline styling remains unmatched.",
+      "Two-character shots lack reference closeup scale.",
+      "Repeated symbolic staging and limited environmental/camera variety remain.",
+      "Exact character-board consistency is unverified.",
+      "Physical phone readability is unverified and small prop labels remain a concern."
+    ]
+  },
+  "visual_review_sha256": "0c81cdbc897c5d2e0f5de3313fd84a322192bcaa721423df91f52ad33c8768d5",
+  "weighted_mean_distance_components": {
+    "edge_density": 0.0034134874131944437,
+    "mean_brightness": 0.02349726677389706,
+    "white_fraction": 0.3288897894965278
+  }
+}
