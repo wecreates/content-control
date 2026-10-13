@@ -61,7 +61,7 @@
       "white_fraction": 0.33251006401909716
     }
   },
-  "reason": "Reference provenance and exact-candidate aligned-frame contract required; raw background difference is diagnostic only.",
+  "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
   "reference_frames": 10,
   "reference_manifest": [
     {
@@ -106,8 +106,8 @@
     }
   ],
   "schema_version": 2,
-  "scope": "Sampled pixel statistics only; not a full audiovisual or semantic style review.",
-  "status": "BLOCKED",
+  "scope": "Sampled visual analysis and optional documented static-frame review; full audiovisual approval remains separate.",
+  "status": "FAIL",
   "threshold": 0.14,
   "visual_analysis": {
     "acceptance_effect": "none",
@@ -347,6 +347,124 @@
     "scope": "Decoded sampled visual evidence and cross-story appearance distributions; no full audiovisual review, motion, retention, or competitive-quality approval.",
     "status": "COMPLETE"
   },
+  "visual_review": {
+    "framewise_style_parity": false,
+    "method": "documented_sampled_frame_visual_review",
+    "production_approved": false,
+    "publication_enabled": false,
+    "reason": "Documented exact-artifact sampled visual review fail. Full audiovisual approval remains separate.",
+    "reviewed_at": "2026-10-13T16:34:31.591808+00:00",
+    "reviewed_frame_indices": [
+      0,
+      93,
+      186,
+      279,
+      372,
+      466,
+      559,
+      652,
+      745,
+      838
+    ],
+    "reviewer": {
+      "id": "visual_review_agent",
+      "method": "direct_sampled_frame_inspection"
+    },
+    "rubric": {
+      "character_consistency": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "character_consistency",
+        "observation": "Not verified: exact identity and shape agreement with the character board were not assessed; no finding of inconsistency is asserted.",
+        "status": "NOT_VERIFIED"
+      },
+      "character_scale": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "character_scale",
+        "observation": "Candidate actors generally appear around 25\u201335% of frame height, with small faces. Reference actors frequently appear around 40\u201355% and make facial expressions easier to read. These proportions are visual estimates, not measured bounding boxes.",
+        "repair": "Add closer framing and larger visible expressions at emotionally important beats.",
+        "status": "MISMATCH"
+      },
+      "phone_readability": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "phone_readability",
+        "observation": "Not verified by physical phone playback. Small top caption fragments and prop labels in sampled frames create a readability concern; no device-level pass is claimed.",
+        "status": "NOT_VERIFIED"
+      },
+      "staging": {
+        "candidate_frames": [
+          0,
+          93,
+          186,
+          279,
+          372,
+          466,
+          559,
+          652,
+          745,
+          838
+        ],
+        "dimension": "staging",
+        "observation": "Candidate samples repeatedly center isolated figures and floating symbolic props in medium or wide composition. References include book, bed, couch and interpersonal staging with more varied scene context. Static samples do not establish the full camera trajectory.",
+        "repair": "Vary close, medium and wide staging and connect props to visible character actions and scene context.",
+        "status": "MISMATCH"
+      },
+      "typography": {
+        "candidate_frames": [
+          0,
+          186,
+          559,
+          652,
+          745
+        ],
+        "dimension": "typography",
+        "observation": "Candidate uses small thin sans-serif word or phrase snippets near the top. Reference frames use large expressive bold two-line headlines. Candidate examples include Stop, Watch the, Why does, winning, and I\u2019m.",
+        "repair": "Increase headline prominence and expressive typography while preserving caption readability and safe areas.",
+        "status": "MISMATCH"
+      }
+    },
+    "scope": "Documented sampled static-frame review only; full audiovisual review remains separate.",
+    "status": "FAIL",
+    "unresolved_issues": [
+      "Typography lacks the reference headline prominence and expressive lettering.",
+      "Character faces and body scale remain smaller than reference samples.",
+      "Staging remains repetitive with isolated figures and symbolic props.",
+      "Exact character-board consistency was not verified in this review.",
+      "Phone readability has not passed a device playback review; sampled small captions and prop labels remain a concern."
+    ]
+  },
+  "visual_review_sha256": "dcd718df44d070b374da5b21630b6516979b3d387098951be37e2a2ed6c24169",
   "weighted_mean_distance_components": {
     "edge_density": 0.0037735134548611106,
     "mean_brightness": 0.02613585401348039,

@@ -8,6 +8,7 @@ on:
     paths:
       - 'public-review/v2-draft.mp4'
       - 'reference/frames/**'
+      - 'state/visual-analysis/frame-review.json'
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/visual_motion_analysis.py'
       - 'scripts/reference_frame_manifest.py'
@@ -37,7 +38,7 @@ jobs:
         run: python -m unittest tests.test_rendered_visual_parity tests.test_visual_motion_analysis tests.test_reference_frame_manifest
       - name: Analyze actual candidate and compare reference images
         run: |
-          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 --out state/visual-analysis-run/comparison.json --analysis-only
+          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 --out state/visual-analysis-run/comparison.json --visual-review state/visual-analysis/frame-review.json --analysis-only
           python scripts/visual_motion_analysis.py --video public-review/v2-draft.mp4 --out state/visual-analysis-run/motion.json
           python - <<'PY'
           import hashlib,json,os

@@ -86,7 +86,7 @@
       "repair": "Increase headline prominence and expressive typography while preserving caption readability and safe areas."
     },
     {
-      "dimension": "character_scale_and_expression",
+      "dimension": "character_scale",
       "status": "MISMATCH",
       "candidate_frames": [
         0,
@@ -103,7 +103,7 @@
       "repair": "Add closer framing and larger visible expressions at emotionally important beats."
     },
     {
-      "dimension": "staging_and_camera_variety",
+      "dimension": "staging",
       "status": "MISMATCH",
       "candidate_frames": [
         0,
@@ -146,6 +146,40 @@
       "dimension": "motion_and_audio",
       "status": "NOT_REVIEWED",
       "observation": "Still reference frames and sampled candidate frames cannot establish motion parity, acting continuity, audio quality, or full pacing."
+    },
+    {
+      "dimension": "character_consistency",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Not verified: exact identity and shape agreement with the character board were not assessed; no finding of inconsistency is asserted."
+    },
+    {
+      "dimension": "phone_readability",
+      "status": "NOT_VERIFIED",
+      "candidate_frames": [
+        0,
+        93,
+        186,
+        279,
+        372,
+        466,
+        559,
+        652,
+        745,
+        838
+      ],
+      "observation": "Not verified by physical phone playback. Small top caption fragments and prop labels in sampled frames create a readability concern; no device-level pass is claimed."
     }
   ],
   "verdict": "CREATIVE_MISMATCHES_IDENTIFIED",
@@ -160,5 +194,44 @@
   "review_artifacts": {
     "candidate_contact_sheet": "candidate-exact.jpg",
     "reference_contact_sheet": "reference-sheet.jpg"
+  },
+  "reviewer": {
+    "id": "visual_review_agent",
+    "method": "direct_sampled_frame_inspection"
+  },
+  "decision": "FAIL",
+  "scope": {
+    "kind": "sampled_visual",
+    "full_audiovisual_review": false,
+    "sampled_frames": 10
+  },
+  "unresolved_issues": [
+    "Typography lacks the reference headline prominence and expressive lettering.",
+    "Character faces and body scale remain smaller than reference samples.",
+    "Staging remains repetitive with isolated figures and symbolic props.",
+    "Exact character-board consistency was not verified in this review.",
+    "Phone readability has not passed a device playback review; sampled small captions and prop labels remain a concern."
+  ],
+  "rubric": {
+    "typography": {
+      "pass": false,
+      "evidence": "Frames 0,186,559,652,745 show small sans-serif word snippets; reference samples have prominent expressive two-line headlines."
+    },
+    "character_scale": {
+      "pass": false,
+      "evidence": "Candidate sampled actors visually estimated around 25\u201335% frame height, versus many reference actors around 40\u201355%. Faces are small. Estimates are not bounding-box measurements."
+    },
+    "staging": {
+      "pass": false,
+      "evidence": "All10 candidate samples repeatedly use mid/wide isolated figures and floating symbolic props; references include book, bed, couch and interpersonal staging."
+    },
+    "character_consistency": {
+      "pass": false,
+      "evidence": "Not verified: exact identity and shape agreement with the character board were not assessed; no finding of inconsistency is asserted."
+    },
+    "phone_readability": {
+      "pass": false,
+      "evidence": "Not verified by physical phone playback. Small top caption fragments and prop labels in sampled frames create a readability concern; no device-level pass is claimed."
+    }
   }
 }

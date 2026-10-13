@@ -146,5 +146,48 @@ class OperationalAnalysisTests(unittest.TestCase):
             with self.assertRaises(ValueError):analyze_comparison(refs,video,root/'invalid')
 
 
+class DocumentedVisualReviewTests(unittest.TestCase):
+    def test_exact_bound_review_can_pass_fail_and_reject_tampering(self):
+        import copy
+        from scripts.rendered_visual_parity import evaluate_visual_review, REVIEW_DIMENSIONS
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'candidate.avi'
+            image=np.full((80,80,3),255,dtype=np.uint8)
+            cv2.line(image,(10,10),(65,65),(0,0,0),4)
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),8,(80,80))
+            self.assertTrue(writer.isOpened())
+            for i in range(8):writer.write(image)
+            writer.release()
+            refs=[]
+            for i in range(4):
+                path=root/f'ref-{i}.jpg';cv2.imwrite(str(path),image)
+                refs.append({'path':path.name,'sha256':sha256(path)})
+            review={'review_type':'independent_sampled_frame_visual_analysis',
+                    'candidate':{'sha256':sha256(video)},'reviewer':{'id':'test-fixture-reviewer','method':'fixture only; not real creative evidence'},
+                    'reviewed_at':'2026-10-13T00:00:00Z','coverage':{'sample_count':8,'sampled_frame_indices':list(range(8))},
+                    'reference_frames':refs,'decision':'PASS','unresolved_issues':[],
+                    'findings':[{'dimension':d,'status':'PASS','candidate_frames':[0,7],'observation':'Synthetic test contract only.'} for d in REVIEW_DIMENSIONS]}
+            result=evaluate_visual_review(root,video,review)
+            self.assertEqual(result['status'],'PASS');self.assertTrue(result['framewise_style_parity'])
+            self.assertFalse(result['production_approved'])
+            failed=copy.deepcopy(review);failed['decision']='FAIL';failed['findings'][0]['status']='MISMATCH'
+            failed['unresolved_issues']=['Fixture mismatch']
+            self.assertEqual(evaluate_visual_review(root,video,failed)['status'],'FAIL')
+            mutations=[lambda r:r['candidate'].update(sha256='0'*64),
+                       lambda r:r['reference_frames'][0].update(sha256='0'*64),
+                       lambda r:r['coverage']['sampled_frame_indices'].pop(),
+                       lambda r:r['coverage']['sampled_frame_indices'].__setitem__(0,80),
+                       lambda r:r['coverage']['sampled_frame_indices'].__setitem__(0,1),
+                       lambda r:r['findings'].pop(),
+                       lambda r:r['reviewer'].update(id=''),
+                       lambda r:r['findings'][0].update(candidate_frames=[79]),
+                       lambda r:r['unresolved_issues'].append('Still broken'),
+                       lambda r:r['findings'][0].update(status='MISMATCH')]
+            for mutate in mutations:
+                bad=copy.deepcopy(review);mutate(bad)
+                with self.subTest(mutation=mutate):
+                    self.assertEqual(evaluate_visual_review(root,video,bad)['status'],'BLOCKED')
+
+
 if __name__ == "__main__":
     unittest.main()
