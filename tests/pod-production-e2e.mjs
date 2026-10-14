@@ -28,11 +28,15 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   await promisify(execFile)('python3',['-c',"from PIL import Image; import sys; Image.new('RGB',(600,600),'white').save(sys.argv[1])",image]);
   const source=await fs.readFile(image),store=new ArtifactStore(db);
   const template={platform:'redbubble',dpi:300,size_inches:[2,2],art_box_px:[100,100,400,400],safe_box_px:[50,50,500,500]};
+  // These scoped approvals are synthetic test records, not official product specs.
+  const templateScope={product:'fixture-shirt',country:'US'};
+  const templateRecord={audience:'pod:template',...templateScope,official_source_verified:true,
+   source_url:'https://example.org/fixture-template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template};
   const inputs={'source.png':source,'layers.json':Buffer.from('[]'),
-   'template.json':Buffer.from(JSON.stringify(sign({audience:'pod:template',template}))),
+   'template.json':Buffer.from(JSON.stringify(sign(templateRecord))),
    'rights.json':Buffer.from(JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:hash(source),text_layers_sha256:hash('[]')})))};
   const files={};for(const [name,bytes] of Object.entries(inputs))files[name]=await store.put(bytes,name.endsWith('.png')?'image/png':'application/json');
-  const task={schema_version:1,files,source:'source.png',reference:'source.png',template:'template.json',textLayers:'layers.json',assetRights:'rights.json'};
+  const task={schema_version:1,templateScope,files,source:'source.png',reference:'source.png',template:'template.json',textLayers:'layers.json',assetRights:'rights.json'};
   const taskHash=await store.put(Buffer.from(JSON.stringify(task)),'application/json');
   const concept=crypto.randomUUID(),account=crypto.randomUUID(),id=crypto.randomUUID();
   await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[account]);
@@ -50,5 +54,23 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   assert.equal((await db.acceptReview(id,qa)).publication_enabled,false);
   await assert.rejects(db.acceptReview(id,qa),/REVIEW_NOT_PENDING/);
   assert.equal((await db.reviewPackage(id)).state,'qa_passed');
+  // Real stored inputs and signed grants must not bypass provenance or scope.
+  for(const [index,change] of [{official_source_verified:false},{country:'CA'}].entries()){
+   const badTemplate=await store.put(Buffer.from(JSON.stringify(sign({...templateRecord,...change}))),'application/json');
+   const badTask={...task,files:{...files,'template.json':badTemplate}};
+   const badTaskHash=await store.put(Buffer.from(JSON.stringify(badTask)),'application/json');
+   const blockedId=crypto.randomUUID();
+   const blockedJob={...job,id:blockedId,task_sha256:badTaskHash};
+   const blockedGrant=sign({...JSON.parse(grant.payload),job_id:blockedId,task_sha256:badTaskHash});
+   await db.enqueue({job:blockedJob,upstream:blockedGrant,conceptId:concept,revision:index+2});
+   const before=(await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n;
+   const blocked=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+    env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
+   assert.equal(blocked.status,'BLOCKED');
+   const state=(await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[blockedId])).rows[0];
+   assert.deepEqual(state,{state:'qa_failed',manifest:null,reason_code:'PRODUCTION_BLOCKED'});
+   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n,before);
+  }
  }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
 });
+

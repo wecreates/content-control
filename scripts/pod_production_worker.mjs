@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
+import {validateTemplate,validateInteriorTemplate} from '../integrations/pod/templates.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
@@ -15,10 +16,17 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
   task=await resolveTask(job);
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  // Scope comes from the hash-bound descriptor; signatures alone do not establish
+  // official provenance or authorize a different product/country/platform.
+  const scope={...task.templateScope,platform:job.brief.platform};
+  validateTemplate(JSON.parse(await fs.readFile(task.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
+  if(job.brief.platform==='kdp'){
+   if(!task.interior)throw Error('INTERIOR_REQUIRED');
+   validateInteriorTemplate(JSON.parse(await fs.readFile(task.interior.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
+  }
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
    '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])],{root,signal,env});
   if(job.brief.platform==='kdp'){
-   if(!task.interior)throw Error('INTERIOR_REQUIRED');
    await python('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
@@ -58,4 +66,5 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   return {status:'BLOCKED',job_id:job.id};
  }finally{if(task?.cleanup)await task.cleanup();}
 }
+
 

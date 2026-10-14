@@ -8,6 +8,8 @@ export function validateTask(task){
  if(task?.schema_version!==1||!task.files||typeof task.files!=='object'||Array.isArray(task.files))throw Error('TASK_INVALID');
  const entries=Object.entries(task.files);
  if(!entries.length||entries.length>32||entries.some(([name,sha])=>!/^[-a-zA-Z0-9_.]{1,100}$/.test(name)||name==='.'||name==='..'||!hash.test(sha)))throw Error('TASK_FILES_INVALID');
+ if(typeof task.templateScope?.product!=='string'||!task.templateScope.product.trim()||task.templateScope.product.length>128||
+  typeof task.templateScope?.country!=='string'||!/^[A-Z]{2}$/.test(task.templateScope.country))throw Error('TASK_TEMPLATE_SCOPE_REQUIRED');
  const roles=['source','template','textLayers','assetRights','reference'];
  const has=n=>typeof n==='string'&&Object.hasOwn(task.files,n);
  if(roles.some(role=>!has(task[role])))throw Error('TASK_ROLE_INVALID');
@@ -37,7 +39,7 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
     }
     const resolved={rights_verified:true,assetRoot:directory,output:path.join(directory,'package'),
      qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
-     approvedEvaluators,cleanup};
+     approvedEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
     for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(directory,task[role]);
     if(task.interior)resolved.interior=Object.fromEntries(Object.entries(task.interior).map(([k,v])=>[k,path.join(directory,v)]));
     // New packages await a hash-bound external QA review; no preapproved future bytes.
@@ -46,4 +48,5 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
   }
  };
 }
+
 
