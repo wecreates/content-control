@@ -1,22 +1,9 @@
-import {spawn} from 'node:child_process';
+import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
-async function python(script,args,{root,signal,env=process.env}){
- return new Promise((resolve,reject)=>{
-  const child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...args],
-   {cwd:root,env,signal,stdio:['ignore','pipe','pipe']});
-  let size=0,output='';
-  let forceTimer;
-  const timer=setTimeout(()=>{child.kill('SIGTERM');forceTimer=setTimeout(()=>child.kill('SIGKILL'),5000);},8*60*1000);
-  child.stdout.on('data',b=>{size+=b.length;if(size>1024*1024)child.kill('SIGTERM');else output+=b;});
-  child.stderr.on('data',()=>{}); // Do not leak signed inputs, model paths or credentials into logs.
-  child.on('error',e=>{clearTimeout(timer);clearTimeout(forceTimer);reject(e);});
-  child.on('close',code=>{clearTimeout(timer);clearTimeout(forceTimer);if(code===0)resolve(output);else reject(Error('PYTHON_STAGE_FAILED'));});
- });
-}
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
