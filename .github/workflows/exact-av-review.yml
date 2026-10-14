@@ -24,6 +24,7 @@ on:
       - 'scripts/exact_av_review.mjs'
       - 'scripts/offline_av_review.py'
       - 'tests/test_offline_av_review.py'
+      - 'tests/test_review_packets.py'
       - 'tests/exact-av-review.test.mjs'
       - '.github/workflows/exact-av-review.yml'
 permissions:
@@ -40,6 +41,7 @@ jobs:
       - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: python -m unittest discover -s tests -p test_offline_av_review.py
+      - run: python -m unittest discover -s tests -p test_review_packets.py
   browser-transport:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest

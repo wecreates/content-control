@@ -54,3 +54,21 @@ test('latest visual repairs require their own pinned source and media hashes',()
  assert.throws(()=>reviewSource({...run,head_sha:'dcb4775fe1891df8d8bcaab477bcb919e6771b50'},request));
  assert.throws(()=>reviewSource({...run,path:'.github/workflows/repair-retained-captions.yml'},request));
 });
+
+test('latest verified visual repairs reach review with exact hashes and no approval',()=>{
+ const run={...sourceRun(),id:38583366384,head_branch:'fix/offline-av-recovery-review',path:'.github/workflows/retained-visual-repair.yml',event:'pull_request',conclusion:'success',head_sha:'b8f22d0be0cd0e2196a892eea07a904898dc43eb'};
+ const request={...sourceRequest,runId:'38583366384',format:'short'};
+ const hashes={short:'46a6989bc7a5f3e0c35c552d2a8c635d1c0fadf369c6252d1c66945b452ee17a',long:'41a479dda53d9b926b299e3769493b9082d450e71c4e1e65e12bf9732d649766'};
+ for(const format of ['short','long']){
+  const out=reviewSource(run,{...request,format});
+  assert.equal(out.artifact,'visual-repair-'+format);
+  assert.equal(out.expected_sha256,hashes[format]);
+  assert.equal(out.media,'candidate.mp4');
+  assert.equal(out.production_approved,false);
+  assert.equal(out.publication_enabled,false);
+ }
+ for(const delta of [{id:38583366385},{head_sha:'a'.repeat(40)},{conclusion:'failure'},{status:'in_progress'},{repository:{full_name:'other/repo'}},{head_repository:{full_name:'fork/repo'}},{event:'push'},{path:'.github/workflows/other.yml'}])assert.throws(()=>reviewSource({...run,...delta},request));
+ assert.throws(()=>reviewSource(run,{...request,format:'v2'}));
+ assert.throws(()=>reviewSource(run,{...request,repository:'other/repo'}));
+ assert.throws(()=>reviewSource({...run,id:38583366385},{...request,runId:'38583366385'}));
+});
