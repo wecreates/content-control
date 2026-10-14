@@ -72,6 +72,36 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    fetchImpl:async(_url,options)=>new Response(JSON.stringify({accepted_event_id:options.headers['idempotency-key']}))});
   assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
   assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
+  // pg's default timestamptz parser drops microseconds. Twenty rejected rows
+  // sharing an instant must not trap the cursor ahead of later pending events.
+  const pageIds=Array.from({length:45},()=>crypto.randomUUID());
+  await pool.query(`INSERT INTO pod_events(id,kind,payload,created_at)
+   SELECT id,'pod.test.pagination','{}',CASE WHEN n<=40
+    THEN '2026-01-01T00:00:00.000123Z'::timestamptz
+    ELSE '2026-01-01T00:00:00.000456Z'::timestamptz END
+   FROM unnest($1::uuid[]) WITH ORDINALITY AS fixture(id,n)`,[pageIds]);
+  const ordered=(await pool.query('SELECT id,created_at::text AS stamp FROM pod_events WHERE id=ANY($1::uuid[]) ORDER BY created_at,id',[pageIds])).rows;
+  const rejected=new Set(ordered.slice(0,20).map(row=>row.id)),pageObserved=[];
+  const deliveryOptions={url:'https://authority.example/events',key:'e'.repeat(32),continueOnError:true,
+   fetchImpl:async(_url,options)=>{
+    const event=JSON.parse(JSON.parse(options.body).payload).event;pageObserved.push(event.id);
+    assert.equal(Object.hasOwn(event,'cursor_created_at'),false);
+    return rejected.has(event.id)?new Response('',{status:503}):new Response(JSON.stringify({accepted_event_id:event.id}));
+   }};
+  const firstPage=await deliverOutbox(db,deliveryOptions);
+  assert.equal(firstPage.failed,20);assert.equal(firstPage.delivered,0);
+  assert.deepEqual(firstPage.nextCursor,{id:ordered[19].id,created_at:ordered[19].stamp});
+  const secondPage=await deliverOutbox(db,{...deliveryOptions,cursor:firstPage.nextCursor});
+  assert.equal(secondPage.delivered,20);assert.equal(secondPage.failed,0);
+  const thirdPage=await deliverOutbox(db,{...deliveryOptions,cursor:secondPage.nextCursor});
+  assert.equal(thirdPage.delivered,5);assert.equal(thirdPage.failed,0);assert.equal(thirdPage.nextCursor,null);
+  assert.deepEqual(pageObserved,ordered.map(row=>row.id));
+  const wrappedPage=await deliverOutbox(db,{...deliveryOptions,cursor:thirdPage.nextCursor});
+  assert.equal(wrappedPage.failed,20);assert.equal(wrappedPage.delivered,0);
+  assert.deepEqual(pageObserved.slice(45),ordered.slice(0,20).map(row=>row.id));
+  const pending=(await pool.query('SELECT id FROM pod_events WHERE id=ANY($1::uuid[]) AND delivered_at IS NULL',[pageIds])).rows;
+  assert.deepEqual(new Set(pending.map(row=>row.id)),rejected);
+  await pool.query('DELETE FROM pod_events WHERE id=ANY($1::uuid[])',[pageIds]);
   await assert.rejects(db.finish(claims.find(Boolean),'published'),/INVALID_FINISH/);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
   assert.ok(!(await db.listReady()).some(row=>row.id===job));
@@ -209,4 +239,5 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   }finally{await historical.query('ROLLBACK');historical.release();}
  }finally{await pool.end();}
 });
+
 

@@ -708,3 +708,25 @@ https://github.com/wecreates/content-control/actions/runs/38626107542
 This verifies the merged code in CI, not a new live deployment or completion of
 the 24-area checklist.
 
+
+## Outbox microsecond pagination repair — 2026-10-14
+
+A new regression reproduced lost cursor precision: pg returns timestamptz as a
+JavaScript Date, truncating microseconds. A full rejected batch could therefore be
+selected repeatedly, starving later Money Factory feedback despite pagination.
+The query now retains exact PostgreSQL timestamp text solely for its cursor;
+signed event payloads and receiver deduplication identities remain unchanged.
+
+All eight focused local outbox tests pass after the fix; the new precision test
+failed beforehand. The existing real PostgreSQL integration suite now exercises
+45 events, 20 persistent rejections, subsequent successful pages, exact ordering
+and retry wraparound. Hosted CI must verify this database regression before merge.
+No new dependency, migration, external request, production credential or network
+change is introduced by the repair. Publication remains held disabled.
+
+At this inspection, protected database deployment run 38627827260 was waiting;
+no approval or duplicate dispatch was attempted. Render listed deployment
+ dep-db7tsqslt5cc73e1054g for c9c3b09433ac8b6967bd9cd9be92faaad26a1189 as queued.
+A queued deployment is not a successful rollout or evidence of restored build
+quota. Production database and all 24 live acceptance areas remain unverified.
+

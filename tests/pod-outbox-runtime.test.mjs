@@ -34,7 +34,7 @@ test('failed acknowledgement does not mark delivered or block another event',asy
  assert.deepEqual(db.updated,['b']);assert.deepEqual(result,{delivered:1,failed:1,nextCursor:null});
 });
 test('full rejected batch returns a cursor so later events remain reachable',async()=>{
- const events=Array.from({length:20},(_,i)=>({id:String(i),created_at:'2026-01-01'})),db=dbFixture(events);
+ const events=Array.from({length:20},(_,i)=>({id:String(i),created_at:'2026-01-01',cursor_created_at:'2026-01-01'})),db=dbFixture(events);
  const result=await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,fetchImpl:async()=>new Response('',{status:503})});
  assert.equal(result.failed,20);assert.deepEqual(result.nextCursor,{id:'19',created_at:'2026-01-01'});assert.equal(db.updated.length,0);
 });
@@ -45,3 +45,15 @@ test('already cancelled batch sends nothing',async()=>{
  const c=new AbortController();c.abort();const db=dbFixture([{id:'a'}]);
  await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,signal:c.signal,fetchImpl:()=>assert.fail('network attempted')});assert.equal(db.updated.length,0);
 });
+test('pagination preserves PostgreSQL microseconds without changing the event envelope',async()=>{
+ const timestamp='2026-01-01 00:00:00.000123+00';
+ const events=Array.from({length:20},(_,i)=>({id:String(i),created_at:new Date('2026-01-01T00:00:00.000Z'),cursor_created_at:timestamp}));
+ const db=dbFixture(events);const sent=[];
+ const result=await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
+  fetchImpl:async(_url,options)=>{sent.push(JSON.parse(JSON.parse(options.body).payload).event);return new Response('',{status:503});}});
+ assert.deepEqual(result.nextCursor,{id:'19',created_at:timestamp});
+ assert.equal(sent.length,20);
+ assert.equal(sent[0].created_at,'2026-01-01T00:00:00.000Z');
+ assert.equal(Object.hasOwn(sent[0],'cursor_created_at'),false);
+});
+
