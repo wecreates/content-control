@@ -309,3 +309,31 @@ must independently verify the durable PostgreSQL and cross-language paths.
 This change does not refresh any approval: authorities must issue evidence from
 current records; re-signing stale rights, templates or reviews remains prohibited.
 
+## Verified source/evidence repairs — 2026-10-14, 16:30 UTC
+
+- PR #67 passed the full integration gate and merged:
+  https://github.com/wecreates/content-control/actions/runs/38597951292
+  Its main-branch gate also passed (38598199644). Render reported
+  4e20ff98c35a71a76adb7da9d57921259215da7b live in
+  dep-db7qqpui0phs739g86dg at 2026-10-14T16:28:27.041247Z.
+- PR #68 passed and merged:
+  https://github.com/wecreates/content-control/actions/runs/38598216977
+  Combined main-branch PostgreSQL/Python integration and System Wiring Audit
+  both passed for d26876d4111cf04722d12bdc1bda68de732f4d6f:
+  https://github.com/wecreates/content-control/actions/runs/38598432562
+  https://github.com/wecreates/content-control/actions/runs/38598432544
+- Render reported that combined commit live in dep-db7qri7avr4c73flv0k0,
+  finished 2026-10-14T16:30:10.514613Z. This is code-deployment evidence only,
+  not an authenticated POD runtime or actual production acceptance result.
+- Local verification additionally passed eight Node identity-binding regressions,
+  38 Python POD tests and syntax compilation of the changed Python files.
+
+No publication flag, network allowlist, live credential or resource plan changed.
+No production database administration was retried without a changed access path.
+Money Factory head 63ba9b144066870b6613a431fb380decaef947dc and both repositories'
+open PRs were inspected; no duplicate POD PR or unrelated video PR was merged.
+The 24-area checklist remains open: code and synthetic CI cannot supply live
+database isolation/recovery, current rights/account/source/template approvals,
+authorized adapters, financial statements or measured production capacity.
+Continue only from verified current heads and actual authorized evidence.
+
