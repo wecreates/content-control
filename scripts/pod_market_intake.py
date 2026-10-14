@@ -20,14 +20,22 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         raise ValueError('REDIRECT_BLOCKED')
 
-def fetch_market(url, approved_hosts):
+MAX_SOURCE_BYTES = 2 * 1024 * 1024
+
+def validate_source_url(url, approved_hosts):
+    if (not isinstance(url, str) or not isinstance(approved_hosts, list)
+            or not approved_hosts or not all(isinstance(host, str) and host for host in approved_hosts)):
+        raise ValueError('SOURCE_NOT_APPROVED')
     u = urllib.parse.urlparse(url)
     if u.scheme != 'https' or u.hostname not in approved_hosts or u.username or u.password or u.port not in (None, 443):
         raise ValueError('SOURCE_NOT_APPROVED')
+
+def fetch_market(url, approved_hosts):
+    validate_source_url(url, approved_hosts)
     request = urllib.request.Request(url, headers={'User-Agent': 'CYZOR-POD-Research/1.0'})
     with urllib.request.build_opener(NoRedirect).open(request, timeout=20) as response:
-        data = response.read(2 * 1024 * 1024 + 1)
-    if len(data) > 2 * 1024 * 1024:
+        data = response.read(MAX_SOURCE_BYTES + 1)
+    if len(data) > MAX_SOURCE_BYTES:
         raise ValueError('SOURCE_TOO_LARGE')
     return data.decode('utf-8', errors='strict')
 
@@ -123,14 +131,25 @@ def run(args):
               'publication_enabled': False}
     if state != 'PASS':
         return result
+    if not args.source_policy:
+        raise ValueError('SOURCE_POLICY_REQUIRED')
+    sources = verified(read_json(args.source_policy), 'POD_SOURCE_KEY', 'pod:source-policy')
+    if sources.get('collection_authorized') is not True:
+        raise ValueError('SOURCE_NOT_AUTHORIZED')
+    validate_source_url(args.url, sources.get('approved_hosts'))
     if args.html:
-        html = Path(args.html).read_text()
-        if len(html.encode()) > 2 * 1024 * 1024:
+        # Offline imports need the same authorization as live collection, plus
+        # a trusted binding of the exact saved bytes to their original URL.
+        with Path(args.html).open('rb') as source:
+            data = source.read(MAX_SOURCE_BYTES + 1)
+        if len(data) > MAX_SOURCE_BYTES:
             raise ValueError('SOURCE_TOO_LARGE')
+        snapshot = sources.get('snapshot')
+        if (not isinstance(snapshot, dict) or snapshot.get('source_url') != args.url
+                or snapshot.get('sha256') != hashlib.sha256(data).hexdigest()):
+            raise ValueError('SOURCE_SNAPSHOT_MISMATCH')
+        html = data.decode('utf-8', errors='strict')
     else:
-        sources = verified(read_json(args.source_policy), 'POD_SOURCE_KEY', 'pod:source-policy')
-        if sources.get('collection_authorized') is not True:
-            raise ValueError('SOURCE_NOT_AUTHORIZED')
         html = fetch_market(args.url, sources.get('approved_hosts', []))
     parser = ProductParser()
     parser.feed(html)
@@ -154,6 +173,8 @@ def run(args):
                           'rank': None, 'search_volume': None})
     visual = analyze_reference(args.reference)
     result.update({'observations': extracted, 'source_url': args.url,
+                   'collection_authorized': True,
+                   'source_policy_sha256': hashlib.sha256(canonical(sources).encode()).hexdigest(),
                    'source_sha256': hashlib.sha256(html.encode()).hexdigest(),
                    'reference_sha256': digest(args.reference), 'visual': visual,
                    'outcompete_spec': {'intended_text': args.text,
@@ -194,3 +215,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
