@@ -220,3 +220,25 @@ This checks combinations of concurrently merged work; PR-specific passing result
 alone do not establish that the final combined head passes. Older runs on the same
 PR/ref are cancelled when superseded. These gates use disposable PostgreSQL and
 synthetic signed fixtures, never live publication or production credentials.
+
+
+## Provider observation identity repair — 2026-10-14
+
+A focused regression reproduced cross-job replay acceptance: the provider inbox
+compared only evidence_sha256, so a different job reusing the same provider event
+and evidence file could receive a false duplicate acknowledgment. Reconciliation
+also failed to require a valid package hash before database access.
+
+The receiver now requires explicit string identities and a SHA-256 package binding,
+and compares the persisted job/account/platform/listing/event/package/proof scope
+before acknowledging a replay. Fresh envelope timestamps remain permissible for
+the same immutable observation. Five focused local tests pass after three failed
+against the previous implementation. The existing PostgreSQL integration test now
+checks a real transaction: conflicting replay leaves the second job submitted and
+creates no additional publication event. Consult this change's CI for that result.
+
+This is fixture-based correctness evidence only. No real marketplace observation,
+provider credential, live database write, or publication was performed. The live
+service inspected at the start of this pass was commit
+a176c1e99d2045f62316c55b9c200cb53d8d23d1. Database provisioning remains unverified;
+no unchanged blocked database access path was retried.

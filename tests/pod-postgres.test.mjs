@@ -9,6 +9,7 @@ import {migrate} from '../scripts/pod_storage_init.mjs';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
+import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -80,6 +81,21 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await assert.rejects(db.acceptReview(job,qa),/REVIEW_NOT_PENDING/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[job])).rows[0].state,'qa_failed');
   await assert.rejects(pool.query("UPDATE pod_concepts SET rights_state='PASS',permanently_unpublished=false WHERE id=$1",[concept]),/POD_PERMANENTLY_UNPUBLISHED/);
+  // Synthetic provider observations test database reconciliation only. They are
+  // not actual listings, provider authorization, or production acceptance.
+  const listingJobs=[crypto.randomUUID(),crypto.randomUUID()],providerKey='provider-test-'.repeat(4);
+  for(const [index,id] of listingJobs.entries())await pool.query(`INSERT INTO pod_production_queue
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
+   VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'submitted',$6)`,[id,concept,account,index+2,crypto.randomUUID(),manifest]);
+  const observed={job_id:listingJobs[0],account_id:account,platform:'redbubble',provider_id:'fixture-listing',provider_event_id:crypto.randomUUID(),
+   package_sha256:manifest.package_sha256,evidence_sha256:hash,status:'LIVE',provider_verified:true};
+  const signedObservation=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:listing-observation',
+   issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
+   return {payload,signature:crypto.createHmac('sha256',providerKey).update(payload).digest('hex')};};
+  assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{published:true});
+  assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{duplicate:true});
+  await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=ANY($1::uuid[])',[listingJobs])).rows[0].n,1);
  }finally{await pool.end();}
 });
-
