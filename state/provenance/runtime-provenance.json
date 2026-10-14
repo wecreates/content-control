@@ -10,7 +10,7 @@
   },
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "publication_enabled": false,
-  "qa_receipt_sha256": "1d8ad6e1a01f1d43cbcbe452a0f951e6b6680a4bc3e1c36b1679b15a7db824ec",
+  "qa_receipt_sha256": "509dbcc216a7f45d7f5c09d42d16e7a65f1fb7784730f1145a8bd108f8ac4972",
   "review_server_smoke_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "review_server_smoke_sha256": "6fa2168ea64be99e1bf1b3cf0294a9dbf87e60775f03c05e37508a61dd1939af",
   "runtime": {
@@ -21,6 +21,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "5eab05e22422fbae2e21c4c736f2b6a4a95b1bca",
+  "source_commit": "b6e11408527161ad67979e448642ab33719e9ba3",
   "zero_credit_runtime": true
 }
