@@ -20,23 +20,25 @@ export function deploymentConfig(env, now=Date.now()) {
  return {role};
 }
 
-export async function deployDatabase({env=process.env,apply=false,connect=createPodPool,inspect=preflight}={}) {
+export async function deployDatabase({env=process.env,apply=false,provision=false,connect=createPodPool,inspect=preflight}={}) {
  const {role}=deploymentConfig(env);
+ if(provision&&!apply)throw Error('PROVISION_REQUIRES_APPLY');
+ const options=provision?{provisionPassword:decodeURIComponent(new URL(env.POD_DATABASE_URL).password)}:{};
  if(apply){
   const pool=await connect({...env,POD_DATABASE_URL:env.DATABASE_MIGRATION_URL});
-  try{await migrate(pool,role);}finally{await pool.end();}
+  try{await migrate(pool,role,undefined,options);}finally{await pool.end();}
  }
  // Inspect using runtime credentials, never the migration owner. No writes or secrets in receipt.
  const report=await inspect({env,connect});
  const required=['RESTRICTED_RUNTIME_ROLE','DATABASE_TLS','POD_TABLE_PRIVILEGES','SOCIAL_VAULT_ISOLATED','SCHEMA_CHECKSUMS','DATABASE_READABLE'];
  const checks=required.map(code=>({code,status:report.checks.find(c=>c.code===code)?.status||'BLOCKED'}));
  return {schema_version:1,status:checks.every(c=>c.status==='PASS')?'DATABASE_VERIFIED':'BLOCKED',
-  migration_requested:apply,publication_enabled:false,production_enabled:false,checks};
+  migration_requested:apply,provision_requested:provision,publication_enabled:false,production_enabled:false,checks};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
-  if(process.argv.slice(2).some(arg=>arg!=='--apply'))throw Error('INVALID_ARGUMENT');
-  const result=await deployDatabase({apply:process.argv.includes('--apply')});
+  if(process.argv.slice(2).some(arg=>!['--apply','--provision-role'].includes(arg)))throw Error('INVALID_ARGUMENT');
+  const result=await deployDatabase({apply:process.argv.includes('--apply'),provision:process.argv.includes('--provision-role')});
   console.log(JSON.stringify(result));if(result.status!=='DATABASE_VERIFIED')process.exitCode=1;
  }catch{console.error(JSON.stringify({status:'BLOCKED',reason:'POD_DATABASE_DEPLOYMENT_FAILED',publication_enabled:false}));process.exitCode=1;}
 }

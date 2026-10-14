@@ -7,6 +7,11 @@ on:
         type: boolean
         required: true
         default: false
+      provision_role:
+        description: Create the dedicated pod_ runtime role if absent (never rotate existing passwords)
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -35,8 +40,12 @@ jobs:
           PUBLICATION_ENABLED: 'false'
           POD_PUBLICATION_ENABLED: 'false'
           APPLY: ${{ inputs.apply }}
+          PROVISION_ROLE: ${{ inputs.provision_role }}
         run: |
-          if [ "$APPLY" = true ]; then
+          if [ "$PROVISION_ROLE" = true ]; then
+            test "$APPLY" = true || { echo 'Provisioning requires apply'; exit 1; }
+            node scripts/pod_deploy_database.mjs --apply --provision-role
+          elif [ "$APPLY" = true ]; then
             node scripts/pod_deploy_database.mjs --apply
           else
             node scripts/pod_deploy_database.mjs

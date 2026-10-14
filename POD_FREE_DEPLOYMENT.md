@@ -65,3 +65,20 @@ Free Render web services sleep during inactivity; this is not a guaranteed 24/7
 worker. The inspected database expires October 26, 2026. Migration does not extend
 that expiry. An approved durable storage/backup arrangement is still required before
 relying on this database for ongoing production. No paid resources are created here.
+
+## First-time restricted account provisioning
+
+The manual workflow now has a separate `provision_role` switch, default false.
+Selecting both `apply` and `provision_role` creates a missing `pod_`-prefixed login
+using the password already stored in POD_RUNTIME_DATABASE_URL (minimum 32 bytes).
+Creation and schema migration share one transaction and advisory lock: a failed
+migration rolls back the new account too. Passwords are stored as SCRAM hashes.
+The account receives no administrator attributes or inherited role privileges;
+only the existing POD table grants are applied. An existing account's password
+is never rotated or overwritten. Elevated memberships block migration even when
+NOINHERIT is set. Post-migration runtime/TLS/isolation checks remain mandatory.
+
+Creating a live database identity and sharing the migration credential with the
+protected GitHub environment are separate security-sensitive operations requiring
+explicit authorization. This implementation does not grant that authorization,
+change database network rules, provision live credentials, or enable production.
