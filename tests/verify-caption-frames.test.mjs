@@ -19,6 +19,19 @@ test('misbound display text and indices cannot pass',()=>{
 test('future words are rejected even in a subframe cue',()=>{
  const {ccsd,track}=fixture();track.cues[2].text='winning';track.cues[2].display_word_indices=[3];assert.match(verifyCaptionFrames(ccsd,track).reason,/Future/);
 });
+test('one-frame word is blocked even when coverage is complete',()=>{
+ const {ccsd,track}=fixture();
+ track.cues[2].start=27.05;
+ track.cues[2].end=27.10;
+ track.cues[3].start=27.10;
+ const before=verifyCaptionFrames(ccsd,track);
+ assert.equal(before.visible_word_count,4);
+ assert.equal(before.status,'BLOCKED');
+ assert.deepEqual(before.brief_word_indices,[2]);
+ track.cues[3].text='the winning';track.cues[3].display_word_indices=[2,3];
+ const after=verifyCaptionFrames(ccsd,track);
+ assert.equal(after.status,'PASS');assert.ok(after.word_exposure_frames[2]>=3);
+});
 test('missing frame rate and enabled publication fail closed',()=>{
  const {ccsd,track}=fixture();delete ccsd.fps;assert.match(verifyCaptionFrames(ccsd,track).reason,/fps/);
  ccsd.fps=30;assert.match(verifyCaptionFrames(ccsd,track).reason,/renderer fps/);
