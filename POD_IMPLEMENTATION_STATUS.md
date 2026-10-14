@@ -624,3 +624,39 @@ Comparison now uses the Date object's epoch milliseconds without string coercion
 the fixture passes. That failed revision was not merged. A fresh hosted gate must
 verify the corrected commit and real concurrent financial tests before merge.
 
+## Verified financial replay repair — 2026-10-14
+
+Content Control PR #79 passed on corrected head
+41b0c628242cfcd4860704a83ea758209c214d38 and merged as
+dbf3821e4cc5e25581ebbe5849dbfe0288d9f0ab. Hosted logs confirm 135 Node tests
+passed with zero failures/skips, including actual PostgreSQL financial contention,
+exact millisecond retries, immutable totals/outbox counts and rejection of a
+temporary historical duplicate set. The real PostgreSQL/Python durable workflow
+also passed: https://github.com/wecreates/content-control/actions/runs/38624332851
+
+Money Factory PR #17 passed its cross-repository gate and merged as
+ea9f44451fe1a1bff34bd89de826776c70b3d755. It documents the authoritative line-ID
+contract without mounting a live authority or inventing ledger entries:
+https://github.com/wecreates/Money-factory/actions/runs/38624195363
+Additional local checks passed 71 focused Node tests, 38 Python POD tests and
+JavaScript syntax checks. The initially failed hosted run remains recorded above;
+it was investigated and fixed, not hidden or merged as passing.
+
+Render's individual-deployment read still reported
+dep-db7r0lh42hec739jiusg / 5180c243198afb6dfb05ee8d2e14995d4e7b0750 as live.
+No deployment of the financial repair was verified. The deployment list continued
+to show the 18:05 UTC failed attempt as its latest entry. The known free-build
+quota and production-database access blockers are unchanged. Migration 004 has
+only been executed in disposable CI; no production migration attempt was made.
+
+Publication flags remain disabled, with no new live credentials, network access,
+spending changes, financial claims or fabricated approvals. The 24-area checklist
+remains open. Follow the protected migration instructions only with real authorized
+access and resolve any genuine duplicate authority events through the upstream
+ledger process; never delete/relabel history to obtain a passing migration.
+
+Combined main integration and System Wiring Audit passed for dbf3821e:
+https://github.com/wecreates/content-control/actions/runs/38624555415
+https://github.com/wecreates/content-control/actions/runs/38624555748
+These are repository/CI results, not a production runtime or financial acceptance.
+
