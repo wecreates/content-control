@@ -41,3 +41,19 @@ test('missing Python dependencies block before queue access',async()=>{
   db:{recover(){throw Error('must not claim');}}});
  assert.equal(runtime.status(),'BLOCKED_PYTHON_RUNTIME');await runtime.stop();
 });
+test('failed recovery reports retrying without leaking database error details',async()=>{
+ let observed;const errorSeen=new Promise(r=>observed=r);
+ const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
+  db:{recover:async()=>{throw Error('private connection details');}},
+  production:{resolveTask:async()=>{},resolveGrant:async()=>{}},onError:observed});
+ await errorSeen;assert.equal(runtime.status(),'RETRYING');const health=runtime.health();
+ assert.equal(health.consecutive_failures,1);assert.equal(health.cycles,0);assert.ok(health.last_started_at);
+ assert.ok(!JSON.stringify(health).includes('private'));await runtime.stop();assert.equal(runtime.status(),'STOPPED');
+});
+test('idle cycle records completion without claiming successful production',async()=>{
+ const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
+  db:{recover:async()=>{},claimProduction:async()=>null},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+ await new Promise(r=>setImmediate(r));const h=runtime.health();assert.equal(h.cycles,1);assert.equal(h.last_result,'IDLE');
+ assert.ok(h.last_completed_at);await runtime.stop();
+});
+
