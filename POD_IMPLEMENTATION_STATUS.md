@@ -459,3 +459,39 @@ Render build quota is still exhausted, so merging this runtime repair is not
 proof of deployment. Publication remains held; no live database operation or
 rights clearance was performed.
 
+## Verified rights repair and deployment hold — 2026-10-14, 17:46 UTC
+
+- Report-only build policy PR #73 passed its integration gate and merged:
+  https://github.com/wecreates/content-control/actions/runs/38608668182
+  Its GitHub workflow change is active without requiring a Render application
+  deployment. Only the exact allowlisted report paths receive [skip render];
+  runtime changes still request deployment and GitHub CI is not skipped.
+- Rights-revocation PR #74 passed and merged. Hosted logs confirm 112 Node
+  tests passed with zero skips, plus the real PostgreSQL/Python durable test,
+  including concurrent adverse re-intake and permanent-tombstone assertions:
+  https://github.com/wecreates/content-control/actions/runs/38609015983
+  Combined main integration and wiring gates passed for
+  8808a873cf84be83018d046698acbdfec935a29b:
+  https://github.com/wecreates/content-control/actions/runs/38609220950
+  https://github.com/wecreates/content-control/actions/runs/38609220723
+- That runtime repair is NOT deployed. Render attempt
+  dep-db7ruvjm8hqs73f2i3c0 failed at 2026-10-14T17:44:31.779531Z.
+  Its build log at 17:44:31.410259956Z explicitly reports exhausted workspace
+  pipeline minutes. No manual retry, cache clear, plan or spending change was made.
+  Last verified live deployment remains dep-db7r0lh42hec739jiusg,
+  commit 5180c243198afb6dfb05ee8d2e14995d4e7b0750, finished
+  2026-10-14T16:41:11.656201Z. Deployment is not live acceptance.
+- Additional local verification passed 30 focused Node tests, 38 Python POD
+  tests and JavaScript syntax checking. Local tests did not use production
+  credentials or confer rights, account access, publication permission or revenue.
+
+The free-minute reset date remains unverified through the available connector;
+owner inspection of Render's workspace Build Pipeline settings is needed to
+establish it. Do not purchase minutes or change spending limits under this task.
+After free capacity is restored, verify an actual successful deployment before
+claiming PR #74 is live. Do not repeatedly rebuild while quota remains exhausted.
+
+All 24 live acceptance areas remain open. No production database administration
+was retried without a changed access path. Publication flags, network scope,
+credentials and resource plans were unchanged. Independent code/test work may
+continue; the repository records session-bounded work, not an always-on worker.
