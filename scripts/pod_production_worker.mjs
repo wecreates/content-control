@@ -42,8 +42,15 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput];
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   // A failed QA process still emits a signed FAIL when signing is available.
-  try{await python('pod_vision_qa.py',args,{root,signal,env});}catch{}
+  let qaProcessFailed=false;
+  try{await python('pod_vision_qa.py',args,{root,signal,env});}catch(error){
+   if(error.message!=='PYTHON_STAGE_FAILED')throw error;
+   qaProcessFailed=true;
+  }
   const qa=JSON.parse(await fs.readFile(task.qaSignedOutput,'utf8'));
+  // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
+  // completeProduction still authenticates the envelope before persisting it.
+  if(qaProcessFailed&&JSON.parse(qa.payload).verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
   const result=await db.completeProduction(job,manifest,qa);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch{
