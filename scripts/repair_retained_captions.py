@@ -27,6 +27,9 @@ def prepare(root, out, kind):
         raise ValueError('Recovered candidate hash mismatch')
     if out.exists():
         raise ValueError('Output must be new')
+    composition = json.loads((root / 'composition.json').read_text())['composition']
+    if composition != {'short': 'StudioAnimatic', 'long': 'StudioLong'}[kind]:
+        raise ValueError('Unexpected retained composition')
     props = json.loads((root / 'props.json').read_text())
     ccsd = props['ccsd']
     old = ccsd['caption_track']
@@ -41,6 +44,7 @@ def prepare(root, out, kind):
     if any(after[i] <= 2 for i in brief):
         raise ValueError('Confirmed brief-word defect remains')
     out.mkdir(parents=True)
+    (out / 'composition.json').write_text(json.dumps({'composition': composition}))
     (out / 'ccsd.json').write_text(json.dumps(ccsd))
     ccsd['caption_track'] = fixed
     (out / 'props.json').write_text(json.dumps(props))

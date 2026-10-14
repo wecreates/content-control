@@ -16,11 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - format: short
-            composition: BossFightShort
-          - format: long
-            composition: StudioLong
+        format: [short, long]
     env:
       PUBLICATION_ENABLED: 'false'
     steps:
@@ -50,7 +46,9 @@ jobs:
         working-directory: original-renderer
       - name: Render repaired candidate using original composition
         working-directory: original-renderer
-        run: npx remotion render remotion/studio-animatic-index.jsx '${{ matrix.composition }}' ../repair/silent.mp4 --props=../repair/props.json --codec=h264 --crf=18 --concurrency=2
+        run: |
+          composition=$(python -c 'import json; print(json.load(open("../repair/composition.json"))["composition"])')
+          npx remotion render remotion/studio-animatic-index.jsx "$composition" ../repair/silent.mp4 --props=../repair/props.json --codec=h264 --crf=18 --concurrency=2
       - name: Preserve exact original encoded audio
         run: |
           ffmpeg -nostdin -v error -i repair/silent.mp4 -i retained/candidate.mp4 -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart repair/candidate.mp4
