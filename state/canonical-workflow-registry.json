@@ -33,6 +33,7 @@
     ".github/workflows/narration-transcription-gate.yml",
     ".github/workflows/ordered-capability-completion.yml",
     ".github/workflows/patched-transformers-smoke.yml",
+    ".github/workflows/pod-integration.yml",
     ".github/workflows/premium-voice-runtime-smoke.yml",
     ".github/workflows/probe-render-infra.yml",
     ".github/workflows/production-execution.yml",

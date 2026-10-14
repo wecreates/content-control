@@ -51,7 +51,10 @@ class FreeReviewGuardTests(unittest.TestCase):
         reviewer=(ROOT/'scripts/exact_av_review.mjs').read_text()
         for forbidden in ['GEMINI_API_KEY','generativelanguage.googleapis.com','gemini_upload','gemini_analyze']:
             self.assertNotIn(forbidden,workflow+reviewer)
-        self.assertIn('node scripts/exact_av_review.mjs prepare',workflow)
+        self.assertIn("import {inspectMedia,prepareReview} from './scripts/exact_av_review.mjs'",workflow)
+        self.assertIn('inspectMedia(process.env.MEDIA_PATH)',workflow)
+        self.assertIn('prepareReview(media)',workflow)
+        self.assertIn('media.candidate_sha256!==source.expected_sha256',workflow)
         self.assertIn("'scripts/exact_av_review.mjs','validate'",workflow)
         self.assertIn("PUBLICATION_ENABLED: 'false'",workflow)
         self.assertIn('reviewSource(run,',workflow)
