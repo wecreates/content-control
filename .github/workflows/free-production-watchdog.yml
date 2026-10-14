@@ -61,7 +61,9 @@ jobs:
         run: |
           echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
       - name: Verify canonical deployment contract
-        run: python scripts/verify_deployment_contract.py
+        run: |
+          python -m unittest tests.test_deployment_contract
+          python scripts/verify_deployment_contract.py
       - name: Verify workflow trigger quarantine
         run: python scripts/verify_workflow_control.py
       - name: Verify complete system wiring

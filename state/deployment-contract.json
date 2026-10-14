@@ -3,8 +3,8 @@
   "provider": "render",
   "manifest": "render.yaml",
   "service_name": "content-control-render-worker",
-  "runtime": "node",
-  "build_command": "npm ci --ignore-scripts",
+  "runtime": "docker",
+  "build_command": "npm ci --ignore-scripts --omit=dev",
   "start_command": "npm start",
   "health_check_path": "/health",
   "canonical_server": "server-lowmem.js",
@@ -12,8 +12,13 @@
   "publication_enabled": false,
   "required_env": {
     "NODE_ENV": "production",
-    "PUBLICATION_ENABLED": "false"
+    "PUBLICATION_ENABLED": "false",
+    "POD_SERVICE_ENABLED": "false",
+    "POD_PRODUCTION_ENABLED": "false",
+    "POD_PUBLICATION_ENABLED": "false"
   },
   "public_base_url": "https://content-control-render-worker.onrender.com",
-  "live_probe_required": true
+  "live_probe_required": true,
+  "dockerfile_path": "./Dockerfile",
+  "docker_context": "."
 }
