@@ -294,3 +294,18 @@ dep-db7prr782drs73da7av0 (finished 2026-10-14T15:22:52.010942Z). Previous combin
 POD main gate 38588431426 passed. No production database retry, platform access,
 rights clearance, publication enablement or live acceptance was performed.
 
+## Python evidence lifetime parity — 2026-10-14
+
+The Python verifier accepted signed evidence with arbitrarily long validity,
+unlike Node's existing 900,000 ms maximum. It also accepted boolean true as
+schema version 1 and as an integer issue time. Six regression tests exposed four
+failing assertions/subtests before the repair. Python now requires actual integer
+schema/timestamp values and rejects validity spans greater than 15 minutes.
+The exact 15-minute boundary remains valid; expired and future evidence still fail.
+
+All 38 locally available Python POD tests passed, including actual OCR/PDF checks,
+the 13 market-source tests and six evidence-lifetime tests. Hosted integration CI
+must independently verify the durable PostgreSQL and cross-language paths.
+This change does not refresh any approval: authorities must issue evidence from
+current records; re-signing stale rights, templates or reviews remains prohibited.
+

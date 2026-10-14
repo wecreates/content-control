@@ -48,9 +48,11 @@ def verified(envelope, key_env, audience):
         raise ValueError('EVIDENCE_SIGNATURE_INVALID')
     value = json.loads(payload)
     now = int(time.time() * 1000)
-    if value.get('audience') != audience or value.get('schema_version') != 1:
+    if (not isinstance(value, dict) or value.get('audience') != audience
+            or type(value.get('schema_version')) is not int or value['schema_version'] != 1):
         raise ValueError('EVIDENCE_SCOPE_INVALID')
-    if not isinstance(value.get('issued_at_ms'), int) or not isinstance(value.get('expires_at_ms'), int):
+    if (type(value.get('issued_at_ms')) is not int or type(value.get('expires_at_ms')) is not int
+            or value['expires_at_ms'] - value['issued_at_ms'] > 900000):
         raise ValueError('EVIDENCE_TIME_INVALID')
     if not value['issued_at_ms'] <= now < value['expires_at_ms']:
         raise ValueError('EVIDENCE_EXPIRED')
@@ -69,3 +71,4 @@ def scoped_file(root, relative):
     if not target.is_relative_to(base) or not target.is_file():
         raise ValueError('ARTIFACT_PATH_INVALID')
     return target
+
