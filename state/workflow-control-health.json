@@ -47,6 +47,7 @@
     ".github/workflows/narration-transcription-gate.yml": true,
     ".github/workflows/ordered-capability-completion.yml": true,
     ".github/workflows/patched-transformers-smoke.yml": true,
+    ".github/workflows/pod-integration.yml": true,
     ".github/workflows/premium-voice-runtime-smoke.yml": true,
     ".github/workflows/probe-render-infra.yml": true,
     ".github/workflows/production-execution.yml": true,
@@ -99,19 +100,11 @@
     ".github/workflows/video-playback-contract.yml": true,
     ".github/workflows/visual-analysis.yml": true,
     "canonical_generation_exists": true,
-    "deny_unlisted_automatic_workflows": false,
+    "deny_unlisted_automatic_workflows": true,
     "publication_disabled": true
   },
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL",
-  "violations": [
-    {
-      "path": ".github/workflows/pod-integration.yml",
-      "push": true,
-      "reason": "unlisted_automatic_workflow",
-      "schedule": false,
-      "workflow_run": false
-    }
-  ]
+  "status": "PASS",
+  "violations": []
 }
