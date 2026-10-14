@@ -1,21 +1,31 @@
 {
   "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "checks": {
-    "actual_hash_matches": true,
-    "caption_hash_matches": true,
-    "captions_present": true,
-    "expected_hash_matches": true,
-    "hash_bound": true,
-    "health_200_and_green": true,
-    "publication_disabled": true,
-    "range_streaming_present": true,
-    "watch_page_present": true
+    "actual_hash_matches": false,
+    "caption_hash_matches": false,
+    "captions_present": false,
+    "expected_hash_matches": false,
+    "hash_bound": false,
+    "health_200_and_green": false,
+    "publication_disabled": false,
+    "range_streaming_present": false,
+    "watch_page_present": false
   },
-  "failed_checks": [],
-  "live_actual_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "live_expected_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "failed_checks": [
+    "health_200_and_green",
+    "publication_disabled",
+    "hash_bound",
+    "expected_hash_matches",
+    "actual_hash_matches",
+    "watch_page_present",
+    "range_streaming_present",
+    "captions_present",
+    "caption_hash_matches"
+  ],
+  "live_actual_sha256": null,
+  "live_expected_sha256": null,
   "public_base_url": "https://content-control-render-worker.onrender.com",
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "PASS"
+  "status": "FAIL"
 }
