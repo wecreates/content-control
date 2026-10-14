@@ -45,8 +45,8 @@ def prepare(root, out, kind):
         raise ValueError('Confirmed brief-word defect remains')
     out.mkdir(parents=True)
     (out / 'composition.json').write_text(json.dumps({'composition': composition}))
-    (out / 'ccsd.json').write_text(json.dumps(ccsd))
     ccsd['caption_track'] = fixed
+    (out / 'ccsd.json').write_text(json.dumps(ccsd))
     (out / 'props.json').write_text(json.dumps(props))
     (out / 'captions.json').write_text(json.dumps(fixed, indent=2))
     (out / 'repair-evidence.json').write_text(json.dumps({

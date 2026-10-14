@@ -6,7 +6,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 const ccsd=JSON.parse(fs.readFileSync('projects/long/credit-card-dlc/ccsd.json','utf8'));
 const result=await build({entryPoints:['remotion/StudioLongComposition.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'frame-fixture',setup(build){build.onResolve({filter:/^remotion$/},()=>({path:'remotion',namespace:'frame'}));build.onLoad({filter:/.*/,namespace:'frame'},()=>({contents:'export const useCurrentFrame=()=>globalThis.__longTestFrame;export const useVideoConfig=()=>({fps:24});export const AbsoluteFill="div";'}));}}]});
-const {StudioLongComposition,longActionTiming,longActorPose,feeReceiptPose}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
+const {StudioLongComposition,longActionTiming,longActorPose,feeReceiptPose,cardSlamPose}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const render=(time,doc=ccsd)=>{globalThis.__longTestFrame=time*24;return renderToStaticMarkup(React.createElement(StudioLongComposition,{ccsd:doc}));};
 test('physical actions remain continuous across narration cuts',()=>{
  for(let i=1;i<ccsd.scenes.length;i++){
@@ -92,4 +92,14 @@ test('loan contract label preserves the complete name within its document',()=>{
  assert.doesNotMatch(markup,/>LOAN CONTRAC<\/text>/);
  const size=Number(markup.match(/font-size="([\d.]+)"[^>]*>LOAN CONTRACT<\/text>/)?.[1]);
  assert.ok(size>0&&size<=13&&size*13*.68<=128);
+});
+
+test('opening card including rotated stroke clears headline throughout slam',()=>{
+ for(let elapsed=0;elapsed<40;elapsed+=1/240){
+  const {y,scale,angle}=cardSlamPose(elapsed),r=angle*Math.PI/180;
+  for(const x of [-92.5,92.5])for(const py of [-57.5,57.5]){
+   const actualY=y+scale*(x*Math.sin(r)+py*Math.cos(r));
+   assert.ok(actualY>200&&actualY<500,`Card outside headline/table safe region: ${actualY}`);
+  }
+ }
 });

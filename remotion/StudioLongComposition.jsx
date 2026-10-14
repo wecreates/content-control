@@ -19,6 +19,8 @@ export const longActionTiming=(scenes,index,time)=>{
  const start=scenes[first].start,end=scenes[last].end;
  return {action,start,end,progress:clamp((time-start)/(end-start))};
 };
+// Card stroke bounds must clear the headline even at the first frame.
+export const cardSlamPose=elapsed=>({y:320+40*ease(elapsed/.65),scale:1.8,angle:12*Math.sin(elapsed*4)*Math.exp(-elapsed/10)});
 // Keep the entire rotated invoice below headlines and above its fee badge.
 export const feeReceiptPose=elapsed=>({y:345+45*ease(elapsed/.65),scale:1.15,angle:12*Math.sin(elapsed*2.4),pivotY:225});
 export const longActorPose=(action,elapsed)=>{
@@ -62,7 +64,7 @@ export const StudioLongComposition=({ccsd})=>{
  else if(action==='doors')art=<>{[535,745].map((x,i)=><g key={x}><rect x={x-75} y="270" width="150" height="260" rx="4" fill="white" stroke="#111" strokeWidth="5"/><Text x={x} y={350} size={46}>{i?'0%*':'0%'}</Text><Text x={x} y={475} size={17} maxWidth={128}>{i?'DEFERRED':'INTRO APR'}</Text><circle cx={x+48} cy="415" r="7" fill="#111"/>{i===1&&<g data-causal-motion="deferred-interest-terms"><rect x={x-65} y="365" width="130" height="80" fill="white" stroke="#111" strokeWidth="3"/>{[0,1,2].map(row=><path key={row} d={`M${x-54} ${374+((elapsed*65+row*22)%62)} h108`} stroke="#111" strokeWidth="5"/>)}</g>}</g>)}<path d={`M670 540 L820 540 L${820-65*beat} ${540+45*beat} L${670-30*beat} ${540+45*beat} Z`} fill="#111"/></>;
  else if(action==='calendar')art=<>{Array.from({length:12},(_,i)=><g key={i}><rect x={470+i%4*88} y={270+Math.floor(i/4)*90} width="76" height="76" rx="6" fill={i<Math.min(12,Math.floor(p*12))?'#eee':'white'} stroke="#111" strokeWidth="3"/><Text x={508+i%4*88} y={315+Math.floor(i/4)*90} size={20}>$100</Text>{i<paymentMonth&&<path d={`M${482+i%4*88} ${331+Math.floor(i/4)*90} l8 7 l15 -15`} fill="none" stroke="#111" strokeWidth="3"/>}</g>)}<g data-causal-motion="monthly-payment"><g transform={`translate(${440+330*cycle(1.5)} 575)`}><rect x="-80" y="-30" width="160" height="60" rx="6" fill="white" stroke="#111" strokeWidth="4"/><path d="M-80 -30 L0 4 L80 -30" fill="none" stroke="#111" strokeWidth="3"/><Text x={0} y={22} size={18}>$100 PAYMENT</Text></g></g></>;
  else if(action==='callback')art=<g data-causal-motion="card-cutting-board-callback">{prop('card',640,480,1.65)}{[0,1,2,3].map(i=><g key={i} transform={`translate(${625+i*33+Math.max(0,Math.sin(elapsed*5))*i*3} 460)`}><ellipse rx="14" ry="20" fill="#fff" stroke="#111" strokeWidth="4"/><path d="M-5 -10 L5 10 M5 -10 L-5 10" stroke="#111" strokeWidth="2"/></g>)}<g data-kitchen-knife="original-svg" transform={`translate(600 ${355+75*Math.max(0,Math.sin(elapsed*5))})`}><rect x="-88" y="-6" width="72" height="23" rx="8" fill="#111"/><path d="M-16 -6 H108 Q108 48 66 48 H-16 Z" fill="white" stroke="#111" strokeWidth="5"/><path d="M-8 36 H66" stroke="#111" strokeWidth="2"/></g><path d="M440 580 H835" stroke="#111" strokeWidth="6"/><Text y={620} size={23}>ONE USE. NO INTEREST.</Text></g>;
- else art=<>{prop('card',640,250+beat*120,1.8,12*Math.sin(elapsed*4)*Math.exp(-elapsed/10))}<path d="M480 500 H800" stroke="#111" strokeWidth="6"/></>;
+ else {const card=cardSlamPose(elapsed);art=<>{prop('card',640,card.y,card.scale,card.angle)}<path d="M480 500 H800" stroke="#111" strokeWidth="6"/></>;}
  return <AbsoluteFill style={{background:'white'}}><svg viewBox="0 0 1280 720" width="100%" height="100%">
   <rect width="1280" height="720" fill="white"/>
   <Text y={73} size={36}>{cue?.text||''}</Text>
