@@ -28,3 +28,6 @@ test('runtime verification is explicitly database-only',async()=>{
  const result=await deployDatabase({env,inspect:async()=>({checks:codes.map(code=>({code,status:'PASS'}))})});
  assert.equal(result.status,'DATABASE_VERIFIED');assert.equal(result.production_enabled,false);assert.equal(result.publication_enabled,false);
 });
+test('role provisioning cannot silently turn check-only into a mutation',async()=>{
+ await assert.rejects(deployDatabase({env,provision:true,connect:()=>{throw Error('must not connect');}}),/PROVISION_REQUIRES_APPLY/);
+});

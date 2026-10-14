@@ -4,17 +4,32 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {createPodPool} from '../pod-db-bridge.js';
 
-export async function migrate(pool, runtimeRole, directory=new URL('../migrations/',import.meta.url)) {
+export async function migrate(pool, runtimeRole, directory=new URL('../migrations/',import.meta.url), {provisionPassword}={}) {
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
+ if(provisionPassword!==undefined&&(!/^pod_[a-z0-9_]+$/.test(runtimeRole)||typeof provisionPassword!=='string'||Buffer.byteLength(provisionPassword)<32||provisionPassword.includes('\0')))throw Error('PROVISION_CONFIG_INVALID');
  const client=await pool.connect();
  try {
   await client.query('BEGIN');
   await client.query("SET LOCAL lock_timeout='10s'");
   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
+  if(provisionPassword!==undefined){
+   const exists=(await client.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows.length>0;
+   if(!exists){
+    // format() quotes identifiers and values server-side; never print this statement.
+    await client.query("SET LOCAL password_encryption='scram-sha-256'");
+    const statement=(await client.query("SELECT format('CREATE ROLE %I LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS PASSWORD %L', $1::text, $2::text) AS sql",[runtimeRole,provisionPassword])).rows[0].sql;
+    await client.query(statement);
+   }
+   // An existing role's password is never changed by a repeat deployment.
+  }
   const role=(await client.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0];
   if(!role||role.rolsuper||role.rolcreatedb||role.rolcreaterole||role.rolreplication||role.rolbypassrls)throw Error('RUNTIME_ROLE_PRIVILEGED');
   const current=(await client.query('SELECT current_user AS name')).rows[0].name;
   if(current===runtimeRole)throw Error('MIGRATION_ROLE_MUST_DIFFER');
+  const inherited=(await client.query(`SELECT EXISTS(SELECT 1 FROM pg_roles p
+   WHERE (p.rolsuper OR p.rolcreatedb OR p.rolcreaterole OR p.rolreplication OR p.rolbypassrls)
+   AND pg_has_role($1,p.oid,'MEMBER')) AS elevated`,[runtimeRole])).rows[0];
+  if(inherited.elevated)throw Error('RUNTIME_ROLE_PRIVILEGED');
   await client.query('CREATE TABLE IF NOT EXISTS pod_schema_version(version text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');
   for(const name of (await fs.readdir(directory)).filter(n=>/^\d+_pod\.sql$/.test(n)).sort()){
    const sql=await fs.readFile(new URL(name,directory),'utf8');
