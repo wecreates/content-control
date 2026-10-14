@@ -12,11 +12,24 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
  router.get('/status',(_req,res)=>res.json({...status?.(),publication_enabled:false,publication_requested:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
  router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
- router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json'],limit:'16mb'}),async(req,res)=>{
+ router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf'],limit:'16mb'}),async(req,res)=>{
   try{const store=new ArtifactStore(db,{budgetBytes:Number(env.POD_ARTIFACT_BUDGET_BYTES||134217728)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
   catch{res.status(409).json({error:'ARTIFACT_STORAGE_BLOCKED'});}
  });
+ router.get('/artifacts/:sha',async(req,res)=>{
+  try{const item=await new ArtifactStore(db).get(req.params.sha);res.set('X-Content-Type-Options','nosniff');res.type(item.media_type).send(item.body);}
+  catch{res.status(404).json({error:'ARTIFACT_UNAVAILABLE'});}
+ });
+ router.get('/jobs/:id/package',async(req,res)=>{
+  try{res.json(await db.reviewPackage(req.params.id));}catch{res.status(404).json({error:'PACKAGE_UNAVAILABLE'});}
+ });
  router.use(express.json({limit:'256kb',strict:true}));
+ router.post('/jobs/:id/retry',async(req,res)=>{
+  try{await db.requeueRepair(req.params.id,req.body);res.json({status:'QUEUED',publication_enabled:false});}catch{res.status(409).json({error:'RETRY_BLOCKED'});}
+ });
+ router.post('/jobs/:id/review',async(req,res)=>{
+  try{res.json(await db.acceptReview(req.params.id,req.body));}catch{res.status(409).json({error:'REVIEW_BLOCKED'});}
+ });
  router.post('/market',async(req,res)=>{try{res.status(202).json(await recordMarketObservation(db,req.body,env.POD_MARKET_KEY));}catch{res.status(409).json({error:'MARKET_OBSERVATION_BLOCKED'});}});
  router.post('/listing-observations',async(req,res)=>{try{res.json(await reconcilePublication(db,req.body,env.POD_PROVIDER_KEY));}catch{res.status(409).json({error:'LISTING_OBSERVATION_BLOCKED'});}});
  router.get('/metrics',async(_req,res)=>{try{res.json(await metrics(db));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}});

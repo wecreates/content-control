@@ -5,7 +5,7 @@ import math
 import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-from pod_common import canonical, digest, read_json, save_json, verified, PLATFORMS
+from pod_common import canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
 
 Image.MAX_IMAGE_PIXELS = 100_000_000
 
@@ -83,6 +83,7 @@ def main():
     p=argparse.ArgumentParser()
     for name in ('source','template','text-layers','rights','output-dir'):
         p.add_argument('--'+name,required=True)
+    p.add_argument('--asset-root')
     a=p.parse_args()
     try:
         rights=verified(read_json(a.rights),'POD_RIGHTS_KEY','pod:asset-rights')
@@ -90,6 +91,8 @@ def main():
         layers=read_json(a.text_layers)
         if rights.get('status')!='PASS' or rights.get('source_sha256')!=digest(a.source) or rights.get('text_layers_sha256')!=hashlib.sha256(canonical(layers).encode()).hexdigest():
             raise ValueError('RIGHTS_BLOCKED')
+        if a.asset_root:
+            layers=[{**layer,'font_path':str(scoped_file(a.asset_root,layer['font_path']))} for layer in layers]
         result=generate(a.source,template,layers,a.output_dir)
         print(canonical({'status':'GENERATED','package_sha256':result['package_sha256'],'publication_enabled':False}))
         return 0

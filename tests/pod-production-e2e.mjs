@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import pg from 'pg';
+import {migrate} from '../scripts/pod_storage_init.mjs';
+import {PodDB} from '../pod-db-bridge.js';
+import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
+import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
+import {createStoredTaskResolvers} from '../integrations/pod/task-resolver.mjs';
+import {produceOnce} from '../scripts/pod_production_worker.mjs';
+const key='fixture-key-only-'.repeat(4);
+const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+const sign=p=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+300000,...p});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
+test('stored task -> real Python production -> durable review hold -> signed QA acceptance',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+ const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL});
+ const db=new PodDB({pool,bridge:{producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}},upstreamKey:key,qaKey:key,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'pod-e2e-'));
+ try{
+  await pool.query("DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='pod_test_runtime') THEN CREATE ROLE pod_test_runtime; END IF; END $$");
+  await migrate(pool,'pod_test_runtime');
+  const image=path.join(tmp,'source.png');
+  await promisify(execFile)('python3',['-c',"from PIL import Image; import sys; Image.new('RGB',(600,600),'white').save(sys.argv[1])",image]);
+  const source=await fs.readFile(image),store=new ArtifactStore(db);
+  const template={platform:'redbubble',dpi:300,size_inches:[2,2],art_box_px:[100,100,400,400],safe_box_px:[50,50,500,500]};
+  const inputs={'source.png':source,'layers.json':Buffer.from('[]'),
+   'template.json':Buffer.from(JSON.stringify(sign({audience:'pod:template',template}))),
+   'rights.json':Buffer.from(JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:hash(source),text_layers_sha256:hash('[]')})))};
+  const files={};for(const [name,bytes] of Object.entries(inputs))files[name]=await store.put(bytes,name.endsWith('.png')?'image/png':'application/json');
+  const task={schema_version:1,files,source:'source.png',reference:'source.png',template:'template.json',textLayers:'layers.json',assetRights:'rights.json'};
+  const taskHash=await store.put(Buffer.from(JSON.stringify(task)),'application/json');
+  const concept=crypto.randomUUID(),account=crypto.randomUUID(),id=crypto.randomUUID();
+  await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[account]);
+  await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
+  const job={id,account_id:account,business_id:'fixture',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH',task_sha256:taskHash};
+  const grant=sign({audience:'content-control:pod',job_id:id,account_id:account,business_id:'fixture',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,task_sha256:taskHash});
+  await db.enqueue({job,upstream:grant,conceptId:concept,revision:1});
+  const result=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
+  assert.equal(result.status,'REVIEW_REQUIRED');
+  const saved=await db.reviewPackage(id);assert.equal(saved.reason_code,'REVIEW_REQUIRED');
+  for(const sha of Object.values(saved.manifest.files))assert.equal(hash((await store.get(sha)).body),sha);
+  const qa=sign({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:saved.manifest.package_sha256,template_sha256:saved.manifest.template_sha256,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true]))});
+  await assert.rejects(db.acceptReview(id,sign({...JSON.parse(qa.payload),package_sha256:'0'.repeat(64)})),/QA_BLOCKED/);
+  assert.equal((await db.acceptReview(id,qa)).publication_enabled,false);
+  await assert.rejects(db.acceptReview(id,qa),/REVIEW_NOT_PENDING/);
+  assert.equal((await db.reviewPackage(id)).state,'qa_passed');
+ }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
+});

@@ -36,3 +36,8 @@ test('already aborted production does not claim a job',async()=>{
   db:{claimProduction(){throw Error('must not claim');}}});
  assert.equal(result.status,'STOPPED');
 });
+test('missing Python dependencies block before queue access',async()=>{
+ const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true'},pythonReady:false,
+  db:{recover(){throw Error('must not claim');}}});
+ assert.equal(runtime.status(),'BLOCKED_PYTHON_RUNTIME');await runtime.stop();
+});
