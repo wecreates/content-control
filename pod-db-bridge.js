@@ -60,7 +60,7 @@ export class PodDB {
    if(!r.rows.length)throw Error('DUPLICATE_JOB');return r.rows[0];
   });
  }
- async listReady(){this.active();return (await this.pool.query("SELECT id,platform,state FROM pod_production_queue WHERE state='qa_passed' ORDER BY created_at LIMIT 20")).rows;}
+ async listReady(){this.active();return (await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;}
  async failProduction(job,reason){return this.tx(async c=>{
   const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' RETURNING id",[reason,job.id,job.fencing_token]);
   if(!r.rows.length)throw Error('LEASE_LOST');
@@ -96,6 +96,16 @@ export class PodDB {
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256);return true;}catch{return false;}})();
   return this.tx(async c=>{
+   if(pass){
+    // Lock current rights through the readiness transition; a prior claim or
+    // signed technical QA does not authorize a subsequently revoked concept.
+    const current=(await c.query(`SELECT p.rights_state,p.permanently_unpublished
+     FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+     WHERE q.id=$1 AND q.fencing_token=$2 AND q.state='processing' AND q.lease_until>now()
+     FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token])).rows[0];
+    if(!current)throw Error('LEASE_LOST');
+    if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
+   }
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>now() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
@@ -137,3 +147,4 @@ export class PodDB {
  });}
  async close(){await this.pool.end();}
 }
+
