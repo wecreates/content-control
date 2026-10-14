@@ -18,6 +18,8 @@ on:
   pull_request:
     paths:
       - 'scripts/exact_av_review.mjs'
+      - 'scripts/offline_av_review.py'
+      - 'tests/test_offline_av_review.py'
       - 'tests/exact-av-review.test.mjs'
       - '.github/workflows/exact-av-review.yml'
 permissions:
@@ -32,6 +34,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
       - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: python -m unittest discover -s tests -p test_offline_av_review.py
   prepare-or-validate:
     if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false && github.ref == 'refs/heads/main'
     needs: tests
@@ -74,6 +78,10 @@ jobs:
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
         run: node scripts/exact_av_review.mjs prepare "$MEDIA_PATH" receipts/review-request.json
+      - name: Build free local audiovisual inspection package
+        env:
+          MEDIA_PATH: ${{ steps.source.outputs.media }}
+        run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out receipts/offline-review
       - name: Validate supplied review against exact media and existing handoff gate
         if: inputs.review_json_path != ''
         env:
