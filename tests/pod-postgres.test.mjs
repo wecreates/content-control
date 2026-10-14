@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
@@ -54,6 +55,10 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const events=(await pool.query("SELECT kind,payload FROM pod_events WHERE job_id=$1",[job])).rows;
   assert.equal(events.length,1);assert.equal(events[0].kind,'pod.production.qa_passed');
   assert.equal(events[0].payload.publication_enabled,false);
+  const delivery=await deliverOutbox(db,{url:'https://authority.example/events',key:'e'.repeat(32),continueOnError:true,
+   fetchImpl:async(_url,options)=>new Response(JSON.stringify({accepted_event_id:options.headers['idempotency-key']}))});
+  assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
+  assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
   await assert.rejects(db.finish(claims.find(Boolean),'published'),/INVALID_FINISH/);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
   await assert.rejects(pool.query("UPDATE pod_concepts SET rights_state='PASS',permanently_unpublished=false WHERE id=$1",[concept]),/POD_PERMANENTLY_UNPUBLISHED/);
