@@ -82,3 +82,32 @@ Creating a live database identity and sharing the migration credential with the
 protected GitHub environment are separate security-sensitive operations requiring
 explicit authorization. This implementation does not grant that authorization,
 change database network rules, provision live credentials, or enable production.
+
+## Build-minute exhaustion and report-only commits
+
+On October 14, 2026 at 17:34:49 UTC, Render explicitly canceled a build because
+the workspace's current-period build pipeline minutes were exhausted. The last
+verified live application commit remained 5180c243198afb6dfb05ee8d2e14995d4e7b0750.
+Do not repeatedly trigger builds, increase spend limits, change plans, clear
+caches or create replacement services to work around the quota. Its reset date
+has not been verified. Test/merge evidence is not deployment evidence while blocked.
+
+`scripts/pod_deploy_commit_policy.mjs` allows Render's documented `[skip render]`
+commit marker only when every staged change is an exact allowlisted report path.
+The provenance workflow uses it for its two generated JSON reports. POD completion,
+implementation-status and free-deployment documentation are also allowlisted.
+Unknown paths, application code, dependencies, templates, runtime health state,
+media and mixed commits retain the normal deployment message. Rename detection
+is disabled during inspection so moving application code into a report path cannot
+hide its deletion. CI is not skipped. No broad build filters are applied.
+
+For a genuinely documentation-only merge, its merge commit must also include
+`[skip render]`; the branch commit's message alone does not control the merge.
+Never add this marker to a release that changes application behavior. Reports
+remain current in GitHub; skipping their deployment does not refresh metadata
+inside an already-running container. A later actual release includes them.
+
+This avoids unnecessary future builds; it does not replenish quota, repair the
+production database, or establish any live POD acceptance. Official behavior:
+https://render.com/docs/deploys#skipping-an-auto-deploy
+

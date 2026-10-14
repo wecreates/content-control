@@ -417,3 +417,23 @@ Database/recovery acceptance and actual authority/account/source/template/review
 adapter/financial/capacity evidence remain open in the 24-area checklist. This work
 uses available execution sessions and hosted CI, not a claimed always-on agent.
 
+## Build quota diagnosis and prevention — 2026-10-14, 17:35 UTC
+
+Render's build log for dep-db7rqe60tbcc73eqatqg explicitly reports exhausted
+workspace build pipeline minutes, not a Docker/compiler failure. The two latest
+automatic provenance-report commits and the earlier documentation merge #72
+failed to deploy. The most recent successful deployment remains
+dep-db7r0lh42hec739jiusg / 5180c243198afb6dfb05ee8d2e14995d4e7b0750.
+
+A narrow report-only commit policy now supports the documented Render skip marker
+for exact allowlisted evidence files. The provenance workflow uses that policy;
+runtime/mixed/unknown changes do not acquire the marker. Four local tests pass,
+including a real temporary Git repository, the actual workflow shell expression
+and a runtime-to-report rename that must still deploy. GitHub CI remains enabled.
+No live service setting, quota, billing plan or publication flag was changed.
+
+This preventive repair cannot restore exhausted minutes. Do not claim subsequent
+code merges are live until an actual deployment succeeds. No production database
+retry was attempted; useful independent implementation and hosted verification
+can continue without expanding network access or buying infrastructure.
+
