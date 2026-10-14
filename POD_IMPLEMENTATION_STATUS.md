@@ -385,3 +385,35 @@ adapter tests; no live environment, external marketplace, listing or credential
 was changed. Real release still requires an authorized adapter and explicit
 publication approval, neither of which is supplied by this repair.
 
+## Verified template/release integration — 2026-10-14, 16:42 UTC
+
+- PR #70 passed and merged. Its hosted logs confirm 99 Node tests passed with
+  zero skips, plus the real PostgreSQL/Python durable-production test including
+  the rejected-template cases:
+  https://github.com/wecreates/content-control/actions/runs/38599545277
+  Render reported 9be06c36646c848afacf4cddd5cef7f6f101fa70 live in
+  dep-db7qvte7bikc73ddi7pg at 2026-10-14T16:39:24.967812Z.
+- PR #71 passed and merged. Hosted logs confirm 103 Node tests passed with zero
+  skips, plus the durable-production test:
+  https://github.com/wecreates/content-control/actions/runs/38599778450
+  The combined main integration gate and wiring audit passed for
+  5180c243198afb6dfb05ee8d2e14995d4e7b0750:
+  https://github.com/wecreates/content-control/actions/runs/38599987943
+  https://github.com/wecreates/content-control/actions/runs/38599988032
+  Render reported that commit live in dep-db7r0lh42hec739jiusg, finished
+  2026-10-14T16:41:11.656201Z. Deployment does not prove authenticated runtime or
+  marketplace acceptance.
+- Money Factory PR #15 documents the enforced descriptor/provenance contract and
+  retains its existing task-hash authority boundary. Its cross-repository gate
+  passed before merge:
+  https://github.com/wecreates/Money-factory/actions/runs/38600098190
+- Local verification also passed 25 focused Node tests, 38 Python POD tests and
+  JavaScript syntax checks. Fixtures use synthetic permissions and fake adapters;
+  they are not real official-template approvals, listings or financial evidence.
+
+No production database access was retried, no network scope was expanded, and
+no live credentials, rights approvals, resource plans or publication flags changed.
+Database/recovery acceptance and actual authority/account/source/template/reviewer/
+adapter/financial/capacity evidence remain open in the 24-area checklist. This work
+uses available execution sessions and hosted CI, not a claimed always-on agent.
+
