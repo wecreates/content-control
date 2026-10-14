@@ -60,10 +60,18 @@ The hosted integration status reports verified scoped CPU operations through Git
 
 ## External and review boundaries
 
-1. **Full audiovisual review:** no verified free complete-video reviewer is currently available. Google AI Studio is signed in but stopped at new legal terms and an age/business-use declaration. Browser rules require action-time confirmation before accepting those terms. Its currently selected model also advertises an upgrade; accepting terms does not prove a free model entitlement. No terms, paid plan, or billed inference was accepted.
+1. **Full audiovisual review:** the earlier terms/authorization boundary was cleared by the user. On 2026-10-14 UTC, both authorized candidate files were attached in Google AI Studio using Gemini 3.8 Flash with no API key selected. Both showed `Token count failed`. The Short response described unrelated mortgage content and was rejected; when challenged to transcribe and identify the actual opening, it returned `INACCESSIBLE`. A separate Long access preflight, limited to the first 15 seconds at 1 FPS, also returned `INACCESSIBLE`. This establishes failure of this browser review path, not a defect in the independently decoded media or a successful full audiovisual review. No paid key or upgrade was enabled. No fabricated findings were used for repair or approval.
 2. **Instagram:** the browser is ordinarily signed out; no connected Instagram account is returned by the available account connector. This is an authentication gap, not a reproduced bot block or wrong-password bug. Official integration still lacks required Meta/Instagram configuration. No authentication bypass or repeated login loop was attempted.
 3. **Owner and YouTube OAuth:** required owner GitHub client configuration and YouTube client/channel configuration remain absent. Publication stays off even after configuration.
 4. **Reference review:** existing intake/reference evidence does not establish two distinct full audiovisual competitor reviews. Sampled frames and transcripts cannot be relabeled as complete coverage.
 5. **Durability:** the existing free PostgreSQL instance expires 2026-10-26T20:02:09.446632Z. Existing encrypted storage evidence was retained; TLS and network restrictions were not weakened. Free Render is not an always-on durable GPU service. Actions media artifacts have finite retention.
 
 These boundaries prevent claiming the requested two fully finished, audiovisual-approved, Android-verified videos. They must remain visible in status and handoff records.
+
+## Reviewer attempt update — 2026-10-14 UTC
+
+The user explicitly authorized uploading these two unpublished candidates to Google AI Studio after disclosure of its data-use implications. Upload authorization is no longer the blocker. Media attachment processing/access in the tested free browser session is the remaining observed blocker; the underlying provider failure cause is not established.
+
+The Short's invented mortgage narrative contradicts the exact source's wallet/Amex/Chase opening ("Stop attacking my wallet"). Model assertions that video/audio were accessible were therefore rejected before any acceptance decision. The subsequent explicit `INACCESSIBLE` responses from both sessions are not creative verdicts. The Long preflight covered only a requested 15-second sample and cannot establish whole-video review.
+
+Candidate hashes, technical PASS, REVIEW_PENDING, and disabled publication remain unchanged. No new approved playback URL exists for either candidate. The previously verified hosted player remains the earlier V10 video. Complete listening/visual review, two distinct authorized audiovisual reference reviews, and Android playback acceptance remain unverified. This documentation-only update does not rerun or certify newer source changes.
