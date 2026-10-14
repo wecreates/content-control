@@ -113,7 +113,7 @@ https://render.com/docs/deploys#skipping-an-auto-deploy
 
 ## Market-proof migration and final release checks
 
-Content Control PR #76 adds checksum-managed `003_pod.sql`. All three migration
+Content Control PR #76 adds checksum-managed `003_pod.sql`. All four migration
 checksums must match before preflight passes. Apply through the existing protected
 manual database path only after authorized connectivity and role isolation are
 available; do not run DDL from application startup or edit the 001/002 files.
@@ -133,4 +133,20 @@ The Render connector's latest reported attempt at 18:05 UTC on October 14 still
 failed due to exhausted workspace build minutes. No successful deployment of
 these repairs or production migration was verified. Do not enable production or
 publication on the basis of merged code or synthetic tests.
+
+## Financial reconciliation migration
+
+`004_pod.sql` adds unique upstream financial-event identity. Preflight requires
+001 through 004 with their exact checksums. Existing duplicate authority IDs
+must fail migration; do not delete financial rows, rewrite IDs, drop immutability
+triggers or mark the migration applied to work around the conflict. Investigate
+through the owner's established upstream ledger reconciliation process.
+
+Financial intake requires stable, verified line-level authority events, stored
+statement evidence and exact replay semantics. Preserve original occurrence time,
+including milliseconds; forecasts are not recorded income. The contract is
+integrations/pod/FINANCIAL_EVIDENCE.md. These changes do not constitute actual
+provider reconciliation or verified profit, and no production migration is
+authorized merely by passing CI. Use the existing protected manual deployment
+workflow only when its access, role and approval prerequisites are satisfied.
 
