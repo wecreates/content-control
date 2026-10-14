@@ -5,7 +5,7 @@ Existing Render service: content-control-render-worker. Do not create a duplicat
 
 ## Runtime dependencies
 
-`Dockerfile.pod` installs Node 22, Python 3.12, the pinned print libraries, English
+`Dockerfile` installs Node 22, Python 3.12, the pinned print libraries, English
 Tesseract OCR, licensed DejaVu fonts, and FFmpeg. It runs as an unprivileged user.
 The container gate builds this exact image, runs the real PostgreSQL/Python durable
 review workflow, checks Python/OCR availability, and starts the existing web app.
@@ -14,7 +14,7 @@ when building or testing the image. Additional OCR languages require installatio
 and validation before jobs in those languages are enabled.
 
 After the container gate passes, the existing Render service can use Docker runtime
-with Dockerfile path `./Dockerfile.pod`. Preserve its environment variables, domain,
+with Dockerfile path `./Dockerfile`. Preserve its environment variables, domain,
 health path `/health`, free plan, and integrations. The existing Node configuration
 in render.yaml is deliberately unchanged until this runtime transition is verified.
 The dashboard source update triggers deployment; do not trigger a duplicate deploy.
