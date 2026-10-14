@@ -149,6 +149,30 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   // Re-applying all checksum-guarded migrations preserves the immutable record.
   await migrate(pool,'pod_test_runtime');
   assert.equal((await pool.query('SELECT observed_rank FROM pod_market_intelligence WHERE id=$1',[marketId])).rows[0].observed_rank,2);
+  // Final local release checks use current durable state after remote waits.
+  // No real publishing is enabled and no adapter is called by this database test.
+  const releaseConcept=crypto.randomUUID(),releaseAccount=crypto.randomUUID(),releaseJob=crypto.randomUUID();
+  await pool.query("INSERT INTO pod_concepts VALUES($1,'release-fixture',$2,'PASS',false,now())",[releaseConcept,crypto.randomUUID()]);
+  await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[releaseAccount]);
+  const releaseClaim=(await pool.query(`INSERT INTO pod_production_queue
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until)
+   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'publishing',1,now()+interval '5 minutes') RETURNING *`,
+   [releaseJob,releaseConcept,releaseAccount,crypto.randomUUID()])).rows[0];
+  assert.equal(await db.assertPublishable(releaseClaim),true);
+  for(const change of [{fencing_token:'2'},{account_id:account},{platform:'kdp'}]){
+   await assert.rejects(db.assertPublishable({...releaseClaim,...change}),/LOCAL_RELEASE_BLOCKED/);
+  }
+  await pool.query("UPDATE pod_accounts SET state='DISABLED' WHERE id=$1",[releaseAccount]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query("UPDATE pod_accounts SET state='ACTIVE' WHERE id=$1",[releaseAccount]);
+  await pool.query("UPDATE pod_production_queue SET state='ambiguous' WHERE id=$1",[releaseJob]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query("UPDATE pod_production_queue SET state='publishing',lease_until=now()-interval '1 second' WHERE id=$1",[releaseJob]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query("UPDATE pod_production_queue SET lease_until=now()+interval '5 minutes' WHERE id=$1",[releaseJob]);
+  assert.equal(await db.assertPublishable(releaseClaim),true);
+  await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[releaseConcept]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
  }finally{await pool.end();}
 });
 

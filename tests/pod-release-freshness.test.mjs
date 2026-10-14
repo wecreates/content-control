@@ -19,7 +19,7 @@ function fixture(now=Date.now()){
  // These enabled flags exercise an in-memory fake adapter only; no live env,
  // marketplace calls, credentials, listings or revenue are involved.
  const options={env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},accountId:brief.account_id,
-  upstreamKey:key,qaKey:key,db:{claimPublish:async()=>job,finish:async(_j,state)=>events.push(state)},
+  upstreamKey:key,qaKey:key,db:{claimPublish:async()=>job,assertPublishable:async()=>true,finish:async(_j,state)=>events.push(state)},
   verifyArtifacts:async()=>manifest,resolveGrant:async()=>sign(release),
   adapters:{redbubble:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
  return {options,events,release,manifest};
@@ -56,4 +56,43 @@ test('cancellation during artifact verification never fetches a release grant or
  f.options.resolveGrant=async()=>{f.events.push('grant');return sign(f.release);};
  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
  assert.deepEqual(f.events,['blocked']);
+});
+
+test('expired lease or revoked local eligibility during grant fetch cannot submit',async()=>{
+ for(const reason of ['LEASE_EXPIRED','ACCOUNT_DISABLED','RIGHTS_BLOCKED','FENCING_CHANGED']){
+  const f=fixture();let eligible=true;
+  f.options.resolveGrant=async()=>{eligible=false;return sign(f.release);};
+  f.options.db.assertPublishable=async()=>{if(!eligible)throw Error(reason);return true;};
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.deepEqual(f.events,['blocked']);
+ }
+});
+test('unverified or missing local eligibility result fails closed',async()=>{
+ for(const result of [undefined,false,null,'true']){
+  const f=fixture();f.options.db.assertPublishable=async()=>result;
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+ }
+ const f=fixture();delete f.options.db.assertPublishable;
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+});
+test('grant expiry while waiting for local database validation cannot submit',async t=>{
+ let now=3000000;t.mock.method(Date,'now',()=>now);
+ const f=fixture(now);f.options.db.assertPublishable=async()=>{now+=61000;return true;};
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+});
+test('local eligibility is checked after grant resolution and before submission',async()=>{
+ const f=fixture();f.options.resolveGrant=async()=>{f.events.push('grant');return sign(f.release);};
+ f.options.db.assertPublishable=async()=>{f.events.push('eligibility');return true;};
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.deepEqual(f.events,['grant','eligibility','submit','submitted']);
+});
+test('cancellation and kill switches are rechecked after local database validation',async()=>{
+ for(const mode of ['abort','disable']){
+  const f=fixture(),controller=new AbortController();f.options.signal=controller.signal;
+  f.options.db.assertPublishable=async()=>{
+   if(mode==='abort')controller.abort();else f.options.env.POD_PUBLICATION_ENABLED='false';
+   return true;
+  };
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+ }
 });

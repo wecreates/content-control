@@ -19,8 +19,13 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   if(!manifest||manifest.package_sha256!==job.manifest?.package_sha256||manifest.release_checks_passed!==true)throw Error('ARTIFACT_VERIFICATION_FAILED');
   signal?.throwIfAborted();
   // Artifact checks may outlive a grant or overlap revocation. Fetch authority
-  // afterward, with cancellation, and leave no awaited work before submit.
-  const release=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
+  // afterward, then recheck local lease/account/rights after that network wait.
+  const releaseEnvelope=await resolveGrant(job,{signal});
+  signal?.throwIfAborted();
+  if(typeof db.assertPublishable!=='function'||await db.assertPublishable(job)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
+  // Database contention can itself outlive signed evidence. Verify time-sensitive
+  // authority/QA only after the last awaited check, immediately before submit.
+  const release=verifyEnvelope(releaseEnvelope,upstreamKey,'content-control:pod');
   const brief=enforceBrief(release,{...job.brief,package_sha256:manifest.package_sha256},{publishing:true});
   const qa=verifyEnvelope(job.qa_envelope,qaKey,'content-control:pod:qa');
   enforceQA(qa,manifest.package_sha256,manifest.template_sha256);
