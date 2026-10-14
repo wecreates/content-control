@@ -4,9 +4,11 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  const endpoint=new URL(url);
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
  db.active();
- const events=(await db.pool.query('SELECT id,job_id,kind,payload,created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null])).rows;
+ // pg decodes timestamptz to a millisecond Date. Preserve the database's full
+ // microsecond value separately or rejected rows can repeat forever on page 2.
+ const events=(await db.pool.query('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null])).rows;
  let delivered=0,failed=0;
- for(const event of events){
+ for(const {cursor_created_at:_cursorTimestamp,...event} of events){
   if(signal?.aborted)break;
   try{
   const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:Date.now(),event});
@@ -24,7 +26,8 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
  }
  const last=events.at(-1);
- const nextCursor=events.length===20?{created_at:last.created_at,id:last.id}:null;
+ const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.id}:null;
  return continueOnError?{delivered,failed,nextCursor}:{delivered};
 }
+
 

@@ -13,3 +13,18 @@ Acceptance still requires a real Money Factory inbox deployment, matching secret
 ## Retrieve exact review packages
 
 Run `python scripts/pod_review_export.py --base-url https://YOUR-HOST/api/print --job-id JOB --output NEW-DIRECTORY` in the reviewer environment with INTERNAL_OPERATIONS_KEY configured securely. The downloader verifies the manifest package hash and every artifact, limits total bytes, rejects redirects and unsafe filenames, refuses existing output directories, and removes its own partial output on failure. It returns REVIEW_REQUIRED, never QA approval. Run the existing pod_vision_qa.py against this directory with independently sourced reference, rights and comparative review inputs; submit the resulting signed QA envelope through the existing review endpoint only after those checks pass.
+
+## Exact retry pagination
+
+The internal pagination cursor uses PostgreSQL's timestamp text, preserving all
+microseconds along with the event UUID tie-breaker. Do not convert cursor timestamps
+to JavaScript Dates: truncated timestamps can repeatedly select a failed full batch
+and starve later events. The signed event envelope is unchanged; this extra cursor
+field is never sent to Money Factory. A finished sweep wraps to the oldest pending
+events, and restart still retries them with the same event identities.
+
+The regression gate includes 45 real PostgreSQL fixture rows sharing millisecond
+values: 20 failures stay pending, the next 25 are acknowledged, then a new sweep
+revisits the original failures. This is synthetic delivery evidence, not a live
+Money Factory round trip or a claim of completed acceptance.
+
