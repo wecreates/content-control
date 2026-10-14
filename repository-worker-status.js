@@ -1,7 +1,6 @@
 import {additionalToolStatus} from './repository-additional-status.js';
 // Read only public execution evidence from the existing Money Factory repository.
 const repository = 'wecreates/Money-factory';
-const raw = `https://raw.githubusercontent.com/${repository}/main/integrations/`;
 const workflow = '.github/workflows/repository-integrations.yml';
 const expected = new Map([
   ['youtube-clipper-skill', ['clip', 'captions']],
@@ -22,6 +21,10 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
     return response.json();
   }
   async function read() {
+    const ref=await json(`https://api.github.com/repos/${repository}/git/ref/heads/main`);
+    const snapshot=ref.object?.sha;
+    if(!/^[a-f0-9]{40}$/.test(snapshot)||ref.object?.type!=='commit')throw Error('INVALID_SOURCE_SNAPSHOT');
+    const raw=`https://raw.githubusercontent.com/${repository}/${snapshot}/integrations/`;
     const [registry, report, runs] = await Promise.all([
       json(raw+'repositories.json'), json(raw+'hosted-verification.json',true),
       json(`https://api.github.com/repos/${repository}/actions/workflows/repository-integrations.yml/runs?branch=main&per_page=1`),
@@ -30,12 +33,12 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
        new Set(registry.repositories.map(e=>e.id)).size!==7 ||
        !['wan21',...expected.keys()].every(id=>registry.repositories.some(e=>e.id===id)))throw Error('INVALID_REGISTRY');
     const latest=runs.workflow_runs?.[0];
-    const result={backend:'github-actions',
+    const result={backend:'github-actions',evidence_snapshot_revision:snapshot,
       workflow_url:`https://github.com/${repository}/actions/workflows/repository-integrations.yml`,
       status:'HOSTED_CPU_NOT_VERIFIED', production_ready:false, publication_enabled:false, paid_generation_enabled:false,
       persistent_worker_configured:false,
       status_scope:'Hosted CPU verification only; GPU generation, provider workflows and persistent project state remain unverified',
-      additional_tools:await additionalToolStatus(registry,{json,now}),
+      additional_tools:await additionalToolStatus(registry,{json,now,rawBase:raw}),
       repositories:registry.repositories.map(e=>({id:e.id,order:e.order,revision:e.revision,capability:e.capability,
         required_for_production:e.required_for_production!==false,
         runtime_status:e.id==='wan21'?(e.required_for_production===false?'OPTIONAL_DISABLED':'BLOCKED_CUDA_AND_MODEL_REQUIRED'):'HOSTED_EXECUTION_NOT_VERIFIED',

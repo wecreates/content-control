@@ -19,7 +19,7 @@ function fixture() {
 function reader(data, extras={}) {
   return createHostedWorkerStatus({cacheMs:0,fetchImpl:async url=>{
     if(data.offline)throw Error('private diagnostic that must not leak');
-    const body=url.includes('/actions/')?{workflow_runs:[data.run]}:
+    const body=url.includes('/git/ref/')?{object:{sha:'f'.repeat(40),type:'commit'}}:url.includes('/actions/')?{workflow_runs:[data.run]}:
       url.endsWith('/repositories.json')?data.registry:data.report;
     return {ok:body!==null,status:body===null?404:200,json:async()=>body};
   },...extras});
@@ -58,10 +58,10 @@ test('outage fails closed without leaking internal errors',async()=>{
 test('concurrent readers share a cached upstream request',async()=>{
   const data=fixture();let calls=0;
   const read=reader(data,{cacheMs:60000,now:()=>Date.parse(data.report.verified_at),fetchImpl:async url=>{
-    calls++;return {ok:true,status:200,json:async()=>url.includes('/actions/')?{workflow_runs:[data.run]}:
+    calls++;return {ok:true,status:200,json:async()=>url.includes('/git/ref/')?{object:{sha:'f'.repeat(40),type:'commit'}}:url.includes('/actions/')?{workflow_runs:[data.run]}:
       url.endsWith('/repositories.json')?data.registry:data.report};
   }});
-  await Promise.all([read(),read(),read()]);await read();assert.equal(calls,3);
+  await Promise.all([read(),read(),read()]);await read();assert.equal(calls,4);
 });
 
 test('optional Wan is skipped without granting production approval',async()=>{
@@ -72,4 +72,27 @@ test('optional Wan is skipped without granting production approval',async()=>{
   assert.equal(result.production_ready,false);
   assert.equal(result.publication_enabled,false);
   assert.equal(result.repositories.flatMap(e=>e.verified_operations).length,8);
+});
+
+test('all evidence files use one immutable main snapshot, never mutable raw main',async()=>{
+  const data=fixture();data.registry.media_tools=[{id:'voicestudio',revision:'a'.repeat(40)}];
+  const urls=[];
+  const read=reader(data,{fetchImpl:async url=>{
+    urls.push(url);
+    const body=url.includes('/git/ref/')?{object:{sha:'f'.repeat(40),type:'commit'}}:
+      url.includes('/actions/')?{workflow_runs:[data.run]}:
+      url.endsWith('/repositories.json')?data.registry:data.report;
+    return {ok:true,status:200,json:async()=>body};
+  }});
+  const result=await read();
+  assert.equal(result.status,'HOSTED_CPU_OPERATIONS_VERIFIED');
+  assert.equal(result.evidence_snapshot_revision,'f'.repeat(40));
+  const rawUrls=urls.filter(url=>url.includes('raw.githubusercontent.com'));
+  assert.equal(rawUrls.length,3);
+  assert.ok(rawUrls.every(url=>url.includes('/'+'f'.repeat(40)+'/integrations/')));
+  assert.ok(rawUrls.every(url=>!url.includes('/main/')));
+});
+test('invalid main source snapshot fails closed',async()=>{
+  const result=await createHostedWorkerStatus({fetchImpl:async()=>({ok:true,json:async()=>({object:{sha:'main',type:'commit'}})})})();
+  assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
 });

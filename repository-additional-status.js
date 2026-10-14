@@ -8,7 +8,7 @@ const configurations={
     'hook-score','package-lint','edit-plan','chapters','retention','outliers']},
 };
 const hash=/^[a-f0-9]{64}$/;
-export async function additionalToolStatus(registry,{json,now}) {
+export async function additionalToolStatus(registry,{json,now,rawBase}) {
   const entries=[...(registry.engineering_tools||[]),...(registry.media_tools||[]),...(registry.agent_tools||[])];
   return Promise.all(entries.map(async entry=>{
     const result={id:entry.id,revision:entry.revision,capability:entry.capability,
@@ -19,7 +19,7 @@ export async function additionalToolStatus(registry,{json,now}) {
     if(!config)return result;
     try {
       const [report,runs]=await Promise.all([
-        json(`https://raw.githubusercontent.com/${repository}/main/integrations/${config.report}`,true),
+        json(`${rawBase}${config.report}`,true),
         json(`https://api.github.com/repos/${repository}/actions/workflows/${config.workflow}/runs?branch=main&per_page=1`),
       ]);
       const latest=runs.workflow_runs?.[0];

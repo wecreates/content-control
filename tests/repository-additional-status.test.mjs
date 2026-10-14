@@ -15,7 +15,7 @@ function fixture(id='voicestudio') {
   return {registry,run,report,receipts};
 }
 async function read(data) {
-  return (await additionalToolStatus(data.registry,{now:()=>Date.parse('2026-10-14T21:00:00Z'),json:async url=>{
+  return (await additionalToolStatus(data.registry,{rawBase:'https://raw.githubusercontent.com/wecreates/Money-factory/'+ 'f'.repeat(40)+'/integrations/',now:()=>Date.parse('2026-10-14T21:00:00Z'),json:async url=>{
     if(data.offline)throw Error('secret');
     return url.includes('/actions/')?{workflow_runs:[data.run]}:data.report;
   }}))[0];
