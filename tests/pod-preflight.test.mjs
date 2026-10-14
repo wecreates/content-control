@@ -15,7 +15,7 @@ function fixture(overrides={}){
   if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
   if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
   if(sql.includes("relname='cyzor_social_vault'"))return {rows:[{access:overrides.vault??false,column_access:false,owns:false}]};
-  if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
+  if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
   return {rows:[]};},release(){released=true;}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,closed:()=>released&&ended};
 }
@@ -46,3 +46,8 @@ test('missing financial uniqueness migration blocks preflight',async()=>{
  const f=fixture({missingMigration:'004_pod.sql'}),r=await preflight(f.options);
  assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'BLOCKED');
 });
+test('missing provider listing uniqueness migration blocks preflight',async()=>{
+ const f=fixture({missingMigration:'005_pod.sql'}),r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'BLOCKED');
+});
+

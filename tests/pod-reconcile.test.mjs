@@ -8,11 +8,11 @@ const observation={job_id:'job-a',account_id:'account-a',platform:'redbubble',st
 function sign(value){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:listing-observation',
  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
-function database(value,seen){
+function database(value,seen,state='submitted'){
  const writes=[];
  return {writes,tx:async fn=>fn({query:async(sql,args)=>{
   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:value.job_id,account_id:value.account_id,
-   platform:value.platform,state:'submitted',manifest:{package_sha256:value.package_sha256}}]};
+   platform:value.platform,state,provider_id:value.provider_id,manifest:{package_sha256:value.package_sha256}}]};
   if(sql.startsWith('SELECT 1 FROM pod_artifacts'))return {rowCount:1};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[seen]:[]};
   writes.push({sql,args});return {rowCount:1};
@@ -49,3 +49,14 @@ test('new scoped observation records inbox, listing state and outbox atomically'
  assert.match(db.writes[1].sql,/UPDATE pod_production_queue/);
  assert.match(db.writes[2].sql,/INSERT INTO pod_events/);
 });
+test('a new readback event for a published listing retains proof without publishing again',async()=>{
+ const next={...observation,provider_event_id:'later-event',evidence_sha256:'c'.repeat(64)};
+ const db=database(next,null,'published');
+ assert.deepEqual(await reconcilePublication(db,sign(next),key),{published:true,already_published:true});
+ assert.equal(db.writes.length,1);assert.match(db.writes[0].sql,/INSERT INTO pod_provider_inbox/);
+});
+test('oversized listing identities fail before database access',async()=>{
+ await assert.rejects(reconcilePublication({tx(){assert.fail('unexpected database access');}},
+  sign({...observation,provider_id:'x'.repeat(257)}),key),/LISTING_EVIDENCE_REQUIRED/);
+});
+

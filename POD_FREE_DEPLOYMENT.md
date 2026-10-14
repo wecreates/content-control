@@ -113,7 +113,7 @@ https://render.com/docs/deploys#skipping-an-auto-deploy
 
 ## Market-proof migration and final release checks
 
-Content Control PR #76 adds checksum-managed `003_pod.sql`. All four migration
+Content Control PR #76 adds checksum-managed `003_pod.sql`. All five migration
 checksums must match before preflight passes. Apply through the existing protected
 manual database path only after authorized connectivity and role isolation are
 available; do not run DDL from application startup or edit the 001/002 files.
@@ -163,4 +163,19 @@ This is not queue/account/ledger recovery, provider expiry extension, verified
 independent backup retention or a completed production restoration drill. No live
 archive key is generated, no secret is copied and no new resource is purchased.
 An actual owner-authorized production backup and restore test remains required.
+
+
+## Provider listing identity migration
+
+Migration 005 prevents multiple jobs from claiming the same provider listing in
+one platform/account. Preflight now requires checksums 001 through 005. A legacy
+duplicate set fails the transaction; never delete history or change provider IDs
+merely to make deployment pass. See integrations/pod/LISTING_EVIDENCE.md for exact
+readback/replay semantics. Repeated observations retain evidence without counting
+another publication. Apply only through the established protected migration path
+with authorized connectivity; no network expansion or publication is enabled.
+
+The October 14 deployment of 419a1e544206adf8aae92df692fd0de0825927b2 failed at
+21:36:56 UTC; its 21:34:55 UTC log again reports exhausted build minutes. A queued
+build or merged PR is not proof that quota or production readiness is restored.
 

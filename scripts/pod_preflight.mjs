@@ -49,7 +49,7 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='cyzor_social_vault'`)).rows;
   check('SOCIAL_VAULT_ISOLATED',vault.every(r=>r.access===false&&r.column_access===false&&r.owns===false));
   const versions=(await client.query('SELECT version,sha256 FROM public.pod_schema_version')).rows;
-  const requiredMigrations=['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql'];
+  const requiredMigrations=['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'];
   let matching=versions.length===requiredMigrations.length;
   for(const name of requiredMigrations){
    const sql=await readFile(new URL(name,directory),'utf8');
@@ -69,3 +69,4 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const result=await preflight();console.log(JSON.stringify(result));process.exitCode=result.status==='BLOCKED'?1:0;
 }
+

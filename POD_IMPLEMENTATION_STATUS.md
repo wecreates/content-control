@@ -764,3 +764,29 @@ accounts/sources/rights/templates/reviewers/adapters, actual financial statement
 measured capacity or controlled-launch acceptance. No paid resource, new credential,
 archive key, claimed revenue or publication was created. This records bounded
 repository work, not a continuously running self-hosted worker.
+
+## Provider listing identity and repeat observations — 2026-10-14
+
+Two new local regressions failed before repair: a fresh readback event for an
+already published job produced another publication transition, and oversized
+provider IDs reached database processing. Reconciliation now retains new readback
+proof without repeating the transition, and bounds signed identities. Migration
+005 makes provider listing identity unique within platform/account so changing
+an event ID cannot attribute one listing to a second job. Existing duplicate
+assignments fail migration; historical records are never deleted or relabeled.
+Preflight now requires all five original checksums. Production DDL was not run.
+
+All 18 focused reconciliation/preflight tests pass. Hosted PostgreSQL tests add
+concurrent readbacks, cross-job attribution conflicts with inbox rollback, a race
+for one listing, independent account namespaces, and historical migration conflicts.
+Their hosted result must pass before merge. LISTING_EVIDENCE.md defines the contract.
+These tests use synthetic evidence and do not create marketplace listings.
+
+The latest Render deployment dep-db7tsqslt5cc73e1054g attempted merge 419a1e544206adf8aae92df692fd0de0825927b2
+and failed at 2026-10-14T21:36:56.101505Z. Its log at 21:34:55.112621Z explicitly
+reports exhausted workspace build pipeline minutes. The prior queued state is
+superseded by this failed attempt, not a successful rollout. No manual retry,
+plan/spend change, credential operation, database retry or network expansion was
+performed. The known quota blocker does not require a repeated owner notification.
+All 24 live acceptance areas remain open and publication stays disabled.
+
