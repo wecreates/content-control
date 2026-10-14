@@ -5,7 +5,7 @@ import {verifyEnvelope} from './policy.mjs';
 export async function reconcilePublication(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
  if(e.status!=='LIVE'||e.provider_verified!==true||
-  !['job_id','account_id','platform','provider_id','provider_event_id'].every(k=>typeof e[k]==='string'&&e[k].trim().length>0)||
+  !['job_id','account_id','platform','provider_id','provider_event_id'].every(k=>typeof e[k]==='string'&&e[k].trim().length>0&&e[k].length<=256)||
   !/^[a-f0-9]{64}$/.test(e.package_sha256||'')||!/^[a-f0-9]{64}$/.test(e.evidence_sha256||''))throw Error('LISTING_EVIDENCE_REQUIRED');
  return db.tx(async c=>{
   const job=(await c.query('SELECT * FROM pod_production_queue WHERE id=$1 FOR UPDATE',[e.job_id])).rows[0];
@@ -23,8 +23,12 @@ export async function reconcilePublication(db,envelope,key){
    return {duplicate:true};
   }
   await c.query('INSERT INTO pod_provider_inbox(provider,account_id,provider_event_id,evidence_sha256,payload) VALUES($1,$2,$3,$4,$5)',[e.platform,e.account_id,e.provider_event_id,e.evidence_sha256,e]);
+  // A fresh observation is new evidence, not another publication transition.
+  // The job row lock serializes concurrent observations with different event IDs.
+  if(job.state==='published')return {published:true,already_published:true};
   await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.published',{provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]);
   return {published:true};
  });
 }
+

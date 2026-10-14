@@ -129,6 +129,34 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=ANY($1::uuid[])',[listingJobs])).rows[0].n,1);
+  // Distinct provider observations retain each proof but emit one state transition.
+  const readbacks=Array.from({length:4},()=>({...observed,provider_event_id:crypto.randomUUID()}));
+  const repeated=await Promise.all(readbacks.map(o=>reconcilePublication(db,signedObservation(o),providerKey)));
+  assert.ok(repeated.every(r=>r.published&&r.already_published));
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.published'",[listingJobs[0]])).rows[0].n,1);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE account_id=$1',[account])).rows[0].n,5);
+  const reassigned={...observed,job_id:listingJobs[1],provider_event_id:crypto.randomUUID()};
+  await assert.rejects(reconcilePublication(db,signedObservation(reassigned),providerKey),error=>error.code==='23505');
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=$1',[reassigned.provider_event_id])).rows[0].n,0);
+  // Different jobs racing to claim one listing: the losing inbox insert rolls back.
+  const raceJob=crypto.randomUUID();
+  await pool.query(`INSERT INTO pod_production_queue
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
+   VALUES($1,$2,$3,'redbubble',4,'{}','{}',$4,'submitted',$5)`,[raceJob,concept,account,crypto.randomUUID(),manifest]);
+  const racing=[listingJobs[1],raceJob].map(id=>({...observed,job_id:id,provider_id:'fixture-race-listing',provider_event_id:crypto.randomUUID()}));
+  const races=await Promise.allSettled(racing.map(o=>reconcilePublication(db,signedObservation(o),providerKey)));
+  assert.equal(races.filter(r=>r.status==='fulfilled').length,1);
+  assert.equal(races.filter(r=>r.status==='rejected'&&r.reason.code==='23505').length,1);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=ANY($1::uuid[]) AND kind='pod.published'",[[listingJobs[1],raceJob]])).rows[0].n,1);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=ANY($1::text[])',[racing.map(o=>o.provider_event_id)])).rows[0].n,1);
+  // Provider IDs are account-scoped, not a global text blacklist.
+  const otherAccount=crypto.randomUUID(),otherJob=crypto.randomUUID();
+  await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[otherAccount]);
+  await pool.query(`INSERT INTO pod_production_queue
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
+   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'submitted',$5)`,[otherJob,concept,otherAccount,crypto.randomUUID(),manifest]);
+  assert.deepEqual(await reconcilePublication(db,signedObservation({...observed,job_id:otherJob,account_id:otherAccount}),providerKey),{published:true});
   // Re-screening an existing concept must atomically revoke its readiness, keep
   // the unique-concept budget unchanged and emit one durable denial event.
   const intakeKey='intake-test-key-'.repeat(4),business=crypto.randomUUID(),fingerprint=crypto.randomUUID(),canonicalId=crypto.randomUUID();
@@ -237,6 +265,14 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    const sql=await (await import('node:fs/promises')).readFile(new URL('../migrations/004_pod.sql',import.meta.url),'utf8');
    await assert.rejects(historical.query(sql),error=>error.code==='23505');
   }finally{await historical.query('ROLLBACK');historical.release();}
+  const legacyListings=await pool.connect();
+  try{
+   await legacyListings.query('BEGIN');
+   await legacyListings.query('CREATE TEMP TABLE pod_production_queue(platform text,account_id uuid,provider_id text) ON COMMIT DROP');
+   await legacyListings.query("INSERT INTO pod_production_queue VALUES('redbubble',$1,'duplicate'),('redbubble',$1,'duplicate')",[account]);
+   const sql=await (await import('node:fs/promises')).readFile(new URL('../migrations/005_pod.sql',import.meta.url),'utf8');
+   await assert.rejects(legacyListings.query(sql),error=>error.code==='23505');
+  }finally{await legacyListings.query('ROLLBACK');legacyListings.release();}
  }finally{await pool.end();}
 });
 
