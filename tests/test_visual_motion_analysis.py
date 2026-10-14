@@ -13,6 +13,8 @@ class MotionTests(unittest.TestCase):
    self.assertEqual(r['decoded_frames'],30);self.assertEqual(r['analysis_status'],'COMPLETE')
    self.assertTrue(r['observations']['low_change_intervals_seconds']);self.assertIn(2.,r['observations']['large_change_timestamps_seconds'])
    self.assertFalse(r['production_approved'])
+   self.assertEqual(r['parameters']['analysis_resolution'],[180,180])
+   self.assertTrue(r['parameters']['aspect_ratio_preserved'])
  def test_invalid_video_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'bad.mp4';p.write_bytes(b'invalid')

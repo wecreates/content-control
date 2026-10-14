@@ -1,0 +1,67 @@
+name: Repair retained caption candidates
+on:
+  pull_request:
+    paths:
+      - 'scripts/repair_retained_captions.py'
+      - '.github/workflows/repair-retained-captions.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  repair:
+    if: github.event.repository.private == false && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        format: [short, long]
+    env:
+      PUBLICATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: python -m pip install numpy opencv-python-headless
+      - run: python -m unittest discover -s tests -p test_v2_captions.py
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-state-${{ matrix.format }}
+          run-id: 38472504826
+          github-token: ${{ github.token }}
+          path: retained
+      - name: Prepare verified caption-only repair
+        run: python scripts/repair_retained_captions.py --input retained --out repair --format '${{ matrix.format }}'
+      - run: node scripts/verify_caption_frames.mjs --ccsd repair/ccsd.json --captions repair/captions.json --out repair/caption-frames.json
+      - name: Use original renderer to avoid unrelated creative changes
+        uses: actions/checkout@v4
+        with:
+          ref: 89f02aaa10036df57283982fcf727b443dcc306e
+          path: original-renderer
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: original-renderer
+      - name: Render repaired candidate using original composition
+        working-directory: original-renderer
+        run: |
+          composition=$(python -c 'import json; print(json.load(open("../repair/composition.json"))["composition"])')
+          npx remotion render remotion/studio-animatic-index.jsx "$composition" ../repair/silent.mp4 --props=../repair/props.json --codec=h264 --crf=18 --concurrency=2
+      - name: Preserve exact original encoded audio
+        run: |
+          ffmpeg -nostdin -v error -i repair/silent.mp4 -i retained/candidate.mp4 -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart repair/candidate.mp4
+          ffmpeg -v error -i retained/candidate.mp4 -map 0:a:0 -c copy -f hash -hash sha256 repair/original-audio.sha256
+          ffmpeg -v error -i repair/candidate.mp4 -map 0:a:0 -c copy -f hash -hash sha256 repair/repaired-audio.sha256
+          cmp repair/original-audio.sha256 repair/repaired-audio.sha256
+      - name: Full technical media verification
+        run: python scripts/production_reality_media_qa.py --video repair/candidate.mp4 --ccsd repair/ccsd.json --out repair/media-qa.json
+      - run: node scripts/exact_av_review.mjs prepare repair/candidate.mp4 repair/review-request.json
+      - name: Preserve repair evidence without approval or publication
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caption-repair-${{ matrix.format }}
+          path: repair/
+          retention-days: 14

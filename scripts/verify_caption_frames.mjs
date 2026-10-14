@@ -51,7 +51,7 @@ export function verifyCaptionFrames(ccsd,track) {
       for(const i of indices)if(cue.start<onsets.get(i))fail('Future word displayed before observed onset');
     }
     checks.original_words_bound=true;
-    const visible=new Set();
+    const visible=new Set(),exposure=expected.map(()=>0);
     for(let frame=0;frame<report.frame_count;frame++) {
       const time=frame/fps;
       // StudioAnimatic returns a blank frame before caption lookup outside scenes.
@@ -61,12 +61,21 @@ export function verifyCaptionFrames(ccsd,track) {
       for(const i of cue.display_word_indices) {
         if(time<onsets.get(i))fail('Renderer reveals word before observed onset');
         visible.add(i);
+        exposure[i]++;
       }
     }
     checks.no_early_reveal=true;report.visible_word_count=visible.size;
     const missing=expected.map((_,i)=>i).filter(i=>!visible.has(i));report.missing_word_indices=missing;
     if(missing.length)fail('Original words never displayed: '+missing.join(','));
-    checks.all_words_visible=true;report.status='PASS';
+    checks.all_words_visible=true;
+    // Presence for one frame is insufficient even as a conservative technical
+    // floor. This does not certify readability, which remains a creative gate.
+    report.word_exposure_frames=exposure;
+    report.minimum_word_exposure_frames=3;
+    report.brief_word_indices=expected.map((_,i)=>i).filter(i=>exposure[i]<3);
+    checks.minimum_word_exposure=report.brief_word_indices.length===0;
+    if(!checks.minimum_word_exposure)fail('Words displayed for fewer than three frames: '+report.brief_word_indices.join(','));
+    report.status='PASS';
   } catch(error) {report.reason=error.message;}
   return report;
 }

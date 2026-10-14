@@ -1,90 +1,78 @@
-#!/usr/bin/env python3
-"""Offline exact-media inspection pack. Preparation/metrics NEVER grant approval.
-
-Uses only Python stdlib plus ffmpeg/ffprobe. No uploads, credentials or inference.
-"""
+"""Free local review transport. No model calls and no creative certification."""
 import argparse
 import hashlib
-import html
 import json
-import math
-from pathlib import Path
 import shutil
 import subprocess
-
-
-def run(args):
-    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=900)
+from pathlib import Path
 
 
 def sha(path):
-    with path.open('rb') as stream:
+    with open(path, 'rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def prepare(source, destination, expected_hash, every=1.0):
-    source = Path(source).resolve(strict=True)
-    destination = Path(destination).resolve()
-    if not math.isfinite(every) or every <= 0:
-        raise ValueError('Positive finite sampling interval required')
-    digest = sha(source)
-    if digest != expected_hash:
-        raise ValueError('Candidate hash mismatch')
-    # Exclusive output avoids overwriting media, previous evidence or symlink targets.
-    destination.mkdir(parents=True, exist_ok=False)
-    candidate = destination / 'candidate.mp4'
-    shutil.copyfile(source, candidate)
-    if sha(candidate) != digest:
-        raise ValueError('Copied candidate hash mismatch')
-    probe = json.loads(run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(candidate)]).stdout)
-    duration = float(probe['format']['duration'])
-    if not math.isfinite(duration) or duration <= 0:
-        raise ValueError('Invalid duration')
-    run(['ffmpeg', '-nostdin', '-v', 'error', '-xerror', '-err_detect', 'explode', '-i', str(candidate), '-map', '0:v:0', '-map', '0:a:0', '-f', 'null', '-'])
-    # Decode timestamps rather than assuming constant frame rate or fps filter offsets.
-    frames = json.loads(run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_frames', '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', str(candidate)]).stdout)['frames']
-    selected, next_time = [], 0.0
-    for n, frame in enumerate(frames):
-        t = float(frame['best_effort_timestamp_time'])
-        if t >= next_time:
-            selected.append((n, t))
-            next_time = t + every
-    if not selected:
-        raise ValueError('No decoded frame timestamps')
-    (destination / 'frames').mkdir()
-    expression = '+'.join(f'eq(n\\,{n})' for n, _ in selected)
-    run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(candidate), '-vf', f'select={expression},scale=640:-2', '-fps_mode', 'vfr', str(destination / 'frames/%05d.jpg')])
-    if len(list((destination / 'frames').glob('*.jpg'))) != len(selected):
-        raise ValueError('Extracted frame count mismatch')
-    audio = run(['ffmpeg', '-nostdin', '-hide_banner', '-i', str(candidate), '-map', '0:a:0', '-af', 'ebur128=peak=true,silencedetect=noise=-45dB:d=0.5', '-f', 'null', '-'])
-    (destination / 'audio-diagnostics.txt').write_text(audio.stderr)
-    run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(candidate), '-map', '0:a:0', '-c:a', 'pcm_s16le', str(destination / 'audio.wav')])
-    if sha(source) != digest or sha(candidate) != digest:
-        raise ValueError('Media changed during inspection')
-    samples = [{'frame_index': n, 'time_seconds': t, 'file': f'frames/{i:05d}.jpg'} for i, (n, t) in enumerate(selected, 1)]
-    receipt = {'schema_version': 1, 'candidate_sha256': digest, 'duration_seconds': duration,
-               'technical_decode': 'PASS', 'status': 'REVIEW_REQUIRED', 'full_video_review': False,
-               'full_audio_review': False, 'publication_enabled': False, 'production_approved': False,
-               'scope': 'Decoded original plus timestamped samples and audio diagnostics. No creative or listening certification.',
-               'samples': samples, 'comparisons': [], 'reviewed_intervals': []}
-    (destination / 'manifest.json').write_text(json.dumps(receipt, indent=2) + '\n')
-    (destination / 'probe.json').write_text(json.dumps(probe, indent=2) + '\n')
-    cards = ''.join(f'<button data-time="{s["time_seconds"]}"><img loading="lazy" src="{s["file"]}"><span>{s["time_seconds"]:.3f}s · frame {s["frame_index"]}</span></button>' for s in samples)
-    page = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unapproved exact-media review</title>'
-    page += '<style>body{font:16px system-ui;max-width:1100px;margin:auto;padding:20px;background:#eee}video{width:100%;max-height:65vh;background:#111}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}button{cursor:pointer}img{width:100%}span{display:block}</style>'
-    page += '<h1>Unapproved exact-media review</h1><p>Publication disabled. Samples and audio statistics do not certify creative quality. Play the original with sound to assess motion, voices, effects and synchronization. Seeking or playback does not automatically record review or approval.</p>'
-    page += f'<p>SHA-256: <code>{html.escape(digest)}</code></p><video id="video" controls playsinline preload="metadata" src="candidate.mp4"></video><p><a href="audio.wav">Isolated original mixed audio</a> · <a href="manifest.json">Evidence scope and exact timestamps</a> · <a href="audio-diagnostics.txt">Audio diagnostics (not listening)</a></p><section>{cards}</section>'
-    page += '<script>document.querySelectorAll("button[data-time]").forEach(b=>b.onclick=()=>{document.getElementById("video").currentTime=Number(b.dataset.time);document.getElementById("video").scrollIntoView();});</script>'
-    (destination / 'index.html').write_text(page)
+def build(video, output):
+    source = Path(video).resolve(strict=True)
+    output = Path(output).resolve()
+    # Never overwrite originals, previous evidence, or aliases.
+    if output.exists():
+        raise ValueError('Output must be a new directory')
+    source_hash = sha(source)
+    probe = json.loads(subprocess.check_output([
+        'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(source)], timeout=30))
+    if sha(source) != source_hash:
+        raise ValueError('Source mutated during media probe')
+    if not all(any(s.get('codec_type') == kind for s in probe['streams']) for kind in ['video', 'audio']):
+        raise ValueError('Both video and audio are required')
+    output.mkdir(parents=True)
+    shutil.copyfile(source, output / 'candidate.mp4')
+    if sha(output / 'candidate.mp4') != source_hash:
+        raise ValueError('Copy integrity failure')
+    decode = subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-xerror', '-err_detect', 'explode',
+        '-i', str(source), '-map', '0:v:0', '-map', '0:a:0', '-f', 'null', '-'], capture_output=True, text=True, timeout=600)
+    (output / 'decode.log').write_text(decode.stderr)
+    if decode.returncode:
+        raise ValueError('Full audiovisual decode failed; inspect decode.log')
+    # Preserve original timing and aspect ratio. Audio is decoded from the final mux.
+    subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(source), '-map', '0:a:0',
+        '-c:a', 'pcm_s16le', str(output / 'final-mix.wav')], check=True, timeout=600)
+    (output / 'frames').mkdir()
+    subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(source), '-vf',
+        'fps=1,scale=640:640:force_original_aspect_ratio=decrease', '-q:v', '3',
+        str(output / 'frames' / '%06d.jpg')], check=True, timeout=600)
+    audio = subprocess.run(['ffmpeg', '-nostdin', '-hide_banner', '-nostats', '-i', str(source),
+        '-map', '0:a:0', '-af', 'ebur128=peak=true,silencedetect=noise=-45dB:d=1', '-f', 'null', '-'],
+        capture_output=True, text=True, timeout=600)
+    (output / 'audio-diagnostics.log').write_text(audio.stderr)
+    if audio.returncode or sha(source) != source_hash:
+        raise ValueError('Audio analysis failed or source mutated')
+    receipt = {'schema_version': 1, 'candidate_sha256': source_hash,
+        'duration_seconds': float(probe['format']['duration']), 'technical_decode': 'PASS',
+        'status': 'REVIEW_PENDING', 'full_video_review': False, 'full_audio_review': False,
+        'production_approved': False, 'publication_enabled': False,
+        'frame_sampling': '1 FPS; sample n represents the fps filter output, not complete motion coverage',
+        'scope': 'Local access package and decode diagnostics only; listening, motion judgment, synchronization, character identity and competitor comparison require actual review.',
+        'files': {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}}
+    (output / 'evidence.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    (output / 'index.html').write_text('''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Unapproved candidate — local audiovisual review</title>
+<style>body{font:18px system-ui;max-width:960px;margin:24px auto;padding:12px}video{width:100%;max-height:75vh}button{padding:12px;margin:4px}</style>
+<h1>Review pending · publication disabled</h1>
+<p>Original candidate, unchanged. Watch and listen end to end. Sampled images and successful decoding do not constitute creative approval.</p>
+<video id="v" controls playsinline preload="metadata" src="candidate.mp4"></video>
+<p><button onclick="v.currentTime=Math.max(0,v.currentTime-5)">Back 5 seconds</button><button onclick="v.currentTime+=5">Forward 5 seconds</button>
+<button onclick="v.playbackRate=.5">Half speed</button><button onclick="v.playbackRate=1">Normal speed</button></p>
+<p id="t"></p><script>const v=document.querySelector('video');v.ontimeupdate=()=>document.querySelector('#t').textContent=v.currentTime.toFixed(3)+' seconds';</script>
+<p>Log observed intervals and timestamped defects for hook, escalation, visual storytelling, character consistency, voice, sound mix, pacing, phone readability, payoff and factual accuracy. Review two distinct references with audio before claiming parity. Use exact_av_review.mjs to validate the resulting review; this page never approves or publishes.</p>
+<a href="evidence.json">Integrity and scope</a> · <a href="final-mix.wav">Final mixed audio</a>''')
     return receipt
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument('--video', required=True)
     parser.add_argument('--out', required=True)
-    parser.add_argument('--sha256', required=True)
-    parser.add_argument('--every', type=float, default=1.0)
     args = parser.parse_args()
-    result = prepare(args.video, args.out, args.sha256, args.every)
-    print(json.dumps({k: result[k] for k in ['status', 'technical_decode', 'candidate_sha256', 'publication_enabled']}))
+    result = build(args.video, args.out)
+    print(json.dumps({k: result[k] for k in ['candidate_sha256', 'technical_decode', 'status', 'publication_enabled']}))

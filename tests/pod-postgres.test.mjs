@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
 import {preflight} from '../scripts/pod_preflight.mjs';
+import {deployDatabase} from '../scripts/pod_deploy_database.mjs';
 import {migrate} from '../scripts/pod_storage_init.mjs';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
@@ -19,6 +20,14 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await pool.query('CREATE TABLE IF NOT EXISTS cyzor_social_vault(id text PRIMARY KEY,envelope jsonb NOT NULL)');
   await pool.query(`INSERT INTO cyzor_social_vault VALUES('owner','{"preserve":true}') ON CONFLICT DO NOTHING`);
   await Promise.all([migrate(pool,'pod_test_runtime'),migrate(pool,'pod_test_runtime')]);
+  const deployed=await deployDatabase({apply:true,env:{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false',
+   POD_STORAGE_EXPIRES_AT:'2099-01-01T00:00:00Z',DATABASE_RUNTIME_USER:'pod_test_runtime',
+   DATABASE_MIGRATION_URL:'postgresql://owner:fixture@localhost/pod_test',
+   POD_DATABASE_URL:'postgresql://pod_test_runtime:fixture@localhost/pod_test'},
+   connect:async()=>({connect:()=>pool.connect(),end:async()=>{}}),
+   inspect:async()=>({checks:[]})});
+  assert.equal(deployed.migration_requested,true);
+  assert.equal(deployed.status,'BLOCKED'); // Migration alone never proves runtime readiness.
   assert.equal((await pool.query("SELECT has_table_privilege('pod_test_runtime','cyzor_social_vault','UPDATE') AS granted")).rows[0].granted,false);
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   const report=await preflight({env:{POD_DATABASE_URL:'test-injected',POD_BRIDGE_PATH:'test-bridge',
@@ -60,7 +69,10 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
   assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
   await assert.rejects(db.finish(claims.find(Boolean),'published'),/INVALID_FINISH/);
+  await pool.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED' WHERE id=$1",[job]);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
+  await assert.rejects(db.acceptReview(job,qa),/REVIEW_NOT_PENDING/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[job])).rows[0].state,'qa_failed');
   await assert.rejects(pool.query("UPDATE pod_concepts SET rights_state='PASS',permanently_unpublished=false WHERE id=$1",[concept]),/POD_PERMANENTLY_UNPUBLISHED/);
  }finally{await pool.end();}
 });

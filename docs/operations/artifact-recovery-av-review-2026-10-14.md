@@ -57,3 +57,7 @@ Validation: 35 existing/updated Node tests pass, plus one real generated-media i
 ## Still required
 
 A fresh encoded Long render of the fix; full actual audiovisual review of each candidate, including voice performance, SFX, motion and synchronization; two distinct full authorized competitor audiovisual reviews; actual Android acceptance. No claim of completed creative approval or a fully automated independent reviewer is made. Original candidates and existing working components are preserved.
+
+## Follow-up reconciliation
+
+Main gained an independently implemented offline review pack, aspect-preserving motion analysis, caption repair and mobile comparison workspace after this report. Those implementations are retained. PR44 now carries the opening-card correction, the recovered evidence, and an additional retained-visual-repair workflow using current compositions with the exact original audio. A confirmed ordering bug in repair_retained_captions.py wrote ccsd.json before installing the repaired caption track; the write now follows assignment so props and technical verification use the same captions. Prior descriptions of this branch's alternative offline script are historical; main's current implementation is authoritative. The new workflow must succeed and its encoded output must be inspected before calling the media repaired.

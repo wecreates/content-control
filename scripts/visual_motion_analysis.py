@@ -15,13 +15,18 @@ def analyze(video):
     fps=float(cap.get(cv2.CAP_PROP_FPS)); expected=float(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if not math.isfinite(fps) or fps<=0 or not math.isfinite(expected) or expected<2 or not expected.is_integer():
         cap.release();raise ValueError('Valid video metadata required')
+    width=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH));height=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    if width<=0 or height<=0:
+        cap.release();raise ValueError('Valid video dimensions required')
+    scale=min(180/width,320/height)
+    resolution=(max(1,round(width*scale)),max(1,round(height*scale)))
     previous=None;deltas=[];count=0;static_start=None;static=[];cuts=[]
     try:
         while True:
             ok,frame=cap.read()
             if not ok:break
             if frame is None:raise ValueError('Undecodable frame')
-            gray=cv2.cvtColor(cv2.resize(frame,(180,320)),cv2.COLOR_BGR2GRAY)
+            gray=cv2.cvtColor(cv2.resize(frame,resolution),cv2.COLOR_BGR2GRAY)
             if previous is not None:
                 delta=float(np.abs(gray.astype(float)-previous.astype(float)).mean()/255)
                 deltas.append(delta)
@@ -35,11 +40,12 @@ def analyze(video):
         if count!=int(expected):raise ValueError(f'Incomplete decode: {count}/{int(expected)} frames')
         if static_start is not None and (count-static_start)/fps>=1:static.append([round(static_start/fps,3),round(count/fps,3)])
     finally:cap.release()
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=digest:raise ValueError('Media changed during analysis')
     return {'schema_version':1,'analysis_status':'COMPLETE','candidate_sha256':digest,'decoded_frames':count,
         'fps':fps,'duration_seconds':count/fps,'coverage':'every decoded frame',
         'observations':{'mean_frame_change':float(np.mean(deltas)),'p95_frame_change':float(np.percentile(deltas,95)),
         'low_change_intervals_seconds':static,'large_change_timestamps_seconds':cuts},
-        'parameters':{'analysis_resolution':[180,320],'low_change_threshold':.001,'large_change_threshold':.15,'minimum_low_change_seconds':1},
+        'parameters':{'analysis_resolution':list(resolution),'aspect_ratio_preserved':True,'low_change_threshold':.001,'large_change_threshold':.15,'minimum_low_change_seconds':1},
         'scope':'Pixel motion diagnostics only. Camera motion, meaning, pacing quality and competitor motion parity are not inferred.',
         'production_approved':False,'publication_enabled':False}
 

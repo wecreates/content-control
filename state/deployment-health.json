@@ -3,11 +3,17 @@
     "build_command": true,
     "canonical_media_exists": true,
     "canonical_server_exists": true,
+    "container_nonroot": true,
+    "container_publication_lock": true,
+    "docker_context": true,
+    "dockerfile_path": true,
+    "free_plan": true,
     "health_check": true,
     "manifest_exists": true,
     "package_start_canonical": true,
     "publication_lock": true,
-    "runtime_node": true,
+    "required_environment": true,
+    "runtime_matches_contract": true,
     "service_name": true,
     "start_command": true
   },
@@ -15,5 +21,6 @@
   "provider": "render",
   "publication_enabled": false,
   "schema_version": 1,
+  "scope": "Repository configuration only; live container and playback require independent probes",
   "status": "PASS"
 }

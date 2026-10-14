@@ -1,0 +1,43 @@
+name: POD database deployment (manual, no publication)
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply checked-in migrations before verifying runtime access
+        type: boolean
+        required: true
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: pod-database-deployment
+  cancel-in-progress: false
+jobs:
+  database:
+    if: github.ref == 'refs/heads/main'
+    environment: pod-database
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - name: Migrate or inspect using dedicated credentials
+        env:
+          DATABASE_MIGRATION_URL: ${{ secrets.POD_MIGRATION_DATABASE_URL }}
+          POD_DATABASE_URL: ${{ secrets.POD_RUNTIME_DATABASE_URL }}
+          DATABASE_RUNTIME_USER: ${{ vars.POD_RUNTIME_USER }}
+          POD_STORAGE_EXPIRES_AT: ${{ vars.POD_STORAGE_EXPIRES_AT }}
+          PUBLICATION_ENABLED: 'false'
+          POD_PUBLICATION_ENABLED: 'false'
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY" = true ]; then
+            node scripts/pod_deploy_database.mjs --apply
+          else
+            node scripts/pod_deploy_database.mjs
+          fi

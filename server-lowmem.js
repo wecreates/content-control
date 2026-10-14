@@ -20,6 +20,7 @@ import {creativeHandoff} from "./creative-handoff.js";
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
 
 const app=express();
+app.use("/compare",express.static(path.resolve("comparison-ui"),{index:"index.html",dotfiles:"deny"}));
 app.use("/api/print",podService.router);
 app.use("/api/integrations",createRepositoryIntegrationRouter());
 app.use("/api/production",createProductionStatusRouter());
