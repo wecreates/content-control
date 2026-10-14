@@ -6,10 +6,10 @@ import {createStore,hydrateStore,serializeStore,applyCheck} from './monitor-stor
 const STATE_FILE=process.env.MONITOR_STATE_FILE||path.resolve('state/monitor-state.json');
 const BACKUP_URL=process.env.MONITOR_BACKUP_URL||'https://raw.githubusercontent.com/wecreates/content-control/main/MONITOR_STATE_BACKUP.json';
 
-export async function loadMonitorStore(){
-  try{return hydrateStore(JSON.parse(await fs.readFile(STATE_FILE,'utf8')));}catch{}
+export async function loadMonitorStore({stateFile=STATE_FILE,backupUrl=BACKUP_URL,fetchImpl=fetch,timeoutMs=5000}={}){
+  try{return hydrateStore(JSON.parse(await fs.readFile(stateFile,'utf8')));}catch{}
   try{
-    const r=await fetch(BACKUP_URL,{headers:{'user-agent':'CYZOR-Monitor-Restore/1.0'}});
+    const r=await fetchImpl(backupUrl,{signal:AbortSignal.timeout(timeoutMs),headers:{'user-agent':'CYZOR-Monitor-Restore/1.0'}});
     if(r.ok) return hydrateStore(await r.json());
   }catch{}
   return createStore();
@@ -20,11 +20,11 @@ export async function saveMonitorStore(store){
   await fs.writeFile(STATE_FILE,serializeStore(store));
 }
 
-export async function checkWatch(store,id,{fetchImpl=fetch,persist=true}={}){
+export async function checkWatch(store,id,{fetchImpl=fetch,persist=true,timeoutMs=10000}={}){
   const w=store.watches.find(x=>x.id===String(id));
   if(!w||w.status!=='active') return {ok:false,reason:'not_found_or_inactive'};
   try{
-    const r=await fetchImpl(w.target_url,{redirect:'follow',headers:{'user-agent':'CYZOR-Free-Monitor/1.0'}});
+    const r=await fetchImpl(w.target_url,{signal:AbortSignal.timeout(timeoutMs),redirect:'follow',headers:{'user-agent':'CYZOR-Free-Monitor/1.0'}});
     const body=Buffer.from(await r.arrayBuffer());
     const hash=crypto.createHash('sha256').update(body).digest('hex');
     applyCheck(store,w.id,{hash,checkedAt:Date.now(),status:r.status});
