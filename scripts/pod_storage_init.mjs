@@ -11,8 +11,8 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   await client.query('BEGIN');
   await client.query("SET LOCAL lock_timeout='10s'");
   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
-  const role=(await client.query('SELECT rolsuper,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0];
-  if(!role||role.rolsuper||role.rolcreatedb||role.rolcreaterole)throw Error('RUNTIME_ROLE_PRIVILEGED');
+  const role=(await client.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows[0];
+  if(!role||role.rolsuper||role.rolcreatedb||role.rolcreaterole||role.rolreplication||role.rolbypassrls)throw Error('RUNTIME_ROLE_PRIVILEGED');
   const current=(await client.query('SELECT current_user AS name')).rows[0].name;
   if(current===runtimeRole)throw Error('MIGRATION_ROLE_MUST_DIFFER');
   await client.query('CREATE TABLE IF NOT EXISTS pod_schema_version(version text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');
