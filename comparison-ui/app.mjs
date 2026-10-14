@@ -7,11 +7,11 @@ for(const name of names){
  $(name+'-file').onchange=()=>{
  const file=$(name+'-file').files[0];if(!file)return;
  if(findings.length&&!confirm('Replacing this video clears the current findings. Export them first if needed.')){$(name+'-file').value='';return;}
- findings=[];render();media[name]=null;identities[name]=null;workers[name]?.terminate();versions[name]++;const version=versions[name];
+ findings=[];render();media[name]=null;identities[name]=null;$(name+'-status').dataset.verified='false';workers[name]?.terminate();versions[name]++;const version=versions[name];
  const worker=new Worker(new URL('./hash-worker.mjs',import.meta.url),{type:'module'});workers[name]=worker;
  worker.onmessage=({data})=>{if(version!==versions[name])return;worker.terminate();
  if(data.error){message('File identity could not be verified. Re-select the file or use a desktop browser. Export is blocked.');return;}
- identities[name]=data.identity;if(media[name])Object.assign(media[name],data.identity);message('File identity verified locally. Review remains pending.');};
+ identities[name]=data.identity;$(name+'-status').dataset.verified='true';if(media[name])Object.assign(media[name],data.identity);message('File identity verified locally. Review remains pending.');};
  worker.onerror=()=>{worker.terminate();if(version===versions[name])message('File verification failed. Try a desktop browser. Export is blocked.');};
  worker.postMessage(file);
  $(name).pause();if(urls[name])URL.revokeObjectURL(urls[name]);urls[name]=URL.createObjectURL(file);
