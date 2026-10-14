@@ -1,4 +1,5 @@
 import {finding,receipt} from './model.mjs';
+import {createHashWorker} from './worker.mjs';
 const $=id=>document.getElementById(id), names=['candidate','reference'];
 const media={}, urls={}, workers={}, identities={}, versions={candidate:0,reference:0};let findings=[];
 const message=text=>{$('message').textContent=text;};
@@ -8,7 +9,7 @@ for(const name of names){
  const file=$(name+'-file').files[0];if(!file)return;
  if(findings.length&&!confirm('Replacing this video clears the current findings. Export them first if needed.')){$(name+'-file').value='';return;}
  findings=[];render();media[name]=null;identities[name]=null;$(name+'-status').dataset.verified='false';workers[name]?.terminate();versions[name]++;const version=versions[name];
- const worker=new Worker(new URL('./hash-worker.mjs',import.meta.url),{type:'module'});workers[name]=worker;
+ const worker=createHashWorker();workers[name]=worker;
  worker.onmessage=({data})=>{if(version!==versions[name])return;worker.terminate();
  if(data.error){message('File identity could not be verified. Re-select the file or use a desktop browser. Export is blocked.');return;}
  identities[name]=data.identity;$(name+'-status').dataset.verified='true';if(media[name])Object.assign(media[name],data.identity);message('File identity verified locally. Review remains pending.');};

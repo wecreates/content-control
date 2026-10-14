@@ -3,6 +3,7 @@ import {createServer} from 'node:http';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {resolve,extname} from 'node:path';
 import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 const require=createRequire(resolve(process.env.BROWSER_QA_MODULES,'package.json'));
 const {chromium}=require('playwright');
@@ -18,7 +19,7 @@ try{
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,acceptDownloads:true});
  page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(`http://127.0.0.1:${server.address().port}/compare`);
+ await page.goto(process.argv[3]?pathToFileURL(resolve(process.argv[3])).href:`http://127.0.0.1:${server.address().port}/compare`);
  for(const name of ['candidate','reference'])await page.locator('#'+name+'-file').setInputFiles(process.argv[2]);
  await page.waitForFunction(()=>['candidate','reference'].every(n=>document.querySelector('#'+n+'-status').dataset.verified==='true'&&document.querySelector('#'+n).readyState>=2));
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=360),true,'Video panels must fit the actual phone width');
