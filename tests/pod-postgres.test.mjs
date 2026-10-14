@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
+import {preflight} from '../scripts/pod_preflight.mjs';
 import {migrate} from '../scripts/pod_storage_init.mjs';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
@@ -19,6 +20,20 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await Promise.all([migrate(pool,'pod_test_runtime'),migrate(pool,'pod_test_runtime')]);
   assert.equal((await pool.query("SELECT has_table_privilege('pod_test_runtime','cyzor_social_vault','UPDATE') AS granted")).rows[0].granted,false);
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
+  const report=await preflight({env:{POD_DATABASE_URL:'test-injected',POD_BRIDGE_PATH:'test-bridge',
+   POD_UPSTREAM_KEY:'u'.repeat(32),POD_QA_KEY:qaKey,INTERNAL_OPERATIONS_KEY:'o'.repeat(32),
+   POD_STORAGE_EXPIRES_AT:new Date(Date.now()+7*86400000).toISOString()},
+   readFile:async (p,encoding)=>p==='test-bridge'?JSON.stringify(bridge):(await import('node:fs/promises')).readFile(p,encoding),
+   connect:async()=>({connect:async()=>{
+    const c=await pool.connect();await c.query('SET ROLE pod_test_runtime');
+    return {query:(...args)=>c.query(...args),release:()=>c.release(true)};
+   },end:async()=>{}})});
+  assert.equal(report.checks.find(c=>c.code==='DATABASE_READABLE').status,'PASS');
+  assert.equal(report.checks.find(c=>c.code==='POD_TABLE_PRIVILEGES').status,'PASS');
+  assert.equal(report.checks.find(c=>c.code==='SOCIAL_VAULT_ISOLATED').status,'PASS');
+  assert.equal(report.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'PASS');
+  // Disposable CI PostgreSQL has no TLS; production must still reject that configuration.
+  assert.equal(report.checks.find(c=>c.code==='DATABASE_TLS').status,'BLOCKED');
   const store=new ArtifactStore(db,{budgetBytes:100});const content=Buffer.from('durable bytes');
   const hash=await store.put(content,'application/json');assert.deepEqual((await store.get(hash)).body,content);
   assert.equal(await store.put(content,'application/json'),hash);
