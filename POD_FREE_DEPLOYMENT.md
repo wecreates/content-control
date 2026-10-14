@@ -150,3 +150,17 @@ provider reconciliation or verified profit, and no production migration is
 authorized merely by passing CI. Use the existing protected manual deployment
 workflow only when its access, role and approval prerequisites are satisfied.
 
+## Optional encrypted artifact recovery
+
+The manual `scripts/pod_artifact_archive.mjs` command now provides bounded,
+encrypted artifact-only export and atomic restore. See
+integrations/pod/ARTIFACT_RECOVERY.md before configuring a separately held archive
+key or retention destination. Restore requires both publication flags explicitly
+false and the existing complete read-only preflight. No archive job or upload is
+enabled by deployment. Do not place archives only on ephemeral Render storage.
+
+This is not queue/account/ledger recovery, provider expiry extension, verified
+independent backup retention or a completed production restoration drill. No live
+archive key is generated, no secret is copied and no new resource is purchased.
+An actual owner-authorized production backup and restore test remains required.
+
