@@ -23,7 +23,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  const job=await db.claimProduction();if(!job)return {status:'IDLE'};
  let task;
  try{
-  const grant=verifyEnvelope(await resolveGrant(job),upstreamKey,'content-control:pod');
+  const grant=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
   enforceBrief(grant,job.brief);
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
   task=await resolveTask(job);
@@ -64,3 +64,4 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   return {status:'BLOCKED',job_id:job.id};
  }finally{if(task?.cleanup)await task.cleanup();}
 }
+

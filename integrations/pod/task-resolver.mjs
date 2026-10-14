@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {ArtifactStore} from './artifacts.mjs';
+import {createGrantResolver} from './grant-client.mjs';
 const hash=/^[a-f0-9]{64}$/;
 export function validateTask(task){
  if(task?.schema_version!==1||!task.files||typeof task.files!=='object'||Array.isArray(task.files))throw Error('TASK_INVALID');
@@ -13,9 +14,13 @@ export function validateTask(task){
  if(task.interior&&['template','pages','font'].some(role=>!has(task.interior[role])))throw Error('TASK_INTERIOR_INVALID');
  return task;
 }
-export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[]}={}){
+export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],env=process.env}={}){
+ let resolveGrant=async job=>job.upstream_envelope;
+ if(env.POD_GRANT_URL){
+  try{resolveGrant=createGrantResolver({env});}catch{resolveGrant=async()=>{throw Error('GRANT_AUTHORITY_INVALID');};}
+ }
  return {
-  resolveGrant:async job=>job.upstream_envelope,
+  resolveGrant,
   resolveTask:async job=>{
    if(!hash.test(job.brief.task_sha256||''))throw Error('TASK_REQUIRED');
    const descriptor=await store.get(job.brief.task_sha256);
@@ -41,3 +46,4 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
   }
  };
 }
+
