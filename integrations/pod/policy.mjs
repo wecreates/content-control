@@ -36,6 +36,7 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  if(!Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
  if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
  if(publishing&&(job.mode!=='LAUNCH'||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
+ if(job.task_sha256!==undefined&&(!/^[a-f0-9]{64}$/.test(job.task_sha256)||grant.task_sha256!==job.task_sha256))throw Error('TASK_SCOPE_MISMATCH');
  const facts=grant.verified_facts&&typeof grant.verified_facts==='object'?grant.verified_facts:{};
  // Downstream metadata comes ONLY from the signed upstream allowlist, never arbitrary client text.
  const forbidden=new Set(Array.isArray(grant.forbidden_claims)?grant.forbidden_claims:[]);
@@ -47,7 +48,7 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  }
  return {id:job.id,account_id:job.account_id,business_id:job.business_id,platform:job.platform,
   destination_platform:job.platform,mode:job.mode,package_sha256:job.package_sha256,
-  facts:approved,price:grant.price?.verified===true&&grant.price?.evidence_id&&
+  ...(job.task_sha256?{task_sha256:job.task_sha256}:{}),facts:approved,price:grant.price?.verified===true&&grant.price?.evidence_id&&
    Number.isSafeInteger(grant.price.amount_minor)&&grant.price.amount_minor>=0&&
    /^[A-Z]{3}$/.test(grant.price.currency||'')?grant.price:null};
 }

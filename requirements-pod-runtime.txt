@@ -1,0 +1,7 @@
+# CPU POD generation and deterministic QA. System requirements: Python 3.12,
+# tesseract-ocr and a verified licensed font. CLIP is optional and separate.
+Pillow==12.3.0
+numpy==2.3.5
+opencv-python-headless==5.0.0.93
+reportlab==4.4.9
+PyMuPDF==1.26.6

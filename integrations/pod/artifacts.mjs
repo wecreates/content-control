@@ -8,7 +8,7 @@ export class ArtifactStore {
   Object.assign(this,{db,budgetBytes,maxObjectBytes});
  }
  async put(body,mediaType){
-  if(!Buffer.isBuffer(body)||!body.length||body.length>this.maxObjectBytes||!['image/png','application/pdf','application/json'].includes(mediaType))throw Error('ARTIFACT_INVALID');
+  if(!Buffer.isBuffer(body)||!body.length||body.length>this.maxObjectBytes||!['image/png','application/pdf','application/json','font/ttf'].includes(mediaType))throw Error('ARTIFACT_INVALID');
   const sha=crypto.createHash('sha256').update(body).digest('hex');
   return this.db.tx(async c=>{
    await c.query('SELECT pg_advisory_xact_lock($1)',[543211]);

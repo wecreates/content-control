@@ -72,6 +72,26 @@ export class PodDB {
     WHERE q.state='raw' AND q.next_attempt_at<=now() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
     ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1) RETURNING *`);return r.rows[0]||null;
  });}
+ async holdProduction(job,manifest){return this.tx(async c=>{
+  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>now() RETURNING id",[manifest,job.id,job.fencing_token]);
+  if(!r.rows.length)throw Error('LEASE_LOST');
+  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',{package_sha256:manifest.package_sha256,publication_enabled:false}]);
+ });}
+ async acceptReview(jobId,qaEnvelope){
+  const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+  return this.tx(async c=>{
+   const job=(await c.query("SELECT * FROM pod_production_queue WHERE id=$1 AND state='qa_failed' AND reason_code='REVIEW_REQUIRED' FOR UPDATE",[jobId])).rows[0];
+   if(!job)throw Error('REVIEW_NOT_PENDING');
+   enforceQA(qa,job.manifest.package_sha256,job.manifest.template_sha256);
+   await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',{package_sha256:job.manifest.package_sha256,publication_enabled:false}]);
+   return {status:'QA_PASSED',publication_enabled:false};
+  });
+ }
+ async reviewPackage(jobId){this.active();
+  const row=(await this.pool.query("SELECT id,state,reason_code,manifest FROM pod_production_queue WHERE id=$1",[jobId])).rows[0];
+  if(!row?.manifest)throw Error('PACKAGE_UNAVAILABLE');return row;
+ }
  async completeProduction(job,manifest,qaEnvelope){
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256);return true;}catch{return false;}})();

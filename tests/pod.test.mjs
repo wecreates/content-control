@@ -59,3 +59,9 @@ test('production permission permits PRELAUNCH but never publication',()=>{
  assert.throws(()=>enforceBrief(grant,job,{publishing:true}),/PUBLICATION_PERMISSION_REQUIRED/);
  grant.revoked=true;assert.throws(()=>enforceBrief(grant,job),/APPROVAL_REVOKED/);
 });
+test('task inputs are bound to the authoritative grant',()=>{
+ const {job,grant}=fixture();job.task_sha256='a'.repeat(64);
+ assert.throws(()=>enforceBrief(grant,job),/TASK_SCOPE_MISMATCH/);
+ grant.task_sha256=job.task_sha256;
+ assert.equal(enforceBrief(grant,job).task_sha256,job.task_sha256);
+});

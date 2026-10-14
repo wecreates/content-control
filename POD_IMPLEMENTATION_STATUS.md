@@ -105,3 +105,34 @@ The first follow-up passed PostgreSQL 18 CI without skips:
 https://github.com/wecreates/content-control/actions/runs/38477814168
 The live Render read-only database connector still failed TLS/connectivity during
 the follow-up; no network allowlist was broadened and no production SQL was run.
+
+## Core wiring repair: durable task inputs and review hold
+
+The server now constructs concrete task resolvers from ArtifactStore. Production
+jobs bind `task_sha256` in both the brief and the upstream approval/grant. The
+referenced JSON descriptor has schema_version 1, a `files` map of basename to
+artifact SHA256, and roles `source`, `template`, `textLayers`, `assetRights`, and
+`reference` naming files in that map. KDP also has `interior` roles `template`,
+`pages`, `font`. See tests/pod-production-e2e.mjs for a synthetic complete example.
+Input files are restored to a bounded disposable directory; text-layer font paths
+are relative to that directory, while signatures bind the original portable JSON.
+Font blobs use font/ttf. All input bytes remain hash-verified in the durable store.
+
+After generation the worker persists the output before entering REVIEW_REQUIRED.
+This uses the existing qa_failed state plus reason_code, so no schema migration
+is needed. It does not consume repeated attempts while waiting. Authenticated
+GET /api/print/jobs/:id/package and GET /api/print/artifacts/:sha provide the exact
+review inputs. POST /api/print/jobs/:id/review accepts only a current signed QA PASS
+bound to that stored package/template; it never publishes. Reviewers reconstruct
+the package from its file map and run the existing signed QA CLI with independent
+rights/comparative evidence. POST /api/print/jobs/:id/retry uses the existing bounded
+repair path with a fresh scoped grant. REVIEW_REQUIRED is not an automatic failure
+or an automatic approval.
+
+Startup now probes the actual Python dependencies and OCR executable before any
+production queue claim. Missing dependencies report BLOCKED_PYTHON_RUNTIME. Install
+requirements-pod-runtime.txt and tesseract-ocr on the authorized worker before
+enabling production. Node-only deployment success does not prove Python readiness.
+The service/database/publication flags remain disabled until live configuration
+and approved evidence exist. This change does not create an upstream approval,
+rights clearance, reviewer identity, marketplace adapter or database credential.

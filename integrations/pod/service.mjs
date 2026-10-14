@@ -3,6 +3,8 @@ import {createPodPool,PodDB} from '../../pod-db-bridge.js';
 import {createPodRouter} from './router.mjs';
 import {operationalAuth} from './auth.mjs';
 import crypto from 'node:crypto';
+import {checkPodPython} from './python-runtime.mjs';
+import {createStoredTaskResolvers} from './task-resolver.mjs';
 import {startProductionRuntime} from './production-runtime.mjs';
 export async function initializePodService({env=process.env,authorize,production}={}){
  let db,pool;
@@ -24,7 +26,8 @@ export async function initializePodService({env=process.env,authorize,production
    if(pool)await pool.end().catch(()=>{});db=undefined;state.status='BLOCKED_CONFIGURATION';
   }
  }
- const worker=startProductionRuntime({db,production,env});
+ const pythonReady=env.POD_PRODUCTION_ENABLED==='true'&&db?await checkPodPython(env):true;
+ const worker=startProductionRuntime({db,pythonReady,production:production||(db?createStoredTaskResolvers(db):undefined),env});
  const status=()=>({...state,production_status:worker.status()});
  return {status,router:createPodRouter({db,authorize:authorize||operationalAuth(env.INTERNAL_OPERATIONS_KEY),env,status}),
   stop:async()=>{await worker.stop();if(db)await db.close();}};
