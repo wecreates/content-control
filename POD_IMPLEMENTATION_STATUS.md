@@ -660,3 +660,27 @@ https://github.com/wecreates/content-control/actions/runs/38624555415
 https://github.com/wecreates/content-control/actions/runs/38624555748
 These are repository/CI results, not a production runtime or financial acceptance.
 
+## Encrypted artifact recovery implementation — 2026-10-14
+
+Added a bounded manual AES-256-GCM artifact-library export/restore path using
+the existing PostgreSQL artifact store and native Node cryptography. A read-only
+repeatable snapshot exports exact hashes, encrypted objects and a catalog written
+last. Restore authenticates every object, enforces budget/type/hash boundaries,
+preserves immutable existing bytes and rolls back the entire transaction on any
+failure. Both publication flags must be explicitly false; CLI restore additionally
+requires target confirmation and the full restricted-role/TLS/schema preflight.
+
+Seven local tests cover exact round trips, retries, permissions, late corruption
+rollback, wrong keys, truncation/symlinks, no overwrite, cancellation, budgets and
+CLI fail-closed configuration. A hosted PostgreSQL drill now creates two isolated
+disposable databases, uses restricted artifact roles, verifies rollback and
+reconnect persistence, and confirms no account or queue is restored. Its hosted
+CI result must be checked before merging. No production access was attempted.
+
+This is artifacts-only recovery, not a complete database backup or completed area
+2. Queue/ledger recovery, independent durable retention, actual production export
+and restoration, real key custody, storage expiry resolution and measured capacity
+remain open. No archive is uploaded, retention provider chosen, credential invented,
+publication enabled or paid resource created. See ARTIFACT_RECOVERY.md for the
+manual contract and precise remaining acceptance evidence.
+
