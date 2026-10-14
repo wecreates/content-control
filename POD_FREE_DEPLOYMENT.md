@@ -111,3 +111,26 @@ This avoids unnecessary future builds; it does not replenish quota, repair the
 production database, or establish any live POD acceptance. Official behavior:
 https://render.com/docs/deploys#skipping-an-auto-deploy
 
+## Market-proof migration and final release checks
+
+Content Control PR #76 adds checksum-managed `003_pod.sql`. All three migration
+checksums must match before preflight passes. Apply through the existing protected
+manual database path only after authorized connectivity and role isolation are
+available; do not run DDL from application startup or edit the 001/002 files.
+The migration retains rank-proof references and makes market observations
+append-only. It leaves historical missing proof unknown instead of backfilling
+fabricated evidence. Intake clients must store source/image/rank artifacts before
+sending their signed observations; see integrations/pod/MARKET_EVIDENCE.md.
+
+PR #77 also requires `PodDB.assertPublishable(job)` in the executor. It rechecks
+lease/fencing, account state and concept rights after upstream grant lookup.
+Custom executors must not replace it with a permissive stub. Grant/QA expiry and
+local kill switches are checked after the database wait; a disabled flag still
+forces the existing dry-run path without claims or platform calls.
+
+These migrations and checks passed disposable CI, not production acceptance.
+The Render connector's latest reported attempt at 18:05 UTC on October 14 still
+failed due to exhausted workspace build minutes. No successful deployment of
+these repairs or production migration was verified. Do not enable production or
+publication on the basis of merged code or synthetic tests.
+

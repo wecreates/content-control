@@ -555,3 +555,41 @@ That gate also exercised migration 003 and concurrent market observations in
 disposable CI PostgreSQL, not the production database. Live deployment and the
 24 acceptance areas remain unverified; no Render quota workaround was attempted.
 
+## Verified market/release integration — 2026-10-14, 19:23 UTC
+
+- Content Control PR #76 merged after its full integration gate passed; logs
+  confirm 121 Node tests passed with zero skips plus the real PostgreSQL/Python
+  durable workflow: https://github.com/wecreates/content-control/actions/runs/38622442650
+- PR #77 merged as cdd659fdbce2ea8cf57d6f2ee94f357dddb8a883 after 126 Node tests
+  passed with zero skips plus the durable workflow:
+  https://github.com/wecreates/content-control/actions/runs/38622841774
+  Combined main integration and System Wiring Audit both passed:
+  https://github.com/wecreates/content-control/actions/runs/38623041412
+  https://github.com/wecreates/content-control/actions/runs/38623041392
+- Money Factory PR #16 aligns the bridge documentation with durable market
+  proof and local release denials. Concurrent main work was preserved by
+  refreshing its base to d46aa20fda4cdbc817454f12f8b9a0c1b277c52e. Its matching
+  cross-repository gate passed before merge:
+  https://github.com/wecreates/Money-factory/actions/runs/38623052071
+- Additional local verification passed 62 focused Node tests, 38 Python POD
+  tests and syntax checks on the changed runtime modules. New regression tests
+  failed before the corresponding repairs. Hosted PostgreSQL used disposable
+  fixtures, not the production database, credentials or actual platform accounts.
+
+Deployment remains UNVERIFIED. The Render connector continued to report
+dep-db7s8ip5efls73cs4od0 (8d2934dc3e9ea0a4acdf1d10eda2318b98529e76) as its
+latest attempt, failed 2026-10-14T18:05:00.684148Z; its 18:05:00.400541473Z build
+log explicitly reports exhausted build pipeline minutes. The connector did not
+show a deployment for either newly merged runtime repair during this inspection.
+Do not infer a successful or failed new deployment from the merge alone. Last
+verified successful application deployment remains 5180c243198afb6dfb05ee8d2e14995d4e7b0750
+in dep-db7r0lh42hec739jiusg at 2026-10-14T16:41:11.656201Z.
+
+No manual deployment retries, network expansion, plan/spending changes, new live
+credentials, production database attempt or publication enablement occurred.
+The already-reported quota blocker is unchanged; no repeated owner notification
+is needed. Production migration 003 is still pending authorized access. All 24
+acceptance areas remain open for real deployment, rights/account/template/reviewer,
+adapter, financial, recovery and measured-capacity evidence. Continue independent
+authorized work from current heads; this is not a claim of continuous worker uptime.
+
