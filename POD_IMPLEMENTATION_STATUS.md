@@ -242,3 +242,26 @@ provider credential, live database write, or publication was performed. The live
 service inspected at the start of this pass was commit
 a176c1e99d2045f62316c55b9c200cb53d8d23d1. Database provisioning remains unverified;
 no unchanged blocked database access path was retried.
+
+
+## Verified identity-binding gates — 2026-10-14, 15:20 UTC
+
+- PR #64 passed the full PostgreSQL/Python integration gate and merged:
+  https://github.com/wecreates/content-control/actions/runs/38587996687
+  Render reported merge 226a0ff69974df6f72f8b3d0c042bed234657069 live in
+  dep-db7pqp942hec739hjqj0 at 2026-10-14T15:20:16.567222Z.
+- PR #65 fixes the same missing-binding failure in shared QA and release policy.
+  Matching absent hashes can no longer satisfy either gate. Three regression
+  cases reproduced the prior failure; the combined focused suite passed 8 tests.
+  Full integration CI passed before merge:
+  https://github.com/wecreates/content-control/actions/runs/38588206040
+  Its deployment was building at this checkpoint; deployed acceptance is separate.
+- The HTTP mount order was inspected: the POD router is mounted before other
+  API routers and no global JSON parser consumes its raw artifact uploads.
+  No upload-path change was necessary.
+
+No live publication, production database administration, credentials, rights
+clearance, revenue, or capacity acceptance was introduced. The 24-area registry
+remains open. Existing known database access limitations were not retried without
+a changed authorized path. Verification used available local tests and hosted CI,
+not a claimed continuously running self-hosted worker.
