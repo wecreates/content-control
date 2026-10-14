@@ -168,3 +168,33 @@ clearance, paid infrastructure, or marketplace permission was changed. The 24-ar
 completion registry remains open. Current runtime work is performed during active
 authorized execution sessions; a continuously running self-hosted agent has not
 been installed or verified.
+
+
+## Continued verification — 2026-10-14, 14:46 UTC
+
+- Money Factory PR #14 merged the real PostgreSQL 18 event-bridge recovery gate.
+  The test invokes Content Control's actual outbox and Money Factory's actual
+  HTTP receiver/inbox, with a local transport and disposable test schema.
+  It verifies lost-acknowledgment recovery, eight concurrent duplicate deliveries,
+  conflicting replay rejection, and database rejection without false delivery.
+  CI passed: https://github.com/wecreates/Money-factory/actions/runs/38582761908
+  This is test-environment evidence, not a live authority round trip.
+- Content Control PR #56 closes the other QA readiness path: direct production
+  completion now locks and verifies current concept rights before PASS, and the
+  ready list excludes revoked/tombstoned concepts. PostgreSQL regression and the
+  full integration gate passed:
+  https://github.com/wecreates/content-control/actions/runs/38582954870
+  Render reported commit 0da96757118abb9eea4490013b0e52aaf769e67d live in
+  deployment dep-db7pah5bedkc738tsgn0 at 2026-10-14T14:45:24.910215Z.
+- PR #57 repairs child-process cancellation and output limits. The runner waits
+  for process close before task cleanup and escalates ignored SIGTERM to SIGKILL.
+  Thirty focused local tests passed, including a real child that ignores SIGTERM.
+  Full CI was still running at this checkpoint; consult its final result and PR
+  merge state before treating this fix as deployed:
+  https://github.com/wecreates/content-control/actions/runs/38583251828
+  https://github.com/wecreates/content-control/pull/57
+
+No production migration, owner credential provisioning, real rights approval,
+authorized marketplace submission, financial reconciliation, or live capacity
+benchmark was performed. Publication remains held. The 24 acceptance areas retain
+their live-evidence requirements; these repairs do not waive them.
