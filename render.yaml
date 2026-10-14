@@ -1,9 +1,10 @@
 services:
   - type: web
     name: content-control-render-worker
-    runtime: node
-    buildCommand: npm ci --ignore-scripts
-    startCommand: npm start
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     autoDeploy: true
     envVars:

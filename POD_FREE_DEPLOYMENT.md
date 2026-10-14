@@ -15,8 +15,8 @@ and validation before jobs in those languages are enabled.
 
 After the container gate passes, the existing Render service can use Docker runtime
 with Dockerfile path `./Dockerfile`. Preserve its environment variables, domain,
-health path `/health`, free plan, and integrations. The existing Node configuration
-in render.yaml is deliberately unchanged until this runtime transition is verified.
+health path `/health`, free plan, and integrations. The checked-in render.yaml uses the same Docker runtime and explicit free plan.
+Runtime deployment success does not imply that the POD database is initialized.
 The dashboard source update triggers deployment; do not trigger a duplicate deploy.
 Rollback uses the previous Node runtime/build/start configuration.
 
