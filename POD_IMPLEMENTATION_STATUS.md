@@ -790,3 +790,39 @@ plan/spend change, credential operation, database retry or network expansion was
 performed. The known quota blocker does not require a repeated owner notification.
 All 24 live acceptance areas remain open and publication stays disabled.
 
+
+## Verified listing identity integration — 2026-10-14
+
+PR #90 passed on c32f3db325390322317ba0b3d503af383eae9d72 and merged as
+593a094a4dc2f0d47fdf2f3bbb3507c23a46494d. Hosted logs confirm 148 Node tests
+passed, zero failures/skips, including concurrent observations, one listing per
+account/job, atomic inbox rollback, independent account namespaces and refusal
+to migrate historical duplicate listing assignments. All 42 Python POD tests
+and the real PostgreSQL/Python durable production workflow also passed:
+https://github.com/wecreates/content-control/actions/runs/38646322404
+Combined main integration and wiring passed:
+https://github.com/wecreates/content-control/actions/runs/38646555308
+https://github.com/wecreates/content-control/actions/runs/38646555530
+Local focused checks passed 26 tests and JavaScript syntax validation. Two new
+regressions failed before the corresponding repair. Fixtures are not live accounts,
+provider permissions, verified listings, production migration or financial evidence.
+
+Concurrent main commit b643fb4e5aa76fc8201c3fd80481aa4678aa7f75 changed only the
+live deployment health report to FAIL. It was inspected and preserved during merge,
+not overwritten with a synthetic PASS. This report does not identify a runtime
+root cause by itself; the inspected app error-log interval returned no entries.
+
+Render attempted the merged repair in dep-db7vuo4s728c73fhoog0 and failed at
+2026-10-14T22:17:05.091221Z. Its 22:17:04.892584637Z log explicitly confirms
+exhausted workspace build pipeline minutes. PR #90 is NOT verified deployed.
+The individual deployment read still reports 5180c243198afb6dfb05ee8d2e14995d4e7b0750
+as live in dep-db7r0lh42hec739jiusg. No manual retry, plan/spend change, live database
+operation, network expansion, credential creation or publication enablement occurred.
+
+Protected database workflow 38627827260 remains waiting on the older
+7d45ff10c90a53721be0a1926eaffb52c7734c3f revision. That revision predates migration
+005 and cannot establish current schema readiness. When existing access and
+required approvals are actually available, the migration must use the current
+reviewed revision and all five checksums. No duplicate workflow was dispatched
+and the optional network-expansion path was not used. All 24 live acceptance
+areas remain open; this record does not claim continuous unattended execution.
