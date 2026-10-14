@@ -18,7 +18,7 @@
     "audio_assets_present": true,
     "audio_green": true,
     "candidate_converged": true,
-    "candidate_identity_consistent": false,
+    "candidate_identity_consistent": true,
     "caption_candidate_match": true,
     "caption_health_green": true,
     "dependency_security_clean": true,
@@ -28,7 +28,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": false,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -54,15 +54,12 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [
-    "live_deployment_green",
-    "candidate_identity_consistent"
-  ],
+  "failed_checks": [],
   "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "reconcile_or_refresh_live_deployment",
+  "repair_action": "none",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED",
+  "status": "GREEN",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
