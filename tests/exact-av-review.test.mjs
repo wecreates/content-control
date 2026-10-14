@@ -33,3 +33,15 @@ test('foreign repository, fork, PR, other branch, workflow and incomplete runs r
  for(const change of changes)assert.throws(()=>reviewSource({...sourceRun(),...change},sourceRequest),/Untrusted/);
 });
 test('format and run identifier cannot select arbitrary artifacts or inject paths',()=>{for(const format of ['../v2','constructor','unknown','short'])assert.throws(()=>reviewSource(sourceRun(),{...sourceRequest,format}));for(const runId of ['123\nmedia=evil','0','123/../../'])assert.throws(()=>reviewSource(sourceRun(),{...sourceRequest,runId}));});
+
+test('verified retained repair is allowed only by pinned run and commit',()=>{
+ const run={...sourceRun(),id:38574413400,head_branch:'codex/retained-caption-repair',path:'.github/workflows/repair-retained-captions.yml',event:'pull_request',conclusion:'success',head_sha:'dcb4775fe1891df8d8bcaab477bcb919e6771b50'};
+ const request={...sourceRequest,runId:'38574413400',format:'short'};
+ const out=reviewSource(run,request);
+ assert.equal(out.artifact,'caption-repair-short');
+ assert.equal(out.expected_sha256,'3cdb6a504fb72ee12cfe9fc451b68a16c1fb7adc978ae1f94836a540082e31fe');
+ assert.equal(out.publication_enabled,false);
+ assert.equal(reviewSource(run,{...request,format:'long'}).expected_sha256,'9ff0d9c74843f246307dabb82f19f61962369cf8aa2603c0b9bc1c0d803beeb1');
+ for(const delta of [{head_sha:'a'.repeat(40)},{conclusion:'failure'},{head_repository:{full_name:'fork/repo'}},{event:'push'}])assert.throws(()=>reviewSource({...run,...delta},request));
+ assert.throws(()=>reviewSource(run,{...request,format:'v2'}));
+});

@@ -6,8 +6,19 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {creativeHandoff,CREATIVE_CHECKS} from '../creative-handoff.js';
 
+const RETAINED_REPAIR = {
+ runId:'38574413400', sha:'dcb4775fe1891df8d8bcaab477bcb919e6771b50',
+ short:'3cdb6a504fb72ee12cfe9fc451b68a16c1fb7adc978ae1f94836a540082e31fe',
+ long:'9ff0d9c74843f246307dabb82f19f61962369cf8aa2603c0b9bc1c0d803beeb1',
+};
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function reviewSource(run, {repository, runId, format}) {
+ // This completed, independently recovered repair predates the main-branch workflow.
+ // Pin its run, commit and media bytes; do not generally trust PR artifacts.
+ if(String(runId)===RETAINED_REPAIR.runId){
+  if(!['short','long'].includes(format)||run?.id!==Number(runId)||run.repository?.full_name!==repository||repository!=='wecreates/content-control'||run.head_repository?.full_name!==repository||run.head_sha!==RETAINED_REPAIR.sha||run.path!=='.github/workflows/repair-retained-captions.yml'||run.event!=='pull_request'||run.status!=='completed'||run.conclusion!=='success')throw Error('Untrusted retained repair source');
+  return {workflow:run.path,artifact:`caption-repair-${format}`,media:'candidate.mp4',expected_sha256:RETAINED_REPAIR[format],run_id:String(runId),source_sha:run.head_sha,conclusion:run.conclusion,publication_enabled:false,production_approved:false};
+ }
  const sources = {
   short: {workflow:'.github/workflows/production-execution.yml',artifact:'production-state-short',media:'candidate.mp4'},
   long: {workflow:'.github/workflows/production-execution.yml',artifact:'production-state-long',media:'candidate.mp4'},

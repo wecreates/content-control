@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       production_run_id:
-        description: Existing completed production execution or V2 run containing exact candidate artifacts
+        description: Existing production, V2, or verified retained-caption repair run
         required: true
         type: string
       format:
@@ -77,7 +77,15 @@ jobs:
       - name: Prepare current exact audiovisual review
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
-        run: node scripts/exact_av_review.mjs prepare "$MEDIA_PATH" receipts/review-request.json
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {inspectMedia,prepareReview} from './scripts/exact_av_review.mjs';
+          const source=JSON.parse(readFileSync('receipts/source-provenance.json','utf8'));
+          const media=inspectMedia(process.env.MEDIA_PATH);
+          if(source.expected_sha256 && media.candidate_sha256!==source.expected_sha256)throw Error('Recovered repair media hash mismatch');
+          writeFileSync('receipts/review-request.json',JSON.stringify(prepareReview(media),null,2)+'\n');
+          JS
       - name: Build free local audiovisual inspection package
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}

@@ -1,17 +1,23 @@
 import {finding,receipt} from './model.mjs';
 const $=id=>document.getElementById(id), names=['candidate','reference'];
-const media={}, urls={}, versions={candidate:0,reference:0};let findings=[];
+const media={}, urls={}, workers={}, identities={}, versions={candidate:0,reference:0};let findings=[];
 const message=text=>{$('message').textContent=text;};
 const render=()=>{$('findings').replaceChildren(...findings.map(f=>{const li=document.createElement('li');li.textContent=`${f.category} · candidate ${f.candidate_sec.toFixed(2)}s / reference ${f.reference_sec.toFixed(2)}s\n${f.observation}\nImprove: ${f.repair}`;return li;}));};
 for(const name of names){
  $(name+'-file').onchange=()=>{
  const file=$(name+'-file').files[0];if(!file)return;
  if(findings.length&&!confirm('Replacing this video clears the current findings. Export them first if needed.')){$(name+'-file').value='';return;}
- findings=[];render();media[name]=null;versions[name]++;const version=versions[name];
+ findings=[];render();media[name]=null;identities[name]=null;workers[name]?.terminate();versions[name]++;const version=versions[name];
+ const worker=new Worker(new URL('./hash-worker.mjs',import.meta.url),{type:'module'});workers[name]=worker;
+ worker.onmessage=({data})=>{if(version!==versions[name])return;worker.terminate();
+ if(data.error){message('File identity could not be verified. Re-select the file or use a desktop browser. Export is blocked.');return;}
+ identities[name]=data.identity;if(media[name])Object.assign(media[name],data.identity);message('File identity verified locally. Review remains pending.');};
+ worker.onerror=()=>{worker.terminate();if(version===versions[name])message('File verification failed. Try a desktop browser. Export is blocked.');};
+ worker.postMessage(file);
  $(name).pause();if(urls[name])URL.revokeObjectURL(urls[name]);urls[name]=URL.createObjectURL(file);
  $(name+'-status').textContent='Loading…';const v=$(name);
  v.onloadedmetadata=()=>{if(version!==versions[name])return;if(!Number.isFinite(v.duration)||v.duration<=0||!v.videoWidth){media[name]=null;$(name+'-status').textContent='Unsupported video. Try an MP4 with H.264 video and AAC audio.';return;}
- media[name]={filename:file.name,byte_length:file.size,duration_seconds:v.duration,width:v.videoWidth,height:v.videoHeight,identity_verified:false};
+ media[name]={filename:file.name,byte_length:file.size,duration_seconds:v.duration,width:v.videoWidth,height:v.videoHeight,identity_verified:false,...(identities[name]||{})};
  $(name+'-status').textContent=`${file.name} · ${v.duration.toFixed(2)}s · ${v.videoWidth} × ${v.videoHeight}`;};
  v.onerror=()=>{media[name]=null;$(name+'-status').textContent='Cannot play this file. Try an MP4 with H.264 video and AAC audio.';};v.src=urls[name];v.load();};
 }
