@@ -80,7 +80,7 @@ export class PodDB {
  async acceptReview(jobId,qaEnvelope){
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   return this.tx(async c=>{
-   const job=(await c.query("SELECT * FROM pod_production_queue WHERE id=$1 AND state='qa_failed' AND reason_code='REVIEW_REQUIRED' FOR UPDATE",[jobId])).rows[0];
+   const job=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
    if(!job)throw Error('REVIEW_NOT_PENDING');
    enforceQA(qa,job.manifest.package_sha256,job.manifest.template_sha256);
    await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
