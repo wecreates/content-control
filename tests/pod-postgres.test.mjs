@@ -97,5 +97,31 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=ANY($1::uuid[])',[listingJobs])).rows[0].n,1);
+  // Re-screening an existing concept must atomically revoke its readiness, keep
+  // the unique-concept budget unchanged and emit one durable denial event.
+  const intakeKey='intake-test-key-'.repeat(4),business=crypto.randomUUID(),fingerprint=crypto.randomUUID(),canonicalId=crypto.randomUUID();
+  const intake=(state,id=canonicalId,businessId=business)=>{
+   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:intake',issued_at_ms:Date.now()-1,
+    expires_at_ms:Date.now()+60000,concept_id:id,business_id:businessId,fingerprint,rights_state:state});
+   return {id,businessId,intakeKey,envelope:{payload,signature:crypto.createHmac('sha256',intakeKey).update(payload).digest('hex')}};
+  };
+  await db.registerIntake(intake('PASS'));
+  const readyId=crypto.randomUUID();
+  await pool.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state)
+   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'qa_passed')`,[readyId,canonicalId,account,crypto.randomUUID()]);
+  assert.ok((await db.listReady()).some(row=>row.id===readyId));
+  await Promise.all(Array.from({length:4},()=>db.registerIntake(intake('UNKNOWN',crypto.randomUUID()))));
+  assert.deepEqual((await pool.query('SELECT rights_state,permanently_unpublished FROM pod_concepts WHERE id=$1',[canonicalId])).rows[0],
+   {rights_state:'UNKNOWN',permanently_unpublished:true});
+  assert.ok(!(await db.listReady()).some(row=>row.id===readyId));
+  assert.equal(await db.claimPublish(account,45),null);
+  assert.deepEqual(await db.registerIntake(intake('PASS',crypto.randomUUID())),{id:canonicalId});
+  assert.deepEqual(await db.registerIntake(intake('FAIL',crypto.randomUUID())),{id:canonicalId});
+  await assert.rejects(db.registerIntake(intake('UNKNOWN',crypto.randomUUID(),'different-business')),/INTAKE_FINGERPRINT_CONFLICT/);
+  assert.equal((await pool.query('SELECT used FROM pod_daily_concept_budget WHERE business_id=$1',[business])).rows[0].used,1);
+  const denied=(await pool.query("SELECT payload FROM pod_events WHERE kind='pod.concept.rights_blocked' AND payload->>'concept_id'=$1",[canonicalId])).rows;
+  assert.equal(denied.length,1);assert.equal(denied[0].payload.rights_state,'UNKNOWN');
+  assert.equal(denied[0].payload.publication_enabled,false);assert.match(denied[0].payload.intake_sha256,/^[a-f0-9]{64}$/);
  }finally{await pool.end();}
 });
+

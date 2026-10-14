@@ -437,3 +437,25 @@ code merges are live until an actual deployment succeeds. No production database
 retry was attempted; useful independent implementation and hosted verification
 can continue without expanding network access or buying infrastructure.
 
+## Duplicate-intake rights revocation — 2026-10-14
+
+Three failing local regressions confirmed that fingerprint deduplication returned
+an existing PASS concept without applying fresh FAIL/UNKNOWN evidence. It also
+returned an existing concept ID across business boundaries. Intake now locks the
+matched concept, rejects cross-business conflicts and atomically tombstones a
+previously publishable concept on adverse evidence. One pod.concept.rights_blocked
+outbox event records the evidence payload hash and scope. The existing Money
+Factory inbox accepts this pod-prefixed observation without treating it as revenue.
+
+Later PASS or different-denial retries cannot alter/revive a permanent tombstone;
+retries do not consume the unique-concept budget or duplicate the denial event.
+Five local regression tests pass. The PostgreSQL test now exercises four
+concurrent denial retries, loss of ready-list/publish-claim eligibility, exact
+budget/event counts and cross-business denial. Its CI outcome is separate from
+local test evidence. Existing in-flight external submissions are not claimed to
+be atomically cancelable by this transaction.
+
+Render build quota is still exhausted, so merging this runtime repair is not
+proof of deployment. Publication remains held; no live database operation or
+rights clearance was performed.
+
