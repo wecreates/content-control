@@ -495,3 +495,32 @@ All 24 live acceptance areas remain open. No production database administration
 was retried without a changed access path. Publication flags, network scope,
 credentials and resource plans were unchanged. Independent code/test work may
 continue; the repository records session-bounded work, not an always-on worker.
+
+## Market-observation evidence integrity — 2026-10-14
+
+Seven of eight new local regression tests failed against the existing intake:
+malformed rank proof was accepted, proof references need not exist, the rank
+proof hash was discarded, and conflicting observations with the same identity
+were silently reported as non-inserted. The repair validates/persists rank proof,
+requires source/image/rank artifacts, returns the canonical ID for exact retries,
+and rejects conflicts across scope, economics, rank, proof and observation JSON.
+
+Additive migration 003 adds the rank-proof reference and immutable market rows.
+Existing 001/002 checksums are unchanged; old missing evidence is not fabricated
+or backfilled. Preflight blocks until all three migrations match. The migration
+has NOT been applied to production. The API contract is documented in
+integrations/pod/MARKET_EVIDENCE.md. Collection permission remains an independent
+upstream requirement; stored references do not prove truth, demand or rights.
+
+All 31 focused local Node tests pass after the repair, including the eight new
+market tests and missing-migration preflight test. The PostgreSQL integration
+test now exercises four concurrent identical imports, retained rank proof,
+conflict rejection, missing evidence, append-only protection and repeat migration.
+Hosted CI must independently verify that database behavior before merge.
+
+Current heads and open PRs were inspected before work; unrelated video changes
+were preserved. Render still reports failed builds and no new successful POD
+deployment. No repeat database-access attempt, live credential, resource plan,
+network rule or publication flag change was made. All 24 live acceptance areas
+remain open; this code repair does not satisfy their real-world evidence needs.
+

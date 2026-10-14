@@ -10,6 +10,7 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
+import {recordMarketObservation} from '../integrations/pod/market.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -122,6 +123,32 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const denied=(await pool.query("SELECT payload FROM pod_events WHERE kind='pod.concept.rights_blocked' AND payload->>'concept_id'=$1",[canonicalId])).rows;
   assert.equal(denied.length,1);assert.equal(denied[0].payload.rights_state,'UNKNOWN');
   assert.equal(denied[0].payload.publication_enabled,false);assert.match(denied[0].payload.intake_sha256,/^[a-f0-9]{64}$/);
+  // Synthetic permitted-source fixtures exercise durability and contention,
+  // not actual marketplace trends, rank claims or source authorization.
+  const marketStore=new ArtifactStore(db),marketKey='synthetic-market-key-'.repeat(3);
+  const proofs=await Promise.all(['source','image','rank'].map(kind=>marketStore.put(Buffer.from(JSON.stringify({fixture:kind,id:crypto.randomUUID()})),'application/json')));
+  const observation={platform:'redbubble',source_url:`https://example.org/fixture/${crypto.randomUUID()}`,
+   country:'US',category:'shirt',observed_at:new Date().toISOString(),collection_authorized:true,
+   source_sha256:proofs[0],image_sha256:proofs[1],rank_evidence_sha256:proofs[2],
+   observed_rank:2,price_minor:1200,currency:'USD',observations:{tags:['synthetic'],layout:{color:'blue'}}};
+  const signedMarket=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:market',
+   issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
+   return {payload,signature:crypto.createHmac('sha256',marketKey).update(payload).digest('hex')};};
+  const observations=await Promise.all(Array.from({length:4},()=>recordMarketObservation(db,signedMarket(observation),marketKey)));
+  assert.equal(observations.filter(r=>r.inserted).length,1);
+  assert.equal(new Set(observations.map(r=>r.id)).size,1);
+  const marketId=observations[0].id;
+  assert.equal((await pool.query('SELECT rank_evidence_sha256 FROM pod_market_intelligence WHERE id=$1',[marketId])).rows[0].rank_evidence_sha256,proofs[2]);
+  for(const change of [{price_minor:999},{country:'CA'},{rank_evidence_sha256:proofs[0]},{observations:{tags:['changed']}}]){
+   await assert.rejects(recordMarketObservation(db,signedMarket({...observation,...change}),marketKey),/MARKET_REPLAY_CONFLICT/);
+  }
+  await assert.rejects(recordMarketObservation(db,signedMarket({...observation,source_sha256:'f'.repeat(64)}),marketKey),/MARKET_EVIDENCE_MISSING/);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_market_intelligence WHERE source_url=$1',[observation.source_url])).rows[0].n,1);
+  await assert.rejects(pool.query("UPDATE pod_market_intelligence SET observed_rank=1 WHERE id=$1",[marketId]),/POD_APPEND_ONLY/);
+  await assert.rejects(pool.query('DELETE FROM pod_market_intelligence WHERE id=$1',[marketId]),/POD_APPEND_ONLY/);
+  // Re-applying all checksum-guarded migrations preserves the immutable record.
+  await migrate(pool,'pod_test_runtime');
+  assert.equal((await pool.query('SELECT observed_rank FROM pod_market_intelligence WHERE id=$1',[marketId])).rows[0].observed_rank,2);
  }finally{await pool.end();}
 });
 

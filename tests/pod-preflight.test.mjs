@@ -15,7 +15,7 @@ function fixture(overrides={}){
   if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
   if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
   if(sql.includes("relname='cyzor_social_vault'"))return {rows:[{access:overrides.vault??false,column_access:false,owns:false}]};
-  if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql'].map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
+  if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql','003_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
   return {rows:[]};},release(){released=true;}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,closed:()=>released&&ended};
 }
@@ -37,4 +37,8 @@ test('database errors redact details and always release connection',async()=>{
 test('expiry and enabled publishing block deployment preflight',async()=>{
  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:'invalid',PUBLICATION_ENABLED:'true'}});
  for(const code of ['STORAGE_LIFETIME','PUBLICATION_DISABLED'])assert.equal(r.checks.find(c=>c.code===code).status,'BLOCKED');
+});
+test('missing market evidence migration blocks preflight',async()=>{
+ const f=fixture({missingMigration:'003_pod.sql'}),r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'BLOCKED');
 });
