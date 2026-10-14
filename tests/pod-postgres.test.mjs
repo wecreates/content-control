@@ -11,6 +11,7 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 import {recordMarketObservation} from '../integrations/pod/market.mjs';
+import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -173,6 +174,39 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(await db.assertPublishable(releaseClaim),true);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[releaseConcept]);
   await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  // Synthetic ledger evidence verifies replay accounting only, never real income.
+  const financeKey='synthetic-finance-key-'.repeat(3);
+  const financial={verified:true,job_id:releaseJob,provider:'redbubble',provider_event_id:crypto.randomUUID(),
+   authority_event_id:crypto.randomUUID(),kind:'royalty',amount_minor:1234,currency:'USD',
+   occurred_at:new Date().toISOString(),evidence_sha256:proofs[0]};
+  const signedFinancial=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:finance',
+   issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
+   return {payload,signature:crypto.createHmac('sha256',financeKey).update(payload).digest('hex')};};
+  const receipts=await Promise.all(Array.from({length:4},()=>recordFinancialEvent(db,signedFinancial(financial),financeKey)));
+  assert.equal(receipts.filter(r=>!r.duplicate).length,1);assert.equal(new Set(receipts.map(r=>r.id)).size,1);
+  const reattributions=await Promise.allSettled(Array.from({length:4},()=>recordFinancialEvent(db,
+   signedFinancial({...financial,provider_event_id:crypto.randomUUID()}),financeKey)));
+  assert.ok(reattributions.every(r=>r.status==='rejected'&&r.reason.message==='FINANCIAL_REPLAY_CONFLICT'));
+  for(const change of [{provider:'teepublic',provider_event_id:crypto.randomUUID()},
+   {authority_event_id:crypto.randomUUID()},{job_id:job,provider_event_id:crypto.randomUUID()}]){
+   await assert.rejects(recordFinancialEvent(db,signedFinancial({...financial,...change}),financeKey),/FINANCIAL_REPLAY_CONFLICT/);
+  }
+  const fee={...financial,provider_event_id:crypto.randomUUID(),authority_event_id:crypto.randomUUID(),kind:'fee',amount_minor:-234};
+  await recordFinancialEvent(db,signedFinancial(fee),financeKey);
+  const total=(await pool.query('SELECT count(*)::int AS n,sum(amount_minor)::text AS total FROM pod_financial_events WHERE job_id=$1',[releaseJob])).rows[0];
+  assert.deepEqual(total,{n:2,total:'1000'});
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.finance.verified'",[releaseJob])).rows[0].n,2);
+  await assert.rejects(pool.query('UPDATE pod_financial_events SET amount_minor=99999 WHERE id=$1',[receipts[0].id]),/POD_APPEND_ONLY/);
+  // A legacy duplicate set must cause the additive index migration to fail,
+  // not silently discard history. Use a temporary table, never production data.
+  const historical=await pool.connect();
+  try{
+   await historical.query('BEGIN');
+   await historical.query('CREATE TEMP TABLE pod_financial_events(authority_event_id text) ON COMMIT DROP');
+   await historical.query("INSERT INTO pod_financial_events VALUES('same-fixture'),('same-fixture')");
+   const sql=await (await import('node:fs/promises')).readFile(new URL('../migrations/004_pod.sql',import.meta.url),'utf8');
+   await assert.rejects(historical.query(sql),error=>error.code==='23505');
+  }finally{await historical.query('ROLLBACK');historical.release();}
  }finally{await pool.end();}
 });
 
