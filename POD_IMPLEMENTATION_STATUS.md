@@ -265,3 +265,32 @@ clearance, revenue, or capacity acceptance was introduced. The 24-area registry
 remains open. Existing known database access limitations were not retried without
 a changed authorized path. Verification used available local tests and hosted CI,
 not a claimed continuously running self-hosted worker.
+
+
+## Offline market-source authorization repair — 2026-10-14
+
+An eight-test reproduction found that --html bypassed the source policy entirely:
+missing/denied authorization, substituted snapshot bytes and substituted source
+URLs could still produce PASS intake evidence. Text-mode reading also normalized
+CRLF, so source_sha256 did not identify the actual imported bytes.
+
+Both live and offline intake now authenticate pod:source-policy and require an
+approved HTTPS host before parsing. Offline imports additionally require the signed
+policy's snapshot object to bind source_url and sha256 to the exact imported bytes.
+Reads stop at 2 MiB plus one byte; hashes preserve original UTF-8/newline bytes.
+Host allowlists must be arrays, not substring-matched strings. The signed intake
+result records collection_authorized and a digest of the verified source policy.
+No source permission is created by these fields; an actual authority must supply
+current authorization. No marketplace is contacted by the regression suite.
+
+Local Python 3.12 verification: 13 tests passed, including expired-policy rejection,
+network-free online-contract checks and a real CLI process proving unauthorized
+imports return exit 2 and sign only UNKNOWN/permanently-unpublished evidence.
+The new suite is included in the existing POD integration gate. Hosted CI and
+merged deployment remain separate verification steps.
+
+At inspection, Render reported ac150167a06e94b340df0866e6700615d61adeee live in
+dep-db7prr782drs73da7av0 (finished 2026-10-14T15:22:52.010942Z). Previous combined
+POD main gate 38588431426 passed. No production database retry, platform access,
+rights clearance, publication enablement or live acceptance was performed.
+
