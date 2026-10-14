@@ -17,6 +17,10 @@ on:
         default: ''
   pull_request:
     paths:
+      - 'comparison-ui/**'
+      - 'tests/comparison-ui.test.mjs'
+      - 'tests/comparison-browser.mjs'
+      - 'scripts/build_offline_comparison.mjs'
       - 'scripts/exact_av_review.mjs'
       - 'scripts/offline_av_review.py'
       - 'tests/test_offline_av_review.py'
@@ -34,10 +38,37 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
-      - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs
+      - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: python -m unittest discover -s tests -p test_offline_av_review.py
       - run: python -m unittest discover -s tests -p test_review_packets.py
+  browser-transport:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm install --prefix /tmp/browser-qa --no-audit --no-fund playwright@1.64.1 esbuild@0.25.0
+      - run: /tmp/browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: ffmpeg -v error -f lavfi -i testsrc2=size=360x640:rate=24 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 5 -c:v libx264 -pix_fmt yuv420p -c:a aac /tmp/comparison-fixture.mp4
+      - run: node tests/comparison-browser.mjs /tmp/comparison-fixture.mp4
+        env:
+          BROWSER_QA_MODULES: /tmp/browser-qa
+      - run: node scripts/build_offline_comparison.mjs
+        env:
+          BROWSER_QA_MODULES: /tmp/browser-qa
+      - run: node tests/comparison-browser.mjs /tmp/comparison-fixture.mp4 receipts/Content-Control-Offline-Comparison.html
+        env:
+          BROWSER_QA_MODULES: /tmp/browser-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: comparison-browser-evidence
+          path: |
+            receipts/comparison-*
+            receipts/Content-Control-Offline-Comparison.html
   prepare-or-validate:
     if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false && github.ref == 'refs/heads/main'
     needs: tests
