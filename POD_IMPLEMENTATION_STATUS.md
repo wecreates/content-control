@@ -593,3 +593,27 @@ acceptance areas remain open for real deployment, rights/account/template/review
 adapter, financial, recovery and measured-capacity evidence. Continue independent
 authorized work from current heads; this is not a claim of continuous worker uptime.
 
+## Financial authority identity protection — 2026-10-14
+
+Three new regressions exposed a reconciliation integrity gap: financial events
+were deduplicated only by provider/provider-event ID, so the same upstream event
+could be counted again under a new provider identity. Non-string/blank identities
+and future-dated occurrences were also accepted. Intake now requires both
+provider and upstream identities to resolve to one exact immutable record.
+Conflicts fail closed; exact retries emit no second outbox observation.
+
+Additive migration 004 makes authority_event_id unique. Historical duplicates
+fail migration for explicit ledger reconciliation; no financial history is
+deleted, modified or assigned fabricated upstream IDs. Preflight requires all
+four checksums. FINANCIAL_EVIDENCE.md defines line-level identity, compound
+statements and the distinction between recorded net amounts and verified profit.
+
+All 27 focused local Node tests pass, including the seven financial regressions
+and missing-migration startup test. The PostgreSQL test adds concurrent exact
+replays, conflicting reattributions, immutable totals/outbox counts and a temporary
+historical-duplicate fixture that must reject migration 004. Its hosted CI outcome
+must be verified before merge; production migration/deployment is not established.
+No production database retry, network change, credential, paid resource, live
+financial event or publication permission was introduced. All 24 live gates remain
+open; the already-reported deployment quota blocker has not changed.
+
