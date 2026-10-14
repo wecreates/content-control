@@ -730,3 +730,37 @@ no approval or duplicate dispatch was attempted. Render listed deployment
 A queued deployment is not a successful rollout or evidence of restored build
 quota. Production database and all 24 live acceptance areas remain unverified.
 
+
+## Verified outbox pagination integration — 2026-10-14
+
+PR #88 merged as 419a1e544206adf8aae92df692fd0de0825927b2 after its full gate
+passed on 854c882885624692892c20006b2efb6646138941. Hosted logs verify 145 Node
+tests passed with zero failures/skips, including the actual PostgreSQL 45-event
+pagination fixture, plus 42 Python POD tests and the PostgreSQL/Python durable
+production workflow:
+https://github.com/wecreates/content-control/actions/runs/38638831168
+Combined-main integration and System Wiring Audit also passed:
+https://github.com/wecreates/content-control/actions/runs/38638995691
+https://github.com/wecreates/content-control/actions/runs/38638995743
+
+Eight focused local outbox tests and 12 current Money Factory HTTP/authority/grant
+tests passed. The precision regression failed before the repair. Money Factory's
+121d7ddecda71dec5c386b89ce6905d4c440cd23 bridge and inbox were inspected; no receiver
+contract change is needed. These are synthetic test results, not a deployed
+cross-repository round trip, approved marketplace interaction or verified profit.
+
+Render still reports dep-db7r0lh42hec739jiusg / 5180c243198afb6dfb05ee8d2e14995d4e7b0750
+as live. The c9c3b094 deployment remains queued in dep-db7tsqslt5cc73e1054g;
+no deployment of PR #88 was verified. The public status URL could not be read
+through the available lookup tool, so live endpoint/flag state was not independently
+reverified. No runtime setting was changed, and publication must remain disabled.
+The protected database workflow remains waiting; no duplicate dispatch, approval,
+production database access or network widening was attempted. Its optional temporary
+network-window path is outside this run's no-network-expansion authorization.
+
+All 24 live acceptance areas remain open. Existing code and these CI results do
+not replace production migration/recovery, live Money Factory mounting, authorized
+accounts/sources/rights/templates/reviewers/adapters, actual financial statements,
+measured capacity or controlled-launch acceptance. No paid resource, new credential,
+archive key, claimed revenue or publication was created. This records bounded
+repository work, not a continuously running self-hosted worker.
