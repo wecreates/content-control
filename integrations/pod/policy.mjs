@@ -35,7 +35,8 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  }else if(grant.production_permission!==true&&grant.publication_permission!==true)throw Error('PRODUCTION_PERMISSION_REQUIRED');
  if(!Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
  if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
- if(publishing&&(job.mode!=='LAUNCH'||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
+ if(publishing&&(job.mode!=='LAUNCH'||typeof job.package_sha256!=='string'||
+  !/^[a-f0-9]{64}$/.test(job.package_sha256)||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
  if(job.task_sha256!==undefined&&(!/^[a-f0-9]{64}$/.test(job.task_sha256)||grant.task_sha256!==job.task_sha256))throw Error('TASK_SCOPE_MISMATCH');
  const facts=grant.verified_facts&&typeof grant.verified_facts==='object'?grant.verified_facts:{};
  // Downstream metadata comes ONLY from the signed upstream allowlist, never arbitrary client text.
@@ -54,6 +55,8 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
 }
 export const REQUIRED_QA=['text','geometry','resolution','rights','competitive','print_preflight'];
 export function enforceQA(qa,packageHash,templateHash) {
- if(qa?.verdict!=='PASS'||qa.package_sha256!==packageHash||qa.template_sha256!==templateHash||
+ if(typeof packageHash!=='string'||!/^[a-f0-9]{64}$/.test(packageHash)||
+  typeof templateHash!=='string'||!/^[a-f0-9]{64}$/.test(templateHash)||
+  qa?.verdict!=='PASS'||qa.package_sha256!==packageHash||qa.template_sha256!==templateHash||
   !REQUIRED_QA.every(k=>qa.checks?.[k]===true)) throw Error('QA_BLOCKED');
 }
