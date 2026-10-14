@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,20 +54,12 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [
-    "runtime_integrity_manifest"
-  ],
-  "integrity_failures": [
-    {
-      "actual": "a4bb40c068dfd747921fbf5eda9d98c44a8f819c1ed4b558e785956fd1aa6965",
-      "expected": "a72ce54a11d1775e49d48ceeae72f98278818df8537cfdfe025b36b30d4731a8",
-      "path": "server-lowmem.js"
-    }
-  ],
+  "failed_checks": [],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "route_smallest_failed_invariant",
+  "repair_action": "none",
   "schema_version": 1,
-  "status": "REPAIR_REQUIRED",
+  "status": "GREEN",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
