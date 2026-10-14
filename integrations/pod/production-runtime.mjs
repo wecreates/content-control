@@ -5,6 +5,8 @@ import {produceOnce} from '../../scripts/pod_production_worker.mjs';
 // Publication is deliberately absent from this internal production lifecycle.
 export function startProductionRuntime({db,production,env=process.env,pythonReady=true,onError=()=>{}}){
  let status='DISABLED',loop=Promise.resolve();
+ let cycles=0,consecutiveFailures=0,lastStartedAt=null,lastCompletedAt=null,lastErrorCode=null,lastResult=null;
+ const reportError=error=>{consecutiveFailures++;status='RETRYING';lastErrorCode=error.code;try{onError(error);}catch{}};
  const controller=new AbortController();
  if(env.POD_PRODUCTION_ENABLED==='true'){
   if(!pythonReady){status='BLOCKED_PYTHON_RUNTIME';}
@@ -15,8 +17,17 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
    status='RUNNING';
    loop=runPodWorker({db,signal:controller.signal,pollMs:15000,
     produce:()=>produceOnce({db,...production,env,upstreamKey:env.POD_UPSTREAM_KEY,signal:controller.signal}),
-    publish:async()=>{},onError}).catch(()=>{status='FAILED';onError({code:'POD_WORKER_FAILED'});});
+    publish:async()=>{},onError:reportError,onCycle:event=>{
+     if(event.phase==='started'){lastStartedAt=new Date().toISOString();return;}
+     cycles++;lastCompletedAt=new Date().toISOString();
+     lastResult=['IDLE','STOPPED','BLOCKED','REVIEW_REQUIRED','QA_PASSED','QA_FAILED'].includes(event.result?.status)?event.result.status:'UNKNOWN';
+     if(lastResult==='BLOCKED'){reportError({code:'POD_PRODUCTION_BLOCKED'});}
+     else{consecutiveFailures=0;lastErrorCode=null;status='RUNNING';}
+    }}).catch(()=>{reportError({code:'POD_WORKER_FAILED'});status='FAILED';});
   }
  }
- return {status:()=>status,stop:async()=>{controller.abort();await loop;if(status==='RUNNING')status='STOPPED';}};
+ return {status:()=>status,health:()=>({status,cycles,consecutive_failures:consecutiveFailures,
+  last_started_at:lastStartedAt,last_completed_at:lastCompletedAt,last_error_code:lastErrorCode,last_result:lastResult}),
+  stop:async()=>{controller.abort();await loop;if(['RUNNING','RETRYING'].includes(status))status='STOPPED';}};
 }
+
