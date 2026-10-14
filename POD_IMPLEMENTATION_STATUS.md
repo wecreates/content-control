@@ -684,3 +684,27 @@ remain open. No archive is uploaded, retention provider chosen, credential inven
 publication enabled or paid resource created. See ARTIFACT_RECOVERY.md for the
 manual contract and precise remaining acceptance evidence.
 
+## Verified artifact recovery integration — 2026-10-14
+
+PR #81 passed and merged as e2dc3bccafc373704c6ec3550a5eb98e8c0a5a53.
+Its hosted logs confirm 143 Node tests passed with zero failures/skips, including
+the two-database restricted-role recovery drill. The PostgreSQL/Python durable
+production workflow also passed:
+https://github.com/wecreates/content-control/actions/runs/38625816846
+Additional local verification passed 42 focused Node tests, 38 Python POD tests
+and syntax checks. No production database access, archive export, key creation,
+retention upload or platform action was performed by these synthetic drills.
+
+The Render deployment detail still reported 5180c243198afb6dfb05ee8d2e14995d4e7b0750
+as live in dep-db7r0lh42hec739jiusg. Deployment of the recovery change is not
+verified. The known quota/access limitations remain unchanged. All 24 live
+acceptance areas remain open; full queue/ledger backup, real independent artifact
+retention and production restoration have not been replaced with a passing unit
+test. Publication remains held, and no spending/network/credential changes occurred.
+
+Combined main POD integration and System Wiring Audit passed for e2dc3bcc:
+https://github.com/wecreates/content-control/actions/runs/38626107567
+https://github.com/wecreates/content-control/actions/runs/38626107542
+This verifies the merged code in CI, not a new live deployment or completion of
+the 24-area checklist.
+
