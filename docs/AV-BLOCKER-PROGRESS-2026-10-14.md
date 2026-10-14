@@ -19,7 +19,7 @@ These are PR44's encoded title-clearance/end-card/caption fixes, not PR46's olde
 
 ## Free reviewer and reference access investigation
 
-The source of https://huggingface.co/spaces/Qwen/Qwen3-Omni-Demo was inspected. Its format_history uploads input media to object storage and generates public URLs. Unpublished candidates were not submitted. This endpoint was not accepted as a private review solution. No paid calls were made.
+The source of https://huggingface.co/spaces/Qwen/Qwen3-Omni-Demo was inspected. Its format_history uploads input media to object storage and generates signed URLs expiring after 600 seconds (despite the get_public_url method name). Unpublished candidates were not submitted. No full audiovisual review through this third-party service is established. No paid calls were made.
 
 Public retrieval of the existing authorized benchmark https://www.youtube.com/watch?v=1OFJM4STSpI returned metadata (57 seconds), but actual video/audio transfers returned 195-byte HTML Site Unavailable responses, rejected by FFmpeg. No full competitor review is claimed. No login or access-control workaround was attempted.
 

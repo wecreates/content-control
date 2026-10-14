@@ -13,11 +13,11 @@ const server=createServer((req,res)=>{
  try{res.setHeader('Content-Type',({'.mjs':'text/javascript','.js':'text/javascript','.html':'text/html'})[extname(p)]||'text/html');res.end(readFileSync(p===root||p===root+'/'?root+'/index.html':p));}catch{res.writeHead(404).end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
-let browser;
+let browser, page;
 try{
  browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,acceptDownloads:true});
- const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`http://127.0.0.1:${server.address().port}/compare`);
  for(const name of ['candidate','reference'])await page.locator('#'+name+'-file').setInputFiles(process.argv[2]);
  await page.waitForFunction(()=>['candidate','reference'].every(n=>document.querySelector('#'+n+'-status').dataset.verified==='true'&&document.querySelector('#'+n).readyState>=2));
@@ -35,4 +35,10 @@ try{
  assert.deepEqual(errors,[]);
  mkdirSync('receipts',{recursive:true});writeFileSync('receipts/comparison-browser.json',JSON.stringify({status:'PASS',scope:'Chromium mobile viewport, local file selection, hashing, playback advancement, audio routing flags, notes and export. Fixture only; no physical Android or creative acceptance.',publication_enabled:false},null,2));
  console.log('PASS: mobile viewport comparison transport; no creative or device certification');
+ }catch(error){
+ mkdirSync('receipts',{recursive:true});
+ if(page){await page.screenshot({path:'receipts/comparison-failure.png',fullPage:true});
+ const layout=await page.evaluate(()=>({viewport:{width:innerWidth,height:innerHeight,scrollY,visual:visualViewport?.height},elements:['observation','repair','add','export'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect();return {id,x:r.x,y:r.y,width:r.width,height:r.height,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML};})}));
+ console.log(JSON.stringify(layout));writeFileSync('receipts/comparison-failure.json',JSON.stringify(layout,null,2));}
+ throw error;
 }finally{await browser?.close();await new Promise(r=>server.close(r));}
