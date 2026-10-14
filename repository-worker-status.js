@@ -1,3 +1,4 @@
+import {additionalToolStatus} from './repository-additional-status.js';
 // Read only public execution evidence from the existing Money Factory repository.
 const repository = 'wecreates/Money-factory';
 const raw = `https://raw.githubusercontent.com/${repository}/main/integrations/`;
@@ -34,6 +35,7 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
       status:'HOSTED_CPU_NOT_VERIFIED', production_ready:false, publication_enabled:false, paid_generation_enabled:false,
       persistent_worker_configured:false,
       status_scope:'Hosted CPU verification only; GPU generation, provider workflows and persistent project state remain unverified',
+      additional_tools:await additionalToolStatus(registry,{json,now}),
       repositories:registry.repositories.map(e=>({id:e.id,order:e.order,revision:e.revision,capability:e.capability,
         required_for_production:e.required_for_production!==false,
         runtime_status:e.id==='wan21'?(e.required_for_production===false?'OPTIONAL_DISABLED':'BLOCKED_CUDA_AND_MODEL_REQUIRED'):'HOSTED_EXECUTION_NOT_VERIFIED',

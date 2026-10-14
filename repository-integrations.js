@@ -22,7 +22,9 @@ export function createRepositoryIntegrationRouter({moneyFactoryRoot=process.env.
       const registry=JSON.parse(await fs.readFile(path.join(moneyFactoryRoot,'integrations/repositories.json'),'utf8'));
       await fs.access(path.join(moneyFactoryRoot,'integrations/run.py'));
       if(registry.schema_version!==1||!Array.isArray(registry.repositories)||registry.repositories.length!==7)throw Error('invalid registry');
-      res.json({...base,status:'WORKER_SOURCE_CONFIGURED',repositories:registry.repositories.map(entry=>({
+      res.json({...base,status:'WORKER_SOURCE_CONFIGURED',additional_tools:[...(registry.engineering_tools||[]),...(registry.media_tools||[]),...(registry.agent_tools||[])].map(entry=>({
+        id:entry.id,revision:entry.revision,capability:entry.capability,runtime_status:'LIVE_EXECUTION_NOT_CHECKED_BY_THIS_ENDPOINT',verified_operations:[]
+      })),repositories:registry.repositories.map(entry=>({
         id:entry.id,order:entry.order,revision:entry.revision,capability:entry.capability,
         runtime_status:'LIVE_EXECUTION_NOT_CHECKED_BY_THIS_ENDPOINT'
       }))});

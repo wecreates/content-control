@@ -4,12 +4,57 @@ import hashlib
 import json
 import shutil
 import subprocess
+import wave
 from pathlib import Path
 
 
 def sha(path):
     with open(path, 'rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def review_packets(output, source_hash, segment_seconds=10):
+    """Separate existing sampled frames and exact PCM intervals for media ingestion.
+
+    This is a transport workaround, not a claim of continuous motion review.
+    Audio chunks partition the decoded final mix without gaps or resampling.
+    """
+    output = Path(output)
+    if not isinstance(segment_seconds, int) or not 1 <= segment_seconds <= 60:
+        raise ValueError('Packet duration must be 1..60 integer seconds')
+    directory = output / 'packets'
+    directory.mkdir()
+    frames = sorted((output / 'frames').glob('*.jpg'))
+    packets = []
+    with wave.open(str(output / 'final-mix.wav'), 'rb') as source:
+        params = source.getparams()
+        rate, total = source.getframerate(), source.getnframes()
+        if total <= 0:
+            raise ValueError('Empty decoded audio')
+        for start in range(0, total, rate * segment_seconds):
+            end = min(total, start + rate * segment_seconds)
+            name = f'packets/{len(packets):04d}.wav'
+            data = source.readframes(end - start)
+            if len(data) != (end - start) * params.nchannels * params.sampwidth:
+                raise ValueError('Truncated decoded audio')
+            with wave.open(str(output / name), 'wb') as target:
+                target.setparams(params)
+                target.writeframes(data)
+            packets.append({'audio': name, 'audio_sha256': sha(output / name),
+                'start_sample': start, 'end_sample_exclusive': end,
+                'start_sec': start / rate, 'end_sec': end / rate,
+                'frames': [{'path': str(p.relative_to(output)), 'sha256': sha(p),
+                    'nominal_filter_time_sec': i}
+                    for i, p in enumerate(frames) if start / rate <= i < end / rate],
+                'status': 'NOT_REVIEWED'})
+    result = {'schema_version': 1, 'candidate_sha256': source_hash,
+        'sample_rate': rate, 'audio_samples': total, 'packets': packets,
+        'frame_scope': '1 FPS filter samples with nominal output times, not exact source-frame timestamps or continuous motion.',
+        'prompt': 'Inspect the attached images and listen to the attached WAV. First identify actual visible details and transcribe actual speech without using filenames or supplied scripts. Report INACCESSIBLE for any unreadable modality. Record observations within this packet interval. Never certify continuous motion from sampled images or a whole video from one packet.',
+        'full_video_review': False, 'full_audio_review': False,
+        'production_approved': False, 'publication_enabled': False}
+    (output / 'review-packets.json').write_text(json.dumps(result, indent=2) + '\n')
+    return result
 
 
 def build(video, output):
@@ -47,6 +92,7 @@ def build(video, output):
     (output / 'audio-diagnostics.log').write_text(audio.stderr)
     if audio.returncode or sha(source) != source_hash:
         raise ValueError('Audio analysis failed or source mutated')
+    review_packets(output, source_hash)
     receipt = {'schema_version': 1, 'candidate_sha256': source_hash,
         'duration_seconds': float(probe['format']['duration']), 'technical_decode': 'PASS',
         'status': 'REVIEW_PENDING', 'full_video_review': False, 'full_audio_review': False,
@@ -76,3 +122,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     result = build(args.video, args.out)
     print(json.dumps({k: result[k] for k in ['candidate_sha256', 'technical_decode', 'status', 'publication_enabled']}))
+

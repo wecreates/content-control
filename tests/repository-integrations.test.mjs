@@ -31,12 +31,16 @@ test('source configuration does not imply runtime health or expose private paths
     await fs.mkdir(path.join(root,'integrations'));
     await fs.writeFile(path.join(root,'integrations/run.py'),'# worker fixture');
     await fs.writeFile(path.join(root,'integrations/repositories.json'),JSON.stringify({schema_version:1,
+      agent_tools:[{id:'youtube-agent-skill',revision:'abc',path:'/private/skill',runtime_status:'CLAIMED_READY'}],
       repositories:Array.from({length:7},(_,i)=>({id:`tool-${i}`,order:i+1,revision:'abc',capability:'test',
         token:'DO_NOT_EXPOSE',path:'/private/worker',runtime_status:'ready'}))}));
     const {status,body}=await request(root);
     assert.equal(status,200);
     assert.equal(body.production_ready,false);
     assert.equal(body.repositories[0].runtime_status,'LIVE_EXECUTION_NOT_CHECKED_BY_THIS_ENDPOINT');
+    assert.equal(body.additional_tools[0].id,'youtube-agent-skill');
+    assert.equal(body.additional_tools[0].runtime_status,'LIVE_EXECUTION_NOT_CHECKED_BY_THIS_ENDPOINT');
+    assert.deepEqual(body.additional_tools[0].verified_operations,[]);
     assert.ok(!JSON.stringify(body).includes('DO_NOT_EXPOSE'));
     assert.ok(!JSON.stringify(body).includes('/private/worker'));
     await fs.writeFile(path.join(root,'integrations/repositories.json'),'{}');
