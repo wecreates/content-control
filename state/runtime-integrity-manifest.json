@@ -83,8 +83,8 @@
       "sha256": "1a709f31a504b2514eac01e54dfde60f5831855ca64039eaf125c7db7cbcaaf2"
     },
     "render.yaml": {
-      "bytes": 495,
-      "sha256": "89eb65c503992f6b14557a33915b8bf319a8d1fbcd2bf8fc9e5217cc23fb8d91"
+      "bytes": 496,
+      "sha256": "de14fffe4f36795ba3856e87fca8e0eec05d4bd052f9857f48f824c391bf9a2a"
     },
     "requirements-free-qa.lock.txt": {
       "bytes": 424,
