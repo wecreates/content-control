@@ -136,3 +136,35 @@ enabling production. Node-only deployment success does not prove Python readines
 The service/database/publication flags remain disabled until live configuration
 and approved evidence exist. This change does not create an upstream approval,
 rights clearance, reviewer identity, marketplace adapter or database credential.
+
+
+## Verified repair evidence — 2026-10-14
+
+- PR #52 merged startup preflight enforcement and redacted production-worker
+  heartbeat/failure health. Missing database isolation, migration checksums,
+  verified TLS, bridge configuration, storage lifetime or required distinct keys
+  blocks the POD lane. Optional POD failure does not terminate unrelated services.
+  CI passed: https://github.com/wecreates/content-control/actions/runs/38575680901
+- PR #53 merged an atomic rights recheck before independent QA acceptance.
+  A concept that is no longer PASS or is permanently unpublished cannot enter
+  qa_passed through a signed review. PostgreSQL 18 regression passed with the full
+  integration gate:
+  https://github.com/wecreates/content-control/actions/runs/38575814945
+- Render reported deployment dep-db7okjunha3s73as3tug live at
+  2026-10-14T13:59:32.279091Z for merge
+  fa6330a30b5c56b8d072cb3d4b44b96251abdfda, containing both repairs.
+  This verifies code deployment only. The read-only public status fetch was
+  unavailable through the available retrieval tool; no authenticated POD runtime,
+  database migration, production job, or marketplace acceptance is asserted.
+- Money Factory PR #13 adds the bounded signed-event HTTP receiver around the
+  existing transactional inbox. Local Node verification passed 12 tests; its
+  cross-repository CI and merge status must be checked separately. Mounting it in
+  the deployed authority remains outstanding.
+  https://github.com/wecreates/Money-factory/pull/13
+
+Production database administration was not retried because no changed authorized
+connection path was established. No publication flag, readiness ceiling, rights
+clearance, paid infrastructure, or marketplace permission was changed. The 24-area
+completion registry remains open. Current runtime work is performed during active
+authorized execution sessions; a continuously running self-hosted agent has not
+been installed or verified.
