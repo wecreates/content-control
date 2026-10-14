@@ -1,7 +1,7 @@
 name: POD integration gates
 on:
   pull_request:
-    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod.py','.github/workflows/pod-integration.yml','server-lowmem.js']
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
   workflow_dispatch:
 permissions:
   contents: read
