@@ -130,9 +130,15 @@ def build_captions(ccsd,transcription,audio):
         if len(fresh)>3:raise ValueError('Normalized group with deferred words exceeds short phrase capacity')
         first=indices[0]
         boundary=first and (expected[first-1]['scene_id']!=source['scene_id'] or expected[first-1]['speaker']!=source['speaker'] or expected[first-1]['original'].endswith(('.', '?', '!')))
-        if pending or not phrase or len(phrase)+len(fresh)>3 or boundary:
+        if pending or not phrase or boundary:
             phrase=[]
             phrase_indices=[]
+        # Keep recently spoken context when the window fills. Resetting every
+        # third word made brief words (including the 'two' in 'two hundred ten')
+        # vanish after a single frame. Never reveal future words or cross roles.
+        while len(phrase)+len(fresh)>3:
+            phrase.pop(0)
+            phrase_indices.pop(0)
         phrase.extend(fresh)
         phrase_indices.extend(pending+indices)
         cues.append({'start':start,'end':end,'text':' '.join(phrase),'word':' '.join(fresh),'speaker':source['speaker'],'scene_id':source['scene_id'],'observed_word_index':i,'source_word_indices':pending+indices,'observed_token_indices':observed_indices,'display_word_indices':list(phrase_indices),'deferred_zero_duration_indices':list(pending)})
@@ -140,7 +146,7 @@ def build_captions(ccsd,transcription,audio):
         previous_end=end
     if pending:raise ValueError('Terminal zero-duration word lacks a following observed interval')
     visibility=enforce_frame_visibility(cues,expected,ccsd.get('fps',24),duration)
-    return {'frame_visibility':visibility,'schema_version':1,'status':'PASS','publication_enabled':False,'source_audio_sha256':digest,'timing_source':'faster-whisper observed words; no timing interpolation','display_mode':'progressive_phrase_max_3_words','cues':cues,'scope':'Exact normalized word alignment and observed timing bounds; does not certify ASR alignment accuracy or rendered readability'}
+    return {'frame_visibility':visibility,'schema_version':1,'status':'PASS','publication_enabled':False,'source_audio_sha256':digest,'timing_source':'faster-whisper observed words; no timing interpolation','display_mode':'rolling_phrase_max_3_words','cues':cues,'scope':'Exact normalized word alignment and observed timing bounds; does not certify ASR alignment accuracy or rendered readability'}
 
 
 def main():

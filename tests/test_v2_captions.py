@@ -16,6 +16,20 @@ class ObservedCaptionsTests(unittest.TestCase):
    self.assertEqual(cue['start'],self.report['words'][i]['start']);self.assertEqual(cue['end'],self.report['words'][i]['end']);self.assertLessEqual(len(cue['text'].split()),3)
    if i<6:self.assertNotIn('boss',cue['text'])
   self.assertEqual(' '.join(c['word'] for c in r['cues']),'Why is my wallet the final boss?')
+ def test_brief_financial_word_survives_phrase_window_boundary(self):
+  self.cc['scenes'][0]['audio']['dialogue'][0]['text']='Premium rewards: two hundred ten.'
+  self.report['words']=[{'word':w,'start':a,'end':b} for w,a,b in [
+   ('Premium',0,.4),('rewards:',.4,.795),('two',.795,.875),
+   ('hundred',.875,1.055),('ten.',1.055,1.455)]]
+  original=copy.deepcopy(self.report)
+  r=self.run_build()
+  self.assertEqual(self.report,original)
+  self.assertEqual(r['cues'][3]['text'],'rewards: two hundred')
+  self.assertEqual(r['cues'][4]['text'],'two hundred ten.')
+  visible=sum(n for c,n in zip(r['cues'],r['frame_visibility']['cue_frame_counts']) if 2 in c['display_word_indices'])
+  self.assertGreaterEqual(visible,12)
+  for c,w in zip(r['cues'],self.report['words']):
+   self.assertEqual((c['start'],c['end']),(w['start'],w['end']))
  def test_discrepancy_missing_times_and_overlap_block(self):
   for mutate in [lambda r:r['words'].pop(),lambda r:r['words'][2].update(word='their'),lambda r:r['words'][2].update(start=None),lambda r:r['words'][2].update(start=.1),lambda r:r['words'][2].update(end=9)]:
    saved=copy.deepcopy(self.report);mutate(self.report)
@@ -45,7 +59,7 @@ class ObservedCaptionsTests(unittest.TestCase):
   self.cc={'fps':24,'publication_enabled':False,'scenes':[{'id':'a','start':0,'end':30,'audio':{'dialogue':[{'speaker':'points_monk','text':'Plot twist: the winning card.'}]}}]}
   self.report['words']=[{'word':w,'start':a,'end':b} for w,a,b in [('Plot',25.8,26.32),('twist:',26.32,26.68),('the',27.10,27.12),('winning',27.12,27.3),('card.',27.3,27.7)]]
   r=self.run_build();cue=r['cues'][3]
-  self.assertEqual(cue['text'],'the winning');self.assertEqual((cue['start'],cue['end']),(27.12,27.3));self.assertEqual(cue['deferred_frame_invisible_indices'],[2])
+  self.assertEqual(cue['text'],'twist: the winning');self.assertEqual((cue['start'],cue['end']),(27.12,27.3));self.assertEqual(cue['deferred_frame_invisible_indices'],[2])
   self.assertEqual(r['frame_visibility']['visible_word_count'],5);self.assertEqual(r['frame_visibility']['cue_frame_counts'][2],0)
   self.assertEqual(' '.join(c['word'] for c in r['cues']),'Plot twist: the winning card.')
  def test_frame_invisible_terminal_and_cross_scene_block(self):
