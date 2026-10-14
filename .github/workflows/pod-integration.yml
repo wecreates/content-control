@@ -1,8 +1,14 @@
 name: POD integration gates
 on:
   pull_request:
-    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
+  push:
+    branches: [main]
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
   workflow_dispatch:
+concurrency:
+  group: pod-integration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

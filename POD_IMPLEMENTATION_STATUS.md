@@ -198,3 +198,25 @@ No production migration, owner credential provisioning, real rights approval,
 authorized marketplace submission, financial reconciliation, or live capacity
 benchmark was performed. Publication remains held. The 24 acceptance areas retain
 their live-evidence requirements; these repairs do not waive them.
+
+
+## Process-stage verification and merged-head gate — 2026-10-14
+
+PR #57 passed the full Node/PostgreSQL/Python/OCR/PDF integration gate and merged:
+https://github.com/wecreates/content-control/actions/runs/38583251828
+
+PR #61 also passed and merged. It rejects PASS output left by a nonzero QA
+process, and abort/timeout/output-limit/spawn errors no longer fall through to
+reading a leftover QA file. Ordinary nonzero exits may retain only FAIL evidence;
+the database still authenticates every persisted envelope:
+https://github.com/wecreates/content-control/actions/runs/38583749928
+
+Concurrent PR #58 added explicit default-off database-role provisioning tooling.
+Its merge is not evidence of production credentials or connectivity. No live
+database retry was made without a changed authorized connection path.
+
+The POD integration workflow now also runs on relevant main-branch changes.
+This checks combinations of concurrently merged work; PR-specific passing results
+alone do not establish that the final combined head passes. Older runs on the same
+PR/ref are cancelled when superseded. These gates use disposable PostgreSQL and
+synthetic signed fixtures, never live publication or production credentials.
