@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import {checkPodPython} from './python-runtime.mjs';
 import {createStoredTaskResolvers} from './task-resolver.mjs';
 import {startProductionRuntime} from './production-runtime.mjs';
+import {startOutboxRuntime} from './outbox-runtime.mjs';
 export async function initializePodService({env=process.env,authorize,production}={}){
  let db,pool;
  const state={status:'DISABLED',publication_enabled:false};
@@ -28,7 +29,9 @@ export async function initializePodService({env=process.env,authorize,production
  }
  const pythonReady=env.POD_PRODUCTION_ENABLED==='true'&&db?await checkPodPython(env):true;
  const worker=startProductionRuntime({db,pythonReady,production:production||(db?createStoredTaskResolvers(db):undefined),env});
- const status=()=>({...state,production_status:worker.status()});
+ const outbox=startOutboxRuntime({db,env});
+ const status=()=>({...state,production_status:worker.status(),outbox:outbox.status()});
  return {status,router:createPodRouter({db,authorize:authorize||operationalAuth(env.INTERNAL_OPERATIONS_KEY),env,status}),
-  stop:async()=>{await worker.stop();if(db)await db.close();}};
+  stop:async()=>{await Promise.all([worker.stop(),outbox.stop()]);if(db)await db.close();}};
 }
+
