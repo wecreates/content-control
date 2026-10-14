@@ -23,8 +23,20 @@ export class PodDB {
   return this.tx(async c=>{
    // Serialize fingerprint deduplication so duplicate retries never consume unique-concept budget.
    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[intake.fingerprint]);
-   const found=await c.query('SELECT id FROM pod_concepts WHERE fingerprint=$1',[intake.fingerprint]);
-   if(found.rows.length)return found.rows[0];
+   const found=await c.query('SELECT id,business_id,rights_state,permanently_unpublished FROM pod_concepts WHERE fingerprint=$1 FOR UPDATE',[intake.fingerprint]);
+   if(found.rows.length){
+    const existing=found.rows[0];
+    if(existing.business_id!==businessId)throw Error('INTAKE_FINGERPRINT_CONFLICT');
+    // Deduplication saves concept budget, never discards newly adverse evidence.
+    // Preserve an existing tombstone exactly; even later PASS cannot revive it.
+    if(intake.rights_state!=='PASS'&&!existing.permanently_unpublished){
+     await c.query('UPDATE pod_concepts SET rights_state=$2,permanently_unpublished=true WHERE id=$1',[existing.id,intake.rights_state]);
+     await c.query('INSERT INTO pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.concept.rights_blocked',
+      {concept_id:existing.id,business_id:businessId,rights_state:intake.rights_state,
+       intake_sha256:crypto.createHash('sha256').update(envelope.payload).digest('hex'),publication_enabled:false}]);
+    }
+    return {id:existing.id};
+   }
    await c.query("INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,(now() AT TIME ZONE 'UTC')::date) ON CONFLICT DO NOTHING",[businessId]);
    const budget=await c.query("UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date AND used<$2 RETURNING used",[businessId,dailyLimit]);
    if(!budget.rows.length)throw Error('DAILY_CONCEPT_LIMIT');
@@ -147,4 +159,5 @@ export class PodDB {
  });}
  async close(){await this.pool.end();}
 }
+
 
