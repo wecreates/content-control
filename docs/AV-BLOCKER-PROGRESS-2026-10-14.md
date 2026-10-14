@@ -8,6 +8,8 @@ Publication and creative approval remain disabled.
 - Comparison hashing now reads at most 1 MiB per slice in its worker, replacing the full-file memory allocation. Vendored MIT @noble/hashes 2.0.1 computes SHA-256 without outbound requests. Chunk-boundary and incomplete-read regressions pass; both actual latest MP4 hashes match.
 - Browser transport CI covers a 360x800 viewport, local video input, hashing, playback advancement, audio mute routing, timestamp notes, overflow and export. This is a synthetic fixture test, not physical Android or creative acceptance.
 
+The first actual browser test exposed grid overflow: intrinsic video-panel widths expanded a 360px viewport to 449px and prevented a normal click on Add timestamped finding. Grid tracks now use minmax(0,1fr) and sections permit shrinking. The regression checks against the requested 360px width, not the expanded innerWidth.
+
 ## Actual media checked this session
 
 Latest repair archives were downloaded and matched against GitHub ZIP digests with passing CRCs. An initially truncated Short transfer was rejected and successfully retrieved again.
@@ -19,7 +21,7 @@ These are PR44's encoded title-clearance/end-card/caption fixes, not PR46's olde
 
 ## Free reviewer and reference access investigation
 
-The source of https://huggingface.co/spaces/Qwen/Qwen3-Omni-Demo was inspected. Its format_history uploads input media to object storage and generates signed URLs expiring after 600 seconds (despite the get_public_url method name). Unpublished candidates were not submitted. No full audiovisual review through this third-party service is established. No paid calls were made.
+The source of https://huggingface.co/spaces/Qwen/Qwen3-Omni-Demo was inspected. Its format_history uploads input media to object storage and generates signed URLs expiring after 600 seconds (despite the get_public_url method name). Unpublished candidates were not submitted. No full audiovisual review through this third-party service is established. A subsequent synthetic-only two-second blue-screen/880Hz-tone access challenge reached the demo but returned an upstream Gradio AppError without a model review. No user media was uploaded and no paid calls were made.
 
 Public retrieval of the existing authorized benchmark https://www.youtube.com/watch?v=1OFJM4STSpI returned metadata (57 seconds), but actual video/audio transfers returned 195-byte HTML Site Unavailable responses, rejected by FFmpeg. No full competitor review is claimed. No login or access-control workaround was attempted.
 

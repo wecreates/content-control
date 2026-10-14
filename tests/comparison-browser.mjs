@@ -21,6 +21,7 @@ try{
  await page.goto(`http://127.0.0.1:${server.address().port}/compare`);
  for(const name of ['candidate','reference'])await page.locator('#'+name+'-file').setInputFiles(process.argv[2]);
  await page.waitForFunction(()=>['candidate','reference'].every(n=>document.querySelector('#'+n+'-status').dataset.verified==='true'&&document.querySelector('#'+n).readyState>=2));
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=360),true,'Video panels must fit the actual phone width');
  await page.click('#play');
  await page.waitForFunction(()=>document.querySelector('#candidate').currentTime>0.2&&document.querySelector('#reference').currentTime>0.2);
  await page.click('#pause');
