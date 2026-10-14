@@ -18,11 +18,13 @@ def build(video, output):
     # Never overwrite originals, previous evidence, or aliases.
     if output.exists():
         raise ValueError('Output must be a new directory')
+    source_hash = sha(source)
     probe = json.loads(subprocess.check_output([
-        'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(source)]))
+        'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(source)], timeout=30))
+    if sha(source) != source_hash:
+        raise ValueError('Source mutated during media probe')
     if not all(any(s.get('codec_type') == kind for s in probe['streams']) for kind in ['video', 'audio']):
         raise ValueError('Both video and audio are required')
-    source_hash = sha(source)
     output.mkdir(parents=True)
     shutil.copyfile(source, output / 'candidate.mp4')
     if sha(output / 'candidate.mp4') != source_hash:
