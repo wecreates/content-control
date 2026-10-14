@@ -524,3 +524,34 @@ deployment. No repeat database-access attempt, live credential, resource plan,
 network rule or publication flag change was made. All 24 live acceptance areas
 remain open; this code repair does not satisfy their real-world evidence needs.
 
+## Final local publication eligibility — 2026-10-14
+
+Four new regressions reproduced an external-side-effect risk in the executor:
+after claiming a job, remote artifact/grant work could outlive the lease or
+overlap an account suspension/rights tombstone, yet the adapter was still called.
+The executor now requires a final database check after grant resolution. The
+check binds job/account/platform/fencing token, publishing state, active account
+and current non-tombstoned rights. It holds shared row locks only for the short
+transaction and evaluates lease expiry using clock_timestamp after lock waits.
+
+Grant and QA validity, cancellation and publication kill switches are checked
+after that last awaited operation. Missing/false eligibility results fail closed.
+No transaction or database lock is held across the external adapter call. This
+narrows the local race; it does not promise atomic revocation across independent
+systems. Provider idempotency/readback and ambiguous-outcome recovery remain
+mandatory. Publication stays disabled in the real environment.
+
+The four failing regressions now pass; an additional test verifies cancellation
+and kill-switch changes during the final database wait. The PostgreSQL suite adds
+actual lease expiry, fencing/scope mismatch, account disablement, ambiguous state
+and permanent-rights denial checks. Hosted CI is required before merging these
+database-path changes. No marketplace adapter, account or clearance is invented.
+
+Market-evidence PR #76 passed and merged at
+dd9eab9f469759bf233fd9ba906c3a823a3689dc. Its hosted logs confirm 121 Node tests
+passed with zero skips and the real PostgreSQL/Python durable workflow passed:
+https://github.com/wecreates/content-control/actions/runs/38622442650
+That gate also exercised migration 003 and concurrent market observations in
+disposable CI PostgreSQL, not the production database. Live deployment and the
+24 acceptance areas remain unverified; no Render quota workaround was attempted.
+

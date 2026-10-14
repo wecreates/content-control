@@ -144,6 +144,18 @@ export class PodDB {
   await c.query("UPDATE pod_accounts SET next_allowed_at=now()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
   return r.rows[0];
  });}
+ async assertPublishable(job){return this.tx(async c=>{
+  const current=(await c.query(`SELECT q.id FROM pod_production_queue q
+   JOIN pod_concepts p ON p.id=q.concept_id JOIN pod_accounts a ON a.id=q.account_id AND a.platform=q.platform
+   WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
+   AND q.state='publishing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished AND a.state='ACTIVE'
+   FOR SHARE OF q,p,a`,[job.id,job.fencing_token,job.account_id,job.platform])).rows[0];
+  if(!current)throw Error('LOCAL_RELEASE_BLOCKED');
+  // Evaluate the live clock after row-lock waits, not transaction-start now().
+  const lease=(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+  if(lease?.valid!==true)throw Error('LOCAL_RELEASE_BLOCKED');
+  return true;
+ });}
  async finish(job,state,receipt={},reason=null){
   if(!['blocked','ambiguous','submitted'].includes(state))throw Error('INVALID_FINISH');
   return this.tx(async c=>{
