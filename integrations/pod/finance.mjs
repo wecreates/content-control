@@ -19,7 +19,7 @@ export async function recordFinancialEvent(db,envelope,key){
    const matches=(await c.query('SELECT * FROM pod_financial_events WHERE (provider=$1 AND provider_event_id=$2) OR authority_event_id=$3',[e.provider,e.provider_event_id,e.authority_event_id])).rows;
    const previous=matches[0];
    if(matches.length!==1||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
-    String(previous.amount_minor)!==String(e.amount_minor)||Date.parse(previous.occurred_at)!==Date.parse(e.occurred_at))throw Error('FINANCIAL_REPLAY_CONFLICT');
+    String(previous.amount_minor)!==String(e.amount_minor)||new Date(previous.occurred_at).getTime()!==Date.parse(e.occurred_at))throw Error('FINANCIAL_REPLAY_CONFLICT');
    return {id:previous.id,duplicate:true};
   }
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.finance.verified',{financial_event_id:id,authority_event_id:e.authority_event_id}]);

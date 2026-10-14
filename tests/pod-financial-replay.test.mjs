@@ -51,6 +51,11 @@ test('exact refreshed replay returns its immutable ID without another outbox eve
  assert.deepEqual(await recordFinancialEvent(f.db,sign(e),key),{id:'original',duplicate:true});
  assert.equal(f.outbox.length,0);
 });
+test('PostgreSQL Date values preserve milliseconds on exact replay',async()=>{
+ const e={...event(),occurred_at:'2026-01-01T00:00:00.123Z'};
+ const f=fixture([{...e,id:'millisecond-event',occurred_at:new Date(e.occurred_at)}]);
+ assert.deepEqual(await recordFinancialEvent(f.db,sign(e),key),{id:'millisecond-event',duplicate:true});
+});
 test('conflict on two distinct identities fails closed instead of selecting either',async()=>{
  const e=event(),f=fixture([{...e,id:'one',authority_event_id:'other-authority'},
   {...e,id:'two',provider_event_id:'other-provider-event'}]);

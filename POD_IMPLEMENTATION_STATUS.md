@@ -608,7 +608,7 @@ deleted, modified or assigned fabricated upstream IDs. Preflight requires all
 four checksums. FINANCIAL_EVIDENCE.md defines line-level identity, compound
 statements and the distinction between recorded net amounts and verified profit.
 
-All 27 focused local Node tests pass, including the seven financial regressions
+All 28 focused local Node tests pass, including the eight financial regressions
 and missing-migration startup test. The PostgreSQL test adds concurrent exact
 replays, conflicting reattributions, immutable totals/outbox counts and a temporary
 historical-duplicate fixture that must reject migration 004. Its hosted CI outcome
@@ -616,4 +616,11 @@ must be verified before merge; production migration/deployment is not establishe
 No production database retry, network change, credential, paid resource, live
 financial event or publication permission was introduced. All 24 live gates remain
 open; the already-reported deployment quota blocker has not changed.
+
+The first hosted financial gate (38624046354) correctly failed: PostgreSQL returns
+timestamps as Date objects, and Date.parse(Date) discarded milliseconds during
+exact replay comparison. A new local millisecond fixture reproduced the failure.
+Comparison now uses the Date object's epoch milliseconds without string coercion;
+the fixture passes. That failed revision was not merged. A fresh hosted gate must
+verify the corrected commit and real concurrent financial tests before merge.
 
