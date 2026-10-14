@@ -12,6 +12,7 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {createStoredTaskResolvers} from '../integrations/pod/task-resolver.mjs';
+import {metrics} from '../integrations/pod/metrics.mjs';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 const key='fixture-key-only-'.repeat(4);
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
@@ -42,6 +43,7 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const result=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
   assert.equal(result.status,'REVIEW_REQUIRED');
   const saved=await db.reviewPackage(id);assert.equal(saved.reason_code,'REVIEW_REQUIRED');
+  const summary=await metrics(db);assert.equal(summary.incident_count,'0');assert.ok(summary.queues.some(q=>q.state==='review_required')); 
   for(const sha of Object.values(saved.manifest.files))assert.equal(hash((await store.get(sha)).body),sha);
   const qa=sign({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:saved.manifest.package_sha256,template_sha256:saved.manifest.template_sha256,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true]))});
   await assert.rejects(db.acceptReview(id,sign({...JSON.parse(qa.payload),package_sha256:'0'.repeat(64)})),/QA_BLOCKED/);
