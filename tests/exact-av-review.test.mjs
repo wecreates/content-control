@@ -45,3 +45,12 @@ test('verified retained repair is allowed only by pinned run and commit',()=>{
  for(const delta of [{head_sha:'a'.repeat(40)},{conclusion:'failure'},{head_repository:{full_name:'fork/repo'}},{event:'push'}])assert.throws(()=>reviewSource({...run,...delta},request));
  assert.throws(()=>reviewSource(run,{...request,format:'v2'}));
 });
+
+test('latest visual repairs require their own pinned source and media hashes',()=>{
+ const run={...sourceRun(),id:38583366384,path:'.github/workflows/retained-visual-repair.yml',event:'pull_request',conclusion:'success',head_sha:'b8f22d0be0cd0e2196a892eea07a904898dc43eb'};
+ const request={...sourceRequest,runId:'38583366384',format:'long'};
+ assert.equal(reviewSource(run,request).artifact,'visual-repair-long');
+ assert.equal(reviewSource(run,request).expected_sha256,'41a479dda53d9b926b299e3769493b9082d450e71c4e1e65e12bf9732d649766');
+ assert.throws(()=>reviewSource({...run,head_sha:'dcb4775fe1891df8d8bcaab477bcb919e6771b50'},request));
+ assert.throws(()=>reviewSource({...run,path:'.github/workflows/repair-retained-captions.yml'},request));
+});

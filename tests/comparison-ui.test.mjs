@@ -16,14 +16,14 @@ test('reference links reject credentials and executable URLs',()=>{
  for(const url of ['javascript:alert(1)','https://user:secret@example.com'])assert.throws(()=>receipt({identity_verified:true,sha256:'a'.repeat(64)}, {identity_verified:true,sha256:'b'.repeat(64)}, [],url));
 });
 
-import {fileIdentity} from '../comparison-ui/hash.mjs';
-import {webcrypto,createHash} from 'node:crypto';
-test('file identity matches exact bytes and fails without secure crypto',async()=>{
+import {fileIdentity,HASH_CHUNK_BYTES} from '../comparison-ui/hash.mjs';
+import {createHash} from 'node:crypto';
+test('file identity matches exact bytes',async()=>{
  const file=new Blob(['exact media bytes']);
- const identity=await fileIdentity(file,webcrypto);
+ const identity=await fileIdentity(file);
  assert.equal(identity.sha256,createHash('sha256').update('exact media bytes').digest('hex'));
  assert.equal(identity.byte_length,file.size);
- await assert.rejects(()=>fileIdentity(file,{}),/HTTPS/);
+
 });
 test('export refuses missing or failed file identity',()=>{
  assert.throws(()=>receipt({}, {}, [],''),/hashes/);
@@ -32,4 +32,14 @@ test('export refuses missing or failed file identity',()=>{
 });
 test('invalid duration cannot produce time-bound findings',()=>{
  for(const duration of [undefined,NaN,Infinity,0])assert.throws(()=>finding({time:0,duration},{time:0,duration:1},'Hook','Observation','Repair'));
+});
+
+test('large files are read in bounded chunks and match native SHA-256',async()=>{
+ const data=Buffer.alloc(HASH_CHUNK_BYTES*3+63,17);const slices=[];
+ const file={size:data.length,slice(start,end){slices.push(end-start);return new Blob([data.subarray(start,end)]);},arrayBuffer(){throw Error('Whole-file allocation forbidden');}};
+ assert.equal((await fileIdentity(file)).sha256,createHash('sha256').update(data).digest('hex'));
+ assert.equal(slices.length,4);assert.ok(slices.every(n=>n<=HASH_CHUNK_BYTES));
+});
+test('partial reads never produce a verified identity',async()=>{
+ await assert.rejects(()=>fileIdentity({size:10,slice(){return new Blob(['short']);}}),/Incomplete/);
 });
