@@ -60,6 +60,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true]))});
   const qa={payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
+  assert.ok((await db.listReady()).some(row=>row.id===job));
   await assert.rejects(db.completeProduction(claimed,manifest,qa),/LEASE_LOST/);
   const events=(await pool.query("SELECT kind,payload FROM pod_events WHERE job_id=$1",[job])).rows;
   assert.equal(events.length,1);assert.equal(events[0].kind,'pod.production.qa_passed');
@@ -69,10 +70,16 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
   assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
   await assert.rejects(db.finish(claims.find(Boolean),'published'),/INVALID_FINISH/);
-  await pool.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED' WHERE id=$1",[job]);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
+  assert.ok(!(await db.listReady()).some(row=>row.id===job));
+  await pool.query("UPDATE pod_production_queue SET state='processing',lease_until=now()+interval '5 minutes' WHERE id=$1",[job]);
+  await assert.rejects(db.completeProduction(claimed,manifest,qa),/RIGHTS_BLOCKED/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[job])).rows[0].state,'processing');
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[job])).rows[0].n,1);
+  await pool.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED' WHERE id=$1",[job]);
   await assert.rejects(db.acceptReview(job,qa),/REVIEW_NOT_PENDING/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[job])).rows[0].state,'qa_failed');
   await assert.rejects(pool.query("UPDATE pod_concepts SET rights_state='PASS',permanently_unpublished=false WHERE id=$1",[concept]),/POD_PERMANENTLY_UNPUBLISHED/);
  }finally{await pool.end();}
 });
+
