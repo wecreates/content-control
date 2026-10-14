@@ -337,3 +337,34 @@ database isolation/recovery, current rights/account/source/template approvals,
 authorized adapters, financial statements or measured production capacity.
 Continue only from verified current heads and actual authorized evidence.
 
+## Production template-provenance enforcement — 2026-10-14
+
+The official-template validator existed but was not called by the production
+worker. A signed yet unverified or wrong-scope template could reach generation
+and the durable review hold. Eight of nine focused tests failed before repair.
+The worker now checks template provenance before launching any Python stage,
+including the KDP interior's separately signed pod:interior-template record.
+Missing interiors fail before cover generation rather than after creating files.
+
+Stored task descriptors now require templateScope: {product, country}. Product is
+a nonempty identifier of at most 128 characters; country is an uppercase two-letter
+code. Scope is bound by the existing task_sha256 in the Money Factory grant and
+brief. The resolver copies it from the stored descriptor; platform comes from the
+authorized job. Both cover and interior records must match that scope and attest
+official_source_verified=true with a valid credential-free HTTPS source URL,
+source SHA-256 and a non-future observation time. The existing bounded signed
+evidence lifetime still applies. Python retains detailed geometry/font/page checks.
+
+Legacy descriptors without scope now fail closed. Supply a new descriptor hash
+and a fresh authoritative grant; do not mutate hash-addressed bytes, auto-fill
+country/product, invent official provenance or re-sign stale evidence. Internal
+rendering helpers and synthetic CI dimensions are not marketplace approvals.
+
+Local verification passed 13 focused Node tests for pre-generation blocking,
+scope validation, resolver restoration and preservation of QA process-failure
+handling. The real PostgreSQL/Python test also now checks that rejected template
+provenance/scope leaves a failed job with no manifest or additional output blobs;
+its hosted CI result must be verified before claiming that integration passed.
+Publication, database permissions, paid infrastructure and live acceptance are
+unchanged. The existing 24-area checklist still requires actual provider evidence.
+
