@@ -15,9 +15,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  try{
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
-  const release=verifyEnvelope(await resolveGrant(job),upstreamKey,'content-control:pod');
   const manifest=await verifyArtifacts(job); // Must hash all files and validate current template/rights/budget.
   if(!manifest||manifest.package_sha256!==job.manifest?.package_sha256||manifest.release_checks_passed!==true)throw Error('ARTIFACT_VERIFICATION_FAILED');
+  signal?.throwIfAborted();
+  // Artifact checks may outlive a grant or overlap revocation. Fetch authority
+  // afterward, with cancellation, and leave no awaited work before submit.
+  const release=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
   const brief=enforceBrief(release,{...job.brief,package_sha256:manifest.package_sha256},{publishing:true});
   const qa=verifyEnvelope(job.qa_envelope,qaKey,'content-control:pod:qa');
   enforceQA(qa,manifest.package_sha256,manifest.template_sha256);
@@ -40,3 +43,4 @@ export async function runPublisher(options){
   try{await pause(15000,undefined,{signal:options.signal});}catch(e){if(e.name!=='AbortError')throw e;}
  }
 }
+

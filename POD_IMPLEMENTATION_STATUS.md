@@ -368,3 +368,20 @@ its hosted CI result must be verified before claiming that integration passed.
 Publication, database permissions, paid infrastructure and live acceptance are
 unchanged. The existing 24-area checklist still requires actual provider evidence.
 
+## Release-authority timing repair — 2026-10-14
+
+Two synthetic adapter regressions demonstrated that publication could proceed
+using a grant fetched before artifact checks even when that grant expired or the
+authority revoked permission during those checks. The executor now completes
+artifact verification first, checks cancellation, then requests and authenticates
+the current scoped grant. Cancellation is forwarded to the grant resolver. QA,
+release scope and local kill switches are checked without awaited work between
+that fresh grant and adapter invocation. This narrows the local race; it does not
+claim atomic revocation across independent external systems.
+
+Four release-freshness tests failed before repair and pass afterward. The combined
+focused Node suite passed 25 tests. Enabled flags appear only in isolated fake-
+adapter tests; no live environment, external marketplace, listing or credential
+was changed. Real release still requires an authorized adapter and explicit
+publication approval, neither of which is supplied by this repair.
+
