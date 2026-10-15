@@ -7,7 +7,7 @@ import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
- router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'");next();});
+ router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
  router.get('/dashboard',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.html',import.meta.url))));
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
  router.get('/status',(_req,res)=>res.json({...status?.(),publication_enabled:false,publication_requested:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
@@ -22,6 +22,10 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  });
  router.get('/jobs/:id/package',async(req,res)=>{
   try{res.json(await db.reviewPackage(req.params.id));}catch{res.status(404).json({error:'PACKAGE_UNAVAILABLE'});}
+ });
+ router.get('/jobs',async(req,res)=>{
+  try{res.json({jobs:await db.listOperationsJobs(req.query.state||'review_required'),limit:50,publication_enabled:false});}
+  catch{res.status(409).json({error:'JOB_LIST_UNAVAILABLE'});}
  });
  router.use(express.json({limit:'256kb',strict:true}));
  router.post('/jobs/:id/retry',async(req,res)=>{

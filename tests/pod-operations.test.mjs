@@ -20,7 +20,18 @@ test('operations endpoints require auth and redact unavailable DB errors',async(
  const app=express();app.use('/api/print',createPodRouter({db:undefined,authorize:operationalAuth(key),env:{}}));
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  const url=`http://127.0.0.1:${server.address().port}/api/print`;
- try{assert.equal((await fetch(url+'/metrics')).status,401);const response=await fetch(url+'/metrics',{headers:{Authorization:`Bearer ${key}`}});assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'});assert.equal((await fetch(url+'/dashboard')).status,200);}finally{await new Promise(r=>server.close(r));}
+ try{assert.equal((await fetch(url+'/metrics')).status,401);assert.equal((await fetch(url+'/jobs')).status,401);const response=await fetch(url+'/metrics',{headers:{Authorization:`Bearer ${key}`}});assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'});assert.equal((await fetch(url+'/dashboard')).status,200);}finally{await new Promise(r=>server.close(r));}
+});
+test('job inspection route authenticates and forwards only its filter',async()=>{
+ const calls=[],app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db:{listOperationsJobs:async state=>{calls.push(state);return [{id:'fixture-job',state}];}}}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const base=`http://127.0.0.1:${server.address().port}`;
+  assert.equal((await fetch(base+'/jobs?state=blocked')).status,401);assert.equal(calls.length,0);
+  const result=await fetch(base+'/jobs?state=blocked',{headers:{Authorization:`Bearer ${key}`}});
+  assert.deepEqual(await result.json(),{jobs:[{id:'fixture-job',state:'blocked'}],limit:50,publication_enabled:false});
+  assert.deepEqual(calls,['blocked']);assert.equal(result.headers.get('cache-control'),'no-store');
+  assert.match(result.headers.get('content-security-policy'),/img-src blob:/);
+ }finally{await new Promise(r=>server.close(r));}
 });
 test('template safe box uses x y width height consistently with Python QA',()=>{
  const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
