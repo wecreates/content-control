@@ -10,7 +10,7 @@ export async function verifyOperationsListing(pool,db){
    const id=crypto.randomUUID();ids.push(id);
    await pool.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,reason_code,created_at)
     VALUES($1,$2,$3,'redbubble',$4,'{"private":"not exposed"}','{"private":"not exposed"}',$5,'blocked','private failure details',clock_timestamp()+interval '1 day')`,
-    [id,concept,account,i,crypto.randomUUID()]);
+    [id,concept,account,i+1,crypto.randomUUID()]);
   }
   const rows=await db.listOperationsJobs('blocked');
   assert.equal(rows.length,50);
