@@ -887,3 +887,34 @@ then releases the lock and verifies unchanged state and no event. These two case
 clean up their own synthetic jobs. Full hosted integration validation is required
 before merge. Production credentials, migrations and publication remain untouched.
 
+PR #93 head 46d557118013951c9016d17679349377f6bf0bb5 passed
+https://github.com/wecreates/content-control/actions/runs/38693182715
+(job 116283592028): 162 Node tests, zero failed/skipped; 42 POD Python tests;
+the durable PostgreSQL/Python review workflow; and three free-review guard tests.
+The real rights-row barrier cases passed alongside the lease-expiry barriers.
+Merged as 9e453ab3b3a35650b259b6bad1da5d42b63b1108 after checking current heads.
+Merged-main integration run 38693359892 and wiring run 38693359671 both passed.
+
+Render deployment dep-db878hh42hec73bvr330 of that merge failed at
+2026-10-15T06:35:51.903655Z; its 06:35:51.564348767Z log confirms exhausted
+workspace build pipeline minutes. The individual deployment record for
+dep-db7r0lh42hec739jiusg still reports 5180c243198afb6dfb05ee8d2e14995d4e7b0750
+as live. Neither PR #92 nor #93 is verified deployed. No manual rebuild, purchase,
+plan change, network expansion, secret creation or publication enablement occurred.
+
+The protected database workflow 38627827260 remains waiting at older revision
+7d45ff10c90a53721be0a1926eaffb52c7734c3f, which predates migration 005. There is
+no new authorized database access path, so the failed connector/browser route was
+not repeated and no duplicate deployment job was dispatched. Production database
+preflight, durable recovery, live Money Factory authority, real account/evidence/
+template/reviewer/adapter configuration, measured capacity and all other live
+acceptance remain outstanding. All 24 checklist rows remain open. Test execution
+in this run does not demonstrate a continuously running production worker.
+
+
+Money Factory PR #19 documents the corresponding downstream lease/QA obligations
+without changing bridge fields, readiness or ledger state. Its hosted cross-repo
+run https://github.com/wecreates/Money-factory/actions/runs/38693475151 passed
+13 Node authority/inbox tests (zero skips) and two Python production-agent tests.
+Merged as ffa9efe28bf86be630cc788649159567ea111198 after verifying unchanged heads.
+This is compatibility evidence, not a mounted live authority or verified profit.
