@@ -98,6 +98,17 @@ export class PodDB {
     WHERE q.state='raw' AND q.next_attempt_at<=now() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
     ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1) RETURNING *`);return r.rows[0]||null;
  });}
+ async assertProducible(job){return this.tx(async c=>{
+  const current=(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
+   AND q.state='processing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+   FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform])).rows[0];
+  if(!current)throw Error('LOCAL_PRODUCTION_BLOCKED');
+  // A queued lock acquisition must not preserve an expired production lease.
+  const lease=(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+  if(lease?.valid!==true)throw Error('LOCAL_PRODUCTION_BLOCKED');
+  return true;
+ });}
  async holdProduction(job,manifest){return this.tx(async c=>{
   await lockProductionLease(c,job);
   const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[manifest,job.id,job.fencing_token]);

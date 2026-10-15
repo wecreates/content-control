@@ -1028,3 +1028,12 @@ acceptance areas remain open. Real configuration/evidence, restricted database
 preflight, recovery, authorized adapters, capacity and end-to-end acceptance remain
 required. Both publication flags remain false. These executed test/merge operations
 are not a continuously running self-hosted production worker.
+
+
+## 2026-10-15 production stage authority repair (verification pending)
+
+At base f84025804bfe461a1132de6b9c30edc930bbe1aa, production checked the upstream grant only before loading task files. Task downloads, rendering and review could outlive that grant or a local rights/lease change. The worker now refreshes scoped upstream authority and checks current concept eligibility, fencing and the production lease before rendering, KDP interiors, artifact persistence, review/hold, QA and completion. Grant expiry and cancellation are checked again after local database waits. This does not renew leases or create permissions; unavailable/expired/revoked authority fails closed. Stage checks bound subsequent work; they do not claim instantaneous distributed cancellation of a stage already running.
+
+Seven regression tests failed against the old coordinator and passed after the repair. Local focused tests: 27 passed, zero skipped, including later review/QA boundary denial and positive orchestration. Synthetic stage fixtures are coordinator tests, not independent QA approval. Added disposable-PostgreSQL barriers for lease expiration, rights revocation and permanent-unpublished changes while waiting on row locks; hosted execution is pending. No production database access was retried.
+
+Current CI video smoke 38697946612 passed on 2026-10-15, but its video playback/hash/caption receipt does not prove the latest POD code or schema deployed. Render's last observed attempt remains dep-db87i8rm8hqs73bsh4kg (build failed); deployment/quota and protected migration limitations remain as previously recorded. All 24 live acceptance areas remain open. PUBLICATION_ENABLED and POD_PUBLICATION_ENABLED remain false. No purchases, marketplace publication, evasion, social-vault access, new infrastructure or changed grants.

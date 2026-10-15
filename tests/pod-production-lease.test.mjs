@@ -20,6 +20,16 @@ function fixture(valid){
  const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  return {db,writes,queries};
 }
+for(const valid of [true,false])test('production stage guard checks live lease after locks: '+valid,async()=>{
+ const f=fixture(valid);
+ if(valid)assert.equal(await f.db.assertProducible({...job,account_id:'fixture-account',platform:'redbubble'}),true);
+ else await assert.rejects(f.db.assertProducible(job),/LOCAL_PRODUCTION_BLOCKED/);
+ assert.equal(f.writes.length,0);
+ const lock=f.queries.findIndex(q=>q.includes('FOR SHARE OF q,p'));
+ const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
+ assert.ok(lock>=0&&clock>lock);
+ assert.equal(f.queries.at(-1),valid?'COMMIT':'ROLLBACK');
+});
 for(const [label,run] of [
  ['failure',(db)=>db.failProduction(job,'QA_FAILED')],
  ['review hold',(db)=>db.holdProduction(job,manifest)],
