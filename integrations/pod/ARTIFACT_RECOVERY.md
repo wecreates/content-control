@@ -58,3 +58,37 @@ upstream reconciliation and crash/revocation drills. CI tests isolated databases
 and synthetic bytes only. Actual production export, independent retention, key
 custody, restoration drill, capacity/retention planning and expiry resolution remain
 required before claiming live recovery acceptance.
+
+## Offline integrity verification
+
+With the archive key and both publication flags explicitly false, run:
+
+```
+node scripts/pod_artifact_archive.mjs verify /ABSOLUTE/existing/archive-directory
+```
+
+This command needs no database URL, bridge file, signing key or network connection.
+It authenticates the encrypted catalog and every referenced object, enforces the
+same catalog/object/count/aggregate limits, and checks exact lengths and SHA-256
+hashes. It reads one object at a time. The JSON receipt contains only scope,
+object/byte counts, archive creation/verification times and archive_sha256 (the
+hash of the authenticated encrypted catalog). No plaintext content, archive key or
+database credentials are printed. It does not alter the archive or destination.
+
+Root directory symlinks and symlinked catalog/artifact files are rejected. File
+opens are nonblocking, followed by regular-file checks, so a FIFO substituted for
+a catalog or object cannot hang waiting for a writer. Cancellation is checked
+between bounded reads and objects. Missing, truncated or unauthenticated content
+fails closed; a readable catalog by itself is insufficient.
+
+Restore now verifies all archived objects before starting its insertion transaction
+(the CLI's existing configuration preflight still runs first). It authenticates
+and hashes them again inside the transaction. A file changed after the initial
+verification still causes rollback, including any earlier inserts. This adds a
+second bounded read pass; it does not weaken locks, expiry or publication checks.
+
+A VERIFIED receipt proves only that the referenced artifact bytes were readable
+and authentic at that time. It does not prove independent retention, future
+availability, queue/account/financial recovery, current grants, production role
+access or a successful destination restoration drill. Keep the separate live
+acceptance requirements above open until actual evidence is recorded.

@@ -9,7 +9,7 @@ import {migrate} from '../scripts/pod_storage_init.mjs';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
-import {exportArtifactLibrary,restoreArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
+import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 
 test('encrypted artifacts recover across isolated PostgreSQL databases with restricted roles',
  {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
@@ -36,9 +36,25 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   const store=new ArtifactStore(source),contents=[Buffer.from('first exact fixture bytes'),Buffer.from('second exact fixture bytes')];
   const hashes=await Promise.all(contents.map(body=>store.put(body,'application/json')));
   const receipt=await exportArtifactLibrary(source,{directory,key});assert.equal(receipt.objects,2);
+  const verified=await verifyArtifactLibrary({directory,key});assert.equal(verified.objects,2);
+  assert.equal(verified.archive_sha256,crypto.createHash('sha256').update(await fs.readFile(path.join(directory,'catalog.pod'))).digest('hex'));
   const broken=path.join(directory,[...hashes].sort().at(-1)+'.pod'),original=await fs.readFile(broken),corrupt=Buffer.from(original);
   corrupt[corrupt.length-1]^=1;await fs.writeFile(broken,corrupt);
   await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_AUTH_FAILED/);
+  assert.equal((await pools[1].query('SELECT count(*)::int AS n FROM public.pod_artifacts')).rows[0].n,0);
+  await fs.writeFile(broken,original);
+  // The offline pass must not replace in-transaction authentication. Corrupt a
+  // later file after the first real INSERT and prove the earlier insert rolls back.
+  let insertedBeforeCorruption=false;
+  const racingTarget={tx:fn=>target.tx(client=>fn({query:async(sql,args)=>{
+   const result=await client.query(sql,args);
+   if(sql.startsWith('INSERT INTO public.pod_artifacts')&&!insertedBeforeCorruption){
+    insertedBeforeCorruption=true;await fs.writeFile(broken,corrupt);
+   }
+   return result;
+  }}))};
+  await assert.rejects(restoreArtifactLibrary(racingTarget,{directory,key,env}),/ARCHIVE_AUTH_FAILED/);
+  assert.equal(insertedBeforeCorruption,true);
   assert.equal((await pools[1].query('SELECT count(*)::int AS n FROM public.pod_artifacts')).rows[0].n,0);
   await fs.writeFile(broken,original);
   assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,2);
@@ -62,3 +78,4 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   await owner.end();await fs.rm(root,{recursive:true,force:true});
  }
 });
+
