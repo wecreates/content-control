@@ -911,3 +911,10 @@ template/reviewer/adapter configuration, measured capacity and all other live
 acceptance remain outstanding. All 24 checklist rows remain open. Test execution
 in this run does not demonstrate a continuously running production worker.
 
+
+Money Factory PR #19 documents the corresponding downstream lease/QA obligations
+without changing bridge fields, readiness or ledger state. Its hosted cross-repo
+run https://github.com/wecreates/Money-factory/actions/runs/38693475151 passed
+13 Node authority/inbox tests (zero skips) and two Python production-agent tests.
+Merged as ffa9efe28bf86be630cc788649159567ea111198 after verifying unchanged heads.
+This is compatibility evidence, not a mounted live authority or verified profit.
