@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {verifyEnvelope} from './policy.mjs';
+import {assertStoredEvidence} from './stored-evidence.mjs';
 
 export async function recordFinancialEvent(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
@@ -9,6 +10,7 @@ export async function recordFinancialEvent(db,envelope,key){
   typeof e.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(e.evidence_sha256))throw Error('FINANCIAL_EVIDENCE_REQUIRED');
  if((e.kind==='royalty'&&e.amount_minor<0)||(['refund','fee','production_cost','generation_cost','tax'].includes(e.kind)&&e.amount_minor>0))throw Error('FINANCIAL_SIGN_INVALID');
  return db.tx(async c=>{
+  await assertStoredEvidence(c,[e.evidence_sha256],'FINANCIAL_EVIDENCE_MISSING');
   const id=crypto.randomUUID();
   const result=await c.query(`INSERT INTO pod_financial_events(id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id`,

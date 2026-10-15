@@ -12,6 +12,7 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 import {recordMarketObservation} from '../integrations/pod/market.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
+import {verifyStoredEvidence} from './pod-stored-evidence-postgres.mjs';
 import {verifyAuthorityExpiry} from './pod-authority-expiry-postgres.mjs';
 import {verifyEvidenceExpiry} from './pod-evidence-expiry-postgres.mjs';
 import {verifyProductionGuard} from './pod-production-guard-postgres.mjs';
@@ -277,6 +278,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await verifyEditorialGate(pool,bridge);
   await verifyFailureReasons(pool,bridge);
   await verifyArtifactBatch(pool,db);
+  await verifyStoredEvidence(pool,db);
   await verifyEvidenceExpiry(pool,bridge,hash);
   // Synthetic permitted-source fixtures exercise durability and contention,
   // not actual marketplace trends, rank claims or source authorization.

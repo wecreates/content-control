@@ -9,11 +9,12 @@ const event=()=>({verified:true,authority_event_id:'mf-event',provider_event_id:
 const sign=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:finance',
  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
-function fixture(previous=[]){
+function fixture(previous=[],corrupt=false){
  const rows=previous.map(x=>({...x})),outbox=[];
  const db={tx:async fn=>{
   const size=rows.length,events=outbox.length;
   try{return await fn({query:async(sql,args)=>{
+   if(sql.includes('FROM pod_artifacts'))return {rows:args[0].map(sha=>({sha256:sha,body_sha256:corrupt?'0'.repeat(64):sha}))};
    if(sql.startsWith('INSERT INTO pod_financial_events')){
     const [id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id]=args;
     const conflict=rows.some(r=>r.provider===provider&&r.provider_event_id===provider_event_id);
@@ -35,6 +36,13 @@ test('one authority event cannot be reattributed to a new provider event',async(
  const e=event(),f=fixture([{...e,id:'original'}]);
  await assert.rejects(recordFinancialEvent(f.db,sign({...e,provider_event_id:'different'}),key),/FINANCIAL_REPLAY_CONFLICT/);
  assert.equal(f.rows.length,1);assert.equal(f.outbox.length,0);
+});
+test('corrupt statement bytes cannot create or acknowledge a financial event',async()=>{
+ for(const replay of [false,true]){
+  const e=event(),f=fixture(replay?[{...e,id:'existing'}]:[],true);
+  await assert.rejects(recordFinancialEvent(f.db,sign(e),key),/EVIDENCE_ARTIFACT_CORRUPT/);
+  assert.equal(f.rows.length,replay?1:0);assert.equal(f.outbox.length,0);
+ }
 });
 test('one authority event cannot cross provider or job boundaries',async()=>{
  for(const change of [{provider:'teepublic',provider_event_id:'different'},{job_id:'other-job',provider_event_id:'different'}]){
@@ -74,3 +82,4 @@ test('new scoped event is recorded once with one outbox observation',async()=>{
  assert.deepEqual(await recordFinancialEvent(f.db,sign(event()),key),{id:r.id,duplicate:true});
  assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);
 });
+
