@@ -25,6 +25,7 @@ async function exercise(stage,verdict,run,expired){
   const client={release(){},query:async sql=>{
    queries.push(sql);
    if(stage==='rights'&&sql.includes('FOR SHARE OF p'))advance();
+   if(stage==='event'&&sql.startsWith('INSERT INTO pod_events'))advance();
    if(sql.startsWith('SELECT'))return {rows:[{...job,manifest,valid:true,rights_state:'PASS',permanently_unpublished:false}]};
    if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}
    return {rows:[]};
@@ -33,7 +34,7 @@ async function exercise(stage,verdict,run,expired){
    bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
   if(expired){
    await assert.rejects(run(db,qa),/ENVELOPE_EXPIRED_OR_INVALID/);
-   assert.equal(writes.length,0);assert.equal(queries.at(-1),'ROLLBACK');
+   assert.equal(writes.length,stage==='event'?2:0);assert.equal(queries.at(-1),'ROLLBACK');
   }else{
    await run(db,qa);assert.equal(writes.length,2);assert.equal(queries.at(-1),'COMMIT');
   }
@@ -41,6 +42,7 @@ async function exercise(stage,verdict,run,expired){
 }
 for(const [label,verdict,run] of actions){
  test('QA expiry during connection wait blocks '+label,()=>exercise('connection',verdict,run,true));
+ test('QA expiry during event write rolls back '+label,()=>exercise('event',verdict,run,true));
  test('unexpired signed QA permits '+label,()=>exercise('connection',verdict,run,false));
  if(verdict==='PASS')test('QA expiry during rights lock wait blocks '+label,()=>exercise('rights',verdict,run,true));
 }

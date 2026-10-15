@@ -20,14 +20,16 @@ export async function reconcilePublication(db,envelope,key){
    // must remain identical. A shared evidence file does not identify one job.
    const scope=['job_id','account_id','platform','provider_id','provider_event_id','package_sha256','status','provider_verified','evidence_sha256'];
    if(previous.evidence_sha256!==e.evidence_sha256||!scope.every(k=>previous.payload?.[k]===e[k]))throw Error('LISTING_REPLAY_CONFLICT');
+   verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
    return {duplicate:true};
   }
   await c.query('INSERT INTO pod_provider_inbox(provider,account_id,provider_event_id,evidence_sha256,payload) VALUES($1,$2,$3,$4,$5)',[e.platform,e.account_id,e.provider_event_id,e.evidence_sha256,e]);
   // A fresh observation is new evidence, not another publication transition.
   // The job row lock serializes concurrent observations with different event IDs.
-  if(job.state==='published')return {published:true,already_published:true};
+  if(job.state==='published'){verifyEnvelope(envelope,key,'content-control:pod:listing-observation');return {published:true,already_published:true};}
   await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.published',{provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]);
+  verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
   return {published:true};
  });
 }

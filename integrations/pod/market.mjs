@@ -24,13 +24,15 @@ export async function recordMarketObservation(db,envelope,key){
   const r=await c.query(`INSERT INTO pod_market_intelligence(id,platform,source_url,observed_at,country,category,image_sha256,price_minor,currency,observed_rank,source_sha256,observations,rank_evidence_sha256)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(platform,source_url,observed_at) DO NOTHING RETURNING id`,
    [crypto.randomUUID(),o.platform,o.source_url,o.observed_at,o.country,o.category,o.image_sha256??null,o.price_minor??null,o.currency??null,o.observed_rank??null,o.source_sha256,observations,o.rank_evidence_sha256??null]);
-  if(r.rowCount===1)return {inserted:true,id:r.rows[0].id};
+  if(r.rowCount===1){verifyEnvelope(envelope,key,'content-control:pod:market');return {inserted:true,id:r.rows[0].id};}
   // ON CONFLICT waits for concurrent writers. A following statement sees the
   // committed immutable row; refreshed envelope times do not change its identity.
   const previous=(await c.query('SELECT * FROM pod_market_intelligence WHERE platform=$1 AND source_url=$2 AND observed_at=$3',[o.platform,o.source_url,o.observed_at])).rows[0];
   if(!previous||!['country','category','image_sha256','currency','observed_rank','source_sha256','rank_evidence_sha256'].every(k=>(previous[k]??null)===(o[k]??null))||
    (previous.price_minor==null?null:String(previous.price_minor))!==(o.price_minor==null?null:String(o.price_minor))||
    !isDeepStrictEqual(previous.observations,observations))throw Error('MARKET_REPLAY_CONFLICT');
+  verifyEnvelope(envelope,key,'content-control:pod:market');
   return {inserted:false,id:previous.id};
  });
 }
+

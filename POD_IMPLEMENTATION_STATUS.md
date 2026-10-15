@@ -950,3 +950,37 @@ local JavaScript execution is not proof of PostgreSQL or production acceptance.
 All 24 live acceptance gates remain open. Publication flags stay false, and no
 production database administration, credentials, paid resource, network change or
 platform submission is introduced.
+
+PR #95 head 8218f282ecb465a94af02ff0bb92ed23ab038e18 passed
+https://github.com/wecreates/content-control/actions/runs/38694726760
+(job 116288516786): 177 Node tests with zero failures/skips, 42 POD Python tests,
+the durable PostgreSQL/Python workflow and three free-review guard tests. The six
+new database barrier cases passed. Merged as b541c3c45f4968dd1647989fb52c0587399f4f9b.
+Merged-main integration 38694903920 and wiring 38694903867 also passed.
+
+Render deployment dep-db87fk6k1f9s73e7gfcg failed at 2026-10-15T06:50:56.805347Z.
+Its 06:50:56.606633153Z log again explicitly reports exhausted build minutes.
+PR #95 is tested and merged, not verified deployed. No manual retry or access/
+resource changes were made.
+
+## Signed evidence freshness through final database writes — 2026-10-15
+
+The continued audit reproduced seven expired-envelope paths in market observations,
+financial evidence and listing readback (including exact replay and already-published
+observations). These handlers now reverify the signed envelope after their final
+database statement before returning to commit. Existing immutable identity, proof
+and replay-conflict rules remain unchanged. A historical observation can still be
+submitted in a current envelope from its actual authority; no timestamps or signatures
+are renewed locally.
+
+Review acceptance and production completion also recheck QA after writing their
+outbox event. Three further regression cases showed why the earlier check immediately
+before the state update was insufficient if a later database statement took time.
+Expiry rolls back the full transition rather than leaving a readiness event committed.
+
+All 47 focused local tests passed after the fix, including the 25 evidence/QA-expiry
+cases and existing authority/reconciliation tests. The disposable PostgreSQL helper
+advances only the test application clock after actual SQL writes, then checks rollback
+of the queue, market/financial rows, provider inbox and outbox in six cases. This is
+controlled expiry testing, not a production traffic/capacity measurement. Hosted CI
+must pass before merge. All 24 live acceptance gates and publication holds remain.
