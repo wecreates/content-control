@@ -170,13 +170,30 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             comparative.get('reference_sha256')==report['reference_sha256'] and
             comparative.get('evaluator_id') in approved_evaluators and comparative.get('winner')=='candidate' and
             comparative.get('all_dimensions_noninferior') is True and comparative.get('swapped_order_consistent') is True and
-            isinstance(comparative.get('weighted_margin'),(int,float)) and comparative['weighted_margin']>=.5)
+            type(comparative.get('weighted_margin')) in (int,float) and
+            math.isfinite(comparative['weighted_margin']) and comparative['weighted_margin']>=.5)
+        # Slow PDF/model work must not extend the rights approval checked earlier.
+        verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
+        verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
+        report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'])
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
     required=('text','geometry','resolution','rights','competitive','print_preflight')
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
     report.update({'verdict':'PASS' if ok else 'FAIL','binary_pass':int(ok),'production_ready':ok})
     return report
+
+def qa_receipt(report, now):
+    """A PASS receipt cannot outlive either approval from which it was derived."""
+    expires=now+900000
+    if report.get('binary_pass')==1:
+        deadline=report.get('evidence_expires_at_ms')
+        if type(deadline) is not int or deadline<=now:
+            report.update({'verdict':'FAIL','binary_pass':0,'production_ready':False})
+            report.setdefault('errors',[]).append('EVIDENCE_EXPIRED')
+        else:
+            expires=min(expires,deadline)
+    return {**report,'audience':'content-control:pod:qa','issued_at_ms':now,'expires_at_ms':expires}
 
 def main():
     p=argparse.ArgumentParser()
@@ -193,7 +210,9 @@ def main():
     save_json(a.output,report)
     if a.signed_output:
         now=int(time.time()*1000)
-        receipt={**report,'audience':'content-control:pod:qa','issued_at_ms':now,'expires_at_ms':now+900000}
+        receipt=qa_receipt(report,now)
+        # Receipt construction can downgrade a result that expired after evaluation.
+        save_json(a.output,report)
         try:
             save_json(a.signed_output,sign(receipt,'POD_QA_KEY'))
         except Exception:
