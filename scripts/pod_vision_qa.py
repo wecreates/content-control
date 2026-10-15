@@ -1,6 +1,7 @@
 """Print QA. Similarity measurements never masquerade as visual superiority."""
 import argparse
 import hashlib
+import math
 import subprocess
 import sys
 import tempfile
@@ -10,7 +11,35 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image
-from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign
+from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign, PLATFORMS
+
+def resolution_checks(manifest, image, stored_dpi):
+    """Derive physical size and native PPI; manifest claims alone are not proof."""
+    try:
+        template=manifest['template']
+        dpi=template['dpi']
+        if type(dpi) is not int or not 300 <= dpi <= 1200 or type(manifest['dpi']) is not int or manifest['dpi'] != dpi:
+            return False
+        inches=template['size_inches']
+        if len(inches)!=2 or any(type(v) not in (int,float) or not math.isfinite(v) or v<=0 for v in inches):
+            return False
+        expected=[math.ceil(v*dpi) for v in inches]
+        if list(image.size)!=expected or manifest['size_px']!=expected:
+            return False
+        # PNG stores pixels/metre, so allow only its sub-0.02 PPI quantization.
+        if len(stored_dpi)!=2 or any(not math.isfinite(v) or abs(v-dpi)>.02 for v in stored_dpi):
+            return False
+        source=manifest['source_size_px'];placed=manifest['placed_size_px']
+        if any(len(pair)!=2 or any(type(v) is not int or v<=0 for v in pair) for pair in (source,placed)):
+            return False
+        if any(p>s for s,p in zip(source,placed)):
+            return False
+        native=min(s*dpi/p for s,p in zip(source,placed))
+        claimed=manifest['effective_native_ppi']
+        return (native>=300 and type(claimed) in (int,float) and math.isfinite(claimed)
+                and math.isclose(claimed,native,rel_tol=1e-9,abs_tol=1e-9))
+    except (KeyError,TypeError,ValueError,OverflowError,ZeroDivisionError):
+        return False
 
 def ocr(image, language='eng'):
     with tempfile.TemporaryDirectory(prefix='pod-ocr-') as tmp:
@@ -72,6 +101,13 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         m['package_sha256']=expected
         if expected!=actual or m['template_sha256']!=hashlib.sha256(canonical(m['template']).encode()).hexdigest():
             raise ValueError('MANIFEST_HASH_MISMATCH')
+        if m.get('platform') not in PLATFORMS or m['template'].get('platform')!=m['platform']:
+            raise ValueError('PLATFORM_BLOCKED')
+        required_files={'print.png','art-mask.png','text-mask.png'}
+        if m['platform']=='kdp':
+            required_files.update({'cover.pdf','interior.pdf','interior.receipt.json'})
+        if not isinstance(m.get('files'),dict) or not required_files.issubset(m['files']):
+            raise ValueError('PACKAGE_FILES_REQUIRED')
         for name,sha in m['files'].items():
             if digest(scoped_file(root,name))!=sha:
                 raise ValueError('FILE_HASH_MISMATCH')
@@ -85,7 +121,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         with Image.open(root/'text-mask.png') as f:
             text=f.convert('L')
         report['checks']['geometry']=spatial_checks(m,image,art,text)
-        report['checks']['resolution']=list(image.size)==m['size_px'] and min(stored_dpi)>=299.99 and m['effective_native_ppi']>=300
+        report['checks']['resolution']=resolution_checks(m,image,stored_dpi)
         text_ok=True
         for layer in m['expected_text']:
             box=layer['box_px']
@@ -103,7 +139,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             interior=m['interior']
             spec=interior['template']
             receipt=interior['receipt']
-            if (receipt['interior_sha256']!=m['files']['interior.pdf'] or
+            if (read_json(scoped_file(root,'interior.receipt.json'))!=receipt or
+                receipt['interior_sha256']!=m['files']['interior.pdf'] or
                 receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
                 receipt['technical_checks_passed'] is not True or
                 spec['page_count']!=m['template']['kdp']['page_count']):

@@ -16,6 +16,103 @@ from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
+    def package_result(self, mutate, kdp=False, dpi=300):
+        """Synthetic signed evidence isolates technical QA; it is not approval."""
+        import time
+        from pod_common import save_json
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48}):
+            root=Path(tmp)/'package'
+            src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
+            template=self.template()
+            template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
+            if kdp:
+                template.update({'platform':'kdp','size_inches':[4.35,2.25],
+                    'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':2}})
+            m=generate(src,template,[],root)
+            if kdp:
+                font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+                spec={'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],
+                    'page_count':2,'margins_inches':dict(inside=.25,outside=.25,top=.25,bottom=.25),
+                    'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
+                m=assemble(root,spec,[{'lines':['First page']},{'lines':['Second page']}],font)
+            mutate(m,root)
+            m['template_sha256']=hashlib.sha256(canonical(m['template']).encode()).hexdigest()
+            m.pop('package_sha256')
+            m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()
+            save_json(root/'manifest.json',m)
+            now=int(time.time()*1000)
+            common={'schema_version':1,'issued_at_ms':now-1,'expires_at_ms':now+60000,'package_sha256':m['package_sha256']}
+            rights=sign({**common,'audience':'pod:package-rights','status':'PASS','permanently_unpublished':False},'POD_RIGHTS_KEY')
+            review=sign({**common,'audience':'pod:competitive-review','reference_sha256':digest(src),
+                'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
+                'swapped_order_consistent':True,'weighted_margin':1},'POD_REVIEW_KEY')
+            # OCR is tested independently; these tests isolate package geometry and binding.
+            with patch('pod_vision_qa.ocr',return_value=''):
+                return evaluate(root,src,rights,review,['test-fixture'])
+
+    def test_unbound_masks_fail_before_ocr(self):
+        for filename in ('art-mask.png','text-mask.png'):
+            with self.subTest(filename=filename):
+                result=self.package_result(lambda m,r:m['files'].pop(filename))
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('PACKAGE_FILES_REQUIRED',result['errors'])
+
+    def test_unbound_kdp_cover_and_receipt_fail(self):
+        for filename in ('cover.pdf','interior.receipt.json'):
+            with self.subTest(filename=filename):
+                result=self.package_result(lambda m,r:m['files'].pop(filename),kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('PACKAGE_FILES_REQUIRED',result['errors'])
+
+    def test_template_physical_dimensions_override_reported_canvas(self):
+        result=self.package_result(lambda m,r:m['template'].update(size_inches=[4,4]))
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertFalse(result['checks']['resolution'])
+
+    def test_template_dpi_must_match_png_and_manifest(self):
+        for mutation in (
+            lambda m,r:m.update(dpi=600),
+            lambda m,r:m['template'].update(dpi=600,size_inches=[1,1]),
+        ):
+            result=self.package_result(mutation)
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertFalse(result['checks']['resolution'])
+
+    def test_native_ppi_is_recomputed_not_claimed(self):
+        result=self.package_result(lambda m,r:m.update(source_size_px=[40,20],effective_native_ppi=1200))
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertFalse(result['checks']['resolution'])
+
+    def test_complete_unchanged_packages_pass_technical_binding(self):
+        for kdp,dpi in ((False,300),(True,300),(False,600),(False,1200)):
+            result=self.package_result(lambda m,r:None,kdp=kdp,dpi=dpi)
+            self.assertEqual(result['binary_pass'],1,result)
+
+    def test_kdp_receipt_file_must_match_manifest_receipt(self):
+        from pod_common import save_json
+        def change(m,root):
+            save_json(root/'interior.receipt.json',{'technical_checks_passed':False})
+            m['files']['interior.receipt.json']=digest(root/'interior.receipt.json')
+        result=self.package_result(change,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('INTERIOR_INVALID',result['errors'])
+
+    def test_qa_rejects_unsupported_and_mismatched_platforms(self):
+        for platform in ('etsy','zazzle'):
+            result=self.package_result(lambda m,r:m.update(platform=platform))
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertIn('PLATFORM_BLOCKED',result['errors'])
+
+    def test_resolution_rejects_non_numeric_and_boolean_dimensions(self):
+        for mutation in (
+            lambda m,r:m['template'].update(size_inches=[True,2]),
+            lambda m,r:m.update(dpi=True),
+            lambda m,r:m.update(source_size_px=[True,400]),
+            lambda m,r:m.update(effective_native_ppi='600'),
+        ):
+            result=self.package_result(mutation)
+            self.assertEqual(result['binary_pass'],0,result)
+
     def test_qa_requires_independent_review_without_model_download(self):
         import time
         with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48}):
