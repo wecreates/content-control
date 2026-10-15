@@ -6,8 +6,7 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pod_common import canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
-
-Image.MAX_IMAGE_PIXELS = 100_000_000
+from pod_raster import MAX_RASTER_PIXELS, open_raster
 
 def generate(source_path, template, text_layers, output_dir):
     if template.get('platform') not in PLATFORMS:
@@ -16,7 +15,7 @@ def generate(source_path, template, text_layers, output_dir):
     if not isinstance(dpi, int) or not 300 <= dpi <= 1200:
         raise ValueError('DPI_INVALID')
     w, h = [math.ceil(float(v) * dpi) for v in template['size_inches']]
-    if min(w, h) <= 0 or w*h > Image.MAX_IMAGE_PIXELS:
+    if min(w, h) <= 0 or w*h > MAX_RASTER_PIXELS:
         raise ValueError('CANVAS_INVALID')
     # KDP spine size must come from a verified official template for exact paper/page count.
     if template['platform'] == 'kdp':
@@ -28,14 +27,14 @@ def generate(source_path, template, text_layers, output_dir):
     if any(not isinstance(v, int) for v in (x,y,bw,bh)) or min(x,y)<0 or min(bw,bh)<=0 or x+bw>w or y+bh>h:
         raise ValueError('ART_BOX_INVALID')
     root = Path(output_dir)
-    root.mkdir(parents=True, exist_ok=False)
-    with Image.open(source_path) as source:
-        source.load()
-        source = source.convert('RGBA')
+    with open_raster(source_path) as source:
         sw, sh = source.size
         scale = min(bw/sw, bh/sh)
         if scale > 1:
             raise ValueError('NATIVE_RESOLUTION_INSUFFICIENT')
+        source.load()
+        source = source.convert('RGBA')
+        root.mkdir(parents=True, exist_ok=False)
         nw, nh = max(1, round(sw*scale)), max(1, round(sh*scale))
         source = source.resize((nw,nh), Image.Resampling.LANCZOS)
         ox, oy = x+(bw-nw)//2, y+(bh-nh)//2

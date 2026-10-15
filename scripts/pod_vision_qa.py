@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign, PLATFORMS
+from pod_raster import open_raster
 
 def resolution_checks(manifest, image, stored_dpi):
     """Derive physical size and native PPI; manifest claims alone are not proof."""
@@ -75,12 +76,12 @@ def spatial_checks(manifest,image,art_mask,text_mask):
     return True
 
 def similarity(candidate,reference):
-    import torch
-    import open_clip
-    torch.set_num_threads(2)
-    model,_,preprocess=open_clip.create_model_and_transforms('ViT-B-32',pretrained='laion2b_s34b_b79k',device='cpu')
-    model.eval()
-    with Image.open(candidate) as a, Image.open(reference) as b:
+    with open_raster(candidate) as a, open_raster(reference) as b:
+        import torch
+        import open_clip
+        torch.set_num_threads(2)
+        model,_,preprocess=open_clip.create_model_and_transforms('ViT-B-32',pretrained='laion2b_s34b_b79k',device='cpu')
+        model.eval()
         batch=torch.stack([preprocess(a.convert('RGB')),preprocess(b.convert('RGB'))])
     with torch.inference_mode():
         z=model.encode_image(batch)
@@ -116,12 +117,12 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 raise ValueError('FILE_HASH_MISMATCH')
         report.update({'platform':m['platform'],'package_sha256':actual,'template_sha256':m['template_sha256'],
                        'candidate_sha256':m['files']['print.png'],'reference_sha256':digest(reference)})
-        with Image.open(root/'print.png') as f:
+        with open_raster(root/'print.png', m['size_px']) as f:
             image=f.convert('RGB')
             stored_dpi=f.info.get('dpi',(0,0))
-        with Image.open(root/'art-mask.png') as f:
+        with open_raster(root/'art-mask.png', image.size) as f:
             art=f.convert('L')
-        with Image.open(root/'text-mask.png') as f:
+        with open_raster(root/'text-mask.png', image.size) as f:
             text=f.convert('L')
         report['checks']['geometry']=spatial_checks(m,image,art,text)
         report['checks']['resolution']=resolution_checks(m,image,stored_dpi)
