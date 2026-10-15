@@ -57,6 +57,22 @@ class PODTests(unittest.TestCase):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators)
 
+    def test_kdp_qa_rejects_local_cover_damage_despite_rebound_hashes(self):
+        from reportlab.pdfgen import canvas as pdfcanvas
+        from reportlab.lib.utils import ImageReader
+        def damage(manifest,root):
+            with Image.open(root/'print.png') as source:
+                altered=source.convert('RGB')
+            altered.putpixel((300,300),(0,0,0))
+            width,height=[v*72/manifest['dpi'] for v in altered.size]
+            pdf=pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(width,height),invariant=1)
+            pdf.drawImage(ImageReader(altered),0,0,width=width,height=height)
+            pdf.showPage();pdf.save()
+            manifest['files']['cover.pdf']=digest(root/'cover.pdf')
+        result=self.package_result(damage,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('COVER_PIXEL_MISMATCH',result['errors'])
+
     def test_kdp_requires_separate_editorial_review(self):
         result=self.package_result(lambda m,r:None,kdp=True,editorial_present=False)
         self.assertEqual(result['binary_pass'],0,result)
