@@ -24,6 +24,12 @@ test('verified configuration is read-only and never authorizes publication',asyn
  assert.equal(f.queries[0],'BEGIN READ ONLY');assert.equal(f.queries.at(-1),'ROLLBACK');assert.ok(f.closed());
  assert.ok(f.queries.every(q=>/^(SELECT|BEGIN READ ONLY|SET LOCAL|ROLLBACK)/.test(q)));
 });
+test('invalid artifact budget blocks preflight without exposing its value',async()=>{
+ const f=fixture(),r=await preflight({...f.options,env:{...env,POD_ARTIFACT_BUDGET_BYTES:'private-invalid-budget'}});
+ assert.equal(r.status,'BLOCKED');
+ assert.equal(r.checks.find(c=>c.code==='ARTIFACT_STORAGE_BUDGET').status,'BLOCKED');
+ assert.equal(JSON.stringify(r).includes('private-invalid-budget'),false);
+});
 test('missing configuration blocks without attempting a database connection',async()=>{
  const r=await preflight({env:{},readFile:async()=>{throw Error('missing');},connect:()=>{assert.fail('must not connect');}});
  assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='DEDICATED_DATABASE_CONFIGURED').status,'BLOCKED');

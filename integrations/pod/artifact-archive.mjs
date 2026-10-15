@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import {constants} from 'node:fs';
 import path from 'node:path';
+import {artifactBudgetBytes} from './storage-budget.mjs';
 
 const MAGIC=Buffer.from('CYZPOD1\n'),MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
 const TYPES=new Set(['image/png','application/pdf','application/json','font/ttf']);
@@ -106,6 +107,7 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
 
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
+ budgetBytes=Math.min(budgetBytes,artifactBudgetBytes(env));
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
  const options={directory,key,budgetBytes,signal};
  const {catalog,bytes}=await readCatalog(options);

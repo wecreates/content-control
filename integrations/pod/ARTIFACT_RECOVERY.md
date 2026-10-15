@@ -1,5 +1,13 @@
 # Encrypted artifact recovery (not a complete database backup)
 
+Restore respects the smaller of its explicit archive limit and the validated
+`POD_ARTIFACT_BUDGET_BYTES` deployment write limit (128 MiB by default). A caller
+cannot override a lower deployment limit. Target occupied bytes and incoming new
+bytes share this limit in the existing locked transaction. Invalid deployment
+configuration blocks before archive reads or database writes. Export and offline
+verification retain independent read bounds so lowering the write budget does not
+prevent recovery inspection or export of existing data.
+
 This optional manual tool exports only `public.pod_artifacts`. It does not read
 the social vault, export credentials, or include queue/account/ledger state.
 Artifact recovery alone does not complete storage/recovery acceptance area 2.
@@ -92,3 +100,4 @@ and authentic at that time. It does not prove independent retention, future
 availability, queue/account/financial recovery, current grants, production role
 access or a successful destination restoration drill. Keep the separate live
 acceptance requirements above open until actual evidence is recorded.
+

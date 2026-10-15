@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url';
 import {metrics} from './metrics.mjs';
 import {recordFinancialEvent} from './finance.mjs';
 import {ArtifactStore} from './artifacts.mjs';
+import {artifactBudgetBytes} from './storage-budget.mjs';
 import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
 export function createPodRouter({db,authorize,env=process.env,status}) {
@@ -13,7 +14,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  router.get('/status',(_req,res)=>res.json({...status?.(),publication_enabled:false,publication_requested:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
  router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
  router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf'],limit:'16mb'}),async(req,res)=>{
-  try{const store=new ArtifactStore(db,{budgetBytes:Number(env.POD_ARTIFACT_BUDGET_BYTES||134217728)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
+  try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
   catch{res.status(409).json({error:'ARTIFACT_STORAGE_BLOCKED'});}
  });
  router.get('/artifacts/:sha',async(req,res)=>{

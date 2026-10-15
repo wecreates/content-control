@@ -75,6 +75,21 @@ test('target budget and conflicting immutable metadata fail without partial writ
  const conflict=database([body]);conflict.rows.get(sha(body)).media_type='image/png';
  await assert.rejects(restoreArtifactLibrary(conflict,{directory,key,env}),/ARCHIVE_RESTORE_CONFLICT/);
 });
+test('restore cannot exceed the deployment budget even with a larger caller limit',async t=>{
+ const directory=await workspace(t),body=Buffer.from('source');await exportArtifactLibrary(database([body]),{directory,key});
+ const target=database([Buffer.from('existing')]);
+ const limited={...env,POD_ARTIFACT_BUDGET_BYTES:'13'};
+ for(const budgetBytes of [undefined,134217728]){
+  await assert.rejects(restoreArtifactLibrary(target,{directory,key,env:limited,budgetBytes}),/ARCHIVE_BUDGET_EXCEEDED/);
+  assert.equal(target.rows.size,1);
+ }
+ assert.equal((await restoreArtifactLibrary(target,{directory,key,env:{...limited,POD_ARTIFACT_BUDGET_BYTES:'14'}})).inserted,1);
+ const invalid=database();
+ await assert.rejects(restoreArtifactLibrary(invalid,{directory,key,env:{...env,POD_ARTIFACT_BUDGET_BYTES:''}}),/ARTIFACT_BUDGET_CONFIG_INVALID/);
+ assert.equal(invalid.queries.length,0);
+ // A lower deployment write limit must not prevent reading an existing backup.
+ assert.equal((await verifyArtifactLibrary({directory,key})).objects,1);
+});
 test('CLI refuses missing keys, enabled publication and unconfirmed restore before connecting',async()=>{
  for(const settings of [{},{...env},{...env,POD_ARCHIVE_KEY:'a'.repeat(64),PUBLICATION_ENABLED:'true'}]){
   await assert.rejects(archiveCLI(['export','/unused-fixture-path'],settings),/ARCHIVE_CLI_CONFIG_INVALID/);

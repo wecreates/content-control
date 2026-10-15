@@ -88,6 +88,24 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[smallId])).rows[0],
    {state:'qa_failed',manifest:null,reason_code:'NATIVE_RESOLUTION_INSUFFICIENT'});
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n,before);
+  // Distinct valid source bytes prevent earlier output from making this a replay.
+  await promisify(execFile)('python3',['-c',"from PIL import Image; import sys; Image.new('RGB',(600,600),'#222222').save(sys.argv[1])",image]);
+  const budgetSource=await fs.readFile(image);
+  const budgetFiles={...files,'source.png':await store.put(budgetSource,'image/png'),
+   'rights.json':await store.put(Buffer.from(JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',
+    source_sha256:hash(budgetSource),text_layers_sha256:hash('[]')}))),'application/json')};
+  const budgetTaskHash=await store.put(Buffer.from(JSON.stringify({...task,files:budgetFiles})),'application/json');
+  const budgetId=crypto.randomUUID(),budgetGrant=sign({...JSON.parse(grant.payload),job_id:budgetId,task_sha256:budgetTaskHash});
+  await db.enqueue({job:{...job,id:budgetId,task_sha256:budgetTaskHash},upstream:budgetGrant,conceptId:concept,revision:5});
+  const storageSnapshot=async()=>(await pool.query('SELECT count(*)::int AS n,COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts')).rows[0];
+  const beforeBudget=await storageSnapshot();
+  const budgetBlocked=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+   env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,
+    POD_ARTIFACT_BUDGET_BYTES:String(Number(beforeBudget.bytes)+1)}});
+  assert.deepEqual(budgetBlocked,{status:'BLOCKED',job_id:budgetId,reason_code:'ARTIFACT_BUDGET_EXHAUSTED'});
+  assert.deepEqual(await storageSnapshot(),beforeBudget);
+  assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[budgetId])).rows[0],
+   {state:'qa_failed',manifest:null,reason_code:'ARTIFACT_BUDGET_EXHAUSTED'});
  }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
 });
 
