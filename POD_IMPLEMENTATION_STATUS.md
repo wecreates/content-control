@@ -1057,3 +1057,16 @@ At base 6d6f12a89c38173a473d8bb07ffc2fef503c3e37, QA read mask and KDP cover fil
 QA now requires all consumed package files to be hash-bound before reading them, rejects unsupported/mismatched platforms, and matches the stored KDP interior receipt to its manifest copy. Resolution is derived from template inches and DPI, compared to the actual raster and PNG density (allowing only PNG pixels-per-metre quantization), and recomputed from source/placed dimensions. Upscaled or contradictory claims fail closed. Source provenance still depends on the existing authorized generation and rights pipeline; these arithmetic checks do not independently prove source ownership or visual quality.
 
 Local syntax compilation passed; local OpenCV is unavailable, so full Python execution uses the existing hosted pinned-dependency CI rather than a substitute QA implementation. Full repair CI and merged/deployed acceptance are pending. No production DB retry, new service, paid resource, permission fabrication, marketplace submission or publication enablement occurred. All 24 live acceptance gates remain open; existing deployment quota and database access blockers remain unchanged.
+
+
+### Package/resolution verification receipt
+
+PR [#100](https://github.com/wecreates/content-control/pull/100), head ab9f508a123875a809cc8d90379b3c40dd84d126, passed [38709504515](https://github.com/wecreates/content-control/actions/runs/38709504515), job 116337102937: 206 Node tests, zero failures/skips; 51 POD Python tests; the actual PostgreSQL/Python durable review pipeline; and three free-review guard tests. It merged as f85e2fe1964ca9e62b44cc3261a94ef3db58bfb5. Merged-main POD run 38709687141 and wiring run 38709687142 both succeeded.
+
+Render deployment dep-db89c2lg1s2s73fbtvb0 failed at 2026-10-15T08:59:55.275598Z; its 08:59:55.087998274Z log explicitly reports exhausted build minutes. Last live deployment was rechecked as dep-db7r0lh42hec739jiusg, revision 5180c243198afb6dfb05ee8d2e14995d4e7b0750. These fixes are merged/tested, not live-verified. No manual deployment retry or database administration attempt was made.
+
+## Derived QA receipt expiry repair — 2026-10-15
+
+Continued inspection found that a signed QA PASS received a new 15-minute expiry regardless of the earlier rights/review deadline. Slow PDF/model evaluation could also outlive a rights envelope checked earlier. QA now revalidates both authorities at evaluation completion, carries their earliest expiry and caps a PASS receipt to that deadline. If evidence expires between evaluation and signing, both JSON report and receipt become FAIL. Failed diagnostics can still be signed; they never acquire a PASS verdict. Comparative weighted margins now reject booleans instead of treating true as numerical 1.
+
+Five new test methods exercise expiry during review, both deadline orders, non-extension, missing/expired deadlines and boolean scores. Local Python syntax compilation passed; full hosted execution remains required before merge. There is no fabricated renewal, market/revenue evidence, publication enablement or claim that all 24 live criteria are complete.

@@ -9,14 +9,14 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_asset_generator import generate
 from pod_market_intake import ProductParser, products, screen
-from pod_vision_qa import spatial_checks, ocr, evaluate
+from pod_vision_qa import spatial_checks, ocr, evaluate, qa_receipt
 from pod_common import digest, canonical, sign
 from pod_original_art import create_art
 from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
-    def package_result(self, mutate, kdp=False, dpi=300):
+    def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -42,10 +42,10 @@ class PODTests(unittest.TestCase):
             save_json(root/'manifest.json',m)
             now=int(time.time()*1000)
             common={'schema_version':1,'issued_at_ms':now-1,'expires_at_ms':now+60000,'package_sha256':m['package_sha256']}
-            rights=sign({**common,'audience':'pod:package-rights','status':'PASS','permanently_unpublished':False},'POD_RIGHTS_KEY')
+            rights=sign({**common,'expires_at_ms':now+rights_ttl,'audience':'pod:package-rights','status':'PASS','permanently_unpublished':False},'POD_RIGHTS_KEY')
             review=sign({**common,'audience':'pod:competitive-review','reference_sha256':digest(src),
                 'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
-                'swapped_order_consistent':True,'weighted_margin':1},'POD_REVIEW_KEY')
+                'swapped_order_consistent':True,'weighted_margin':1,**(review_patch or {})},'POD_REVIEW_KEY')
             # OCR is tested independently; these tests isolate package geometry and binding.
             with patch('pod_vision_qa.ocr',return_value=''):
                 return evaluate(root,src,rights,review,['test-fixture'])
@@ -112,6 +112,51 @@ class PODTests(unittest.TestCase):
         ):
             result=self.package_result(mutation)
             self.assertEqual(result['binary_pass'],0,result)
+
+    def test_boolean_is_not_a_competitive_score(self):
+        result=self.package_result(lambda m,r:None,review_patch={'weighted_margin':True})
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertFalse(result['checks']['competitive'])
+
+    def test_rights_expiring_during_review_do_not_pass(self):
+        from pod_common import verified
+        now=1800000000.0
+        def delayed_review(envelope,key,audience):
+            nonlocal now
+            if audience=='pod:competitive-review':
+                now+=2
+            return verified(envelope,key,audience)
+        with patch('pod_common.time.time',side_effect=lambda:now),patch('pod_vision_qa.verified',side_effect=delayed_review):
+            result=self.package_result(lambda m,r:None,rights_ttl=1000)
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertIn('EVIDENCE_EXPIRED',result['errors'])
+
+    def test_qa_receipt_does_not_extend_evidence_lifetime(self):
+        now=1800000000000
+        for deadline in (now+1,now+60000,now+1800000):
+            report={'binary_pass':1,'verdict':'PASS','production_ready':True,'evidence_expires_at_ms':deadline}
+            receipt=qa_receipt(report,now)
+            self.assertEqual(receipt['expires_at_ms'],min(deadline,now+900000))
+            self.assertEqual(receipt['binary_pass'],1)
+
+    def test_qa_receipt_downgrades_expired_or_missing_evidence(self):
+        now=1800000000000
+        for deadline in (None,True,'1800000000001',now,now-1):
+            report={'binary_pass':1,'verdict':'PASS','production_ready':True,'evidence_expires_at_ms':deadline}
+            receipt=qa_receipt(report,now)
+            self.assertEqual(receipt['binary_pass'],0)
+            self.assertEqual(report['verdict'],'FAIL')
+            self.assertFalse(report['production_ready'])
+            self.assertIn('EVIDENCE_EXPIRED',receipt['errors'])
+
+    def test_evaluation_exports_earliest_evidence_expiry(self):
+        now=1800000000.0
+        with patch('pod_common.time.time',return_value=now):
+            for rights_ttl,review_ttl in ((1000,60000),(60000,1000)):
+                result=self.package_result(lambda m,r:None,rights_ttl=rights_ttl,
+                    review_patch={'expires_at_ms':int(now*1000)+review_ttl})
+                self.assertEqual(result['binary_pass'],1,result)
+                self.assertEqual(result['evidence_expires_at_ms'],int(now*1000)+1000)
 
     def test_qa_requires_independent_review_without_model_download(self):
         import time
