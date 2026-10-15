@@ -100,11 +100,13 @@ export class PodDB {
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',{package_sha256:manifest.package_sha256,publication_enabled:false}]);
  });}
  async acceptReview(jobId,qaEnvelope){
-  const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+  verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   return this.tx(async c=>{
    const job=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
    if(!job)throw Error('REVIEW_NOT_PENDING');
-   enforceQA(qa,job.manifest.package_sha256,job.manifest.template_sha256);
+   // Authentication before connection acquisition cannot authorize an expired
+   // review after pool or row-lock waits. Revalidate at the state transition.
+   enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256);
    await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',{package_sha256:job.manifest.package_sha256,publication_enabled:false}]);
    return {status:'QA_PASSED',publication_enabled:false};
@@ -129,6 +131,8 @@ export class PodDB {
     if(!current)throw Error('LEASE_LOST');
     if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
    }
+   const currentQA=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+   if(pass)enforceQA(currentQA,manifest.package_sha256,manifest.template_sha256);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
