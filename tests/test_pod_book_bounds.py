@@ -9,6 +9,82 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_book_interior import render_book
 from pod_common import digest
 from pod_interior_preflight import inspect_interior, inspect_pairing
+from pod_cover_preflight import inspect_cover
+from PIL import Image, ImageChops, ImageStat
+from reportlab.pdfgen import canvas as pdfcanvas
+from reportlab.lib.utils import ImageReader
+
+class CoverPreflightTests(unittest.TestCase):
+    def write_cover(self, path, image, dpi=300, shift=0):
+        width,height=[v*72/dpi for v in image.size]
+        pdf=pdfcanvas.Canvas(str(path),pagesize=(width,height),invariant=1)
+        pdf.drawImage(ImageReader(image),shift*72/dpi,0,width=width,height=height)
+        pdf.showPage();pdf.save()
+
+    def test_lossless_cover_passes_at_supported_dpi_and_fractional_point_sizes(self):
+        import numpy as np
+        with tempfile.TemporaryDirectory() as d:
+            for dpi in (300,600,1200):
+                image=Image.fromarray(np.random.default_rng(1).integers(0,256,(311,607,3),dtype=np.uint8))
+                path=Path(d)/'cover.pdf';self.write_cover(path,image,dpi)
+                self.assertTrue(inspect_cover(path,image,dpi))
+
+    def test_single_changed_pixel_fails_even_when_old_mean_error_passes(self):
+        original=Image.new('RGB',(600,900),'white')
+        with tempfile.TemporaryDirectory() as d:
+            for rgb in ((254,255,255),(255,254,255),(255,255,254),(0,0,0)):
+                changed=original.copy();changed.putpixel((300,400),rgb)
+                self.assertLess(sum(ImageStat.Stat(ImageChops.difference(original,changed)).mean)/3,1)
+                path=Path(d)/'cover.pdf';self.write_cover(path,changed)
+                with self.subTest(rgb=rgb),self.assertRaisesRegex(ValueError,'COVER_PIXEL_MISMATCH'):
+                    inspect_cover(path,original,300)
+
+    def test_missing_detail_and_one_pixel_shift_fail(self):
+        original=Image.new('RGB',(600,900),'white')
+        original.paste((0,0,0),(300,400,310,410))
+        with tempfile.TemporaryDirectory() as d:
+            for changed,shift in ((Image.new('RGB',original.size,'white'),0),(original,1)):
+                path=Path(d)/'cover.pdf';self.write_cover(path,changed,shift=shift)
+                with self.subTest(shift=shift),self.assertRaisesRegex(ValueError,'COVER_PIXEL_MISMATCH'):
+                    inspect_cover(path,original,300)
+
+    def test_rotation_crop_and_oversized_page_fail_before_rasterization(self):
+        image=Image.new('RGB',(600,900),'white')
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'source.pdf';self.write_cover(source,image)
+            for edit in (lambda p:p.set_rotation(180),lambda p:p.set_cropbox(fitz.Rect(0,0,140,216)),
+                         lambda p:p.set_mediabox(fitz.Rect(0,0,10000,10000))):
+                target=Path(d)/'changed.pdf'
+                with fitz.open(source) as doc:
+                    edit(doc[0]);doc.save(target)
+                with patch.object(fitz.Page,'get_pixmap',side_effect=AssertionError('must not rasterize')):
+                    with self.assertRaisesRegex(ValueError,'COVER_PAGE_BOX_INVALID'):
+                        inspect_cover(target,image,300)
+
+    def test_interactive_content_is_rejected_even_if_pixels_are_unchanged(self):
+        image=Image.new('RGB',(600,900),'white')
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'source.pdf';self.write_cover(source,image)
+            for edit in (lambda p:p.insert_link({'kind':fitz.LINK_URI,'from':fitz.Rect(20,20,30,30),'uri':'https://example.invalid'}),
+                         lambda p:p.add_text_annot((20,20),'fixture')):
+                target=Path(d)/'changed.pdf'
+                with fitz.open(source) as doc:
+                    edit(doc[0]);doc.save(target)
+                with self.assertRaisesRegex(ValueError,'COVER_CONTENT_UNSUPPORTED'):
+                    inspect_cover(target,image,300)
+
+    def test_invalid_dpi_and_page_count_fail(self):
+        image=Image.new('RGB',(600,900),'white')
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'cover.pdf';self.write_cover(path,image)
+            for dpi in (True,299,1201,300.0,float('nan')):
+                with self.subTest(dpi=dpi),self.assertRaisesRegex(ValueError,'COVER_SPEC_INVALID'):
+                    inspect_cover(path,image,dpi)
+            target=Path(d)/'two.pdf'
+            with fitz.open(path) as doc:
+                doc.new_page(width=144,height=216);doc.save(target)
+            with self.assertRaisesRegex(ValueError,'COVER_INVALID'):
+                inspect_cover(target,image,300)
 
 class BookBoundsTests(unittest.TestCase):
     def test_cover_pairing_dimensions_and_strict_numeric_values(self):

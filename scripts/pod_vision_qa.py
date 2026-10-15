@@ -138,7 +138,6 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         report['checks']['rights']=rights.get('status')=='PASS' and rights.get('package_sha256')==actual and rights.get('permanently_unpublished') is False
         preflight=True
         if m['platform']=='kdp':
-            import fitz
             interior=m['interior']
             spec=interior['template']
             receipt=interior['receipt']
@@ -151,14 +150,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             from pod_interior_preflight import inspect_interior, inspect_pairing
             inspect_pairing(spec,m['template'])
             inspect_interior(scoped_file(root,'interior.pdf'),spec)
-            with fitz.open(root/'cover.pdf') as pdf:
-                page=pdf[0]
-                preflight=len(pdf)==1 and abs(page.rect.width-image.width*72/m['dpi'])<.02 and abs(page.rect.height-image.height*72/m['dpi'])<.02
-                pix=page.get_pixmap(matrix=fitz.Matrix(m['dpi']/72,m['dpi']/72),alpha=False)
-                raster=Image.frombytes('RGB',(pix.width,pix.height),pix.samples)
-                preflight &= raster.size==image.size
-                if preflight:
-                    preflight &= float(np.abs(np.asarray(raster,dtype=float)-np.asarray(image,dtype=float)).mean())<1
+            from pod_cover_preflight import inspect_cover
+            preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
         report['checks']['print_preflight']=bool(preflight)
         if m['platform']=='kdp':
             report['checks']['editorial']=False
