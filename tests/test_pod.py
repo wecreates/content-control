@@ -16,7 +16,7 @@ from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
-    def package_result(self, mutate, kdp=False):
+    def package_result(self, mutate, kdp=False, dpi=300):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -24,6 +24,7 @@ class PODTests(unittest.TestCase):
             root=Path(tmp)/'package'
             src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
             template=self.template()
+            template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             if kdp:
                 template.update({'platform':'kdp','size_inches':[4.35,2.25],
                     'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':2}})
@@ -83,9 +84,34 @@ class PODTests(unittest.TestCase):
         self.assertFalse(result['checks']['resolution'])
 
     def test_complete_unchanged_packages_pass_technical_binding(self):
-        for kdp in (False,True):
-            result=self.package_result(lambda m,r:None,kdp=kdp)
+        for kdp,dpi in ((False,300),(True,300),(False,600),(False,1200)):
+            result=self.package_result(lambda m,r:None,kdp=kdp,dpi=dpi)
             self.assertEqual(result['binary_pass'],1,result)
+
+    def test_kdp_receipt_file_must_match_manifest_receipt(self):
+        from pod_common import save_json
+        def change(m,root):
+            save_json(root/'interior.receipt.json',{'technical_checks_passed':False})
+            m['files']['interior.receipt.json']=digest(root/'interior.receipt.json')
+        result=self.package_result(change,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('INTERIOR_INVALID',result['errors'])
+
+    def test_qa_rejects_unsupported_and_mismatched_platforms(self):
+        for platform in ('etsy','zazzle'):
+            result=self.package_result(lambda m,r:m.update(platform=platform))
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertIn('PLATFORM_BLOCKED',result['errors'])
+
+    def test_resolution_rejects_non_numeric_and_boolean_dimensions(self):
+        for mutation in (
+            lambda m,r:m['template'].update(size_inches=[True,2]),
+            lambda m,r:m.update(dpi=True),
+            lambda m,r:m.update(source_size_px=[True,400]),
+            lambda m,r:m.update(effective_native_ppi='600'),
+        ):
+            result=self.package_result(mutation)
+            self.assertEqual(result['binary_pass'],0,result)
 
     def test_qa_requires_independent_review_without_model_download(self):
         import time
