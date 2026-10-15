@@ -161,7 +161,8 @@ class PODTests(unittest.TestCase):
     def test_kdp_qa_rechecks_actual_interior_despite_passing_receipt(self):
         import fitz
         from pod_common import save_json
-        for fault in ('blank','margin','offpage','invisible','rotated','drawing'):
+        for fault in ('blank','margin','offpage','invisible','rotated','drawing',
+                      'white_text','link','embedded','open_action'):
             def change(m,root):
                 target=root/'replacement.pdf'
                 with fitz.open() as book:
@@ -169,9 +170,13 @@ class PODTests(unittest.TestCase):
                         page=book.new_page(width=144,height=144)
                         if fault!='blank':
                             point=(3,36) if fault=='margin' else (27,170) if fault=='offpage' else (27,36)
-                            page.insert_text(point,'Unreviewed layout',fontsize=8,render_mode=3 if fault=='invisible' else 0)
+                            page.insert_text(point,'Unreviewed layout',fontsize=8,render_mode=3 if fault=='invisible' else 0,
+                                             color=(1,1,1) if fault=='white_text' else (0,0,0))
                         if fault=='rotated':page.set_rotation(90)
                         if fault=='drawing':page.draw_rect(fitz.Rect(0,0,5,5))
+                        if fault=='link':page.insert_link({'kind':fitz.LINK_URI,'from':fitz.Rect(20,20,30,30),'uri':'https://example.invalid'})
+                    if fault=='embedded':book.embfile_add('fixture.txt',b'fixture')
+                    if fault=='open_action':book.xref_set_key(book.pdf_catalog(),'OpenAction','<< /S /JavaScript /JS (void 0;) >>')
                     book.save(target)
                 target.replace(root/'interior.pdf')
                 # Every hash and synthetic authority agrees; only independent

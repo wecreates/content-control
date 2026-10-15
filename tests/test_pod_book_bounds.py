@@ -87,6 +87,11 @@ class CoverPreflightTests(unittest.TestCase):
                 inspect_cover(target,image,300)
 
 class BookBoundsTests(unittest.TestCase):
+    def test_independent_preflight_rejects_white_gray_and_colored_text(self):
+        for color in ((1,1,1),(.9,.9,.9),(.2,.2,.2),(1,0,0)):
+            with self.subTest(color=color),self.assertRaisesRegex(ValueError,'INTERIOR_TEXT_COLOR_UNSUPPORTED'):
+                self.inspect_fixture(lambda page:page.insert_text((27,36),'gyp',color=color))
+
     def test_cover_pairing_dimensions_and_strict_numeric_values(self):
         import copy
         _,spec=self.spec()
@@ -199,6 +204,73 @@ class BookBoundsTests(unittest.TestCase):
                 book.save(target)
             with self.assertRaisesRegex(ValueError,'INTERIOR_TEXT_BOUNDS_FAILED'):
                 inspect_interior(target,spec)
+
+class StaticPDFPolicyTests(unittest.TestCase):
+    def check_mutation(self, edit=None, save_options=None, expected='CONTENT_UNSUPPORTED'):
+        # Both actual delivered formats use the same document/page policy.
+        with tempfile.TemporaryDirectory() as d:
+            for kind in ('INTERIOR','COVER'):
+                source=Path(d)/(kind+'-source.pdf');target=Path(d)/(kind+'-changed.pdf')
+                if kind=='INTERIOR':
+                    font,spec=BookBoundsTests().spec()
+                    render_book(spec,[{'lines':['gyp']}],font,source)
+                    inspect=lambda p:inspect_interior(p,spec)
+                else:
+                    image=Image.new('RGB',(600,900),'white')
+                    CoverPreflightTests().write_cover(source,image)
+                    inspect=lambda p:inspect_cover(p,image,300)
+                self.assertTrue(inspect(source))
+                with fitz.open(source) as doc:
+                    if edit:edit(doc)
+                    doc.save(target,**(save_options or {}))
+                with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,kind+'_'+expected):
+                    inspect(target)
+
+    def test_embedded_files_and_links_rejected_for_both_formats(self):
+        for edit in (lambda doc:doc.embfile_add('fixture.txt',b'fixture'),
+                     lambda doc:doc[0].insert_link({'kind':fitz.LINK_URI,
+                         'from':fitz.Rect(20,20,30,30),'uri':'https://example.invalid'})):
+            self.check_mutation(edit)
+
+    def test_catalog_behavior_and_optional_content_rejected(self):
+        fixtures={'OpenAction':'<< /S /JavaScript /JS (void 0;) >>',
+                  'AA':'<< /WC << /S /JavaScript /JS (void 0;) >> >>',
+                  'Names':'<< /JavaScript << /Names [(fixture) << /S /JavaScript /JS (void 0;) >>] >> >>',
+                  'AcroForm':'<< /Fields [] >>','OCProperties':'<< /OCGs [] >>',
+                  'Collection':'<< /Type /Collection /View /D >>','AF':'[]','Outlines':'<< /Type /Outlines /Count 0 >>'}
+        for key,value in fixtures.items():
+            with self.subTest(key=key):
+                self.check_mutation(lambda doc:doc.xref_set_key(doc.pdf_catalog(),key,value))
+
+    def test_indirect_and_escaped_catalog_action_rejected(self):
+        def edit(doc):
+            action=doc.get_new_xref()
+            doc.update_object(action,'<< /S /JavaScript /JS (void 0;) >>')
+            catalog=doc.pdf_catalog()
+            value=doc.xref_object(catalog).rstrip()
+            doc.update_object(catalog,value[:-2]+f' /Open#41ction {action} 0 R >>')
+        self.check_mutation(edit)
+
+    def test_page_actions_and_unrecognized_annotations_rejected(self):
+        for key,value in (('AA','<< /O << /S /JavaScript /JS (void 0;) >> >>'),
+                          ('AF','[]'),('PresSteps','<< >>'),
+                          ('Annots','[<< /Type /Annot /Subtype /Unknown /Rect [20 20 30 30] >>]')):
+            with self.subTest(key=key):
+                self.check_mutation(lambda doc:doc.xref_set_key(doc[0].xref,key,value))
+
+    def test_encrypted_pdf_rejected_even_without_user_password(self):
+        for user_password in ('','fixture-user'):
+            self.check_mutation(save_options={'encryption':fitz.PDF_ENCRYPT_AES_256,
+                'owner_pw':'fixture-owner','user_pw':user_password},expected='INVALID')
+
+    def test_literal_action_names_in_metadata_are_not_pdf_actions(self):
+        with tempfile.TemporaryDirectory() as d:
+            font,spec=BookBoundsTests().spec();source=Path(d)/'source.pdf';target=Path(d)/'result.pdf'
+            render_book(spec,[{'lines':['gyp']}],font,source)
+            with fitz.open(source) as doc:
+                doc.set_metadata({'subject':'/OpenAction /JavaScript /Annots'});doc.save(target)
+            self.assertTrue(inspect_interior(target,spec))
+
 
 if __name__=='__main__':
     unittest.main()

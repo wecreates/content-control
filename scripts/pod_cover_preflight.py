@@ -6,6 +6,7 @@ editorial approval or proof of platform acceptance.
 import math
 import fitz
 from PIL import Image, ImageChops
+from pod_pdf_policy import inspect_static_document, inspect_static_page
 
 
 def inspect_cover(path, image, dpi):
@@ -15,9 +16,11 @@ def inspect_cover(path, image, dpi):
         raise ValueError('COVER_SPEC_INVALID')
     expected = (0, 0, image.width * 72 / dpi, image.height * 72 / dpi)
     with fitz.open(path) as cover:
+        inspect_static_document(cover, 'COVER')
         if cover.needs_pass or len(cover) != 1:
             raise ValueError('COVER_INVALID')
         page = cover[0]
+        inspect_static_page(cover, page, 'COVER')
         # Check boxes before rasterization so malformed dimensions cannot
         # allocate an arbitrarily large render. Cropping/rotation are unsupported.
         if (page.rotation != 0 or any(

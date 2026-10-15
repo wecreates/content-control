@@ -5,6 +5,7 @@ It does not assess editorial quality, licensing or official platform acceptance.
 """
 import math
 import fitz
+from pod_pdf_policy import inspect_static_document, inspect_static_page
 
 
 def inspect_pairing(spec, cover):
@@ -56,9 +57,11 @@ def inspect_interior(path, spec):
         raise ValueError('INTERIOR_SPEC_INVALID')
 
     with fitz.open(path) as book:
+        inspect_static_document(book, 'INTERIOR')
         if book.needs_pass or len(book) != count:
             raise ValueError('INTERIOR_INVALID')
         for index, page in enumerate(book):
+            inspect_static_page(book, page, 'INTERIOR')
             expected = (0, 0, width, height)
             if (page.rotation != 0 or any(
                     abs(actual - desired) > .01
@@ -81,6 +84,13 @@ def inspect_interior(path, spec):
             for trace in traces:
                 if trace['type'] != 0 or trace['opacity'] != 1:
                     raise ValueError('INTERIOR_TEXT_NOT_VISIBLE')
+                # The supported renderer emits black text on unpainted white
+                # pages. Extraction succeeds even for invisible white text.
+                # Color interiors require a separate validated contract.
+                if (trace.get('colorspace') not in (1, 3) or
+                        len(trace.get('color', ())) != trace['colorspace'] or
+                        any(not number(v) or v != 0 for v in trace['color'])):
+                    raise ValueError('INTERIOR_TEXT_COLOR_UNSUPPORTED')
                 if not within(trace['bbox']):
                     raise ValueError('INTERIOR_TEXT_BOUNDS_FAILED')
             for block in page.get_text('dict')['blocks']:
