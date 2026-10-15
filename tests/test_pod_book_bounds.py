@@ -8,9 +8,26 @@ import fitz
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_book_interior import render_book
 from pod_common import digest
-from pod_interior_preflight import inspect_interior
+from pod_interior_preflight import inspect_interior, inspect_pairing
 
 class BookBoundsTests(unittest.TestCase):
+    def test_cover_pairing_dimensions_and_strict_numeric_values(self):
+        import copy
+        _,spec=self.spec()
+        cover={'platform':'kdp','size_inches':[4.35,2.25],
+               'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':1}}
+        self.assertTrue(inspect_pairing(spec,cover))
+        changes=[lambda c:c.update(platform='redbubble'),lambda c:c.update(size_inches=[4.4,2.25]),
+                 lambda c:c.update(size_inches=[4.35,2.5]),lambda c:c['kdp'].update(trim_width_inches=1.5),
+                 lambda c:c['kdp'].update(page_count=2),lambda c:c['kdp'].update(page_count=True)]
+        changes += [lambda c,key=key,v=v:c['kdp'].update({key:v})
+                    for key in ('trim_width_inches','spine_width_inches','bleed_inches')
+                    for v in (True,float('nan'),float('inf'),-1,'0.1')]
+        for change in changes:
+            candidate=copy.deepcopy(cover);change(candidate)
+            with self.subTest(candidate=candidate),self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                inspect_pairing(spec,candidate)
+
     def spec(self):
         font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         return font,{'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],

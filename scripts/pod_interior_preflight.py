@@ -7,6 +7,33 @@ import math
 import fitz
 
 
+def inspect_pairing(spec, cover):
+    """Check physical cover/interior agreement without trusting assembly receipts."""
+    def positive(value, zero=False):
+        return (type(value) in (int,float) and math.isfinite(value) and
+                (value >= 0 if zero else value > 0))
+
+    try:
+        kdp=cover['kdp']
+        trim=spec['trim_inches'];size=cover['size_inches']
+        if (spec['platform']!='kdp' or cover['platform']!='kdp' or
+                type(spec['page_count']) is not int or type(kdp['page_count']) is not int or
+                not 1<=spec['page_count']<=1000 or spec['page_count']!=kdp['page_count'] or
+                len(trim)!=2 or len(size)!=2 or any(not positive(v) for v in (*trim,*size)) or
+                not positive(kdp['trim_width_inches']) or
+                not positive(kdp['spine_width_inches'],zero=True) or
+                not positive(kdp['bleed_inches'],zero=True)):
+            raise ValueError('COVER_INTERIOR_MISMATCH')
+        expected_width=2*trim[0]+kdp['spine_width_inches']+2*kdp['bleed_inches']
+        expected_height=trim[1]+2*kdp['bleed_inches']
+        if (abs(trim[0]-kdp['trim_width_inches'])>1e-6 or
+                abs(size[0]-expected_width)>1e-6 or abs(size[1]-expected_height)>1e-6):
+            raise ValueError('COVER_INTERIOR_MISMATCH')
+    except (KeyError,TypeError,OverflowError):
+        raise ValueError('COVER_INTERIOR_MISMATCH') from None
+    return True
+
+
 def inspect_interior(path, spec):
     def number(value):
         return type(value) in (int, float) and math.isfinite(value)

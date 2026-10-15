@@ -148,7 +148,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 receipt['technical_checks_passed'] is not True or
                 spec['page_count']!=m['template']['kdp']['page_count']):
                 raise ValueError('INTERIOR_INVALID')
-            from pod_interior_preflight import inspect_interior
+            from pod_interior_preflight import inspect_interior, inspect_pairing
+            inspect_pairing(spec,m['template'])
             inspect_interior(scoped_file(root,'interior.pdf'),spec)
             with fitz.open(root/'cover.pdf') as pdf:
                 page=pdf[0]

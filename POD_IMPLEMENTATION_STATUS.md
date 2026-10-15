@@ -1121,3 +1121,14 @@ The KDP QA gateway previously rechecked only page count and physical size after 
 Nine real-PDF tests passed locally, including six new negative-path methods and the existing valid mirrored-page control. A package-level regression mutates six actual PDFs while keeping matching hashes and synthetic passing receipts/approvals, to verify the full QA gateway still rejects the defects. Full hosted integration is pending; local OpenCV is unavailable, so no full local QA result is claimed. Publication remains disabled and no live approval/key was created.
 
 Current heads were inspected before editing: CC 8d56e3de0c5d47435ea3d3b784a742b3ec0ff22a; MF b53a4db1d3d4bd8d7e9c0f8b5568edf9091ca2e6, whose latest change is the free-monitor cadence report. Unrelated open PRs were preserved. Render's latest attempt remains dep-db8a78lg1s2s73fctgag/build_failed; no changed database access path was found and no administration/deployment retry was made. All 24 live acceptance rows remain open.
+
+
+### Independent interior QA verification receipt
+
+[PR #106](https://github.com/wecreates/content-control/pull/106), head a7432687e54ee23a7b3b69772381122faba32014, passed [38725333316](https://github.com/wecreates/content-control/actions/runs/38725333316), job 116389642463: 208 Node tests without failures/skips, 70 POD Python tests, the actual PostgreSQL/Python durable review workflow and three free-review guard tests. Merged as 26c68b3fac51b42d94a0790c64e7549e74655db9; merged-main integration 38725497412 and wiring 38725497491 succeeded. Render deploy dep-db8b9ek9v7es73boitbg failed at 2026-10-15T11:10:51.843325Z; this is tested/merged code, not a live QA acceptance.
+
+## Independent cover/interior pairing — 2026-10-15
+
+The assembly step enforced trim pairing, but final QA only compared page count. Continued work adds a separate final physical pairing check: interior trim width, cover wrap width including spine/bleed, cover height including bleed and exact page count. Boolean, nonfinite, negative and malformed measurements fail closed. This uses supplied specifications, never an inferred spine formula or invented official template.
+
+Ten focused real-PDF/pairing tests pass locally. The full-package regression creates a valid replacement interior at each of two mismatched trims, updates all hashes/receipts and uses synthetic review evidence; QA must return COVER_INTERIOR_MISMATCH. Full hosted verification is pending. The valid package control remains required. No real approval or publication is created; all 24 live acceptance areas remain open.

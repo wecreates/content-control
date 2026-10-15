@@ -170,6 +170,25 @@ class PODTests(unittest.TestCase):
                 self.assertEqual(result['binary_pass'],0,result)
                 self.assertTrue(any(e.startswith('INTERIOR_') for e in result['errors']),result)
 
+    def test_kdp_qa_rechecks_cover_interior_pairing(self):
+        from pod_common import save_json
+        for trim in ([2.5,2],[2,2.5]):
+            def change(m,root):
+                # Re-render a valid, correctly receipted interior with a different
+                # trim. Page count, hashes and independent layout checks still pass.
+                spec=m['interior']['template'];spec['trim_inches']=trim
+                target=root/'interior.pdf';target.unlink()
+                receipt=render_book(spec,[{'lines':['First page']},{'lines':['Second page']}],
+                    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',target)
+                m['interior']['receipt']=receipt
+                save_json(root/'interior.receipt.json',receipt)
+                for filename in ('interior.pdf','interior.receipt.json'):
+                    m['files'][filename]=digest(root/filename)
+            with self.subTest(trim=trim):
+                result=self.package_result(change,kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('COVER_INTERIOR_MISMATCH',result['errors'])
+
     def test_qa_rejects_unsupported_and_mismatched_platforms(self):
         for platform in ('etsy','zazzle'):
             result=self.package_result(lambda m,r:m.update(platform=platform))
