@@ -918,3 +918,35 @@ run https://github.com/wecreates/Money-factory/actions/runs/38693475151 passed
 13 Node authority/inbox tests (zero skips) and two Python production-agent tests.
 Merged as ffa9efe28bf86be630cc788649159567ea111198 after verifying unchanged heads.
 This is compatibility evidence, not a mounted live authority or verified profit.
+
+## Upstream authorization expiry and repair rights — 2026-10-15
+
+Fresh inspection found no overlapping POD PRs. Content Control main was
+69f548c1b91fbcd373449eab38cae3147b21cdc1 and Money Factory main was
+ffa9efe28bf86be630cc788649159567ea111198. PR #93 merged-main integration and
+wiring remained passing. The latest Render attempt was still the failed
+dep-db878hh42hec73bvr330; no changed database access path was observed.
+
+New local regressions reproduced ten expired-authorization cases in registerIntake,
+enqueue and requeueRepair after connection/database waits. Intake could commit a
+new concept/budget or adverse duplicate evidence using an expired signature;
+enqueue and repair could persist expired grants. These paths now revalidate their
+original signed envelope after all database statements, before returning to commit.
+Expiry aborts the transaction, including concept budget, queue and outbox changes.
+The duplicate-intake return also checks freshness instead of bypassing validation.
+
+Repair now takes a shared lock on concept rights along with the queue row, so
+concurrent rights revocation is evaluated before requeue and rights stay locked
+through the transition. This does not renew grants, revive tombstones or override
+the Money Factory readiness ceiling. No schema or bridge-contract change is added.
+
+All 15 new focused tests and the 14 existing lease/QA-expiry tests pass locally.
+The new PostgreSQL helper exercises five expiry barriers plus concurrent repair
+rights revocation. It checks actual database blocking, unchanged persisted queue/
+rights, no concept-budget consumption and no emitted event, then removes only
+its own synthetic fixtures. Full hosted integration remains required before merge;
+local JavaScript execution is not proof of PostgreSQL or production acceptance.
+
+All 24 live acceptance gates remain open. Publication flags stay false, and no
+production database administration, credentials, paid resource, network change or
+platform submission is introduced.

@@ -12,6 +12,7 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 import {recordMarketObservation} from '../integrations/pod/market.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
+import {verifyAuthorityExpiry} from './pod-authority-expiry-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -262,6 +263,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const denied=(await pool.query("SELECT payload FROM pod_events WHERE kind='pod.concept.rights_blocked' AND payload->>'concept_id'=$1",[canonicalId])).rows;
   assert.equal(denied.length,1);assert.equal(denied[0].payload.rights_state,'UNKNOWN');
   assert.equal(denied[0].payload.publication_enabled,false);assert.match(denied[0].payload.intake_sha256,/^[a-f0-9]{64}$/);
+  await verifyAuthorityExpiry(pool,bridge);
   // Synthetic permitted-source fixtures exercise durability and contention,
   // not actual marketplace trends, rank claims or source authorization.
   const marketStore=new ArtifactStore(db),marketKey='synthetic-market-key-'.repeat(3);
