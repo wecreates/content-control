@@ -43,22 +43,26 @@ export class PodDB {
       {concept_id:existing.id,business_id:businessId,rights_state:intake.rights_state,
        intake_sha256:crypto.createHash('sha256').update(envelope.payload).digest('hex'),publication_enabled:false}]);
     }
+    verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
     return {id:existing.id};
    }
    await c.query("INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,(now() AT TIME ZONE 'UTC')::date) ON CONFLICT DO NOTHING",[businessId]);
    const budget=await c.query("UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date AND used<$2 RETURNING used",[businessId,dailyLimit]);
    if(!budget.rows.length)throw Error('DAILY_CONCEPT_LIMIT');
    await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished) VALUES($1,$2,$3,$4,$5)',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']);
+   // Revalidate after all database waits so expiry rolls back budget and writes.
+   verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
    return {id};
   });
  }
  async requeueRepair(jobId,upstream){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   return this.tx(async c=>{
-   const j=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q",[jobId])).rows[0];
+   const j=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),j.id,'pod.repair.archived',{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope}]);
    await c.query("UPDATE pod_production_queue SET state='raw',manifest=NULL,qa_envelope=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
+   verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   });
  }
  async tx(fn){
@@ -77,7 +81,8 @@ export class PodDB {
    const r=await c.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(idempotency_key) DO NOTHING RETURNING id`,
     [job.id,conceptId,job.account_id,job.platform,revision,brief,upstream,key]);
-   if(!r.rows.length)throw Error('DUPLICATE_JOB');return r.rows[0];
+   if(!r.rows.length)throw Error('DUPLICATE_JOB');
+   verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return r.rows[0];
   });
  }
  async listReady(){this.active();return (await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;}
