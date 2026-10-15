@@ -28,6 +28,7 @@ def render_book(spec, pages, font_path, output):
         raise ValueError('TYPE_METRICS_INVALID')
     face='POD-'+spec['font_sha256'][:16]
     pdfmetrics.registerFont(TTFont(face,font_path))
+    ascent,descent=pdfmetrics.getAscentDescent(face,size)
     target=Path(output)
     if target.exists():
         raise ValueError('OUTPUT_EXISTS')
@@ -41,7 +42,7 @@ def render_book(spec, pages, font_path, output):
         y=height-top-size
         pdf.setFont(face,size)
         for line in lines:
-            if y < bottom or pdfmetrics.stringWidth(line,face,size) > width-inside-outside:
+            if y+descent < bottom or y+ascent > height-top or pdfmetrics.stringWidth(line,face,size) > width-inside-outside:
                 raise ValueError('TEXT_OVERFLOW')
             pdf.drawString(x,y,line);y-=leading
         pdf.showPage()
@@ -51,9 +52,18 @@ def render_book(spec, pages, font_path, output):
     with fitz.open(target) as document:
         if len(document)!=len(pages):
             raise ValueError('PDF_PAGE_COUNT_FAILED')
-        for page,expected in zip(document,pages):
+        for number,(page,expected) in enumerate(zip(document,pages),1):
             if abs(page.rect.width-width)>.01 or abs(page.rect.height-height)>.01 or page.get_text().splitlines()!=expected['lines']:
                 raise ValueError('PDF_TEXT_OR_SIZE_FAILED')
+            left,right=(inside,outside) if number%2 else (outside,inside)
+            # Inspect the emitted PDF, not only the layout engine's advance
+            # widths/baselines. PDF coordinates here have a top-left origin.
+            for block in page.get_text('dict')['blocks']:
+                for line in block.get('lines',[]):
+                    for span in line['spans']:
+                        x0,y0,x1,y1=span['bbox']
+                        if x0<left-.01 or x1>width-right+.01 or y0<top-.01 or y1>height-bottom+.01:
+                            raise ValueError('PDF_TEXT_BOUNDS_FAILED')
     return {'schema_version':1,'interior_sha256':digest(target),'page_count':len(pages),
             'template_sha256':hashlib.sha256(canonical(spec).encode()).hexdigest(),'technical_checks_passed':True,
             'editorial_review':'UNASSESSED','production_ready':False,'publication_enabled':False}

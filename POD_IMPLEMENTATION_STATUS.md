@@ -1090,3 +1090,16 @@ The production worker forwards the separate editorial evidence and host-owned ev
 Local focused JavaScript checks passed (54 existing/new production, grant, task and release tests plus the 23 base policy/publisher tests); Python syntax compilation passed. Full hosted PostgreSQL/Python verification is pending. Added real database coverage for blocked technical-only completion/review and valid synthetic editorial acceptance, plus Python hash/evaluator/check/expiry tests. Synthetic enabled-adapter tests invoke only in-memory fixtures, never a marketplace or live publication flag.
 
 Current Render remains at its previously verified live revision; latest attempted deployment dep-db89e8942hec73c28g1g still reports build_failed. No credible database access change was observed, so administration was not retried. All 24 live acceptance areas remain open, including actual editorial calibration, rights, official preview, platform adapters, capacity and recovery. Both publication flags remain false; no credentials, paid resources, evasion, social-vault access or fabricated evidence are introduced.
+
+
+### KDP editorial gate verification receipt
+
+[PR #103](https://github.com/wecreates/content-control/pull/103), head e8d633f173396e6e8dd4274755d50f6164cd3aaf, passed [38716100591](https://github.com/wecreates/content-control/actions/runs/38716100591), job 116359043969: 208 Node tests with zero skips/failures, 60 POD Python tests, the durable PostgreSQL/Python production/review integration and three free-review guard tests. The new PostgreSQL enforcement fixture passed. Merged as 67f9b793c295e5819adb351cce0bcee8878c6f18; merged-main integration 38716303311 and wiring 38716303312 succeeded.
+
+Render deployment dep-db8a59942hec73c33ve0 failed at 2026-10-15T09:53:41.733756Z. Its 09:53:41.435558523Z log explicitly reports exhausted build minutes. No manual retry, resource/spend change, database administration or live account approval occurred. This is tested/merged enforcement, not actual editorial acceptance or deployment.
+
+## KDP interior glyph-bound repair — 2026-10-15
+
+A local real-PDF reproduction using the installed ReportLab 4.4.9 and PyMuPDF 1.26.6 returned technical_checks_passed=true even though the last line's descenders reached 119.8828125pt against a permitted bottom of 117pt. The old renderer checked only the baseline. Two regression tests failed against that code; the valid two-page mirrored-margin control passed.
+
+The renderer now checks ascent/descent before drawing and independently inspects the emitted PDF's text span bounds against the correct inside/outside/top/bottom margins. The existing 0.01pt PDF numeric tolerance is retained for post-render geometry, with no layout repair, font shrink or altered manuscript content. All three focused tests now pass locally; full hosted integration remains required before merge. Editorial remains UNASSESSED in the technical renderer and requires the separate approved evidence contract from #103. These synthetic manuscripts are test fixtures, not market-ready books or official template approval.
