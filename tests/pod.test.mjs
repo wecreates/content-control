@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {verifyEnvelope,enforceBrief,enforceQA,assertBridge,BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {publishOnce} from '../scripts/pod_stealth_publisher.mjs';
+import {economicsFixture} from './pod-economics-fixture.mjs';
 const key='test-only-key-never-use-in-production';
 function signed(p){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-100,expires_at_ms:Date.now()+60000,...p});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
 function fixture(){
  const job={id:'job',account_id:'account',business_id:'business',platform:'kdp',destination_platform:'kdp',mode:'LAUNCH',package_sha256:'a'.repeat(64)};
- const grant={job_id:'job',account_id:'account',business_id:'business',platform:'kdp',max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:job.package_sha256};return {job,grant};
+ const grant={job_id:'job',account_id:'account',business_id:'business',platform:'kdp',max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:job.package_sha256,...economicsFixture(job)};return {job,grant};
 }
 test('valid envelope verifies',()=>assert.equal(verifyEnvelope(signed({}),key,'content-control:pod').schema_version,1));
 test('tampered envelope fails',()=>{const e=signed({});e.payload+=' ';assert.throws(()=>verifyEnvelope(e,key,'content-control:pod'));});

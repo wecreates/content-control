@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {publishOnce} from '../scripts/pod_stealth_publisher.mjs';
+import {economicsFixture} from './pod-economics-fixture.mjs';
 
 const key='synthetic-release-freshness-key-'.repeat(2);
 const sign=p=>{const payload=JSON.stringify(p);return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
@@ -11,7 +12,7 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   destination_platform:platform,mode:'LAUNCH',package_sha256:manifest.package_sha256};
  const common={schema_version:1,issued_at_ms:now-1,expires_at_ms:now+60000};
  const release={...common,audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,
-  platform:brief.platform,max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:manifest.package_sha256};
+  platform:brief.platform,max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:manifest.package_sha256,...economicsFixture(brief,now)};
  const qa=sign({...common,expires_at_ms:now+899000,audience:'content-control:pod:qa',verdict:'PASS',...manifest,
   checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true])),editorial}});
  const job={id:brief.id,platform:brief.platform,brief,manifest,qa_envelope:qa,idempotency_key:'fixture-idempotency'};
@@ -103,4 +104,27 @@ test('cancellation and kill switches are rechecked after local database validati
   };
   assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
  }
+});
+
+test('missing or inadequate economics never reaches an adapter despite valid QA and authority',async()=>{
+ for(const edit of [r=>delete r.economics,r=>r.economics.variable_cost_minor=601,
+  r=>r.economics.package_sha256='c'.repeat(64),r=>r.price.amount_minor=1999,
+  r=>r.economics.all_variable_costs_included=false]){
+  const f=fixture();edit(f.release);
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+ }
+});
+test('economics expires during final database wait even while release grant and QA remain valid',async t=>{
+ let now=4000000;t.mock.method(Date,'now',()=>now);const f=fixture(now);
+ f.release.economics.valid_until_ms=now+1000;
+ f.options.db.assertPublishable=async()=>{now+=1000;return true;};
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+});
+test('adapter receives only validated economics and exact calculated contribution',async()=>{
+ const f=fixture();f.release.economics.contribution_minor=999999;
+ f.options.adapters.redbubble.submit=async({brief})=>{
+  assert.equal(brief.economics.contribution_minor,400);
+  assert.equal(brief.economics.evidence_event_id,'fixture-economics');return {id:'fixture-receipt'};
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
 });
