@@ -1,7 +1,7 @@
 import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
+import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 import {validateTemplate,validateInteriorTemplate} from '../integrations/pod/templates.mjs';
@@ -48,13 +48,9 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
   const store=new ArtifactStore(db);
-  for(const [name,sha] of Object.entries(manifest.files)){
-   const base=await fs.realpath(task.output),file=await fs.realpath(path.resolve(base,name));
-   if(!file.startsWith(base+path.sep))throw Error('ARTIFACT_PATH_INVALID');
-   const body=await fs.readFile(file);
-   if(crypto.createHash('sha256').update(body).digest('hex')!==sha)throw Error('ARTIFACT_HASH_MISMATCH');
-   await store.put(body,name.endsWith('.pdf')?'application/pdf':name.endsWith('.json')?'application/json':'image/png');
-  }
+  const artifacts=await readPackageArtifacts(task.output,manifest.files);
+  await authorizeProduction();
+  await store.putMany(artifacts);
   await authorizeProduction();
   if(typeof task.reviewPackage!=='function'){
    await db.holdProduction(job,manifest);

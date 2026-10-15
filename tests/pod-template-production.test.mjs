@@ -126,18 +126,22 @@ test('revocation after rendering prevents persistence and review hold',async()=>
  assert.equal(result.started,true);assert.equal(result.held,0);assert.equal(result.status,'BLOCKED');
 });
 test('fresh authority is required before an independent review callback',async()=>{
- const result=await exercise({review:true,denyGrantAt:4,detailed:true});
+ const result=await exercise({review:true,denyGrantAt:5,detailed:true});
  assert.equal(result.started,true);assert.equal(result.reviewCalls,0);assert.equal(result.status,'BLOCKED');
 });
 test('revocation after independent review blocks QA execution',async()=>{
- const r=await exercise({review:true,denyGrantAt:5,detailed:true});
+ const r=await exercise({review:true,denyGrantAt:6,detailed:true});
  assert.equal(r.reviewCalls,1);assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.status,'BLOCKED');
 });
 test('revocation after QA prevents completion',async()=>{
- const r=await exercise({review:true,denyGrantAt:6,detailed:true});
+ const r=await exercise({review:true,denyGrantAt:7,detailed:true});
  assert.equal(r.qaStarted,true);assert.equal(r.completed,0);assert.equal(r.status,'BLOCKED');
 });
 test('valid stage authority reaches the authenticated completion boundary',async()=>{
  const r=await exercise({review:true,detailed:true});
- assert.equal(r.status,'QA_PASSED');assert.equal(r.completed,1);assert.equal(r.grantCalls,6);assert.equal(r.localChecks,5);
+ assert.equal(r.status,'QA_PASSED');assert.equal(r.completed,1);assert.equal(r.grantCalls,7);assert.equal(r.localChecks,6);
+});
+test('fresh authority after package reads is required before persistence',async()=>{
+ const result=await exercise({review:true,denyGrantAt:4,detailed:true});
+ assert.equal(result.started,true);assert.equal(result.reviewCalls,0);assert.equal(result.held,0);assert.equal(result.status,'BLOCKED');
 });
