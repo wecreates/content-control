@@ -984,3 +984,47 @@ advances only the test application clock after actual SQL writes, then checks ro
 of the queue, market/financial rows, provider inbox and outbox in six cases. This is
 controlled expiry testing, not a production traffic/capacity measurement. Hosted CI
 must pass before merge. All 24 live acceptance gates and publication holds remain.
+
+PR #96 head ca65bbacb059c5fd983bca955a7c1605efb681d9 passed
+https://github.com/wecreates/content-control/actions/runs/38695345427
+(job 116290492737): 194 Node tests, zero failures/skips; 42 POD Python tests;
+the durable PostgreSQL/Python review workflow; and three free-review guard tests.
+All six actual-SQL rollback cases passed. Merged as
+790e32805d66caf8de360e3b796f1075d3866d6a after checking unchanged heads.
+Merged-main integration run 38695494909 and wiring run 38695494958 also passed.
+
+Render deployment dep-db87i8rm8hqs73bsh4kg of that merge failed at
+2026-10-15T06:56:36.499323Z. Its 06:56:36.267963642Z log explicitly confirms
+exhausted build pipeline minutes. The individual deployment record still reports
+5180c243198afb6dfb05ee8d2e14995d4e7b0750 live in dep-db7r0lh42hec739jiusg.
+PRs #95 and #96 are merged/tested, not verified deployed.
+
+## Money Factory inbox expiry verification — 2026-10-15
+
+The matching Money Factory receiver captured one request timestamp before database
+work, so an event could expire during a connection or uniqueness wait and still
+be committed/acknowledged. PR #20 now passes a clock function through the HTTP
+handler, validates finite readings and rechecks the five-minute window immediately
+before commit. The internal optional fourth acceptPodEvent argument is now a clock
+function, not a numeric timestamp; the default and HTTP callers are updated/tested.
+HTTP envelope, idempotency header, reply schema and observation-only semantics stay
+unchanged. No event is converted into verified revenue or readiness.
+
+Two HTTP regressions failed before the fix; all seven HTTP tests pass locally.
+Hosted cross-repository run
+https://github.com/wecreates/Money-factory/actions/runs/38695980312
+(job 116292525967) passed all 16 Node tests with zero skips and both Python tests.
+Its actual PostgreSQL unique-key barrier expires an envelope while insertion is
+blocked, releases the blocker, then verifies rollback and no retained inbox row.
+Existing lost-acknowledgement, replay, conflict and rollback tests also passed.
+PR #20 merged as f43aae9843ff72a77691672bacc8d1f7643d818e, after head verification.
+This does not establish that the receiver is mounted in the live MF service.
+
+The protected database run 38627827260 is still waiting at the pre-005 revision
+7d45ff10c90a53721be0a1926eaffb52c7734c3f. No credible changed access path appeared;
+database administration was not retried, no duplicate migration was dispatched,
+and no credentials, network rules, spend or service plans changed. All 24 live
+acceptance areas remain open. Real configuration/evidence, restricted database
+preflight, recovery, authorized adapters, capacity and end-to-end acceptance remain
+required. Both publication flags remain false. These executed test/merge operations
+are not a continuously running self-hosted production worker.
