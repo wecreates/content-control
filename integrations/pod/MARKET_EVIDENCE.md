@@ -32,3 +32,14 @@ Stored hashes establish durable references, not truth, freshness, demand,
 trademark clearance or profitability. Historical records must not be called
 current trends without current source evidence. CI uses synthetic source data
 and temporary PostgreSQL; it confers no collection rights or production acceptance.
+
+## Stored proof integrity
+
+Every referenced proof must exist and its stored bytes must hash to its claimed
+SHA-256. The intake transaction recomputes digests in PostgreSQL before recording
+or acknowledging either new evidence or a replay; blob bodies are not downloaded
+to Node for this check. Missing evidence retains the lane-specific rejection;
+mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not update
+queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
+for recovery investigation. Integrity establishes byte identity only, not source
+authorization, legal clearance, listing truth or verified income.

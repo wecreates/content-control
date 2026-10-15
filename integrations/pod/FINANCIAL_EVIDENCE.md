@@ -35,3 +35,14 @@ costs/taxes cannot be positive. Adjustments still require direct authoritative
 evidence. Recorded net amounts are not verified business profit: complete costs,
 provider reconciliation and the Money Factory ledger remain independent gates.
 Fixture events and passing CI provide no real revenue, account access or approval.
+
+## Stored proof integrity
+
+Every referenced proof must exist and its stored bytes must hash to its claimed
+SHA-256. The intake transaction recomputes digests in PostgreSQL before recording
+or acknowledging either new evidence or a replay; blob bodies are not downloaded
+to Node for this check. Missing evidence retains the lane-specific rejection;
+mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not update
+queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
+for recovery investigation. Integrity establishes byte identity only, not source
+authorization, legal clearance, listing truth or verified income.

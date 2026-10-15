@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
 import {PLATFORMS,verifyEnvelope} from './policy.mjs';
+import {assertStoredEvidence} from './stored-evidence.mjs';
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 export async function recordMarketObservation(db,envelope,key){
  const o=verifyEnvelope(envelope,key,'content-control:pod:market');
@@ -19,8 +20,7 @@ export async function recordMarketObservation(db,envelope,key){
  return db.tx(async c=>{
   // Evidence blobs are immutable. Do not persist unresolvable proof references.
   const hashes=[...new Set([o.source_sha256,o.image_sha256,o.rank_evidence_sha256].filter(v=>v!=null))];
-  const stored=await c.query('SELECT sha256 FROM pod_artifacts WHERE sha256=ANY($1::text[])',[hashes]);
-  if(!hashes.every(sha=>stored.rows.some(row=>row.sha256===sha)))throw Error('MARKET_EVIDENCE_MISSING');
+  await assertStoredEvidence(c,hashes,'MARKET_EVIDENCE_MISSING');
   const r=await c.query(`INSERT INTO pod_market_intelligence(id,platform,source_url,observed_at,country,category,image_sha256,price_minor,currency,observed_rank,source_sha256,observations,rank_evidence_sha256)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(platform,source_url,observed_at) DO NOTHING RETURNING id`,
    [crypto.randomUUID(),o.platform,o.source_url,o.observed_at,o.country,o.category,o.image_sha256??null,o.price_minor??null,o.currency??null,o.observed_rank??null,o.source_sha256,observations,o.rank_evidence_sha256??null]);

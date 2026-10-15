@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {verifyEnvelope} from './policy.mjs';
+import {assertStoredEvidence} from './stored-evidence.mjs';
 
 // An authenticated provider observer must confirm the listing; submit success is insufficient.
 export async function reconcilePublication(db,envelope,key){
@@ -11,8 +12,7 @@ export async function reconcilePublication(db,envelope,key){
   const job=(await c.query('SELECT * FROM pod_production_queue WHERE id=$1 FOR UPDATE',[e.job_id])).rows[0];
   if(!job||job.account_id!==e.account_id||job.platform!==e.platform||job.manifest?.package_sha256!==e.package_sha256||
    !['submitted','ambiguous','published'].includes(job.state)||(job.provider_id&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
-  const artifact=await c.query('SELECT 1 FROM pod_artifacts WHERE sha256=$1',[e.evidence_sha256]);
-  if(!artifact.rowCount)throw Error('LISTING_EVIDENCE_MISSING');
+  await assertStoredEvidence(c,[e.evidence_sha256],'LISTING_EVIDENCE_MISSING');
   const seen=await c.query('SELECT evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]);
   if(seen.rowCount){
    const previous=seen.rows[0];

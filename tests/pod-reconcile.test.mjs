@@ -8,12 +8,12 @@ const observation={job_id:'job-a',account_id:'account-a',platform:'redbubble',st
 function sign(value){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:listing-observation',
  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
-function database(value,seen,state='submitted'){
+function database(value,seen,state='submitted',corrupt=false){
  const writes=[];
  return {writes,tx:async fn=>fn({query:async(sql,args)=>{
   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:value.job_id,account_id:value.account_id,
    platform:value.platform,state,provider_id:value.provider_id,manifest:{package_sha256:value.package_sha256}}]};
-  if(sql.startsWith('SELECT 1 FROM pod_artifacts'))return {rowCount:1};
+  if(sql.includes('FROM pod_artifacts'))return {rowCount:1,rows:[{sha256:value.evidence_sha256,body_sha256:corrupt?'0'.repeat(64):value.evidence_sha256}]};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[seen]:[]};
   writes.push({sql,args});return {rowCount:1};
  }})};
@@ -23,6 +23,14 @@ test('provider event replay cannot be acknowledged for another job sharing evide
  const db=database(changed,{evidence_sha256:observation.evidence_sha256,payload:observation});
  await assert.rejects(reconcilePublication(db,sign(changed),key),/LISTING_REPLAY_CONFLICT/);
  assert.equal(db.writes.length,0);
+});
+test('corrupt listing evidence cannot publish, replay or add a published observation',async()=>{
+ for(const [state,replay] of [['submitted',false],['published',true],['published',false]]){
+  const seen=replay?{evidence_sha256:observation.evidence_sha256,payload:observation}:null;
+  const db=database(observation,seen,state,true);
+  await assert.rejects(reconcilePublication(db,sign(observation),key),/EVIDENCE_ARTIFACT_CORRUPT/);
+  assert.equal(db.writes.length,0);
+ }
 });
 test('exact replay ignores refreshed envelope times and never mutates state',async()=>{
  const db=database(observation,{evidence_sha256:observation.evidence_sha256,payload:{...observation,issued_at_ms:1,expires_at_ms:2}});
