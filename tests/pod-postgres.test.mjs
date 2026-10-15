@@ -63,6 +63,51 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true]))});
   const qa={payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
+  // Real row-lock waits must not let a transaction-start clock authorize a
+  // production write after expiry. A database barrier avoids timing guesses.
+  const leaseConcept=crypto.randomUUID(),leaseAccount=crypto.randomUUID();
+  await pool.query("INSERT INTO pod_concepts VALUES($1,'lease-fixture',$2,'PASS',false,now())",[leaseConcept,crypto.randomUUID()]);
+  await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[leaseAccount]);
+  const failedPayload=JSON.stringify({...JSON.parse(payload),verdict:'FAIL'});
+  const failedQA={payload:failedPayload,signature:crypto.createHmac('sha256',qaKey).update(failedPayload).digest('hex')};
+  for(const [index,action] of [
+   (target,j)=>target.failProduction(j,'FIXTURE_FAILURE'),
+   (target,j)=>target.holdProduction(j,manifest),
+   (target,j)=>target.completeProduction(j,manifest,qa),
+   (target,j)=>target.completeProduction(j,manifest,failedQA)
+  ].entries()){
+   const leaseJob={id:crypto.randomUUID(),fencing_token:1};
+   await pool.query(`INSERT INTO pod_production_queue
+    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until)
+    VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'processing',1,clock_timestamp()+interval '1 minute')`,
+    [leaseJob.id,leaseConcept,leaseAccount,index+1,crypto.randomUUID()]);
+   const blocker=await pool.connect();let pending,workerPid;
+   const waitingDB=new PodDB({pool:{connect:async()=>{
+    const client=await pool.connect();workerPid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;return client;
+   }},bridge,qaKey,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
+   try{
+    await blocker.query('BEGIN');await blocker.query('SELECT id FROM pod_production_queue WHERE id=$1 FOR UPDATE',[leaseJob.id]);
+    pending=action(waitingDB,leaseJob).then(value=>({value}),error=>({error}));
+    let waiting=false;
+    for(let attempt=0;attempt<100;attempt++){
+     if(workerPid)waiting=(await pool.query('SELECT cardinality(pg_blocking_pids($1))>0 AS waiting',[workerPid])).rows[0].waiting;
+     if(waiting)break;await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.equal(waiting,true,'production write reached the held row lock');
+    await blocker.query("UPDATE pod_production_queue SET lease_until=clock_timestamp()+interval '50 milliseconds' WHERE id=$1",[leaseJob.id]);
+    await blocker.query('SELECT pg_sleep(0.15)');await blocker.query('COMMIT');
+    const outcome=await pending;assert.equal(outcome.error?.message,'LEASE_LOST');
+    const unchanged=(await pool.query('SELECT state,manifest,qa_envelope,fencing_token,reason_code FROM pod_production_queue WHERE id=$1',[leaseJob.id])).rows[0];
+    assert.deepEqual(unchanged,{state:'processing',manifest:null,qa_envelope:null,fencing_token:'1',reason_code:null});
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[leaseJob.id])).rows[0].n,0);
+    await db.recover();
+    await assert.rejects(action(db,leaseJob),/LEASE_LOST/);
+    assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[leaseJob.id])).rows[0].state,'blocked');
+    // Remove only this disposable case so later e2e metrics are not polluted
+    // by deliberately expired leases from an earlier workflow step.
+    await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[leaseJob.id]);
+   }finally{await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
+  }
   assert.ok((await db.listReady()).some(row=>row.id===job));
   await assert.rejects(db.completeProduction(claimed,manifest,qa),/LEASE_LOST/);
   const events=(await pool.query("SELECT kind,payload FROM pod_events WHERE job_id=$1",[job])).rows;
@@ -275,5 +320,6 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   }finally{await legacyListings.query('ROLLBACK');legacyListings.release();}
  }finally{await pool.end();}
 });
+
 
 
