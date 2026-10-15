@@ -16,6 +16,30 @@ from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
+    def test_qa_oversized_and_mismatched_rasters_fail_before_ocr(self):
+        from test_pod_raster_bounds import png_header
+        for filename in ('print.png', 'art-mask.png', 'text-mask.png'):
+            for size, reason in (((10001, 10000), 'IMAGE_PIXEL_LIMIT'), ((601, 600), 'IMAGE_SIZE_MISMATCH')):
+                with self.subTest(filename=filename, size=size):
+                    def mutate(manifest, root):
+                        png_header(root / filename, size)
+                        manifest['files'][filename] = digest(root / filename)
+                    result = self.package_result(mutate)
+                    self.assertEqual(result['binary_pass'], 0, result)
+                    self.assertIn(reason, result['errors'])
+                    self.assertNotIn('text', result['checks'])
+
+    def test_similarity_rejects_oversized_reference_before_optional_model_import(self):
+        from test_pod_raster_bounds import png_header
+        from pod_vision_qa import similarity
+        with tempfile.TemporaryDirectory() as tmp:
+            candidate, reference = Path(tmp) / 'candidate.png', Path(tmp) / 'reference.png'
+            Image.new('RGB', (2, 2)).save(candidate)
+            png_header(reference, (10001, 10000))
+            with patch.dict(sys.modules, {'torch': None, 'open_clip': None}):
+                with self.assertRaisesRegex(ValueError, '^IMAGE_PIXEL_LIMIT$'):
+                    similarity(candidate, reference)
+
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
