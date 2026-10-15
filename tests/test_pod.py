@@ -9,18 +9,19 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_asset_generator import generate
 from pod_market_intake import ProductParser, products, screen
-from pod_vision_qa import spatial_checks, ocr, evaluate, qa_receipt
+from pod_vision_qa import spatial_checks, ocr, evaluate, qa_receipt, EDITORIAL_CHECKS
 from pod_common import digest, canonical, sign
 from pod_original_art import create_art
 from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
-    def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None):
+    def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
+                       editorial_patch=None,editorial_present=True,editorial_evaluators=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
-        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48}):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48,'POD_EDITORIAL_KEY':'e'*48}):
             root=Path(tmp)/'package'
             src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
             template=self.template()
@@ -46,9 +47,53 @@ class PODTests(unittest.TestCase):
             review=sign({**common,'audience':'pod:competitive-review','reference_sha256':digest(src),
                 'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
                 'swapped_order_consistent':True,'weighted_margin':1,**(review_patch or {})},'POD_REVIEW_KEY')
+            editorial=None
+            if kdp and editorial_present:
+                editorial=sign({**common,'audience':'pod:editorial-review','interior_sha256':m['files'].get('interior.pdf'),
+                    'evaluator_id':'synthetic-editor','verdict':'PASS','checks':{k:True for k in EDITORIAL_CHECKS},
+                    **(editorial_patch or {})},'POD_EDITORIAL_KEY')
             # OCR is tested independently; these tests isolate package geometry and binding.
             with patch('pod_vision_qa.ocr',return_value=''):
-                return evaluate(root,src,rights,review,['test-fixture'])
+                return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
+                    approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators)
+
+    def test_kdp_requires_separate_editorial_review(self):
+        result=self.package_result(lambda m,r:None,kdp=True,editorial_present=False)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('EDITORIAL_REVIEW_REQUIRED',result['errors'])
+
+    def test_kdp_editorial_scope_and_each_required_check(self):
+        patches=[{'package_sha256':'a'*64},{'interior_sha256':'b'*64},{'evaluator_id':'unapproved'},
+                 {'verdict':'FAIL'},{'audience':'pod:competitive-review'},
+                 {'expires_at_ms':1}, {'checks':{}}]
+        for k in EDITORIAL_CHECKS:
+            patches.append({'checks':{**{x:True for x in EDITORIAL_CHECKS},k:1}})
+        for change in patches:
+            with self.subTest(change=change):
+                result=self.package_result(lambda m,r:None,kdp=True,editorial_patch=change)
+                self.assertEqual(result['binary_pass'],0,result)
+        self.assertEqual(self.package_result(lambda m,r:None,kdp=True,editorial_evaluators=[])['binary_pass'],0)
+
+    def test_kdp_editorial_expiry_caps_receipt(self):
+        now=1800000000.0
+        with patch('pod_common.time.time',return_value=now):
+            result=self.package_result(lambda m,r:None,kdp=True,editorial_patch={'expires_at_ms':int(now*1000)+1000})
+            self.assertEqual(result['binary_pass'],1,result)
+            self.assertTrue(result['checks']['editorial'])
+            self.assertEqual(qa_receipt(result,int(now*1000))['expires_at_ms'],int(now*1000)+1000)
+
+    def test_kdp_editorial_expiry_during_comparison_fails(self):
+        from pod_common import verified
+        now=1800000000.0
+        def delayed_review(envelope,key,audience):
+            nonlocal now
+            if audience=='pod:competitive-review':
+                now+=2
+            return verified(envelope,key,audience)
+        with patch('pod_common.time.time',side_effect=lambda:now),patch('pod_vision_qa.verified',side_effect=delayed_review):
+            result=self.package_result(lambda m,r:None,kdp=True,editorial_patch={'expires_at_ms':int(now*1000)+1000})
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertIn('EVIDENCE_EXPIRED',result['errors'])
 
     def test_unbound_masks_fail_before_ocr(self):
         for filename in ('art-mask.png','text-mask.png'):

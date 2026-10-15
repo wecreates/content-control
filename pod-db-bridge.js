@@ -122,7 +122,7 @@ export class PodDB {
    if(!job)throw Error('REVIEW_NOT_PENDING');
    // Authentication before connection acquisition cannot authorize an expired
    // review after pool or row-lock waits. Revalidate at the state transition.
-   enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256);
+   enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256,job.platform);
    await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',{package_sha256:job.manifest.package_sha256,publication_enabled:false}]);
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
@@ -135,7 +135,7 @@ export class PodDB {
  }
  async completeProduction(job,manifest,qaEnvelope){
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
-  const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256);return true;}catch{return false;}})();
+  const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256,job.platform);return true;}catch{return false;}})();
   return this.tx(async c=>{
    await lockProductionLease(c,job);
    if(pass){
@@ -149,7 +149,7 @@ export class PodDB {
     if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
    }
    const currentQA=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
-   if(pass)enforceQA(currentQA,manifest.package_sha256,manifest.template_sha256);
+   if(pass)enforceQA(currentQA,manifest.package_sha256,manifest.template_sha256,job.platform);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);

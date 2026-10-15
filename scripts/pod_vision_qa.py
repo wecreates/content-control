@@ -90,7 +90,10 @@ def similarity(candidate,reference):
         raise ValueError('SIMILARITY_NONFINITE')
     return cosine
 
-def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False):
+EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interior_consistency','ai_disclosure')
+
+def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
+             editorial_envelope=None,approved_editorial_evaluators=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -111,7 +114,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         for name,sha in m['files'].items():
             if digest(scoped_file(root,name))!=sha:
                 raise ValueError('FILE_HASH_MISMATCH')
-        report.update({'package_sha256':actual,'template_sha256':m['template_sha256'],
+        report.update({'platform':m['platform'],'package_sha256':actual,'template_sha256':m['template_sha256'],
                        'candidate_sha256':m['files']['print.png'],'reference_sha256':digest(reference)})
         with Image.open(root/'print.png') as f:
             image=f.convert('RGB')
@@ -159,6 +162,16 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 if preflight:
                     preflight &= float(np.abs(np.asarray(raster,dtype=float)-np.asarray(image,dtype=float)).mean())<1
         report['checks']['print_preflight']=bool(preflight)
+        if m['platform']=='kdp':
+            report['checks']['editorial']=False
+            if editorial_envelope is None:
+                raise ValueError('EDITORIAL_REVIEW_REQUIRED')
+            editorial=verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
+            report['checks']['editorial']=bool(editorial.get('verdict')=='PASS' and
+                editorial.get('package_sha256')==actual and
+                editorial.get('interior_sha256')==m['files']['interior.pdf'] and
+                editorial.get('evaluator_id') in (approved_editorial_evaluators or []) and
+                all(editorial.get('checks',{}).get(k) is True for k in EDITORIAL_CHECKS))
         # Descriptive similarity is optional; the independent signed review remains mandatory.
         report['openclip']={'status':'NOT_REQUESTED','scope':'descriptive_only_not_superiority'}
         if descriptive_similarity:
@@ -176,9 +189,14 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
         verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
         report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'])
+        if m['platform']=='kdp':
+            verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
+            report['evidence_expires_at_ms']=min(report['evidence_expires_at_ms'],editorial['expires_at_ms'])
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
     required=('text','geometry','resolution','rights','competitive','print_preflight')
+    if report.get('platform')=='kdp':
+        required+=('editorial',)
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
     report.update({'verdict':'PASS' if ok else 'FAIL','binary_pass':int(ok),'production_ready':ok})
     return report
@@ -202,9 +220,12 @@ def main():
     p.add_argument('--approved-evaluator',action='append',default=[])
     p.add_argument('--signed-output')
     p.add_argument('--descriptive-similarity',action='store_true')
+    p.add_argument('--editorial-review')
+    p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
-        report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity)
+        report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
+                        read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

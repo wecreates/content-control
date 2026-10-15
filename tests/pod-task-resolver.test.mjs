@@ -12,13 +12,16 @@ test('task descriptor blocks traversal and absent roles',()=>{
  }
 });
 test('resolver restores stored bytes into isolated disposable workspace',async()=>{
- const descriptor=Buffer.from(JSON.stringify(task));
+ const descriptor=Buffer.from(JSON.stringify({...task,approvedEditorialEvaluators:['descriptor-cannot-authorize']}));
  const store={get:async hash=>hash==='b'.repeat(64)?{body:descriptor,media_type:'application/json'}:{body:Buffer.from('payload'),media_type:'application/json'}};
  const resolver=createStoredTaskResolvers({}, {store});
  const resolved=await resolver.resolveTask({brief:{task_sha256:'b'.repeat(64)}});
  assert.equal(await fs.readFile(resolved.source,'utf8'),'payload');
  assert.equal(resolved.reviewPackage,undefined);
+ assert.deepEqual(resolved.approvedEditorialEvaluators,[]);
  assert.deepEqual(resolved.templateScope,task.templateScope);
  await resolved.cleanup();await assert.rejects(fs.stat(resolved.assetRoot),{code:'ENOENT'});
+ const authorized=createStoredTaskResolvers({}, {store,approvedEditorialEvaluators:['host-fixture']});
+ const approved=await authorized.resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+ try{assert.deepEqual(approved.approvedEditorialEvaluators,['host-fixture']);}finally{await approved.cleanup();}
 });
-

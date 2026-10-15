@@ -63,6 +63,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const args=['--package-dir',task.output,'--reference',task.reference,'--rights',attestation.rights,
    '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput];
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
+  if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
+  for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);
   // A failed QA process still emits a signed FAIL when signing is available.
   await authorizeProduction();
   let qaProcessFailed=false;

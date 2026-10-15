@@ -15,6 +15,7 @@ import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 import {verifyAuthorityExpiry} from './pod-authority-expiry-postgres.mjs';
 import {verifyEvidenceExpiry} from './pod-evidence-expiry-postgres.mjs';
 import {verifyProductionGuard} from './pod-production-guard-postgres.mjs';
+import {verifyEditorialGate} from './pod-editorial-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -267,6 +268,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(denied[0].payload.publication_enabled,false);assert.match(denied[0].payload.intake_sha256,/^[a-f0-9]{64}$/);
   await verifyAuthorityExpiry(pool,bridge);
   await verifyProductionGuard(pool,bridge);
+  await verifyEditorialGate(pool,bridge);
   await verifyEvidenceExpiry(pool,bridge,hash);
   // Synthetic permitted-source fixtures exercise durability and contention,
   // not actual marketplace trends, rank claims or source authorization.

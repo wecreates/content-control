@@ -16,7 +16,7 @@ export function validateTask(task){
  if(task.interior&&['template','pages','font'].some(role=>!has(task.interior[role])))throw Error('TASK_INTERIOR_INVALID');
  return task;
 }
-export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],env=process.env}={}){
+export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env}={}){
  let resolveGrant=async job=>job.upstream_envelope;
  if(env.POD_GRANT_URL){
   try{resolveGrant=createGrantResolver({env});}catch{resolveGrant=async()=>{throw Error('GRANT_AUTHORITY_INVALID');};}
@@ -39,7 +39,7 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
     }
     const resolved={rights_verified:true,assetRoot:directory,output:path.join(directory,'package'),
      qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
-     approvedEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
+     approvedEvaluators,approvedEditorialEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
     for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(directory,task[role]);
     if(task.interior)resolved.interior=Object.fromEntries(Object.entries(task.interior).map(([k,v])=>[k,path.join(directory,v)]));
     // New packages await a hash-bound external QA review; no preapproved future bytes.
@@ -48,5 +48,3 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
   }
  };
 }
-
-
