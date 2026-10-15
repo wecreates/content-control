@@ -826,3 +826,27 @@ required approvals are actually available, the migration must use the current
 reviewed revision and all five checksums. No duplicate workflow was dispatched
 and the optional network-expansion path was not used. All 24 live acceptance
 areas remain open; this record does not claim continuous unattended execution.
+
+## Production lease expiry after database waits — 2026-10-15
+
+Resumed the unfinished local production-lease repair after checking current heads
+and open PRs. Failure writes had no expiry check; review holds and completion used
+PostgreSQL now(), fixed at transaction start. A lock wait could therefore allow a
+late worker to overwrite queue state after its lease expired. All three paths now
+lock the current processing row and fencing token, check clock_timestamp in a
+separate statement after the lock, and check wall time again in the final update.
+Completion still holds current rights through the successful readiness transition.
+No migration, lease renewal, publication permission or new dependency is added.
+
+Six focused local lease tests pass after the repair; the new rejection/order
+checks failed against the original code. The PostgreSQL suite adds four controlled
+row-lock/expiry cases: failure, review hold, passing QA and failing QA. Each must
+reject the late write, preserve state/manifest/fencing and emit no event; recovery
+then blocks the job and rejects the stale worker again. Hosted CI must validate
+these real database tests before merge. Synthetic fixtures are not live acceptance.
+
+Current Render service remains the existing free Docker service; latest listed
+deployment dep-db808v942hec73bp3ubg failed on ef49076f1af7590f579d31f1f13dd8b59ecdf0f6.
+No database access was retried, no network/spend/credential settings were changed,
+and both publication flags remain held disabled. All 24 live gates remain open.
+
