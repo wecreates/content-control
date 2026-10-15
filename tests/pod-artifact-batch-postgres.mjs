@@ -32,5 +32,31 @@ export async function verifyArtifactBatch(pool,db){
  const extra=item();
  await assert.rejects(store.putMany([winner[0],extra]),/ARTIFACT_BUDGET_EXHAUSTED/);
  assert.equal(await count([extra]),0);assert.equal(await used(),initial+128);
+ // Mutate caller-owned bytes while the real transaction awaits its lock query.
+ const mutable=item(),original=Buffer.from(mutable.body),originalSha=sha(mutable);
+ const racingDB={tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
+  const result=await client.query(sql,args);
+  if(sql.includes('pg_advisory_xact_lock'))mutable.body.fill(120);
+  return result;
+ }}))};
+ assert.equal(await new ArtifactStore(racingDB).put(mutable.body,mutable.mediaType),originalSha);
+ assert.deepEqual((await pool.query('SELECT body FROM pod_artifacts WHERE sha256=$1',[originalSha])).rows[0].body,original);
+ const untouched=item(),beforeConflict=await used();
+ await assert.rejects(new ArtifactStore(db).putMany([untouched,{body:original,mediaType:'image/png'}]),/ARTIFACT_CONFLICT/);
+ assert.equal(await count([untouched]),0);assert.equal(await used(),beforeConflict);
+ // Two writers for the same bytes but incompatible media metadata cannot both
+ // claim success. The shared advisory lock serializes conflict detection.
+ const raced=item(),racedStore=new ArtifactStore(db);
+ const mediaRace=await Promise.allSettled([racedStore.put(raced.body,'image/png'),racedStore.put(raced.body,'application/pdf')]);
+ assert.equal(mediaRace.filter(r=>r.status==='fulfilled').length,1);
+ assert.equal(mediaRace.filter(r=>r.status==='rejected'&&r.reason.message==='ARTIFACT_CONFLICT').length,1);
+ assert.equal(await count([raced]),1);
+ // Reproduce a legacy mismatched hash/body row in disposable CI only. Never
+ // silently accept its key as a valid idempotent upload or rewrite its bytes.
+ const corrupted=item(),wrongBody=item(),pending=item();
+ await pool.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha(corrupted),wrongBody.body,corrupted.mediaType]);
+ await assert.rejects(new ArtifactStore(db).putMany([pending,corrupted]),/ARTIFACT_CONFLICT/);
+ assert.equal(await count([pending]),0);
+ assert.deepEqual((await pool.query('SELECT body FROM pod_artifacts WHERE sha256=$1',[sha(corrupted)])).rows[0].body,wrongBody.body);
  // These small immutable fixtures remain only in disposable CI PostgreSQL.
 }

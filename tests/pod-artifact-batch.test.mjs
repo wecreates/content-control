@@ -10,6 +10,21 @@ import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
 
+test('artifact bytes are snapshotted before database waits',async()=>{
+ const a=entry('original'),original=Buffer.from(a.body);let inserted;
+ const db={tx:async fn=>{
+  a.body.fill(120);a.mediaType='image/png';
+  return fn({query:async(sql,args)=>{
+   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+   if(sql.startsWith('INSERT'))inserted=args;
+   return {rows:[]};
+  }});
+ }};
+ assert.equal(await new ArtifactStore(db).put(a.body,a.mediaType),hash(original));
+ assert.equal(inserted[0],hash(inserted[1]));
+ assert.deepEqual(inserted[1],original);assert.equal(inserted[2],'application/json');
+});
+
 test('deployment budget accepts only bounded positive decimal byte strings',()=>{
  assert.equal(artifactBudgetBytes({}),134217728);
  for(const bytes of ['1','64','134217728'])assert.equal(artifactBudgetBytes({POD_ARTIFACT_BUDGET_BYTES:bytes}),Number(bytes));
@@ -29,7 +44,7 @@ test('invalid batches fail before acquiring a database connection',async()=>{
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
  const db={tx:fn=>fn({query:async(sql,args)=>{
-  if(sql.includes('ANY('))return {rows:[{sha256:hash(a.body)}]};
+  if(sql.includes('ANY('))return {rows:[{sha256:hash(a.body),body_sha256:hash(a.body),media_type:a.mediaType}]};
   if(sql.includes('sum('))return {rows:[{bytes:'4'}]};
   if(sql.startsWith('INSERT'))writes.push(args);
   return {rows:[]};
@@ -46,6 +61,27 @@ async function fixture(fn){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-artifact-read-'));
  try{await fn(root);}finally{await fs.rm(root,{recursive:true,force:true});}
 }
+test('same-batch media conflicts fail before database access',async()=>{
+ const a=entry('same bytes');
+ const store=new ArtifactStore({tx(){assert.fail('must not open a transaction');}});
+ await assert.rejects(store.putMany([a,{body:Buffer.from(a.body),mediaType:'image/png'}]),/ARTIFACT_CONFLICT/);
+});
+test('existing corrupt bytes or media conflicts reject the whole batch before inserts',async()=>{
+ const a=entry('existing'),b=entry('new');
+ for(const existing of [
+  {sha256:hash(a.body),body_sha256:hash(a.body),media_type:'image/png'},
+  {sha256:hash(a.body),body_sha256:hash('corrupted'),media_type:a.mediaType}
+ ]){
+  let inserts=0;
+  const db={tx:fn=>fn({query:async(sql)=>{
+   if(sql.includes('ANY('))return {rows:[existing]};
+   if(sql.startsWith('INSERT'))inserts++;
+   return {rows:[]};
+  }})};
+  await assert.rejects(new ArtifactStore(db).putMany([b,a]),/ARTIFACT_CONFLICT/);
+  assert.equal(inserts,0);
+ }
+});
 test('package reads preserve exact bytes, order and media types',()=>fixture(async root=>{
  const files={'print.png':Buffer.from('png fixture'),'cover.pdf':Buffer.from('pdf fixture'),'interior.receipt.json':Buffer.from('{}')};
  for(const [name,body] of Object.entries(files))await fs.writeFile(path.join(root,name),body);

@@ -14,6 +14,18 @@ the whole batch may already exist, and hash-addressed replay is idempotent. Two
 writers cannot both reserve the same remaining capacity. Exact replay does not
 consume additional durable bytes.
 
+The store copies validated caller buffers before any asynchronous database wait.
+Hashing and insertion use that private snapshot, so callers cannot change stored
+bytes after identity is calculated. Copies are bounded by the existing 64 MiB
+batch limit. Identical hashes must also agree on media type; conflicting types in
+one batch fail before opening a transaction. Under the same write lock, existing
+rows have their SHA-256 recomputed by PostgreSQL and their media type compared.
+Only the small digest/metadata result returns to Node, not duplicate blob bodies.
+Corrupt legacy rows and metadata conflicts return `ARTIFACT_CONFLICT` before any
+new batch insert. Existing evidence is never overwritten or deleted automatically;
+an operator must investigate through the recovery process. These checks do not
+claim to validate the actual media format, rights or design quality.
+
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.
 If present it must be a positive decimal integer string of at most 134217728;
