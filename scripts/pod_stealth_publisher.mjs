@@ -28,7 +28,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const release=verifyEnvelope(releaseEnvelope,upstreamKey,'content-control:pod');
   const brief=enforceBrief(release,{...job.brief,package_sha256:manifest.package_sha256},{publishing:true});
   const qa=verifyEnvelope(job.qa_envelope,qaKey,'content-control:pod:qa');
-  enforceQA(qa,manifest.package_sha256,manifest.template_sha256);
+  enforceQA(qa,manifest.package_sha256,manifest.template_sha256,job.platform);
   signal?.throwIfAborted();
   // Recheck local kill switches immediately before external side effect.
   if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true')throw Error('PUBLICATION_DISABLED');
@@ -48,4 +48,3 @@ export async function runPublisher(options){
   try{await pause(15000,undefined,{signal:options.signal});}catch(e){if(e.name!=='AbortError')throw e;}
  }
 }
-

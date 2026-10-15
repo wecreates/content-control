@@ -2,6 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enforceQA,enforceBrief,REQUIRED_QA} from '../integrations/pod/policy.mjs';
 const checks=Object.fromEntries(REQUIRED_QA.map(k=>[k,true]));
+test('KDP requires explicit editorial approval beyond technical and cover QA',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64),qa={verdict:'PASS',checks,package_sha256:p,template_sha256:t};
+ for(const editorial of [undefined,false,1,'true'])assert.throws(()=>enforceQA({...qa,checks:{...checks,editorial}},p,t,'kdp'),/QA_BLOCKED/);
+ assert.doesNotThrow(()=>enforceQA({...qa,checks:{...checks,editorial:true}},p,t,'kdp'));
+ for(const platform of ['redbubble','teepublic','zazzle','spreadshirt'])assert.doesNotThrow(()=>enforceQA(qa,p,t,platform));
+});
 test('QA cannot pass by comparing missing or malformed package/template hashes',()=>{
  for(const hash of [undefined,null,'','bad','A'.repeat(64),['a'.repeat(64)]]){
   assert.throws(()=>enforceQA({verdict:'PASS',checks,package_sha256:hash,template_sha256:hash},hash,hash),/QA_BLOCKED/);

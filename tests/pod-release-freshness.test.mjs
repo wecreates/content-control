@@ -5,15 +5,15 @@ import {publishOnce} from '../scripts/pod_stealth_publisher.mjs';
 
 const key='synthetic-release-freshness-key-'.repeat(2);
 const sign=p=>{const payload=JSON.stringify(p);return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
-function fixture(now=Date.now()){
+function fixture(now=Date.now(),platform='redbubble',editorial){
  const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),release_checks_passed:true};
- const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',platform:'redbubble',
-  destination_platform:'redbubble',mode:'LAUNCH',package_sha256:manifest.package_sha256};
+ const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',platform,
+  destination_platform:platform,mode:'LAUNCH',package_sha256:manifest.package_sha256};
  const common={schema_version:1,issued_at_ms:now-1,expires_at_ms:now+60000};
  const release={...common,audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,
   platform:brief.platform,max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:manifest.package_sha256};
  const qa=sign({...common,expires_at_ms:now+899000,audience:'content-control:pod:qa',verdict:'PASS',...manifest,
-  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true]))});
+  checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,true])),editorial}});
  const job={id:brief.id,platform:brief.platform,brief,manifest,qa_envelope:qa,idempotency_key:'fixture-idempotency'};
  const events=[];
  // These enabled flags exercise an in-memory fake adapter only; no live env,
@@ -21,9 +21,17 @@ function fixture(now=Date.now()){
  const options={env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},accountId:brief.account_id,
   upstreamKey:key,qaKey:key,db:{claimPublish:async()=>job,assertPublishable:async()=>true,finish:async(_j,state)=>events.push(state)},
   verifyArtifacts:async()=>manifest,resolveGrant:async()=>sign(release),
-  adapters:{redbubble:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
+  adapters:{[platform]:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
  return {options,events,release,manifest};
 }
+test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
+ for(const editorial of [undefined,false,1,'true']){
+  const f=fixture(Date.now(),'kdp',editorial);
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+ }
+ const f=fixture(Date.now(),'kdp',true);
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');assert.deepEqual(f.events,['submit','submitted']);
+});
 
 test('revocation during artifact verification is observed before submission',async()=>{
  const f=fixture();let revoked=false;
