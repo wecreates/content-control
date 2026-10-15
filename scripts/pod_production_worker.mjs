@@ -5,6 +5,7 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 import {validateTemplate,validateInteriorTemplate} from '../integrations/pod/templates.mjs';
+import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
@@ -79,8 +80,9 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   await authorizeProduction();
   const result=await db.completeProduction(job,manifest,qa);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
- }catch{
-  await db.failProduction(job,'PRODUCTION_BLOCKED');
-  return {status:'BLOCKED',job_id:job.id};
+ }catch(error){
+  const reason=productionFailure(error);
+  await db.failProduction(job,reason);
+  return {status:'BLOCKED',job_id:job.id,reason_code:reason};
  }finally{if(task?.cleanup)await task.cleanup();}
 }

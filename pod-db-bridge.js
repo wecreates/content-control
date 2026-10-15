@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA} from './integrations/pod/policy.mjs';
+import {productionReason} from './integrations/pod/failure-reasons.mjs';
 async function lockProductionLease(client,job){
  const current=(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='processing' FOR UPDATE",[job.id,job.fencing_token])).rows[0];
  if(!current)throw Error('LEASE_LOST');
@@ -60,8 +61,8 @@ export class PodDB {
   return this.tx(async c=>{
    const j=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),j.id,'pod.repair.archived',{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope}]);
-   await c.query("UPDATE pod_production_queue SET state='raw',manifest=NULL,qa_envelope=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),j.id,'pod.repair.archived',{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope,reason_code:productionReason(j.reason_code)}]);
+   await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   });
  }
@@ -88,7 +89,7 @@ export class PodDB {
  async listReady(){this.active();return (await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;}
  async failProduction(job,reason){return this.tx(async c=>{
   await lockProductionLease(c,job);
-  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[reason,job.id,job.fencing_token]);
+  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[productionReason(reason),job.id,job.fencing_token]);
   if(!r.rows.length)throw Error('LEASE_LOST');
  });}
  async claimProduction(){return this.tx(async c=>{
@@ -150,7 +151,7 @@ export class PodDB {
    }
    const currentQA=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    if(pass)enforceQA(currentQA,manifest.package_sha256,manifest.template_sha256,job.platform);
-   const r=await c.query(`UPDATE pod_production_queue SET state=$1,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
+   const r=await c.query(`UPDATE pod_production_queue SET state=$1,reason_code=CASE WHEN $1='qa_passed' THEN NULL ELSE 'QA_FAILED' END,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
    if(!r.rows.length)throw Error('LEASE_LOST');
