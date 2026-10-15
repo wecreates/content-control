@@ -33,7 +33,7 @@ export async function verifyProductionGuard(pool,bridge){
    }
    assert.equal(waiting,true,kind+' reached the lock barrier');
    if(kind==='lease')await blocker.query("UPDATE pod_production_queue SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[id]);
-   else if(kind==='rights')await blocker.query("UPDATE pod_concepts SET rights_state='UNKNOWN' WHERE id=$1",[concept]);
+   else if(kind==='rights')await blocker.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
    else await blocker.query('UPDATE pod_concepts SET permanently_unpublished=true WHERE id=$1',[concept]);
    await blocker.query('COMMIT');
    assert.equal((await pending).error?.message,'LOCAL_PRODUCTION_BLOCKED',kind);

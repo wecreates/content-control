@@ -27,7 +27,7 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
    job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
   let completed=0,blocked=0,cleaned=0;
   const result=await produceOnce({root,env:{...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key},upstreamKey:key,
-   db:{claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};}},
+   db:{assertProducible:async()=>true,claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};}},
    resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
    resolveTask:async()=>({rights_verified:true,templateScope,source:'unused',template:templatePath,textLayers:'unused',assetRights:'unused',
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa.json'),
