@@ -108,6 +108,41 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[leaseJob.id]);
    }finally{await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
   }
+  // A signed QA envelope must remain current after waiting for the rights row,
+  // even when the worker lease remains valid. Advance only the application clock
+  // once PostgreSQL confirms the wait; do not depend on short real-time sleeps.
+  for(const [index,review] of [true,false].entries()){
+   const qaJob={id:crypto.randomUUID(),fencing_token:1};
+   const state=review?'qa_failed':'processing',reason=review?'REVIEW_REQUIRED':null;
+   await pool.query(`INSERT INTO pod_production_queue
+    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until,manifest,reason_code)
+    VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,$6,1,clock_timestamp()+interval '1 minute',$7,$8)`,
+    [qaJob.id,leaseConcept,leaseAccount,index+5,crypto.randomUUID(),state,manifest,reason]);
+   const blocker=await pool.connect(),originalNow=Date.now,issued=originalNow();let now=issued,pending,workerPid;
+   Date.now=()=>now;
+   const shortPayload=JSON.stringify({...JSON.parse(payload),issued_at_ms:issued-1,expires_at_ms:issued+1000});
+   const shortQA={payload:shortPayload,signature:crypto.createHmac('sha256',qaKey).update(shortPayload).digest('hex')};
+   const waitingDB=new PodDB({pool:{connect:async()=>{
+    const client=await pool.connect();workerPid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;return client;
+   }},bridge,qaKey,expiresAt:new Date(issued+7*86400000).toISOString()});
+   try{
+    await blocker.query('BEGIN');await blocker.query('SELECT id FROM pod_concepts WHERE id=$1 FOR UPDATE',[leaseConcept]);
+    pending=(review?waitingDB.acceptReview(qaJob.id,shortQA):waitingDB.completeProduction(qaJob,manifest,shortQA))
+     .then(value=>({value}),error=>({error}));
+    let waiting=false;
+    for(let attempt=0;attempt<100;attempt++){
+     if(workerPid)waiting=(await pool.query('SELECT cardinality(pg_blocking_pids($1))>0 AS waiting',[workerPid])).rows[0].waiting;
+     if(waiting)break;await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.equal(waiting,true,'QA acceptance reached the held rights lock');
+    now=issued+1000;await blocker.query('COMMIT');
+    assert.equal((await pending).error?.message,'ENVELOPE_EXPIRED_OR_INVALID');
+    const unchanged=(await pool.query('SELECT state,manifest,qa_envelope,reason_code FROM pod_production_queue WHERE id=$1',[qaJob.id])).rows[0];
+    assert.deepEqual(unchanged,{state,manifest,qa_envelope:null,reason_code:reason});
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[qaJob.id])).rows[0].n,0);
+    await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[qaJob.id]);
+   }finally{Date.now=originalNow;await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
+  }
   assert.ok((await db.listReady()).some(row=>row.id===job));
   await assert.rejects(db.completeProduction(claimed,manifest,qa),/LEASE_LOST/);
   const events=(await pool.query("SELECT kind,payload FROM pod_events WHERE job_id=$1",[job])).rows;

@@ -858,3 +858,32 @@ The fixture now deletes only its own UUID job after verifying recovery and stale
 worker rejection. The end-to-end incident assertion is unchanged. Full corrected
 CI remains required before merge; this initial run is recorded as failed.
 
+Corrected PR #92 head 2b474ac4192c58bf16ec541aec221c0c2b8ae124 passed
+https://github.com/wecreates/content-control/actions/runs/38692725008
+(job 116282140568): 154 Node tests, zero skipped; 42 POD Python tests; the real
+PostgreSQL/Python durable review workflow; and three free-review guard tests.
+Merged as fb3cf86e0cde856aba6f2d2dcfd3c7999610ebb4 after verifying the unchanged
+main/head. Merged-main integration run 38692881464 and wiring run 38692881284
+also passed. Money Factory remained d22df316830f37ff2029b96b3b28199f7cd8cde9.
+
+Render attempted fb3cf86 in dep-db876acs728c73fokdeg and failed at
+2026-10-15T06:31:06.124764Z. Its 06:31:05.944466933Z log explicitly reports
+exhausted workspace build pipeline minutes. No manual rebuild or settings change
+was made; PR #92 is merged/tested, not verified deployed. All live gates stay open.
+
+## Signed QA expiry at readiness transitions — 2026-10-15
+
+The follow-on audit reproduced five cases where acceptReview or completeProduction
+accepted a signed QA envelope that expired during connection or rights-row waits.
+Three unexpired control cases passed. Both methods now reverify the envelope after
+their database waits, immediately before the state update; passing completion also
+rechecks the package-bound QA result. An expired envelope rolls back without a
+queue change or readiness event. No approval is renewed or synthesized.
+
+All eight local QA-expiry tests and six production-lease tests pass. The PostgreSQL
+suite additionally holds the actual concept rights row, confirms the worker is
+blocked using pg_blocking_pids, advances the application clock to the signed expiry,
+then releases the lock and verifies unchanged state and no event. These two cases
+clean up their own synthetic jobs. Full hosted integration validation is required
+before merge. Production credentials, migrations and publication remain untouched.
+
