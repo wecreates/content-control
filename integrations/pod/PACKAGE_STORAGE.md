@@ -8,9 +8,11 @@ The worker refreshes upstream and local production authority after reading.
 
 `ArtifactStore.putMany([{body, mediaType}, ...])` uses one transaction and the same
 advisory lock as single-file `put`. It deduplicates hashes, computes the combined
-size of missing blobs and checks the total store budget before inserts. Any insert
-or commit failure rolls back that batch. Two writers cannot both reserve the same
-remaining capacity. Exact replay does not consume additional durable bytes.
+size of missing blobs and checks the total store budget before inserts. An insert
+failure rolls back that batch. A lost commit acknowledgment has an unknown outcome:
+the whole batch may already exist, and hash-addressed replay is idempotent. Two
+writers cannot both reserve the same remaining capacity. Exact replay does not
+consume additional durable bytes.
 
 Default store capacity remains 128 MiB. A package exceeding a limit is blocked;
 there is no automatic scaling, deletion of older artifacts or paid storage. Batch
