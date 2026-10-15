@@ -59,10 +59,16 @@ export class PodDB {
  async requeueRepair(jobId,upstream){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   return this.tx(async c=>{
-   const j=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
+   // Only an expired internal production lease is recoverable from blocked.
+   // Publication ambiguity and other blocked reasons must never become raw.
+   const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+    WHERE q.id=$1 AND (q.state='qa_failed' OR (q.state='blocked' AND q.reason_code='PRODUCTION_LEASE_EXPIRED'
+      AND q.lease_until<=clock_timestamp() AND q.provider_id IS NULL))
+    AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+    FOR UPDATE OF q FOR SHARE OF p`,[jobId])).rows[0];
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),j.id,'pod.repair.archived',{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope,reason_code:productionReason(j.reason_code)}]);
-   await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
+   await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,lease_until=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1",[jobId,upstream]);
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   });
  }
