@@ -20,9 +20,11 @@ export async function recordFinancialEvent(db,envelope,key){
    const previous=matches[0];
    if(matches.length!==1||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
     String(previous.amount_minor)!==String(e.amount_minor)||new Date(previous.occurred_at).getTime()!==Date.parse(e.occurred_at))throw Error('FINANCIAL_REPLAY_CONFLICT');
+   verifyEnvelope(envelope,key,'content-control:pod:finance');
    return {id:previous.id,duplicate:true};
   }
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.finance.verified',{financial_event_id:id,authority_event_id:e.authority_event_id}]);
+  verifyEnvelope(envelope,key,'content-control:pod:finance');
   return {id,duplicate:false};
  });
 }
@@ -31,3 +33,4 @@ export async function financialTotals(db){
  return (await db.pool.query(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
   FROM pod_financial_events GROUP BY currency ORDER BY currency`)).rows;
 }
+

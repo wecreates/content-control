@@ -114,6 +114,7 @@ export class PodDB {
    enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256);
    await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',{package_sha256:job.manifest.package_sha256,publication_enabled:false}]);
+   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {status:'QA_PASSED',publication_enabled:false};
   });
  }
@@ -145,6 +146,7 @@ export class PodDB {
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
     [crypto.randomUUID(),job.id,pass?'pod.production.qa_passed':'pod.production.qa_failed',
      {package_sha256:manifest.package_sha256,fencing_token:job.fencing_token,publication_enabled:false}]);
+   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {pass};
   });
  }
