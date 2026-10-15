@@ -21,13 +21,16 @@ function unseal(body,key,aad){
  cipher.setAAD(Buffer.from(aad));cipher.setAuthTag(body.subarray(20,36));
  try{return Buffer.concat([cipher.update(body.subarray(36)),cipher.final()]);}catch{throw Error('ARCHIVE_AUTH_FAILED');}
 }
-async function readBounded(file,max){
- const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW);
+async function readBounded(file,max,signal){
+ signal?.throwIfAborted();
+ // O_NOFOLLOW alone still blocks forever when the named entry is a FIFO.
+ const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
  try{
   const stat=await handle.stat();if(!stat.isFile()||stat.size>max||stat.size<36)throw Error('ARCHIVE_SIZE_INVALID');
   const body=Buffer.alloc(stat.size);let offset=0;
-  while(offset<body.length){const {bytesRead}=await handle.read(body,offset,body.length-offset,null);if(!bytesRead)throw Error('ARCHIVE_TRUNCATED');offset+=bytesRead;}
+  while(offset<body.length){signal?.throwIfAborted();const {bytesRead}=await handle.read(body,offset,body.length-offset,null);if(!bytesRead)throw Error('ARCHIVE_TRUNCATED');offset+=bytesRead;}
   if((await handle.read(Buffer.alloc(1),0,1,null)).bytesRead)throw Error('ARCHIVE_SIZE_INVALID');
+  signal?.throwIfAborted();
   return body;
  }finally{await handle.close();}
 }
@@ -36,6 +39,41 @@ async function writeNew(file,body){
  try{await handle.writeFile(body);await handle.sync();}finally{await handle.close();}
 }
 const aad=item=>`pod:artifact:v1:${item.sha256}:${item.media_type}:${item.bytes}`;
+
+async function readCatalog({directory,key,budgetBytes,signal}){
+ config(directory,key,budgetBytes);signal?.throwIfAborted();
+ if(!(await fs.lstat(directory)).isDirectory())throw Error('ARCHIVE_DIRECTORY_INVALID');
+ const encrypted=await readBounded(path.join(directory,'catalog.pod'),MAX_CATALOG+36,signal);
+ const catalog=JSON.parse(unseal(encrypted,key,'pod:artifact-catalog:v1'));
+ if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
+  typeof catalog.created_at!=='string'||!Number.isFinite(Date.parse(catalog.created_at)))throw Error('ARCHIVE_CATALOG_INVALID');
+ const seen=new Set();let bytes=0;
+ for(const item of catalog.items){
+  if(typeof item?.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||seen.has(item.sha256)||!TYPES.has(item.media_type)||
+   !Number.isSafeInteger(item.bytes)||item.bytes<1||item.bytes>MAX_OBJECT)throw Error('ARCHIVE_CATALOG_INVALID');
+  seen.add(item.sha256);bytes+=item.bytes;
+ }
+ if(bytes>budgetBytes)throw Error('ARCHIVE_BUDGET_EXCEEDED');
+ return {catalog,bytes,archive_sha256:digest(encrypted)};
+}
+async function readArtifact(item,{directory,key,signal}){
+ const body=unseal(await readBounded(path.join(directory,item.sha256+'.pod'),MAX_OBJECT+36,signal),key,aad(item));
+ if(body.length!==item.bytes||digest(body)!==item.sha256)throw Error('ARCHIVE_ARTIFACT_INVALID');
+ return body;
+}
+async function verifyItems(catalog,options){
+ for(const item of catalog.items)await readArtifact(item,options);
+ options.signal?.throwIfAborted();
+}
+
+// Offline and read-only: no database, credentials, authority renewal or uploads.
+export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728,signal}={}){
+ const options={directory,key,budgetBytes,signal};
+ const {catalog,bytes,archive_sha256}=await readCatalog(options);
+ await verifyItems(catalog,options);
+ return {status:'VERIFIED',scope:'artifacts_only',archive_sha256,created_at:catalog.created_at,
+  verified_at:new Date().toISOString(),objects:catalog.items.length,bytes,publication_enabled:false};
+}
 
 // Reads only the dedicated artifact table, never queue envelopes or the social vault.
 // A repeatable-read snapshot keeps the final catalog tied to the exported bytes.
@@ -69,22 +107,18 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
- const catalog=JSON.parse(unseal(await readBounded(path.join(directory,'catalog.pod'),MAX_CATALOG+36),key,'pod:artifact-catalog:v1'));
- if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS)throw Error('ARCHIVE_CATALOG_INVALID');
- const seen=new Set();let bytes=0;
- for(const item of catalog.items){
-  if(typeof item?.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||seen.has(item.sha256)||!TYPES.has(item.media_type)||
-   !Number.isSafeInteger(item.bytes)||item.bytes<1||item.bytes>MAX_OBJECT)throw Error('ARCHIVE_CATALOG_INVALID');
-  seen.add(item.sha256);bytes+=item.bytes;
- }
- if(bytes>budgetBytes)throw Error('ARCHIVE_BUDGET_EXCEEDED');
+ const options={directory,key,budgetBytes,signal};
+ const {catalog,bytes}=await readCatalog(options);
+ // Reject an already broken backup before acquiring a database connection/lock.
+ // Read and authenticate again during insertion to catch intervening changes.
+ await verifyItems(catalog,options);
+ if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
  return db.tx(async client=>{
   await client.query('SELECT pg_advisory_xact_lock($1)',[543211]);
   let used=BigInt((await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts')).rows[0].bytes),inserted=0;
   for(const item of catalog.items){
    signal?.throwIfAborted();
-   const body=unseal(await readBounded(path.join(directory,item.sha256+'.pod'),MAX_OBJECT+36),key,aad(item));
-   if(body.length!==item.bytes||digest(body)!==item.sha256)throw Error('ARCHIVE_ARTIFACT_INVALID');
+   const body=await readArtifact(item,options);
    const existing=(await client.query('SELECT body,media_type FROM public.pod_artifacts WHERE sha256=$1',[item.sha256])).rows[0];
    if(existing){if(existing.media_type!==item.media_type||!Buffer.isBuffer(existing.body)||!existing.body.equals(body))throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
@@ -95,3 +129,4 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
  });
 }
+

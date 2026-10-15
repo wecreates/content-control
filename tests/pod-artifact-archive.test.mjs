@@ -4,7 +4,9 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {exportArtifactLibrary,restoreArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
@@ -79,3 +81,71 @@ test('CLI refuses missing keys, enabled publication and unconfirmed restore befo
  }
  await assert.rejects(archiveCLI(['restore','/unused-fixture-path'],{...env,POD_ARCHIVE_KEY:'a'.repeat(64)}),/ARCHIVE_RESTORE_NOT_AUTHORIZED/);
 });
+
+test('offline verification binds its receipt to the encrypted catalog without database configuration',async t=>{
+ const directory=await workspace(t),body=Buffer.from('private-fixture-offline');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ const before=await fs.readFile(path.join(directory,'catalog.pod'));
+ const result=await archiveCLI(['verify',directory],{...env,POD_ARCHIVE_KEY:key.toString('hex')});
+ assert.equal(result.status,'VERIFIED');assert.equal(result.scope,'artifacts_only');
+ assert.equal(result.objects,1);assert.equal(result.bytes,body.length);
+ assert.equal(result.archive_sha256,sha(before));assert.equal(result.publication_enabled,false);
+ assert.ok(Number.isFinite(Date.parse(result.created_at)));assert.ok(Number.isFinite(Date.parse(result.verified_at)));
+ assert.equal(JSON.stringify(result).includes('private-fixture'),false);
+ assert.deepEqual(await fs.readFile(path.join(directory,'catalog.pod')),before);
+});
+
+test('offline verification rejects wrong keys, limits, missing bytes and cancellation',async t=>{
+ const directory=await workspace(t),body=Buffer.from('fixture');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ await assert.rejects(verifyArtifactLibrary({directory,key:Buffer.alloc(32,3)}),/ARCHIVE_AUTH_FAILED/);
+ await assert.rejects(verifyArtifactLibrary({directory,key,budgetBytes:1}),/ARCHIVE_BUDGET_EXCEEDED/);
+ const controller=new AbortController();controller.abort();
+ await assert.rejects(verifyArtifactLibrary({directory,key,signal:controller.signal}),e=>e.name==='AbortError');
+ await fs.unlink(path.join(directory,sha(body)+'.pod'));
+ await assert.rejects(verifyArtifactLibrary({directory,key}),e=>e.code==='ENOENT');
+});
+
+test('corrupt archives are rejected before opening a restore transaction',async t=>{
+ const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
+ const file=path.join(directory,sha(body)+'.pod'),data=await fs.readFile(file);data[data.length-1]^=1;await fs.writeFile(file,data);
+ let calls=0;await assert.rejects(restoreArtifactLibrary({tx:async()=>{calls++;throw Error('must not connect');}},
+  {directory,key,env}),/ARCHIVE_AUTH_FAILED/);assert.equal(calls,0);
+});
+
+test('artifact changes after offline verification still roll back earlier inserts',async t=>{
+ const directory=await workspace(t),source=database([Buffer.from('one'),Buffer.from('two')]);
+ await exportArtifactLibrary(source,{directory,key});const target=database(),tx=target.tx;
+ target.tx=async fn=>{
+  const file=path.join(directory,[...source.rows.keys()].sort().at(-1)+'.pod');
+  const body=await fs.readFile(file);body[body.length-1]^=1;await fs.writeFile(file,body);
+  return tx(fn);
+ };
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_AUTH_FAILED/);
+ assert.equal(target.queries.filter(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')).length,1);
+ assert.equal(target.rows.size,0);
+});
+
+test('symlinked roots and artifact entries are rejected',async t=>{
+ const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
+ const link=directory+'-link';await fs.symlink(directory,link);
+ await assert.rejects(verifyArtifactLibrary({directory:link,key}),/ARCHIVE_DIRECTORY_INVALID/);
+ const file=path.join(directory,sha(body)+'.pod');await fs.rename(file,file+'.original');await fs.symlink(file+'.original',file);
+ await assert.rejects(verifyArtifactLibrary({directory,key}),e=>e.code==='ELOOP');
+});
+
+test('FIFO catalog and artifact entries fail promptly without a writer',async t=>{
+ const run=promisify(execFile),directory=await workspace(t),body=Buffer.from('fixture');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ const moduleURL=new URL('../integrations/pod/artifact-archive.mjs',import.meta.url).href;
+ for(const name of ['catalog.pod',sha(body)+'.pod']){
+  const file=path.join(directory,name);await fs.rename(file,file+'.saved');await run('mkfifo',[file]);
+  // A child deadline makes a regression to blocking open fail, not hang CI.
+  const code=`import {verifyArtifactLibrary} from ${JSON.stringify(moduleURL)};
+   try {await verifyArtifactLibrary({directory:process.argv[1],key:Buffer.alloc(32,7)});process.exitCode=1;}
+   catch(error){if(error.message!=='ARCHIVE_SIZE_INVALID')throw error;}`;
+  await run(process.execPath,['--input-type=module','-e',code,directory],{timeout:3000});
+  await fs.unlink(file);await fs.rename(file+'.saved',file);
+ }
+});
+
