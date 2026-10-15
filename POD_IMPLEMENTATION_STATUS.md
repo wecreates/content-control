@@ -850,3 +850,11 @@ deployment dep-db808v942hec73bp3ubg failed on ef49076f1af7590f579d31f1f13dd8b59e
 No database access was retried, no network/spend/credential settings were changed,
 and both publication flags remain held disabled. All 24 live gates remain open.
 
+Initial PR #92 CI run 38692199039 passed all 154 Node tests (zero skips) and
+42 Python tests, including the four real PostgreSQL lease barriers. The subsequent
+durable end-to-end step failed its zero-incidents assertion because those deliberate
+expired-lease fixtures left four blocked jobs in the shared disposable database.
+The fixture now deletes only its own UUID job after verifying recovery and stale
+worker rejection. The end-to-end incident assertion is unchanged. Full corrected
+CI remains required before merge; this initial run is recorded as failed.
+

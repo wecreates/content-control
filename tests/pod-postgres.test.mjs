@@ -103,6 +103,9 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     await db.recover();
     await assert.rejects(action(db,leaseJob),/LEASE_LOST/);
     assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[leaseJob.id])).rows[0].state,'blocked');
+    // Remove only this disposable case so later e2e metrics are not polluted
+    // by deliberately expired leases from an earlier workflow step.
+    await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[leaseJob.id]);
    }finally{await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
   }
   assert.ok((await db.listReady()).some(row=>row.id===job));
