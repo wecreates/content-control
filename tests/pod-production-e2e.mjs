@@ -68,9 +68,27 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
     env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
    assert.equal(blocked.status,'BLOCKED');
    const state=(await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[blockedId])).rows[0];
-   assert.deepEqual(state,{state:'qa_failed',manifest:null,reason_code:'PRODUCTION_BLOCKED'});
+   assert.equal(blocked.reason_code,'TEMPLATE_PROVENANCE_REQUIRED');
+   assert.deepEqual(state,{state:'qa_failed',manifest:null,reason_code:'TEMPLATE_PROVENANCE_REQUIRED'});
    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n,before);
   }
+  // A real failed Python stage supplies only its allowlisted JSON diagnostic.
+  await promisify(execFile)('python3',['-c',"from PIL import Image; import sys; Image.new('RGB',(60,60),'white').save(sys.argv[1])",image]);
+  const small=await fs.readFile(image);
+  const smallFiles={...files,'source.png':await store.put(small,'image/png'),
+   'rights.json':await store.put(Buffer.from(JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',
+    source_sha256:hash(small),text_layers_sha256:hash('[]')}))),'application/json')};
+  const smallHash=await store.put(Buffer.from(JSON.stringify({...task,files:smallFiles})),'application/json');
+  const smallId=crypto.randomUUID(),smallGrant=sign({...JSON.parse(grant.payload),job_id:smallId,task_sha256:smallHash});
+  await db.enqueue({job:{...job,id:smallId,task_sha256:smallHash},upstream:smallGrant,conceptId:concept,revision:4});
+  const before=(await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n;
+  const tooSmall=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+   env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
+  assert.deepEqual(tooSmall,{status:'BLOCKED',job_id:smallId,reason_code:'NATIVE_RESOLUTION_INSUFFICIENT'});
+  assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[smallId])).rows[0],
+   {state:'qa_failed',manifest:null,reason_code:'NATIVE_RESOLUTION_INSUFFICIENT'});
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n,before);
  }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
 });
+
 

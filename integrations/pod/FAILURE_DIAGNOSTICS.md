@@ -6,6 +6,11 @@ the allowlist in `failure-reasons.mjs` is accepted; unknown errors become
 `PRODUCTION_BLOCKED`. Credentials, URLs, paths, child output and dependency
 messages are never copied into that reason or result.
 
+The existing worker health snapshot and error callback retain the same sanitized
+reason. An authenticated QA_FAILED result increments consecutive failures instead
+of clearing the incident as a successful cycle. REVIEW_REQUIRED and IDLE retain
+their non-error semantics. This does not configure external alert destinations.
+
 For nonzero Python exits, the process adapter may read one bounded JSON object
 with `status: BLOCKED` and an allowlisted `reason_code`. Its Error message remains
 `PYTHON_STAGE_FAILED`, preserving signed-QA-FAIL handling. Timeout, cancellation,

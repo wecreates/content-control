@@ -1,5 +1,6 @@
 import {runPodWorker} from './orchestrator.mjs';
 import {produceOnce} from '../../scripts/pod_production_worker.mjs';
+import {productionReason} from './failure-reasons.mjs';
 
 // The host supplies authoritative resolvers, never request-supplied executable code.
 // Publication is deliberately absent from this internal production lifecycle.
@@ -21,7 +22,11 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
      if(event.phase==='started'){lastStartedAt=new Date().toISOString();return;}
      cycles++;lastCompletedAt=new Date().toISOString();
      lastResult=['IDLE','STOPPED','BLOCKED','REVIEW_REQUIRED','QA_PASSED','QA_FAILED'].includes(event.result?.status)?event.result.status:'UNKNOWN';
-     if(lastResult==='BLOCKED'){reportError({code:'POD_PRODUCTION_BLOCKED'});}
+     if(lastResult==='BLOCKED'){
+      const reason=productionReason(event.result?.reason_code);
+      reportError({code:reason==='PRODUCTION_BLOCKED'?'POD_PRODUCTION_BLOCKED':reason});
+     }
+     else if(lastResult==='QA_FAILED'){reportError({code:'QA_FAILED'});}
      else{consecutiveFailures=0;lastErrorCode=null;status='RUNNING';}
     }}).catch(()=>{reportError({code:'POD_WORKER_FAILED'});status='FAILED';});
   }
@@ -30,4 +35,3 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
   last_started_at:lastStartedAt,last_completed_at:lastCompletedAt,last_error_code:lastErrorCode,last_result:lastResult}),
   stop:async()=>{controller.abort();await loop;if(['RUNNING','RETRYING'].includes(status))status='STOPPED';}};
 }
-

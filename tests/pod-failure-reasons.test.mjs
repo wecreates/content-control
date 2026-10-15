@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 import {productionFailure,productionReason} from '../integrations/pod/failure-reasons.mjs';
+import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
 
 test('only fixed failure vocabulary can become an operational reason',()=>{
  for(const value of ['postgres://secret@host/db','TEXT_CLIPPED secret',null,{},'toString','__proto__']){
@@ -23,10 +24,20 @@ for(const [error,expected] of [
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  let stored;
- const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>({id:'j',brief}),failProduction:async(job,reason)=>{stored=reason;}},
+ const options={env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:key},upstreamKey:key,
+  db:{recover:async()=>{},claimProduction:async()=>({id:'j',brief}),failProduction:async(job,reason)=>{stored=reason;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
-  resolveTask:async()=>{throw error;}});
+  resolveTask:async()=>{throw error;}};
+ const result=await produceOnce(options);
  assert.equal(stored,expected);assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:expected});
  assert.ok(!JSON.stringify(result).includes('private'));
+ let observed,timer;const failure=new Promise(resolve=>observed=resolve);
+ const runtime=startProductionRuntime({db:options.db,env:options.env,
+  production:{resolveTask:options.resolveTask,resolveGrant:options.resolveGrant},onError:observed});
+ try{
+  const report=await Promise.race([failure,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('health event missing')),5000);})]);
+  const code=expected==='PRODUCTION_BLOCKED'?'POD_PRODUCTION_BLOCKED':expected;
+  assert.deepEqual(report,{code});assert.equal(runtime.health().last_error_code,code);
+  assert.equal(runtime.health().consecutive_failures,1);assert.equal(runtime.health().last_result,'BLOCKED');
+ }finally{clearTimeout(timer);await runtime.stop();}
 });
