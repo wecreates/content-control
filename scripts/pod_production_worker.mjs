@@ -10,6 +10,16 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  if(signal?.aborted)return {status:'STOPPED'};
  const job=await db.claimProduction();if(!job)return {status:'IDLE'};
  let task;
+ const authorizeProduction=async()=>{
+  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
+  enabled();
+  const envelope=await resolveGrant(job,{signal});
+  enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
+  await db.assertProducible(job);
+  // Local lock waits must not extend upstream authority or ignore cancellation.
+  enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
+  enabled();
+ };
  try{
   const grant=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
   enforceBrief(grant,job.brief);
@@ -24,15 +34,18 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    validateInteriorTemplate(JSON.parse(await fs.readFile(task.interior.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
   }
+  await authorizeProduction();
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
    '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])],{root,signal,env});
   if(job.brief.platform==='kdp'){
+   await authorizeProduction();
    await python('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
   const manifest=JSON.parse(await fs.readFile(path.join(task.output,'manifest.json'),'utf8'));
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
+  await authorizeProduction();
   const store=new ArtifactStore(db);
   for(const [name,sha] of Object.entries(manifest.files)){
    const base=await fs.realpath(task.output),file=await fs.realpath(path.resolve(base,name));
@@ -41,6 +54,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(crypto.createHash('sha256').update(body).digest('hex')!==sha)throw Error('ARTIFACT_HASH_MISMATCH');
    await store.put(body,name.endsWith('.pdf')?'application/pdf':name.endsWith('.json')?'application/json':'image/png');
   }
+  await authorizeProduction();
   if(typeof task.reviewPackage!=='function'){
    await db.holdProduction(job,manifest);
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
@@ -50,6 +64,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput];
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   // A failed QA process still emits a signed FAIL when signing is available.
+  await authorizeProduction();
   let qaProcessFailed=false;
   try{await python('pod_vision_qa.py',args,{root,signal,env});}catch(error){
    if(error.message!=='PYTHON_STAGE_FAILED')throw error;
@@ -59,6 +74,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
   if(qaProcessFailed&&JSON.parse(qa.payload).verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
+  await authorizeProduction();
   const result=await db.completeProduction(job,manifest,qa);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch{
@@ -66,5 +82,3 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   return {status:'BLOCKED',job_id:job.id};
  }finally{if(task?.cleanup)await task.cleanup();}
 }
-
-
