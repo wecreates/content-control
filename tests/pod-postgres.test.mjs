@@ -17,6 +17,7 @@ import {verifyEvidenceExpiry} from './pod-evidence-expiry-postgres.mjs';
 import {verifyProductionGuard} from './pod-production-guard-postgres.mjs';
 import {verifyEditorialGate} from './pod-editorial-postgres.mjs';
 import {verifyFailureReasons} from './pod-failure-reasons-postgres.mjs';
+import {verifyArtifactBatch} from './pod-artifact-batch-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -271,6 +272,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await verifyProductionGuard(pool,bridge);
   await verifyEditorialGate(pool,bridge);
   await verifyFailureReasons(pool,bridge);
+  await verifyArtifactBatch(pool,db);
   await verifyEvidenceExpiry(pool,bridge,hash);
   // Synthetic permitted-source fixtures exercise durability and contention,
   // not actual marketplace trends, rank claims or source authorization.
