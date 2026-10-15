@@ -40,3 +40,26 @@ test('deadline and pre-aborted signal cannot succeed',async()=>{
   await assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal:controller.signal}),/PYTHON_STAGE_ABORTED/);
  });
 });
+test('structured stage failures expose only a fixed reason code',async()=>{
+ for(const [stdout,expected] of [
+  [JSON.stringify({status:'BLOCKED',reason_code:'NATIVE_RESOLUTION_INSUFFICIENT',private:'secret'}),'NATIVE_RESOLUTION_INSUFFICIENT'],
+  [JSON.stringify({status:'BLOCKED',reason_code:'postgres://private:secret@host/db'}),'PRODUCTION_BLOCKED'],
+  [JSON.stringify({status:'GENERATED',reason_code:'TEXT_CLIPPED'}),'PRODUCTION_BLOCKED'],
+  ['not JSON: secret','PRODUCTION_BLOCKED'],
+  ['null','PRODUCTION_BLOCKED'],
+  [JSON.stringify({status:'BLOCKED',reason_code:{secret:true}}),'PRODUCTION_BLOCKED']
+ ])await fixture(`process.stdout.write(${JSON.stringify(stdout)});process.stderr.write('secret');process.exit(2);`,async options=>{
+  await assert.rejects(runPythonStage('fixture.cjs',[],options),error=>{
+   assert.equal(error.message,'PYTHON_STAGE_FAILED');assert.equal(error.reasonCode,expected);
+   assert.ok(!JSON.stringify(error).includes('secret'));assert.ok(!error.stack.includes('secret'));return true;
+  });
+ });
+});
+test('stderr and combined output count toward the same bounded budget',async()=>{
+ for(const source of ["process.stderr.write('private'.repeat(1000));",
+  "process.stdout.write('x'.repeat(60));process.stderr.write('y'.repeat(60));"]){
+  await fixture(source,async options=>await assert.rejects(
+   runPythonStage('fixture.cjs',[],{...options,maxOutputBytes:100}),/PYTHON_STAGE_OUTPUT_LIMIT/));
+ }
+});
+
