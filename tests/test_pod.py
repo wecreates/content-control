@@ -142,6 +142,34 @@ class PODTests(unittest.TestCase):
         self.assertEqual(result['binary_pass'],0,result)
         self.assertIn('INTERIOR_INVALID',result['errors'])
 
+    def test_kdp_qa_rechecks_actual_interior_despite_passing_receipt(self):
+        import fitz
+        from pod_common import save_json
+        for fault in ('blank','margin','offpage','invisible','rotated','drawing'):
+            def change(m,root):
+                target=root/'replacement.pdf'
+                with fitz.open() as book:
+                    for _ in range(2):
+                        page=book.new_page(width=144,height=144)
+                        if fault!='blank':
+                            point=(3,36) if fault=='margin' else (27,170) if fault=='offpage' else (27,36)
+                            page.insert_text(point,'Unreviewed layout',fontsize=8,render_mode=3 if fault=='invisible' else 0)
+                        if fault=='rotated':page.set_rotation(90)
+                        if fault=='drawing':page.draw_rect(fitz.Rect(0,0,5,5))
+                    book.save(target)
+                target.replace(root/'interior.pdf')
+                # Every hash and synthetic authority agrees; only independent
+                # inspection of the PDF can catch these layout defects.
+                receipt=m['interior']['receipt']
+                receipt['interior_sha256']=digest(root/'interior.pdf')
+                save_json(root/'interior.receipt.json',receipt)
+                for filename in ('interior.pdf','interior.receipt.json'):
+                    m['files'][filename]=digest(root/filename)
+            with self.subTest(fault=fault):
+                result=self.package_result(change,kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertTrue(any(e.startswith('INTERIOR_') for e in result['errors']),result)
+
     def test_qa_rejects_unsupported_and_mismatched_platforms(self):
         for platform in ('etsy','zazzle'):
             result=self.package_result(lambda m,r:m.update(platform=platform))
