@@ -6,8 +6,17 @@ import os from 'node:os';
 import crypto from 'node:crypto';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
+import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
+
+test('deployment budget accepts only bounded positive decimal byte strings',()=>{
+ assert.equal(artifactBudgetBytes({}),134217728);
+ for(const bytes of ['1','64','134217728'])assert.equal(artifactBudgetBytes({POD_ARTIFACT_BUDGET_BYTES:bytes}),Number(bytes));
+ for(const raw of ['',null,true,64,'0','-1','1.5','1e3','0x100',' 64','64 ','064','NaN','Infinity','134217729','9007199254740993']){
+  assert.throws(()=>artifactBudgetBytes({POD_ARTIFACT_BUDGET_BYTES:raw}),/ARTIFACT_BUDGET_CONFIG_INVALID/);
+ }
+});
 
 test('invalid batches fail before acquiring a database connection',async()=>{
  const store=new ArtifactStore({tx(){throw Error('unexpected database access');}},{maxObjectBytes:10,maxBatchBytes:12});

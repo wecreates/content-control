@@ -14,7 +14,20 @@ the whole batch may already exist, and hash-addressed replay is idempotent. Two
 writers cannot both reserve the same remaining capacity. Exact replay does not
 consume additional durable bytes.
 
-Default store capacity remains 128 MiB. A package exceeding a limit is blocked;
+Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
+deployment-wide write limit shared by uploads, production and artifact restore.
+If present it must be a positive decimal integer string of at most 134217728;
+empty, fractional, exponential and oversized values fail closed rather than
+silently selecting the default. Preflight reports `ARTIFACT_STORAGE_BUDGET` and
+production validates configuration before claiming a job. All writer instances
+must receive the same deployment setting; this is not a database-persisted quota.
+Reducing a limit does not delete existing data. Ordinary upload/production batches
+containing only existing hashes remain idempotent; restore also requires its
+catalog to fit the selected read bound.
+Export and offline verification keep their separate archive read bounds so existing
+backups remain readable after a write budget reduction.
+
+A package exceeding a limit is blocked;
 there is no automatic scaling, deletion of older artifacts or paid storage. Batch
 failure cannot strand its earlier files. Successfully committed batches can still
 outlive a later review/queue failure, so full storage reclamation and whole-system

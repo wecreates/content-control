@@ -8,6 +8,24 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 import {validateTemplate} from '../integrations/pod/templates.mjs';
 const key='a'.repeat(48);
+test('authenticated uploads share the bounded deployment storage policy',async()=>{
+ const env={POD_ARTIFACT_BUDGET_BYTES:'3'};let inserts=0,transactions=0;
+ const db={tx:async fn=>{transactions++;return fn({query:async(sql)=>{
+  if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('INSERT'))inserts++;
+  return {rows:[]};
+ }});}};
+ const app=express();app.use(createPodRouter({db,env,authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const send=()=>fetch(`http://127.0.0.1:${server.address().port}/artifacts`,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:'1234'});
+  const rejected=await send();assert.equal(rejected.status,409);assert.deepEqual(await rejected.json(),{error:'ARTIFACT_STORAGE_BLOCKED'});assert.equal(inserts,0);
+  env.POD_ARTIFACT_BUDGET_BYTES='4';assert.equal((await send()).status,201);assert.equal(inserts,1);
+  const before=transactions;env.POD_ARTIFACT_BUDGET_BYTES='';
+  assert.equal((await send()).status,409);assert.equal(transactions,before);assert.equal(inserts,1);
+ }finally{await new Promise(r=>server.close(r));}
+});
 const sign=p=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+30000,...p});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
 test('unset operational key cannot be authenticated with Bearer undefined',()=>assert.equal(operationalAuth()( {headers:{authorization:'Bearer undefined'}}),false));
 test('operational key requires exact bearer match',()=>{const auth=operationalAuth(key);assert.equal(auth({headers:{authorization:`Bearer ${key}`}}),true);assert.equal(auth({headers:{authorization:`Bearer ${key}x`}}),false);});

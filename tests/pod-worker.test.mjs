@@ -5,6 +5,12 @@ import {produceOnce} from '../scripts/pod_production_worker.mjs';
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
 });
+test('malformed production storage budgets fail before queue access',async()=>{
+ for(const value of ['', '0', 'NaN', '134217729']){
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true',POD_ARTIFACT_BUDGET_BYTES:value},
+   db:{claimProduction(){assert.fail('must not claim under invalid storage policy');}}}),/ARTIFACT_BUDGET_CONFIG_INVALID/);
+ }
+});
 test('production-only grant reaches task resolution without publishing',async()=>{
  const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
@@ -56,4 +62,3 @@ test('idle cycle records completion without claiming successful production',asyn
  await new Promise(r=>setImmediate(r));const h=runtime.health();assert.equal(h.cycles,1);assert.equal(h.last_result,'IDLE');
  assert.ok(h.last_completed_at);await runtime.stop();
 });
-

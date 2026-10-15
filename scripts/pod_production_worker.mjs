@@ -1,6 +1,7 @@
 import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import path from 'node:path';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
+import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
@@ -9,6 +10,7 @@ import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
+ const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});
  const job=await db.claimProduction();if(!job)return {status:'IDLE'};
  let task;
  const authorizeProduction=async()=>{
@@ -47,7 +49,6 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const manifest=JSON.parse(await fs.readFile(path.join(task.output,'manifest.json'),'utf8'));
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
-  const store=new ArtifactStore(db);
   const artifacts=await readPackageArtifacts(task.output,manifest.files);
   await authorizeProduction();
   await store.putMany(artifacts);
