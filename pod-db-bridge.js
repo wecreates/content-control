@@ -178,20 +178,28 @@ export class PodDB {
    return {pass};
   });
  }
- async claimPublish(accountId,delaySeconds){return this.tx(async c=>{
-  const a=(await c.query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=now() FOR UPDATE",[accountId])).rows[0];
+ async claimPublish(accountId,delaySeconds){
+  if(!Number.isInteger(delaySeconds)||delaySeconds<45||delaySeconds>180)throw Error('PUBLISH_DELAY_INVALID');
+  return this.tx(async c=>{
+  // Acquire the account lock first, then evaluate cooldown on the live clock.
+  // A predicate in the locking SELECT can be evaluated before its lock wait.
+  const locked=(await c.query('SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE',[accountId])).rows[0];
+  if(!locked)return null;
+  const a=(await c.query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=clock_timestamp()",[accountId])).rows[0];
   if(!a)return null;
   const busy=await c.query("SELECT 1 FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]);
   if(busy.rows.length)return null;
-  const count=(await c.query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>now()-interval '24 hours'",[accountId])).rows[0].n;
+  const count=(await c.query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId])).rows[0].n;
   if(count>=a.daily_cap)return null;
   const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
-   WHERE q.account_id=$1 AND q.state='qa_passed' AND q.next_attempt_at<=now() AND p.rights_state='PASS'
+   WHERE q.account_id=$1 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp() AND p.rights_state='PASS'
    AND NOT p.permanently_unpublished ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId])).rows[0];
   if(!j)return null;
-  const r=await c.query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=now()+interval '5 minutes',updated_at=now() WHERE id=$1 RETURNING *",[j.id]);
-  await c.query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id) VALUES($1,$2,$3)',[j.id,r.rows[0].attempt,accountId]);
-  await c.query("UPDATE pod_accounts SET next_allowed_at=now()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
+  const r=await c.query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1 RETURNING *",[j.id]);
+  // Override the schema's transaction-time default: reservations must not age
+  // while the claimant is waiting for the account lock.
+  await c.query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at) VALUES($1,$2,$3,clock_timestamp())',[j.id,r.rows[0].attempt,accountId]);
+  await c.query("UPDATE pod_accounts SET next_allowed_at=clock_timestamp()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
   return r.rows[0];
  });}
  async assertPublishable(job){return this.tx(async c=>{
