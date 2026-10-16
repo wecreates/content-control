@@ -43,3 +43,16 @@ demonstrate the 1,000/day target under the same quality and budget constraints.
 Keep variation/job counts distinct and publication disabled pending approval.
 This endpoint creates no jobs, accounts, synthetic revenue, clearances or release
 authorization. Live measurement and all dependent acceptance remain open.
+
+## Read-only operations dashboard
+
+The existing authenticated dashboard loads `/capacity` alongside metrics and jobs.
+It displays only the six defined aggregate counts and the database's UTC window,
+without converting decimal strings to JavaScript numbers. Targets and limitations
+stay visible even when the endpoint is unavailable. Invalid schema, window, counts
+or claims of capacity/acceptance/publication approval reject the activity panel.
+Independent endpoint failures preserve other successfully loaded panels. Refresh,
+key changes, session clearing and page exit invalidate pending responses and clear
+activity, just as they clear job previews. No credentials are persisted and no
+mutation or approval control is added. Automated DOM tests are not owner-phone or
+production acceptance; those checks remain open.

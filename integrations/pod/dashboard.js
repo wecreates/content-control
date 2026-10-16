@@ -7,6 +7,7 @@ function resetView(){
  element('print-preview').removeAttribute('src');element('preview').hidden=true;
  element('package-info').textContent='';element('preview-status').textContent='';
  element('jobs').replaceChildren();element('result').textContent='Authenticate to load metrics.';
+ element('activity-counts').replaceChildren();element('activity-window').textContent='Authenticate to load recorded activity.';
 }
 function begin(){resetView();request=new AbortController();return {signal:request.signal,version:generation,key:element('key').value};}
 async function read(route,context,limit){
@@ -37,13 +38,34 @@ function listJobs(rows){
  });
  element('jobs').replaceChildren(...items);
 }
+function showActivity(report){
+ const fields=[['registered_concept_records','Registered concept records'],
+  ['generated_concept_records','Concept records with generation events'],['generated_jobs','Generated jobs (includes variants and revisions)'],
+  ['generated_package_hashes','Distinct generated package hashes'],['jobs_with_pass_event','Jobs with a QA pass event'],
+  ['jobs_with_fail_event','Jobs with a QA fail event']];
+ const start=new Date(report?.window?.start),end=new Date(report?.window?.end);
+ if(report?.schema_version!==1||report.scope!=='recorded_production_activity'||report.window?.hours!==24||
+  !Number.isFinite(start.getTime())||!Number.isFinite(end.getTime())||end-start!==86400000||
+  report.window.start!==start.toISOString()||report.window.end!==end.toISOString()||
+  report.capacity_verified!==false||report.acceptance_verified!==false||report.publication_enabled!==false||
+  report.targets?.baseline_unique_concepts_per_day!==100||report.targets?.scale_unique_concepts_per_day!==1000||
+  fields.some(([field])=>typeof report.counts?.[field]!=='string'||!/^(0|[1-9][0-9]*)$/.test(report.counts[field])))throw Error('INVALID_ACTIVITY');
+ // Render only known aggregate fields. Preserve exact decimal strings; never round bigint counts.
+ const items=fields.map(([field,label])=>{const item=document.createElement('li');item.textContent=label+': '+report.counts[field];return item;});
+ element('activity-counts').replaceChildren(...items);
+ element('activity-window').textContent='Recorded 24-hour window (UTC): '+start.toISOString()+' to '+end.toISOString();
+}
 element('form').addEventListener('submit',async event=>{
  event.preventDefault();const context=begin();element('notice').textContent='Loading…';
- try{const [metrics,jobs]=await Promise.allSettled([json('/metrics',context),json('/jobs?state='+encodeURIComponent(element('state').value),context)]);
+ try{const [metrics,jobs,activity]=await Promise.allSettled([json('/metrics',context),json('/jobs?state='+encodeURIComponent(element('state').value),context),json('/capacity',context)]);
   if(context.version!==generation)return;
   element('result').textContent=metrics.status==='fulfilled'?JSON.stringify(metrics.value,null,2):'Metrics unavailable.';
+  let activityError;
+  try{if(activity.status==='rejected')throw activity.reason;showActivity(activity.value);}
+  catch(error){activityError=error;element('activity-window').textContent='Recorded activity unavailable.';}
   if(jobs.status==='fulfilled')listJobs(jobs.value.jobs);
   if(metrics.status==='rejected')throw metrics.reason;if(jobs.status==='rejected')throw jobs.reason;
+  if(activityError)throw activityError;
   element('notice').textContent=jobs.value.jobs.length?'Select a job to inspect its print artwork.':'No matching jobs.';
  }catch(error){failure(error,context);}
 });
