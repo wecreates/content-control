@@ -15,6 +15,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from pod_common import PLATFORMS, canonical, read_json, save_json, verified, digest, sign
+from pod_raster import open_raster
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
@@ -104,11 +105,13 @@ def screen(text, country, category, registry, policy):
     return 'PASS', []
 
 def analyze_reference(image_path):
-    image = cv2.imread(str(image_path))
-    if image is None:
-        raise ValueError('REFERENCE_UNREADABLE')
-    h, w = image.shape[:2]
-    edges = cv2.Canny(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), 80, 180)
+    # Validate dimensions/frame count before decoding. Keep the validated file
+    # open through conversion rather than reopening a potentially replaced path.
+    with open_raster(image_path) as image:
+        w, h = image.size
+        with image.convert('L') as grayscale:
+            pixels = np.array(grayscale)
+    edges = cv2.Canny(pixels, 80, 180)
     components, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     boxes = [cv2.boundingRect(c) for c in components if cv2.contourArea(c) > 16]
     return {'display_pixels': [w, h], 'edge_density': float(np.mean(edges > 0)),
