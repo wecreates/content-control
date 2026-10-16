@@ -1,5 +1,6 @@
 """Synthetic intake authorization regressions; no marketplace requests or clearances."""
 import hashlib
+import copy
 import io
 import json
 import os
@@ -16,8 +17,75 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from pod_common import save_json, sign, verified
 from pod_market_intake import run, main
 from pod_market_intake import analyze_reference
+from pod_market_intake import screen
 from PIL import Image, ImageFile
 from test_pod_raster_bounds import png_header
+
+
+class RightsEvidenceShapeTests(unittest.TestCase):
+    def setUp(self):
+        self.registry = {'countries': ['US'], 'categories': ['apparel'],
+                         'coverage_verified': True, 'records': []}
+        self.policy = {'related_categories_checked': True,
+                       'non_trademark_rights_verified': True}
+
+    def test_explicit_empty_records_with_verified_coverage_remain_valid(self):
+        self.assertEqual(screen('Original', 'US', 'apparel', self.registry, self.policy), ('PASS', []))
+
+    def test_registry_requires_explicit_list_shapes(self):
+        for key, value in [('countries', 'AUS'), ('categories', 'home-apparel'),
+                           ('records', {}), ('records', ''), ('records', None),
+                           ('countries', ['US', None]), ('categories', ['apparel', ''])]:
+            with self.subTest(key=key, value=value):
+                registry = {**self.registry, key: value}
+                self.assertEqual(screen('Original', 'US', 'apparel', registry, self.policy),
+                                 ('UNKNOWN', ['REGISTRY_SCHEMA_INVALID']))
+        registry = {k:v for k,v in self.registry.items() if k != 'records'}
+        self.assertEqual(screen('Original', 'US', 'apparel', registry, self.policy),
+                         ('UNKNOWN', ['REGISTRY_SCHEMA_INVALID']))
+
+    def test_malformed_records_cannot_be_silently_ignored(self):
+        record = {'word_mark': 'Unrelated', 'countries': ['CA'], 'related_categories': ['books']}
+        for bad in ({}, None, [], 'record', {**record, 'word_mark': ''},
+                    {**record, 'word_mark': 123}, {**record, 'countries': 'CA'},
+                    {**record, 'related_categories': 'books'}, {**record, 'countries': []}):
+            with self.subTest(record=bad):
+                registry = {**self.registry, 'records': [bad]}
+                self.assertEqual(screen('Original', 'US', 'apparel', registry, self.policy),
+                                 ('UNKNOWN', ['REGISTRY_SCHEMA_INVALID']))
+
+    def test_invalid_defensive_term_shapes_are_unknown(self):
+        for key in ('blocked_terms', 'blocked_whole_words'):
+            for value in ('', {}, None, [''], [12], ['valid', None]):
+                with self.subTest(key=key, value=value):
+                    self.assertEqual(screen('Original', 'US', 'apparel', self.registry,
+                                     {**self.policy, key: value}),
+                                     ('UNKNOWN', ['RIGHTS_POLICY_SCHEMA_INVALID']))
+
+    def test_non_object_evidence_is_unknown(self):
+        for value in (None, [], 'evidence'):
+            with self.subTest(value=value):
+                self.assertEqual(screen('Original', 'US', 'apparel', value, self.policy)[0], 'UNKNOWN')
+                self.assertEqual(screen('Original', 'US', 'apparel', self.registry, value)[0], 'UNKNOWN')
+
+    def test_non_text_candidate_is_not_coerced_to_a_clearable_string(self):
+        for text in (None, 123, ['Original'], {'text': 'Original'}):
+            with self.subTest(text=text):
+                self.assertEqual(screen(text, 'US', 'apparel', self.registry, self.policy),
+                                 ('UNKNOWN', ['TEXT_INVALID']))
+
+    def test_valid_localized_conflict_and_defensive_matching_preserved(self):
+        registry = copy.deepcopy(self.registry)
+        registry['records'] = [{'word_mark': 'Étoile', 'countries': ['US'],
+                                'related_categories': ['apparel']}]
+        self.assertEqual(screen('E\u0301TOILE design', 'US', 'apparel', registry, self.policy),
+                         ('UNKNOWN', ['POTENTIAL_MARK_CONFLICT']))
+        self.assertEqual(screen('Original', 'US', 'apparel', self.registry,
+                         {**self.policy, 'blocked_terms': ['ORIGINAL']}),
+                         ('FAIL', ['DEFENSIVE_TERM_MATCH']))
+        self.assertEqual(screen('Original', 'US', 'apparel', self.registry,
+                         {**self.policy, 'blocked_whole_words': ['ORIGINAL']}),
+                         ('FAIL', ['LOCALIZED_WORD_MATCH']))
 
 
 class ReferenceRasterTests(unittest.TestCase):
@@ -344,6 +412,24 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
             evidence = verified(json.loads((self.root / 'signed.json').read_text()),
                                 'POD_INTAKE_KEY', 'content-control:pod:intake')
         self.assertEqual(evidence['rights_state'], 'UNKNOWN')
+        self.assertTrue(evidence['permanently_unpublished'])
+        self.assertFalse(evidence['publication_enabled'])
+
+
+    def test_signed_malformed_registry_emits_unknown_before_collection(self):
+        self.write_evidence(self.args.registry, 'POD_REGISTRY_KEY', 'pod:registry', {
+            'countries': ['US'], 'categories': ['apparel'], 'coverage_verified': True,
+            # Missing records cannot assert that no matching records exist.
+        })
+        with patch('pod_market_intake.fetch_market', side_effect=AssertionError('collection reached')), \
+             patch('pod_market_intake.analyze_reference', side_effect=AssertionError('analysis reached')), \
+             patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+             patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 2)
+            evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                'POD_INTAKE_KEY', 'content-control:pod:intake')
+        self.assertEqual(evidence['rights_state'], 'UNKNOWN')
+        self.assertEqual(evidence['reason_codes'], ['REGISTRY_SCHEMA_INVALID'])
         self.assertTrue(evidence['permanently_unpublished'])
         self.assertFalse(evidence['publication_enabled'])
 

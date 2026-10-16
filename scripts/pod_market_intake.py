@@ -76,14 +76,37 @@ def products(value):
 def normalize(text):
     return unicodedata.normalize('NFC', str(text)).casefold().strip()
 
+def text_list(value, allow_empty=False):
+    return (isinstance(value, list) and (allow_empty or bool(value)) and
+            all(isinstance(item, str) and bool(item.strip()) for item in value))
+
 def screen(text, country, category, registry, policy):
     # Registry/policy are signature-verified upstream, never supplied by a generator.
+    # A signature authenticates bytes, not their schema or registry completeness.
+    if (not isinstance(registry, dict) or
+            not text_list(registry.get('countries')) or
+            not text_list(registry.get('categories')) or
+            not isinstance(registry.get('records'), list)):
+        return 'UNKNOWN', ['REGISTRY_SCHEMA_INVALID']
+    for record in registry['records']:
+        if (not isinstance(record, dict) or
+                not isinstance(record.get('word_mark'), str) or
+                not record['word_mark'].strip() or
+                not text_list(record.get('countries')) or
+                not text_list(record.get('related_categories'))):
+            return 'UNKNOWN', ['REGISTRY_SCHEMA_INVALID']
+    if (not isinstance(policy, dict) or
+            any(not text_list(policy.get(key, []), allow_empty=True)
+                for key in ('blocked_terms', 'blocked_whole_words'))):
+        return 'UNKNOWN', ['RIGHTS_POLICY_SCHEMA_INVALID']
     if country not in registry.get('countries', []) or category not in registry.get('categories', []):
         return 'UNKNOWN', ['REGISTRY_COVERAGE_MISSING']
     if registry.get('coverage_verified') is not True or policy.get('related_categories_checked') is not True:
         return 'UNKNOWN', ['REGIONAL_COVERAGE_UNVERIFIED']
     if policy.get('non_trademark_rights_verified') is not True:
         return 'UNKNOWN', ['COPYRIGHT_FONT_LIKENESS_UNVERIFIED']
+    if not isinstance(text, str):
+        return 'UNKNOWN', ['TEXT_INVALID']
     text = normalize(text)
     if not text or len(text) > 2000:
         return 'UNKNOWN', ['TEXT_INVALID']
