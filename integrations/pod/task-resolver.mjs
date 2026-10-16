@@ -4,16 +4,21 @@ import path from 'node:path';
 import {ArtifactStore} from './artifacts.mjs';
 import {createGrantResolver} from './grant-client.mjs';
 const hash=/^[a-f0-9]{64}$/;
+const outputNames=new Set(['package','qa.json','qa-signed.json']);
+const interiorRoles=['template','pages','font'];
 export function validateTask(task){
  if(task?.schema_version!==1||!task.files||typeof task.files!=='object'||Array.isArray(task.files))throw Error('TASK_INVALID');
  const entries=Object.entries(task.files);
- if(!entries.length||entries.length>32||entries.some(([name,sha])=>!/^[-a-zA-Z0-9_.]{1,100}$/.test(name)||name==='.'||name==='..'||!hash.test(sha)))throw Error('TASK_FILES_INVALID');
+ if(!entries.length||entries.length>32||entries.some(([name,sha])=>!/^[-a-zA-Z0-9_.]{1,100}$/.test(name)||name==='.'||name==='..'||
+  outputNames.has(name.toLowerCase())||typeof sha!=='string'||!hash.test(sha)))throw Error('TASK_FILES_INVALID');
  if(typeof task.templateScope?.product!=='string'||!task.templateScope.product.trim()||task.templateScope.product.length>128||
   typeof task.templateScope?.country!=='string'||!/^[A-Z]{2}$/.test(task.templateScope.country))throw Error('TASK_TEMPLATE_SCOPE_REQUIRED');
  const roles=['source','template','textLayers','assetRights','reference'];
  const has=n=>typeof n==='string'&&Object.hasOwn(task.files,n);
  if(roles.some(role=>!has(task[role])))throw Error('TASK_ROLE_INVALID');
- if(task.interior&&['template','pages','font'].some(role=>!has(task.interior[role])))throw Error('TASK_INTERIOR_INVALID');
+ if(Object.hasOwn(task,'interior')&&(!task.interior||typeof task.interior!=='object'||Array.isArray(task.interior)||
+  Object.keys(task.interior).length!==interiorRoles.length||
+  interiorRoles.some(role=>!Object.hasOwn(task.interior,role)||!has(task.interior[role]))))throw Error('TASK_INTERIOR_INVALID');
  return task;
 }
 export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env}={}){
@@ -24,7 +29,7 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
  return {
   resolveGrant,
   resolveTask:async job=>{
-   if(!hash.test(job.brief.task_sha256||''))throw Error('TASK_REQUIRED');
+   if(typeof job.brief?.task_sha256!=='string'||!hash.test(job.brief.task_sha256))throw Error('TASK_REQUIRED');
    const descriptor=await store.get(job.brief.task_sha256);
    if(descriptor.media_type!=='application/json'||descriptor.body.length>262144)throw Error('TASK_INVALID');
    const task=validateTask(JSON.parse(descriptor.body.toString('utf8')));
@@ -41,7 +46,7 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
      qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
      approvedEvaluators,approvedEditorialEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
     for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(directory,task[role]);
-    if(task.interior)resolved.interior=Object.fromEntries(Object.entries(task.interior).map(([k,v])=>[k,path.join(directory,v)]));
+    if(task.interior)resolved.interior=Object.fromEntries(interiorRoles.map(role=>[role,path.join(directory,task.interior[role])]));
     // New packages await a hash-bound external QA review; no preapproved future bytes.
     return resolved;
    }catch(e){await cleanup();throw e;}
