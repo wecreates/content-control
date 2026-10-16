@@ -71,3 +71,36 @@ test('unpriced unranked observations remain valid with stored source evidence',a
  const f=fixture();assert.deepEqual(await recordMarketObservation(f.db,sign(o),key),{inserted:true,id:'stored-id'});
 });
 
+test('observation timestamps require explicit timezone and full time before database access',async()=>{
+ for(const observed_at of ['2026-01-01','2026-01-01T00:00:00','01/01/2026','2026-01-01 00:00:00Z']){
+  const f=fixture();await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observed_at}),key),/MARKET_EVIDENCE_INVALID/);
+  assert.equal(f.writes.length,0);
+ }
+});
+test('observation timestamps cannot normalize nonexistent dates or midnight overflow',async()=>{
+ for(const observed_at of ['2026-02-30T00:00:00Z','2025-02-29T00:00:00Z','2026-01-01T24:00:00Z']){
+  const f=fixture();await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observed_at}),key),/MARKET_EVIDENCE_INVALID/);
+  assert.equal(f.writes.length,0);
+ }
+});
+test('observation timestamp objects and arrays are not coerced into dates',async()=>{
+ for(const observed_at of [['2026-01-01T00:00:00Z'],2026,null,true,{}]){
+  const f=fixture();await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observed_at}),key),/MARKET_EVIDENCE_INVALID/);
+  assert.equal(f.writes.length,0);
+ }
+});
+test('observation precision cannot exceed PostgreSQL microseconds',async()=>{
+ const f=fixture();await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observed_at:'2026-01-01T00:00:00.1234567Z'}),key),/MARKET_EVIDENCE_INVALID/);
+ assert.equal(f.writes.length,0);
+});
+test('valid explicit zones and microseconds retain original observation parameters',async()=>{
+ for(const observed_at of ['2024-02-29T12:30:00Z','2026-01-01T00:00:00.123456Z','2026-01-01T01:00:00.123456+01:00','2025-12-31T16:00:00.123456-08:00']){
+  const f=fixture();await recordMarketObservation(f.db,sign({...observation(),observed_at}),key);
+  assert.equal(f.writes[0][3],observed_at);
+ }
+});
+test('future observation timestamps remain blocked',async()=>{
+ const f=fixture();await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observed_at:new Date(Date.now()+86400000).toISOString()}),key),/MARKET_EVIDENCE_INVALID/);
+ assert.equal(f.writes.length,0);
+});
+

@@ -2,13 +2,14 @@ import crypto from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
 import {PLATFORMS,verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
+import {validEvidenceTime} from './evidence-time.mjs';
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 export async function recordMarketObservation(db,envelope,key){
  const o=verifyEnvelope(envelope,key,'content-control:pod:market');
  let url;try{url=new URL(o.source_url);}catch{throw Error('MARKET_SOURCE_INVALID');}
  if(!PLATFORMS.includes(o.platform)||url.protocol!=='https:'||url.username||url.password||
   !/^[A-Z]{2}$/.test(o.country)||typeof o.category!=='string'||!o.category||
-  !Number.isFinite(Date.parse(o.observed_at))||Date.parse(o.observed_at)>Date.now()||
+  !validEvidenceTime(o.observed_at)||
   !/^[a-f0-9]{64}$/.test(o.source_sha256)||o.collection_authorized!==true)throw Error('MARKET_EVIDENCE_INVALID');
  if(o.price_minor!=null&&(!Number.isSafeInteger(o.price_minor)||o.price_minor<0||!/^[A-Z]{3}$/.test(o.currency||'')))throw Error('PRICE_EVIDENCE_INVALID');
  if(o.observed_rank!=null&&(!Number.isInteger(o.observed_rank)||o.observed_rank<=0||o.observed_rank>2147483647||!hash(o.rank_evidence_sha256)))throw Error('RANK_EVIDENCE_INVALID');

@@ -40,4 +40,30 @@ export async function verifyStoredEvidence(pool,db){
  await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[job]);
  await pool.query('DELETE FROM pod_concepts WHERE id=$1',[concept]);
  await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
+ // Valid signed observation identity must not depend on session timezone.
+ // This is disposable evidence, not authorized market collection.
+ const body=Buffer.from('synthetic observation timezone proof '+crypto.randomUUID());
+ const sha=crypto.createHash('sha256').update(body).digest('hex');
+ await pool.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha,body,'application/json']);
+ const source='https://authorized.example/timestamp/'+crypto.randomUUID();
+ const observation={platform:'redbubble',country:'US',category:'apparel',source_url:source,
+  source_sha256:sha,collection_authorized:true,observed_at:'2026-01-01T00:00:00.123456Z'};
+ const inZone=zone=>({tx:fn=>db.tx(async client=>{
+  await client.query("SELECT set_config('TimeZone',$1,true)",[zone]);
+  return fn(client);
+ })});
+ const first=await recordMarketObservation(inZone('Pacific/Honolulu'),sign('market',observation),key);
+ assert.equal(first.inserted,true);
+ const replay=await recordMarketObservation(inZone('Asia/Tokyo'),sign('market',{
+  ...observation,observed_at:'2026-01-01T01:00:00.123456+01:00'}),key);
+ assert.deepEqual(replay,{inserted:false,id:first.id});
+ for(const observed_at of ['2026-01-01T00:00:00','2026-01-01T00:00:00.1234567Z']){
+  await assert.rejects(recordMarketObservation(inZone('Pacific/Honolulu'),sign('market',{...observation,observed_at}),key),{message:'MARKET_EVIDENCE_INVALID'});
+ }
+ assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_market_intelligence WHERE source_url=$1',[source])).rows[0].n,1);
+ assert.equal((await pool.query('SELECT observed_at=$2::timestamptz AS exact FROM pod_market_intelligence WHERE id=$1',[first.id,observation.observed_at])).rows[0].exact,true);
+ const distinct=await recordMarketObservation(inZone('Asia/Tokyo'),sign('market',{
+  ...observation,observed_at:'2026-01-01T00:00:00.123457Z'}),key);
+ assert.equal(distinct.inserted,true);assert.notEqual(distinct.id,first.id);
+ assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_market_intelligence WHERE source_url=$1',[source])).rows[0].n,2);
 }
