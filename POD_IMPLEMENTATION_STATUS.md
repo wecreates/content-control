@@ -1611,3 +1611,13 @@ All 24 live acceptance rows remain OPEN. Both publication flags remain false. No
 - MF head inspected was d3baaa4d3f23b98ddaf6537edbc800b157d78164. No competing POD PR was found. The protected stale migration was neither approved nor duplicated, and unchanged failed database-administration methods were not retried.
 
 The archive completion repair is implemented and CI verified. All 24 live acceptance rows remain OPEN; both publication flags remain false. No production export, retained backup, role, migration, account, credential, network, social vault, spending, clearance, permission or revenue change occurred. Live deployment and database/backup acceptance, actual authority/account/rights/template/reviewer evidence, authorized adapters, capacity, reconciliation, phone acceptance and end-to-end execution remain unverified. This report-only receipt uses [skip render] to avoid a redundant build.
+
+### 2026-10-16 — r31 implementation checkpoint: UTC concept-budget admission
+
+Inspected CC main b4529982113edb2adb15b50e9197c32d05dd59cf, MF main d3baaa4d3f23b98ddaf6537edbc800b157d78164, current checklist/status/free-deployment documents, open PRs, recent workflows and the authorized free Docker Render service. No competing POD PR was open. The last deployment remains failed, with no changed database-administration path identified or retried.
+
+Intake used transaction-start now() to choose its daily budget, allowing a request waiting across UTC midnight to charge a stale day. New concepts now acquire a business budget lock before reading database wall-clock UTC date, use that explicit date for both budget writes, stamp concept creation with wall time, and reject a date change after writes so the entire transaction rolls back. Fingerprint deduplication, adverse-evidence tombstones, admission limits and final signed-authority expiry checks remain intact.
+
+Three new regression cases failed against the old intake path. Nineteen focused local budget/authority tests now pass. Added hosted PostgreSQL fixtures for three concurrent requests under a two-concept cap, actual rollback under controlled midnight clock responses, and a real advisory-lock barrier proving no date read occurs before the business lock is released. The new fixture passes syntax validation; hosted execution is pending. CONCEPT_BUDGET.md distinguishes admission limits from unique-artwork throughput and defines retry behavior.
+
+All 24 live acceptance rows remain OPEN. Both publication flags remain false. No migration, historical record rewrite, production intake, role, account, credential, environment, network, social vault, spending, clearance, permission or revenue change occurred.

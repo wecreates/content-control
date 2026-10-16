@@ -30,6 +30,7 @@ async function exercise(spec,stage,expired){
   const client={release(){},query:async sql=>{
    queries.push(sql);
    if(stage==='database'&&/^(SELECT|UPDATE|INSERT)/.test(sql))advance();
+   if(sql.includes('AS budget_day'))return {rows:[{budget_day:'2026-10-16'}]};
    if(sql.includes('FROM pod_concepts WHERE fingerprint='))return {rows:spec.duplicate?
     [{id:'existing-concept',business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]:[]};
    if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};

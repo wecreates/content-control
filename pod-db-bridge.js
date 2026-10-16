@@ -1,6 +1,11 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA} from './integrations/pod/policy.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
+async function conceptBudgetDay(client){
+ const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
+ if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
+ return day;
+}
 async function lockProductionLease(client,job){
  const current=(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='processing' FOR UPDATE",[job.id,job.fencing_token])).rows[0];
  if(!current)throw Error('LEASE_LOST');
@@ -47,10 +52,15 @@ export class PodDB {
     verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
     return {id:existing.id};
    }
-   await c.query("INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,(now() AT TIME ZONE 'UTC')::date) ON CONFLICT DO NOTHING",[businessId]);
-   const budget=await c.query("UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=(now() AT TIME ZONE 'UTC')::date AND used<$2 RETURNING used",[businessId,dailyLimit]);
+   // Serialize a business's admission budget before selecting wall-clock UTC day.
+   // Transaction-start now() can be yesterday after a fingerprint/budget wait.
+   await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['pod:concept-budget:'+businessId]);
+   const day=await conceptBudgetDay(c);
+   await c.query('INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,$2::date) ON CONFLICT DO NOTHING',[businessId,day]);
+   const budget=await c.query('UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=$2::date AND used<$3 RETURNING used',[businessId,day,dailyLimit]);
    if(!budget.rows.length)throw Error('DAILY_CONCEPT_LIMIT');
-   await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished) VALUES($1,$2,$3,$4,$5)',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']);
+   await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp())',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']);
+   if(await conceptBudgetDay(c)!==day)throw Error('CONCEPT_BUDGET_DAY_CHANGED');
    // Revalidate after all database waits so expiry rolls back budget and writes.
    verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
    return {id};
