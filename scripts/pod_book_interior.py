@@ -3,11 +3,14 @@ No placeholder pages, debugging boxes, inferred gutters, or fabricated book cont
 """
 import argparse
 import hashlib
+import io
 from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pod_common import canonical, digest, read_json, save_json, verified
+
+MAX_FONT_BYTES = 16 * 1024 * 1024
 
 def render_book(spec, pages, font_path, output):
     if spec.get('platform') != 'kdp' or spec.get('interior_type') != 'text_no_bleed':
@@ -21,13 +24,19 @@ def render_book(spec, pages, font_path, output):
     inside,outside,top,bottom = [float(margins[k])*72 for k in ('inside','outside','top','bottom')]
     if min(inside,outside,top,bottom) <= 0 or inside+outside >= width or top+bottom >= height:
         raise ValueError('MARGINS_INVALID')
-    if digest(font_path) != spec['font_sha256']:
+    # Verify and embed one bounded snapshot; reopening a verified path permits
+    # a replacement font to be attributed to the original typeface's identity.
+    with Path(font_path).open('rb') as source:
+        font_bytes = source.read(MAX_FONT_BYTES + 1)
+    if not font_bytes or len(font_bytes) > MAX_FONT_BYTES:
+        raise ValueError('FONT_BYTES_INVALID')
+    if hashlib.sha256(font_bytes).hexdigest() != spec['font_sha256']:
         raise ValueError('FONT_HASH_MISMATCH')
     size,leading=spec['font_size_pt'],spec['leading_pt']
     if not 6 <= size <= 72 or not size*1.2 <= leading <= size*3:
         raise ValueError('TYPE_METRICS_INVALID')
     face='POD-'+spec['font_sha256'][:16]
-    pdfmetrics.registerFont(TTFont(face,font_path))
+    pdfmetrics.registerFont(TTFont(face,io.BytesIO(font_bytes)))
     ascent,descent=pdfmetrics.getAscentDescent(face,size)
     target=Path(output)
     if target.exists():

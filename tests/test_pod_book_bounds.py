@@ -7,12 +7,74 @@ import fitz
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_book_interior import render_book
+import pod_book_interior as book_renderer
 from pod_common import digest
 from pod_interior_preflight import inspect_interior, inspect_pairing
 from pod_cover_preflight import inspect_cover
 from PIL import Image, ImageChops, ImageStat
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.lib.utils import ImageReader
+
+class BookFontSnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.font = self.root / 'font.ttf'
+        self.font.write_bytes(Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf').read_bytes())
+        self.spec = {'platform': 'kdp', 'interior_type': 'text_no_bleed', 'trim_inches': [2, 2],
+            'page_count': 1, 'margins_inches': dict(inside=.25, outside=.25, top=.25, bottom=.25),
+            'font_sha256': digest(self.font), 'font_size_pt': 10, 'leading_pt': 12}
+        self.pages = [{'lines': ['Original text']}]
+        self.output = self.root / 'book.pdf'
+
+    def test_font_mutation_after_verification_cannot_replace_embedded_typeface(self):
+        for mutation in ('overwrite', 'delete'):
+            with self.subTest(mutation=mutation):
+                self.font.write_bytes(Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf').read_bytes())
+                real_font = book_renderer.TTFont
+                def mutate_then_load(name, source):
+                    if mutation == 'overwrite':
+                        self.font.write_bytes(b'unverified typeface')
+                    else:
+                        self.font.unlink()
+                    return real_font(name, source)
+                target = self.root / (mutation + '.pdf')
+                with patch.object(book_renderer, 'TTFont', side_effect=mutate_then_load):
+                    receipt = render_book(self.spec, self.pages, self.font, target)
+                self.assertTrue(receipt['technical_checks_passed'])
+                self.assertFalse(receipt['production_ready'])
+                with fitz.open(target) as pdf:
+                    self.assertEqual(pdf[0].get_text().splitlines(), ['Original text'])
+                    self.assertTrue(any(font[1] == 'ttf' for font in pdf[0].get_fonts()))
+
+    def test_font_ceiling_blocks_before_parser_and_pdf_creation(self):
+        with patch.object(book_renderer, 'MAX_FONT_BYTES', self.font.stat().st_size - 1, create=True), patch.object(
+                book_renderer, 'TTFont', side_effect=AssertionError('font parser reached')):
+            with self.assertRaisesRegex(ValueError, '^FONT_BYTES_INVALID$'):
+                render_book(self.spec, self.pages, self.font, self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_exact_font_ceiling_can_produce_a_verified_pdf(self):
+        with patch.object(book_renderer, 'MAX_FONT_BYTES', self.font.stat().st_size, create=True):
+            result = render_book(self.spec, self.pages, self.font, self.output)
+        self.assertTrue(result['technical_checks_passed'])
+
+    def test_empty_font_with_matching_digest_never_reaches_parser(self):
+        self.font.write_bytes(b'')
+        self.spec['font_sha256'] = digest(self.font)
+        with patch.object(book_renderer, 'TTFont', side_effect=AssertionError('font parser reached')):
+            with self.assertRaisesRegex(ValueError, '^FONT_BYTES_INVALID$'):
+                render_book(self.spec, self.pages, self.font, self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_wrong_font_identity_blocks_before_parser_and_pdf_creation(self):
+        self.spec['font_sha256'] = '0' * 64
+        with patch.object(book_renderer, 'TTFont', side_effect=AssertionError('font parser reached')):
+            with self.assertRaisesRegex(ValueError, '^FONT_HASH_MISMATCH$'):
+                render_book(self.spec, self.pages, self.font, self.output)
+        self.assertFalse(self.output.exists())
+
 
 class CoverPreflightTests(unittest.TestCase):
     def write_cover(self, path, image, dpi=300, shift=0):
