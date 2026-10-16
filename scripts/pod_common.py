@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 PLATFORMS = {'kdp', 'redbubble', 'teepublic', 'zazzle', 'spreadshirt'}
+MAX_JSON_BYTES = 4 * 1024 * 1024
 
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
@@ -19,9 +20,13 @@ def digest(path):
     return h.hexdigest()
 
 def read_json(path):
-    if Path(path).stat().st_size > 4 * 1024 * 1024:
+    # Enforce the bound on captured bytes, not a stat result that may become
+    # stale before an unbounded read of a growing or replaced file.
+    with Path(path).open('rb') as source:
+        data = source.read(MAX_JSON_BYTES + 1)
+    if len(data) > MAX_JSON_BYTES:
         raise ValueError('JSON_TOO_LARGE')
-    return json.loads(Path(path).read_text())
+    return json.loads(data.decode('utf-8', errors='strict'))
 
 def save_json(path, value):
     p = Path(path)
