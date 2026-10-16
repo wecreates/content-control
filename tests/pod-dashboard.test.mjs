@@ -35,6 +35,12 @@ test('dashboard lists jobs using authenticated bounded GET routes and text nodes
  assert.match(h.get('jobs').children[0].children[0].textContent,/<img onerror=bad>/);
  assert.equal(h.get('jobs').children[0].children[2].textContent,'Open print preview');
 });
+test('health metrics remain visible when expiry blocks job inspection',async()=>{
+ const h=harness(url=>url.includes('/metrics')?response({health:{status:'CRITICAL',alerts:[{code:'STORAGE_EXPIRING'}]},publication_enabled:false}):new Response('{}',{status:409}));
+ await h.get('form').listeners.submit({preventDefault(){}});
+ assert.match(h.get('result').textContent,/STORAGE_EXPIRING/);assert.equal(h.get('jobs').children.length,0);
+ assert.equal(h.get('notice').textContent,'POD data is unavailable.');
+});
 test('preview verifies stored hash and clears credential and blob on page exit',async()=>{
  const h=harness(url=>url.includes('/package')?response(record(png)):new Response(png));
  await h.context.openPreview('fixture-job');

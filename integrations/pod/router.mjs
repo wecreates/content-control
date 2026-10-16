@@ -37,7 +37,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  });
  router.post('/market',async(req,res)=>{try{res.status(202).json(await recordMarketObservation(db,req.body,env.POD_MARKET_KEY));}catch{res.status(409).json({error:'MARKET_OBSERVATION_BLOCKED'});}});
  router.post('/listing-observations',async(req,res)=>{try{res.json(await reconcilePublication(db,req.body,env.POD_PROVIDER_KEY));}catch{res.status(409).json({error:'LISTING_OBSERVATION_BLOCKED'});}});
- router.get('/metrics',async(_req,res)=>{try{res.json(await metrics(db));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}});
+ router.get('/metrics',async(_req,res)=>{try{res.json(await metrics(db,{env}));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}});
  router.post('/financial-events',async(req,res)=>{try{res.status(202).json(await recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY));}catch{res.status(409).json({error:'FINANCIAL_EVENT_BLOCKED'});}});
  router.post('/intake',async(req,res)=>{try{res.status(202).json(await db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)}));}catch{res.status(409).json({error:'INTAKE_BLOCKED'});}});
  router.post('/jobs',async(req,res)=>{

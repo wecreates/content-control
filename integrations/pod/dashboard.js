@@ -39,9 +39,12 @@ function listJobs(rows){
 }
 element('form').addEventListener('submit',async event=>{
  event.preventDefault();const context=begin();element('notice').textContent='Loading…';
- try{const [metrics,jobs]=await Promise.all([json('/metrics',context),json('/jobs?state='+encodeURIComponent(element('state').value),context)]);
-  if(context.version!==generation)return;listJobs(jobs.jobs);element('result').textContent=JSON.stringify(metrics,null,2);
-  element('notice').textContent=jobs.jobs.length?'Select a job to inspect its print artwork.':'No matching jobs.';
+ try{const [metrics,jobs]=await Promise.allSettled([json('/metrics',context),json('/jobs?state='+encodeURIComponent(element('state').value),context)]);
+  if(context.version!==generation)return;
+  element('result').textContent=metrics.status==='fulfilled'?JSON.stringify(metrics.value,null,2):'Metrics unavailable.';
+  if(jobs.status==='fulfilled')listJobs(jobs.value.jobs);
+  if(metrics.status==='rejected')throw metrics.reason;if(jobs.status==='rejected')throw jobs.reason;
+  element('notice').textContent=jobs.value.jobs.length?'Select a job to inspect its print artwork.':'No matching jobs.';
  }catch(error){failure(error,context);}
 });
 async function openPreview(id){
