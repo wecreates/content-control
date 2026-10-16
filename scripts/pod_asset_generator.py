@@ -1,6 +1,7 @@
 """Deterministic layout of original input art; does not pretend to be an AI image API."""
 import argparse
 import hashlib
+import io
 import math
 import sys
 from pathlib import Path
@@ -8,7 +9,18 @@ from PIL import Image, ImageDraw, ImageFont
 from pod_common import canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
 from pod_raster import MAX_RASTER_PIXELS, open_raster
 
-def generate(source_path, template, text_layers, output_dir):
+MAX_INPUT_BYTES = 16 * 1024 * 1024
+
+def input_snapshot(path):
+    # One bounded capture supplies both identity verification and the decoder.
+    # Never reopen a path after verifying its bytes.
+    with Path(path).open('rb') as source:
+        data = source.read(MAX_INPUT_BYTES + 1)
+    if not data or len(data) > MAX_INPUT_BYTES:
+        raise ValueError('INPUT_BYTES_INVALID')
+    return data
+
+def generate(source_path, template, text_layers, output_dir, *, expected_source_sha256=None):
     if template.get('platform') not in PLATFORMS:
         raise ValueError('PLATFORM_BLOCKED')
     dpi = template.get('dpi', 300)
@@ -27,7 +39,10 @@ def generate(source_path, template, text_layers, output_dir):
     if any(not isinstance(v, int) for v in (x,y,bw,bh)) or min(x,y)<0 or min(bw,bh)<=0 or x+bw>w or y+bh>h:
         raise ValueError('ART_BOX_INVALID')
     root = Path(output_dir)
-    with open_raster(source_path) as source:
+    source_bytes = input_snapshot(source_path)
+    if expected_source_sha256 is not None and hashlib.sha256(source_bytes).hexdigest() != expected_source_sha256:
+        raise ValueError('RIGHTS_BLOCKED')
+    with open_raster(io.BytesIO(source_bytes)) as source:
         sw, sh = source.size
         scale = min(bw/sw, bh/sh)
         if scale > 1:
@@ -45,9 +60,10 @@ def generate(source_path, template, text_layers, output_dir):
     text_mask = Image.new('L',(w,h),0)
     expected = []
     for layer in text_layers:
-        if digest(layer['font_path']) != layer['font_sha256']:
+        font_bytes = input_snapshot(layer['font_path'])
+        if hashlib.sha256(font_bytes).hexdigest() != layer['font_sha256']:
             raise ValueError('FONT_HASH_MISMATCH')
-        font = ImageFont.truetype(layer['font_path'], layer['font_size_px'])
+        font = ImageFont.truetype(io.BytesIO(font_bytes), layer['font_size_px'])
         px, py = layer['position_px']
         draw = ImageDraw.Draw(canvas)
         box = draw.textbbox((px,py),layer['text'],font=font)
@@ -88,11 +104,11 @@ def main():
         rights=verified(read_json(a.rights),'POD_RIGHTS_KEY','pod:asset-rights')
         template=verified(read_json(a.template),'POD_TEMPLATE_KEY','pod:template')['template']
         layers=read_json(a.text_layers)
-        if rights.get('status')!='PASS' or rights.get('source_sha256')!=digest(a.source) or rights.get('text_layers_sha256')!=hashlib.sha256(canonical(layers).encode()).hexdigest():
+        if rights.get('status')!='PASS' or not isinstance(rights.get('source_sha256'), str) or rights.get('text_layers_sha256')!=hashlib.sha256(canonical(layers).encode()).hexdigest():
             raise ValueError('RIGHTS_BLOCKED')
         if a.asset_root:
             layers=[{**layer,'font_path':str(scoped_file(a.asset_root,layer['font_path']))} for layer in layers]
-        result=generate(a.source,template,layers,a.output_dir)
+        result=generate(a.source,template,layers,a.output_dir,expected_source_sha256=rights['source_sha256'])
         print(canonical({'status':'GENERATED','package_sha256':result['package_sha256'],'publication_enabled':False}))
         return 0
     except Exception as exc:
