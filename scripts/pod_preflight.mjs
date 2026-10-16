@@ -15,7 +15,7 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
  check('STORAGE_LIFETIME',Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))&&Date.parse(env.POD_STORAGE_EXPIRES_AT)-now>86400000);
  try{assertBridge(JSON.parse(await readFile(env.POD_BRIDGE_PATH,'utf8')));check('BRIDGE_CONTRACT',true);}catch{check('BRIDGE_CONTRACT',false);}
  check('DEDICATED_DATABASE_CONFIGURED',!!env.POD_DATABASE_URL);
- let pool,client;
+ let pool,client,readable=false,bad=false;
  if(env.POD_DATABASE_URL)try{
   const factory=connect|| (async e=>(await import('../pod-db-bridge.js')).createPodPool(e));
   pool=await factory(env);client=await pool.connect();
@@ -58,12 +58,18 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
    matching&&=versions.find(r=>r.version===name)?.sha256===crypto.createHash('sha256').update(sql).digest('hex');
   }
   check('SCHEMA_CHECKSUMS',matching);
-  check('DATABASE_READABLE',true);
- }catch{check('DATABASE_READABLE',false);}
+  readable=true;
+ }catch{readable=false;}
  finally{
-  if(client){await client.query('ROLLBACK').catch(()=>{});client.release();}
+  if(client){
+   // Startup borrows a service-owned pool. A failed rollback must invalidate
+   // the report as well as discard the connection with unknown transaction state.
+   try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
+   client.release(bad);
+  }
   if(pool)await pool.end().catch(()=>{});
  }
+ if(env.POD_DATABASE_URL)check('DATABASE_READABLE',readable);
  return {schema_version:1,status:checks.every(c=>c.status==='PASS')?'CONFIGURATION_VERIFIED':'BLOCKED',
   publication_enabled:false,scope:'configuration_only',checks,
   unverified:['production_dependencies','production_resolvers','rights_and_editorial_review','authorized_platform_adapters','upstream_revenue_events']};
@@ -71,4 +77,5 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const result=await preflight();console.log(JSON.stringify(result));process.exitCode=result.status==='BLOCKED'?1:0;
 }
+
 
