@@ -7,7 +7,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
+    "candidate_converged": true,
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
@@ -57,10 +57,9 @@
   "factual_compliance_status": "PASS",
   "failed_checks": [
     "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "candidate_identity_consistent"
   ],
-  "live_deployment_status": "PASS",
+  "live_deployment_status": "FAIL",
   "machine_system_complete": false,
   "mobile_playback_status": "PASS",
   "narration_transcription_status": "PASS",
