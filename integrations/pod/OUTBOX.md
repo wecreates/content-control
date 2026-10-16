@@ -28,3 +28,20 @@ values: 20 failures stay pending, the next 25 are acknowledged, then a new sweep
 revisits the original failures. This is synthetic delivery evidence, not a live
 Money Factory round trip or a claim of completed acceptance.
 
+
+## Bounded bridge response cleanup
+
+Outbox acknowledgements are capped at 4,096 body bytes; current-grant responses
+are capped at 262,144. Both clients cancel unsuccessful HTTP responses and
+responses rejected by declared size before reading them. Acquired readers are
+cancelled and unlocked on success, size rejection, parse failure or aborted reads.
+Streamed bytes are counted even if Content-Length is absent or understated.
+Cleanup failures do not replace stable delivery/authority errors.
+
+JSON uses strict UTF-8 decoding after bounded byte collection, preserving
+characters split across chunks and rejecting malformed sequences. Only the
+existing exact event acknowledgement marks an event delivered; grants still
+require signature, audience, scope, permission and lifetime verification.
+Request deadlines and redirect rejection remain unchanged. Failed events stay
+pending for the existing retry/backoff loop. Stream-fixture tests are not a live
+authority/inbox acceptance or a measured production capacity claim.
