@@ -8,6 +8,33 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 import {validateTemplate} from '../integrations/pod/templates.mjs';
 const key='a'.repeat(48);
+test('authenticated parser failures return sanitized JSON before any database operation',async()=>{
+ const app=express();app.set('env','development');let calls=0,escaped=0;
+ const db=new Proxy({}, {get(){calls++;throw Error('database must not be touched');}});
+ app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ app.use((_error,_req,res,_next)=>{escaped++;res.status(599).json({error:'escaped'});});
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const base=`http://127.0.0.1:${server.address().port}`;
+ try{
+  const cases=[
+   ['/jobs','application/json','{"private-marker":',{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json','true',{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json','x'.repeat(262145),{},413,'POD_REQUEST_TOO_LARGE'],
+   ['/artifacts','image/png',Buffer.alloc(16777217),{},413,'POD_REQUEST_TOO_LARGE'],
+   ['/jobs','application/json; charset=iso-8859-1','{}',{},415,'POD_REQUEST_ENCODING_UNSUPPORTED'],
+   ['/jobs','application/json','{}',{'content-encoding':'unsupported-fixture'},415,'POD_REQUEST_ENCODING_UNSUPPORTED']
+  ];
+  for(const [path,type,body,headers,status,code] of cases){
+   const r=await fetch(base+path,{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':type,...headers},body});
+   assert.equal(r.status,status);assert.match(r.headers.get('content-type'),/^application\/json/);
+   assert.equal(r.headers.get('cache-control'),'no-store');assert.deepEqual(await r.json(),{error:code});
+  }
+  // Unauthenticated input is rejected by auth before parsing sensitive bytes.
+  const denied=await fetch(base+'/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"private-marker":'});
+  assert.equal(denied.status,401);assert.deepEqual(await denied.json(),{error:'OWNER_AUTH_REQUIRED'});
+  assert.equal(calls,0);assert.equal(escaped,0);
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('authenticated uploads share the bounded deployment storage policy',async()=>{
  const env={POD_ARTIFACT_BUDGET_BYTES:'3'};let inserts=0,transactions=0;
  const db={tx:async fn=>{transactions++;return fn({query:async(sql)=>{

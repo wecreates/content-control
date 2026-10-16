@@ -6,6 +6,7 @@ import {ArtifactStore} from './artifacts.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
+import {podRequestError} from './request-errors.mjs';
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
@@ -45,5 +46,8 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   catch{res.status(409).json({error:'POD_INTAKE_BLOCKED'});}
  });
  router.get('/ready',async(_req,res)=>{try{res.json({jobs:await db.listReady()});}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}});
+ // Keep parser failures inside this router, including in development mode.
+ // Express's default handler may expose parser messages and stack traces.
+ router.use(podRequestError);
  return router;
 }
