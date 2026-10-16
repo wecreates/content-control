@@ -1420,3 +1420,12 @@ Current CC head 29011d184980e92319fe6ee17eb69252a5eeb142 and MF head 3609b58aff6
 - Money Factory main remains `3609b58aff6b7350f85a5a4952e1922e4ba98a1f`; current open PRs and workflows were inspected and unrelated work preserved. Protected migration `38627827260` remains waiting at stale pre-005 head `7d45ff10c90a53721be0a1926eaffb52c7734c3f`. It was not approved or duplicated, and unchanged failed database-administration paths were not retried. The existing authorized Render service remains on its free Docker web plan.
 
 All 24 live acceptance rows remain OPEN. Outstanding work includes actual production role/schema access, retained whole-system recovery, live hosting and authority, authorized account/source/rights/template/reviewer/adapter evidence, real financial reconciliation, phone acceptance, measured capacity and controlled end-to-end readiness. Both publication flags stay false. No migration, environment, credential, clearance, approval or revenue changed or was fabricated. This report-only receipt uses the established Render skip policy; scheduled tool execution is not a continuously running self-hosted worker.
+
+
+## Production claim timing — 2026-10-16 UTC
+
+Inspection found production claims still used the transaction-start clock for retry eligibility and lease creation, unlike the repaired publishing path. Claims now use clock_timestamp() for due jobs, the new 30-minute lease and its update timestamp. Existing row-level SKIP LOCKED coordination, fencing increments and rights filters remain in place. No migration or production setting changes are required.
+
+41 focused local Node tests passed and the new PostgreSQL fixture passed syntax validation. Added actual relation-lock barrier cases for fresh leases after contention, a retry deadline that elapses during the wait, future retry exclusion, row-lock skipping and concurrent single ownership. PostgreSQL is unavailable locally; these behavioral database cases are pending hosted CI and are not claimed as already executed or reproduced against the preceding implementation.
+
+Current checklist, deployment notes, open PRs and workflow results were inspected at CC 34465c15bc3f36a61aad13a995cc318330afb047 and MF 3609b58aff6b7350f85a5a4952e1922e4ba98a1f. No competing POD change or credible changed database administration path was identified. Existing Render build quota remains unresolved. All 24 live acceptance rows remain OPEN; both publication flags stay false. No paid resource, secret, network, migration, authority, clearance or revenue change was made.

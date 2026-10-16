@@ -109,10 +109,12 @@ export class PodDB {
   if(!r.rows.length)throw Error('LEASE_LOST');
  });}
  async claimProduction(){return this.tx(async c=>{
-  const r=await c.query(`UPDATE pod_production_queue SET state='processing',lease_until=now()+interval '30 minutes',
-   fencing_token=fencing_token+1,attempt=attempt+1,updated_at=now()
+  // Lock acquisition can outlive a retry deadline. Eligibility and the new
+  // lease must use wall time, not the timestamp frozen at transaction BEGIN.
+  const r=await c.query(`UPDATE pod_production_queue SET state='processing',lease_until=clock_timestamp()+interval '30 minutes',
+   fencing_token=fencing_token+1,attempt=attempt+1,updated_at=clock_timestamp()
    WHERE id=(SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
-    WHERE q.state='raw' AND q.next_attempt_at<=now() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+    WHERE q.state='raw' AND q.next_attempt_at<=clock_timestamp() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
     ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1) RETURNING *`);return r.rows[0]||null;
  });}
  async assertProducible(job){return this.tx(async c=>{
