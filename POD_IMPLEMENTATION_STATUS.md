@@ -1569,3 +1569,13 @@ All 24 live acceptance rows remain OPEN. Both publication flags remain false. Ex
 - MF remains d3baaa4d3f23b98ddaf6537edbc800b157d78164. No competing POD PR was found. The protected stale migration was neither approved nor duplicated; unchanged failed administration paths were not retried.
 
 The dashboard integration is implemented and CI verified. All 24 live acceptance rows remain OPEN. Both publication flags remain false; no role, migration, account, credential, network, social vault, spending, clearance, permission or revenue changes occurred. Live deployment, actual authority/account/rights/template inputs, restricted database acceptance, sustained capacity, owner-phone verification, authorized provider adapters, reconciliation and end-to-end acceptance still require real evidence. This report-only receipt uses [skip render] to avoid a redundant build.
+
+### 2026-10-16 — r29 implementation checkpoint: stored task boundary repair
+
+Inspected CC main a9d110d9b81ae50d8407841488ef3d5ab22a39e4, MF main d3baaa4d3f23b98ddaf6537edbc800b157d78164, current checklist/status/free-deployment documents, open PRs, recent workflows and the authorized Render service. No overlapping POD work was open. The latest runtime deployment remains build_failed; the service is still free Docker. No changed database-administration access path was found or retried.
+
+Three regression tests reproduced validation gaps: input filenames could collide with generated package/QA paths; malformed or extra interior fields were not rejected; non-string hashes could pass regular-expression coercion. The resolver now reserves output names case-insensitively, requires literal hash strings, validates optional interiors as exactly three declared file roles, and constructs interior paths only from that allowlist. All descriptor checks occur before workspace creation and input artifact fetch. New fixed task diagnostic codes preserve useful remediation reasons without including arbitrary error text.
+
+Twelve focused local tests pass, including valid interior restoration/cleanup and a production-worker case that rejects a colliding input before Python or further production authorization. TASK_INPUTS.md documents the contract and correction path. Full hosted PostgreSQL/Python integration verification is pending; no live task, rights clearance, independent review or platform acceptance is inferred from fixtures.
+
+All 24 live acceptance rows remain OPEN. Both publication flags remain false. No migration, role, account, credential, environment, network, social vault, spending, clearance, permission or revenue change was made.
