@@ -15,6 +15,99 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from pod_common import save_json, sign, verified
 from pod_market_intake import run, main
+from pod_market_intake import analyze_reference
+from PIL import Image, ImageFile
+from test_pod_raster_bounds import png_header
+
+
+class ReferenceRasterTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+
+    def test_oversized_reference_rejected_before_any_decoder(self):
+        path = self.root / 'oversized.png'
+        png_header(path, (10001, 10000))
+        with patch.object(Image, 'MAX_IMAGE_PIXELS', None), patch.object(
+                ImageFile.ImageFile, 'load', side_effect=AssertionError('pixel decoder reached')), patch(
+                'pod_market_intake.cv2.imread', create=True,
+                side_effect=AssertionError('unchecked OpenCV decoder reached')):
+            with self.assertRaisesRegex(ValueError, '^IMAGE_PIXEL_LIMIT$'):
+                analyze_reference(path)
+
+    def test_bomb_reference_has_bounded_failure(self):
+        path = self.root / 'bomb.png'
+        png_header(path, (100000, 100000))
+        with patch('pod_market_intake.cv2.imread', create=True,
+                   side_effect=AssertionError('unchecked decoder reached')):
+            with self.assertRaisesRegex(ValueError, '^IMAGE_PIXEL_LIMIT$'):
+                analyze_reference(path)
+
+    def test_animated_reference_rejected_before_edge_analysis(self):
+        path = self.root / 'animation.gif'
+        Image.new('RGB', (2, 2), 'white').save(path, save_all=True,
+            append_images=[Image.new('RGB', (2, 2), 'black')], duration=100, loop=0)
+        with patch('pod_market_intake.cv2.Canny', create=True,
+                   side_effect=AssertionError('edge analysis reached')), patch(
+                   'pod_market_intake.cv2.imread', create=True,
+                   side_effect=AssertionError('unchecked decoder reached')):
+            with self.assertRaisesRegex(ValueError, '^IMAGE_MULTIFRAME_UNSUPPORTED$'):
+                analyze_reference(path)
+
+    def test_truncated_reference_fails_before_edge_analysis(self):
+        path = self.root / 'truncated.png'
+        png_header(path, (50, 50))
+        with patch('pod_market_intake.cv2.Canny', create=True,
+                   side_effect=AssertionError('edge analysis reached')), patch(
+                   'pod_market_intake.cv2.imread', create=True,
+                   side_effect=AssertionError('unchecked decoder reached')):
+            with self.assertRaises(OSError):
+                analyze_reference(path)
+
+    def test_unsupported_reference_fails_closed(self):
+        path = self.root / 'invalid.bin'
+        path.write_bytes(b'not an image')
+        with patch('pod_market_intake.cv2.imread', create=True,
+                   side_effect=AssertionError('unchecked decoder reached')):
+            with self.assertRaises(OSError):
+                analyze_reference(path)
+
+    def test_static_modes_preserve_display_geometry(self):
+        for mode in ('RGB', 'RGBA', 'L', 'P'):
+            with self.subTest(mode=mode):
+                path = self.root / (mode + '.png')
+                image = Image.new('RGB', (64, 48), 'white')
+                image.paste('black', (16, 12, 40, 36))
+                image.convert(mode).save(path)
+                result = analyze_reference(path)
+                self.assertEqual(result['display_pixels'], [64, 48])
+                self.assertGreater(result['edge_density'], 0)
+                self.assertLess(result['edge_density'], 1)
+                self.assertTrue(result['normalized_regions'])
+                for x, y, w, h in result['normalized_regions']:
+                    self.assertTrue(0 <= x < x+w <= 1 and 0 <= y < y+h <= 1)
+                self.assertIsNone(result['print_dimensions'])
+                self.assertIsNone(result['font_identity'])
+
+    def test_validated_file_is_not_reopened_after_path_replacement(self):
+        path = self.root / 'source.png'
+        Image.new('RGB', (64, 48), 'white').save(path)
+        replacement = self.root / 'replacement.png'
+        png_header(replacement, (10001, 10000))
+        real_open = Image.open
+        opened = []
+        def replace_after_open(source):
+            image = real_open(source)
+            opened.append(image)
+            replacement.replace(path)
+            return image
+        with patch('pod_raster.Image.open', side_effect=replace_after_open) as opener:
+            result = analyze_reference(path)
+        self.assertEqual(opener.call_count, 1)
+        self.assertEqual(result['display_pixels'], [64, 48])
+        self.assertEqual(result['edge_density'], 0)
+        self.assertIsNone(opened[0].fp)
 
 
 class MarketSourceAuthorizationTests(unittest.TestCase):
