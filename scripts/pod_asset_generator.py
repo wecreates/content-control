@@ -101,14 +101,20 @@ def main():
     p.add_argument('--asset-root')
     a=p.parse_args()
     try:
-        rights=verified(read_json(a.rights),'POD_RIGHTS_KEY','pod:asset-rights')
-        template=verified(read_json(a.template),'POD_TEMPLATE_KEY','pod:template')['template']
+        rights_envelope=read_json(a.rights)
+        template_envelope=read_json(a.template)
+        rights=verified(rights_envelope,'POD_RIGHTS_KEY','pod:asset-rights')
+        template=verified(template_envelope,'POD_TEMPLATE_KEY','pod:template')['template']
         layers=read_json(a.text_layers)
         if rights.get('status')!='PASS' or not isinstance(rights.get('source_sha256'), str) or rights.get('text_layers_sha256')!=hashlib.sha256(canonical(layers).encode()).hexdigest():
             raise ValueError('RIGHTS_BLOCKED')
         if a.asset_root:
             layers=[{**layer,'font_path':str(scoped_file(a.asset_root,layer['font_path']))} for layer in layers]
         result=generate(a.source,template,layers,a.output_dir,expected_source_sha256=rights['source_sha256'])
+        # Rendering and hashing can outlive an initially valid grant. Recheck
+        # the exact original evidence, never a replacement from its file path.
+        verified(rights_envelope,'POD_RIGHTS_KEY','pod:asset-rights')
+        verified(template_envelope,'POD_TEMPLATE_KEY','pod:template')
         print(canonical({'status':'GENERATED','package_sha256':result['package_sha256'],'publication_enabled':False}))
         return 0
     except Exception as exc:
