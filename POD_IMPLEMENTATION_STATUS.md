@@ -1868,3 +1868,14 @@ All 24 live acceptance areas remain OPEN and publication flags false. Production
 Inspected CC f3c674c6f186f01ebb51a6bdf3a8f04be6da27c1 and unchanged MF 15576ab5b4957a762feb2a823469ae50765e2fa2, current acceptance/deployment documents, open PRs/workflows and Render. No competing POD PR or AGENTS.md; Render quota and database access blockers are unchanged.
 
 Asset, standalone interior and book-package CLIs now reverify their original signed evidence after rendering/hashing, before reporting success. Interior receipt writes are also followed by a final check. Replacing an evidence file cannot renew the authority used for rendering. Expiry returns BLOCKED/exit 2, so the worker cannot persist the failed stage; local output files alone are not acceptance. Seven new controlled-time tests pass after baseline reproduced eight failed assertions and two errors. Actual local Pillow/ReportLab/PyMuPDF suites pass 16 raster and 28 book/cover tests; full hosted verification pending. No live authorization is invented. All 24 live areas remain OPEN; publication stays disabled.
+
+
+### 2026-10-16 — r42 verified receipt: final rendering authority
+
+[PR 179](https://github.com/wecreates/content-control/pull/179) merged tested bee4a2234d7bb8adf28d6703700610fe04feaeb2 as 3d1d7ea654d64e5fee7a285abdaece82b371054e. Tree 85c67585ffe5bb1095348e0b8203e353a0ec4c92 exactly matches the tested tree. Fresh head/base, clean mergeability and passing checks were verified before merge. Asset/interior/package CLI success now requires the original rights/template evidence still be valid after rendering; replacing files cannot extend it.
+
+[PR CI 38969436508](https://github.com/wecreates/content-control/actions/runs/38969436508), job 117203893826, and [main CI 38969618714](https://github.com/wecreates/content-control/actions/runs/38969618714), job 117204500536, each passed 349 Node, 148 Python, one durable PostgreSQL/Python E2E and three guards, zero failures/skips. Main wiring 38969618715 passed. The new seven-test suite uses controlled time and stubbed render stages; existing real rendering/E2E tests remain passing. These fixtures provide no live approval.
+
+Render dep-db99dvlg1s2s73bv9fig failed at 2026-10-16T21:28:31.614167Z; build log 21:28:31.372680056Z confirms exhausted build minutes. Re-read dep-db7r0lh42hec739jiusg remains live at 5180c243198afb6dfb05ee8d2e14995d4e7b0750. No manual retry, duplicate dispatch, paid workaround or unchanged DB-access retry occurred.
+
+All 24 live areas remain OPEN, with existing production/data/authority/provider/acceptance dependencies unresolved. Publication flags remain false. No credentials, social-vault access, network widening, spending, clearance, approvals, publication or revenue was changed or invented. CI is not deployment or continuous execution. This report-only receipt uses [skip render]; runtime code did not skip CI or deployment.
