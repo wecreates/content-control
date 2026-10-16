@@ -97,7 +97,7 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
  config(directory,key);disabled(env);signal?.throwIfAborted();const budget=artifactBudgetBytes(env);
  await fs.mkdir(directory,{mode:0o700});
- const client=await db.pool.connect();let bytes=0,artifacts=0;
+ const client=await db.pool.connect();let bytes=0,artifacts=0,bad=false;
  try{
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   await client.query("SET LOCAL statement_timeout='10s'");await client.query("SET LOCAL lock_timeout='2s'");
@@ -126,7 +126,10 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   await syncArchiveDirectory(directory);
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
- }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
+ }catch(error){
+  // Failed rollback makes the connection unsafe for subsequent pooled work.
+  try{await client.query('ROLLBACK');}catch{bad=true;}throw error;
+ }finally{client.release(bad);}
 }
 
 export async function restoreStateArchive(db,{directory,key,signal,env=process.env}={}){
