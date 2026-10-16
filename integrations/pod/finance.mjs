@@ -2,11 +2,21 @@ import crypto from 'node:crypto';
 import {verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
 
+function validOccurrence(value){
+ if(typeof value!=='string')return false;
+ // Require an explicit zone and at most PostgreSQL's six fractional digits.
+ // Reject normalized invalid calendar dates and 24:00 rather than changing them.
+ const match=/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+ if(!match||!Number.isFinite(Date.parse(value))||Date.parse(value)>Date.now())return false;
+ const local=Date.parse(match[1]+'Z');
+ return Number.isFinite(local)&&new Date(local).toISOString().slice(0,19)===match[1];
+}
+
 export async function recordFinancialEvent(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
  if(e.verified!==true||!['authority_event_id','provider_event_id','provider','job_id'].every(k=>typeof e[k]==='string'&&e[k].trim().length>0&&e[k].length<=256)||
   !Number.isSafeInteger(e.amount_minor)||!['royalty','refund','fee','production_cost','generation_cost','tax','adjustment'].includes(e.kind)||
-  !/^[A-Z]{3}$/.test(e.currency)||typeof e.occurred_at!=='string'||!Number.isFinite(Date.parse(e.occurred_at))||Date.parse(e.occurred_at)>Date.now()||
+  !/^[A-Z]{3}$/.test(e.currency)||!validOccurrence(e.occurred_at)||
   typeof e.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(e.evidence_sha256))throw Error('FINANCIAL_EVIDENCE_REQUIRED');
  if((e.kind==='royalty'&&e.amount_minor<0)||(['refund','fee','production_cost','generation_cost','tax'].includes(e.kind)&&e.amount_minor>0))throw Error('FINANCIAL_SIGN_INVALID');
  return db.tx(async c=>{
@@ -18,10 +28,12 @@ export async function recordFinancialEvent(db,envelope,key){
   if(!result.rowCount){
    // Both identities must resolve to exactly the same immutable event. A new
    // provider ID cannot turn one authoritative event into additional income.
-   const matches=(await c.query('SELECT * FROM pod_financial_events WHERE (provider=$1 AND provider_event_id=$2) OR authority_event_id=$3',[e.provider,e.provider_event_id,e.authority_event_id])).rows;
+   // pg's Date decoder loses microseconds. Compare the original parameter in
+   // PostgreSQL so sub-millisecond changes cannot masquerade as exact retries.
+   const matches=(await c.query('SELECT *,occurred_at=$4::timestamptz AS occurred_at_matches FROM pod_financial_events WHERE (provider=$1 AND provider_event_id=$2) OR authority_event_id=$3',[e.provider,e.provider_event_id,e.authority_event_id,e.occurred_at])).rows;
    const previous=matches[0];
    if(matches.length!==1||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
-    String(previous.amount_minor)!==String(e.amount_minor)||new Date(previous.occurred_at).getTime()!==Date.parse(e.occurred_at))throw Error('FINANCIAL_REPLAY_CONFLICT');
+    String(previous.amount_minor)!==String(e.amount_minor)||previous.occurred_at_matches!==true)throw Error('FINANCIAL_REPLAY_CONFLICT');
    verifyEnvelope(envelope,key,'content-control:pod:finance');
    return {id:previous.id,duplicate:true};
   }

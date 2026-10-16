@@ -46,3 +46,18 @@ mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not upda
 queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
 for recovery investigation. Integrity establishes byte identity only, not source
 authorization, legal clearance, listing truth or verified income.
+
+## Occurrence precision
+
+Occurrence timestamps must include an explicit Z or numeric timezone offset and
+zero through six fractional-second digits. Ambiguous local dates, normalized
+invalid calendar dates, 24:00 and finer-than-microsecond values are rejected before
+transaction entry. Producers must preserve the statement's verified instant; this
+endpoint does not silently round or invent timezone information.
+
+Exact replay compares occurred_at inside PostgreSQL against the original bound
+timestamp parameter. JavaScript Date values truncate PostgreSQL microseconds and
+must not decide financial identity. Equivalent offsets for the same instant are
+accepted; a one-microsecond difference or truncated fractional value is a conflict.
+Historical rows are not rewritten. Fresh signatures and stored proof are still
+required for every replay. This establishes timestamp identity, not verified profit.

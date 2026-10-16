@@ -25,7 +25,7 @@ function fixture(previous=[],corrupt=false){
     rows.push({id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id});
     return {rowCount:1,rows:[{id}]};
    }
-   if(sql.startsWith('SELECT * FROM pod_financial_events'))return {rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2]))};
+   if(sql.includes('FROM pod_financial_events'))return {rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2])).map(r=>({...r,occurred_at_matches:new Date(r.occurred_at).getTime()===Date.parse(args[3])}))};
    if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[]};}
    throw Error('UNEXPECTED_QUERY');
   }});}catch(e){rows.length=size;outbox.length=events;throw e;}
@@ -81,5 +81,25 @@ test('new scoped event is recorded once with one outbox observation',async()=>{
  assert.equal(r.duplicate,false);assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);
  assert.deepEqual(await recordFinancialEvent(f.db,sign(event()),key),{id:r.id,duplicate:true});
  assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);
+});
+
+test('database timestamp mismatch cannot be hidden by millisecond Date decoding',async()=>{
+ for(const occurred_at_matches of [false,null,undefined]){
+  const e={...event(),occurred_at:'2026-01-01T00:00:00.123457Z'};
+  const db={tx:async fn=>fn({query:async sql=>{
+   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,body_sha256:e.evidence_sha256}]};
+   if(sql.startsWith('INSERT INTO pod_financial_events'))return {rowCount:0};
+   if(sql.includes('FROM pod_financial_events'))return {rows:[{...e,id:'original',occurred_at:new Date('2026-01-01T00:00:00.123456Z'),occurred_at_matches}]};
+   assert.fail('replay must not write an outbox event');
+  }})};
+  await assert.rejects(recordFinancialEvent(db,sign(e),key),/FINANCIAL_REPLAY_CONFLICT/);
+ }
+});
+
+test('ambiguous, invalid or overprecision financial timestamps fail before database access',async()=>{
+ for(const occurred_at of ['2026-01-01','2026-01-01T00:00:00','2026-01-01T00:00:00.1234567Z',
+  '2026-02-30T00:00:00Z','2026-01-01T24:00:00Z','2026-01-01T00:00:00+24:00']){
+  await assert.rejects(recordFinancialEvent({tx:()=>assert.fail('invalid timestamp reached database')},sign({...event(),occurred_at}),key),/FINANCIAL_EVIDENCE_REQUIRED/);
+ }
 });
 
