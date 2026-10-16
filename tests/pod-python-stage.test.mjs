@@ -6,6 +6,21 @@ import path from 'node:path';
 import {setTimeout as wait} from 'node:timers/promises';
 import {runPythonStage} from '../integrations/pod/python-stage.mjs';
 
+async function assertStopped(pid){
+ for(let i=0;i<100;i++){
+  try{
+   // Orphan zombies cannot run or retain descriptors, but may await PID 1.
+   if(process.platform==='linux'){
+    const stat=await fs.readFile(`/proc/${pid}/stat`,'utf8');
+    if(stat.slice(stat.lastIndexOf(')')+2).startsWith('Z'))return;
+   }
+   process.kill(pid,0);
+  }catch(error){if(['ESRCH','ENOENT'].includes(error.code))return;throw error;}
+  await wait(10);
+ }
+ assert.fail('descendant still running after stage settled');
+}
+
 async function fixture(source,fn){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-process-'));
  await fs.mkdir(path.join(root,'scripts'));
@@ -62,4 +77,63 @@ test('stderr and combined output count toward the same bounded budget',async()=>
    runPythonStage('fixture.cjs',[],{...options,maxOutputBytes:100}),/PYTHON_STAGE_OUTPUT_LIMIT/));
  }
 });
+
+test('cancellation kills descendants that ignore SIGTERM and retain output pipes',async()=>{
+ const source=`const fs=require('node:fs'),{spawn}=require('node:child_process');
+ process.on('SIGTERM',()=>{});
+ const child=spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});require('node:fs').writeFileSync('descendant',String(process.pid));setInterval(()=>{},50);"],{stdio:['ignore',1,2]});
+ fs.writeFileSync('parent',String(process.pid));setInterval(()=>{},50);`;
+ await fixture(source,async options=>{
+  const controller=new AbortController();let descendant,parent;
+  const result=runPythonStage('fixture.cjs',[],{...options,signal:controller.signal}).then(()=>({ok:true}),error=>({error}));
+  try{
+   for(let i=0;i<100;i++){
+    try{descendant=Number(await fs.readFile(path.join(options.root,'descendant'),'utf8'));
+     parent=Number(await fs.readFile(path.join(options.root,'parent'),'utf8'));break;}catch{await wait(10);}
+   }
+   assert.ok(descendant&&parent,'both processes initialized');controller.abort();
+   const outcome=await Promise.race([result,wait(600).then(()=>({pending:true}))]);
+   assert.equal(outcome.error?.message,'PYTHON_STAGE_ABORTED','stage must settle after killing the whole group');
+   await assertStopped(descendant);
+  }finally{
+   controller.abort();
+   for(const pid of [descendant,parent])if(pid)try{process.kill(pid,'SIGKILL');}catch{}
+   await result;
+  }
+ });
+});
+
+for(const mode of ['timeout','overflow','parent-exit-with-pipes','parent-exit-without-pipes']){
+ test('descendant cleanup: '+mode,async()=>{
+  const source=`const fs=require('node:fs'),{spawn}=require('node:child_process');
+  const mode=${JSON.stringify(mode)};
+  process.on('SIGTERM',()=>{});
+  const child=spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});require('node:fs').writeFileSync('descendant',String(process.pid));setInterval(()=>{},50);"],
+   {stdio:mode==='parent-exit-without-pipes'?'ignore':['ignore',1,2]});
+  fs.writeFileSync('parent',String(process.pid));
+  const ready=setInterval(()=>{if(!fs.existsSync('descendant'))return;clearInterval(ready);
+   if(mode.startsWith('parent-exit'))process.exit(0);
+   if(mode==='overflow')process.stdout.write('x'.repeat(10000));
+  },10);setInterval(()=>{},50);`;
+  await fixture(source,async options=>{
+   let descendant,parent;
+   const result=runPythonStage('fixture.cjs',[],{...options,timeoutMs:1500,maxOutputBytes:1000})
+    .then(()=>({ok:true}),error=>({error}));
+   try{
+    for(let i=0;i<100;i++){
+     try{descendant=Number(await fs.readFile(path.join(options.root,'descendant'),'utf8'));
+      parent=Number(await fs.readFile(path.join(options.root,'parent'),'utf8'));break;}catch{await wait(10);}
+    }
+    assert.ok(descendant&&parent,'both processes initialized');
+    const outcome=await Promise.race([result,wait(2500).then(()=>({pending:true}))]);
+    const expected=mode==='timeout'?'PYTHON_STAGE_TIMEOUT':mode==='overflow'?'PYTHON_STAGE_OUTPUT_LIMIT':'PYTHON_STAGE_DESCENDANTS_REMAIN';
+    assert.equal(outcome.error?.message,expected);
+    await assertStopped(descendant);
+   }finally{
+    for(const pid of [descendant,parent])if(pid)try{process.kill(pid,'SIGKILL');}catch{}
+    await result;
+   }
+  });
+ });
+}
 
