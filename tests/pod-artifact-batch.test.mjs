@@ -10,6 +10,41 @@ import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
 
+test('artifact reads require an actual hash string before database access',async()=>{
+ const store=new ArtifactStore({active(){},pool:{query(){assert.fail('database reached');}}});
+ for(const sha of [null,undefined,[],['a'.repeat(64)],{toString:()=> 'a'.repeat(64)},'A'.repeat(64)]){
+  await assert.rejects(store.get(sha),/ARTIFACT_HASH_INVALID/);
+ }
+});
+test('artifact read accepts the exact object ceiling and preserves bytes',async()=>{
+ const body=Buffer.from('1234');let checks=0;
+ const store=new ArtifactStore({active(){checks++;},pool:{query:async()=>({rows:[{body,media_type:'image/png'}]})}},{maxObjectBytes:4});
+ assert.deepEqual(await store.get(hash(body)),{body,media_type:'image/png'});
+ assert.equal(checks,2);
+});
+test('artifact read rejects an oversized returned body even from an alternate pool',async()=>{
+ const body=Buffer.from('12345');
+ const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:[{body,media_type:'image/png'}]})}},{maxObjectBytes:4});
+ await assert.rejects(store.get(hash(body)),/ARTIFACT_UNAVAILABLE/);
+});
+test('artifact read fails closed for absent, empty, nonbinary or corrupt rows',async()=>{
+ for(const row of [undefined,{body:Buffer.alloc(0)},{body:'bytes'},{body:null},{body:Buffer.from('wrong')}]){
+  const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:row?[row]:[]})}});
+  await assert.rejects(store.get(hash(Buffer.from('expected'))),/^Error: ARTIFACT_UNAVAILABLE$/);
+ }
+});
+test('artifact read rechecks database lifetime after an asynchronous query',async()=>{
+ const body=Buffer.from('valid');let expired=false;
+ const store=new ArtifactStore({active(){if(expired)throw Error('STORAGE_EXPIRED');},pool:{query:async()=>{
+  expired=true;return {rows:[{body,media_type:'image/png'}]};
+ }}});
+ await assert.rejects(store.get(hash(body)),/STORAGE_EXPIRED/);
+});
+test('inactive artifact storage never starts a read query',async()=>{
+ const store=new ArtifactStore({active(){throw Error('STORAGE_EXPIRED');},pool:{query(){assert.fail('database reached');}}});
+ await assert.rejects(store.get('a'.repeat(64)),/STORAGE_EXPIRED/);
+});
+
 test('artifact bytes are snapshotted before database waits',async()=>{
  const a=entry('original'),original=Buffer.from(a.body);let inserted;
  const db={tx:async fn=>{
