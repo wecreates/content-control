@@ -21,6 +21,7 @@ import {verifyFailureReasons} from './pod-failure-reasons-postgres.mjs';
 import {verifyArtifactBatch} from './pod-artifact-batch-postgres.mjs';
 import {verifyProductionRecovery} from './pod-production-recovery-postgres.mjs';
 import {verifyOperationsListing} from './pod-operations-postgres.mjs';
+import {verifyPublishClock} from './pod-publish-clock-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -74,6 +75,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
   await verifyProductionRecovery(pool,bridge);
   await verifyOperationsListing(pool,db);
+  await verifyPublishClock(pool,bridge);
   // Real row-lock waits must not let a transaction-start clock authorize a
   // production write after expiry. A database barrier avoids timing guesses.
   const leaseConcept=crypto.randomUUID(),leaseAccount=crypto.randomUUID();
