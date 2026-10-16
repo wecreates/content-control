@@ -169,3 +169,29 @@ test('FIFO catalog and artifact entries fail promptly without a writer',async t=
  }
 });
 
+
+for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false,true]){
+ test(`artifact export ${phase} failure with broken rollback=${brokenRollback}`,async t=>{
+  const directory=await workspace(t),db=database([Buffer.from('transaction fixture')]);
+  const client=await db.pool.connect(),query=client.query.bind(client),calls=[],releases=[];
+  const failure=Error('EXPORT_FIXTURE_FAILURE');
+  client.query=async(sql,...args)=>{calls.push(sql);
+   if(sql.startsWith(phase))throw failure;
+   if(sql==='ROLLBACK'&&brokenRollback)throw Error('ROLLBACK_FIXTURE_FAILURE');
+   return query(sql,...args);
+  };
+  client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
+  await assert.rejects(exportArtifactLibrary(db,{directory,key}),error=>error===failure);
+  assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+  await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),error=>error.code==='ENOENT');
+ });
+}
+test('artifact successful export returns a clean connection without rollback',async t=>{
+ const directory=await workspace(t),db=database([Buffer.from('transaction fixture')]);
+ const client=await db.pool.connect(),query=client.query.bind(client),calls=[],releases=[];
+ client.query=async(sql,...args)=>{calls.push(sql);return query(sql,...args);};
+ client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
+ assert.equal((await exportArtifactLibrary(db,{directory,key})).status,'EXPORTED');
+ assert.deepEqual(releases,[false]);assert.equal(calls.at(-1),'COMMIT');
+ assert.equal(calls.includes('ROLLBACK'),false);
+});
