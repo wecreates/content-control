@@ -2,6 +2,7 @@
 No placeholder pages, debugging boxes, inferred gutters, or fabricated book content.
 """
 import argparse
+import sys
 import hashlib
 import io
 from pathlib import Path
@@ -77,12 +78,24 @@ def render_book(spec, pages, font_path, output):
             'template_sha256':hashlib.sha256(canonical(spec).encode()).hexdigest(),'technical_checks_passed':True,
             'editorial_review':'UNASSESSED','production_ready':False,'publication_enabled':False}
 
-if __name__=='__main__':
+def main():
     p=argparse.ArgumentParser()
     for name in ('template','pages','font','output'):
         p.add_argument('--'+name,required=True)
     a=p.parse_args()
-    spec=verified(read_json(a.template),'POD_TEMPLATE_KEY','pod:interior-template')['template']
-    result=render_book(spec,read_json(a.pages),a.font,a.output)
-    save_json(str(a.output)+'.receipt.json',result)
-    print(canonical(result))
+    try:
+        template_envelope=read_json(a.template)
+        spec=verified(template_envelope,'POD_TEMPLATE_KEY','pod:interior-template')['template']
+        result=render_book(spec,read_json(a.pages),a.font,a.output)
+        verified(template_envelope,'POD_TEMPLATE_KEY','pod:interior-template')
+        save_json(str(a.output)+'.receipt.json',result)
+        verified(template_envelope,'POD_TEMPLATE_KEY','pod:interior-template')
+        print(canonical(result))
+        return 0
+    except Exception as exc:
+        print(canonical({'status':'BLOCKED','reason_code':str(exc) if isinstance(exc,ValueError) else type(exc).__name__,'publication_enabled':False}))
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())

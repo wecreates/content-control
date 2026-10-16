@@ -1,5 +1,6 @@
 """Bind a rendered interior to a cover package before independent review."""
 import argparse
+import sys
 import hashlib
 from pathlib import Path
 from pod_common import canonical, digest, read_json, save_json, scoped_file, verified
@@ -33,10 +34,22 @@ def assemble(root, spec, pages, font):
     return manifest
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     for name in ('package-dir', 'template', 'pages', 'font'):
         parser.add_argument('--'+name, required=True)
     args = parser.parse_args()
-    spec = verified(read_json(args.template), 'POD_TEMPLATE_KEY', 'pod:interior-template')['template']
-    print(canonical(assemble(args.package_dir, spec, read_json(args.pages), args.font)))
+    try:
+        template_envelope = read_json(args.template)
+        spec = verified(template_envelope, 'POD_TEMPLATE_KEY', 'pod:interior-template')['template']
+        result = assemble(args.package_dir, spec, read_json(args.pages), args.font)
+        verified(template_envelope, 'POD_TEMPLATE_KEY', 'pod:interior-template')
+        print(canonical(result))
+        return 0
+    except Exception as exc:
+        print(canonical({'status':'BLOCKED','reason_code':str(exc) if isinstance(exc,ValueError) else type(exc).__name__,'publication_enabled':False}))
+        return 2
+
+
+if __name__ == '__main__':
+    sys.exit(main())
