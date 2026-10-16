@@ -357,11 +357,14 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         now = int(time.time() * 1000)
         self.expire_one_evidence(0, now)
         clock = [now]
-        def hash_reference(_):
-            clock[0] += 200
-            return 'a' * 64
+        reference = self.reference.read_bytes()
+        real_sha256 = hashlib.sha256
+        def hash_reference(data=b''):
+            if data == reference:
+                clock[0] += 200
+            return real_sha256(data)
         with patch('pod_common.time.time', side_effect=lambda: clock[0] / 1000), \
-             patch('pod_market_intake.digest', side_effect=hash_reference):
+             patch('pod_market_intake.hashlib.sha256', side_effect=hash_reference):
             with self.assertRaisesRegex(ValueError, 'EVIDENCE_EXPIRED'):
                 run(self.args)
 
@@ -415,6 +418,79 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         self.assertTrue(evidence['permanently_unpublished'])
         self.assertFalse(evidence['publication_enabled'])
 
+
+    def test_reference_hash_keeps_analyzed_bytes_after_path_mutation(self):
+        for mutation in ('replace', 'overwrite', 'delete'):
+            with self.subTest(mutation=mutation):
+                original = b'original synthetic reference'
+                self.reference.write_bytes(original)
+                def analyze(source):
+                    observed = source.read() if hasattr(source, 'read') else Path(source).read_bytes()
+                    if mutation == 'replace':
+                        replacement = self.root / 'replacement.bin'
+                        replacement.write_bytes(b'replaced reference')
+                        replacement.replace(self.reference)
+                    elif mutation == 'overwrite':
+                        self.reference.write_bytes(b'overwritten reference')
+                    else:
+                        self.reference.unlink()
+                    return {'observed_sha256': hashlib.sha256(observed).hexdigest()}
+                with patch('pod_market_intake.analyze_reference', side_effect=analyze):
+                    result = run(self.args)
+                expected = hashlib.sha256(original).hexdigest()
+                self.assertEqual(result['visual']['observed_sha256'], expected)
+                self.assertEqual(result['reference_sha256'], expected)
+
+    def test_reference_byte_limit_rejects_before_analysis(self):
+        self.reference.write_bytes(b'x' * 33)
+        with patch('pod_market_intake.MAX_REFERENCE_BYTES', 32, create=True), \
+             patch('pod_market_intake.analyze_reference') as analyze:
+            with self.assertRaisesRegex(ValueError, '^REFERENCE_TOO_LARGE$'):
+                run(self.args)
+            analyze.assert_not_called()
+
+    def test_empty_reference_rejected_before_analysis(self):
+        self.reference.write_bytes(b'')
+        with patch('pod_market_intake.analyze_reference') as analyze:
+            with self.assertRaisesRegex(ValueError, '^REFERENCE_EMPTY$'):
+                run(self.args)
+            analyze.assert_not_called()
+
+    def test_exact_reference_byte_limit_preserves_snapshot(self):
+        original = b'x' * 32
+        self.reference.write_bytes(original)
+        with patch('pod_market_intake.MAX_REFERENCE_BYTES', 32, create=True):
+            result = run(self.args)
+        self.assertEqual(result['reference_sha256'], hashlib.sha256(original).hexdigest())
+
+    def test_real_reference_analysis_and_hash_share_snapshot(self):
+        Image.new('RGB', (64, 48), 'white').save(self.reference, format='PNG')
+        original = self.reference.read_bytes()
+        def analyze(source):
+            # Replacement precedes the actual decoder, after the snapshot boundary.
+            Image.new('RGB', (12, 20), 'black').save(self.reference, format='PNG')
+            return analyze_reference(source)
+        with patch('pod_market_intake.analyze_reference', side_effect=analyze):
+            result = run(self.args)
+        self.assertEqual(result['visual']['display_pixels'], [64, 48])
+        self.assertEqual(result['reference_sha256'], hashlib.sha256(original).hexdigest())
+
+    def test_signed_intake_binds_reference_hash_to_analyzed_snapshot(self):
+        original = self.reference.read_bytes()
+        def analyze(source):
+            observed = source.read()
+            self.reference.write_bytes(b'replacement after snapshot')
+            return {'observed_sha256': hashlib.sha256(observed).hexdigest()}
+        with patch('pod_market_intake.analyze_reference', side_effect=analyze), \
+             patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+             patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 0)
+            evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                'POD_INTAKE_KEY', 'content-control:pod:intake')
+        expected = hashlib.sha256(original).hexdigest()
+        self.assertEqual(evidence['reference_sha256'], expected)
+        self.assertEqual(evidence['visual']['observed_sha256'], expected)
+        self.assertFalse(evidence['publication_enabled'])
 
     def test_signed_malformed_registry_emits_unknown_before_collection(self):
         self.write_evidence(self.args.registry, 'POD_REGISTRY_KEY', 'pod:registry', {

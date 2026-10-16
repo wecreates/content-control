@@ -2,6 +2,7 @@
 import argparse
 import difflib
 import hashlib
+import io
 import json
 import re
 import sys
@@ -14,7 +15,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 import cv2
 import numpy as np
-from pod_common import PLATFORMS, canonical, read_json, save_json, verified, digest, sign
+from pod_common import PLATFORMS, canonical, read_json, save_json, verified, sign
 from pod_raster import open_raster
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -22,6 +23,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise ValueError('REDIRECT_BLOCKED')
 
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
+MAX_REFERENCE_BYTES = 16 * 1024 * 1024  # Existing artifact-store object ceiling.
 
 def validate_source_url(url, approved_hosts):
     if (not isinstance(url, str) or not isinstance(approved_hosts, list)
@@ -200,12 +202,21 @@ def run(args):
         extracted.append({'name': item.get('name'), 'price_decimal': price,
                           'currency': offer.get('priceCurrency'), 'tags': item.get('keywords'),
                           'rank': None, 'search_volume': None})
-    visual = analyze_reference(args.reference)
+    # Analyze and identify exactly the same bounded byte snapshot. The path may
+    # be replaced, overwritten or removed during vision work; never rehash it.
+    with Path(args.reference).open('rb') as source:
+        reference = source.read(MAX_REFERENCE_BYTES + 1)
+    if len(reference) > MAX_REFERENCE_BYTES:
+        raise ValueError('REFERENCE_TOO_LARGE')
+    if not reference:
+        raise ValueError('REFERENCE_EMPTY')
+    with io.BytesIO(reference) as snapshot:
+        visual = analyze_reference(snapshot)
     result.update({'observations': extracted, 'source_url': args.url,
                    'collection_authorized': True,
                    'source_policy_sha256': hashlib.sha256(canonical(sources).encode()).hexdigest(),
                    'source_sha256': hashlib.sha256(html.encode()).hexdigest(),
-                   'reference_sha256': digest(args.reference), 'visual': visual,
+                   'reference_sha256': hashlib.sha256(reference).hexdigest(), 'visual': visual,
                    'outcompete_spec': {'intended_text': args.text,
                      'original_art_required': True, 'exact_text_ocr_required': True,
                      'critical_content_outside_safe_area_px': 0,

@@ -43,3 +43,15 @@ mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not upda
 queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
 for recovery investigation. Integrity establishes byte identity only, not source
 authorization, legal clearance, listing truth or verified income.
+
+## Reference-analysis snapshot
+
+The Python market-intake CLI reads one bounded reference snapshot (nonempty, at
+most 16 MiB, matching the existing artifact-object ceiling). Vision analysis and
+`reference_sha256` use those same bytes. Replacing, overwriting or deleting the
+input path during analysis cannot change the reported evidence identity. Pixel
+and frame-count checks still apply before decoding the snapshot. This does not
+prove that the original local file was immutable during capture, authorize its
+collection, or persist the reference: durable intake must still upload the exact
+snapshot bytes and pass the stored-proof integrity checks above. Re-reading a
+changed path later is not equivalent evidence and must not be substituted.
