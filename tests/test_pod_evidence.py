@@ -1,12 +1,68 @@
 """Short-lived evidence policy parity, using only synthetic signing keys."""
 import os
+import io
+import json
+import tempfile
+from types import SimpleNamespace
 from pathlib import Path
 import sys
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from pod_common import sign, verified
+from pod_common import sign, verified, read_json
+
+
+class BoundedEvidenceReadTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'evidence.json'
+
+    def test_growth_after_size_observation_does_not_bypass_limit(self):
+        self.path.write_bytes(b'{}' + b' ' * (4 * 1024 * 1024 - 1))
+        with patch.object(Path, 'stat', return_value=SimpleNamespace(st_size=2)):
+            with self.assertRaisesRegex(ValueError, '^JSON_TOO_LARGE$'):
+                read_json(self.path)
+
+    def test_reads_at_most_limit_plus_one_and_closes_on_rejection(self):
+        class BoundedStream(io.BytesIO):
+            def read(self, size=-1):
+                if size != 4 * 1024 * 1024 + 1:
+                    raise AssertionError('unbounded or unexpected read size')
+                return super().read(size)
+        stream = BoundedStream(b' ' * (4 * 1024 * 1024 + 2))
+        with patch.object(Path, 'stat', return_value=SimpleNamespace(st_size=0)), \
+             patch.object(Path, 'open', return_value=stream):
+            with self.assertRaisesRegex(ValueError, '^JSON_TOO_LARGE$'):
+                read_json(self.path)
+        self.assertTrue(stream.closed)
+
+    def test_exact_byte_ceiling_is_accepted(self):
+        self.path.write_bytes(b'{}' + b' ' * (4 * 1024 * 1024 - 2))
+        self.assertEqual(read_json(self.path), {})
+
+    def test_utf8_roundtrip_and_invalid_encoding(self):
+        expected = {'text': 'Étoile 日本語'}
+        self.path.write_bytes(json.dumps(expected, ensure_ascii=False).encode('utf-8'))
+        self.assertEqual(read_json(self.path), expected)
+        self.path.write_bytes(b'{"text":"\xff"}')
+        with self.assertRaises(UnicodeDecodeError):
+            read_json(self.path)
+
+    def test_multibyte_input_is_limited_by_bytes_not_characters(self):
+        body = ('"' + 'é' * (2 * 1024 * 1024) + '"').encode('utf-8')
+        self.path.write_bytes(body)
+        with self.assertRaisesRegex(ValueError, '^JSON_TOO_LARGE$'):
+            read_json(self.path)
+
+    def test_invalid_json_still_fails_and_closes_stream(self):
+        stream = io.BytesIO(b'{broken')
+        with patch.object(Path, 'stat', return_value=SimpleNamespace(st_size=7)), \
+             patch.object(Path, 'open', return_value=stream):
+            with self.assertRaises(json.JSONDecodeError):
+                read_json(self.path)
+        self.assertTrue(stream.closed)
 
 
 class EvidenceLifetimeTests(unittest.TestCase):

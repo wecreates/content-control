@@ -1791,3 +1791,12 @@ Intake analyzed a reference, then reopened its path to hash it: replacement/over
 Baseline regressions reproduced four failed assertions and one deletion error across four tests. After repair, 35 local tests passed with OpenCV import/reference-analysis stubs. Four tests needing real OpenCV or a subprocess remain for hosted CI. Six added tests cover replacement/overwrite/deletion, over/empty/exact byte bounds, real decoded dimensions after path replacement, and signed snapshot identity. The existing final-hash expiry regression now intercepts byte hashing and still rejects expired evidence. Its first adapted local mock lacked hashlib's optional empty argument and failed; that test mock was corrected before the passing run. Hosted verification pending.
 
 All 24 live acceptance areas remain OPEN. Both publication flags remain false. No live collection, credentials, database/role/network changes, social-vault access, spending, clearance, publication or revenue changes occurred. Local fixtures are not live acceptance or continuous worker execution.
+
+
+### 2026-10-16 — r39 follow-through: bounded shared evidence reads
+
+PR 171 merged tested head 575460e60b5f53dc30907d76ff7328fbfbb092e6 as d32f1eb46654fb2833bff1ec3d9595c2d4fc8420. Merged tree 773d03bf71a80456a9fd98519b9e110f16d6f297 exactly equals the tested tree. PR integration 38954369335/job 117153390668 passed 343 Node, 122 Python (39 intake), one durable E2E and three free guards with zero failures/skips. Main verification is pending.
+
+Continued with a second reproduced defect: pod_common.read_json checked stat size then reopened the path for an unbounded text read. A file growing/replaced after the check could bypass the 4 MiB ceiling. The shared helper now reads at most the ceiling plus one byte from one open stream, rejects oversized captured bytes, then decodes strict UTF-8 and parses JSON. It preserves the existing size error and invalid-input rejection; no authority or signing checks were relaxed.
+
+Two new tests failed against baseline (stale-size bypass and an unbounded read). All 12 evidence tests pass locally after repair; six added cases cover those defects, exact ceiling, UTF-8/invalid bytes, multibyte byte limits and closure on invalid JSON. The 35-test local intake subset also passes with the previously documented OpenCV stubs/exclusions. Hosted full verification is pending. All 24 live areas remain OPEN and publication flags false. No live credentials, access, permissions, source collection, DB/network changes, spending or publication occurred.
