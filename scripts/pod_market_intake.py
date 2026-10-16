@@ -119,8 +119,10 @@ def analyze_reference(image_path):
 def run(args):
     if args.platform not in PLATFORMS:
         raise ValueError('PLATFORM_BLOCKED')
-    registry = verified(read_json(args.registry), 'POD_REGISTRY_KEY', 'pod:registry')
-    policy = verified(read_json(args.policy), 'POD_RIGHTS_KEY', 'pod:rights-policy')
+    registry_envelope = read_json(args.registry)
+    policy_envelope = read_json(args.policy)
+    registry = verified(registry_envelope, 'POD_REGISTRY_KEY', 'pod:registry')
+    policy = verified(policy_envelope, 'POD_RIGHTS_KEY', 'pod:rights-policy')
     text_hash = hashlib.sha256(args.text.encode()).hexdigest()
     if policy.get('text_sha256') != text_hash or policy.get('country') != args.country or policy.get('category') != args.category:
         raise ValueError('RIGHTS_POLICY_SCOPE_MISMATCH')
@@ -133,7 +135,8 @@ def run(args):
         return result
     if not args.source_policy:
         raise ValueError('SOURCE_POLICY_REQUIRED')
-    sources = verified(read_json(args.source_policy), 'POD_SOURCE_KEY', 'pod:source-policy')
+    source_envelope = read_json(args.source_policy)
+    sources = verified(source_envelope, 'POD_SOURCE_KEY', 'pod:source-policy')
     if sources.get('collection_authorized') is not True:
         raise ValueError('SOURCE_NOT_AUTHORIZED')
     validate_source_url(args.url, sources.get('approved_hosts'))
@@ -182,6 +185,15 @@ def run(args):
                      'critical_content_outside_safe_area_px': 0,
                      'hypotheses': ['Increase readable hierarchy', 'Reduce competing focal elements'],
                      'reference_is_not_a_production_asset': True}})
+    # Fetching, analysis and hashing can outlive any of the input authorities.
+    # Revalidate the exact snapshots used above, never replacement files.
+    for envelope, key, audience in (
+            (registry_envelope, 'POD_REGISTRY_KEY', 'pod:registry'),
+            (policy_envelope, 'POD_RIGHTS_KEY', 'pod:rights-policy'),
+            (source_envelope, 'POD_SOURCE_KEY', 'pod:source-policy')):
+        verified(envelope, key, audience)
+    result['evidence_expires_at_ms'] = min(
+        registry['expires_at_ms'], policy['expires_at_ms'], sources['expires_at_ms'])
     return result
 
 def main():
@@ -197,19 +209,25 @@ def main():
     args = p.parse_args()
     try:
         result = run(args)
+        now = int(time.time() * 1000)
+        if result.get('rights_state') == 'PASS' and result['evidence_expires_at_ms'] <= now:
+            raise ValueError('EVIDENCE_EXPIRED')
     except Exception as exc:
         result = {'schema_version': 1, 'rights_state': 'UNKNOWN', 'permanently_unpublished': True,
                   'publication_enabled': False, 'reason_codes': [type(exc).__name__], 'status': 'BLOCKED'}
-    save_json(args.output, result)
     if args.signed_output:
         if not args.concept_id or not args.business_id:
             raise ValueError('CONCEPT_ID_AND_BUSINESS_ID_REQUIRED')
         now=int(time.time()*1000)
+        expires = now + 900000
+        if result.get('rights_state') == 'PASS':
+            expires = min(expires, result['evidence_expires_at_ms'])
         fingerprint=hashlib.sha256(canonical([normalize(args.text),args.country,args.category]).encode()).hexdigest()
         envelope=sign({**result,'schema_version':1,'audience':'content-control:pod:intake',
-                       'issued_at_ms':now,'expires_at_ms':now+900000,'concept_id':args.concept_id,
+                       'issued_at_ms':now,'expires_at_ms':expires,'concept_id':args.concept_id,
                        'business_id':args.business_id,'fingerprint':fingerprint},'POD_INTAKE_KEY')
         save_json(args.signed_output,envelope)
+    save_json(args.output, result)
     print(canonical(result))
     return 0 if result.get('rights_state') == 'PASS' else 2
 

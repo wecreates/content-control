@@ -1,5 +1,6 @@
 """Synthetic intake authorization regressions; no marketplace requests or clearances."""
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from pod_common import save_json, sign, verified
-from pod_market_intake import run
+from pod_market_intake import run, main
 
 
 class MarketSourceAuthorizationTests(unittest.TestCase):
@@ -158,6 +159,100 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         self.assertTrue(evidence['permanently_unpublished'])
         self.assertFalse(evidence['publication_enabled'])
         self.assertEqual(json.loads(result.stdout)['status'], 'BLOCKED')
+
+    def expire_one_evidence(self, index, now):
+        paths = [self.args.registry, self.args.policy, self.args.source_policy]
+        keys = ['POD_REGISTRY_KEY', 'POD_RIGHTS_KEY', 'POD_SOURCE_KEY']
+        for i, (path, key) in enumerate(zip(paths, keys)):
+            payload = json.loads(json.loads(Path(path).read_text())['payload'])
+            payload.update(issued_at_ms=now - 1000,
+                           expires_at_ms=now + (100 if i == index else 60000))
+            save_json(path, sign(payload, key))
+
+    def cli_args(self):
+        argv = ['pod_market_intake.py']
+        for key, value in vars(self.args).items():
+            argv.extend(['--' + key.replace('_', '-'), value])
+        argv.extend(['--output', str(self.root / 'output.json'),
+                     '--signed-output', str(self.root / 'signed.json'),
+                     '--concept-id', 'fixture-concept', '--business-id', 'fixture-business'])
+        return argv
+
+    def test_each_authority_expiring_during_analysis_blocks_pass(self):
+        for index in range(3):
+            with self.subTest(authority=index):
+                now = int(time.time() * 1000)
+                self.expire_one_evidence(index, now)
+                clock = [now]
+                def analyze(_):
+                    clock[0] += 200
+                    return {'fixture': True}
+                with patch('pod_common.time.time', side_effect=lambda: clock[0] / 1000), \
+                     patch('pod_market_intake.analyze_reference', side_effect=analyze):
+                    with self.assertRaisesRegex(ValueError, 'EVIDENCE_EXPIRED'):
+                        run(self.args)
+
+    def test_expiry_during_final_reference_hash_also_blocks_pass(self):
+        now = int(time.time() * 1000)
+        self.expire_one_evidence(0, now)
+        clock = [now]
+        def hash_reference(_):
+            clock[0] += 200
+            return 'a' * 64
+        with patch('pod_common.time.time', side_effect=lambda: clock[0] / 1000), \
+             patch('pod_market_intake.digest', side_effect=hash_reference):
+            with self.assertRaisesRegex(ValueError, 'EVIDENCE_EXPIRED'):
+                run(self.args)
+
+    def test_signed_pass_cannot_outlive_shortest_input_authority(self):
+        for index in range(3):
+            with self.subTest(authority=index):
+                now = int(time.time() * 1000)
+                self.expire_one_evidence(index, now)
+                with patch('pod_common.time.time', return_value=now / 1000), \
+                     patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+                     patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+                    self.assertEqual(main(), 0)
+                    evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                        'POD_INTAKE_KEY', 'content-control:pod:intake')
+                self.assertEqual(evidence['expires_at_ms'], now + 100)
+                self.assertEqual(evidence['rights_state'], 'PASS')
+                with patch('pod_common.time.time', return_value=(now + 101) / 1000), \
+                     patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}):
+                    with self.assertRaisesRegex(ValueError, 'EVIDENCE_EXPIRED'):
+                        verified(json.loads((self.root / 'signed.json').read_text()),
+                                 'POD_INTAKE_KEY', 'content-control:pod:intake')
+
+    def test_replacement_file_does_not_renew_the_used_authority(self):
+        now = int(time.time() * 1000)
+        self.expire_one_evidence(0, now)
+        clock = [now]
+        def analyze(_):
+            self.expire_one_evidence(-1, now)
+            clock[0] += 200
+            return {'fixture': True}
+        with patch('pod_common.time.time', side_effect=lambda: clock[0] / 1000), \
+             patch('pod_market_intake.analyze_reference', side_effect=analyze):
+            with self.assertRaisesRegex(ValueError, 'EVIDENCE_EXPIRED'):
+                run(self.args)
+
+    def test_cli_emits_only_unpublished_unknown_when_analysis_outlives_authority(self):
+        now = int(time.time() * 1000)
+        self.expire_one_evidence(1, now)
+        clock = [now]
+        def analyze(_):
+            clock[0] += 200
+            return {'fixture': True}
+        with patch('pod_common.time.time', side_effect=lambda: clock[0] / 1000), \
+             patch('pod_market_intake.analyze_reference', side_effect=analyze), \
+             patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+             patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 2)
+            evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                'POD_INTAKE_KEY', 'content-control:pod:intake')
+        self.assertEqual(evidence['rights_state'], 'UNKNOWN')
+        self.assertTrue(evidence['permanently_unpublished'])
+        self.assertFalse(evidence['publication_enabled'])
 
 
 if __name__ == '__main__':
