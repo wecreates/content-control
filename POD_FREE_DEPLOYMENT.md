@@ -179,3 +179,20 @@ The October 14 deployment of 419a1e544206adf8aae92df692fd0de0825927b2 failed at
 21:36:56 UTC; its 21:34:55 UTC log again reports exhausted build minutes. A queued
 build or merged PR is not proof that quota or production readiness is restored.
 
+
+
+## Dedicated POD state snapshots
+
+The optional manual `scripts/pod_state_archive.mjs` command now adds consistent,
+encrypted export and offline verification of all ten dedicated POD data tables,
+plus atomic restore into an empty migrated target. It requires an existing
+restricted connection, exact schema checksums and a separately retained archive
+key. Restore requires preflight and all publication, production and outbox flags
+explicitly false; accounts are disabled and in-flight work is held for recovery.
+See integrations/pod/STATE_RECOVERY.md for limits and cutover requirements.
+
+This adds queue/account/quota/inbox/outbox/financial-state recovery tooling beyond
+the artifact-only archive. It is not a backup of Money Factory, credentials,
+provider state or the entire PostgreSQL instance. No live backup, external
+retention destination, replacement database, restore drill or expiry extension
+is established by this implementation. Production acceptance remains open.
