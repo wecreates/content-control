@@ -23,6 +23,7 @@ import {verifyProductionRecovery} from './pod-production-recovery-postgres.mjs';
 import {verifyOperationsListing} from './pod-operations-postgres.mjs';
 import {verifyPublishClock} from './pod-publish-clock-postgres.mjs';
 import {verifyProductionClock} from './pod-production-clock-postgres.mjs';
+import {verifyMonitoring} from './pod-monitoring-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -58,6 +59,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(report.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'PASS');
   // Disposable CI PostgreSQL has no TLS; production must still reject that configuration.
   assert.equal(report.checks.find(c=>c.code==='DATABASE_TLS').status,'BLOCKED');
+  await verifyMonitoring(pool,bridge);
   const store=new ArtifactStore(db,{budgetBytes:100});const content=Buffer.from('durable bytes');
   const hash=await store.put(content,'application/json');assert.deepEqual((await store.get(hash)).body,content);
   assert.equal(await store.put(content,'application/json'),hash);
