@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import {constants} from 'node:fs';
 const MAGIC=Buffer.from('CYZPOD1\n');
 export function seal(body,key,aad){
@@ -29,4 +30,14 @@ export async function readBounded(file,max,signal){
 export async function writeNew(file,body){
  const handle=await fs.open(file,'wx',0o600);
  try{await handle.writeFile(body);await handle.sync();}finally{await handle.close();}
+}
+export async function syncArchiveDirectory(directory){
+ // Files have already been fsynced. Persist their directory entries first,
+ // then the new archive directory's entry in its existing parent. Neither
+ // failure may be reported as a successful export.
+ const archive=path.resolve(directory);
+ for(const target of [archive,path.dirname(archive)]){
+  const handle=await fs.open(target,'r');
+  try{await handle.sync();}finally{await handle.close();}
+ }
 }

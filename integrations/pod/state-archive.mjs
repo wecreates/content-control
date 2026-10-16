@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {seal,unseal,readBounded,writeNew} from './archive-codec.mjs';
+import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 
 // Dependency order is fixed in code, never taken from an archive or request.
@@ -123,7 +123,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   disabled(env);signal?.throwIfAborted();await client.query('COMMIT');
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(directory,'catalog.pod'),encrypted);
-  const handle=await fs.open(directory,'r');try{await handle.sync();}finally{await handle.close();}
+  await syncArchiveDirectory(directory);
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
