@@ -67,6 +67,17 @@ test('operations endpoints require auth and redact unavailable DB errors',async(
  const url=`http://127.0.0.1:${server.address().port}/api/print`;
  try{assert.equal((await fetch(url+'/metrics')).status,401);assert.equal((await fetch(url+'/jobs')).status,401);const response=await fetch(url+'/metrics',{headers:{Authorization:`Bearer ${key}`}});assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'});assert.equal((await fetch(url+'/dashboard')).status,200);}finally{await new Promise(r=>server.close(r));}
 });
+test('capacity endpoint authenticates and sanitizes unavailable storage',async()=>{
+ const app=express();app.use(createPodRouter({db:undefined,authorize:operationalAuth(key),env:{}}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const url=`http://127.0.0.1:${server.address().port}/capacity`;
+  const denied=await fetch(url);assert.equal(denied.status,401);assert.deepEqual(await denied.json(),{error:'OWNER_AUTH_REQUIRED'});
+  const blocked=await fetch(url,{headers:{Authorization:`Bearer ${key}`}});
+  assert.equal(blocked.status,503);assert.deepEqual(await blocked.json(),{error:'POD_CAPACITY_UNAVAILABLE'});
+  assert.equal(blocked.headers.get('cache-control'),'no-store');
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('job inspection route authenticates and forwards only its filter',async()=>{
  const calls=[],app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db:{listOperationsJobs:async state=>{calls.push(state);return [{id:'fixture-job',state}];}}}));
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));

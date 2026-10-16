@@ -7,6 +7,7 @@ import {artifactBudgetBytes} from './storage-budget.mjs';
 import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
 import {podRequestError} from './request-errors.mjs';
+import {productionActivity} from './capacity.mjs';
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
@@ -39,6 +40,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  router.post('/market',async(req,res)=>{try{res.status(202).json(await recordMarketObservation(db,req.body,env.POD_MARKET_KEY));}catch{res.status(409).json({error:'MARKET_OBSERVATION_BLOCKED'});}});
  router.post('/listing-observations',async(req,res)=>{try{res.json(await reconcilePublication(db,req.body,env.POD_PROVIDER_KEY));}catch{res.status(409).json({error:'LISTING_OBSERVATION_BLOCKED'});}});
  router.get('/metrics',async(_req,res)=>{try{res.json(await metrics(db,{env}));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}});
+ router.get('/capacity',async(_req,res)=>{try{res.json(await productionActivity(db));}catch{res.status(503).json({error:'POD_CAPACITY_UNAVAILABLE'});}});
  router.post('/financial-events',async(req,res)=>{try{res.status(202).json(await recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY));}catch{res.status(409).json({error:'FINANCIAL_EVENT_BLOCKED'});}});
  router.post('/intake',async(req,res)=>{try{res.status(202).json(await db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)}));}catch{res.status(409).json({error:'INTAKE_BLOCKED'});}});
  router.post('/jobs',async(req,res)=>{
