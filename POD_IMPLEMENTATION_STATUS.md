@@ -1841,3 +1841,12 @@ Reproduced a generation identity defect: the CLI hashed a source path before gen
 Eight new regressions cover source replacement/deletion, source byte ceiling/exact boundary, font replacement/bounds/hash rejection and the signed CLI source-mutation path. Baseline reproduced four failures and two errors after correcting an initial test-class placement mistake. All 16 local raster/generation tests now pass with actual Pillow/font decoding; hosted full integration is pending. No live rights or approvals are provided by these fixtures.
 
 All 24 live acceptance areas remain OPEN; publication flags remain false. No credentials, database roles/migrations/network rules, social-vault data, marketplace collection, spending, approvals, publication or revenue changes occurred. Merged code and disposable tests are not live acceptance or continuous execution.
+
+
+### 2026-10-16 — r41 follow-through: KDP embedded-font identity
+
+PR 176 merged tested head 10c34bbe8064ae2f4fb33f73252b5ac25339ef16 as 051567e3fb732f6a0fc6f29a154eaa15ea7f403e; merged tree e0e7348aa7218f9c0802b731e98b72c713b7e8d5 exactly equals the tested tree. PR integration 38966790338/job 117195125337 passed 349 Node, 136 Python, one durable PostgreSQL/Python E2E and three guards, without failures/skips. Main CI/deployment verification is pending.
+
+Continued the same input-integrity repair in the KDP interior renderer: ReportLab previously reopened the font path after digest verification. It now hashes and embeds one nonempty, at-most-16-MiB snapshot. Missing, empty, oversized or mismatched fonts cannot reach the font parser/PDF output. Existing post-render PDF text/page/bounds checks and editorial hold remain enforced.
+
+Five additional regression tests cover replacement/deletion after verification, oversized/exact-boundary/empty bytes and wrong hashes. The baseline produced two assertion failures and two errors across three tests; after repair all 28 book/cover tests pass locally using actual ReportLab and PyMuPDF. Expected MuPDF warnings from deliberately invalid annotation fixtures remain nonfatal. Full hosted integration is pending. This does not provide font licenses, editorial approval, print acceptance or live KDP execution. All 24 live acceptance areas remain OPEN; publication flags remain false.
