@@ -21,6 +21,15 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL});
  const db=new PodDB({pool,bridge:{producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}},upstreamKey:key,qaKey:key,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),'pod-e2e-'));
+ // Independent synthetic authority snapshots exercise current grant resolution;
+ // the queued envelope is never used as the execution authorization fallback.
+ const approvals=new Map();
+ const approve=(id,envelope)=>{const {issued_at_ms,expires_at_ms,...scope}=JSON.parse(envelope.payload);approvals.set(id,scope);};
+ const resolvers=()=>createStoredTaskResolvers(db,{env:{POD_GRANT_URL:'https://authority.invalid/grant',
+  POD_GRANT_AUTH_KEY:'fixture-auth-only-'.repeat(4),POD_UPSTREAM_KEY:key},fetchImpl:async(_url,options)=>{
+   const scope=approvals.get(JSON.parse(options.body).job_id);
+   return scope?new Response(JSON.stringify(sign(scope))):new Response('',{status:503});
+  }});
  try{
   await pool.query("DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='pod_test_runtime') THEN CREATE ROLE pod_test_runtime; END IF; END $$");
   await migrate(pool,'pod_test_runtime');
@@ -44,7 +53,8 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const job={id,account_id:account,business_id:'fixture',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH',task_sha256:taskHash};
   const grant=sign({audience:'content-control:pod',job_id:id,account_id:account,business_id:'fixture',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,task_sha256:taskHash});
   await db.enqueue({job,upstream:grant,conceptId:concept,revision:1});
-  const result=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
+  approve(id,grant);
+  const result=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
   assert.equal(result.status,'REVIEW_REQUIRED');
   const saved=await db.reviewPackage(id);assert.equal(saved.reason_code,'REVIEW_REQUIRED');
   const summary=await metrics(db);assert.equal(summary.incident_count,'0');assert.ok(summary.queues.some(q=>q.state==='review_required')); 
@@ -63,8 +73,9 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
    const blockedJob={...job,id:blockedId,task_sha256:badTaskHash};
    const blockedGrant=sign({...JSON.parse(grant.payload),job_id:blockedId,task_sha256:badTaskHash});
    await db.enqueue({job:blockedJob,upstream:blockedGrant,conceptId:concept,revision:index+2});
+   approve(blockedId,blockedGrant);
    const before=(await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n;
-   const blocked=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+   const blocked=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),
     env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
    assert.equal(blocked.status,'BLOCKED');
    const state=(await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[blockedId])).rows[0];
@@ -81,8 +92,9 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const smallHash=await store.put(Buffer.from(JSON.stringify({...task,files:smallFiles})),'application/json');
   const smallId=crypto.randomUUID(),smallGrant=sign({...JSON.parse(grant.payload),job_id:smallId,task_sha256:smallHash});
   await db.enqueue({job:{...job,id:smallId,task_sha256:smallHash},upstream:smallGrant,conceptId:concept,revision:4});
+  approve(smallId,smallGrant);
   const before=(await pool.query('SELECT count(*)::int AS n FROM pod_artifacts')).rows[0].n;
-  const tooSmall=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+  const tooSmall=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),
    env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
   assert.deepEqual(tooSmall,{status:'BLOCKED',job_id:smallId,reason_code:'NATIVE_RESOLUTION_INSUFFICIENT'});
   assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[smallId])).rows[0],
@@ -97,15 +109,27 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const budgetTaskHash=await store.put(Buffer.from(JSON.stringify({...task,files:budgetFiles})),'application/json');
   const budgetId=crypto.randomUUID(),budgetGrant=sign({...JSON.parse(grant.payload),job_id:budgetId,task_sha256:budgetTaskHash});
   await db.enqueue({job:{...job,id:budgetId,task_sha256:budgetTaskHash},upstream:budgetGrant,conceptId:concept,revision:5});
+  approve(budgetId,budgetGrant);
   const storageSnapshot=async()=>(await pool.query('SELECT count(*)::int AS n,COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts')).rows[0];
   const beforeBudget=await storageSnapshot();
-  const budgetBlocked=await produceOnce({db,...createStoredTaskResolvers(db),upstreamKey:key,root:process.cwd(),
+  const budgetBlocked=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),
    env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,
     POD_ARTIFACT_BUDGET_BYTES:String(Number(beforeBudget.bytes)+1)}});
   assert.deepEqual(budgetBlocked,{status:'BLOCKED',job_id:budgetId,reason_code:'ARTIFACT_BUDGET_EXHAUSTED'});
   assert.deepEqual(await storageSnapshot(),beforeBudget);
   assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[budgetId])).rows[0],
    {state:'qa_failed',manifest:null,reason_code:'ARTIFACT_BUDGET_EXHAUSTED'});
+  // Revoke after valid intake: the still-current queued signature cannot win.
+  const revokedId=crypto.randomUUID(),revokedGrant=sign({...JSON.parse(grant.payload),job_id:revokedId});
+  await db.enqueue({job:{...job,id:revokedId},upstream:revokedGrant,conceptId:concept,revision:6});
+  approve(revokedId,revokedGrant);approvals.get(revokedId).revoked=true;
+  const beforeRevocation=await storageSnapshot();
+  const denied=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),
+   env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
+  assert.deepEqual(denied,{status:'BLOCKED',job_id:revokedId,reason_code:'APPROVAL_REVOKED'});
+  assert.deepEqual(await storageSnapshot(),beforeRevocation);
+  assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[revokedId])).rows[0],
+   {state:'qa_failed',manifest:null,reason_code:'APPROVAL_REVOKED'});
  }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
 });
 

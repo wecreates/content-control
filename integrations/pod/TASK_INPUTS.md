@@ -36,3 +36,25 @@ Regression tests cover reserved filenames before input reads, malformed hashes,
 interior shape/extra fields/traversal, valid interior restoration and cleanup,
 and production rejection before Python execution. They do not establish live
 platform or end-to-end acceptance.
+
+## Current execution authority
+
+The built-in stored-task resolver requires POD_GRANT_URL, a separate
+POD_GRANT_AUTH_KEY and POD_UPSTREAM_KEY. It validates the existing HTTPS grant
+client configuration and exposes authorityReady=false when missing or invalid.
+The production runtime reports BLOCKED_GRANT_AUTHORITY before recovery or queue
+claims in that case. Saved upstream_envelope remains intake evidence; it is
+never a fallback execution approval, even if its signature has not expired.
+
+Each execution check uses the current grant endpoint. Revocation, unavailable
+authority, bad scope/signature and short lifetime block production. Configure
+the real server-owned Money Factory authority before enabling the worker; do not
+renew stored approvals or invent credentials. Custom host-supplied resolvers
+remain trusted host integrations and must enforce the same current-authority
+contract. The optional fetchImpl injection supports controlled transport tests;
+it is not supplied by task descriptors or public requests.
+
+The durable PostgreSQL/Python fixture uses a separate synthetic authority map,
+fresh signed responses and an injected transport. It also revokes an approval
+after enqueue and verifies no generated artifacts or readiness result. This is
+revocation-contract testing, not live authority deployment or real approval.

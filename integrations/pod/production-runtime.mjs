@@ -11,6 +11,7 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
  const controller=new AbortController();
  if(env.POD_PRODUCTION_ENABLED==='true'){
   if(!pythonReady){status='BLOCKED_PYTHON_RUNTIME';}
+  else if(production?.authorityReady===false){status='BLOCKED_GRANT_AUTHORITY';}
   else if(!db||typeof production?.resolveTask!=='function'||typeof production?.resolveGrant!=='function'||
      typeof env.POD_UPSTREAM_KEY!=='string'||Buffer.byteLength(env.POD_UPSTREAM_KEY)<32){
    status='BLOCKED_PRODUCTION_CONFIGURATION';

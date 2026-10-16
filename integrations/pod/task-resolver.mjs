@@ -21,13 +21,15 @@ export function validateTask(task){
   interiorRoles.some(role=>!Object.hasOwn(task.interior,role)||!has(task.interior[role]))))throw Error('TASK_INTERIOR_INVALID');
  return task;
 }
-export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env}={}){
- let resolveGrant=async job=>job.upstream_envelope;
- if(env.POD_GRANT_URL){
-  try{resolveGrant=createGrantResolver({env});}catch{resolveGrant=async()=>{throw Error('GRANT_AUTHORITY_INVALID');};}
- }
+export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env,fetchImpl=fetch}={}){
+ // A signed queue envelope records intake authority, not current revocation.
+ // Missing configuration must never silently switch to cached approvals.
+ let resolveGrant,authorityReady=false;
+ try{resolveGrant=createGrantResolver({env,fetchImpl});authorityReady=true;}
+ catch(error){const code=error.message==='GRANT_AUTHORITY_REQUIRED'?'GRANT_AUTHORITY_REQUIRED':'GRANT_AUTHORITY_INVALID';
+  resolveGrant=async()=>{throw Error(code);};}
  return {
-  resolveGrant,
+  resolveGrant,authorityReady,
   resolveTask:async job=>{
    if(typeof job.brief?.task_sha256!=='string'||!hash.test(job.brief.task_sha256))throw Error('TASK_REQUIRED');
    const descriptor=await store.get(job.brief.task_sha256);
