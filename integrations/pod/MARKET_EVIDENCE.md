@@ -55,3 +55,15 @@ prove that the original local file was immutable during capture, authorize its
 collection, or persist the reference: durable intake must still upload the exact
 snapshot bytes and pass the stored-proof integrity checks above. Re-reading a
 changed path later is not equivalent evidence and must not be substituted.
+
+## Observation timestamps
+
+Market and financial evidence share the explicit ISO timestamp validator. An
+observation time must be a string containing the full date and time, an explicit
+Z or numeric offset, and at most six fractional digits. Zone-less dates/times,
+normalized invalid dates, midnight overflow, non-string values, excess precision
+and future observations fail before database access. Original valid timestamps
+are passed unchanged to PostgreSQL, preserving microsecond identity. Equivalent
+explicit offsets identify the same immutable observation regardless of the
+session timezone; truly distinct microseconds remain separate observations.
+This grammar does not establish that an observation actually occurred.
