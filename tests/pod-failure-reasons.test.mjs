@@ -12,7 +12,8 @@ test('only fixed failure vocabulary can become an operational reason',()=>{
  }
  assert.equal(productionFailure({message:'PYTHON_STAGE_FAILED',reasonCode:'TEXT_CLIPPED'}),'TEXT_CLIPPED');
  assert.equal(productionFailure({message:'private',reasonCode:'TEXT_CLIPPED'}),'PRODUCTION_BLOCKED');
- for(const code of ['IMAGE_PIXEL_LIMIT','IMAGE_SIZE_MISMATCH','IMAGE_MULTIFRAME_UNSUPPORTED']){
+ for(const code of ['IMAGE_PIXEL_LIMIT','IMAGE_SIZE_MISMATCH','IMAGE_MULTIFRAME_UNSUPPORTED',
+  'PYTHON_STAGE_PLATFORM_UNSUPPORTED','PYTHON_STAGE_TERMINATION_FAILED','PYTHON_STAGE_DESCENDANTS_REMAIN']){
   assert.equal(productionFailure({message:'PYTHON_STAGE_FAILED',reasonCode:code}),code);
  }
 });

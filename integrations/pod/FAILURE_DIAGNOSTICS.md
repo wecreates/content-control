@@ -36,3 +36,23 @@ upscaling, renewed approval, publication or additional retry is granted here.
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.
+
+
+## Stage process-tree cleanup
+
+The supported Render/Linux stage runner starts each trusted Python stage in its own
+POSIX process group. Cancellation, timeout and output exhaustion signal the group,
+then escalate ignored SIGTERM to SIGKILL. On direct-child exit it also kills any
+remaining group members before settling and allowing workspace cleanup. A nominally
+successful parent that leaves helpers running fails with
+PYTHON_STAGE_DESCENDANTS_REMAIN rather than reporting successful production.
+The direct child is reaped; orphan zombies may briefly await the container's PID 1,
+but cannot execute or hold file descriptors. Windows fails closed with
+PYTHON_STAGE_PLATFORM_UNSUPPORTED because this runner has no Windows job-object
+implementation. Unexpected group-signaling errors have the fixed
+PYTHON_STAGE_TERMINATION_FAILED code.
+
+This handles ordinary inherited OCR/render subprocesses. It is not a sandbox for
+hostile executables that deliberately create new sessions/process groups; keep stage
+scripts and executable configuration controlled. No untrusted executable input,
+extra host permission, container privilege or external service is introduced.
