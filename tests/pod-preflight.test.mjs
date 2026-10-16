@@ -3,21 +3,22 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {preflight} from '../scripts/pod_preflight.mjs';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
+import {requirePodRuntime} from '../integrations/pod/runtime-gate.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const env={POD_DATABASE_URL:'postgresql://secret:secret@example.invalid/db',POD_BRIDGE_PATH:'bridge',
  POD_UPSTREAM_KEY:'a'.repeat(32),POD_QA_KEY:'b'.repeat(32),INTERNAL_OPERATIONS_KEY:'c'.repeat(32),
  POD_STORAGE_EXPIRES_AT:'2030-01-01',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 function fixture(overrides={}){
- const queries=[];let released=false,ended=false;
+ const queries=[],releases=[];let released=false,ended=false;
  const client={async query(sql,args){queries.push(sql);
-  if(overrides.throwOn&&sql.includes(overrides.throwOn))throw Error('secret password internal-url');
+  if((overrides.throwOn&&sql.includes(overrides.throwOn))||(overrides.rollbackFails&&sql==='ROLLBACK'))throw Error('secret password internal-url');
   if(sql.includes('FROM pg_roles r'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,elevated_membership:false,schema_create:false,...overrides.role}]};
   if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
   if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
   if(sql.includes("relname='cyzor_social_vault'"))return {rows:[{access:overrides.vault??false,column_access:false,owns:false}]};
   if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
-  return {rows:[]};},release(){released=true;}};
- return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,closed:()=>released&&ended};
+  return {rows:[]};},release(discard){released=true;releases.push(discard);}};
+ return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,releases,closed:()=>released&&ended};
 }
 test('verified configuration is read-only and never authorizes publication',async()=>{
  const f=fixture(),r=await preflight(f.options);assert.equal(r.status,'CONFIGURATION_VERIFIED');assert.equal(r.publication_enabled,false);
@@ -57,3 +58,21 @@ test('missing provider listing uniqueness migration blocks preflight',async()=>{
  assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'BLOCKED');
 });
 
+
+for(const throwOn of [undefined,'pg_roles'])test('rollback failure blocks preflight and destroys connection: '+(throwOn||'successful checks'),async()=>{
+ const f=fixture({rollbackFails:true,throwOn}),r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code==='DATABASE_READABLE'),[{code:'DATABASE_READABLE',status:'BLOCKED'}]);
+ assert.deepEqual(f.releases,[true]);assert.ok(f.closed());
+ assert.equal(f.queries.at(-1),'ROLLBACK');
+ assert.equal(JSON.stringify(r).includes('secret'),false);
+});
+test('runtime cannot activate after a failed preflight rollback on its borrowed pool',async()=>{
+ const f=fixture({rollbackFails:true}),pool=await f.options.connect();
+ await assert.rejects(requirePodRuntime({pool,env,check:({connect})=>preflight({...f.options,connect})}),/POD_RUNTIME_PREFLIGHT_BLOCKED/);
+ assert.deepEqual(f.releases,[true]);assert.equal(f.closed(),false);
+});
+test('successful preflight rollback releases a reusable connection',async()=>{
+ const f=fixture(),r=await preflight(f.options);
+ assert.equal(r.status,'CONFIGURATION_VERIFIED');assert.deepEqual(f.releases,[false]);assert.ok(f.closed());
+});
