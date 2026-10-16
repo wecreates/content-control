@@ -7,6 +7,7 @@ import path from 'node:path';
 import {exportStateArchive,verifyStateArchive,restoreStateArchive} from '../integrations/pod/state-archive.mjs';
 import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {stateArchiveCLI} from '../scripts/pod_state_archive.mjs';
+import {verifyExportFlush} from './pod-archive-flush.mjs';
 
 const key=Buffer.alloc(32,31),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false',POD_PRODUCTION_ENABLED:'false',POD_OUTBOX_ENABLED:'false'};
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
@@ -30,6 +31,10 @@ async function fixture(t){
  }};
  return {root,directory,queries,data,versions,db:{pool:{connect:async()=>client}}};
 }
+for(const fault of [undefined,'archive:sync','parent:open','parent:sync'])test('state export requires complete directory flush: '+(fault||'success'),async t=>{
+ const f=await fixture(t);
+ await verifyExportFlush(t,f.directory,()=>exportStateArchive(f.db,{...f,key,env}),{fault});
+});
 test('state archive is offline verifiable, encrypted and scoped to the ten POD tables',async t=>{
  const f=await fixture(t),receipt=await exportStateArchive(f.db,{...f,key,env});
  const verified=await verifyStateArchive({...f,key});

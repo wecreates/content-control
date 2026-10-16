@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import {seal,unseal,readBounded,writeNew} from './archive-codec.mjs';
+import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 
@@ -71,7 +71,7 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   await client.query('COMMIT');signal?.throwIfAborted();
   // Written last: an interrupted export without this catalog is not restorable.
   await writeNew(path.join(directory,'catalog.pod'),seal(catalog,key,'pod:artifact-catalog:v1'));
-  const dirHandle=await fs.open(directory,'r');try{await dirHandle.sync();}finally{await dirHandle.close();}
+  await syncArchiveDirectory(directory);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
  finally{client.release();}

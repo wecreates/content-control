@@ -102,3 +102,21 @@ Production acceptance still needs a retained live snapshot, independently held
 key, an authorized restoration drill, measured recovery time/data loss and a
 storage-expiry solution. Passing synthetic tests or writing these commands does
 not complete those acceptance criteria.
+
+## Filesystem completion boundary
+
+Both exporters fsync each encrypted file, then the completed archive directory,
+then its existing parent directory before returning EXPORTED. Flushing a file or
+directory alone does not ensure its entry in the containing directory reached
+storage; see the [Linux fsync documentation](https://man7.org/linux/man-pages/man2/fsync.2.html)
+(checked October 16, 2026). A directory open/flush failure rejects the export.
+Opened handles are closed even when a flush fails.
+
+A rejected final flush can leave a readable catalog and ciphertext. Offline
+VERIFIED means those bytes currently authenticate; it is not evidence that the
+failed export completed durably. Preserve the failed attempt for diagnosis and
+use a new destination after resolving the storage problem; exports never silently
+overwrite it. Use a previously established durable parent directory and a
+filesystem that supports directory fsync. This does not synchronize newly created
+ancestors owned by another process, qualify storage hardware against power loss,
+create off-host retention, extend database expiry or complete a live restore drill.

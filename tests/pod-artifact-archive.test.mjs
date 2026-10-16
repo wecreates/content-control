@@ -8,6 +8,7 @@ import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
+import {verifyExportFlush} from './pod-archive-flush.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
 function database(values=[]){
@@ -27,6 +28,10 @@ function database(values=[]){
  }};
 }
 async function workspace(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return path.join(root,'archive');}
+for(const fault of [undefined,'archive:sync','parent:open','parent:sync'])test('artifact export requires complete directory flush: '+(fault||'success'),async t=>{
+ const directory=await workspace(t);
+ await verifyExportFlush(t,directory,()=>exportArtifactLibrary(database([Buffer.from('flush fixture')]),{directory,key}),{fault});
+});
 test('encrypted export and restore preserve exact bytes with idempotent retries',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('private-fixture-one'),Buffer.from('private-fixture-two')]);
  const exported=await exportArtifactLibrary(source,{directory,key});assert.equal(exported.objects,2);
