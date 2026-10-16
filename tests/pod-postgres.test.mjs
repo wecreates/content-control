@@ -344,12 +344,19 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const financeKey='synthetic-finance-key-'.repeat(3);
   const financial={verified:true,job_id:releaseJob,provider:'redbubble',provider_event_id:crypto.randomUUID(),
    authority_event_id:crypto.randomUUID(),kind:'royalty',amount_minor:1234,currency:'USD',
-   occurred_at:new Date().toISOString(),evidence_sha256:proofs[0]};
+   occurred_at:'2026-01-01T00:00:00.123456Z',evidence_sha256:proofs[0]};
   const signedFinancial=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:finance',
    issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
    return {payload,signature:crypto.createHmac('sha256',financeKey).update(payload).digest('hex')};};
   const receipts=await Promise.all(Array.from({length:4},()=>recordFinancialEvent(db,signedFinancial(financial),financeKey)));
   assert.equal(receipts.filter(r=>!r.duplicate).length,1);assert.equal(new Set(receipts.map(r=>r.id)).size,1);
+  // The pg Date decoder truncates microseconds; replay identity must not.
+  assert.deepEqual(await recordFinancialEvent(db,signedFinancial({...financial,occurred_at:'2025-12-31T19:00:00.123456-05:00'}),financeKey),{id:receipts[0].id,duplicate:true});
+  for(const occurred_at of ['2026-01-01T00:00:00.123457Z','2026-01-01T00:00:00.123Z']){
+   await assert.rejects(recordFinancialEvent(db,signedFinancial({...financial,occurred_at}),financeKey),/FINANCIAL_REPLAY_CONFLICT/);
+  }
+  const storedOccurrence=(await pool.query("SELECT to_char(occurred_at AT TIME ZONE 'UTC','YYYY-MM-DD HH24:MI:SS.US') AS precise FROM pod_financial_events WHERE id=$1",[receipts[0].id])).rows[0].precise;
+  assert.equal(storedOccurrence,'2026-01-01 00:00:00.123456');
   const reattributions=await Promise.allSettled(Array.from({length:4},()=>recordFinancialEvent(db,
    signedFinancial({...financial,provider_event_id:crypto.randomUUID()}),financeKey)));
   assert.ok(reattributions.every(r=>r.status==='rejected'&&r.reason.message==='FINANCIAL_REPLAY_CONFLICT'));
