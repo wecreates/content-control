@@ -32,6 +32,18 @@ export async function verifyArtifactBatch(pool,db){
  const extra=item();
  await assert.rejects(store.putMany([winner[0],extra]),/ARTIFACT_BUDGET_EXHAUSTED/);
  assert.equal(await count([extra]),0);assert.equal(await used(),initial+128);
+ // The real SQL must exclude an oversized body before pg receives it. The
+ // same immutable row remains readable at its exact size and is not altered.
+ const readBytes=[],readDB={active:()=>db.active(),pool:{query:async(sql,args)=>{
+  const result=await pool.query(sql,args);
+  readBytes.push(result.rows.reduce((n,row)=>n+(row.body?.length||0),0));
+  return result;
+ }}};
+ await assert.rejects(new ArtifactStore(readDB,{maxObjectBytes:63}).get(sha(winner[0])),/ARTIFACT_UNAVAILABLE/);
+ assert.deepEqual(readBytes,[0]);
+ assert.deepEqual((await new ArtifactStore(readDB,{maxObjectBytes:64}).get(sha(winner[0]))).body,winner[0].body);
+ assert.deepEqual(readBytes,[0,64]);
+ assert.equal(await used(),initial+128);assert.equal(await count(winner),2);
  // Mutate caller-owned bytes while the real transaction awaits its lock query.
  const mutable=item(),original=Buffer.from(mutable.body),originalSha=sha(mutable);
  const racingDB={tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
