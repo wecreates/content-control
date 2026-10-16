@@ -48,3 +48,17 @@ recovery remain separate acceptance work. No existing artifacts are removed.
 This contract preserves hash-addressed package restoration and independent QA.
 It does not approve rights, replace retained backups, extend provider expiry or
 establish measured 100/1,000-concept throughput. Publication stays disabled.
+
+## Verified generation inputs
+
+The Python layout renderer captures each source image and font with one bounded
+read (nonempty, at most 16 MiB). The CLI checks the signed source identity against
+that captured image; font identities are checked against captured font bytes.
+Pillow decodes those same byte snapshots. Changing, replacing or removing paths
+after capture cannot substitute different artwork or typography after verification.
+Pixel/frame limits still apply before image decoding. A mismatched source blocks
+before output-directory creation; a later font failure leaves only a failed local
+workspace, never a successful CLI result or committed production package.
+
+This establishes input-byte identity, not original authorship, license clearance,
+current template approval, independent visual acceptance or live throughput.
