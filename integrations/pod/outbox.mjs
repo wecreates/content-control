@@ -11,6 +11,9 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  let delivered=0,failed=0;
  for(const {cursor_created_at:_cursorTimestamp,...event} of events){
   if(signal?.aborted)break;
+  // Selection and earlier deliveries may cross the storage safety cutoff.
+  // This is a batch-wide stop, not a skippable per-event delivery failure.
+  db.active();
   try{
   const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:Date.now(),event});
   const signature=crypto.createHmac('sha256',key).update(payload).digest('hex');
@@ -21,6 +24,8 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   await db.tx(c=>c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL',[event.id]));delivered++;
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
  }
+ // Check empty pages and expiry during the final response/commit as well.
+ if(!signal?.aborted)db.active();
  const last=events.at(-1);
  const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.id}:null;
  return continueOnError?{delivered,failed,nextCursor}:{delivered};
