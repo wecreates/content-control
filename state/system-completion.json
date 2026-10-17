@@ -1,12 +1,12 @@
 {
   "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-  "component_checks_passed": false,
+  "component_checks_passed": true,
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
     "automatic_repair_watchdog": true,
     "bounded_failure_retry": true,
-    "candidate_identity_consistency": false,
+    "candidate_identity_consistency": true,
     "cyclonedx_sbom": true,
     "dependency_security_clean": true,
     "deployment_contract": true,
@@ -15,7 +15,7 @@
     "hash_bound_artifact": true,
     "hash_bound_provenance": true,
     "immutable_acceptance_history": true,
-    "live_public_deployment": false,
+    "live_public_deployment": true,
     "live_review_server_smoke": true,
     "local_audio_assets": true,
     "local_reference_assets": true,
@@ -45,7 +45,7 @@
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "schema_version": 1,
   "source_receipt": "qa-output/free/final-receipt.json",
-  "status": "REPAIR_REQUIRED",
+  "status": "COMPONENT_CHECKS_PASSED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",
   "watchdog_receipt": "state/free-production-watchdog.json",
   "zero_credit_runtime": true
