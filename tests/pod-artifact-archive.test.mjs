@@ -18,7 +18,8 @@ function database(values=[]){
   if(sql.startsWith('DECLARE')){index=0;return {rows:[]};}
   if(sql.startsWith('FETCH')){const entries=[...rows].sort(([a],[b])=>a.localeCompare(b));const item=entries[index++];return {rows:item?[{sha256:item[0],...item[1]}]:[]};}
   if(sql.includes('COALESCE(sum'))return {rows:[{bytes:String([...rows.values()].reduce((n,x)=>n+x.body.length,0))}]};
-  if(sql.startsWith('SELECT body,media_type'))return {rows:rows.has(args[0])?[rows.get(args[0])]:[]};
+  if(sql.startsWith('SELECT media_type,octet_length')){const row=rows.get(args[0]);return {rows:row?[{media_type:row.media_type,
+   bytes:row.body.length,body_sha256:row.body.length===args[1]?sha(row.body):null}]:[]};}
   if(sql.startsWith('INSERT INTO public.pod_artifacts')){rows.set(args[0],{body:args[1],media_type:args[2]});return {rows:[]};}
   if(/^(BEGIN|COMMIT|ROLLBACK|SET LOCAL|SELECT pg_advisory)/.test(sql))return {rows:[]};
   throw Error('UNEXPECTED_QUERY');
@@ -94,6 +95,14 @@ test('restore cannot exceed the deployment budget even with a larger caller limi
  assert.equal(invalid.queries.length,0);
  // A lower deployment write limit must not prevent reading an existing backup.
  assert.equal((await verifyArtifactLibrary({directory,key})).objects,1);
+});
+for(const corrupted of [Buffer.from('SOURCE'),Buffer.from('longer corrupt body')])test('restore rejects existing byte corruption of length '+corrupted.length,async t=>{
+ const directory=await workspace(t),body=Buffer.from('source');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ const target=database([body]);target.rows.get(sha(body)).body=corrupted;
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_RESTORE_CONFLICT/);
+ assert.equal(target.rows.size,1);assert.deepEqual(target.rows.get(sha(body)).body,corrupted);
+ assert.equal(target.queries.some(sql=>sql.startsWith('INSERT INTO')),false);
 });
 test('CLI refuses missing keys, enabled publication and unconfirmed restore before connecting',async()=>{
  for(const settings of [{},{...env},{...env,POD_ARCHIVE_KEY:'a'.repeat(64),PUBLICATION_ENABLED:'true'}]){
