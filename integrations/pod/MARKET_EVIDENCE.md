@@ -67,3 +67,21 @@ are passed unchanged to PostgreSQL, preserving microsecond identity. Equivalent
 explicit offsets identify the same immutable observation regardless of the
 session timezone; truly distinct microseconds remain separate observations.
 This grammar does not establish that an observation actually occurred.
+
+
+## JSON-LD price precision
+
+Numeric JSON-LD prices are parsed as decimal values directly from their source
+tokens and emitted as strings. They never pass through binary floating point:
+`1234567890123456.78` must not become `1234567890123456.8`, and a small nonzero
+exponent must not become zero. String prices and integer prices remain supported;
+negative and nonfinite prices remain unassessed (`null`). Decimal scale can be
+preserved, while exponent spelling may be normalized without changing its value.
+The independently bound source bytes retain the original spelling.
+
+These are observed source prices, not approved release economics or verified
+revenue. No currency conversion, minor-unit rounding, plausibility approval or
+collection authorization is inferred. Existing source/rights signatures, URL and
+snapshot bindings, reference analysis and final expiry checks remain required.
+Synthetic offline and signed-output regressions establish value preservation;
+actual authorized marketplace collection and live acceptance remain open.
