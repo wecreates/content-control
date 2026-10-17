@@ -1,5 +1,6 @@
 """Short-lived evidence policy parity, using only synthetic signing keys."""
 import os
+import hashlib
 import io
 import json
 import tempfile
@@ -11,6 +12,85 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 from pod_common import sign, verified, read_json
+import pod_qa_snapshot as snapshots
+
+
+class QASnapshotTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name) / 'package'
+        self.root.mkdir()
+        self.source = self.root / 'print.png'
+        self.source.write_bytes(b'original')
+        self.reference = Path(self.temp.name) / 'reference.png'
+        self.reference.write_bytes(b'reference')
+        self.files = {'print.png': hashlib.sha256(b'original').hexdigest()}
+
+    def capture(self, files=None):
+        return snapshots.capture_qa_inputs(self.root, self.reference, self.files if files is None else files)
+
+    def test_copies_and_hashes_one_version_and_removes_workspace(self):
+        with self.capture() as (root, reference):
+            self.source.write_bytes(b'replaced')
+            self.reference.unlink()
+            self.assertEqual((root / 'print.png').read_bytes(), b'original')
+            self.assertEqual(reference.read_bytes(), b'reference')
+            self.assertEqual(hashlib.sha256((root / 'print.png').read_bytes()).hexdigest(), self.files['print.png'])
+        self.assertFalse(root.parent.exists())
+
+    def test_rejects_wrong_hash_before_inspection(self):
+        self.source.write_bytes(b'changed')
+        with self.assertRaisesRegex(ValueError, '^FILE_HASH_MISMATCH$'):
+            with self.capture():
+                self.fail('inspection reached')
+
+    def test_validates_all_names_and_hash_types_before_reads(self):
+        for files in ({'../print.png': 'a' * 64}, {'/print.png': 'a' * 64},
+                      {'nested/print.png': 'a' * 64}, {'print.png': ['a' * 64]}):
+            with self.subTest(files=files), patch.object(snapshots, 'bounded_bytes', side_effect=AssertionError('read reached')):
+                with self.assertRaises(ValueError):
+                    with self.capture(files):
+                        self.fail('inspection reached')
+
+    def test_empty_or_excessive_file_lists_are_rejected(self):
+        for files in ({}, [], {str(i): 'a' * 64 for i in range(33)}):
+            with self.assertRaisesRegex(ValueError, '^ARTIFACT_BATCH_INVALID$'):
+                with self.capture(files):
+                    self.fail('inspection reached')
+
+    def test_object_and_package_limits_and_exact_ceilings(self):
+        with patch.object(snapshots, 'MAX_OBJECT_BYTES', 9), patch.object(snapshots, 'MAX_PACKAGE_BYTES', 8):
+            with self.capture():
+                pass
+        for name, limit in (('MAX_OBJECT_BYTES', 7), ('MAX_PACKAGE_BYTES', 7)):
+            with patch.object(snapshots, name, limit), self.assertRaises(ValueError):
+                with self.capture():
+                    self.fail('inspection reached')
+        self.reference.write_bytes(b'0123456789')
+        with patch.object(snapshots, 'MAX_OBJECT_BYTES', 9), self.assertRaisesRegex(ValueError, '^ARTIFACT_INVALID$'):
+            with self.capture():
+                self.fail('inspection reached')
+
+    def test_growth_after_stat_remains_bounded(self):
+        self.source.write_bytes(b'x' * 100)
+        mode = self.source.stat().st_mode
+        with patch.object(snapshots.os, 'fstat', return_value=SimpleNamespace(st_mode=mode, st_size=1)):
+            with self.assertRaisesRegex(ValueError, '^ARTIFACT_INVALID$'):
+                snapshots.bounded_bytes(self.source, 8)
+
+    def test_escaped_symlink_is_rejected(self):
+        self.source.unlink()
+        self.source.symlink_to(self.reference)
+        with self.assertRaisesRegex(ValueError, '^ARTIFACT_PATH_INVALID$'):
+            with self.capture():
+                self.fail('inspection reached')
+
+    def test_snapshot_removed_after_inspection_failure(self):
+        with self.assertRaisesRegex(RuntimeError, '^fixture$'):
+            with self.capture() as (root, reference):
+                raise RuntimeError('fixture')
+        self.assertFalse(root.parent.exists())
 
 
 class BoundedEvidenceReadTests(unittest.TestCase):

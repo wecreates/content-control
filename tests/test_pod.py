@@ -16,6 +16,37 @@ from pod_book_interior import render_book
 from pod_book_package import assemble
 
 class PODTests(unittest.TestCase):
+    def test_qa_inspects_the_hashed_bytes_when_originals_change(self):
+        import pod_vision_qa as qa
+        for kdp in (False, True):
+            with self.subTest(kdp=kdp):
+                source = {}
+                observed = []
+                original_open = qa.open_raster
+                def remember(manifest, root):
+                    source['root'] = root
+                    with Image.open(root / 'print.png') as image:
+                        source['pixel'] = image.convert('RGB').getpixel((0, 0))
+                        source['size'] = image.size
+                    source['dpi'] = manifest['dpi']
+                def replace_then_open(filename, expected_size=None):
+                    if not source.get('replaced'):
+                        source['replaced'] = True
+                        Image.new('RGB', source['size'], 'black').save(
+                            source['root'] / 'print.png', dpi=(source['dpi'], source['dpi']))
+                        if kdp:
+                            (source['root'] / 'cover.pdf').unlink()
+                            (source['root'] / 'interior.pdf').unlink()
+                    return original_open(filename, expected_size)
+                def inspect_pixels(manifest, image, art, text):
+                    observed.append(image.getpixel((0, 0)))
+                    return True
+                with patch('pod_vision_qa.open_raster', side_effect=replace_then_open), \
+                     patch('pod_vision_qa.spatial_checks', side_effect=inspect_pixels):
+                    result = self.package_result(remember, kdp=kdp)
+                self.assertEqual(result['binary_pass'], 1, result)
+                self.assertEqual(observed, [source['pixel']])
+
     def test_qa_oversized_and_mismatched_rasters_fail_before_ocr(self):
         from test_pod_raster_bounds import png_header
         for filename in ('print.png', 'art-mask.png', 'text-mask.png'):
