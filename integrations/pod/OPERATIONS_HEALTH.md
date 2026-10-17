@@ -40,6 +40,17 @@ specific thresholds were not reached. Every response carries
 expiry is an input, not a fresh provider API lookup. Worker process heartbeats
 remain available in the existing `/status` response.
 
+The production lifecycle rechecks its in-process POD_PRODUCTION_ENABLED flag
+before lease recovery and after each awaited stage. Disabling it drains current
+work and ends the loop as STOPPED; it does not keep recovering leases or record
+late results as completed healthy cycles. Existing diagnostics are retained.
+An already-started database operation or callback is not undone. Disabling during
+the 15-second polling wait takes effect when that wait ends; call the lifecycle
+stop method to abort the wait and propagate cooperative cancellation immediately.
+Setting the flag back to true does not restart the stopped lifecycle. The host
+must start a new one. This is not remote configuration polling, a live shutdown
+drill or authorization to enable production or publication.
+
 The dashboard preserves successful metrics even if the separate job-list request
 is blocked. Its requests remain authenticated, same-origin, bounded and read-only;
 session clearing and stale-response handling remain in effect.

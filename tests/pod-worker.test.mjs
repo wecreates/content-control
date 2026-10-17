@@ -23,6 +23,55 @@ test('production-only grant reaches task resolution without publishing',async()=
  assert.equal(resolved,true);assert.equal(failed,true);assert.equal(result.status,'BLOCKED');
 });
 import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
+import {runPodWorker} from '../integrations/pod/orchestrator.mjs';
+for(const phase of ['recovery','rejected recovery','claim']){
+ test(`disable during ${phase} stops the lifecycle without completion or retry health`,async()=>{
+  const env={POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)};
+  let release,entered,claims=0;
+  const started=new Promise(resolve=>entered=resolve);
+  const pending=new Promise(resolve=>release=resolve);
+  const runtime=startProductionRuntime({env,db:{
+   recover:async()=>{if(phase!=='claim'){entered();await pending;if(phase==='rejected recovery')throw Error('private recovery failure');}},
+   claimProduction:async()=>{claims++;if(phase==='claim'){entered();await pending;}return null;}
+  },production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+  await started;env.POD_PRODUCTION_ENABLED='false';release();
+  await new Promise(resolve=>setImmediate(resolve));
+  const health=runtime.health();await runtime.stop();
+  assert.equal(health.status,'STOPPED');assert.equal(health.cycles,0);
+  assert.equal(health.consecutive_failures,0);assert.equal(health.last_error_code,null);
+  assert.equal(health.last_completed_at,null);assert.equal(claims,phase==='claim'?1:0);
+  env.POD_PRODUCTION_ENABLED='true';await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(runtime.status(),'STOPPED');assert.equal(claims,phase==='claim'?1:0);
+ });
+}
+test('disabled worker continuation gate prevents recovery before the first cycle',async()=>{
+ const controller=new AbortController();let recovered=0;
+ await runPodWorker({signal:controller.signal,shouldContinue:()=>false,
+  db:{recover:async()=>{recovered++;controller.abort();}},produce:async()=>{},publish:async()=>{}});
+ assert.equal(recovered,0);
+});
+test('disable after production prevents the following stage and completion notification',async()=>{
+ const controller=new AbortController();let enabled=true,published=0,completed=0;
+ await runPodWorker({signal:controller.signal,shouldContinue:()=>enabled,
+  db:{recover:async()=>{}},produce:async()=>{enabled=false;return {status:'IDLE'};},
+  publish:async()=>{published++;controller.abort();},
+  onCycle:event=>{if(event.phase==='completed')completed++;}});
+ assert.equal(published,0);assert.equal(completed,0);
+});
+test('disable during polling prevents another lease recovery', {timeout:3000},async()=>{
+ const controller=new AbortController();let enabled=true,recovered=0,completed=0;
+ await runPodWorker({signal:controller.signal,pollMs:1000,shouldContinue:()=>enabled,
+  db:{recover:async()=>{recovered++;}},produce:async()=>({status:'IDLE'}),publish:async()=>{},
+  onCycle:event=>{if(event.phase==='completed'){completed++;setImmediate(()=>{enabled=false;});}}});
+ assert.equal(recovered,1);assert.equal(completed,1);
+});
+test('disable during the final stage suppresses completion notification',async()=>{
+ const controller=new AbortController();let enabled=true,completed=0;
+ await runPodWorker({signal:controller.signal,shouldContinue:()=>enabled,
+  db:{recover:async()=>{}},produce:async()=>({status:'IDLE'}),publish:async()=>{enabled=false;},
+  onCycle:event=>{if(event.phase==='completed')completed++;}});
+ assert.equal(completed,0);
+});
 test('enabled worker without authority resolvers fails closed',async()=>{
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true'},db:{recover(){throw Error('must not access');}}});
  assert.equal(runtime.status(),'BLOCKED_PRODUCTION_CONFIGURATION');await runtime.stop();

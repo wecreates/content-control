@@ -18,6 +18,7 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
   }else{
    status='RUNNING';
    loop=runPodWorker({db,signal:controller.signal,pollMs:15000,
+    shouldContinue:()=>env.POD_PRODUCTION_ENABLED==='true',
     produce:()=>produceOnce({db,...production,env,upstreamKey:env.POD_UPSTREAM_KEY,signal:controller.signal}),
     publish:async()=>{},onError:reportError,onCycle:event=>{
      if(event.phase==='started'){lastStartedAt=new Date().toISOString();return;}
@@ -29,7 +30,7 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
      }
      else if(lastResult==='QA_FAILED'){reportError({code:'QA_FAILED'});}
      else{consecutiveFailures=0;lastErrorCode=null;status='RUNNING';}
-    }}).catch(()=>{reportError({code:'POD_WORKER_FAILED'});status='FAILED';});
+    }}).then(()=>{status='STOPPED';}).catch(()=>{reportError({code:'POD_WORKER_FAILED'});status='FAILED';});
   }
  }
  return {status:()=>status,health:()=>({status,cycles,consecutive_failures:consecutiveFailures,
