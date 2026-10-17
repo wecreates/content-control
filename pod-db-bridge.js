@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA} from './integrations/pod/policy.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
+import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
  if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
@@ -20,9 +21,11 @@ export async function createPodPool(env=process.env) {
  if(!['postgres:','postgresql:'].includes(u.protocol)||!u.username||!u.password||u.pathname.length<2||
   u.hash||[...u.searchParams.keys()].some(k=>k!=='sslmode')||
   (u.searchParams.has('sslmode')&&!['require','verify-full'].includes(u.searchParams.get('sslmode')))) throw Error('POD_DATABASE_INVALID');
- return new pg.Pool({host:u.hostname,port:Number(u.port||5432),user:decodeURIComponent(u.username),
+ const pool=new pg.Pool({host:u.hostname,port:Number(u.port||5432),user:decodeURIComponent(u.username),
   password:decodeURIComponent(u.password),database:decodeURIComponent(u.pathname.slice(1)),
   ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:10000,query_timeout:15000,idleTimeoutMillis:10000});
+ Object.defineProperty(pool,'podConnectionHealth',{value:monitorPodPool(pool)});
+ return pool;
 }
 export class PodDB {
  constructor({pool,bridge,upstreamKey,qaKey,expiresAt}) {
