@@ -71,6 +71,26 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
    assert.equal(status(await inspect(),'POD_TABLE_PRIVILEGES'),'BLOCKED');
   }finally{await pool.query(`REVOKE UPDATE (sha256) ON public.pod_schema_version FROM "${runtime}"`);}
   await clean();
+  // Ordinary required access must not imply authority to delegate it. Exercise
+  // table and column grant options, both directly and through SET ROLE chains.
+  for(const role of [runtime,group])for(const [table,column,privileges] of [
+   ['pod_events','id',['SELECT','INSERT','UPDATE']],
+   ['pod_schema_version','sha256',['SELECT']],
+  ])for(const privilege of privileges)for(const columnLevel of [false,true]){
+   const grant=`${privilege}${columnLevel?' ('+column+')':''} ON public.${table}`;
+   const label=`${role===runtime?'direct':'indirect'} ${grant}`;
+   await pool.query(`GRANT ${grant} TO "${role}" WITH GRANT OPTION`);
+   try{
+    const probe="SELECT has_any_column_privilege($1,$2,$3) AS ordinary,has_any_column_privilege($1,$2,$4) AS delegable";
+    assert.deepEqual((await pool.query(probe,[role,'public.'+table,privilege,privilege+' WITH GRANT OPTION'])).rows[0],
+     {ordinary:true,delegable:true},label);
+    if(role===group)assert.equal((await pool.query(probe,[runtime,'public.'+table,privilege,privilege+' WITH GRANT OPTION'])).rows[0].delegable,false,label);
+    const report=await inspect();assert.equal(status(report,'DATABASE_READABLE'),'PASS',label);
+    assert.equal(status(report,'POD_TABLE_PRIVILEGES'),'BLOCKED',label);
+   }finally{await pool.query(`REVOKE GRANT OPTION FOR ${grant} FROM "${role}"`);}
+   assert.equal((await pool.query('SELECT has_any_column_privilege($1,$2,$3) AS ordinary',[role,'public.'+table,privilege])).rows[0].ordinary,true,label);
+   await clean();
+  }
  }finally{
   if(pool)await pool.end();
   if(createdDatabase)await owner.query(`DROP DATABASE "${name}"`);
