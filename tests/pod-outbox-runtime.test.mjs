@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {startOutboxRuntime} from '../integrations/pod/outbox-runtime.mjs';
 import {deliverOutbox} from '../integrations/pod/outbox.mjs';
+import {PodDB} from '../pod-db-bridge.js';
+import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const env={POD_OUTBOX_ENABLED:'true',POD_OUTBOX_URL:'https://authority.example/events',POD_OUTBOX_KEY:'k'.repeat(32)};
 test('disabled and incomplete configurations never deliver',async()=>{
  for(const config of [{},{...env,POD_OUTBOX_KEY:''},{...env,POD_OUTBOX_URL:'http://example.com'},{...env,POD_OUTBOX_POLL_MS:'0'}]){
@@ -27,6 +29,36 @@ test('shutdown aborts in-flight delivery and drains before returning',async()=>{
  }});await entered;await r.stop();assert.equal(finished,true);assert.equal(r.status().failures,0);
 });
 function dbFixture(events){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:events})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+for(const phase of ['select','empty-select','response','commit','last-response','last-commit']){
+ test(`storage safety cutoff during ${phase} stops the whole outbox batch`,async t=>{
+  const start=Date.parse('2026-10-17T00:00:00Z');let now=start;
+  t.mock.method(Date,'now',()=>now);
+  const sent=[],committed=[],pending=[];
+  const expire=()=>{now=start+1000;};
+  const client={release(){},query:async(sql,args)=>{
+   if(sql.startsWith('UPDATE pod_events'))pending.push(args[0]);
+   if(sql==='ROLLBACK')pending.length=0;
+   if(sql==='COMMIT'){
+    committed.push(...pending);pending.length=0;
+    if(phase.endsWith('commit'))expire();
+   }
+   return {rows:[]};
+  }};
+  const db=new PodDB({bridge:{producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}},
+   expiresAt:new Date(start+86400000+1000).toISOString(),pool:{connect:async()=>client,query:async()=>{
+    if(phase.endsWith('select'))expire();
+    return {rows:phase==='empty-select'?[]:phase.startsWith('last-')?[{id:'a'}]:[{id:'a'},{id:'b'}]};
+   }}});
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
+   fetchImpl:async(_url,options)=>{
+    const id=options.headers['idempotency-key'];sent.push(id);
+    if(phase.endsWith('response'))expire();
+    return new Response(JSON.stringify({accepted_event_id:id}));
+   }}),/POD_STORAGE_EXPIRING/);
+  assert.deepEqual(sent,phase.endsWith('select')?[]:['a']);
+  assert.deepEqual(committed,phase.endsWith('commit')?['a']:[]);
+ });
+}
 test('failed acknowledgement does not mark delivered or block another event',async()=>{
  const db=dbFixture([{id:'a'},{id:'b'}]);
  const result=await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
