@@ -40,10 +40,18 @@ export async function deployDatabase({env=process.env,apply=false,provision=fals
  const options=provision?{provisionPassword:decodeURIComponent(new URL(env.POD_DATABASE_URL).password)}:{};
  if(apply){
   const pool=await connect({...env,POD_DATABASE_URL:env.DATABASE_MIGRATION_URL});
-  try{await migrate(pool,role,undefined,options);}finally{await pool.end();}
+  try{
+   // Pool construction may await external work. Never begin migration using
+   // safety conditions that were valid only before that wait.
+   deploymentConfig(env);
+   await migrate(pool,role,undefined,{...options,assertActive:()=>deploymentConfig(env)});
+  }finally{await pool.end();}
  }
  // Inspect using runtime credentials, never the migration owner. No writes or secrets in receipt.
  const report=await inspect({env,connect});
+ // Inspection and pool cleanup can cross the storage cutoff or a kill switch.
+ // A successful database check alone cannot make a stale deployment safe.
+ deploymentConfig(env);
  const required=['RESTRICTED_RUNTIME_ROLE','DATABASE_TLS','POD_TABLE_PRIVILEGES','SOCIAL_VAULT_ISOLATED','SCHEMA_CHECKSUMS','DATABASE_READABLE'];
  const checks=required.map(code=>({code,status:report.checks.find(c=>c.code===code)?.status||'BLOCKED'}));
  return {schema_version:1,status:checks.every(c=>c.status==='PASS')?'DATABASE_VERIFIED':'BLOCKED',

@@ -26,6 +26,13 @@ test('provisioning is transactional, repeatable and grants only POD access',{ski
   assert.equal(Object.entries(flags).some(([k,v])=>k!=='rolcanlogin'&&v),false);
   assert.equal((await pool.query("SELECT has_table_privilege($1,'pod_events','INSERT') AS access",[role])).rows[0].access,true);
   assert.equal((await pool.query("SELECT has_table_privilege($1,'cyzor_social_vault','SELECT,INSERT,UPDATE,DELETE') AS access",[role])).rows[0].access,false);
+  let safetyChecks=0;
+  await assert.rejects(migrate(pool,elevated,undefined,{provisionPassword:password,assertActive:()=>{
+   if(++safetyChecks===2)throw Error('STORAGE_EXPIRING');
+  }}),/STORAGE_EXPIRING/);
+  assert.equal(safetyChecks,2);
+  // The role and grants existed inside the transaction but must not survive.
+  assert.equal((await pool.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[elevated])).rowCount,0);
   await assert.rejects(migrate(pool,elevated,new URL('./missing-migrations/',import.meta.url),{provisionPassword:password}));
   assert.equal((await pool.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[elevated])).rowCount,0);
   await pool.query(`CREATE ROLE "${elevated}" NOINHERIT`);

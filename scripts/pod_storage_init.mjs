@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {createPodPool} from '../pod-db-bridge.js';
 
-export async function migrate(pool, runtimeRole, directory=new URL('../migrations/',import.meta.url), {provisionPassword}={}) {
+export async function migrate(pool, runtimeRole, directory=new URL('../migrations/',import.meta.url), {provisionPassword,assertActive=()=>{}}={}) {
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
  if(provisionPassword!==undefined&&(!/^pod_[a-z0-9_]+$/.test(runtimeRole)||typeof provisionPassword!=='string'||Buffer.byteLength(provisionPassword)<32||provisionPassword.includes('\0')))throw Error('PROVISION_CONFIG_INVALID');
  const client=await pool.connect();
@@ -12,6 +12,8 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   await client.query('BEGIN');
   await client.query("SET LOCAL lock_timeout='10s'");
   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
+  // Recheck deployment safety after connection and lock waits, before DDL.
+  assertActive();
   if(provisionPassword!==undefined){
    const exists=(await client.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[runtimeRole])).rows.length>0;
    if(!exists){
@@ -43,6 +45,8 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   const tables=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
   await client.query(`GRANT SELECT,INSERT,UPDATE ON ${tables.join(',')} TO "${runtimeRole}"`);
   await client.query(`GRANT SELECT ON pod_schema_version TO "${runtimeRole}"`);
+  // Any safety change during migration must roll back the entire transaction.
+  assertActive();
   await client.query('COMMIT');
  }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
 }
@@ -52,3 +56,4 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
  catch{console.error(JSON.stringify({status:'BLOCKED',reason:'POD_MIGRATION_FAILED'}));process.exitCode=1;}
  finally{if(pool)await pool.end();}
 }
+
