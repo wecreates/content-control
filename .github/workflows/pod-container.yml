@@ -52,16 +52,6 @@ jobs:
           docker run --rm --network host -e POD_TEST_DATABASE_URL=postgresql://postgres:pod_test_only@localhost:5432/pod_test pod-runtime node --test tests/pod-production-e2e.mjs
       - name: Verify hosted app starts with publication and production disabled
         run: |
-          docker run -d --name pod-smoke -p 10000:10000 -e PORT=10000 pod-runtime
+          docker run -d --name pod-smoke -p 127.0.0.1:10000:10000 -e PORT=10000 pod-runtime
           trap 'docker rm -f pod-smoke' EXIT
-          for attempt in $(seq 1 30); do
-            if curl -fsS http://localhost:10000/health > /tmp/pod-health.json; then break; fi
-            sleep 2
-          done
-          curl -fsS http://localhost:10000/api/print/status > /tmp/pod-status.json
-          python3 - <<'PY'
-          import json
-          with open('/tmp/pod-status.json') as f: status=json.load(f)
-          assert status['publication_enabled'] is False, status
-          assert status['production_status']=='DISABLED', status
-          PY
+          node scripts/pod_container_smoke.mjs
