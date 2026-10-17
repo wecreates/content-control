@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 import {validateTemplate} from '../integrations/pod/templates.mjs';
+import {setTimeout as pause} from 'node:timers/promises';
 
 const key='synthetic-template-test-key-'.repeat(2);
 const sign=value=>{
@@ -18,7 +19,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
  template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500]}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,detailed=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -47,12 +48,12 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused'}}:{}),
-    ...(review?{reviewPackage:async()=>{reviewCalls++;return {rights:'unused',competitive:'unused'};}}:{}),
+    ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
     cleanup:async()=>{cleaned++;}})});
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
   const bookStarted=await fs.stat(path.join(root,'book-started')).then(()=>true,()=>false);
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
-  return {status:result.status,blocked,held,cleaned,started,...(detailed?{bookStarted,qaStarted,completed,grantCalls,localChecks,reviewCalls}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(detailed?{reason:result.reason_code,bookStarted,qaStarted,completed,grantCalls,localChecks,reviewCalls}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -144,4 +145,45 @@ test('valid stage authority reaches the authenticated completion boundary',async
 test('fresh authority after package reads is required before persistence',async()=>{
  const result=await exercise({review:true,denyGrantAt:4,detailed:true});
  assert.equal(result.started,true);assert.equal(result.reviewCalls,0);assert.equal(result.held,0);assert.equal(result.status,'BLOCKED');
+});
+
+test('cooperative reviewer receives the worker signal and abort is recorded as stopped',async()=>{
+ let received=false,settled=false;
+ const r=await exercise({review:true,detailed:true,reviewPolicy:async({options,controller})=>{
+  received=options?.signal===controller.signal;
+  setImmediate(()=>controller.abort(Error('private reviewer abort details')));
+  try{await pause(100,undefined,{signal:options?.signal});}
+  finally{settled=true;}
+ }});
+ assert.equal(received,true);assert.equal(settled,true);
+ assert.equal(r.reason,'PRODUCTION_STOPPED');assert.equal(r.cleaned,1);
+ assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.held,0);
+});
+
+for(const action of ['abort','disable'])test(`review rejection after ${action} uses the fixed stop reason`,async()=>{
+ const r=await exercise({review:true,detailed:true,reviewPolicy:async({controller,env})=>{
+  if(action==='abort')controller.abort(Error('private cancellation reason'));
+  else env.POD_PRODUCTION_ENABLED='false';
+  // Let an in-flight callback settle before workspace cleanup; no detached race.
+  await new Promise(resolve=>setImmediate(resolve));
+  throw Error('private reviewer failure');
+ }});
+ assert.equal(r.reason,'PRODUCTION_STOPPED');assert.equal(r.cleaned,1);
+ assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.reviewCalls,1);
+});
+
+test('ordinary reviewer errors remain redacted and do not complete production',async()=>{
+ const r=await exercise({review:true,detailed:true,reviewPolicy:async()=>{throw Error('private reviewer failure');}});
+ assert.equal(r.reason,'PRODUCTION_BLOCKED');assert.equal(r.cleaned,1);
+ assert.equal(r.qaStarted,false);assert.equal(r.completed,0);
+});
+
+for(const action of ['abort','disable'])test(`late review result after ${action} is discarded before reading paths`,async()=>{
+ let accessed=false;
+ const r=await exercise({review:true,detailed:true,reviewPolicy:async({controller,env})=>{
+  if(action==='abort')controller.abort();else env.POD_PRODUCTION_ENABLED='false';
+  return {get rights(){accessed=true;throw Error('RIGHTS_BLOCKED');}};
+ }});
+ assert.equal(accessed,false);assert.equal(r.reason,'PRODUCTION_STOPPED');
+ assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
 });
