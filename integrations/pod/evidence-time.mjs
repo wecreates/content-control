@@ -1,4 +1,4 @@
-// Exact signed evidence timestamps shared by market and financial intake.
+// Exact signed evidence timestamps shared by market, finance and templates.
 export function validEvidenceTime(value,now=Date.now()){
  if(typeof value!=='string')return false;
  // Require an explicit zone and at most PostgreSQL's six fractional digits.
