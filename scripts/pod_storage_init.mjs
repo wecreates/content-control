@@ -8,6 +8,7 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
  if(provisionPassword!==undefined&&(!/^pod_[a-z0-9_]+$/.test(runtimeRole)||typeof provisionPassword!=='string'||Buffer.byteLength(provisionPassword)<32||provisionPassword.includes('\0')))throw Error('PROVISION_CONFIG_INVALID');
  const client=await pool.connect();
+ let discard=false;
  try {
   await client.query('BEGIN');
   await client.query("SET LOCAL lock_timeout='10s'");
@@ -48,7 +49,12 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   // Any safety change during migration must roll back the entire transaction.
   assertActive();
   await client.query('COMMIT');
- }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}finally{client.release();}
+ }catch(error){
+  // A failed rollback leaves transaction state unknown. Never return that
+  // connection to the pool, and keep the original error for safe diagnostics.
+  try{await client.query('ROLLBACK');}catch{discard=true;}
+  throw error;
+ }finally{client.release(discard);}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  let pool;
