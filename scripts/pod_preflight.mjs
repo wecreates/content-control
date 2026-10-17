@@ -33,7 +33,9 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
   const role=(await client.query(`SELECT r.rolsuper,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
    EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER')
     AND has_database_privilege(p.oid,current_database(),'CREATE')) AS db_create,
-   EXISTS(SELECT 1 FROM pg_roles p WHERE (p.rolsuper OR p.rolcreatedb OR p.rolcreaterole OR p.rolreplication OR p.rolbypassrls)
+   EXISTS(SELECT 1 FROM pg_roles p WHERE (p.rolsuper OR p.rolcreatedb OR p.rolcreaterole OR p.rolreplication OR p.rolbypassrls
+    OR p.rolname IN ('pg_read_server_files','pg_write_server_files','pg_execute_server_program',
+      'pg_signal_backend','pg_signal_autovacuum_worker','pg_checkpoint','pg_maintain'))
     AND pg_has_role(current_user,p.oid,'MEMBER')) AS elevated_membership,
    EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN pg_roles p
     WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname<>'information_schema'
