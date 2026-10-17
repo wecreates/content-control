@@ -91,6 +91,25 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
    assert.equal((await pool.query('SELECT has_any_column_privilege($1,$2,$3) AS ordinary',[role,'public.'+table,privilege])).rows[0].ordinary,true,label);
    await clean();
   }
+  // Predefined administrative roles can have no elevated role attributes.
+  // Inspect memberships only: never read/write server files, execute programs,
+  // signal backends, checkpoint or maintain tables in this regression.
+  for(const privileged of ['pg_read_server_files','pg_write_server_files','pg_execute_server_program',
+   'pg_signal_backend','pg_signal_autovacuum_worker','pg_checkpoint','pg_maintain']){
+   const attributes=(await pool.query('SELECT rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls FROM pg_roles WHERE rolname=$1',[privileged])).rows[0];
+   assert.ok(attributes,'PostgreSQL 18 fixture role required: '+privileged);
+   assert.ok(Object.values(attributes).every(value=>value===false),privileged);
+   for(const role of [runtime,group]){
+    await pool.query(`GRANT "${privileged}" TO "${role}" WITH INHERIT FALSE, SET TRUE`);
+    try{
+     const membership=(await pool.query("SELECT pg_has_role($1,$2,'USAGE') AS inherited,pg_has_role($1,$2,'SET') AS reachable",[runtime,privileged])).rows[0];
+     assert.deepEqual(membership,{inherited:false,reachable:true},privileged);
+     const report=await inspect();assert.equal(status(report,'DATABASE_READABLE'),'PASS',privileged);
+     assert.equal(status(report,'RESTRICTED_RUNTIME_ROLE'),'BLOCKED',privileged);
+    }finally{await pool.query(`REVOKE "${privileged}" FROM "${role}"`);}
+    await clean();
+   }
+  }
  }finally{
   if(pool)await pool.end();
   if(createdDatabase)await owner.query(`DROP DATABASE "${name}"`);
