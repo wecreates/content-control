@@ -29,6 +29,44 @@ test('shutdown aborts in-flight delivery and drains before returning',async()=>{
  }});await entered;await r.stop();assert.equal(finished,true);assert.equal(r.status().failures,0);
 });
 function dbFixture(events){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:events})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+test('disabling the outbox during polling stops before the next batch',async()=>{
+ const config={...env};let calls=0;
+ const runtime=startOutboxRuntime({db:{},env:config,
+  deliver:async()=>{calls++;return {delivered:1,failed:0};},
+  wait:async()=>{config.POD_OUTBOX_ENABLED='false';if(calls>1)throw Error('unexpected next batch');}});
+ await new Promise(resolve=>setImmediate(resolve));
+ const observed=runtime.status();await runtime.stop();
+ assert.equal(calls,1);assert.equal(observed.status,'STOPPED');
+ assert.equal(observed.delivered,1);assert.ok(observed.last_success_at);
+ config.POD_OUTBOX_ENABLED='true';await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(calls,1);assert.equal(runtime.status().status,'STOPPED');
+});
+test('disabling while delivery rejects stops without a retry or failure increment',async()=>{
+ const config={...env};let rejectDelivery;
+ const runtime=startOutboxRuntime({db:{},env:config,
+  deliver:()=>new Promise((_resolve,reject)=>rejectDelivery=reject),
+  wait:async()=>{throw Error('disabled delivery must not retry');}});
+ config.POD_OUTBOX_ENABLED='false';rejectDelivery(Error('private transport error'));
+ await new Promise(resolve=>setImmediate(resolve));
+ const observed=runtime.status();await runtime.stop();
+ assert.deepEqual(observed,{status:'STOPPED',delivered:0,failures:0,last_success_at:null});
+});
+for(const ending of ['disable','abort']){
+ test(`${ending} during delivery retains acknowledged counts without recording a healthy cycle`,async()=>{
+  const config={...env};let release,entered;
+  const started=new Promise(resolve=>entered=resolve);
+  const runtime=startOutboxRuntime({db:{},env:config,deliver:async()=>{
+   entered();await new Promise(resolve=>release=resolve);return {delivered:1,failed:0};
+  },wait:async()=>{throw Error('stopped cycle must not poll');}});
+  await started;
+  let stopping;
+  if(ending==='disable')config.POD_OUTBOX_ENABLED='false';else stopping=runtime.stop();
+  release();await new Promise(resolve=>setImmediate(resolve));
+  const observed=runtime.status();await (stopping||runtime.stop());
+  assert.equal(observed.status,'STOPPED');assert.equal(observed.delivered,1);
+  assert.equal(observed.failures,0);assert.equal(observed.last_success_at,null);
+ });
+}
 for(const phase of ['select','empty-select','response','commit','last-response','last-commit']){
  test(`storage safety cutoff during ${phase} stops the whole outbox batch`,async t=>{
   const start=Date.parse('2026-10-17T00:00:00Z');let now=start;

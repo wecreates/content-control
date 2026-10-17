@@ -4,6 +4,7 @@ import {deliverOutbox} from './outbox.mjs';
 // Internal business feedback only; this runtime never calls a marketplace.
 export function startOutboxRuntime({db,env=process.env,deliver=deliverOutbox,wait=pause,clock=Date.now}={}){
  const controller=new AbortController();
+ const stopped=()=>controller.signal.aborted||env.POD_OUTBOX_ENABLED!=='true';
  let loop=Promise.resolve(),status='DISABLED',delivered=0,failures=0,lastSuccessAt=null;
  const pollMs=Number(env.POD_OUTBOX_POLL_MS||15000);
  if(env.POD_OUTBOX_ENABLED==='true'){
@@ -15,21 +16,25 @@ export function startOutboxRuntime({db,env=process.env,deliver=deliverOutbox,wai
    status='RUNNING';
    loop=(async()=>{
     let consecutiveFailures=0,cursor=null;
-    while(!controller.signal.aborted){
+    while(!stopped()){
      try{
       const result=await deliver(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
        signal:controller.signal,continueOnError:true,cursor});
       cursor=result.nextCursor||null;
       delivered+=result.delivered;failures+=result.failed||0;
+      // A drained batch may have committed acknowledgements before shutdown.
+      // Retain those counts without turning cancellation into a healthy cycle.
+      if(stopped())break;
       if(result.failed){consecutiveFailures++;status='RETRYING';}
       else{consecutiveFailures=0;status='RUNNING';lastSuccessAt=new Date(clock()).toISOString();}
      }catch{
-      if(controller.signal.aborted)break;
+      if(stopped())break;
       failures++;consecutiveFailures++;status='RETRYING';
      }
      try{await wait(Math.min(300000,pollMs*2**Math.min(consecutiveFailures,5)),undefined,{signal:controller.signal});}
-     catch{if(!controller.signal.aborted)throw Error('OUTBOX_WAIT_FAILED');}
+     catch{if(!stopped())throw Error('OUTBOX_WAIT_FAILED');}
     }
+    status='STOPPED';
    })().catch(()=>{status='FAILED';});
   }
  }
