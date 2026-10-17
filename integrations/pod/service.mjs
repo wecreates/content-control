@@ -25,7 +25,8 @@ export async function initializePodService({env=process.env,authorize,production
  const pythonReady=env.POD_PRODUCTION_ENABLED==='true'&&db?await checkPodPython(env):true;
  const worker=startProductionRuntime({db,pythonReady,production:production||(db?createStoredTaskResolvers(db,{env}):undefined),env});
  const outbox=startOutboxRuntime({db,env});
- const status=()=>({...state,production_status:worker.status(),production_health:worker.health(),outbox:outbox.status()});
+ const status=()=>({...state,database_health:pool?.podConnectionHealth?.()??null,
+  production_status:worker.status(),production_health:worker.health(),outbox:outbox.status()});
  return {status,router:createPodRouter({db,authorize:authorize||operationalAuth(env.INTERNAL_OPERATIONS_KEY),env,status}),
   stop:async()=>{await Promise.all([worker.stop(),outbox.stop()]);if(db)await db.close();}};
 }
