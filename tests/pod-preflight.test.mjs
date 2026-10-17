@@ -20,6 +20,46 @@ function fixture(overrides={}){
   return {rows:[]};},release(discard){released=true;releases.push(discard);}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,releases,closed:()=>released&&ended};
 }
+for(const remaining of [86400001,86400000,86399999])test('preflight reports storage lifetime after cleanup: '+remaining,async t=>{
+ let now=1800000000000;t.mock.method(Date,'now',()=>now);
+ const f=fixture(),settings={...env,POD_STORAGE_EXPIRES_AT:new Date(now+86400002).toISOString()};
+ const pool=await f.options.connect(),end=pool.end;
+ pool.end=async()=>{await end();now+=86400002-remaining;};
+ const r=await preflight({...f.options,now:undefined,env:settings,connect:async()=>pool});
+ assert.equal(r.status,remaining>86400000?'CONFIGURATION_VERIFIED':'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code==='STORAGE_LIFETIME'),[{code:'STORAGE_LIFETIME',status:remaining>86400000?'PASS':'BLOCKED'}]);
+ assert.ok(f.closed());assert.equal(r.publication_enabled,false);
+});
+for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test('preflight rejects '+flag+' enabled during cleanup',async()=>{
+ const f=fixture(),settings={...env},pool=await f.options.connect(),end=pool.end;
+ pool.end=async()=>{await end();settings[flag]='true';};
+ const r=await preflight({...f.options,env:settings,connect:async()=>pool});
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code==='PUBLICATION_DISABLED'),[{code:'PUBLICATION_DISABLED',status:'BLOCKED'}]);
+ assert.ok(f.closed());
+});
+test('runtime preflight cannot admit storage that expired while checking its borrowed pool',async t=>{
+ let now=1800000000000;t.mock.method(Date,'now',()=>now);
+ const f=fixture(),settings={...env,POD_STORAGE_EXPIRES_AT:new Date(now+86400001).toISOString()};
+ const pool=await f.options.connect(),client=await pool.connect(),query=client.query;
+ client.query=async(...args)=>{const r=await query(...args);if(args[0]==='ROLLBACK')now++;return r;};
+ await assert.rejects(requirePodRuntime({pool,env:settings,check:({connect})=>preflight({...f.options,now:undefined,env:settings,connect})}),/POD_RUNTIME_PREFLIGHT_BLOCKED/);
+ assert.deepEqual(f.releases,[false]);assert.equal(f.closed(),false);
+});
+for(const code of ['STORAGE_LIFETIME','PUBLICATION_DISABLED'])test('final recheck cannot clear an earlier '+code+' failure',async()=>{
+ const f=fixture(),settings={...env,...(code==='STORAGE_LIFETIME'?{POD_STORAGE_EXPIRES_AT:'invalid'}:{PUBLICATION_ENABLED:'true'})};
+ const pool=await f.options.connect(),end=pool.end;
+ pool.end=async()=>{await end();Object.assign(settings,env);};
+ const r=await preflight({...f.options,env:settings,connect:async()=>pool});
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code===code),[{code,status:'BLOCKED'}]);
+});
+test('an injected preflight clock is sampled again at completion',async()=>{
+ const f=fixture();let reads=0;
+ const r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:new Date(86400001).toISOString()},now:()=>reads++});
+ assert.equal(reads,2);assert.equal(r.status,'BLOCKED');
+ assert.equal(r.checks.find(c=>c.code==='STORAGE_LIFETIME').status,'BLOCKED');
+});
 test('verified configuration is read-only and never authorizes publication',async()=>{
  const f=fixture(),r=await preflight(f.options);assert.equal(r.status,'CONFIGURATION_VERIFIED');assert.equal(r.publication_enabled,false);
  assert.equal(f.queries[0],'BEGIN READ ONLY');assert.equal(f.queries.at(-1),'ROLLBACK');assert.ok(f.closed());

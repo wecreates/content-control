@@ -7,14 +7,20 @@ import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {isolatedRuntimeKeys,REQUIRED_RUNTIME_KEYS} from '../integrations/pod/key-policy.mjs';
 
 const TABLES=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
-export async function preflight({env=process.env,connect,readFile=fs.readFile,now=Date.now(),directory=new URL('../migrations/',import.meta.url)}={}) {
+export async function preflight({env=process.env,connect,readFile=fs.readFile,now=Date.now,directory=new URL('../migrations/',import.meta.url)}={}) {
  const checks=[];
  const check=(code,ok)=>checks.push({code,status:ok?'PASS':'BLOCKED'});
+ // Numeric time remains a fixed test hook; the default clock is sampled again
+ // after all asynchronous checks and owned-pool cleanup have completed.
+ const clock=typeof now==='function'?now:()=>now;
+ const safety=()=>[
+  ['PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true'],
+  ['STORAGE_LIFETIME',Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))&&Date.parse(env.POD_STORAGE_EXPIRES_AT)-clock()>86400000],
+ ];
  try{artifactBudgetBytes(env);check('ARTIFACT_STORAGE_BUDGET',true);}catch{check('ARTIFACT_STORAGE_BUDGET',false);}
  for(const key of REQUIRED_RUNTIME_KEYS)check(key,typeof env[key]==='string'&&Buffer.byteLength(env[key])>=32);
  check('POD_KEY_ISOLATION',isolatedRuntimeKeys(env));
- check('PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true');
- check('STORAGE_LIFETIME',Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))&&Date.parse(env.POD_STORAGE_EXPIRES_AT)-now>86400000);
+ for(const [code,ok] of safety())check(code,ok);
  try{assertBridge(JSON.parse(await readFile(env.POD_BRIDGE_PATH,'utf8')));check('BRIDGE_CONTRACT',true);}catch{check('BRIDGE_CONTRACT',false);}
  check('DEDICATED_DATABASE_CONFIGURED',!!env.POD_DATABASE_URL);
  let pool,client,readable=false,bad=false;
@@ -72,6 +78,9 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
   if(pool)await pool.end().catch(()=>{});
  }
  if(env.POD_DATABASE_URL)check('DATABASE_READABLE',readable);
+ // Downgrade stale evidence without duplicating checks or clearing an earlier
+ // failure. A completed read-only query is not a current safety guarantee.
+ for(const [code,ok] of safety())if(!ok)checks.find(c=>c.code===code).status='BLOCKED';
  return {schema_version:1,status:checks.every(c=>c.status==='PASS')?'CONFIGURATION_VERIFIED':'BLOCKED',
   publication_enabled:false,scope:'configuration_only',checks,
   unverified:['production_dependencies','production_resolvers','rights_and_editorial_review','authorized_platform_adapters','upstream_revenue_events']};
