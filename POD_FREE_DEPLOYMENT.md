@@ -7,11 +7,18 @@ Existing Render service: content-control-render-worker. Do not create a duplicat
 
 `Dockerfile` installs Node 22, Python 3.12, the pinned print libraries, English
 Tesseract OCR, licensed DejaVu fonts, and FFmpeg. It runs as an unprivileged user.
-The container gate builds this exact image, runs the real PostgreSQL/Python durable
-review workflow, checks Python/OCR availability, and starts the existing web app.
-All POD and publication switches default to false. No cloud credentials are supplied
-when building or testing the image. Additional OCR languages require installation
-and validation before jobs in those languages are enabled.
+The container gate runs on PR changes to POD runtime code, tests, migrations,
+Node dependency manifests, the web entry point and image configuration. Markdown
+inside integrations/pod is excluded from that image trigger. Superseded runs on
+the same PR are cancelled. It verifies UID 10001 and installed dependencies, then
+runs the POD Python suite with networking disabled, the Node/PostgreSQL suite and
+the durable review E2E inside the exact Dockerfile image. Database tests use only
+the workflow's disposable local PostgreSQL service. The startup smoke retains
+both publication and production disabled. No image is pushed or deployed by this
+gate, and no cloud credentials are supplied when building or testing it.
+Additional OCR languages require installation and validation before jobs in those
+languages are enabled. A successful container gate is build/test evidence, not
+proof that Render has deployed that revision or that any live acceptance row passes.
 
 After the container gate passes, the existing Render service can use Docker runtime
 with Dockerfile path `./Dockerfile`. Preserve its environment variables, domain,

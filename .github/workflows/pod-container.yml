@@ -1,8 +1,25 @@
 name: POD container runtime gates
 on:
   pull_request:
-    paths: ['Dockerfile','.dockerignore','requirements-pod-runtime.txt','.github/workflows/pod-container.yml']
+    paths:
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'requirements-pod-runtime.txt'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'server-lowmem.js'
+      - 'pod-db-bridge.js'
+      - 'integrations/pod/**'
+      - '!integrations/pod/**/*.md'
+      - 'scripts/pod*'
+      - 'migrations/*pod.sql'
+      - 'tests/pod*'
+      - 'tests/test_pod*.py'
+      - '.github/workflows/pod-container.yml'
   workflow_dispatch:
+concurrency:
+  group: pod-container-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -23,10 +40,16 @@ jobs:
         with:
           persist-credentials: false
       - run: docker build -f Dockerfile -t pod-runtime .
+      - name: Verify non-root runtime and Python dependencies without network
+        run: |
+          docker run --rm --network none pod-runtime node --input-type=module -e "import assert from 'node:assert/strict'; import {checkPodPython} from './integrations/pod/python-runtime.mjs'; assert.equal(process.getuid(),10001); assert.equal(await checkPodPython(),true)"
+      - name: Run POD Python QA and rendering tests in the production image
+        run: docker run --rm --network none pod-runtime python -m unittest discover -s tests -p 'test_pod*.py'
+      - name: Run POD Node and PostgreSQL tests in the production image
+        run: docker run --rm --network host -e POD_TEST_DATABASE_URL=postgresql://postgres:pod_test_only@localhost:5432/pod_test pod-runtime npm run test:pod
       - name: Verify real print generation and durable review workflow in image
         run: |
           docker run --rm --network host -e POD_TEST_DATABASE_URL=postgresql://postgres:pod_test_only@localhost:5432/pod_test pod-runtime node --test tests/pod-production-e2e.mjs
-          docker run --rm pod-runtime node --input-type=module -e "import {checkPodPython} from './integrations/pod/python-runtime.mjs'; if(!await checkPodPython())process.exit(1)"
       - name: Verify hosted app starts with publication and production disabled
         run: |
           docker run -d --name pod-smoke -p 10000:10000 -e PORT=10000 pod-runtime
