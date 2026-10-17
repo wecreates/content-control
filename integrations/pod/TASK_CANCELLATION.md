@@ -22,3 +22,24 @@ late stopped worker. Cancellation does not imply automatic retry or approval.
 The tests use synthetic grants, injected artifact reads, and real temporary files.
 They establish cancellation boundaries and cleanup, not live storage, measured
 capacity, independent review, or deployment acceptance. Publication remains off.
+
+## Independent review callback
+
+The optional host callback is now `reviewPackage(manifest, {signal})`. The signal
+is the same worker cancellation signal supplied to task and grant resolution.
+Existing one-argument reviewers remain callable. Reviewers should pass this
+signal to their bounded network and filesystem operations and settle their
+promise when canceled. The coordinator awaits settlement before cleanup; it does
+not race deletion of the workspace against a detached callback.
+
+After either resolution or rejection, the coordinator checks cancellation and
+the production switch. A stopped review produces the fixed `PRODUCTION_STOPPED`
+reason, discards any late attestation before reading its paths, and starts no QA
+process or completion write. Ordinary reviewer failures retain existing redaction.
+Failure recording remains subject to the current database lease/fencing checks.
+
+This is cooperative cancellation, not a forced deadline for arbitrary host code.
+A reviewer ignoring the signal can still delay shutdown, as can outstanding
+database or cleanup work. The host must enforce its own review I/O deadlines.
+The default stored resolver still holds work for independent review; no reviewer,
+approval, timeout-based pass, or publication permission is created here.

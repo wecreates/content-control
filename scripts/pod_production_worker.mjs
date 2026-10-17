@@ -60,7 +60,12 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    await db.holdProduction(job,manifest);
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
-  const attestation=await task.reviewPackage(manifest);
+  let attestation;
+  try{attestation=await task.reviewPackage(manifest,{signal});}
+  catch(error){enabled();throw error;}
+  // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
+  // and reject late results before reading attestation paths or launching QA.
+  enabled();
   const args=['--package-dir',task.output,'--reference',task.reference,'--rights',attestation.rights,
    '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput];
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
