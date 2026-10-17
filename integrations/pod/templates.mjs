@@ -1,4 +1,5 @@
 import {verifyEnvelope,PLATFORMS} from './policy.mjs';
+import {validEvidenceTime} from './evidence-time.mjs';
 function provenance(envelope,key,{platform,product,country},audience,now){
  const record=verifyEnvelope(envelope,key,audience,now),t=record.template;
  let source;try{source=new URL(record.source_url);}catch{throw Error('TEMPLATE_PROVENANCE_REQUIRED');}
@@ -7,7 +8,7 @@ function provenance(envelope,key,{platform,product,country},audience,now){
   record.product!==product||record.country!==country||record.official_source_verified!==true||
   source.protocol!=='https:'||source.username||source.password||
   typeof record.source_sha256!=='string'||!/^[a-f0-9]{64}$/.test(record.source_sha256)||
-  !Number.isFinite(Date.parse(record.observed_at))||Date.parse(record.observed_at)>now)throw Error('TEMPLATE_PROVENANCE_REQUIRED');
+  !validEvidenceTime(record.observed_at,now))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
  return t;
 }
 export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){

@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
-import {validateTemplate} from '../integrations/pod/templates.mjs';
+import {validateTemplate,validateInteriorTemplate} from '../integrations/pod/templates.mjs';
 import {setTimeout as pause} from 'node:timers/promises';
 
 const key='synthetic-template-test-key-'.repeat(2);
@@ -98,6 +98,35 @@ test('template provenance rejects credential URLs and future observations',()=>{
 test('template scope is explicitly required even when record fields are missing',()=>{
  const r=record();delete r.product;delete r.country;
  assert.throws(()=>validateTemplate(sign(r),key,{platform:'redbubble'}),/TEMPLATE_PROVENANCE_REQUIRED/);
+});
+
+const invalidObservationTimes=[
+ '2026-02-30T12:00:00Z','2026-02-29T12:00:00Z','2026-04-31T12:00:00Z',
+ '2026-01-01T24:00:00Z','2026-01-01T12:00:00','2026-01-01',
+ 'January 1, 2026','2026-01-01T12:00:00.1234567Z',0,null,
+];
+for(const interior of [false,true])test(`official ${interior?'interior':'artwork'} provenance rejects ambiguous observation timestamps`,()=>{
+ const platform=interior?'kdp':'redbubble',validate=interior?validateInteriorTemplate:validateTemplate;
+ for(const observed_at of invalidObservationTimes){
+  const r={...record(platform),audience:interior?'pod:interior-template':'pod:template',observed_at};
+  assert.throws(()=>validate(sign(r),key,{platform,...scope}),/TEMPLATE_PROVENANCE_REQUIRED/,String(observed_at));
+ }
+});
+for(const interior of [false,true])test(`official ${interior?'interior':'artwork'} provenance preserves explicit-zone observation timestamps`,()=>{
+ const platform=interior?'kdp':'redbubble',validate=interior?validateInteriorTemplate:validateTemplate;
+ for(const observed_at of ['2024-02-29T23:59:59Z','2026-01-01T12:00:00.123456Z','2026-01-01T07:00:00-05:00','2026-01-01T17:30:00+05:30']){
+  const r={...record(platform),audience:interior?'pod:interior-template':'pod:template',observed_at};
+  assert.deepEqual(validate(sign(r),key,{platform,...scope}),r.template);
+ }
+});
+for(const interior of [false,true])test(`invalid ${interior?'interior':'artwork'} observation blocks production before rendering`,async()=>{
+ const platform=interior?'kdp':'redbubble';
+ const invalid={...record(platform),observed_at:'2026-02-30T12:00:00Z'};
+ const result=await exercise({platform,template:interior?record(platform):invalid,
+  ...(interior?{interior:{...invalid,audience:'pod:interior-template'}}:{}),detailed:true});
+ assert.equal(result.status,'BLOCKED');assert.equal(result.started,false);
+ assert.equal(result.bookStarted,false);assert.equal(result.qaStarted,false);
+ assert.equal(result.completed,0);assert.equal(result.held,0);assert.equal(result.cleaned,1);
 });
 test('fresh authority after task resolution can revoke or narrow production permission',async()=>{
  for(const grantPatch of [{revoked:true},{production_permission:false},{max_mode:'RESEARCH'},{job_id:'different-job'}]){
