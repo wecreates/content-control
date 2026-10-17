@@ -76,3 +76,13 @@ test('successful preflight rollback releases a reusable connection',async()=>{
  const f=fixture(),r=await preflight(f.options);
  assert.equal(r.status,'CONFIGURATION_VERIFIED');assert.deepEqual(f.releases,[false]);assert.ok(f.closed());
 });
+
+test('preflight rejects reused or weak configured keys without reporting credentials',async()=>{
+ for(const extra of [{POD_QA_KEY:env.POD_UPSTREAM_KEY},{POD_EDITORIAL_KEY:env.POD_QA_KEY},
+  {POD_FINANCE_KEY:'sensitive-short-key'},{POD_MARKET_KEY:'m'.repeat(32),POD_PROVIDER_KEY:'m'.repeat(32)}]){
+  const f=fixture(),r=await preflight({...f.options,env:{...env,...extra}});
+  assert.equal(r.status,'BLOCKED');
+  assert.deepEqual(r.checks.find(c=>c.code==='POD_KEY_ISOLATION'),{code:'POD_KEY_ISOLATION',status:'BLOCKED'});
+  for(const value of Object.values(extra))assert.equal(JSON.stringify(r).includes(value),false);
+ }
+});

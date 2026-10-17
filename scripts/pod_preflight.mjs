@@ -4,13 +4,15 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {assertBridge} from '../integrations/pod/policy.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
+import {isolatedRuntimeKeys,REQUIRED_RUNTIME_KEYS} from '../integrations/pod/key-policy.mjs';
 
 const TABLES=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
 export async function preflight({env=process.env,connect,readFile=fs.readFile,now=Date.now(),directory=new URL('../migrations/',import.meta.url)}={}) {
  const checks=[];
  const check=(code,ok)=>checks.push({code,status:ok?'PASS':'BLOCKED'});
  try{artifactBudgetBytes(env);check('ARTIFACT_STORAGE_BUDGET',true);}catch{check('ARTIFACT_STORAGE_BUDGET',false);}
- for(const key of ['POD_UPSTREAM_KEY','POD_QA_KEY','INTERNAL_OPERATIONS_KEY'])check(key,typeof env[key]==='string'&&Buffer.byteLength(env[key])>=32);
+ for(const key of REQUIRED_RUNTIME_KEYS)check(key,typeof env[key]==='string'&&Buffer.byteLength(env[key])>=32);
+ check('POD_KEY_ISOLATION',isolatedRuntimeKeys(env));
  check('PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true');
  check('STORAGE_LIFETIME',Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))&&Date.parse(env.POD_STORAGE_EXPIRES_AT)-now>86400000);
  try{assertBridge(JSON.parse(await readFile(env.POD_BRIDGE_PATH,'utf8')));check('BRIDGE_CONTRACT',true);}catch{check('BRIDGE_CONTRACT',false);}
