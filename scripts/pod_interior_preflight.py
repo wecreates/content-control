@@ -63,9 +63,12 @@ def inspect_interior(path, spec):
         for index, page in enumerate(book):
             inspect_static_page(book, page, 'INTERIOR')
             expected = (0, 0, width, height)
+            # This no-bleed subset has one full-page region. Text extraction
+            # alone does not expose conflicting trim, bleed or art rectangles.
             if (page.rotation != 0 or any(
-                    abs(actual - desired) > .01
-                    for box in (page.mediabox, page.cropbox, page.rect)
+                    not math.isfinite(actual) or abs(actual - desired) > .01
+                    for box in (page.mediabox, page.cropbox, page.rect,
+                                page.trimbox, page.bleedbox, page.artbox)
                     for actual, desired in zip(box, expected))):
                 raise ValueError('INTERIOR_PAGE_BOX_INVALID')
             left, right = (inside, outside) if index % 2 == 0 else (outside, inside)

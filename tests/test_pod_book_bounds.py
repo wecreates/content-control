@@ -268,6 +268,41 @@ class BookBoundsTests(unittest.TestCase):
                 inspect_interior(target,spec)
 
 class StaticPDFPolicyTests(unittest.TestCase):
+    def test_print_boxes_cannot_change_delivered_geometry(self):
+        # These boxes do not change the ordinary preview raster or extraction,
+        # but must not specify a different print region from this static subset.
+        for box in ('trimbox', 'bleedbox', 'artbox'):
+            def edit(doc):
+                page = doc[0]
+                before = page.get_pixmap().samples
+                text = page.get_text()
+                getattr(page, 'set_' + box)(fitz.Rect(10, 10, 100, 100))
+                self.assertEqual(page.get_pixmap().samples, before)
+                self.assertEqual(page.get_text(), text)
+            with self.subTest(box=box):
+                self.check_mutation(edit, expected='PAGE_BOX_INVALID')
+
+    def test_explicit_full_page_print_boxes_remain_supported(self):
+        with tempfile.TemporaryDirectory() as d:
+            for kind in ('INTERIOR', 'COVER'):
+                source = Path(d) / (kind + '-source.pdf')
+                target = Path(d) / (kind + '-boxes.pdf')
+                if kind == 'INTERIOR':
+                    font, spec = BookBoundsTests().spec()
+                    render_book(spec, [{'lines': ['gyp']}], font, source)
+                    inspect = lambda p: inspect_interior(p, spec)
+                else:
+                    image = Image.new('RGB', (600, 900), 'white')
+                    CoverPreflightTests().write_cover(source, image)
+                    inspect = lambda p: inspect_cover(p, image, 300)
+                with fitz.open(source) as doc:
+                    page = doc[0]
+                    for box in ('trimbox', 'bleedbox', 'artbox'):
+                        getattr(page, 'set_' + box)(page.cropbox)
+                    doc.save(target)
+                with self.subTest(kind=kind):
+                    self.assertTrue(inspect(target))
+
     def check_mutation(self, edit=None, save_options=None, expected='CONTENT_UNSUPPORTED'):
         # Both actual delivered formats use the same document/page policy.
         with tempfile.TemporaryDirectory() as d:

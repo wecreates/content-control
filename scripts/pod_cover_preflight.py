@@ -23,9 +23,12 @@ def inspect_cover(path, image, dpi):
         inspect_static_page(cover, page, 'COVER')
         # Check boxes before rasterization so malformed dimensions cannot
         # allocate an arbitrarily large render. Cropping/rotation are unsupported.
+        # The generated raster PDF has no separate print regions. Optional print
+        # boxes must agree too, even though they do not change preview pixels.
         if (page.rotation != 0 or any(
                 not math.isfinite(actual) or abs(actual - desired) > .01
-                for box in (page.mediabox, page.cropbox, page.rect)
+                for box in (page.mediabox, page.cropbox, page.rect,
+                            page.trimbox, page.bleedbox, page.artbox)
                 for actual, desired in zip(box, expected))):
             raise ValueError('COVER_PAGE_BOX_INVALID')
         if (page.get_links() or next(page.annots(), None) is not None or
