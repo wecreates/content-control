@@ -46,7 +46,9 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
   check('DATABASE_TLS',tls?.ssl===true);
   // NOINHERIT does not remove membership/SET ROLE capabilities. Conservatively
   // inspect every member role, including indirect memberships, and column ACLs.
-  // Required data access never includes permission to delegate it to others.
+  // Required data access never includes permission to delegate it to others or
+  // perform table maintenance. MAINTAIN was introduced in PostgreSQL 17;
+  // keep older servers readable without evaluating an unknown privilege.
   const tables=(await client.query(`SELECT c.relname,
    pg_has_role(current_user,c.relowner,'MEMBER') AS owns,
    has_table_privilege(current_user,c.oid,'SELECT') AS can_select,
@@ -57,7 +59,9 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
       THEN 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' ELSE 'DELETE,TRUNCATE,REFERENCES,TRIGGER' END)
      OR has_any_column_privilege(p.oid,c.oid,CASE WHEN c.relname='pod_schema_version'
       THEN 'INSERT,UPDATE,REFERENCES' ELSE 'REFERENCES' END)
-     OR has_any_column_privilege(p.oid,c.oid,'SELECT WITH GRANT OPTION,INSERT WITH GRANT OPTION,UPDATE WITH GRANT OPTION'))) AS excess
+     OR has_any_column_privilege(p.oid,c.oid,'SELECT WITH GRANT OPTION,INSERT WITH GRANT OPTION,UPDATE WITH GRANT OPTION')
+     OR CASE WHEN current_setting('server_version_num')::int>=170000
+      THEN has_table_privilege(p.oid,c.oid,'MAINTAIN') ELSE false END)) AS excess
    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
    WHERE n.nspname='public' AND c.relname=ANY($1::text[])`,[[...TABLES,'pod_schema_version']])).rows;
   check('POD_TABLE_PRIVILEGES',[...TABLES,'pod_schema_version'].every(name=>{

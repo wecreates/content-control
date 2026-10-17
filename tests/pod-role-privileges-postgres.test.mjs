@@ -91,6 +91,26 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
    assert.equal((await pool.query('SELECT has_any_column_privilege($1,$2,$3) AS ordinary',[role,'public.'+table,privilege])).rows[0].ordinary,true,label);
    await clean();
   }
+  // Relation-specific maintenance does not require the global pg_maintain role.
+  // Direct, indirectly reachable and PUBLIC grants must all block preflight.
+  // Inspect permission metadata only; do not execute maintenance operations.
+  for(const grantee of [runtime,group,'PUBLIC'])for(const table of ['pod_events','pod_schema_version']){
+   const role=grantee==='PUBLIC'?'PUBLIC':'"'+grantee+'"';
+   const label=`MAINTAIN on ${table} for ${grantee===runtime?'direct':grantee===group?'indirect':'PUBLIC'}`;
+   await pool.query(`GRANT MAINTAIN ON public.${table} TO ${role}`);
+   try{
+    assert.equal((await pool.query("SELECT pg_has_role($1,'pg_maintain','MEMBER') AS member",[runtime])).rows[0].member,false,label);
+    assert.equal((await pool.query("SELECT has_table_privilege($1,$2,'MAINTAIN') AS granted",[runtime,'public.'+table])).rows[0].granted,grantee!==group,label);
+    if(grantee===group){
+     assert.equal((await pool.query("SELECT has_table_privilege($1,$2,'MAINTAIN') AS granted",[group,'public.'+table])).rows[0].granted,true,label);
+     assert.equal((await pool.query("SELECT pg_has_role($1,$2,'SET') AS reachable",[runtime,group])).rows[0].reachable,true,label);
+    }
+    const report=await inspect();assert.equal(status(report,'DATABASE_READABLE'),'PASS',label);
+    assert.equal(status(report,'RESTRICTED_RUNTIME_ROLE'),'PASS',label);
+    assert.equal(status(report,'POD_TABLE_PRIVILEGES'),'BLOCKED',label);
+   }finally{await pool.query(`REVOKE MAINTAIN ON public.${table} FROM ${role}`);}
+   await clean();
+  }
   // Predefined administrative roles can have no elevated role attributes.
   // Inspect memberships only: never read/write server files, execute programs,
   // signal backends, checkpoint or maintain tables in this regression.
