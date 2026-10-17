@@ -4,6 +4,44 @@ import crypto from 'node:crypto';
 import pg from 'pg';
 import {migrate} from '../scripts/pod_storage_init.mjs';
 
+for(const rollbackFails of [false,true])test(`migration ${rollbackFails?'discards an unrolled-back backend':'reuses a successfully rolled-back backend'}`,
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+ const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:1});
+ const role='pod_cleanup_'+crypto.randomBytes(5).toString('hex');
+ const original=Error('STORAGE_EXPIRING');let checks=0,rollbacks=0,released;
+ try{
+  const before=(await pool.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  const borrowed={connect:async()=>{
+   const client=await pool.connect();
+   return {query:async(...args)=>{
+    if(args[0]==='ROLLBACK'){
+     rollbacks++;
+     // Inject a failed rollback before PostgreSQL receives it. The real
+     // transaction stays open until the real pg pool discards the backend.
+     if(rollbackFails)throw Error('fixture rollback transport failure');
+    }
+    return client.query(...args);
+   },release:destroy=>{released=Boolean(destroy);client.release(destroy);}};
+  }};
+  await assert.rejects(migrate(borrowed,role,undefined,{
+   provisionPassword:'fixture-cleanup-password-'.repeat(3),
+   assertActive:()=>{if(++checks===2)throw original;},
+  }),error=>error===original);
+  assert.equal(checks,2);assert.equal(rollbacks,1);assert.equal(released,rollbackFails);
+  assert.equal(pool.totalCount,rollbackFails?0:1);
+  const after=(await pool.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  assert.equal(after===before,!rollbackFails);
+  assert.equal((await pool.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount,0);
+  // A fresh transaction can acquire the migration lock after cleanup.
+  const client=await pool.connect();
+  try{
+   await client.query('BEGIN');await client.query("SET LOCAL lock_timeout='5s'");
+   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
+   await client.query('ROLLBACK');
+  }finally{client.release();}
+ }finally{await pool.end();}
+});
+
 test('invalid provision identity and short secrets fail before database access',async()=>{
  const pool={connect:()=>{throw Error('must not connect');}};
  await assert.rejects(migrate(pool,'unrelated_user',undefined,{provisionPassword:'a'.repeat(40)}),/PROVISION_CONFIG_INVALID/);
