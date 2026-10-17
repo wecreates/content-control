@@ -31,21 +31,29 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
   const role=(await client.query(`SELECT r.rolsuper,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
-   has_database_privilege(current_user,current_database(),'CREATE') AS db_create,
+   EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER')
+    AND has_database_privilege(p.oid,current_database(),'CREATE')) AS db_create,
    EXISTS(SELECT 1 FROM pg_roles p WHERE (p.rolsuper OR p.rolcreatedb OR p.rolcreaterole OR p.rolreplication OR p.rolbypassrls)
     AND pg_has_role(current_user,p.oid,'MEMBER')) AS elevated_membership,
-   EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname<>'information_schema'
-    AND has_schema_privilege(current_user,n.oid,'CREATE')) AS schema_create
+   EXISTS(SELECT 1 FROM pg_namespace n CROSS JOIN pg_roles p
+    WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname<>'information_schema'
+    AND pg_has_role(current_user,p.oid,'MEMBER') AND has_schema_privilege(p.oid,n.oid,'CREATE')) AS schema_create
    FROM pg_roles r WHERE r.rolname=current_user`)).rows[0];
   check('RESTRICTED_RUNTIME_ROLE',!!role&&Object.values(role).every(v=>v===false));
   const tls=(await client.query('SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()')).rows[0];
   check('DATABASE_TLS',tls?.ssl===true);
+  // NOINHERIT does not remove membership/SET ROLE capabilities. Conservatively
+  // inspect every member role, including indirect memberships, and column ACLs.
   const tables=(await client.query(`SELECT c.relname,
    pg_has_role(current_user,c.relowner,'MEMBER') AS owns,
    has_table_privilege(current_user,c.oid,'SELECT') AS can_select,
    has_table_privilege(current_user,c.oid,'INSERT') AS can_insert,
    has_table_privilege(current_user,c.oid,'UPDATE') AS can_update,
-   has_table_privilege(current_user,c.oid,'DELETE,TRUNCATE,REFERENCES,TRIGGER') AS excess
+   EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER') AND
+    (has_table_privilege(p.oid,c.oid,CASE WHEN c.relname='pod_schema_version'
+      THEN 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER' ELSE 'DELETE,TRUNCATE,REFERENCES,TRIGGER' END)
+     OR has_any_column_privilege(p.oid,c.oid,CASE WHEN c.relname='pod_schema_version'
+      THEN 'INSERT,UPDATE,REFERENCES' ELSE 'REFERENCES' END))) AS excess
    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
    WHERE n.nspname='public' AND c.relname=ANY($1::text[])`,[[...TABLES,'pod_schema_version']])).rows;
   check('POD_TABLE_PRIVILEGES',[...TABLES,'pod_schema_version'].every(name=>{
@@ -53,8 +61,10 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,no
    return t&&t.owns===false&&t.excess===false&&t.can_select===true&&
     (name==='pod_schema_version'?t.can_insert===false&&t.can_update===false:t.can_insert===true&&t.can_update===true);
   }));
-  const vault=(await client.query(`SELECT has_table_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS access,
-   has_any_column_privilege(current_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES') AS column_access,
+  const vault=(await client.query(`SELECT EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER')
+    AND has_table_privilege(p.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')) AS access,
+   EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER')
+    AND has_any_column_privilege(p.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')) AS column_access,
    pg_has_role(current_user,c.relowner,'MEMBER') AS owns
    FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relname='cyzor_social_vault'`)).rows;
   check('SOCIAL_VAULT_ISOLATED',vault.every(r=>r.access===false&&r.column_access===false&&r.owns===false));
