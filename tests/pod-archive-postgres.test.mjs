@@ -71,6 +71,37 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   const targetAgain=new PodDB({pool:restricted(reopened),bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
   await assert.rejects(restoreArtifactLibrary(targetAgain,{directory,key,env}),/ARCHIVE_AUTH_FAILED/);
   assert.equal((await reopened.query('SELECT count(*)::int AS n FROM public.pod_artifacts')).rows[0].n,2);
+  await fs.writeFile(broken,original);
+  // A separately created legacy fixture has no modern size constraint. Never
+  // weaken the migrated databases, their immutability triggers or live data.
+  const legacyName='pod_archive_legacy_'+token;
+  await owner.query(`CREATE DATABASE "${legacyName}" TEMPLATE template0`);created.push(legacyName);
+  const legacyURL=new URL(url);legacyURL.pathname='/'+legacyName;
+  const legacy=new pg.Pool({connectionString:legacyURL.toString(),max:1});pools.push(legacy);
+  await legacy.query('CREATE TABLE public.pod_artifacts(sha256 text PRIMARY KEY,body bytea NOT NULL,media_type text NOT NULL)');
+  await legacy.query(`GRANT SELECT,INSERT ON public.pod_artifacts TO "${role}"`);
+  const conflictingHash=[...hashes].sort()[0];
+  await legacy.query("INSERT INTO public.pod_artifacts VALUES($1,decode(repeat('61',16777217),'hex'),'application/json')",[conflictingHash]);
+  const boundedPool={connect:async()=>{
+   const client=await restricted(legacy).connect();
+   return {release:()=>client.release(),query:async(...args)=>{
+    const result=await client.query(...args);
+    if(args[0].startsWith('FETCH'))for(const row of result.rows){
+     assert.equal(row.body,null,'oversized export bytes must stay inside PostgreSQL');
+    }
+    if(args[0].includes('FROM public.pod_artifacts WHERE sha256='))for(const row of result.rows){
+     assert.equal(Object.hasOwn(row,'body'),false,'restore must not download existing bodies');
+     assert.equal(row.bytes,16777217);assert.equal(row.body_sha256,null);
+    }
+    return result;
+   }};
+  }};
+  const legacyDB=new PodDB({pool:boundedPool,bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
+  const rejectedDirectory=path.join(root,'oversized-export');
+  await assert.rejects(exportArtifactLibrary(legacyDB,{directory:rejectedDirectory,key}),/ARCHIVE_ARTIFACT_INVALID/);
+  await assert.rejects(fs.stat(path.join(rejectedDirectory,'catalog.pod')),error=>error.code==='ENOENT');
+  await assert.rejects(restoreArtifactLibrary(legacyDB,{directory,key,env}),/ARCHIVE_RESTORE_CONFLICT/);
+  assert.deepEqual((await legacy.query('SELECT count(*)::int AS n,max(octet_length(body)) AS bytes FROM public.pod_artifacts')).rows[0],{n:1,bytes:16777217});
  }finally{
   await Promise.all(pools.map(pool=>pool.end()));
   for(const name of created.reverse())await owner.query(`DROP DATABASE "${name}"`);

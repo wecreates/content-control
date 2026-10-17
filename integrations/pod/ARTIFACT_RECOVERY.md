@@ -35,6 +35,15 @@ encrypted catalog last. An incomplete directory without a valid catalog must not
 be treated as a backup. Partial encrypted files are left for inspection, never
 overwritten by a retry; use a new directory. A receipt reports only counts/bytes.
 
+Export also enforces the 16 MiB object bound in its SQL projection. An empty or
+oversized legacy row stays visible as an error without transferring its body to
+Node; it is never silently omitted from a successful backup. Restore compares
+existing object length, type and SHA-256 inside PostgreSQL without downloading
+existing bodies. A length mismatch skips hashing and fails the restore. These
+checks supplement the migrated table's size constraint and do not repair or
+discard corrupt history. The ordinary read-only snapshot, budget lock, rollback
+and immutable conflict rules still apply.
+
 Retain the completed archive on an owner-authorized independent durable medium.
 An archive left only on Render's ephemeral disk or in the expiring source database
 is not independent recovery. This feature neither selects a retention destination

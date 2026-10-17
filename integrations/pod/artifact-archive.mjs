@@ -57,7 +57,11 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
  try{
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   await client.query("SET LOCAL statement_timeout='10s'");
-  await client.query('DECLARE pod_artifact_export NO SCROLL CURSOR FOR SELECT sha256,media_type,body FROM public.pod_artifacts ORDER BY sha256');
+  // Keep invalid rows visible so export fails, but do not transfer an oversized
+  // legacy body into the low-memory process before checking its bound.
+  await client.query(`DECLARE pod_artifact_export NO SCROLL CURSOR FOR SELECT sha256,media_type,
+   CASE WHEN octet_length(body) BETWEEN 1 AND ${MAX_OBJECT} THEN body ELSE NULL END AS body
+   FROM public.pod_artifacts ORDER BY sha256`);
   while(true){
    signal?.throwIfAborted();const {rows}=await client.query('FETCH FORWARD 1 FROM pod_artifact_export');if(!rows.length)break;
    const row=rows[0];
@@ -96,8 +100,12 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   for(const item of catalog.items){
    signal?.throwIfAborted();
    const body=await readArtifact(item,options);
-   const existing=(await client.query('SELECT body,media_type FROM public.pod_artifacts WHERE sha256=$1',[item.sha256])).rows[0];
-   if(existing){if(existing.media_type!==item.media_type||!Buffer.isBuffer(existing.body)||!existing.body.equals(body))throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
+   // Compare immutable identity in PostgreSQL without downloading existing
+   // bytes. A length mismatch also skips hashing an oversized corrupt row.
+   const existing=(await client.query(`SELECT media_type,octet_length(body) AS bytes,
+    CASE WHEN octet_length(body)=$2 THEN encode(sha256(body),'hex') ELSE NULL END AS body_sha256
+    FROM public.pod_artifacts WHERE sha256=$1`,[item.sha256,item.bytes])).rows[0];
+   if(existing){if(existing.media_type!==item.media_type||existing.bytes!==item.bytes||existing.body_sha256!==item.sha256)throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
    await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);inserted++;
   }
