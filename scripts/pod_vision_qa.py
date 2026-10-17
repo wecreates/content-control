@@ -13,6 +13,7 @@ import numpy as np
 from PIL import Image
 from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign, PLATFORMS
 from pod_raster import open_raster
+from pod_qa_snapshot import capture_qa_inputs
 
 def resolution_checks(manifest, image, stored_dpi):
     """Derive physical size and native PPI; manifest claims alone are not proof."""
@@ -112,78 +113,76 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             required_files.update({'cover.pdf','interior.pdf','interior.receipt.json'})
         if not isinstance(m.get('files'),dict) or not required_files.issubset(m['files']):
             raise ValueError('PACKAGE_FILES_REQUIRED')
-        for name,sha in m['files'].items():
-            if digest(scoped_file(root,name))!=sha:
-                raise ValueError('FILE_HASH_MISMATCH')
-        report.update({'platform':m['platform'],'package_sha256':actual,'template_sha256':m['template_sha256'],
-                       'candidate_sha256':m['files']['print.png'],'reference_sha256':digest(reference)})
-        with open_raster(root/'print.png', m['size_px']) as f:
-            image=f.convert('RGB')
-            stored_dpi=f.info.get('dpi',(0,0))
-        with open_raster(root/'art-mask.png', image.size) as f:
-            art=f.convert('L')
-        with open_raster(root/'text-mask.png', image.size) as f:
-            text=f.convert('L')
-        report['checks']['geometry']=spatial_checks(m,image,art,text)
-        report['checks']['resolution']=resolution_checks(m,image,stored_dpi)
-        text_ok=True
-        for layer in m['expected_text']:
-            box=layer['box_px']
-            crop=image.crop((max(0,box[0]-12),max(0,box[1]-12),min(image.width,box[2]+12),min(image.height,box[3]+12)))
-            text_ok &= ocr(crop)==unicodedata.normalize('NFC',layer['text'])
-        # Whole-art OCR catches accidental extra lettering; no expected text requires empty OCR.
-        observed=ocr(image)
-        intended='\n'.join(x['text'] for x in m['expected_text'])
-        report['checks']['text']=bool(text_ok and observed==unicodedata.normalize('NFC',intended))
-        rights=verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
-        report['checks']['rights']=rights.get('status')=='PASS' and rights.get('package_sha256')==actual and rights.get('permanently_unpublished') is False
-        preflight=True
-        if m['platform']=='kdp':
-            interior=m['interior']
-            spec=interior['template']
-            receipt=interior['receipt']
-            if (read_json(scoped_file(root,'interior.receipt.json'))!=receipt or
-                receipt['interior_sha256']!=m['files']['interior.pdf'] or
-                receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
-                receipt['technical_checks_passed'] is not True or
-                spec['page_count']!=m['template']['kdp']['page_count']):
-                raise ValueError('INTERIOR_INVALID')
-            from pod_interior_preflight import inspect_interior, inspect_pairing
-            inspect_pairing(spec,m['template'])
-            inspect_interior(scoped_file(root,'interior.pdf'),spec)
-            from pod_cover_preflight import inspect_cover
-            preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
-        report['checks']['print_preflight']=bool(preflight)
-        if m['platform']=='kdp':
-            report['checks']['editorial']=False
-            if editorial_envelope is None:
-                raise ValueError('EDITORIAL_REVIEW_REQUIRED')
-            editorial=verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
-            report['checks']['editorial']=bool(editorial.get('verdict')=='PASS' and
-                editorial.get('package_sha256')==actual and
-                editorial.get('interior_sha256')==m['files']['interior.pdf'] and
-                editorial.get('evaluator_id') in (approved_editorial_evaluators or []) and
-                all(editorial.get('checks',{}).get(k) is True for k in EDITORIAL_CHECKS))
-        # Descriptive similarity is optional; the independent signed review remains mandatory.
-        report['openclip']={'status':'NOT_REQUESTED','scope':'descriptive_only_not_superiority'}
-        if descriptive_similarity:
-            report['openclip']={'status':'MEASURED','cosine_similarity':similarity(root/'print.png',reference),'scope':'descriptive_only_not_superiority'}
-        comparative=verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
-        # A reviewer/model service with independently calibrated criteria must attest the strict win.
-        # Merely choosing a larger CLIP threshold cannot produce this attestation.
-        report['checks']['competitive']=bool(comparative.get('package_sha256')==actual and
-            comparative.get('reference_sha256')==report['reference_sha256'] and
-            comparative.get('evaluator_id') in approved_evaluators and comparative.get('winner')=='candidate' and
-            comparative.get('all_dimensions_noninferior') is True and comparative.get('swapped_order_consistent') is True and
-            type(comparative.get('weighted_margin')) in (int,float) and
-            math.isfinite(comparative['weighted_margin']) and comparative['weighted_margin']>=.5)
-        # Slow PDF/model work must not extend the rights approval checked earlier.
-        verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
-        verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
-        report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'])
-        if m['platform']=='kdp':
-            verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
-            report['evidence_expires_at_ms']=min(report['evidence_expires_at_ms'],editorial['expires_at_ms'])
+        with capture_qa_inputs(root, reference, m['files']) as (root, reference):
+            report.update({'platform':m['platform'],'package_sha256':actual,'template_sha256':m['template_sha256'],
+                           'candidate_sha256':m['files']['print.png'],'reference_sha256':digest(reference)})
+            with open_raster(root/'print.png', m['size_px']) as f:
+                image=f.convert('RGB')
+                stored_dpi=f.info.get('dpi',(0,0))
+            with open_raster(root/'art-mask.png', image.size) as f:
+                art=f.convert('L')
+            with open_raster(root/'text-mask.png', image.size) as f:
+                text=f.convert('L')
+            report['checks']['geometry']=spatial_checks(m,image,art,text)
+            report['checks']['resolution']=resolution_checks(m,image,stored_dpi)
+            text_ok=True
+            for layer in m['expected_text']:
+                box=layer['box_px']
+                crop=image.crop((max(0,box[0]-12),max(0,box[1]-12),min(image.width,box[2]+12),min(image.height,box[3]+12)))
+                text_ok &= ocr(crop)==unicodedata.normalize('NFC',layer['text'])
+            # Whole-art OCR catches accidental extra lettering; no expected text requires empty OCR.
+            observed=ocr(image)
+            intended='\n'.join(x['text'] for x in m['expected_text'])
+            report['checks']['text']=bool(text_ok and observed==unicodedata.normalize('NFC',intended))
+            rights=verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
+            report['checks']['rights']=rights.get('status')=='PASS' and rights.get('package_sha256')==actual and rights.get('permanently_unpublished') is False
+            preflight=True
+            if m['platform']=='kdp':
+                interior=m['interior']
+                spec=interior['template']
+                receipt=interior['receipt']
+                if (read_json(scoped_file(root,'interior.receipt.json'))!=receipt or
+                    receipt['interior_sha256']!=m['files']['interior.pdf'] or
+                    receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
+                    receipt['technical_checks_passed'] is not True or
+                    spec['page_count']!=m['template']['kdp']['page_count']):
+                    raise ValueError('INTERIOR_INVALID')
+                from pod_interior_preflight import inspect_interior, inspect_pairing
+                inspect_pairing(spec,m['template'])
+                inspect_interior(scoped_file(root,'interior.pdf'),spec)
+                from pod_cover_preflight import inspect_cover
+                preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
+            report['checks']['print_preflight']=bool(preflight)
+            if m['platform']=='kdp':
+                report['checks']['editorial']=False
+                if editorial_envelope is None:
+                    raise ValueError('EDITORIAL_REVIEW_REQUIRED')
+                editorial=verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
+                report['checks']['editorial']=bool(editorial.get('verdict')=='PASS' and
+                    editorial.get('package_sha256')==actual and
+                    editorial.get('interior_sha256')==m['files']['interior.pdf'] and
+                    editorial.get('evaluator_id') in (approved_editorial_evaluators or []) and
+                    all(editorial.get('checks',{}).get(k) is True for k in EDITORIAL_CHECKS))
+            # Descriptive similarity is optional; the independent signed review remains mandatory.
+            report['openclip']={'status':'NOT_REQUESTED','scope':'descriptive_only_not_superiority'}
+            if descriptive_similarity:
+                report['openclip']={'status':'MEASURED','cosine_similarity':similarity(root/'print.png',reference),'scope':'descriptive_only_not_superiority'}
+            comparative=verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
+            # A reviewer/model service with independently calibrated criteria must attest the strict win.
+            # Merely choosing a larger CLIP threshold cannot produce this attestation.
+            report['checks']['competitive']=bool(comparative.get('package_sha256')==actual and
+                comparative.get('reference_sha256')==report['reference_sha256'] and
+                comparative.get('evaluator_id') in approved_evaluators and comparative.get('winner')=='candidate' and
+                comparative.get('all_dimensions_noninferior') is True and comparative.get('swapped_order_consistent') is True and
+                type(comparative.get('weighted_margin')) in (int,float) and
+                math.isfinite(comparative['weighted_margin']) and comparative['weighted_margin']>=.5)
+            # Slow PDF/model work must not extend the rights approval checked earlier.
+            verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
+            verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
+            report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'])
+            if m['platform']=='kdp':
+                verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
+                report['evidence_expires_at_ms']=min(report['evidence_expires_at_ms'],editorial['expires_at_ms'])
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
     required=('text','geometry','resolution','rights','competitive','print_preflight')
