@@ -8,6 +8,19 @@ Each cycle handles up to 20 events. Failed events remain durable and undelivered
 
 Shutdown aborts outbound requests and waits for worker and outbox loops before closing PostgreSQL. Network requests have a 15-second limit and disallow redirects. No new tables, cloud resources, or migration credentials are required.
 
+The running loop rechecks its host environment's POD_OUTBOX_ENABLED flag before
+each batch and after delivery settles. If it is no longer exactly true, the loop
+drains the current batch and becomes STOPPED without starting another. Changing
+the flag during a polling wait is observed when that wait ends (at most five
+minutes under the built-in backoff); it does not interrupt a batch already in
+flight. Use the lifecycle stop method for immediate cooperative request abort.
+An acknowledged delivery count returned while stopping is retained, but that
+stopped cycle does not refresh last_success_at or reset retry health. Re-enabling
+the environment flag does not restart a stopped lifecycle; the host must start a
+new one. This is an in-process configuration check, not remote configuration
+polling or a marketplace publication switch. Live disable/restart acceptance
+still requires the deployed authority and service.
+
 Acceptance still requires a real Money Factory inbox deployment, matching secrets, a stored event sent and acknowledged, restart/redelivery verification, and a verified upstream ledger mapping. Unit/CI success does not establish these live conditions. Do not enable this flag against an arbitrary webhook collector.
 
 ## Retrieve exact review packages
