@@ -13,8 +13,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});
  const job=await db.claimProduction();if(!job)return {status:'IDLE'};
  let task;
+ const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
-  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
   enabled();
   const envelope=await resolveGrant(job,{signal});
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
@@ -24,10 +24,13 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   enabled();
  };
  try{
+  enabled();
   const grant=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
+  enabled();
   enforceBrief(grant,job.brief);
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
-  task=await resolveTask(job);
+  task=await resolveTask(job,{signal});
+  enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
