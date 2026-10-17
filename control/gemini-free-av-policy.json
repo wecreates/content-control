@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project_id": "gen-lang-client-0010384080",
+  "model": "gemini-3.8-flash",
+  "service_tier": "standard",
+  "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing#gemini-3.8-flash",
+  "pricing_checked_at": "2026-10-17T16:02:00Z",
+  "pricing_expires_at": "2026-10-24T16:02:00Z",
+  "free_input": true,
+  "free_output": true,
+  "max_media_bytes": 209715200,
+  "max_duration_seconds": 600,
+  "processing_timeout_seconds": 300,
+  "publication_enabled": false,
+  "paid_fallback": false
+}
