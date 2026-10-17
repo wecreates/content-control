@@ -121,9 +121,12 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   }
   const body=Buffer.from(JSON.stringify(catalog));if(body.length>MAX_CATALOG)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
   disabled(env);signal?.throwIfAborted();await client.query('COMMIT');
+  signal?.throwIfAborted();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(directory,'catalog.pod'),encrypted);
   await syncArchiveDirectory(directory);
+  // Late cancellation can leave valid bytes, but must not report EXPORTED.
+  signal?.throwIfAborted();
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){

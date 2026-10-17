@@ -9,6 +9,7 @@ import {promisify} from 'node:util';
 import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
+import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
 function database(values=[]){
@@ -29,6 +30,12 @@ function database(values=[]){
  }};
 }
 async function workspace(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return path.join(root,'archive');}
+for(const phase of ['commit','catalog','parent'])test('artifact export rejects cancellation during '+phase,async t=>{
+ const directory=await workspace(t),db=database([Buffer.from('cancellation fixture')]);
+ await verifyExportCancellation(t,{db,directory,phase,
+  run:signal=>exportArtifactLibrary(db,{directory,key,signal}),
+  verify:()=>verifyArtifactLibrary({directory,key})});
+});
 for(const fault of [undefined,'archive:sync','parent:open','parent:sync'])test('artifact export requires complete directory flush: '+(fault||'success'),async t=>{
  const directory=await workspace(t);
  await verifyExportFlush(t,directory,()=>exportArtifactLibrary(database([Buffer.from('flush fixture')]),{directory,key}),{fault});

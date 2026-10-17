@@ -76,6 +76,9 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   // Written last: an interrupted export without this catalog is not restorable.
   await writeNew(path.join(directory,'catalog.pod'),seal(catalog,key,'pod:artifact-catalog:v1'));
   await syncArchiveDirectory(directory);
+  // Cancellation may arrive while the catalog or directory entries are
+  // being flushed. Completed writes do not authorize a success receipt.
+  signal?.throwIfAborted();
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){
   // An unsuccessful rollback leaves transaction state unknown. Never return
