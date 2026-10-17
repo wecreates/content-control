@@ -16,6 +16,13 @@ the durable review E2E inside the exact Dockerfile image. Database tests use onl
 the workflow's disposable local PostgreSQL service. The startup smoke retains
 both publication and production disabled. No image is pushed or deployed by this
 gate, and no cloud credentials are supplied when building or testing it.
+The local startup probe waits at most 60 seconds for `/api/print/status`, rejects
+redirects and invalid or oversized responses, and requires the service, production
+loop and outbox to be DISABLED with publication neither enabled nor requested.
+It checks image defaults without injecting enabling flags or cloud credentials.
+The shared `/health` route measures video acceptance and is not used as POD startup
+evidence. These image checks do not change Render's configured health route or
+replace the separate live deployment smoke.
 Additional OCR languages require installation and validation before jobs in those
 languages are enabled. A successful container gate is build/test evidence, not
 proof that Render has deployed that revision or that any live acceptance row passes.
