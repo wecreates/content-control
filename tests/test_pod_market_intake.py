@@ -231,6 +231,44 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         with self.assertRaises((ValueError, FileNotFoundError)):
             run(self.args)
 
+    def test_numeric_source_prices_preserve_decimal_identity(self):
+        for literal, expected in [('1234567890123456.78', '1234567890123456.78'),
+                                  ('0.10000000000000001', '0.10000000000000001'),
+                                  ('19.9900', '19.9900'), ('1.234567890123456789e-3', '0.001234567890123456789'),
+                                  ('1e400', '1E+400'), ('1e-400', '1E-400'),
+                                  ('9007199254740993', '9007199254740993'), ('0', '0'),
+                                  ('"19.9900"', '19.9900'), ('-1.25', None), ('"NaN"', None)]:
+            with self.subTest(literal=literal):
+                self.body = ('<script type="application/ld+json">{"@type":"Product",'
+                             '"name":"Fixture","offers":{"price":' + literal +
+                             ',"priceCurrency":"USD"}}</script>').encode()
+                self.html.write_bytes(self.body)
+                self.source['snapshot']['sha256'] = hashlib.sha256(self.body).hexdigest()
+                self.write_source()
+                result = run(self.args)
+                self.assertEqual(result['observations'][0]['price_decimal'], expected)
+                self.assertEqual(result['observations'][0]['currency'], 'USD')
+                self.assertEqual(result['source_sha256'], hashlib.sha256(self.body).hexdigest())
+                # Extracted values must remain serializable strings, never Decimal objects.
+                self.assertEqual(json.loads(json.dumps(result))['observations'][0]['price_decimal'], expected)
+                self.assertFalse(result['publication_enabled'])
+
+    def test_signed_intake_keeps_exact_numeric_price(self):
+        self.body = (b'<script type="application/ld+json">{"@type":"Product",'
+                     b'"name":"Fixture","offers":{"price":1234567890123456.78,'
+                     b'"priceCurrency":"USD"}}</script>')
+        self.html.write_bytes(self.body)
+        self.source['snapshot']['sha256'] = hashlib.sha256(self.body).hexdigest()
+        self.write_source()
+        with patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+             patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 0)
+            evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                'POD_INTAKE_KEY', 'content-control:pod:intake')
+        self.assertEqual(evidence['observations'][0]['price_decimal'], '1234567890123456.78')
+        self.assertEqual(evidence['source_sha256'], hashlib.sha256(self.body).hexdigest())
+        self.assertFalse(evidence['publication_enabled'])
+
     def test_offline_snapshot_requires_collection_authorization(self):
         self.source['collection_authorized'] = False
         self.write_source()

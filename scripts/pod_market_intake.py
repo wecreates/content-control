@@ -59,7 +59,10 @@ class ProductParser(HTMLParser):
         if tag == 'script' and self.capture:
             self.capture = False
             try:
-                self.records.append(json.loads(''.join(self.text)))
+                # Preserve numeric price tokens before they can be rounded or
+                # overflow/underflow through binary floating point. Extraction
+                # emits decimal strings; source bytes remain independently bound.
+                self.records.append(json.loads(''.join(self.text), parse_float=Decimal))
             except json.JSONDecodeError:
                 pass
 
