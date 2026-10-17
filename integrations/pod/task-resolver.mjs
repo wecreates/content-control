@@ -30,19 +30,24 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
   resolveGrant=async()=>{throw Error(code);};}
  return {
   resolveGrant,authorityReady,
-  resolveTask:async job=>{
+  resolveTask:async(job,{signal}={})=>{
+   const active=()=>{if(signal?.aborted)throw Error('PRODUCTION_STOPPED');};
+   active();
    if(typeof job.brief?.task_sha256!=='string'||!hash.test(job.brief.task_sha256))throw Error('TASK_REQUIRED');
    const descriptor=await store.get(job.brief.task_sha256);
+   active();
    if(descriptor.media_type!=='application/json'||descriptor.body.length>262144)throw Error('TASK_INVALID');
    const task=validateTask(JSON.parse(descriptor.body.toString('utf8')));
    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'cyzor-pod-'));
    const cleanup=()=>fs.rm(directory,{recursive:true,force:true});
    try{
+    active();
     let total=0;
     for(const [name,sha] of Object.entries(task.files)){
-     const artifact=await store.get(sha);total+=artifact.body.length;
+     const artifact=await store.get(sha);active();total+=artifact.body.length;
      if(total>64*1024*1024)throw Error('TASK_BUDGET_EXCEEDED');
      await fs.writeFile(path.join(directory,name),artifact.body,{flag:'wx',mode:0o600});
+     active();
     }
     const resolved={rights_verified:true,assetRoot:directory,output:path.join(directory,'package'),
      qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
