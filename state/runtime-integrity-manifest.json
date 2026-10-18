@@ -111,8 +111,8 @@
       "sha256": "89e7ce18f10d402142a76c5da6e66d31da6dbf5b352a521bed745b5926eb6678"
     },
     "scripts/persist_caption_evidence.py": {
-      "bytes": 8427,
-      "sha256": "bcc9fa4097403cf25b1b4c810bcda5ecb372eb9c777c4ee3f89ec033d8c1e01a"
+      "bytes": 9692,
+      "sha256": "10cece4e80b8831e6ea8b3cabf928ce5ca9ed6905a960bfb59edf4cc13f6311f"
     },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
