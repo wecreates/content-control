@@ -43,3 +43,7 @@ https://github.com/wecreates/Money-factory/actions/workflows/repository-integrat
 Access is controlled by the existing GitHub account; no new application password is
 required. Source changes automatically run the relevant checks. All reported passes
 remain limited to the named operations; production readiness remains false.
+
+## Optional ZeroGPU Wan assets
+
+The same private bridge supports Money Factory’s `wan21/generate-free` operation; see [free-wan-integration.md](free-wan-integration.md). It requires per-job approval for external image/prompt processing. The live anonymous provider test failed, so this is not a verified production path. Existing Remotion and QA gates remain authoritative.
