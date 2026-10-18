@@ -301,11 +301,15 @@ class Reviewer:
     def request(self, method, path, **kwargs):
         return self.http.request(method, API + path, headers=self.headers | kwargs.pop("headers", {}), **kwargs)
 
-    def check_file(self, file, name=None, media=None):
+    def check_file_name(self, file, name=None):
         require(isinstance(file, dict), "invalid_provider_file")
         file_name = file.get("name", "")
         require(isinstance(file_name, str) and re.fullmatch(r"files/[a-zA-Z0-9_-]+", file_name) is not None
                 and (name is None or name == file_name), "provider_file_identity_mismatch")
+        return file_name
+
+    def check_file(self, file, name=None, media=None):
+        file_name = self.check_file_name(file, name)
         require(file.get("uri") == API + "/v1beta/" + file_name
                 and file.get("mimeType") == "video/mp4", "provider_file_identity_mismatch")
         require(file.get("state") in ("PROCESSING", "ACTIVE", "FAILED"), "unknown_provider_file_state")
@@ -338,7 +342,10 @@ class Reviewer:
                 headers={"Content-Length": str(len(data)), "X-Goog-Upload-Offset": "0",
                          "X-Goog-Upload-Command": "upload, finalize"})
             file = uploaded.get("file") if isinstance(uploaded, dict) else None
-            name = self.check_file(file)
+            # Retain only a validated resource name before checking the remaining
+            # metadata, so malformed upload responses still get cleanup. Never
+            # construct the DELETE target from a provider-supplied URI.
+            name = self.check_file_name(file)
             self.check_file(file, name, media)
             deadline = self.monotonic() + self.policy["processing_timeout_seconds"]
             while file["state"] != "ACTIVE":
