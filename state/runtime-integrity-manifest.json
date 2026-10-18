@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "critical_file_count": 30,
+  "critical_file_count": 32,
   "entries": {
     "package-lock.json": {
       "bytes": 173740,
@@ -95,8 +95,12 @@
       "sha256": "a0e33d44fb0f6e7b348f475f40b9395baa4f2c9739a6bdba663835169f600c84"
     },
     "scripts/build_verified_captions.py": {
-      "bytes": 1169,
-      "sha256": "10cf021e8564ad1b8d9deb6cecdbce613d8cf05255738091c480d4b5abf916ab"
+      "bytes": 1470,
+      "sha256": "9882ad156a7a803800c02390411f074a57c677a0f33bc21027ba7dfc4c65f063"
+    },
+    "scripts/caption_contract.py": {
+      "bytes": 7204,
+      "sha256": "93f34ffbba07099d5ea270c4bd8e768a57f5771a029a916a83a8f29868911dc1"
     },
     "scripts/free_mobile_compat_qa.py": {
       "bytes": 2816,
@@ -106,13 +110,17 @@
       "bytes": 10082,
       "sha256": "89e7ce18f10d402142a76c5da6e66d31da6dbf5b352a521bed745b5926eb6678"
     },
+    "scripts/persist_caption_evidence.py": {
+      "bytes": 8427,
+      "sha256": "bcc9fa4097403cf25b1b4c810bcda5ecb372eb9c777c4ee3f89ec033d8c1e01a"
+    },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
       "sha256": "50be46e1f9c50eff4f7bb89a9cbabd6495094a94e86bea83de079f685d8823e4"
     },
     "scripts/verify_captions.py": {
-      "bytes": 2322,
-      "sha256": "a86a5fc38fa2ab2bcc305821cd47a713c5f678281a75d24ba1d99621429b8bf8"
+      "bytes": 3992,
+      "sha256": "bf0c464379502bbb17a8af14b46eb2eed6cf5fdbe9af72350e5f9bc30eed057c"
     },
     "server-lowmem.js": {
       "bytes": 28413,
