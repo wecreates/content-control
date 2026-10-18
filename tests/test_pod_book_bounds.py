@@ -78,6 +78,68 @@ class InteriorGlyphTests(unittest.TestCase):
                 self.assertTrue(all(c[1] != 0 for c in chars))
             self.assertTrue(inspect_interior(path,spec))
 
+class InteriorClippingTests(unittest.TestCase):
+    def fixture(self, root, mode):
+        _, spec = BookBoundsTests().spec()
+        target = root/(mode+'.pdf')
+        pdf = pdfcanvas.Canvas(str(target), pagesize=(144,144), invariant=1)
+        pdf.saveState()
+        if mode in ('partial','hidden','hole'):
+            path = pdf.beginPath()
+            if mode == 'hole':
+                path.rect(0,0,144,144)
+                path.rect(40,96,20,24)
+            else:
+                path.rect(0,0,40 if mode == 'partial' else 10,144)
+            pdf.clipPath(path,stroke=0,fill=0,fillMode=0)
+        pdf.setFont('Helvetica',12)
+        pdf.drawString(27,108,'Clipped text')
+        pdf.restoreState()
+        if mode == 'hidden':
+            pdf.setFont('Helvetica',12)
+            pdf.drawString(27,84,'Visible text')
+        pdf.showPage();pdf.save()
+        return target,spec
+
+    def test_partial_clip_rejected_when_text_is_still_extractable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);normal,_=self.fixture(root,'normal');clipped,spec=self.fixture(root,'partial')
+            with fitz.open(normal) as original, fitz.open(clipped) as edited:
+                self.assertEqual(edited[0].get_text().strip(),'Cli')
+                self.assertEqual(edited[0].get_drawings(),[])
+                original_ink=sum(p<250 for p in original[0].get_pixmap(colorspace=fitz.csGRAY).samples)
+                clipped_ink=sum(p<250 for p in edited[0].get_pixmap(colorspace=fitz.csGRAY).samples)
+                self.assertGreater(clipped_ink,0)
+                self.assertLess(clipped_ink,original_ink)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_CONTENT_UNSUPPORTED$'):
+                inspect_interior(clipped,spec)
+
+    def test_hidden_line_cannot_pass_alongside_visible_text(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path,spec=self.fixture(Path(tmp),'hidden')
+            with fitz.open(path) as doc:
+                self.assertEqual(doc[0].get_text().strip(),'Visible text')
+                self.assertEqual(len(doc[0].get_texttrace()),2)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_CONTENT_UNSUPPORTED$'):
+                inspect_interior(path,spec)
+
+    def test_even_odd_hole_rejected_despite_full_page_clip_bounds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);normal,_=self.fixture(root,'normal');path,spec=self.fixture(root,'hole')
+            with fitz.open(normal) as original, fitz.open(path) as edited:
+                clips=[p for p in edited[0].get_drawings(extended=True) if p['type']=='clip']
+                self.assertEqual(len(clips),1)
+                self.assertEqual(clips[0]['scissor'],edited[0].rect)
+                self.assertNotEqual(original[0].get_pixmap().samples,edited[0].get_pixmap().samples)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_CONTENT_UNSUPPORTED$'):
+                inspect_interior(path,spec)
+
+    def test_save_restore_without_clipping_remains_supported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path,spec=self.fixture(Path(tmp),'normal')
+            self.assertTrue(inspect_interior(path,spec))
+
+
 class BookFontSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

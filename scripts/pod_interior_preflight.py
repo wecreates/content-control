@@ -111,7 +111,13 @@ def inspect_interior(path, spec):
                             raise ValueError('INTERIOR_TEXT_BOUNDS_FAILED')
             # The current contract is text-only. Images, drawings, forms and
             # annotations require a separate supported contract and validation.
+            # Ordinary drawings omit clipping paths. A clip may remove part of
+            # a line (or an entire line beside visible text) while text traces
+            # still report black, in-bounds glyphs. Even a full-page scissor can
+            # contain an even-odd hole, so do not infer safety from clip bounds.
             if (page.get_images() or page.get_drawings() or
+                    any(operation['type'] == 'clip'
+                        for operation in page.get_drawings(extended=True)) or
                     next(page.annots(), None) is not None or next(page.widgets(), None) is not None):
                 raise ValueError('INTERIOR_CONTENT_UNSUPPORTED')
     return True

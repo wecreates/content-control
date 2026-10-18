@@ -64,3 +64,17 @@ Regression fixtures cover missing glyphs on first/later pages, a misleading but
 textually correct ToUnicode map, and supported accented/Greek/Cyrillic text.
 PyMuPDF documents the trace's separate Unicode and glyph fields at
 https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_texttrace
+
+The same text-only preflight rejects clipping paths as
+`INTERIOR_CONTENT_UNSUPPORTED`. Ordinary drawing extraction omits these paths;
+the extended display-list inspection exposes them. A clip can cut off a word or
+hide a whole line while another line remains visible, without changing reported
+text color, opacity or glyph bounds. Even a clip whose bounding rectangle covers
+the full page may contain an even-odd hole, so bounds alone cannot authorize it.
+Clipping is outside the current renderer contract, including otherwise harmless
+clips. Ordinary graphics-state save/restore without clipping remains supported.
+Fixtures verify actual pixel loss, partially extractable text, hidden text beside
+visible text and a full-page clip with a hole. This is a technical content check;
+editorial and independent visual approval remain separate requirements.
+The parser's extended clipping output is documented at
+https://pymupdf.readthedocs.io/en/latest/page.html#Page.get_drawings
