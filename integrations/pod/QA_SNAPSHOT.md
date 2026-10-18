@@ -68,3 +68,29 @@ Seven regression tests cover five late stage failures followed by genuine
 reproducible rendering, corrected worker-font input, KeyboardInterrupt, existing
 output/symlink protection, concurrent replacements and denied cleanup. Fixtures
 are synthetic and supply no official-template, rights, editorial or live evidence.
+
+
+## Review CLI cancellation
+
+The local Node review CLI uses the production worker's existing Python-stage
+supervisor. SIGTERM and SIGINT abort generation, terminate the child's POSIX
+process group, escalate to SIGKILL after five seconds and wait for settlement
+before returning failure. A cooperative child exiting zero after cancellation
+does not turn cancellation into success. A normally exiting parent that leaves
+process-group descendants also fails after cleanup.
+
+The four-minute stage deadline and forced false publication flags remain in
+place. Combined stdout/stderr is bounded to 1 MiB; stdout is emitted only after
+successful settlement, and failure prints REVIEW_GENERATION_FAILED without
+forwarding child diagnostics. Input, font and destination paths are resolved
+against the caller's working directory before the supervisor switches to the
+repository root. Successful JSON output is preserved.
+
+Seven real subprocess fixtures cover both cancellation signals, resistant
+children/descendants, leftover descendants after zero exit, relative paths,
+publication flags and diagnostic redaction. The shared supervisor retains its
+own deadline and output-budget tests. These checks establish process lifecycle
+behavior on POSIX, not live recovery, capacity or independent review. Abrupt
+Node SIGKILL, descendants that escape the process group and adversarial processes
+are outside this guarantee; default Python SIGTERM can still leave partial output
+for manual recovery. No publication or marketplace readiness is granted.
