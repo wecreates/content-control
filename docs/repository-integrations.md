@@ -43,3 +43,33 @@ https://github.com/wecreates/Money-factory/actions/workflows/repository-integrat
 Access is controlled by the existing GitHub account; no new application password is
 required. Source changes automatically run the relevant checks. All reported passes
 remain limited to the named operations; production readiness remains false.
+
+## Independent verification scopes and aggregate HTTP status
+
+The hosted response's existing `status` remains the original eight-operation CPU
+suite result for compatibility. It does not include `additional_tools`: REA has
+five independently verified operations, VoiceStudio has one, and YouTube Agent
+Skill has six. Each retains its own workflow, receipts, freshness and runtime status.
+All evidence files still come from the single immutable `evidence_snapshot_revision`.
+
+`aggregate_status` is `HOSTED_REQUIRED_OPERATIONS_VERIFIED` only when the original
+suite and every required configured additional tool pass. Otherwise it is
+`HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED`. Hosted HTTP responses preserve the legacy
+contract: 200 for original-suite verification and 503 otherwise. Consumers requiring
+all configured operation evidence must inspect `aggregate_status`, not HTTP 200.
+Missing, failed, running, stale, malformed or unavailable additional evidence cannot
+produce aggregate verification. Local source-configuration responses are unchanged.
+
+`expected_operation_count` and `verified_operation_count` count the original eight
+plus required configured additional operations (20 when all three tools above are
+required). Additional tools default to required; an explicit registry
+`required_for_production: false` excludes that tool from the aggregate and its counts,
+but its independent status remains visible. `expected_operations` and
+`required_for_aggregate` expose that scope per additional tool. An unknown required
+tool, duplicate configured tool identity or unavailable registry leaves the expected count `null` and fails aggregate
+verification closed. Only fully verified suites/tools contribute to the verified count.
+Wan's CUDA/model requirement remains separate from these named hosted operations.
+
+Neither aggregate success nor operation counts assert provider production health,
+creative approval, persistent service readiness or publishing readiness.
+`production_ready`, `publication_enabled` and `paid_generation_enabled` remain false.

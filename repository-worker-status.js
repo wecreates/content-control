@@ -77,7 +77,21 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
     if(inflight)return inflight;
     inflight=read().catch(()=>({backend:'github-actions',status:'HOSTED_EVIDENCE_UNAVAILABLE',
       production_ready:false,publication_enabled:false,paid_generation_enabled:false}))
-      .then(result=>{cached=result;expires=now()+cacheMs;return result;})
+      .then(result=>{
+        const required=result.additional_tools?.filter(entry=>entry.required_for_aggregate);
+        const known=required!==undefined && required.every(entry=>Array.isArray(entry.expected_operations)) &&
+          new Set(result.additional_tools.map(entry=>entry.id)).size===result.additional_tools.length;
+        const originalVerified=result.status==='HOSTED_CPU_OPERATIONS_VERIFIED';
+        const verifiedAdditional=[...new Map((required ?? [])
+          .filter(entry=>entry.runtime_status==='HOSTED_OPERATIONS_VERIFIED').map(entry=>[entry.id,entry])).values()];
+        const aggregateVerified=known && originalVerified && verifiedAdditional.length===required.length;
+        cached={...result,
+          aggregate_status:aggregateVerified?'HOSTED_REQUIRED_OPERATIONS_VERIFIED':'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED',
+          aggregate_scope:'Original CPU suite and required configured additional hosted operations only; not provider, creative, production or publishing readiness',
+          expected_operation_count:known?8+required.reduce((sum,entry)=>sum+entry.expected_operations.length,0):null,
+          verified_operation_count:(originalVerified?8:0)+verifiedAdditional.reduce((sum,entry)=>sum+entry.verified_operations.length,0)};
+        expires=now()+cacheMs;return cached;
+      })
       .finally(()=>{inflight=null;});
     return inflight;
   };

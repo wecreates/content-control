@@ -14,6 +14,7 @@ export function createRepositoryIntegrationRouter({moneyFactoryRoot=process.env.
       repository:'https://github.com/wecreates/Money-factory/tree/main/integrations'};
     if(backend==='github-actions') {
       const status=await hostedStatus();
+      // HTTP compatibility covers the original suite; consumers must inspect aggregate_status.
       const ok=status.status==='HOSTED_CPU_OPERATIONS_VERIFIED';
       return res.status(ok?200:503).json({...base,...status});
     }
