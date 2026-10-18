@@ -240,6 +240,50 @@ class AdapterTests(unittest.TestCase):
             self.assertEqual(self.http.inference_calls(), [])
             self.assertEqual(result["uploaded_file_cleanup"], "deleted")
 
+    def test_malformed_upload_metadata_cleans_up_validated_resource_name(self):
+        for mutation in ({"state": "UNKNOWN"}, {"state": None}, {"mimeType": "text/plain"},
+                         {"uri": "https://evil.example/file"}, {"uri": []}):
+            with self.subTest(mutation=mutation):
+                self.http = FakeHTTP()
+                self.http.file.update(mutation)
+                result = self.run_review()
+                self.assertEqual(result["status"], "BLOCKED")
+                self.assertEqual(result["uploaded_file_cleanup"], "deleted")
+                self.assertEqual(self.http.inference_calls(), [])
+                deletes = [url for method, url, _ in self.http.calls if method == "DELETE"]
+                self.assertEqual(deletes, [av.API + "/v1beta/files/test-file"])
+                for flag in ("publication_enabled", "production_approved", "full_video_review", "full_audio_review", "ready"):
+                    self.assertIs(result[flag], False)
+
+    def test_malformed_upload_resource_name_never_becomes_cleanup_target(self):
+        for name in (None, [], "", "files/../other", "files/test-file/other", "files/test-file?other",
+                     "files/test-file#other", "https://evil.example/files/test-file"):
+            with self.subTest(name=name):
+                self.http = FakeHTTP()
+                self.http.file["name"] = name
+                result = self.run_review()
+                self.assertEqual(result["status"], "BLOCKED")
+                self.assertEqual(result["uploaded_file_cleanup"], "not_created_or_identifier_unavailable")
+                self.assertEqual(self.http.inference_calls(), [])
+                self.assertFalse(any(method == "DELETE" for method, _, _ in self.http.calls))
+
+    def test_poll_identity_mismatch_only_cleans_up_original_upload(self):
+        class ChangedFile(FakeHTTP):
+            def request(self, method, url, **kwargs):
+                value, headers = super().request(method, url, **kwargs)
+                if method == "GET" and url == av.API + "/v1beta/files/test-file":
+                    value.update(name="files/other", uri=av.API + "/v1beta/files/other")
+                return value, headers
+        self.http = ChangedFile()
+        self.http.file["state"] = "PROCESSING"
+        result = self.run_review(sleep=lambda _: None)
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["reason"], "provider_file_identity_mismatch")
+        self.assertEqual(result["uploaded_file_cleanup"], "deleted")
+        self.assertEqual(self.http.inference_calls(), [])
+        self.assertEqual([url for method, url, _ in self.http.calls if method == "DELETE"],
+                         [av.API + "/v1beta/files/test-file"])
+
     def test_inference_errors_do_not_retry_or_fallback(self):
         for reason in ("provider_http_429", "provider_http_500", "provider_transport_error"):
             self.http = FakeHTTP()
