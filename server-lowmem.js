@@ -45,19 +45,34 @@ fs.mkdirSync(path.dirname(output),{recursive:true});
 const validationProcess=createValidationProcess();
 const renderState=validationProcess.state;
 const runV2Tick=()=>validationProcess.run();
-function readJson(p){try{return JSON.parse(fs.readFileSync(p,"utf8"));}catch{return null;}}
+function fileIdentity(stat){return [stat.dev,stat.ino,stat.size,stat.mtimeMs,stat.ctimeMs].join(":");}
+function readJson(p){
+  let fd;
+  try{
+    fd=fs.openSync(p,fs.constants.O_RDONLY|fs.constants.O_NONBLOCK);
+    const before=fs.fstatSync(fd),limit=512*1024;
+    if(!before.isFile()||before.size<=0||before.size>limit)return null;
+    const buffer=Buffer.allocUnsafe(limit+1);let size=0,n;
+    while(size<buffer.length&&(n=fs.readSync(fd,buffer,size,buffer.length-size,null))>0)size+=n;
+    if(size>limit||size!==before.size||fileIdentity(fs.fstatSync(fd))!==fileIdentity(before)||fileIdentity(fs.statSync(p))!==fileIdentity(before))return null;
+    return JSON.parse(buffer.subarray(0,size).toString('utf8'));
+  }catch{return null;}finally{if(fd!==undefined)fs.closeSync(fd);}
+}
 function readHealth(){return readJson(healthPath);}
 function readCaptionHealth(){return readJson(captionHealthPath);}
 function fileHash(p){
-  if(!fs.existsSync(p)) return null;
-  const h=crypto.createHash("sha256");
-  const fd=fs.openSync(p,"r");
+  let fd;
   try{
+    fd=fs.openSync(p,fs.constants.O_RDONLY|fs.constants.O_NONBLOCK);
+    const before=fs.fstatSync(fd),limit=512*1024*1024;
+    if(!before.isFile()||before.size<=0||before.size>limit)return null;
+    const h=crypto.createHash("sha256");
     const buf=Buffer.allocUnsafe(1024*1024);
-    let n=0;
-    while((n=fs.readSync(fd,buf,0,buf.length,null))>0) h.update(buf.subarray(0,n));
-  }finally{fs.closeSync(fd);}
-  return h.digest("hex");
+    let n=0,size=0;
+    while((n=fs.readSync(fd,buf,0,buf.length,null))>0){size+=n;if(size>limit)return null;h.update(buf.subarray(0,n));}
+    if(size!==before.size||fileIdentity(fs.fstatSync(fd))!==fileIdentity(before)||fileIdentity(fs.statSync(p))!==fileIdentity(before))return null;
+    return h.digest("hex");
+  }catch{return null;}finally{if(fd!==undefined)fs.closeSync(fd);}
 }
 function episode2Acceptance(){
   const h=readJson(episode2HealthPath);
@@ -196,12 +211,13 @@ app.get("/media",(req,res)=>{
     res.setHeader("Cache-Control","no-store");
     return res.status(409).json({error:"accepted artifact unavailable or hash mismatch",publication:false});
   }
+  if(req.query.sha256!==undefined&&req.query.sha256!==a.expected){res.setHeader("Cache-Control","no-store, max-age=0");return res.status(409).json({error:"requested media identity changed",publication:false});}
   const stat=fs.statSync(output);
   const total=stat.size;
   const range=req.headers.range;
   res.setHeader("Accept-Ranges","bytes");
   res.setHeader("ETag",`"${a.expected}"`);
-  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("Content-Type","video/mp4");
 
   if(range){
@@ -233,21 +249,24 @@ app.get("/captions",(req,res)=>{
     res.setHeader("Cache-Control","no-store");
     return res.status(409).json({error:"verified captions unavailable",publication:false});
   }
+  if(req.query.sha256!==undefined&&req.query.sha256!==a.captionHash){res.setHeader("Cache-Control","no-store, max-age=0");return res.status(409).json({error:"requested caption identity changed",publication:false});}
   const tag=a.captionHash;
   res.setHeader("Content-Type","text/vtt; charset=utf-8");
-  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("ETag",`"${tag}"`);
   fs.createReadStream(captionsPath).pipe(res);
 });
 
 
 function streamMp4(req,res,file,etag){
+  res.setHeader("Cache-Control","no-store, max-age=0");
+  if(req.query.sha256!==undefined&&req.query.sha256!==etag)return res.status(409).json({error:"requested media identity changed",publication:false});
   const stat=fs.statSync(file);
   const total=stat.size;
   const range=req.headers.range;
   res.setHeader("Accept-Ranges","bytes");
   res.setHeader("ETag",`"${etag}"`);
-  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("Content-Type","video/mp4");
   if(range){
     const m=/bytes=(\d*)-(\d*)/.exec(String(range));
@@ -295,7 +314,7 @@ app.get("/episode2/watch",(req,res)=>{
   const a=episode2Acceptance();
   const short=(a.expected||"unverified").slice(0,12);
   const body=a.ready
-    ? '<video controls playsinline preload="metadata" src="/episode2/media"></video>'
+    ? '<video controls playsinline preload="metadata" src="/episode2/media?sha256='+a.expected+'"></video>'
     : '<p>Episode 2 is still in QA. This page will activate only after the exact artifact is accepted.</p><script>setTimeout(()=>location.reload(),5000)</script>';
   res.setHeader("Cache-Control","no-store");
   res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control — Episode 2</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{display:block;width:100%;max-height:90vh;background:#f5f5f5;border:1px solid #dedede;border-radius:14px}small{color:#666}</style><main><h2>Your Credit Card Became a Coupon Book</h2>${body}<p><small>EPISODE 2 • hash ${short} • publication disabled</small></p></main>`);
@@ -314,8 +333,9 @@ app.get("/episode3/media",(req,res)=>{
 app.get("/episode3/captions",(req,res)=>{
   const a=episode3Acceptance();
   if(!a.captionReady){res.setHeader("Cache-Control","no-store");return res.status(409).json({error:"Episode 3 verified captions unavailable",publication:false});}
+  if(req.query.sha256!==undefined&&req.query.sha256!==a.captionHash){res.setHeader("Cache-Control","no-store, max-age=0");return res.status(409).json({error:"requested caption identity changed",publication:false});}
   res.setHeader("Content-Type","text/vtt; charset=utf-8");
-  res.setHeader("Cache-Control","public, max-age=31536000, immutable");
+  res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("ETag",`"${a.captionHash}"`);
   fs.createReadStream(episode3CaptionsPath).pipe(res);
 });
@@ -324,7 +344,7 @@ app.get("/episode3/watch",(req,res)=>{
   const short=(a.expected||"unverified").slice(0,12);
   const ready=Boolean(a.ready);
   const body=ready
-    ? '<div class="player-wrap"><div id="loadingCard" class="loading-card"><div class="spinner"></div><strong>Loading verified video…</strong><span style="margin-top:8px;color:#666">The page will stay visible while media buffers.</span></div><video id="player" controls playsinline preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%221280%22%3E%3Crect width=%22720%22 height=%221280%22 fill=%22%23f5f5f5%22/%3E%3Ctext x=%22360%22 y=%22640%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22%23666%22%3ELoading video…%3C/text%3E%3C/svg%3E" src="/episode3/media"><track kind="captions" src="/episode3/captions" srclang="en" label="English" default></video></div><p id="status">Checking media…</p>'
+    ? '<div class="player-wrap"><div id="loadingCard" class="loading-card"><div class="spinner"></div><strong>Loading verified video…</strong><span style="margin-top:8px;color:#666">The page will stay visible while media buffers.</span></div><video id="player" controls playsinline preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%221280%22%3E%3Crect width=%22720%22 height=%221280%22 fill=%22%23f5f5f5%22/%3E%3Ctext x=%22360%22 y=%22640%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22%23666%22%3ELoading video…%3C/text%3E%3C/svg%3E" src="/episode3/media?sha256='+a.expected+'"><track kind="captions" src="/episode3/captions?sha256='+a.captionHash+'" srclang="en" label="English" default></video></div><p id="status">Checking media…</p>'
     : '<section class="pending"><div class="spinner"></div><h3>Video is not ready yet.</h3><p>The review page is working, but the Episode 3 render has not passed hash-bound QA yet.</p><p><a href="/watch">Open the last verified video</a></p></section>';
   res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("Pragma","no-cache");
@@ -352,10 +372,10 @@ app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
   res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,creativeHandoff:a.handoff,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:v2Draft().ready?"free_dialogue_generated_review_pending":"free_generation_pending",voiceProvider:"kokoro_local_cpu",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
 });
-app.get("/v2/media",(req,res)=>{const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
+app.get("/v2/media",(req,res)=>{res.setHeader("Cache-Control","no-store, max-age=0");const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{
  const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
- const body=a.ready?'<video controls playsinline preload="metadata" src="/v2/media"></video>':'<p>V2 has not passed the complete production contract yet.</p>';
+ const body=a.ready?'<video controls playsinline preload="metadata" src="/v2/media?sha256='+a.expected+'"></video>':'<p>V2 has not passed the complete production contract yet.</p>';
  res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:16px}main{max-width:560px;margin:auto}video{width:100%;max-height:90vh;background:#f5f5f5;border-radius:14px}</style><main><h2>Content Control V2</h2>${body}<p>Publication disabled</p></main>`);
 });
 app.get("/clone/health",(req,res)=>{
@@ -368,14 +388,14 @@ app.get("/clone/media",(req,res)=>{
 });
 app.get("/clone/watch",(req,res)=>{
   const a=referenceCloneAcceptance();const short=(a.expected||"unverified").slice(0,12);
-  const body=a.ready?'<video controls playsinline preload="metadata" src="/clone/media"></video>':'<section class="pending"><h3>Clone proof is not ready yet.</h3><p>The page remains available while QA/rendering completes.</p></section>';
+  const body=a.ready?'<video controls playsinline preload="metadata" src="/clone/media?sha256='+a.expected+'"></video>':'<section class="pending"><h3>Clone proof is not ready yet.</h3><p>The page remains available while QA/rendering completes.</p></section>';
   res.setHeader("Cache-Control","no-store, max-age=0");res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control Clone Review</title><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:16px}main{max-width:560px;margin:auto}video{width:100%;background:#f5f5f5;border:1px solid #ddd;border-radius:14px}.pending{min-height:55vh;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px solid #ddd;border-radius:14px}small{color:#666}</style><main><h2>Reference Clone Proof</h2>${body}<p><small>hash ${short} • publication disabled</small></p></main>`);
 });
 app.get("/watch",(req,res)=>{
   const a=acceptance();
   const short=(a.expected||"unverified").slice(0,12);
   const body=a.ready
-    ? '<video controls playsinline preload="metadata" src="/media"><track kind="captions" src="/captions" srclang="en" label="English" default></video>'
+    ? '<video controls playsinline preload="metadata" src="/media?sha256='+a.expected+'"><track kind="captions" src="/captions?sha256='+a.captionHash+'" srclang="en" label="English" default></video>'
     : '<p>Accepted artifact is not ready. Repair pipeline required.</p><script>setTimeout(()=>location.reload(),5000)</script>';
   res.setHeader("Cache-Control","no-store");
   res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{display:block;width:100%;max-height:90vh;background:#f5f5f5;border:1px solid #dedede;border-radius:14px}small{color:#666}</style><main><h2>Content Control Review</h2>${body}<p><small>FREE_QA • hash ${short} • publication disabled</small></p></main>`);
@@ -404,3 +424,4 @@ function shutdown(signal){
 }
 process.on("SIGTERM",()=>shutdown("SIGTERM"));
 process.on("SIGINT",()=>shutdown("SIGINT"));
+

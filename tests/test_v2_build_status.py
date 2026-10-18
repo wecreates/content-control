@@ -1,6 +1,7 @@
 import json,tempfile,unittest,hashlib
+from unittest.mock import patch
 from pathlib import Path
-from scripts.v2_build_status import summarize,should_replace,RECEIPTS,classify_readiness
+from scripts.v2_build_status import summarize,should_replace,RECEIPTS,classify_readiness,CHECKED_RECEIPTS
 class BuildStatusTests(unittest.TestCase):
  def test_absent_failed_and_invalid_receipts_never_approve(self):
   with tempfile.TemporaryDirectory() as tmp:
@@ -10,7 +11,7 @@ class BuildStatusTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    root=Path(tmp)
    for rel in RECEIPTS.values():
-    p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps({'status':'PASS','publication_enabled':False,'candidate_sha256':hashlib.sha256(b'identity fixture').hexdigest()}))
+    p=root/rel;p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps({'status':'PASS','publication_enabled':False,'candidate_sha256':hashlib.sha256(b'identity fixture').hexdigest(),'checks':{'fixture_verified':True}}))
    (root/'render').mkdir();(root/'render/v2-boss-fight.mp4').write_bytes(b'identity fixture')
    r=summarize(root,123,'a'*40,'success');self.assertEqual(r['status'],'REVIEW_REQUIRED');self.assertFalse(r['production_approved']);self.assertFalse(r['publication_enabled'])
    p=root/RECEIPTS['voices'];p.write_text(json.dumps({'status':'PASS','publication_enabled':True}));self.assertEqual(summarize(root,123,'a'*40,'success')['checks']['voices']['status'],'BLOCKED')
@@ -47,3 +48,35 @@ class BuildStatusTests(unittest.TestCase):
  def test_invalid_identity_rejected(self):
   with self.assertRaises(ValueError):summarize('.',True,'a'*40,'success')
   with self.assertRaises(ValueError):summarize('.',123,'main','success')
+ def fixture_receipts(self,root,payload=b'identity fixture'):
+  video=root/'render/v2-boss-fight.mp4';video.parent.mkdir(parents=True);video.write_bytes(payload)
+  for name,relative in RECEIPTS.items():
+   receipt={'status':'PASS','publication_enabled':False,'candidate_sha256':hashlib.sha256(payload).hexdigest()}
+   if name in CHECKED_RECEIPTS:receipt['checks']={'fixture_verified':True}
+   target=root/relative;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(receipt))
+ def test_empty_candidate_is_not_generated_even_with_pass_labels(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);self.fixture_receipts(root,b'');result=summarize(root,123,'a'*40,'success')
+   self.assertIsNone(result['candidate_sha256']);self.assertFalse(result['candidate_generated']);self.assertEqual(result['technical_status'],'BLOCKED')
+ def test_checked_receipts_require_explicit_nonempty_boolean_checks(self):
+  for name in CHECKED_RECEIPTS:
+   for checks in [None,{},[],True,{'decoded':'true'},{'decoded':1}]:
+    with self.subTest(name=name,checks=checks),tempfile.TemporaryDirectory() as tmp:
+     root=Path(tmp);self.fixture_receipts(root);target=root/RECEIPTS[name];receipt=json.loads(target.read_text())
+     if checks is None:receipt.pop('checks')
+     else:receipt['checks']=checks
+     target.write_text(json.dumps(receipt));result=summarize(root,123,'a'*40,'success')
+     self.assertEqual(result['checks'][name]['status'],'INVALID_RECEIPT');self.assertEqual(result['status'],'BLOCKED')
+ def test_generators_without_boolean_check_maps_remain_compatible(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);self.fixture_receipts(root);result=summarize(root,123,'a'*40,'success')
+   self.assertEqual(result['status'],'REVIEW_REQUIRED');self.assertEqual(result['technical_status'],'PASS')
+   self.assertFalse(result['production_approved']);self.assertFalse(result['publication_enabled'])
+ def test_candidate_change_during_summary_invalidates_prior_receipts(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);self.fixture_receipts(root)
+   with patch('scripts.v2_build_status.candidate_digest',side_effect=[hashlib.sha256(b'identity fixture').hexdigest(),'b'*64]):
+    result=summarize(root,123,'a'*40,'success')
+   self.assertEqual(result['technical_status'],'BLOCKED')
+   self.assertIn('candidate_changed_during_summary',result['checks']['technical_video']['failed_checks'])
+

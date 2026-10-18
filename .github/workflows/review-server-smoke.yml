@@ -102,7 +102,7 @@ jobs:
           grep -q 'Ignore the flex and keep the math.' /tmp/captions.vtt
           test "$(curl -s -D /tmp/media.headers -o /tmp/served.mp4 -w "%{http_code}" http://127.0.0.1:10000/media)" = "200"
           grep -qi '^accept-ranges: bytes' /tmp/media.headers
-          grep -qi '^cache-control: public, max-age=31536000, immutable' /tmp/media.headers
+          grep -qi '^cache-control: no-store' /tmp/media.headers
           grep -qi '^content-type: video/mp4' /tmp/media.headers
           test "$(curl -s -D /tmp/range.headers -H 'Range: bytes=0-1023' -o /tmp/range.bin -w "%{http_code}" http://127.0.0.1:10000/media)" = "206"
           test "$(wc -c < /tmp/range.bin)" = "1024"

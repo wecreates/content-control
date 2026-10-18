@@ -3,6 +3,20 @@ from pathlib import Path
 from scripts.audit_system_wiring import audit_root, _paid_boundary_locked, _review_server_status_safe
 
 class SystemWiringAuditTests(unittest.TestCase):
+    def test_episode3_caption_link_requires_the_accepted_caption_hash(self):
+        server=(Path(__file__).resolve().parents[1]/'server-lowmem.js').read_text()
+        bound='src="/episode3/captions?sha256=\'+a.captionHash+\'"'
+        self.assertIn(bound,server)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            target=root/'server-lowmem.js'
+            target.write_text(server)
+            self.assertTrue(audit_root(root)['checks']['episode3_hash_bound_captions'])
+            for replacement in ['src="/episode3/captions"', 'src="/episode3/captions?sha256=\'+a.expected+\'"', 'src="/unrelated/captions"']:
+                with self.subTest(link=replacement):
+                    target.write_text(server.replace(bound,replacement))
+                    self.assertFalse(audit_root(root)['checks']['episode3_hash_bound_captions'])
+
     def test_extracted_validation_status_wiring_remains_guarded(self):
         repository=Path(__file__).resolve().parents[1]
         server=(repository/'server-lowmem.js').read_text()

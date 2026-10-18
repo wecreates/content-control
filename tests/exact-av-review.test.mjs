@@ -12,7 +12,8 @@ test('unresolved timed finding blocks even forged zero counts',()=>{const r=vali
 test('out-of-runtime findings and missing provenance reject',()=>{const r=valid();delete r.reviewer;r.findings=[{start_sec:34,end_sec:40,severity:'minor',category:'voice',evidence:'Observed late pronunciation defect',repair:'Repair then review exact new artifact',resolved:true}];assert.equal(validateReview(r,media).ready,false);});
 test('comparison and publication restrictions remain enforced',()=>{const r=valid();r.comparisons=[];r.publication_enabled=true;assert.equal(validateReview(r,media).ready,false);});
 
-import {mkdtempSync,writeFileSync,readFileSync,rmSync,symlinkSync,linkSync} from 'node:fs';
+import {mkdtempSync,writeFileSync,readFileSync,rmSync,symlinkSync,linkSync,lstatSync,existsSync,truncateSync} from 'node:fs';
+import {execFileSync,spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {inspectMedia,safeOutputPath,main} from '../scripts/exact_av_review.mjs';
@@ -22,6 +23,98 @@ test('symlink output, symlink parent and hardlink aliases reject',t=>{const {dir
 test('input symlinks also protect their real file',t=>{const {dir,video}=fixture(t);const input=join(dir,'input-link');symlinkSync(video,input);assert.throws(()=>safeOutputPath(video,[input]),/must not overwrite/);});
 test('media mutation during ffprobe rejects stale hash binding',t=>{const {video}=fixture(t);const probe=()=>{writeFileSync(video,'modified media');return JSON.stringify({format:{duration:1},streams:[{codec_type:'video'},{codec_type:'audio'}]});};assert.throws(()=>inspectMedia(video,probe),/Media changed during probe/);});
 test('unchanged media probe binds exact bytes',t=>{const {video}=fixture(t);const probe=()=>JSON.stringify({format:{duration:1},streams:[{codec_type:'video'},{codec_type:'audio'}]});assert.equal(inspectMedia(video,probe).duration_seconds,1);});
+
+test('media inspection bounds ffprobe runtime and kills a stuck probe',t=>{
+ const {video}=fixture(t);
+ const probe=(_command,_args,options)=>{
+  assert.equal(options.timeout,30_000);assert.equal(options.killSignal,'SIGKILL');
+  return JSON.stringify({format:{duration:1},streams:[{codec_type:'video'},{codec_type:'audio'}]});
+ };
+ assert.equal(inspectMedia(video,probe).duration_seconds,1);
+});
+const goodProbe=()=>JSON.stringify({format:{duration:media.duration_seconds},streams:[{codec_type:'video'},{codec_type:'audio'}]});
+function staleReceipt(dir){const output=join(dir,'receipt.json');writeFileSync(output,JSON.stringify({status:'VALIDATED_REVIEW',ready:true,candidate_sha256:media.candidate_sha256}));return output;}
+function assertBlocked(output){const receipt=JSON.parse(readFileSync(output,'utf8'));assert.equal(receipt.status,'BLOCKED');assert.equal(receipt.ready,false);assert.equal(receipt.production_approved,false);assert.equal(receipt.publication_enabled,false);}
+test('probe failure invalidates a previously successful receipt before inspection',t=>{
+ const {dir,video,review}=fixture(t);const output=staleReceipt(dir);
+ assert.throws(()=>main(['validate',video,output,review],{probe:()=>{assertBlocked(output);throw Error('probe timed out');}}));
+ assertBlocked(output);
+});
+test('malformed review JSON cannot leave a stale successful receipt',t=>{
+ const {dir,video,review}=fixture(t);const output=staleReceipt(dir);writeFileSync(review,'{broken json');
+ assert.throws(()=>main(['validate',video,output,review],{probe:goodProbe}));assertBlocked(output);
+});
+test('missing media or review input cannot leave a stale successful receipt',t=>{
+ const {dir,video,review}=fixture(t);const output=staleReceipt(dir);
+ for(const inputs of [[join(dir,'missing.mp4'),review],[video,join(dir,'missing.json')]]){
+  staleReceipt(dir);assert.throws(()=>main(['validate',inputs[0],output,inputs[1]],{probe:goodProbe}));assertBlocked(output);
+ }
+});
+test('missing inputs beneath symlink parents cannot be created as output receipts',t=>{
+ const {dir}=fixture(t);const parent=join(dir,'alias-dir');symlinkSync(dir,parent);
+ for(const tail of ['missing.mp4','missing/subdir/video.mp4']){
+  const input=join(parent,tail),output=join(dir,tail);
+  assert.throws(()=>main(['prepare',input,output]),/must not overwrite/);
+  assert.throws(()=>readFileSync(output),{code:'ENOENT'});
+ }
+});
+test('successful validate replaces the blocked marker atomically',t=>{
+ const {dir,video,review}=fixture(t);const output=staleReceipt(dir);const metadata=inspectMedia(video,goodProbe);
+ writeFileSync(review,JSON.stringify({...valid(),candidate_sha256:metadata.candidate_sha256}));
+ assert.equal(main(['validate',video,output,review],{probe:()=>{assertBlocked(output);return goodProbe();}}),0);
+ const receipt=JSON.parse(readFileSync(output,'utf8'));assert.equal(receipt.ready,true);assert.equal(receipt.candidate_sha256,metadata.candidate_sha256);
+});
+test('blocked validate replaces stale success without approving the artifact',t=>{
+ const {dir,video,review}=fixture(t);const output=staleReceipt(dir);writeFileSync(review,JSON.stringify(valid()));
+ assert.equal(main(['validate',video,output,review],{probe:goodProbe}),2);assertBlocked(output);
+});
+
+function fifo(path){execFileSync('mkfifo',[path],{timeout:1000});}
+function boundedChild(body,args=[]) {
+ const source=`import {inspectMedia,main} from ${JSON.stringify(new URL('../scripts/exact_av_review.mjs',import.meta.url).href)};
+ import fs from 'node:fs';import {execFileSync} from 'node:child_process';
+ const probe=()=>(${goodProbe()});
+ try {${body};process.exitCode=10;} catch(error) {if(!/regular file|allowed limit/.test(error.message))throw error;console.log(error.message);}`;
+ const result=spawnSync(process.execPath,['--input-type=module','-e',source,...args],{encoding:'utf8',timeout:1500,killSignal:'SIGKILL'});
+ assert.equal(result.error,undefined,result.error?.message);
+ assert.equal(result.status,0,result.stderr||result.stdout);
+}
+test('media FIFO and FIFO symlink reject without blocking or starting probe',{skip:process.platform==='win32'},t=>{
+ const {dir}=fixture(t),pipe=join(dir,'media.pipe'),alias=join(dir,'media-link');fifo(pipe);symlinkSync(pipe,alias);
+ for(const target of [pipe,alias])boundedChild("inspectMedia(process.argv[1],()=>{throw Error('probe must not run');})",[target]);
+});
+test('special media and review inputs replace stale success with BLOCKED',{skip:process.platform==='win32'},t=>{
+ const {dir,video,review}=fixture(t),pipe=join(dir,'input.pipe'),alias=join(dir,'input-link');fifo(pipe);symlinkSync(pipe,alias);
+ for(const target of [pipe,alias])for(const mode of ['media','review']) {
+  const output=staleReceipt(dir);
+  boundedChild("main(['validate',process.argv[1],process.argv[2],process.argv[3]],{probe:()=>JSON.stringify(probe())})",[mode==='media'?target:video,output,mode==='review'?target:review]);
+  assertBlocked(output);assert.equal(lstatSync(pipe).isFIFO(),true);
+ }
+});
+test('media replaced with FIFO during probe fails closed without blocking',{skip:process.platform==='win32'},t=>{
+ const {video}=fixture(t);
+ boundedChild("inspectMedia(process.argv[1],()=>{fs.unlinkSync(process.argv[1]);execFileSync('mkfifo',[process.argv[1]],{timeout:1000});return JSON.stringify(probe());})",[video]);
+});
+test('directories and infinite character devices are rejected before reading',t=>{
+ const {dir}=fixture(t);
+ for(const target of [dir,...(existsSync('/dev/zero')?['/dev/zero']:[])])boundedChild('inspectMedia(process.argv[1])',[target]);
+});
+test('media and review size limits reject oversized inputs before reading',t=>{
+ const {dir,video,review}=fixture(t),oversized=join(dir,'oversized.mp4');writeFileSync(oversized,'');truncateSync(oversized,512*1024*1024+1);
+ boundedChild("inspectMedia(process.argv[1],()=>{throw Error('probe must not run');})",[oversized]);
+ writeFileSync(review,'');truncateSync(review,512*1024+1);const output=staleReceipt(dir);
+ boundedChild("main(['validate',process.argv[1],process.argv[2],process.argv[3]],{probe:()=>JSON.stringify(probe())})",[video,output,review]);assertBlocked(output);
+});
+test('ordinary media and review symlinks remain supported with bounded streaming reads',t=>{
+ const {dir,video,review}=fixture(t),videoLink=join(dir,'video-link'),reviewLink=join(dir,'review-link');symlinkSync(video,videoLink);symlinkSync(review,reviewLink);
+ const metadata=inspectMedia(videoLink,goodProbe);assert.equal(metadata.byte_length,readFileSync(video).length);
+ const json=JSON.stringify({...valid(),candidate_sha256:metadata.candidate_sha256});writeFileSync(review,json+' '.repeat(512*1024-Buffer.byteLength(json)));
+ const output=staleReceipt(dir);assert.equal(main(['validate',videoLink,output,reviewLink],{probe:goodProbe}),0);assert.equal(JSON.parse(readFileSync(output,'utf8')).ready,true);
+});
+test('existing FIFO output is preserved rather than replaced with JSON',{skip:process.platform==='win32'},t=>{
+ const {dir,video}=fixture(t),output=join(dir,'output.pipe');fifo(output);
+ assert.throws(()=>main(['prepare',video,output],{probe:goodProbe}),/regular file/);assert.equal(lstatSync(output).isFIFO(),true);
+});
 
 import {reviewSource} from '../scripts/exact_av_review.mjs';
 const sourceRun=()=>({id:123,repository:{full_name:'wecreates/content-control'},head_repository:{full_name:'wecreates/content-control'},head_branch:'main',path:'.github/workflows/content-control-v2.yml',event:'workflow_dispatch',status:'completed',conclusion:'failure',head_sha:'a'.repeat(40)});

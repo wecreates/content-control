@@ -118,7 +118,7 @@ def audit_root(root: Path):
     ])
     checks["review_server_status_safe"]=_review_server_status_safe(root,server_text)
     checks["episode3_hash_bound_captions"]=all(x in server_text for x in [
-        "episode3CaptionsPath","captionReady","/episode3/captions",'src="/episode3/captions"'
+        "episode3CaptionsPath","captionReady","/episode3/captions",'src="/episode3/captions?sha256=\'+a.captionHash+\'"'
     ])
 
     visual=root/"remotion/CashbackCasinoVisual.jsx"
