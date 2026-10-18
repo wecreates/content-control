@@ -28,15 +28,17 @@ async function revalidationFixture(change,fn){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'revalidation-status-'));
  const candidate=Buffer.from('fixture bytes'),candidateHash=hash(candidate);
  const rubric=Object.fromEntries(['typography','character_scale','staging','character_consistency','phone_readability'].map(key=>[key,{pass:false,evidence:'Observed issue '+key}]));
- const review={candidate:{sha256:candidateHash},decision:'FAIL',rubric,unresolved_issues:['Needs creative repair']};
+ const references=Array.from({length:4},(_,i)=>({path:`reference/frames/ref-${i}.jpg`,sha256:hash('reference '+i)}));
+ const review={candidate:{sha256:candidateHash},reference_frames:references,decision:'FAIL',rubric,unresolved_issues:['Needs creative repair']};
  const reviewBytes=JSON.stringify(review);
  const draft={status:'DRAFT',candidate_sha256:candidateHash,run_id:123,production_approved:false,publication_enabled:false};
  const report={schema_version:1,status:'BLOCKED',candidate_sha256:candidateHash,original_run_id:123,visual_review_sha256:hash(reviewBytes),production_approved:false,publication_enabled:false,full_av_review:false,render_attempted:false,visual_review:{status:'FAIL',rubric:Object.fromEntries(Object.entries(rubric).map(([k,v])=>[k,{status:'MISMATCH',observation:v.evidence}]))},media_url:'/unsafe',watch_url:'/unsafe'};
  const files={'state/v2-revalidation.json':JSON.stringify(report),'state/v2-draft.json':JSON.stringify(draft),'state/visual-analysis/frame-review.json':reviewBytes,'public-review/v2-draft.mp4':candidate};
+ for(let i=0;i<references.length;i++)files[references[i].path]='reference '+i;
  if(change)change(files,report,draft);
  for(const [name,bytes] of Object.entries(files)){const file=path.join(root,name);await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,bytes);}
  const app=express();app.use(createProductionStatusRouter({root}));const server=await new Promise(resolve=>{const s=app.listen(0,'127.0.0.1',()=>resolve(s));});
- try{await fn(`http://127.0.0.1:${server.address().port}/v2/revalidation`);}finally{await new Promise(resolve=>server.close(resolve));await fs.rm(root,{recursive:true,force:true});}
+ try{await fn(`http://127.0.0.1:${server.address().port}/v2/revalidation`,root);}finally{await new Promise(resolve=>server.close(resolve));await fs.rm(root,{recursive:true,force:true});}
 }
 test('exact revalidation exposes safe findings without media or approval',()=>revalidationFixture(null,async url=>{
  const response=await fetch(url),data=await response.json();assert.equal(response.status,200);assert.equal(data.status,'BLOCKED');assert.equal(data.rubric.staging.status,'MISMATCH');assert.deepEqual(data.blockers,['Needs creative repair']);assert.equal(data.watch_url,null);assert.equal(data.media_url,undefined);assert.equal(data.full_av_review,false);assert.equal(data.production_approved,false);
@@ -101,3 +103,28 @@ test('complete recorded technical checks distinguish review work from render fai
   const d=await(await fetch(url)).json();assert.equal(d.status,status);assert.equal(d.review_status,review);assert.equal(d.technical_status,'PASS');assert.equal(d.production_approved,false);assert.equal(d.watch_url,null);
  });
 });
+
+test('revalidation invalidates changed or missing references after the digest cache is populated',()=>revalidationFixture(null,async(url,root)=>{
+ assert.equal((await fetch(url)).status,200);
+ const reference=path.join(root,'reference/frames/ref-0.jpg'),before=await fs.stat(reference);
+ await fs.writeFile(reference,'reference X');await fs.utimes(reference,before.atime,before.mtime);
+ let response=await fetch(url);assert.equal(response.status,503);assert.equal((await response.json()).production_approved,false);
+ await fs.writeFile(reference,'reference 0');assert.equal((await fetch(url)).status,200);
+ await fs.rm(path.join(root,'reference'),{recursive:true});response=await fetch(url);
+ assert.equal(response.status,503);assert.equal((await response.json()).error,'REVALIDATION_STALE_OR_UNAVAILABLE');
+}));
+
+test('array and object candidate hashes cannot be coerced into technical success',async()=>{
+ const checks=Object.fromEntries(['voices','sound_mix','transcription','captions','caption_frames','technical_video','character_binding','phone_viewport','style_parity'].map(name=>[name,{status:'PASS'}]));
+ for(const candidate_sha256 of [['a'.repeat(64)],{},42,true,'bad']){
+  await fixture({...base,candidate_generated:true,candidate_sha256,checks},async url=>assert.equal((await fetch(url)).status,503));
+  await executionFixture({...executionBase,candidate_sha256},async url=>assert.equal((await fetch(url)).status,503));
+ }
+});
+test('recorded time and source commit provenance must have string types',async()=>{
+ for(const change of [{source_commit:['b'.repeat(40)]},{source_commit:42},{recorded_at:[new Date().toISOString()]},{recorded_at:42}]){
+  await fixture({...base,...change},async url=>assert.equal((await fetch(url)).status,503));
+  await executionFixture({...executionBase,...change},async url=>assert.equal((await fetch(url)).status,503));
+ }
+});
+

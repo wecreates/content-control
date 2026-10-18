@@ -1,6 +1,6 @@
 /** Local exact-media review preparation and validation. Never calls an inference provider. */
 import {createHash} from 'node:crypto';
-import {readFileSync,writeFileSync,mkdirSync,realpathSync,lstatSync,statSync,mkdtempSync,renameSync,rmSync} from 'node:fs';
+import {constants,openSync,closeSync,fstatSync,readSync,writeFileSync,mkdirSync,realpathSync,lstatSync,statSync,mkdtempSync,renameSync,rmSync} from 'node:fs';
 import {dirname,resolve,basename,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
@@ -12,7 +12,37 @@ const RETAINED_REPAIRS = {
  '38583366384': {sha:'b8f22d0be0cd0e2196a892eea07a904898dc43eb',workflow:'.github/workflows/retained-visual-repair.yml',prefix:'visual-repair',
  short:'46a6989bc7a5f3e0c35c552d2a8c635d1c0fadf369c6252d1c66945b452ee17a',long:'41a479dda53d9b926b299e3769493b9082d450e71c4e1e65e12bf9732d649766'},
 };
-const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+const MAX_MEDIA_BYTES=512*1024*1024;
+const MAX_REVIEW_BYTES=512*1024;
+const fileIdentity=stat=>[stat.dev,stat.ino,stat.size,stat.mtimeNs,stat.ctimeNs].join(':');
+function readRegularInput(path,maxBytes,consume) {
+ // Follow existing ordinary-file symlinks, but never block opening a FIFO.
+ // The opened descriptor, not a racy pre-open path stat, determines file type.
+ const fd=openSync(path,constants.O_RDONLY|constants.O_NONBLOCK);
+ try {
+  const before=fstatSync(fd,{bigint:true});
+  if(!before.isFile())throw Error('Input must be a regular file');
+  if(before.size<=0n||before.size>BigInt(maxBytes))throw Error('Input size is outside the allowed limit');
+  const identity=fileIdentity(before),buffer=Buffer.allocUnsafe(64*1024);
+  let size=0,n;
+  while((n=readSync(fd,buffer,0,Math.min(buffer.length,maxBytes-size+1),null))>0) {
+   size+=n;if(size>maxBytes)throw Error('Input size is outside the allowed limit');
+   consume(buffer.subarray(0,n));
+  }
+  if(size!==Number(before.size)||fileIdentity(fstatSync(fd,{bigint:true}))!==identity||fileIdentity(statSync(path,{bigint:true}))!==identity)throw Error('Input changed during read');
+  return {byte_length:size,identity};
+ } finally {closeSync(fd);}
+}
+function mediaDigest(path) {
+ const hash=createHash('sha256');
+ const metadata=readRegularInput(path,MAX_MEDIA_BYTES,chunk=>hash.update(chunk));
+ return {...metadata,sha256:hash.digest('hex')};
+}
+function readReview(path) {
+ const chunks=[];
+ readRegularInput(path,MAX_REVIEW_BYTES,chunk=>chunks.push(Buffer.from(chunk)));
+ return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+}
 export function reviewSource(run, {repository, runId, format}) {
  // This completed, independently recovered repair predates the main-branch workflow.
  // Pin its run, commit and media bytes; do not generally trust PR artifacts.
@@ -33,13 +63,13 @@ export function reviewSource(run, {repository, runId, format}) {
  return {...source,run_id:String(runId),source_sha:run.head_sha,conclusion:run.conclusion,publication_enabled:false,production_approved:false};
 }
 export function inspectMedia(path,probe=execFileSync) {
- const bytes=readFileSync(path);
- const data=JSON.parse(probe('ffprobe',['-v','error','-show_streams','-show_format','-of','json',path],{encoding:'utf8'}));
- const hash=digest(bytes);
- if(digest(readFileSync(path))!==hash)throw Error('Media changed during probe');
+ const before=mediaDigest(path);
+ const data=JSON.parse(probe('ffprobe',['-v','error','-show_streams','-show_format','-of','json',path],{encoding:'utf8',timeout:30_000,killSignal:'SIGKILL'}));
+ const after=mediaDigest(path);
+ if(after.sha256!==before.sha256||after.identity!==before.identity)throw Error('Media changed during probe');
  const duration=Number(data.format?.duration);
  if(!Number.isFinite(duration)||duration<=0||!data.streams?.some(s=>s.codec_type==='video')||!data.streams?.some(s=>s.codec_type==='audio'))throw Error('A positive-duration video with audio is required');
- return {verified:true,candidate_sha256:hash,duration_seconds:duration,byte_length:bytes.length};
+ return {verified:true,candidate_sha256:before.sha256,duration_seconds:duration,byte_length:before.byte_length};
 }
 export function prepareReview(media) {
  return {schema_version:1,status:'REVIEW_REQUIRED',publication_enabled:false,production_approved:false,media,
@@ -48,46 +78,58 @@ export function prepareReview(media) {
   response_schema:{candidate_sha256:media.candidate_sha256,duration_seconds:media.duration_seconds,status:'PASS | REPAIR | BLOCKED',method:'rendered_video_review',full_video_review:'boolean',full_audio_review:'boolean',reviewer:{identity:'reviewer identifier',method:'actual audiovisual inspection method',evidence:'traceable review session or response identifier'},reviewed_intervals:'[[start,end], ...]',checks:Object.fromEntries(CREATIVE_CHECKS.map(k=>[k,{pass:'boolean',evidence:'concrete observed evidence'}])),comparisons:[{url:'https://...',full_video_review:'boolean',full_audio_review:'boolean',access_scope:'full audiovisual review',observation:'specific observed evidence',applied_difference:'specific difference'}],findings:[{start_sec:'number',end_sec:'number',severity:'critical | major | minor',category:'string',evidence:'observed defect',repair:'required change',resolved:'boolean'}],critical_count:'integer',major_count:'integer',unresolved_issues:'array',publication_enabled:false}};
 }
 export function validateReview(review,media) {
- const reasons=[];const documented=x=>typeof x==='string'&&x.trim().length>=12;
- if(review?.publication_enabled!==false)reasons.push('publication_lock_missing');
- if(!documented(review?.reviewer?.identity)||!documented(review?.reviewer?.method)||!documented(review?.reviewer?.evidence))reasons.push('reviewer_provenance_missing');
- const findings=review?.findings;
- if(!Array.isArray(findings))reasons.push('findings_missing');
- else {
-  for(const f of findings) {
-   if(!f||!['critical','major','minor'].includes(f.severity)||!Number.isFinite(f.start_sec)||!Number.isFinite(f.end_sec)||f.start_sec<0||f.end_sec<=f.start_sec||f.end_sec>media.duration_seconds||!documented(f.evidence)||!documented(f.repair)||typeof f.category!=='string'||!f.category.trim()||typeof f.resolved!=='boolean')reasons.push('invalid_timestamped_finding');
-  }
-  for(const severity of ['critical','major'])if(!Number.isInteger(review[severity+'_count'])||review[severity+'_count']!==findings.filter(f=>f?.severity===severity).length)reasons.push(severity+'_count_mismatch');
-  if(findings.some(f=>f?.resolved!==true))reasons.push('unresolved_findings');
-  if(findings.some(f=>['critical','major'].includes(f?.severity)))reasons.push('material_findings_require_repair_and_new_review');
- }
- const gate=creativeHandoff(review,media.candidate_sha256,media);
- reasons.push(...gate.reasons);
+ const {reasons}=creativeHandoff(review,media.candidate_sha256,media);
  return {schema_version:1,status:reasons.length?'BLOCKED':'VALIDATED_REVIEW',ready:reasons.length===0,reasons:[...new Set(reasons)],candidate_sha256:media.candidate_sha256,duration_seconds:media.duration_seconds,publication_enabled:false,production_approved:false,scope:'Validates submitted evidence structure and the existing creative handoff gate; does not itself observe audiovisual content or authenticate reviewer claims.'};
+}
+function inputIdentity(input) {
+ let current=resolve(input);const missing=[];
+ for(;;) {
+  try{return join(realpathSync(current),...missing);}
+  catch(error) {
+   if(error.code!=='ENOENT')throw error;
+   // A dangling symlink is not a missing lexical path: its target identity is
+   // unknown here, so reject rather than risk creating a receipt at that target.
+   try {if(lstatSync(current).isSymbolicLink())throw Error('Unresolvable input symlink');}
+   catch(statError) {if(statError.code!=='ENOENT')throw statError;}
+   missing.unshift(basename(current));
+   const parent=dirname(current);if(parent===current)throw error;current=parent;
+  }
+ }
 }
 export function safeOutputPath(output,inputs) {
  const absolute=resolve(output);
- const inputPaths=inputs.map(p=>realpathSync(resolve(p)));
+ // Missing inputs must still invalidate an old receipt. Existing inputs retain
+ // canonical-path and inode protection, and are checked again before each write.
+ const inputPaths=inputs.map(inputIdentity);
  mkdirSync(dirname(absolute),{recursive:true});
  const canonical=join(realpathSync(dirname(absolute)),basename(absolute));
  let info;
  try{info=lstatSync(canonical);}catch(error){if(error.code!=='ENOENT')throw error;}
  if(info?.isSymbolicLink())throw Error('Output must not be a symlink');
- if(inputPaths.includes(canonical)||info&&inputPaths.some(p=>{const st=statSync(p);return st.dev===info.dev&&st.ino===info.ino;}))throw Error('Output must not overwrite review or media input');
+ if(info&&!info.isFile())throw Error('Output must be a regular file');
+ if(inputPaths.includes(canonical)||info&&inputPaths.some(p=>{try{const st=statSync(p);return st.dev===info.dev&&st.ino===info.ino;}catch(error){if(error.code!=='ENOENT')throw error;return false;}}))throw Error('Output must not overwrite review or media input');
  return canonical;
 }
-export function main(args) {
+function writeReceipt(destination,inputs,result) {
+ const temporary=mkdtempSync(join(dirname(destination),'.exact-review-'));
+ try {
+  const staged=join(temporary,'receipt.json');writeFileSync(staged,JSON.stringify(result,null,2)+'\n');
+  safeOutputPath(destination,inputs);
+  renameSync(staged,destination);
+ } finally {rmSync(temporary,{recursive:true,force:true});}
+}
+export function main(args,{probe=execFileSync}={}) {
  const [mode,video,output,reviewPath]=args;
  if(!['prepare','validate'].includes(mode)||!video||!output||(mode==='validate'&&!reviewPath))throw Error('Usage: exact_av_review.mjs prepare VIDEO OUTPUT | validate VIDEO OUTPUT REVIEW_JSON');
  const inputs=mode==='validate'?[video,reviewPath]:[video];
  const destination=safeOutputPath(output,inputs);
- const media=inspectMedia(resolve(video));
- const result=mode==='prepare'?prepareReview(media):validateReview(JSON.parse(readFileSync(reviewPath,'utf8')),media);
+ // Fail closed before probing or parsing. A failed attempt must not leave an
+ // earlier VALIDATED_REVIEW receipt looking like the result of this attempt.
+ writeReceipt(destination,inputs,{schema_version:1,status:'BLOCKED',ready:false,reasons:['review_attempt_incomplete'],publication_enabled:false,production_approved:false});
+ const media=inspectMedia(resolve(video),probe);
+ const result=mode==='prepare'?prepareReview(media):validateReview(readReview(reviewPath),media);
  // Recheck aliases immediately before atomic replace; never follow a destination symlink.
- safeOutputPath(destination,inputs);
- const temporary=mkdtempSync(join(dirname(destination),'.exact-review-'));
- try {const staged=join(temporary,'receipt.json');writeFileSync(staged,JSON.stringify(result,null,2)+'\n');renameSync(staged,destination);}
- finally {rmSync(temporary,{recursive:true,force:true});}
+ writeReceipt(destination,inputs,result);
  console.log(JSON.stringify({status:result.status,candidate_sha256:media.candidate_sha256,publication_enabled:false}));
  return mode==='validate'&&!result.ready?2:0;
 }
