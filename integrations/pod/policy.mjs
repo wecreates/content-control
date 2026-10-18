@@ -20,8 +20,11 @@ export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
  const expected=crypto.createHmac('sha256',key).update(envelope.payload).digest();
  if(!crypto.timingSafeEqual(expected,Buffer.from(envelope.signature,'hex'))) throw Error('SIGNATURE_INVALID');
  const p=JSON.parse(envelope.payload);
- if(p.audience!==audience||p.schema_version!==1||!Number.isFinite(p.issued_at_ms)||
-  !Number.isFinite(p.expires_at_ms)||p.issued_at_ms>now||p.expires_at_ms<=now||
+ // Relational comparisons coerce values and are all false for NaN. Validate
+ // the clock and signed millisecond integers before making an expiry decision.
+ if(!Number.isSafeInteger(now)||now<0||p.audience!==audience||p.schema_version!==1||
+  !Number.isSafeInteger(p.issued_at_ms)||p.issued_at_ms<0||
+  !Number.isSafeInteger(p.expires_at_ms)||p.expires_at_ms<0||p.issued_at_ms>now||p.expires_at_ms<=now||
   p.expires_at_ms-p.issued_at_ms>900000) throw Error('ENVELOPE_EXPIRED_OR_INVALID');
  return p;
 }
