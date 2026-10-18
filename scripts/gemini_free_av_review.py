@@ -7,6 +7,7 @@ No network requests are made when required configuration is missing.
 """
 import argparse
 import base64
+from contextlib import contextmanager
 import datetime as dt
 import hashlib
 import http.client
@@ -15,8 +16,10 @@ import math
 import os
 import pathlib
 import re
+import signal
 import subprocess
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -119,6 +122,29 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+@contextmanager
+def request_deadline(timeout):
+    require(finite(timeout) and 0 < timeout <= 300, "invalid_request_timeout")
+    require(threading.current_thread() is threading.main_thread()
+            and all(hasattr(signal, attr) for attr in ("SIGALRM", "ITIMER_REAL", "getitimer", "setitimer")),
+            "request_deadline_unavailable")
+    require(signal.getitimer(signal.ITIMER_REAL) == (0.0, 0.0), "request_deadline_timer_in_use")
+    previous_handler = signal.getsignal(signal.SIGALRM)
+    require(previous_handler in (signal.SIG_DFL, signal.SIG_IGN) or callable(previous_handler),
+            "request_deadline_unavailable")
+    deadline = time.monotonic() + timeout
+    def expired(_signum, _frame):
+        raise Blocked("provider_request_deadline_exceeded")
+    signal.signal(signal.SIGALRM, expired)
+    try:
+        signal.setitimer(signal.ITIMER_REAL, timeout)
+        yield deadline
+        require(time.monotonic() < deadline, "provider_request_deadline_exceeded")
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
+
+
 def checked_url(url, host, path_prefix):
     try:
         p = urllib.parse.urlsplit(url)
@@ -142,13 +168,16 @@ class HTTP:
         require(p.hostname in hosts and p.scheme == "https" and p.netloc == p.hostname
                 and not p.fragment, "untrusted_provider_url")
         try:
-            req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)
-            with self.opener.open(req, timeout=timeout) as response:
-                raw = response.read(MAX_RESPONSE + 1)
-                require(len(raw) <= MAX_RESPONSE, "provider_response_too_large")
-                if empty:
-                    return {}, dict(response.headers)
-                return strict_json(raw), dict(response.headers)
+            with request_deadline(timeout) as deadline:
+                req = urllib.request.Request(url, data=body, headers=headers or {}, method=method)
+                with self.opener.open(req, timeout=timeout) as response:
+                    require(time.monotonic() < deadline, "provider_request_deadline_exceeded")
+                    raw = response.read(MAX_RESPONSE + 1)
+                    require(time.monotonic() < deadline, "provider_request_deadline_exceeded")
+                    require(len(raw) <= MAX_RESPONSE, "provider_response_too_large")
+                    if empty:
+                        return {}, dict(response.headers)
+                    return strict_json(raw), dict(response.headers)
         except urllib.error.HTTPError as error:
             # Includes redirects, missing scope, exhausted quota and service errors.
             # Do not read/print errors: lookupKey's URL contains the API key.
