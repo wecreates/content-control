@@ -68,6 +68,25 @@ def payload_for(repo, kind, source_bytes):
     if caption['status'] == 'FAIL':
         if not caption.get('failed_checks') or checks.get('caption_provenance_valid') is not False:
             raise ValueError('Explicit failed caption provenance check required')
+        if kind == 'narration':
+            transcription_path = 'state/narration-transcription-health.json'
+            try:
+                transcription_bytes = read(transcription_path)
+                transcription = object_from(transcription_bytes)
+            except (OSError, ValueError, RecursionError):
+                # Missing/partial ASR output must not suppress the caption FAIL.
+                return payload
+            # A current-source negative transcription is useful even if ASR setup
+            # failed. Never carry a historical PASS forward with failed captions.
+            if transcription.get('status') == 'FAIL':
+                failed = transcription.get('failed_checks')
+                transcript_checks = transcription.get('checks')
+                if (transcription.get('publication_enabled') is False
+                        and transcription.get('audio_sha256') == sha(read('public/audio/episode1-narration.mp3'))
+                        and isinstance(failed, list) and failed
+                        and isinstance(transcript_checks, dict)
+                        and all(isinstance(name, str) and transcript_checks.get(name) is False for name in failed)):
+                    payload[transcription_path] = transcription_bytes
         # Do not carry stale captions or partial acceptance-ledger outputs forward.
         return payload
     health = object_from(read('state/content-control-health.json'))

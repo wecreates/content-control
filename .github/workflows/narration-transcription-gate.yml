@@ -13,6 +13,7 @@ on:
       - 'scripts/persist_caption_evidence.py'
       - 'tests/test_caption_provenance.py'
       - 'tests/test_persist_caption_evidence.py'
+      - 'tests/test_narration_transcription_workflow.py'
       - 'requirements-transcription.txt'
       - '.github/workflows/narration-transcription-gate.yml'
   schedule:
@@ -39,6 +40,24 @@ jobs:
         run: |
           test "$GITHUB_REF" = refs/heads/main
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Prepare fresh transcription failure receipt
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          output = Path('state/narration-transcription-health.json')
+          report = {
+              'schema_version': 1, 'status': 'FAIL', 'publication_enabled': False,
+              'actual_transcript': '', 'segments': [], 'words': [],
+              'checks': {'fresh_transcription_completed': False},
+              'failed_checks': ['fresh_transcription_completed'],
+              'reason': 'This run has not completed transcription; dependency or transcription failure leaves this receipt blocked.',
+          }
+          # Replace historical PASS before setup/install or any ASR import can fail.
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          report['audio_sha256'] = hashlib.sha256(Path('public/audio/episode1-narration.mp3').read_bytes()).hexdigest()
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          PY
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -50,6 +69,9 @@ jobs:
           key: faster-whisper-base-en-v1
       - name: Install pinned transcription runtime
         run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version
           python -m pip install --upgrade pip
           python -m pip install -r requirements-transcription.txt
       - name: Transcribe actual narration and compare to approved script
@@ -62,7 +84,7 @@ jobs:
             --output state/narration-transcription-health.json \
             --model base.en
       - name: Test canonical caption provenance
-        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence
+        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_narration_transcription_workflow
       - name: Build and verify synchronized VTT captions
         if: ${{ !cancelled() }}
         run: |
@@ -81,13 +103,25 @@ jobs:
           python scripts/persist_caption_evidence.py --kind narration --source-commit "$GITHUB_SHA" --source-ref "$GITHUB_REF"
       - name: Enforce transcription gate
         if: always()
+        env:
+          TRANSCRIBE_OUTCOME: ${{ steps.transcribe.outcome }}
         run: |
           python - <<'PY'
-          import json
-          d=json.load(open("state/narration-transcription-health.json"))
-          print({"status":d["status"],"actual_transcript":d["actual_transcript"]})
-          if d["status"]!="PASS":
+          import hashlib, json, os
+          from pathlib import Path
+          if os.environ.get('TRANSCRIBE_OUTCOME') != 'success':
+              print('BLOCKED: this run did not complete transcription successfully')
               raise SystemExit(2)
+          try:
+              d = json.loads(Path('state/narration-transcription-health.json').read_text())
+              current = hashlib.sha256(Path('public/audio/episode1-narration.mp3').read_bytes()).hexdigest()
+              valid = isinstance(d, dict) and d.get('status') == 'PASS' and d.get('publication_enabled') is False and d.get('audio_sha256') == current
+          except (OSError, ValueError, RecursionError):
+              valid = False
+          if not valid:
+              print('BLOCKED: current-source publication-disabled transcription PASS required')
+              raise SystemExit(2)
+          print({'status': d['status'], 'actual_transcript': d.get('actual_transcript', '')})
           PY
       - name: Continue candidate promotion after caption binding
         if: success()
