@@ -85,3 +85,24 @@ collection authorization is inferred. Existing source/rights signatures, URL and
 snapshot bindings, reference analysis and final expiry checks remain required.
 Synthetic offline and signed-output regressions establish value preservation;
 actual authorized marketplace collection and live acceptance remain open.
+
+
+## Exact future-time boundary
+
+Market, financial and official-template evidence compare the complete signed
+instant, including all six supported fractional digits, against the validation
+clock. JavaScript's millisecond date parser no longer discards the remaining
+microseconds for this check: evidence one microsecond beyond the clock fails,
+while an exact boundary or earlier instant remains valid. Explicit timezone
+offsets and pre-epoch evidence retain their actual instant. The validation clock
+must be nonnegative safe integer milliseconds; invalid clocks fail closed.
+
+Eight regression tests cover sub-millisecond future values, exact boundaries,
+offset equivalence, fractional scaling, epoch edges, invalid clocks and the three
+signed evidence consumers. Future market/finance evidence must fail before any
+transaction; both cover and KDP interior provenance reject it. Six of these tests
+failed before repair, including database access reached with future evidence.
+All 34 focused time/market/finance tests pass locally; hosted integration and image
+verification are required before merge. Original accepted timestamp strings are
+unchanged. No clock skew allowance, evidence freshness, rights, income, official
+source approval, publication permission or live acceptance is fabricated.
