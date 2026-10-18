@@ -15,6 +15,10 @@ on:
         description: Optional committed reviewer JSON path; blank prepares review only
         type: string
         default: ''
+      run_free_api_diagnostic:
+        description: Opt in to sampled Gemini AV diagnostics; requires verified free project and secure read identity
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'comparison-ui/**'
@@ -22,6 +26,9 @@ on:
       - 'tests/comparison-browser.mjs'
       - 'scripts/build_offline_comparison.mjs'
       - 'scripts/exact_av_review.mjs'
+      - 'scripts/gemini_free_av_review.py'
+      - 'tests/test_gemini_free_av_review.py'
+      - 'control/gemini-free-av-policy.json'
       - 'scripts/offline_av_review.py'
       - 'tests/test_offline_av_review.py'
       - 'tests/test_review_packets.py'
@@ -40,6 +47,7 @@ jobs:
         with: {node-version: '20'}
       - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: python -m unittest discover -s tests -p test_gemini_free_av_review.py
       - run: python -m unittest discover -s tests -p test_offline_av_review.py
       - run: python -m unittest discover -s tests -p test_review_packets.py
   browser-transport:
@@ -73,6 +81,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false && github.ref == 'refs/heads/main'
     needs: tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      artifact: ${{ steps.source.outputs.artifact }}
+      media: ${{ steps.source.outputs.media }}
+      candidate_sha256: ${{ steps.prepare.outputs.candidate_sha256 }}
     env:
       PUBLICATION_ENABLED: 'false'
     steps:
@@ -108,21 +121,33 @@ jobs:
       - name: Install local media probe
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Prepare current exact audiovisual review
+        id: prepare
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
         run: |
           node --input-type=module <<'JS'
-          import {readFileSync,writeFileSync} from 'node:fs';
+          import {readFileSync,writeFileSync,appendFileSync} from 'node:fs';
           import {inspectMedia,prepareReview} from './scripts/exact_av_review.mjs';
           const source=JSON.parse(readFileSync('receipts/source-provenance.json','utf8'));
           const media=inspectMedia(process.env.MEDIA_PATH);
           if(source.expected_sha256 && media.candidate_sha256!==source.expected_sha256)throw Error('Recovered repair media hash mismatch');
           writeFileSync('receipts/review-request.json',JSON.stringify(prepareReview(media),null,2)+'\n');
+          appendFileSync(process.env.GITHUB_OUTPUT,`candidate_sha256=${media.candidate_sha256}\n`);
           JS
       - name: Build free local audiovisual inspection package
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
         run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out receipts/offline-review
+      - name: Record disabled API identity configuration
+        if: inputs.run_free_api_diagnostic && (vars.GEMINI_AV_IDENTITY_ENABLED != 'true' || vars.GEMINI_AV_WIF_PROVIDER == '' || vars.GEMINI_AV_READ_SERVICE_ACCOUNT == '')
+        run: |
+          python - <<'PY'
+          import json
+          from scripts.gemini_free_av_review import base_receipt
+          receipt=base_receipt()|{'reason':'approved_short_lived_project_read_identity_not_configured'}
+          with open('receipts/gemini-av-diagnostic.json','w') as f:json.dump(receipt,f,indent=2)
+          print('BLOCKED: approved short-lived project-read identity is not configured; no API upload or review performed.')
+          PY
       - name: Validate supplied review against exact media and existing handoff gate
         if: inputs.review_json_path != ''
         env:
@@ -143,3 +168,60 @@ jobs:
           path: receipts/
           retention-days: 14
           if-no-files-found: warn
+  free-api-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && github.event.repository.private == false && github.ref == 'refs/heads/main' && inputs.run_free_api_diagnostic && vars.GEMINI_AV_IDENTITY_ENABLED == 'true' && vars.GEMINI_AV_WIF_PROVIDER != '' && vars.GEMINI_AV_READ_SERVICE_ACCOUNT != ''
+    needs: [tests, prepare-or-validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      PUBLICATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize incomplete diagnostic receipt
+        run: |
+          python - <<'PY'
+          from scripts.gemini_free_av_review import POLICY, base_receipt, write_receipt
+          receipt = base_receipt() | {'reason': 'diagnostic_step_not_completed'}
+          write_receipt('receipts/gemini-av-diagnostic.json', receipt, [POLICY])
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.prepare-or-validate.outputs.artifact }}
+          run-id: ${{ inputs.production_run_id }}
+          github-token: ${{ github.token }}
+          path: review-input/current
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Mint approved project-read identity token
+        id: google_read_auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3, verified 2026-10-17
+        with:
+          project_id: gen-lang-client-0010384080
+          workload_identity_provider: ${{ vars.GEMINI_AV_WIF_PROVIDER }}
+          service_account: ${{ vars.GEMINI_AV_READ_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_lifetime: 1800s
+          access_token_scopes: https://www.googleapis.com/auth/cloud-platform.read-only,https://www.googleapis.com/auth/cloud-billing.readonly
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Diagnose exact video and audio without approving publication
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_PROJECT_READ_TOKEN: ${{ steps.google_read_auth.outputs.access_token }}
+          MEDIA_PATH: ${{ needs.prepare-or-validate.outputs.media }}
+          EXPECTED_SHA256: ${{ needs.prepare-or-validate.outputs.candidate_sha256 }}
+        run: |
+          python scripts/gemini_free_av_review.py --video "$MEDIA_PATH" \
+            --expected-sha256 "$EXPECTED_SHA256" --output receipts/gemini-av-diagnostic.json
+      - name: Preserve sampled diagnostic only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-av-diagnostic-${{ inputs.format }}
+          path: receipts/gemini-av-diagnostic.json
+          retention-days: 14
+          if-no-files-found: warn
+
