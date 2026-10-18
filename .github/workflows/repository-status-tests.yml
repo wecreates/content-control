@@ -1,0 +1,41 @@
+name: Repository Status Tests
+
+on:
+  pull_request:
+    paths:
+      - 'repository-worker-status.js'
+      - 'repository-additional-status.js'
+      - 'repository-integrations.js'
+      - 'tests/repository-worker-status.test.mjs'
+      - 'tests/repository-integrations.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/repository-status-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-status-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PUBLICATION_ENABLED: 'false'
+      PAID_GENERATION_ENABLED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run only repository reporting regressions
+        run: node --test tests/repository-worker-status.test.mjs tests/repository-integrations.test.mjs
