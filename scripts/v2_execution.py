@@ -9,6 +9,7 @@ import fcntl
 import hashlib
 import json
 import os
+import signal
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +17,7 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+_cancellation_state = None
 
 
 def sha(path):
@@ -36,6 +38,78 @@ def atomic_json(path, value):
     finally:
         if os.path.exists(name):
             os.unlink(name)
+
+
+def terminate_process_group(process, grace=0.5, reap_timeout=3):
+    """Stop only the session created for this stage, before releasing its job lock."""
+    blocked = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGINT, signal.SIGTERM, signal.SIGHUP})
+    try:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+        deadline = time.monotonic() + grace
+        while time.monotonic() < deadline:
+            process.poll()
+            try:
+                os.killpg(process.pid, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(min(0.05, max(0, deadline - time.monotonic())))
+        # The immediate process may have exited while descendants ignored TERM.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+        process.wait(timeout=reap_timeout)
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, blocked)
+
+
+def run_process(args, *, cwd, stdout, stderr, timeout):
+    if os.name != 'posix':
+        raise RuntimeError('Production process-group cleanup requires POSIX')
+    process = None
+    state = _cancellation_state
+    try:
+        # Defer our handler, not the OS signal mask: children must inherit normal signals.
+        if state is not None:
+            state['defer'] += 1
+        try:
+            process = subprocess.Popen(args, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
+        finally:
+            if state is not None:
+                state['defer'] -= 1
+        if state is not None and state['pending'] is not None:
+            signum = state['pending']
+            state['pending'] = None
+            raise InterruptedError(f'Production cancelled by signal {signum}')
+        process.wait(timeout=timeout)
+    except BaseException:
+        if process is not None:
+            terminate_process_group(process)
+        raise
+    if process.returncode:
+        terminate_process_group(process)
+    return subprocess.CompletedProcess(args, process.returncode)
+
+
+@contextlib.contextmanager
+def cancellation_signals():
+    """Turn CLI cancellation into an unwinding exception so children are reaped."""
+    global _cancellation_state
+    previous = {}
+    previous_state = _cancellation_state
+    state = _cancellation_state = {'defer': 0, 'pending': None}
+    def cancel(signum, frame):
+        if state['defer']:
+            state['pending'] = signum
+        else:
+            raise InterruptedError(f'Production cancelled by signal {signum}')
+    try:
+        for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            previous[signum] = signal.signal(signum, cancel)
+        yield
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+        _cancellation_state = previous_state
 
 
 class StageRunner:
@@ -133,7 +207,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
         raise ValueError('Publication must be explicitly disabled')
     if not ccsd.get('scenes'):
         raise ValueError('Scenes are required')
-    with job_lock(workdir):
+    with cancellation_signals(), job_lock(workdir):
         runner = StageRunner(workdir)
         w = runner.root
         clips, mixdir = w / 'clips', w / 'mix'
@@ -143,7 +217,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
 
         def command(name, args, outputs, timeout=1800, check=True):
             with (w / (name + '.log')).open('a') as log:
-                result = subprocess.run([str(a) for a in args], cwd=ROOT, stdout=log, stderr=log, timeout=timeout)
+                result = run_process([str(a) for a in args], cwd=ROOT, stdout=log, stderr=log, timeout=timeout)
             if check:
                 result.check_returncode()
             return outputs
@@ -162,7 +236,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
         voice_record = runner.stage('voice', [ccsd_path, scripts / 'v2_free_voice.py', ROOT / 'control/free-voice-policy.json', ROOT / 'control/audio-sync-policy.json'], generate)
         runner.stage('assembly', [ccsd_path, scripts / 'v2_audio_assemble.py', *voice_record['outputs']], lambda: python('v2_audio_assemble', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--out', voice, '--receipt', w / 'assembly.json'], [voice, w / 'assembly.json']))
         stems = [ROOT / 'public/audio' / name for name in ('episode1-music.mp3', 'episode1-sfx-1.mp3', 'episode1-sfx-2.mp3')]
-        runner.stage('mix', [ccsd_path, voice, scripts / 'v2_sound_mix.py', *stems], lambda: python('v2_sound_mix', ['--ccsd', ccsd_path, '--voice', voice, '--out-dir', mixdir, '--receipt', w / 'mix.json'], [mixdir / 'mix.wav', w / 'mix.json']))
+        runner.stage('mix', [ccsd_path, voice, scripts / 'v2_sound_mix.py', *stems], lambda: python('v2_sound_mix', ['--ccsd', ccsd_path, '--voice', voice, '--out-dir', mixdir, '--receipt', w / 'mix.json'], [mixdir / name for name in ('music.wav', 'sfx.wav', 'mix.wav')] + [w / 'mix.json']))
         contract, transcript, captions = w / 'transcription-contract.json', w / 'transcription.json', w / 'captions.json'
         def transcription_contract():
             lines = [d['text'] for scene in sorted(ccsd['scenes'], key=lambda s: s['start']) for d in scene.get('audio', {}).get('dialogue', [])]
@@ -170,7 +244,10 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
             return [contract]
         runner.stage('transcription_contract', [ccsd_path], transcription_contract)
         transcription_options = ['--model', 'medium.en', '--spoken-numbers'] if composition == 'StudioLong' else ['--model', 'small.en']
-        runner.stage('transcription', [voice, contract, scripts / 'free_transcription_qa.py', ROOT / 'requirements-transcription.txt'], lambda: python('free_transcription_qa', ['--audio', voice, '--contract', contract, '--output', transcript, *transcription_options], [transcript]))
+        transcription_selection = w / 'transcription-selection.json'
+        selected_transcription = {'options': transcription_options}
+        atomic_json(transcription_selection, selected_transcription)
+        runner.stage('transcription', [voice, contract, transcription_selection, scripts / 'free_transcription_qa.py', ROOT / 'requirements-transcription.txt'], lambda: python('free_transcription_qa', ['--audio', voice, '--contract', contract, '--output', transcript, *transcription_options], [transcript]))
         if composition == 'StudioLong':
             observed = w / 'transcription-repaired.json'
             runner.stage('recognition_repair', [ccsd_path, voice, transcript, w / 'assembly.json', scripts / 'v2_transcription_repair.py', scripts / 'free_transcription_qa.py'], lambda: python('v2_transcription_repair', ['--ccsd', ccsd_path, '--transcription', transcript, '--assembly', w / 'assembly.json', '--audio', voice, '--out', observed], [observed]))

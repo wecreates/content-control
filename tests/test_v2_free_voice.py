@@ -74,10 +74,59 @@ class FreeVoiceTests(unittest.TestCase):
   self.assertEqual(len(self.calls),1);self.assertEqual(self.calls[0][2],1.2)
   self.assertTrue(r['clips'][0]['reused'])
  def test_invalid_explicit_speed_fails_before_synthesis(self):
-  for value in [True,0.99,1.46,float('nan'),'1.2']:
+  for value in [True,0.99,1.46,float('nan'),'1.2',10**400]:
    self.cc['scenes'][0]['audio']['dialogue'][0]['performance']={'synthesis_speed':value}
    with self.assertRaisesRegex(ValueError,'synthesis speed'):generate(self.cc,self.out,self.synth)
   self.assertEqual(self.calls,[])
+ def test_removing_requested_speed_regenerates_default_take(self):
+  dialogue=self.cc['scenes'][0]['audio']['dialogue'][0]
+  dialogue['performance']={'synthesis_speed':1.2}
+  generate(self.cc,self.out,self.synth);self.calls.clear()
+  del dialogue['performance']
+  result=generate(self.cc,self.out,self.synth)
+  self.assertEqual(len(self.calls),1)
+  self.assertEqual(self.calls[0][2],1.0)
+  self.assertFalse(result['clips'][1]['reused'])
+  self.assertTrue(result['clips'][0]['reused'])
+ def test_auto_fit_reuses_unchanged_requested_speed(self):
+  self.cc['scenes'][0]['audio']['dialogue'][0]['performance']={'synthesis_speed':1.1}
+  self.cc['scenes'][1]['audio']['dialogue'][0]['performance']={'synthesis_speed':1.1}
+  def longer(text,voice,speed):
+   self.calls.append((text,voice,speed))
+   return [math.sin(i*.1)*.1 for i in range(round(24000*1.2/speed))],24000
+  first=generate(self.cc,self.out,longer);self.calls.clear()
+  self.assertTrue(all(c['speed']>1.1 for c in first['clips']))
+  result=generate(self.cc,self.out,longer)
+  self.assertTrue(all(c['reused'] for c in result['clips']))
+  self.assertEqual(self.calls,[])
+ def test_changed_generator_or_legacy_provenance_disables_reuse(self):
+  for digest in [None,'0'*64]:
+   with self.subTest(digest=digest):
+    original=generate(self.cc,self.out,self.synth);self.calls.clear()
+    if digest is None:original.pop('generator_sha256',None)
+    else:original['generator_sha256']=digest
+    (self.out/'approved-manifest.json').write_text(json.dumps(original))
+    result=generate(self.cc,self.out,self.synth)
+    self.assertEqual(len(self.calls),2)
+    self.assertFalse(any(c['reused'] for c in result['clips']))
+ def test_malformed_cache_is_a_miss_not_a_failed_job(self):
+  self.out.mkdir(parents=True)
+  for malformed in [[],None,True,1,'not an object']:
+   with self.subTest(cache=malformed):
+    self.calls.clear()
+    (self.out/'approved-manifest.json').write_text(json.dumps(malformed))
+    result=generate(self.cc,self.out,self.synth)
+    self.assertEqual(len(self.calls),2)
+    self.assertFalse(any(c['reused'] for c in result['clips']))
+ def test_oversized_cached_speeds_regenerate_instead_of_crashing(self):
+  for field in ['requested_speed','speed']:
+   with self.subTest(field=field):
+    original=generate(self.cc,self.out,self.synth);self.calls.clear()
+    original['clips'][0][field]=10**400
+    (self.out/'approved-manifest.json').write_text(json.dumps(original))
+    result=generate(self.cc,self.out,self.synth)
+    self.assertFalse(result['clips'][0]['reused'])
+    self.assertTrue(self.calls)
  def test_fit_retries_bounded_without_truncation(self):
   def longer(text,voice,speed):
    self.calls.append(speed);return [math.sin(i*.1)*.1 for i in range(round(24000*1.1/speed))],24000

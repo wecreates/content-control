@@ -322,6 +322,27 @@ def evaluate_visual_review(reference_dir, candidate_video, review):
             'scope':base['scope'],'production_approved':False,'publication_enabled':False}
 
 
+def comparison_summary(report):
+    """Expose the actual approval outcome separately from pixel diagnostics.
+
+    Keep the historical distance keys for log consumers, but never present
+    them without their non-acceptance scope or hide an exact-review blocker.
+    """
+    approval=report.get('visual_review') or report.get('qualified_structure') or {}
+    diagnostic=report['raw_pixel_diagnostic']
+    return {
+        'status':report['status'],
+        'analysis_status':report['analysis_status'],
+        'candidate_sha256':report['candidate_sha256'],
+        'reason':report['reason'],
+        'blocker':approval.get('blocker'),
+        'failed_checks':[name for name,value in report['checks'].items() if value is not True],
+        'mean_frame_distance':diagnostic['mean_frame_distance'],
+        'p90_frame_distance':diagnostic['p90_frame_distance'],
+        'raw_pixel_diagnostic_acceptance_effect':diagnostic['acceptance_effect'],
+    }
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--reference-dir",required=True)
@@ -370,7 +391,7 @@ def main():
     }
     Path(a.out).parent.mkdir(parents=True,exist_ok=True)
     Path(a.out).write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-    print(json.dumps({"status":report["status"],"mean_frame_distance":comp["mean_frame_distance"],"p90_frame_distance":comp["p90_frame_distance"]},sort_keys=True))
+    print(json.dumps(comparison_summary(report),sort_keys=True))
     raise SystemExit(0 if report["status"]=="PASS" or (a.analysis_only and analysis["status"]=="COMPLETE") else 2)
 
 if __name__=="__main__":

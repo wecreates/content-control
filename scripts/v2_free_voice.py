@@ -38,16 +38,19 @@ def cached_clips(out):
     """Only trust identity metadata from the prior successfully staged manifest."""
     try:
         old=json.loads((out/'approved-manifest.json').read_text())
-        if (old.get('publication_enabled') is not False or old.get('provider')!='kokoro'
+        if (not isinstance(old,dict) or old.get('publication_enabled') is not False or old.get('provider')!='kokoro'
                 or old.get('model_id')!='Kokoro-82M' or old.get('model_repository')!=MODEL_REPO
-                or old.get('voice_assignments')!=VOICE_ASSIGNMENTS):return {}
+                or old.get('voice_assignments')!=VOICE_ASSIGNMENTS
+                or old.get('generator_sha256')!=sha(__file__)):return {}
         result={}
         for clip in old['clips']:
+            requested=clip.get('requested_speed')
+            if isinstance(requested,bool) or not isinstance(requested,(int,float)) or not 1<=requested<=MAX_SPEED or not math.isfinite(requested):return {}
             key=(clip['scene_id'],clip['speaker'],clip['text_sha256'],clip['voice_id'])
             if key in result:return {}  # Ambiguous provenance is not reusable.
             result[key]=clip
         return result
-    except (OSError,ValueError,KeyError,TypeError):return {}
+    except (OSError,ValueError,KeyError,TypeError,AttributeError):return {}
 
 
 def reuse_clip(out,stage,name,clip,window):
@@ -66,7 +69,7 @@ def reuse_clip(out,stage,name,clip,window):
         target=stage/name;shutil.copyfile(source,target)
         if sha(target)!=clip['audio_sha256']:return None
         return dict(clip,file=name,duration=seconds,window_seconds=window,reused=True,attempts=0)
-    except (OSError,ValueError,KeyError,TypeError,wave.Error,EOFError):return None
+    except (OSError,ValueError,OverflowError,KeyError,TypeError,wave.Error,EOFError):return None
 
 
 def generate(ccsd,out_dir,synth=None):
@@ -84,7 +87,7 @@ def generate(ccsd,out_dir,synth=None):
             if d.get('speaker') not in VOICE_ASSIGNMENTS:raise ValueError('Speaker has no approved free voice assignment')
             if len(d['text'])>3000:raise ValueError('Dialogue too long')
             requested=d.get('performance',{}).get('synthesis_speed',1.0)
-            if isinstance(requested,bool) or not isinstance(requested,(int,float)) or not math.isfinite(requested) or not 1<=requested<=MAX_SPEED:raise ValueError('Invalid synthesis speed')
+            if isinstance(requested,bool) or not isinstance(requested,(int,float)) or not 1<=requested<=MAX_SPEED or not math.isfinite(requested):raise ValueError('Invalid synthesis speed')
             dialogue.append((s,d))
     if not dialogue:raise ValueError('No dialogue to synthesize')
     windows=[]
@@ -94,7 +97,7 @@ def generate(ccsd,out_dir,synth=None):
         windows.append(window)
     out=Path(out_dir).resolve();out.mkdir(parents=True,exist_ok=True)
     previous=cached_clips(out)
-    manifest={'schema_version':1,'publication_enabled':False,'provider':'kokoro','model_id':'Kokoro-82M','model_repository':MODEL_REPO,'device':'cpu','voice_assignments':dict(VOICE_ASSIGNMENTS),'clips':[],'provider_calls':0,'status':'GENERATED_PENDING_LISTENING_REVIEW','scope':'Local synthesis, declared stock voice assignment, timing and file integrity; transcript/listening quality requires review'}
+    manifest={'schema_version':1,'publication_enabled':False,'provider':'kokoro','model_id':'Kokoro-82M','model_repository':MODEL_REPO,'generator_sha256':sha(__file__),'device':'cpu','voice_assignments':dict(VOICE_ASSIGNMENTS),'clips':[],'provider_calls':0,'status':'GENERATED_PENDING_LISTENING_REVIEW','scope':'Local synthesis, declared stock voice assignment, timing and file integrity; transcript/listening quality requires review'}
     # Manifest is committed only after every clip succeeds; no partial success claim.
     with tempfile.TemporaryDirectory(prefix='.voice-build-',dir=out) as temp:
         stage=Path(temp)
@@ -103,12 +106,14 @@ def generate(ccsd,out_dir,synth=None):
             name=f'{i:02d}-{d["speaker"]}.wav'
             key=(scene['id'],d['speaker'],hashlib.sha256(text.encode()).hexdigest(),voice)
             cached=previous.get(key)
-            if cached and 'synthesis_speed' in d.get('performance',{}) and cached.get('speed')!=speed:cached=None
+            # Requested speed identifies the take; speed may differ after bounded auto-fit.
+            if cached and cached.get('requested_speed')!=speed:cached=None
             reused=reuse_clip(out,stage,name,cached,window) if cached else None
             if reused:
                 manifest['clips'].append(reused)
                 continue
             if synth is None:synth=local_synthesizer()
+            requested_speed=speed
             for attempt in range(3):
                 samples,rate=synth(text,voice,speed)
                 if not isinstance(rate,int) or rate<8000 or rate>96000 or not len(samples):raise ValueError('Invalid synthesized audio')
@@ -127,7 +132,7 @@ def generate(ccsd,out_dir,synth=None):
             with wave.open(str(target),'rb') as w:
                 output_duration=w.getnframes()/w.getframerate()
                 if (w.getnchannels(),w.getsampwidth(),w.getframerate())!=(2,2,44100) or output_duration>window:raise ValueError('Converted clip violates timeline')
-            manifest['clips'].append({'scene_id':scene['id'],'speaker':d['speaker'],'voice_id':voice,'file':target.name,'text_sha256':hashlib.sha256(text.encode()).hexdigest(),'audio_sha256':sha(target),'duration':output_duration,'window_seconds':window,'speed':speed,'attempts':attempt+1,'reused':False})
+            manifest['clips'].append({'scene_id':scene['id'],'speaker':d['speaker'],'voice_id':voice,'file':target.name,'text_sha256':hashlib.sha256(text.encode()).hexdigest(),'audio_sha256':sha(target),'duration':output_duration,'window_seconds':window,'requested_speed':requested_speed,'speed':speed,'attempts':attempt+1,'reused':False})
         for clip in manifest['clips']:os.replace(stage/clip['file'],out/clip['file'])
         staged_manifest=stage/'manifest.json';staged_manifest.write_text(json.dumps(manifest,indent=2)+'\n');os.replace(staged_manifest,out/'approved-manifest.json')
     return manifest

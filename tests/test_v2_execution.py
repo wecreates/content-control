@@ -125,5 +125,99 @@ class ResumeTests(unittest.TestCase):
                 self.assertFalse(failure['publication_enabled'])
 
 
+class ProductionCacheTests(unittest.TestCase):
+    """Exercise the actual stage wiring with offline, deterministic process doubles."""
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.work = self.root / 'job'
+        for name in ('scripts/v2_free_voice.py', 'scripts/v2_audio_assemble.py',
+                     'scripts/v2_sound_mix.py', 'scripts/free_transcription_qa.py',
+                     'control/free-voice-policy.json', 'control/audio-sync-policy.json',
+                     'requirements-transcription.txt', 'public/audio/episode1-music.mp3',
+                     'public/audio/episode1-sfx-1.mp3', 'public/audio/episode1-sfx-2.mp3'):
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('fixture input: ' + name)
+        self.ccsd = self.root / 'ccsd.json'
+        self.ccsd.write_text(json.dumps({'publication_enabled': False, 'scenes': [
+            {'id': 'a', 'start': 0, 'end': 2, 'audio': {'dialogue': [
+                {'speaker': 'dave', 'text': 'Hello.'}]}}]}))
+        self.calls = []
+
+    def fake_process(self, args, **kwargs):
+        script = Path(args[1]).stem
+        self.calls.append((script, args))
+        def value(flag):
+            return Path(args[args.index(flag) + 1])
+        if script == 'v2_free_voice':
+            out = value('--out-dir');out.mkdir(parents=True, exist_ok=True)
+            (out / 'take.wav').write_bytes(b'voice fixture')
+            (out / 'approved-manifest.json').write_text(json.dumps({'clips': [{'file': 'take.wav'}]}))
+        elif script == 'v2_audio_assemble':
+            value('--out').write_bytes(b'assembled voice fixture')
+            value('--receipt').write_text('{"status":"PASS"}')
+        elif script == 'v2_sound_mix':
+            out = value('--out-dir');out.mkdir(parents=True, exist_ok=True)
+            for stem in ('music.wav', 'sfx.wav', 'mix.wav'):
+                (out / stem).write_bytes(('mixed fixture ' + stem).encode())
+            value('--receipt').write_text('{"status":"PASS"}')
+        elif script == 'free_transcription_qa':
+            value('--output').write_text('{"status":"PASS"}')
+        else:
+            raise AssertionError('Unexpected process: ' + script)
+        return subprocess.CompletedProcess(args, 0)
+
+    def run_until(self, stage, composition='StudioAnimatic'):
+        from unittest.mock import patch
+        from scripts import v2_execution
+        class StopPipeline(Exception):
+            pass
+        original = StageRunner.stage
+        def bounded(runner, name, *args, **kwargs):
+            result = original(runner, name, *args, **kwargs)
+            if name == stage:
+                raise StopPipeline
+            return result
+        with patch.object(v2_execution, 'ROOT', self.root), \
+             patch.object(v2_execution, 'run_process', side_effect=self.fake_process), \
+             patch.object(StageRunner, 'stage', bounded), \
+             self.assertRaises(StopPipeline):
+            v2_execution.execute(self.ccsd, self.work, composition)
+
+    def test_missing_or_changed_stem_forces_mix_without_repeating_voice(self):
+        self.run_until('mix')
+        self.run_until('mix')
+        self.assertEqual(sum(name == 'v2_sound_mix' for name, _ in self.calls), 1)
+        for stem in ('music.wav', 'sfx.wav'):
+            target = self.work / 'mix' / stem
+            for tamper in ('delete', 'change'):
+                with self.subTest(stem=stem, tamper=tamper):
+                    self.calls.clear()
+                    if tamper == 'delete':
+                        target.unlink()
+                    else:
+                        target.write_bytes(b'corrupted stem')
+                    self.run_until('mix')
+                    self.assertEqual([name for name, _ in self.calls], ['v2_sound_mix'])
+                    self.assertEqual(target.read_bytes(), ('mixed fixture ' + stem).encode())
+
+    def test_transcription_model_change_invalidates_only_dependent_stage(self):
+        self.run_until('transcription', 'StudioAnimatic')
+        self.calls.clear()
+        self.run_until('transcription', 'StudioLong')
+        self.assertEqual([name for name, _ in self.calls], ['free_transcription_qa'])
+        self.assertIn('medium.en', self.calls[0][1])
+        self.assertIn('--spoken-numbers', self.calls[0][1])
+        self.calls.clear()
+        self.run_until('transcription', 'StudioLong')
+        self.assertEqual(self.calls, [])
+        self.run_until('transcription', 'StudioAnimatic')
+        self.assertEqual([name for name, _ in self.calls], ['free_transcription_qa'])
+        self.assertIn('small.en', self.calls[0][1])
+        self.assertNotIn('--spoken-numbers', self.calls[0][1])
+
+
 if __name__ == '__main__':
     unittest.main()

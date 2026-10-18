@@ -23,6 +23,9 @@ on:
       - 'tests/production-status.test.mjs'
       - 'scripts/v2_execution.py'
       - 'tests/test_v2_execution.py'
+      - 'tests/test_v2_execution_processes.py'
+      - 'scripts/v2_free_voice.py'
+      - 'tests/test_v2_free_voice.py'
       - 'scripts/v2_captions.py'
       - 'scripts/production_memory.py'
       - 'tests/test_v2_captions.py'
@@ -61,7 +64,7 @@ jobs:
       - run: npm run test:system
       - run: node --test tests/studio-long-layout.test.mjs tests/studio-layout.test.mjs tests/observed-captions.test.mjs
       - run: node --test tests/verify-caption-frames.test.mjs
-      - run: python -m unittest -v tests.test_v2_execution tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions tests.test_v2_free_voice tests.test_v2_pacing tests.test_v2_transcription_repair tests.test_production_package
+      - run: python -m unittest -v tests.test_v2_execution tests.test_v2_execution_processes tests.test_v2_captions tests.test_production_memory tests.test_studio_free_execution tests.test_historical_runtime_regressions tests.test_v2_free_voice tests.test_v2_pacing tests.test_v2_transcription_repair tests.test_production_package
       - run: node --test integrations/watch-video/watch-bridge.test.mjs
   produce:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
