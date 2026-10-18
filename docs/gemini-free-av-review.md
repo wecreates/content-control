@@ -125,6 +125,12 @@ preparation receipt. Existing safeguards for retained repaired media still apply
 This produces `receipts/gemini-av-diagnostic.json` in the separate
 `gemini-av-diagnostic-FORMAT` artifact. When identity is not configured, its blocker
 receipt is instead included in the existing `exact-av-review-FORMAT` artifact.
+After checkout, the separate diagnostic job initializes a BLOCKED receipt with
+reason `diagnostic_step_not_completed` before downloading media or setting up the
+read identity. The adapter replaces it when it completes, so a setup/auth failure
+can still preserve an explicit incomplete diagnostic. Checkout failures and runner
+failures that prevent artifact preservation cannot guarantee a receipt; inspect
+the failed job in those cases.
 It never substitutes an original Short's diagnostic for repaired media.
 
 Direct CLI use requires an explicit independently obtained expected SHA-256:
