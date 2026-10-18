@@ -16,15 +16,20 @@ def transcribe_windows(ccsd, receipt, audio, samples, observe):
  duration=len(samples)/16000
  if not math.isfinite(receipt.get('duration',float('nan'))) or abs(duration-receipt['duration'])>.001:raise ValueError('Assembly duration mismatch')
  # Validate all windows before invoking the model.
- previous=0
- for (scene,line),window in zip(expected,windows):
+ previous=0;sample_bounds=[]
+ for index,((scene,line),window) in enumerate(zip(expected,windows)):
   start,end=window.get('start'),window.get('end')
   if window.get('scene_id')!=scene['id'] or window.get('speaker')!=line['speaker']:raise ValueError('Assembly scene or speaker mismatch')
   if any(type(t) not in (int,float) or not math.isfinite(t) for t in (start,end)) or not previous<=start<end<=duration or abs(start-scene['start'])>1/44100:raise ValueError('Invalid assembly speech window')
+  # Stay inside both the exact assembled clip and its nominal dialogue window.
+  # Assembly uses 44.1kHz rounding; ASR's 16kHz crop must never round outward.
+  dialogue_end=expected[index+1][0]['start'] if index+1<len(expected) else duration
+  first=math.ceil(max(start,scene['start'])*16000);last=math.floor(min(end,dialogue_end)*16000)
+  if not 0<=first<last<=len(samples):raise ValueError('Assembly speech window has no complete decoded samples')
+  sample_bounds.append((first,last))
   previous=end
  words=[];observations=[]
- for (scene,line),window in zip(expected,windows):
-  first=round(window['start']*16000);last=round(window['end']*16000)
+ for (scene,line),window,(first,last) in zip(expected,windows,sample_bounds):
   local=list(observe(samples[first:last]))
   if not local or norm(' '.join(w['word'] for w in local))!=norm(line['text']):raise ValueError('Observed words differ from script: '+scene['id']+'; expected='+repr(norm(line['text']))+'; observed='+repr(norm(' '.join(w['word'] for w in local))))
   previous=0
@@ -33,7 +38,7 @@ def transcribe_windows(ccsd, receipt, audio, samples, observe):
    if any(type(t) not in (int,float) or not math.isfinite(t) for t in (start,end)) or not previous<=start<=end<=(last-first)/16000:raise ValueError('Observed word outside speech window: '+scene['id'])
    words.append({**w,'start':start+first/16000,'end':end+first/16000,'scene_id':scene['id'],'speaker':line['speaker']})
    previous=end
-  observations.append({'scene_id':scene['id'],'speaker':line['speaker'],'sample_start':first,'sample_end':last,'sample_rate':16000,'actual_transcript':' '.join(w['word'] for w in local)})
+  observations.append({'scene_id':scene['id'],'speaker':line['speaker'],'assembly_start':window['start'],'assembly_end':window['end'],'sample_start':first,'sample_end':last,'sample_rate':16000,'actual_transcript':' '.join(w['word'] for w in local)})
  return {'schema_version':1,'status':'PASS','publication_enabled':False,'word_timestamps':True,'audio_sha256':digest,'words':words,'windows':observations,'actual_transcript':' '.join(w['word'] for w in words),'timing_source':'Independent ASR on decoded assembly windows; original observed times plus exact sample offset','scope':'Exact normalized text and speech-window bounds; ASR accuracy and full audiovisual review remain separate'}
 
 def main():
