@@ -2,6 +2,7 @@
 import ast
 import importlib.util
 import os
+import re
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -46,11 +47,43 @@ class FreeReviewGuardTests(unittest.TestCase):
                 count+=1
         self.assertEqual(count,1)
 
+    def assert_local_review_has_no_provider_access(self, workflow, reviewer):
+        # Exempt only the explicitly gated diagnostic job, never later jobs.
+        prefix, jobs = workflow.split("\njobs:\n", 1)
+        sections = re.split(r"(?m)^(  \S[^\n]*(?:\n|\Z))", jobs)
+        self.assertEqual(sections[0], "")
+        blocks = list(zip(sections[1::2], sections[2::2]))
+        diagnostic = [body for name, body in blocks if name == "  free-api-diagnostic:\n"]
+        self.assertEqual(len(diagnostic), 1)
+        local = prefix + "".join(name+body for name, body in blocks if name != "  free-api-diagnostic:\n")
+        for forbidden in ['GEMINI_API_KEY','GEMINI_PROJECT_READ_TOKEN','id-token: write',
+                          'generativelanguage.googleapis.com','gemini_upload','gemini_analyze']:
+            self.assertNotIn(forbidden, local+reviewer)
+        guard = diagnostic[0].split("\n", 1)[0]
+        for required in ["github.event_name == 'workflow_dispatch'", "github.ref == 'refs/heads/main'",
+                         "github.event.repository.private == false", "inputs.run_free_api_diagnostic",
+                         "vars.GEMINI_AV_IDENTITY_ENABLED == 'true'", "vars.GEMINI_AV_WIF_PROVIDER != ''",
+                         "vars.GEMINI_AV_READ_SERVICE_ACCOUNT != ''"]:
+            self.assertIn(required, guard)
+
+    def test_local_job_guard_rejects_provider_access_before_and_after_diagnostic(self):
+        workflow=(ROOT/'.github/workflows/exact-av-review.yml').read_text()
+        for position in ['before', 'after']:
+            for header in ['leaked-provider-job:', '"leaked-provider-job":', 'leaked-provider-job: # comment']:
+                for forbidden in ['GEMINI_API_KEY', 'GEMINI_PROJECT_READ_TOKEN', 'id-token: write']:
+                    extra=f"  {header}\n    env: {{{forbidden}: synthetic}}\n"
+                    mutated=(workflow.replace("  free-api-diagnostic:\n",extra+"  free-api-diagnostic:\n")
+                             if position=='before' else workflow+extra)
+                    with self.subTest(position=position, header=header, forbidden=forbidden):
+                        with self.assertRaises(AssertionError):
+                            self.assert_local_review_has_no_provider_access(mutated, '')
+        with self.assertRaises(AssertionError):
+            self.assert_local_review_has_no_provider_access(workflow+'  inline-job: {env: {GEMINI_API_KEY: synthetic}}', '')
+
     def test_exact_review_uses_local_probe_and_existing_evidence_without_paid_inference(self):
         workflow=(ROOT/'.github/workflows/exact-av-review.yml').read_text()
         reviewer=(ROOT/'scripts/exact_av_review.mjs').read_text()
-        for forbidden in ['GEMINI_API_KEY','generativelanguage.googleapis.com','gemini_upload','gemini_analyze']:
-            self.assertNotIn(forbidden,workflow+reviewer)
+        self.assert_local_review_has_no_provider_access(workflow, reviewer)
         self.assertIn("import {inspectMedia,prepareReview} from './scripts/exact_av_review.mjs'",workflow)
         self.assertIn('inspectMedia(process.env.MEDIA_PATH)',workflow)
         self.assertIn('prepareReview(media)',workflow)
