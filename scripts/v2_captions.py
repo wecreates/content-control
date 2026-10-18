@@ -7,17 +7,21 @@ import argparse
 import hashlib
 import json
 import math
+import os
+import tempfile
 import re
 from pathlib import Path
 try:
     from scripts.free_transcription_qa import norm
+    from scripts.v2_audio_assemble import read_audio, same_file
 except ModuleNotFoundError:
     from free_transcription_qa import norm
+    from v2_audio_assemble import read_audio, same_file
 
 
 def enforce_frame_visibility(cues,expected,fps,duration):
     """Mirror ObservedCaptions.mjs's 0.12s hold, capped by the next cue."""
-    if isinstance(fps,bool) or not isinstance(fps,(int,float)) or not math.isfinite(fps) or not 1<=fps<=120:raise ValueError('Invalid caption frame rate')
+    if isinstance(fps,bool) or not isinstance(fps,(int,float)) or not 1<=fps<=120:raise ValueError('Invalid caption frame rate')
     pending=[];visible=set();counts=[]
     for i,cue in enumerate(cues):
         until=min(cue['end']+.12,cues[i+1]['start'] if i+1<len(cues) else duration,duration)
@@ -51,7 +55,7 @@ def coalesce_numeric_tokens(actual):
     for i,token in enumerate(actual):
         item=dict(token);item['observed_token_indices']=[i]
         start,end=item.get('start'),item.get('end')
-        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not math.isfinite(t) for t in (start,end)):raise ValueError('Observed word times missing or invalid')
+        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not 0<=t<=600 for t in (start,end)):raise ValueError('Observed word times missing or invalid')
         if start<previous_end or end<start:raise ValueError('Observed word timings overlap or leave media bounds')
         previous_end=end
         text=item.get('word','').strip()
@@ -70,20 +74,32 @@ def coalesce_numeric_tokens(actual):
 
 
 def build_captions(ccsd,transcription,audio):
+    if not isinstance(ccsd,dict) or not isinstance(transcription,dict):raise ValueError('CCSD and transcription objects required')
     if ccsd.get('publication_enabled') is not False or transcription.get('publication_enabled') is not False:raise ValueError('Publication must remain disabled')
     if transcription.get('status')!='PASS' or transcription.get('word_timestamps') is not True:raise ValueError('Passing observed word transcription required')
-    digest=hashlib.sha256(Path(audio).read_bytes()).hexdigest()
+    digest=hashlib.sha256(read_audio(audio)).hexdigest()
     if digest!=transcription.get('audio_sha256'):raise ValueError('Transcription audio hash mismatch')
-    scenes=sorted(ccsd.get('scenes',[]),key=lambda s:float(s['start']))
+    scenes=ccsd.get('scenes',[])
+    if not isinstance(scenes,list) or not scenes:raise ValueError('Scenes required')
+    for scene in scenes:
+        if not isinstance(scene,dict):raise ValueError('Invalid scene')
+        times=(scene.get('start'),scene.get('end'))
+        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not 0<=t<=600 for t in times) or not 0<=times[0]<times[1]<=600:
+            raise ValueError('Invalid scene timing')
+    scenes=sorted(scenes,key=lambda s:s['start'])
     duration=max(float(s['end']) for s in scenes)
     if not math.isfinite(duration) or duration<=0:raise ValueError('Invalid timeline duration')
+    dialogue_scenes=[scene for scene in scenes if any(line.get('text','').strip() for line in scene.get('audio',{}).get('dialogue',[]))]
     expected=[]
-    for scene in scenes:
+    for scene_index,scene in enumerate(dialogue_scenes):
+        # Audio assembly permits speech across non-dialogue reaction subshots,
+        # but never across the start of the next spoken scene.
+        window_end=dialogue_scenes[scene_index+1]['start'] if scene_index+1<len(dialogue_scenes) else duration
         for line in scene.get('audio',{}).get('dialogue',[]):
             for raw in line.get('text','').split():
                 token=norm(raw).split()
                 if not token:raise ValueError('Script token has no normalized speech')
-                expected.append({'original':raw,'normalized':token,'speaker':line['speaker'],'scene_id':scene['id']})
+                expected.append({'original':raw,'normalized':token,'speaker':line['speaker'],'scene_id':scene['id'],'window_start':scene['start'],'window_end':window_end})
     actual=coalesce_numeric_tokens(transcription.get('words',[]))
     if not expected or not actual:raise ValueError('Observed word count does not exactly match script')
     # Match the entire normalized sequence exactly, then join only at boundaries
@@ -91,7 +107,7 @@ def build_captions(ccsd,transcription,audio):
     normalized=[];previous_end=0
     for observed in actual:
         start,end=observed.get('start'),observed.get('end')
-        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not math.isfinite(t) for t in (start,end)):raise ValueError('Observed word times missing or invalid')
+        if any(isinstance(t,bool) or not isinstance(t,(int,float)) or not 0<=t<=600 for t in (start,end)):raise ValueError('Observed word times missing or invalid')
         if not 0<=start<=end<=duration or start<previous_end:raise ValueError('Observed word timings overlap or leave media bounds')
         words=norm(observed.get('word','')).split()
         if not words:raise ValueError('Observed token has no normalized speech')
@@ -112,6 +128,8 @@ def build_captions(ccsd,transcription,audio):
         source=expected[last_source]
         if any(expected[k]['scene_id']!=source['scene_id'] or expected[k]['speaker']!=source['speaker'] for k in indices):
             raise ValueError('Normalized group cannot cross scene or speaker boundary')
+        if actual[oi]['start']<source['window_start'] or actual[last_observed]['end']>source['window_end']:
+            raise ValueError('Observed words leave their dialogue window')
         # Delay joined source tokens until the final observed token starts. Earlier
         # subwords have already been heard; all times remain actual ASR boundaries.
         groups.append((indices,observed_indices,actual[last_observed]['start'],actual[last_observed]['end']))
@@ -151,7 +169,15 @@ def build_captions(ccsd,transcription,audio):
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--ccsd',required=True);p.add_argument('--transcription',required=True);p.add_argument('--audio',required=True);p.add_argument('--out',required=True);a=p.parse_args()
-    try:r=build_captions(json.loads(Path(a.ccsd).read_text()),json.loads(Path(a.transcription).read_text()),a.audio);code=0
-    except (ValueError,OSError,KeyError,TypeError) as e:r={'status':'BLOCKED','reason':str(e),'publication_enabled':False,'cues':[]};code=2
-    target=Path(a.out);target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(r,indent=2)+'\n');print(json.dumps({'status':r['status'],'cues':len(r.get('cues',[])),'reason':r.get('reason')}));return code
+    try:
+        if any(same_file(a.out,source) for source in (a.ccsd,a.transcription,a.audio)):
+            raise ValueError('Caption output would overwrite an input')
+    except (ValueError,OSError) as e:
+        print(json.dumps({'status':'BLOCKED','reason':str(e),'publication_enabled':False,'cues':[]}));return 2
+    try:r=build_captions(json.loads(read_audio(a.ccsd,2*1024*1024)),json.loads(read_audio(a.transcription,2*1024*1024)),a.audio);code=0
+    except (ValueError,OSError,KeyError,TypeError,AttributeError,RecursionError) as e:r={'status':'BLOCKED','reason':str(e),'publication_enabled':False,'cues':[]};code=2
+    target=Path(a.out);target.parent.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.caption-build-',dir=target.parent) as temporary:
+        staged=Path(temporary)/'captions.json';staged.write_text(json.dumps(r,indent=2)+'\n');os.replace(staged,target)
+    print(json.dumps({'status':r['status'],'cues':len(r.get('cues',[])),'reason':r.get('reason')}));return code
 if __name__=='__main__':raise SystemExit(main())

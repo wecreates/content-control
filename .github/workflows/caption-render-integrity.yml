@@ -1,0 +1,58 @@
+name: Caption and render integrity
+on:
+  pull_request:
+    paths:
+      - 'scripts/caption_contract.py'
+      - 'scripts/build_verified_captions.py'
+      - 'scripts/verify_captions.py'
+      - 'scripts/persist_caption_evidence.py'
+      - 'scripts/free_transcription_qa.py'
+      - 'scripts/v2_audio_assemble.py'
+      - 'scripts/v2_captions.py'
+      - 'scripts/assemble_render_shards.py'
+      - 'scripts/v2_sound_mix.py'
+      - 'remotion/ObservedCaptions.mjs'
+      - 'scripts/verify_caption_frames.mjs'
+      - 'requirements-transcription.txt'
+      - 'tests/test_caption_provenance.py'
+      - 'tests/test_persist_caption_evidence.py'
+      - 'tests/test_v2_audio*.py'
+      - 'tests/test_v2_caption*.py'
+      - 'tests/test_assemble_render_shards.py'
+      - 'tests/test_v2_sound_mix.py'
+      - 'tests/observed-captions.test.mjs'
+      - 'tests/verify-caption-frames.test.mjs'
+      - '.github/workflows/caption-render-integrity.yml'
+      - '.github/workflows/narration-transcription-gate.yml'
+      - '.github/workflows/candidate-state-reconcile.yml'
+      - '.github/workflows/runtime-integrity-manifest.yml'
+      - '.github/workflows/content-control-v2.yml'
+      - '.github/workflows/shot-render-farm.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: caption-render-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  PUBLICATION_ENABLED: 'false'
+jobs:
+  offline-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install local media fixture tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Test source-bound caption, audio and shard evidence offline
+        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_v2_audio_integrity tests.test_v2_caption_timing_integrity tests.test_assemble_render_shards tests.test_v2_audio_assemble tests.test_v2_captions tests.test_v2_sound_mix
+      - name: Test actual caption frame visibility
+        run: node --test tests/verify-caption-frames.test.mjs tests/observed-captions.test.mjs
+      - name: Check Python syntax
+        run: python -m compileall -q scripts tests

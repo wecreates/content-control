@@ -146,6 +146,58 @@ class OperationalAnalysisTests(unittest.TestCase):
             with self.assertRaises(ValueError):analyze_comparison(refs,video,root/'invalid')
 
 
+class ComparisonCliSummaryTests(unittest.TestCase):
+    def test_summary_reports_review_blocker_without_mislabeling_pixel_distance(self):
+        from scripts.rendered_visual_parity import comparison_summary
+        report={'status':'BLOCKED','analysis_status':'COMPLETE','candidate_sha256':'a'*64,
+                'reason':'Review candidate hash does not match exact video',
+                'visual_review':{'status':'BLOCKED','blocker':'INVALID_VISUAL_REVIEW'},
+                'qualified_structure':{'blocker':'BLOCKED_UNSUPPORTED_REFERENCE'},
+                'checks':{'candidate_decodes':True,'reference_frames_present':True,'framewise_style_parity':False},
+                'raw_pixel_diagnostic':{'mean_frame_distance':.3457,'p90_frame_distance':.3554,'acceptance_effect':'none'}}
+        summary=comparison_summary(report)
+        self.assertEqual(summary['reason'],report['reason'])
+        self.assertEqual(summary['blocker'],'INVALID_VISUAL_REVIEW')
+        self.assertEqual(summary['candidate_sha256'],'a'*64)
+        self.assertEqual(summary['analysis_status'],'COMPLETE')
+        self.assertEqual(summary['failed_checks'],['framewise_style_parity'])
+        self.assertEqual(summary['raw_pixel_diagnostic_acceptance_effect'],'none')
+        self.assertEqual(summary['mean_frame_distance'],.3457)
+        self.assertEqual(report['status'],'BLOCKED')
+        report['visual_review']=None
+        self.assertEqual(comparison_summary(report)['blocker'],'BLOCKED_UNSUPPORTED_REFERENCE')
+
+    def test_real_cli_keeps_stale_review_blocked_even_when_analysis_succeeds(self):
+        import json,os,subprocess,sys
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);video=root/'candidate.avi';refs=root/'refs';refs.mkdir()
+            writer=cv2.VideoWriter(str(video),cv2.VideoWriter_fourcc(*'MJPG'),8,(80,80))
+            self.assertTrue(writer.isOpened())
+            image=np.full((80,80,3),255,dtype=np.uint8)
+            cv2.line(image,(10,10),(65,65),(0,0,0),4)
+            for i in range(8):writer.write(image)
+            writer.release()
+            for i in range(4):cv2.imwrite(str(refs/f'ref-{i}.jpg'),image)
+            review=root/'stale-review.json';review.write_text(json.dumps({'candidate':{'sha256':'0'*64}}))
+            output=root/'comparison.json'
+            command=[sys.executable,'-m','scripts.rendered_visual_parity','--reference-dir',str(refs),
+                     '--candidate-video',str(video),'--out',str(output),'--visual-review',str(review)]
+            for analysis_only,expected_exit in [(False,2),(True,0)]:
+                completed=subprocess.run(command+(['--analysis-only'] if analysis_only else []),
+                                         capture_output=True,text=True,timeout=30,env=os.environ.copy())
+                self.assertEqual(completed.returncode,expected_exit,completed.stderr)
+                summary=json.loads(completed.stdout);report=json.loads(output.read_text())
+                self.assertEqual(summary['status'],'BLOCKED')
+                self.assertEqual(summary['analysis_status'],'COMPLETE')
+                self.assertEqual(summary['candidate_sha256'],sha256(video))
+                self.assertEqual(summary['reason'],'Review candidate hash does not match exact video')
+                self.assertEqual(summary['blocker'],'INVALID_VISUAL_REVIEW')
+                self.assertEqual(summary['raw_pixel_diagnostic_acceptance_effect'],'none')
+                self.assertEqual(report['status'],'BLOCKED')
+                self.assertFalse(report['checks']['framewise_style_parity'])
+                self.assertFalse(report['publication_enabled'])
+
+
 class DocumentedVisualReviewTests(unittest.TestCase):
     def test_exact_bound_review_can_pass_fail_and_reject_tampering(self):
         import copy
