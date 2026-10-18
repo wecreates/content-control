@@ -3,7 +3,7 @@
     "audio_duration_seconds": 30.058667,
     "audio_start_relative_seconds": 0.0,
     "audio_start_tolerance_seconds": 0.05,
-    "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+    "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "channels": 2,
     "checks": {
       "analysis_complete": true,
@@ -46,11 +46,11 @@
     "verdict": "PASS"
   },
   "audio_source": "repository-local public/audio",
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "contact_sheet": "qa-output/free/contact.jpg",
   "credit_cost": 0,
   "deterministic": {
-    "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+    "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "checks": {
       "duration_30s": true,
       "motion_activity": true,
@@ -59,9 +59,9 @@
       "reference_edge_density_ratio": true
     },
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5938150292294868,
+    "edge_density_ratio": 0.5936676060171352,
     "engine": "opencv-free-qa-v1",
-    "mean_candidate_edge_density": 0.011363606770833333,
+    "mean_candidate_edge_density": 0.01136078559027778,
     "mean_reference_edge_density": 0.019136610243055557,
     "motion_active_fraction": 1.0,
     "reference_frames": 10,
@@ -89,7 +89,7 @@
       },
       {
         "offset": 22676,
-        "size": 4029848,
+        "size": 4029651,
         "type": "mdat"
       }
     ],
@@ -132,16 +132,16 @@
     "analysis_status": "COMPLETE",
     "artistic_acceptance": "UNASSESSED",
     "best_reference_similarity_by_candidate": [
-      0.4270409047603607,
-      0.45013365149497986,
-      0.39411091804504395,
+      0.4270407557487488,
+      0.4501338303089142,
+      0.39411044120788574,
       0.4375591278076172,
-      0.38390132784843445,
-      0.38086381554603577,
-      0.47470104694366455,
-      0.39926469326019287,
-      0.4028262495994568,
-      0.39723461866378784
+      0.38434621691703796,
+      0.3808640241622925,
+      0.4747009873390198,
+      0.39926478266716003,
+      0.402826189994812,
+      0.39877745509147644
     ],
     "checks": {
       "florence_completed": true,
@@ -163,7 +163,7 @@
             "file": "cand-05.jpg"
           },
           {
-            "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue circle around them. Above the figures, there is text that reads \"One rule. REAL",
+            "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue border around the image. Above the figures, there is text that reads \"One rule.",
             "file": "cand-10.jpg"
           }
         ],
@@ -177,7 +177,7 @@
             "file": "ref-05.jpg"
           },
           {
-            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
             "file": "ref-10.jpg"
           }
         ]
@@ -188,17 +188,17 @@
     "frame_matches": [
       {
         "candidate": "cand-01.jpg",
-        "cosine_similarity": 0.4270409047603607,
+        "cosine_similarity": 0.4270407557487488,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-02.jpg",
-        "cosine_similarity": 0.45013365149497986,
+        "cosine_similarity": 0.4501338303089142,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-03.jpg",
-        "cosine_similarity": 0.39411091804504395,
+        "cosine_similarity": 0.39411044120788574,
         "reference": "ref-08.jpg"
       },
       {
@@ -208,42 +208,42 @@
       },
       {
         "candidate": "cand-05.jpg",
-        "cosine_similarity": 0.38390132784843445,
+        "cosine_similarity": 0.38434621691703796,
         "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-06.jpg",
-        "cosine_similarity": 0.38086381554603577,
+        "cosine_similarity": 0.3808640241622925,
         "reference": "ref-07.jpg"
       },
       {
         "candidate": "cand-07.jpg",
-        "cosine_similarity": 0.47470104694366455,
+        "cosine_similarity": 0.4747009873390198,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-08.jpg",
-        "cosine_similarity": 0.39926469326019287,
+        "cosine_similarity": 0.39926478266716003,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-09.jpg",
-        "cosine_similarity": 0.4028262495994568,
+        "cosine_similarity": 0.402826189994812,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-10.jpg",
-        "cosine_similarity": 0.39723461866378784,
+        "cosine_similarity": 0.39877745509147644,
         "reference": "ref-01.jpg"
       }
     ],
-    "global_similarity": 0.631574273109436,
+    "global_similarity": 0.6317602396011353,
     "limitations": [
       "Embedding similarity is descriptive, not calibrated artistic parity.",
       "Sampled frames do not establish timing, animation quality, or full-video parity.",
       "Captions may omit details or hallucinate; they are not visual approval."
     ],
-    "mean_best_frame_similarity": 0.4147636294364929,
+    "mean_best_frame_similarity": 0.41496238112449646,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "openclip_status": "COMPLETE",
     "production_ready": false,
@@ -268,7 +268,7 @@
         },
         {
           "file": "cand-05.jpg",
-          "sha256": "9b747cd809506d7ba05f35680c416f0a97a5d6e654c839e138aacae1b4e5452f"
+          "sha256": "4ef6be313416dd66ec5d4314469ba8abed3b548216aba1049a012ce611e677ba"
         },
         {
           "file": "cand-06.jpg",
@@ -288,7 +288,7 @@
         },
         {
           "file": "cand-10.jpg",
-          "sha256": "36bb40c3c2c6c7fc48239f2cc5a441dc21f52b381385b732b5c8b008a6f29ce6"
+          "sha256": "8b6a8af2862bd7532bcc83b6042d9a6d26342b288839436883a8681dc58ed799"
         }
       ],
       "candidate_frames_video_binding_verified": false,
@@ -334,8 +334,8 @@
           "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
         }
       ],
-      "run_id": "39114090121",
-      "source_revision": "6d882b54c0e1cae940d33d1ada708c5fb9e6e8ba"
+      "run_id": "39134208789",
+      "source_revision": "8e80c1927526d227472f3e09cf773724a627edf4"
     },
     "publication_enabled": false,
     "runtime_versions": {
