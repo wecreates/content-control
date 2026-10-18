@@ -89,3 +89,57 @@ test('bounded grant transport still checks signature, scope, revocation and life
  const payload=JSON.stringify(base),resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify({payload,signature:'0'.repeat(64)}))});
  await assert.rejects(resolve({id:brief.id,brief}),/SIGNATURE_INVALID/);
 });
+
+async function bounded(promise){
+ let timer;
+ try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('TEST_OPERATION_STALLED')),1000);})]);}
+ finally{clearTimeout(timer);}
+}
+for(const scenario of ['status','size']){
+ test(`unsettled cancellation does not stall the ${scenario} error`,async()=>{
+  let cancelled=0;
+  const body=new ReadableStream({start(c){if(scenario==='size')c.enqueue(new Uint8Array(5));},cancel(){cancelled++;return new Promise(()=>{});}});
+  const response=new Response(body,{status:scenario==='status'?503:200});
+  await assert.rejects(bounded(readBridgeJSON(response,{maxBytes:4,statusError:'STATUS',sizeError:'SIZE'})),
+   scenario==='status'?/^Error: STATUS$/:/^Error: SIZE$/);
+  assert.equal(cancelled,1);assert.equal(body.locked,false);
+ });
+}
+test('response abort interrupts an uncooperative read and releases a stalled cancellation',async()=>{
+ const controller=new AbortController();let reading,cancelled=0;
+ const entered=new Promise(resolve=>reading=resolve);
+ const body=new ReadableStream({pull(){reading();return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});
+ const operation=readBridgeJSON(new Response(body),{maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal:controller.signal});
+ await entered;controller.abort();
+ await assert.rejects(bounded(operation),{name:'AbortError'});
+ assert.equal(cancelled,1);assert.equal(body.locked,false);
+});
+for(const caller of ['grant','outbox']){
+ test(`${caller} forwards cancellation to a body that ignores fetch's signal`,async()=>{
+  const controller=new AbortController();let reading,cancelled=0;
+  const entered=new Promise(resolve=>reading=resolve),db=dbFixture();
+  const body=new ReadableStream({pull(){reading();return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});
+  const fetchImpl=async()=>new Response(body);
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'},{signal:controller.signal}):
+   deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl,signal:controller.signal});
+  await entered;controller.abort();
+  if(caller==='grant')await assert.rejects(bounded(operation),{name:'AbortError'});
+  else assert.deepEqual(await bounded(operation),{delivered:0});
+  assert.equal(cancelled,1);assert.equal(body.locked,false);assert.deepEqual(db.updated,[]);
+ });
+}
+
+test('response deadline stops a stalled body without a transport abort listener',async()=>{
+ let cancelled=0;
+ const body=new ReadableStream({pull(){return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});
+ await assert.rejects(bounded(readBridgeJSON(new Response(body),
+  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal:AbortSignal.timeout(10)})),{name:'TimeoutError'});
+ assert.equal(cancelled,1);assert.equal(body.locked,false);
+});
+test('already aborted response is cancelled without acquiring a reader',async()=>{
+ let cancelled=0;
+ const body=new ReadableStream({cancel(){cancelled++;return new Promise(()=>{});}});
+ await assert.rejects(bounded(readBridgeJSON(new Response(body),
+  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal:AbortSignal.abort()})),{name:'AbortError'});
+ assert.equal(cancelled,1);assert.equal(body.locked,false);
+});
