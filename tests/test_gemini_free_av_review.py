@@ -3,6 +3,7 @@ import copy
 import datetime as dt
 import importlib.util
 import http.client
+import http.server
 import io
 import json
 import os
@@ -10,6 +11,8 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 import unittest
 import urllib.error
 from unittest.mock import patch
@@ -416,6 +419,129 @@ class AdapterTests(unittest.TestCase):
             client = av.HTTP()
             with patch.object(client.opener, "open", side_effect=error), self.assertRaisesRegex(av.Blocked, "^provider_transport_error$"):
                 client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+
+    def test_invalid_deadlines_and_unsupported_contexts_never_open_network(self):
+        client = av.HTTP()
+        with patch.object(client.opener, "open") as opened:
+            for timeout in (0, -1, True, float("nan"), float("inf"), 301):
+                with self.subTest(timeout=timeout), self.assertRaisesRegex(av.Blocked, "^invalid_request_timeout$"):
+                    client.request("GET", av.API + "/v1beta/models/" + av.MODEL, timeout=timeout)
+            with patch.object(av, "signal", object()), self.assertRaisesRegex(av.Blocked, "^request_deadline_unavailable$"):
+                client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+            with patch.object(av.threading, "current_thread", return_value=object()), self.assertRaisesRegex(av.Blocked, "^request_deadline_unavailable$"):
+                client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+            opened.assert_not_called()
+
+    def test_request_deadline_preserves_existing_active_and_repeating_timers(self):
+        client = av.HTTP()
+        previous_handler = av.signal.getsignal(av.signal.SIGALRM)
+        custom_handler = lambda *_: None
+        av.signal.signal(av.signal.SIGALRM, custom_handler)
+        try:
+            for interval in (0, 60):
+                av.signal.setitimer(av.signal.ITIMER_REAL, 60, interval)
+                with patch.object(client.opener, "open") as opened, self.assertRaisesRegex(av.Blocked, "^request_deadline_timer_in_use$"):
+                    client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+                opened.assert_not_called()
+                remaining, repeating = av.signal.getitimer(av.signal.ITIMER_REAL)
+                self.assertGreater(remaining, 55)
+                self.assertEqual(repeating, interval)
+                self.assertIs(av.signal.getsignal(av.signal.SIGALRM), custom_handler)
+                av.signal.setitimer(av.signal.ITIMER_REAL, 0)
+        finally:
+            av.signal.setitimer(av.signal.ITIMER_REAL, 0)
+            av.signal.signal(av.signal.SIGALRM, previous_handler)
+
+    def test_unrestorable_signal_handler_is_rejected_before_any_change(self):
+        client = av.HTTP()
+        with patch.object(av.signal, "getsignal", return_value=None), patch.object(av.signal, "signal") as set_handler, \
+                patch.object(av.signal, "setitimer") as set_timer, patch.object(client.opener, "open") as opened, \
+                self.assertRaisesRegex(av.Blocked, "^request_deadline_unavailable$"):
+            client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+        set_handler.assert_not_called()
+        set_timer.assert_not_called()
+        opened.assert_not_called()
+
+    def test_request_deadline_restores_handler_on_success_and_transport_error(self):
+        client = av.HTTP()
+        previous_handler = av.signal.getsignal(av.signal.SIGALRM)
+        custom_handler = lambda *_: None
+        av.signal.signal(av.signal.SIGALRM, custom_handler)
+        try:
+            response = io.BytesIO(b"{}")
+            response.headers = {}
+            with patch.object(client.opener, "open", return_value=response):
+                self.assertEqual(client.request("GET", av.API + "/v1beta/models/" + av.MODEL)[0], {})
+            with patch.object(client.opener, "open", side_effect=OSError("private detail")), self.assertRaisesRegex(av.Blocked, "^provider_transport_error$"):
+                client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+            self.assertEqual(av.signal.getitimer(av.signal.ITIMER_REAL), (0.0, 0.0))
+            self.assertIs(av.signal.getsignal(av.signal.SIGALRM), custom_handler)
+        finally:
+            av.signal.setitimer(av.signal.ITIMER_REAL, 0)
+            av.signal.signal(av.signal.SIGALRM, previous_handler)
+
+    def test_delayed_alarm_delivery_is_checked_after_open_and_read(self):
+        for times in ([0, .2], [0, 0, .2]):
+            response = io.BytesIO(b"{}")
+            response.headers = {}
+            client = av.HTTP()
+            with patch.object(client.opener, "open", return_value=response), patch.object(av.time, "monotonic", side_effect=times), \
+                    patch.object(av.signal, "setitimer"), self.assertRaisesRegex(av.Blocked, "^provider_request_deadline_exceeded$"):
+                client.request("GET", av.API + "/v1beta/models/" + av.MODEL, timeout=.1)
+
+    def test_slow_drip_response_hits_wall_clock_deadline(self):
+        class SlowResponse(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+            def do_GET(self):
+                data = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                try:
+                    for byte in data:
+                        self.wfile.write(bytes([byte]))
+                        self.wfile.flush()
+                        time.sleep(.04)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), SlowResponse)
+        thread = threading.Thread(target=lambda: server.serve_forever(poll_interval=.01), daemon=True)
+        thread.start()
+        client = av.HTTP()
+        local_opener = av.urllib.request.build_opener(av.urllib.request.ProxyHandler({}))
+        def loopback_only(_request, timeout):
+            return local_opener.open(f"http://127.0.0.1:{server.server_port}/", timeout=timeout)
+        try:
+            start = time.monotonic()
+            with patch.object(client.opener, "open", side_effect=loopback_only), self.assertRaisesRegex(av.Blocked, "^provider_request_deadline_exceeded$"):
+                client.request("GET", av.API + "/v1beta/models/" + av.MODEL, timeout=.1)
+            self.assertLess(time.monotonic() - start, 1)
+            self.assertEqual(av.signal.getitimer(av.signal.ITIMER_REAL), (0.0, 0.0))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_inference_deadline_unwinds_before_independent_cleanup(self):
+        class DeadlineHTTP(FakeHTTP):
+            def request(self, method, url, **kwargs):
+                if url.endswith("/interactions"):
+                    self.calls.append((method, url, kwargs))
+                    with av.request_deadline(.02):
+                        time.sleep(.1)
+                if method == "DELETE":
+                    if av.signal.getitimer(av.signal.ITIMER_REAL) != (0.0, 0.0):
+                        raise AssertionError("inference timer leaked into cleanup")
+                    with av.request_deadline(30):
+                        return super().request(method, url, **kwargs)
+                return super().request(method, url, **kwargs)
+        self.http = DeadlineHTTP()
+        result = self.run_review()
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["reason"], "provider_request_deadline_exceeded")
+        self.assertEqual(result["uploaded_file_cleanup"], "deleted")
+        self.assertEqual(len(self.http.inference_calls()), 1)
 
     def test_diagnostic_is_rejected_by_existing_creative_gate(self):
         if not shutil.which("node"):
