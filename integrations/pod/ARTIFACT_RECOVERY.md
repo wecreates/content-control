@@ -63,7 +63,7 @@ It authenticates the catalog, rejects symlinked files, enforces 16 MiB/object,
 10,000 objects and at most 128 MiB total data, then restores within one transaction
 under the existing artifact-budget lock. Exact existing bytes/type are idempotent;
 any mismatch, corruption, budget exhaustion, cancellation or changed publication
-flag aborts and rolls back the entire restore. Existing immutable artifacts are
+flag detected before COMMIT aborts and rolls back the entire restore. Existing immutable artifacts are
 never overwritten. Destination storage lifetime checks still apply. Export remains
 read-only and can retrieve reachable artifacts even when production's expiry
 guard is blocking new work; it does not extend provider storage lifetime.
@@ -128,3 +128,14 @@ overwrite it. Use a previously established durable parent directory and a
 filesystem that supports directory fsync. This does not synchronize newly created
 ancestors owned by another process, qualify storage hardware against power loss,
 create off-host retention, extend database expiry or complete a live restore drill.
+
+## Transaction completion boundary
+
+Restore rechecks cancellation and required disabled flags after the transaction
+and connection release finish. If either changes during COMMIT, the command
+rejects instead of returning RESTORED, but the database may already contain the
+complete restored data. This rejection is not evidence of rollback. Keep workers
+and publication disabled and inspect the target before retrying; never delete
+restored data to make a retry pass. Artifact retries remain idempotent only when
+existing bytes, hashes and media types match exactly. A lost COMMIT response also
+requires checking the target rather than assuming the transaction failed.
