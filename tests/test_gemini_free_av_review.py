@@ -660,6 +660,30 @@ class MediaTests(unittest.TestCase):
 
 
 class WorkflowIsolationTests(unittest.TestCase):
+    def test_incomplete_receipt_precedes_setup_and_is_nonapproving(self):
+        workflow = (ROOT / ".github/workflows/exact-av-review.yml").read_text()
+        job = workflow.split("  free-api-diagnostic:\n", 1)[1]
+        marker = "      - name: Initialize incomplete diagnostic receipt\n"
+        self.assertLess(job.index("actions/checkout@v4"), job.index(marker))
+        self.assertLess(job.index(marker), job.index("actions/download-artifact@v4"))
+        self.assertLess(job.index(marker), job.index("Mint approved project-read identity token"))
+        step = job.split(marker, 1)[1].split("      - uses: actions/download-artifact@v4", 1)[0]
+        script = step.split("          python - <<'PY'\n", 1)[1].split("          PY\n", 1)[0]
+        script = "\n".join(line[10:] for line in script.splitlines())
+        with tempfile.TemporaryDirectory() as work:
+            subprocess.run([os.sys.executable, "-c", script], cwd=work, check=True, capture_output=True,
+                           timeout=10, env={"PYTHONPATH": str(ROOT), "LANG": "C", "LC_ALL": "C"})
+            receipt = json.loads((pathlib.Path(work) / "receipts/gemini-av-diagnostic.json").read_text())
+        self.assertEqual(receipt["status"], "BLOCKED")
+        self.assertEqual(receipt["reason"], "diagnostic_step_not_completed")
+        for flag in ("publication_enabled", "production_approved", "full_video_review", "full_audio_review", "ready"):
+            self.assertIs(receipt[flag], False)
+        self.assertEqual(receipt["reviewed_intervals"], [])
+        self.assertEqual(receipt["comparisons"], [])
+        preserve = job.split("      - name: Preserve sampled diagnostic only\n", 1)[1]
+        self.assertIn("if: always()", preserve)
+        self.assertIn("path: receipts/gemini-av-diagnostic.json", preserve)
+
     def test_oidc_and_secret_are_confined_to_explicit_manual_main_job(self):
         workflow = (ROOT / ".github/workflows/exact-av-review.yml").read_text()
         prefix, job = workflow.split("  free-api-diagnostic:\n", 1)
