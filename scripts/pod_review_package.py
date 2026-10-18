@@ -1,11 +1,38 @@
 """Produce a local review package; never authorize a marketplace release."""
 import argparse
+from contextlib import contextmanager
 import hashlib
+import os
 from pathlib import Path
+import shutil
 from pod_common import canonical, digest, read_json, save_json, PLATFORMS
 from pod_original_art import create_art
 from pod_asset_generator import generate
 from pod_book_package import assemble
+
+
+@contextmanager
+def output_attempt(output):
+    # Existing output is never a cleanup target. Hold the new directory open so
+    # its inode cannot be recycled while checking for a concurrent replacement.
+    output.mkdir(parents=True, exist_ok=False)
+    fd = os.open(output, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    owned = os.fstat(fd)
+    try:
+        yield
+    except BaseException as failure:
+        try:
+            current = output.lstat()
+            if (current.st_dev, current.st_ino) == (owned.st_dev, owned.st_ino):
+                shutil.rmtree(output)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            # Preserve the stage failure and partial files if cleanup is denied.
+            failure.add_note('REVIEW_OUTPUT_CLEANUP_FAILED')
+        raise
+    finally:
+        os.close(fd)
 
 
 def prepare(spec, font, output):
@@ -34,34 +61,34 @@ def prepare(spec, font, output):
         not isinstance(r.get('observation'),str) or not r['observation'].strip() for r in research):
         raise ValueError('RESEARCH_INVALID')
     output=Path(output)
-    output.mkdir(parents=True,exist_ok=False)
-    provenance=create_art(spec['original_art'],output/'source.png')
-    layers=[]
-    for layer in spec.get('text_layers',[]):
-        if 'font_path' in layer or 'font_sha256' in layer:
-            raise ValueError('FONT_IS_WORKER_OWNED')
-        layers.append({**layer,'font_path':str(font),'font_sha256':digest(font)})
-    manifest=generate(output/'source.png',spec['cover_template'],layers,output/'package')
-    if platform=='kdp':
-        interior=spec['interior']
-        template={**interior['template'],'font_sha256':digest(font)}
-        manifest=assemble(output/'package',template,interior['pages'],font)
-    # Supplied metadata is preserved exactly, never expanded into invented claims.
-    save_json(output/'package/metadata.json',metadata)
-    save_json(output/'package/research.json',{'observations':research,'verification_status':'UNASSESSED'})
-    save_json(output/'package/provenance.json',provenance)
-    manifest.pop('package_sha256')
-    for name in ('metadata.json','research.json','provenance.json'):
-        manifest['files'][name]=digest(output/'package'/name)
-    manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()
-    save_json(output/'package/manifest.json',manifest)
-    result={'schema_version':1,'status':'REVIEW_REQUIRED','package_sha256':manifest['package_sha256'],
-        'platform':platform,'publication_enabled':False,'production_ready':False,
-        'paid_generation_enabled':False,'marketplace_ready':False,
-        'remaining_checks':['official_template','rights','editorial','independent_visual_review',
-                            'marketplace_account','platform_preview','release_approval']}
-    save_json(output/'result.json',result)
-    return result
+    with output_attempt(output):
+        provenance=create_art(spec['original_art'],output/'source.png')
+        layers=[]
+        for layer in spec.get('text_layers',[]):
+            if 'font_path' in layer or 'font_sha256' in layer:
+                raise ValueError('FONT_IS_WORKER_OWNED')
+            layers.append({**layer,'font_path':str(font),'font_sha256':digest(font)})
+        manifest=generate(output/'source.png',spec['cover_template'],layers,output/'package')
+        if platform=='kdp':
+            interior=spec['interior']
+            template={**interior['template'],'font_sha256':digest(font)}
+            manifest=assemble(output/'package',template,interior['pages'],font)
+        # Supplied metadata is preserved exactly, never expanded into invented claims.
+        save_json(output/'package/metadata.json',metadata)
+        save_json(output/'package/research.json',{'observations':research,'verification_status':'UNASSESSED'})
+        save_json(output/'package/provenance.json',provenance)
+        manifest.pop('package_sha256')
+        for name in ('metadata.json','research.json','provenance.json'):
+            manifest['files'][name]=digest(output/'package'/name)
+        manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()
+        save_json(output/'package/manifest.json',manifest)
+        result={'schema_version':1,'status':'REVIEW_REQUIRED','package_sha256':manifest['package_sha256'],
+            'platform':platform,'publication_enabled':False,'production_ready':False,
+            'paid_generation_enabled':False,'marketplace_ready':False,
+            'remaining_checks':['official_template','rights','editorial','independent_visual_review',
+                                'marketplace_account','platform_preview','release_approval']}
+        save_json(output/'result.json',result)
+        return result
 
 
 if __name__=='__main__':
