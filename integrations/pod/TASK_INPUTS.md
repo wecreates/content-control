@@ -58,3 +58,18 @@ The durable PostgreSQL/Python fixture uses a separate synthetic authority map,
 fresh signed responses and an injected transport. It also revokes an approval
 after enqueue and verifies no generated artifacts or readiness result. This is
 revocation-contract testing, not live authority deployment or real approval.
+
+## Local JSON evidence files
+
+The shared Python JSON reader opens inputs nonblocking, rejects a final symlink,
+and verifies the opened descriptor is a regular file before reading. Named pipes,
+devices and directories are not supported evidence inputs. This prevents a FIFO
+without a writer from hanging before the byte limit or evidence checks execute.
+Provide an actual regular file at the selected path; never bypass these checks
+to accept a stream as an approval.
+
+The reader still captures at most 4 MiB plus one byte, rejects excess bytes,
+requires strict UTF-8 and parses only the captured bytes. Descriptor ownership is
+released on file-type rejection, wrapper failure, read failure and parse failure.
+These checks do not replace path scoping, signature/expiry validation or the
+production process deadline, and do not establish live approval or acceptance.

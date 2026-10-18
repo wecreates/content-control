@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import os
+import stat
 import time
 from pathlib import Path
 
@@ -22,7 +23,17 @@ def digest(path):
 def read_json(path):
     # Enforce the bound on captured bytes, not a stat result that may become
     # stale before an unbounded read of a growing or replaced file.
-    with Path(path).open('rb') as source:
+    # Inspect the opened descriptor before reading. Nonblocking open prevents a
+    # FIFO without a writer from hanging; NOFOLLOW rejects a replaced final link.
+    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+    try:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise ValueError('JSON_FILE_INVALID')
+        source = os.fdopen(fd, 'rb')
+    except BaseException:
+        os.close(fd)
+        raise
+    with source:
         data = source.read(MAX_JSON_BYTES + 1)
     if len(data) > MAX_JSON_BYTES:
         raise ValueError('JSON_TOO_LARGE')
