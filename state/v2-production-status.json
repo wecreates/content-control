@@ -1,73 +1,61 @@
 {
   "schema_version": 1,
-  "run_id": 39114019002,
-  "source_commit": "d2c432ba91e741f406814bc33af8ea6bb88662f7",
+  "run_id": 39137821591,
+  "source_commit": "8cd9548aadc2ccd08618268d66d60cab8275e03d",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-10-18T09:10:20.080132+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/39114019002",
-  "candidate_sha256": "b92a85db6034314789569becf6aedc07763d69f1f3b5f339224c4dde46c3e4b3",
-  "candidate_generated": true,
+  "recorded_at": "2026-10-18T14:53:46.680538+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/39137821591",
+  "candidate_sha256": null,
+  "candidate_generated": false,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "f8a9ae8a2a467624dc4479067efca90d3bdec71e41e8242b046198919556e5b0"
+      "receipt_sha256": "2a4a7b05ec6f89183501b403ceff7dc56fe5ba1a1b12a1c5c95079439552fbf8"
     },
     "sound_mix": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "4ebc041b0e0b134045fe9a3ff34bd5afc511d83b6a2396223d5b3728fb6ee6ee"
+      "receipt_sha256": "d88b2cf1080a4fea454a53452f9f1fbd552c9f8271b7b5b1013dfc0b1a94642d"
     },
     "transcription": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "1485b75581e6638e2518bd958e7f8759c7e96573af19212e5d3e9bcd5a67658b"
+      "receipt_sha256": "ac3c0ce593678f46e0e2382af0f04ab4a1e58e383bcba1fc2f0da8988e8cac27"
     },
     "captions": {
-      "status": "PASS",
+      "status": "BLOCKED",
       "failed_checks": [],
-      "receipt_sha256": "dbaa30eca8acb2bfa06da7cefbbd89e432a45399445cd2e65c90c7a6c33f2f24"
+      "receipt_sha256": "900c2e16e792e8f2d37518954ad43bc4ff42a18e5c2c0ae46c0fd72b74b076f4",
+      "reason": "Observed words leave their dialogue window"
     },
     "caption_frames": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "bd173c937f99799e2276dbb6415539c43b75e37a1f798c7a183e293ec27b0742"
+      "status": "NOT_RUN"
     },
     "technical_video": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "effd3103675c43106541ae9c2115d13f98e0af8cd1cf2ad1fa584602869417ab"
+      "status": "NOT_RUN"
     },
     "style_parity": {
-      "status": "BLOCKED",
-      "failed_checks": [
-        "framewise_style_parity"
-      ],
-      "receipt_sha256": "98f2292d532231338d34bd5457b9d60f78c76577a4c4c0be4788b0bf9ed49259",
-      "reason": "Review candidate hash does not match exact video"
+      "status": "NOT_RUN"
     },
     "character_binding": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "96ce0ead5b22059b30a01fcfa8862a19d2f8523ba8c20b3ea6796eb80d5e7f1d"
+      "status": "NOT_RUN"
     },
     "phone_viewport": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "f45847fea5557ba47ca31d144cd8a9f27357832e50e9c24e4cbdf4c1b4d2ae1c"
+      "status": "NOT_RUN"
     }
   },
   "diagnostics": {
     "caption_windows": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "9a68472300e0d94848ca9d28f30201617842b34783fed21480c17024a01da3ed"
+      "receipt_sha256": "e35d31546d2a71c01a8455adafa2925af0764c0efca45fe7814afc5009dd5288"
     }
   },
-  "status": "AWAITING_REVIEW",
-  "technical_status": "PASS",
-  "review_status": "CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED",
-  "next_action": "Review the exact existing candidate, then revalidate without regeneration. Full audiovisual and competitor approval remain mandatory.",
+  "status": "BLOCKED",
+  "technical_status": "BLOCKED",
+  "review_status": "TECHNICAL_PREREQUISITES_MISSING",
+  "next_action": "Resolve missing or failed original technical evidence; no approval inferred.",
   "production_approved": false,
   "publication_enabled": false,
   "scope": "Recorded build result; no full audiovisual or competitor approval."
