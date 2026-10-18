@@ -62,7 +62,7 @@ async function withCLI(mode,fn){
  try{await fn({child,tmp,readPID,exit,closed,output:()=>({stdout,stderr})});}
  finally{
   for(const name of ['ready','descendant']){
-   try{const pid=Number(await fs.readFile(path.join(tmp,name),'utf8'));process.kill(pid,'SIGKILL');}catch{}
+   try{const pid=Number(await fs.readFile(path.join(tmp,name),'utf8'));if(Number.isInteger(pid)&&pid>0)process.kill(pid,'SIGKILL');}catch{}
   }
   if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');
   await closed;await fs.rm(tmp,{recursive:true,force:true});
