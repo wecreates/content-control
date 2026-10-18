@@ -15,7 +15,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 import cv2
 import numpy as np
-from pod_common import PLATFORMS, canonical, read_json, save_json, verified, sign
+from pod_common import open_regular_binary, PLATFORMS, canonical, read_json, save_json, verified, sign
 from pod_raster import open_raster
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -174,7 +174,7 @@ def run(args):
     if args.html:
         # Offline imports need the same authorization as live collection, plus
         # a trusted binding of the exact saved bytes to their original URL.
-        with Path(args.html).open('rb') as source:
+        with open_regular_binary(args.html) as source:
             data = source.read(MAX_SOURCE_BYTES + 1)
         if len(data) > MAX_SOURCE_BYTES:
             raise ValueError('SOURCE_TOO_LARGE')
@@ -207,7 +207,7 @@ def run(args):
                           'rank': None, 'search_volume': None})
     # Analyze and identify exactly the same bounded byte snapshot. The path may
     # be replaced, overwritten or removed during vision work; never rehash it.
-    with Path(args.reference).open('rb') as source:
+    with open_regular_binary(args.reference) as source:
         reference = source.read(MAX_REFERENCE_BYTES + 1)
     if len(reference) > MAX_REFERENCE_BYTES:
         raise ValueError('REFERENCE_TOO_LARGE')

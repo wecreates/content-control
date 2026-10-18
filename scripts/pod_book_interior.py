@@ -9,7 +9,7 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from pod_common import canonical, digest, read_json, save_json, verified
+from pod_common import open_regular_binary, canonical, digest, read_json, save_json, verified
 
 MAX_FONT_BYTES = 16 * 1024 * 1024
 
@@ -27,7 +27,7 @@ def render_book(spec, pages, font_path, output):
         raise ValueError('MARGINS_INVALID')
     # Verify and embed one bounded snapshot; reopening a verified path permits
     # a replacement font to be attributed to the original typeface's identity.
-    with Path(font_path).open('rb') as source:
+    with open_regular_binary(font_path) as source:
         font_bytes = source.read(MAX_FONT_BYTES + 1)
     if not font_bytes or len(font_bytes) > MAX_FONT_BYTES:
         raise ValueError('FONT_BYTES_INVALID')

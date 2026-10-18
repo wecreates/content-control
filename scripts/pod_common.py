@@ -13,26 +13,37 @@ MAX_JSON_BYTES = 4 * 1024 * 1024
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
 
-def digest(path):
-    h = hashlib.sha256()
-    with Path(path).open('rb') as f:
-        for b in iter(lambda: f.read(1024 * 1024), b''):
-            h.update(b)
-    return h.hexdigest()
+MAX_DIGEST_BYTES = 16 * 1024 * 1024  # Existing POD artifact object ceiling.
 
-def read_json(path):
-    # Enforce the bound on captured bytes, not a stat result that may become
-    # stale before an unbounded read of a growing or replaced file.
-    # Inspect the opened descriptor before reading. Nonblocking open prevents a
-    # FIFO without a writer from hanging; NOFOLLOW rejects a replaced final link.
+def open_regular_binary(path, reason='BINARY_FILE_INVALID'):
+    # Check the opened object: path checks alone race replacement. Never wait
+    # for a FIFO writer or follow a substituted final symlink before validation.
     fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
     try:
         if not stat.S_ISREG(os.fstat(fd).st_mode):
-            raise ValueError('JSON_FILE_INVALID')
-        source = os.fdopen(fd, 'rb')
+            raise ValueError(reason)
+        return os.fdopen(fd, 'rb')
     except BaseException:
         os.close(fd)
         raise
+
+def digest(path):
+    h = hashlib.sha256()
+    total = 0
+    with open_regular_binary(path) as source:
+        while True:
+            chunk = source.read(min(1024 * 1024, MAX_DIGEST_BYTES - total + 1))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_DIGEST_BYTES:
+                raise ValueError('DIGEST_TOO_LARGE')
+            h.update(chunk)
+    return h.hexdigest()
+
+def read_json(path):
+    # Bound actual captured bytes even if the file grows after opening.
+    source = open_regular_binary(path, 'JSON_FILE_INVALID')
     with source:
         data = source.read(MAX_JSON_BYTES + 1)
     if len(data) > MAX_JSON_BYTES:

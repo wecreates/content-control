@@ -6,7 +6,7 @@ import math
 import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
-from pod_common import canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
+from pod_common import open_regular_binary, canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
 from pod_raster import MAX_RASTER_PIXELS, open_raster
 
 MAX_INPUT_BYTES = 16 * 1024 * 1024
@@ -14,7 +14,7 @@ MAX_INPUT_BYTES = 16 * 1024 * 1024
 def input_snapshot(path):
     # One bounded capture supplies both identity verification and the decoder.
     # Never reopen a path after verifying its bytes.
-    with Path(path).open('rb') as source:
+    with open_regular_binary(path) as source:
         data = source.read(MAX_INPUT_BYTES + 1)
     if not data or len(data) > MAX_INPUT_BYTES:
         raise ValueError('INPUT_BYTES_INVALID')

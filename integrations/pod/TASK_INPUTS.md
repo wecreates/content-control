@@ -73,3 +73,28 @@ requires strict UTF-8 and parses only the captured bytes. Descriptor ownership i
 released on file-type rejection, wrapper failure, read failure and parse failure.
 These checks do not replace path scoping, signature/expiry validation or the
 production process deadline, and do not establish live approval or acceptance.
+
+
+## Local binary inputs and hashing
+
+Artwork/font snapshots, offline source HTML, reference images, QA snapshots and
+file hashing use the shared regular-file opener. It opens nonblocking, refuses
+a final symlink at the selected path, and checks the opened descriptor before
+reading. FIFOs, devices and directories cannot supply production bytes. Callers
+that deliberately resolve paths first retain their existing scoping rules; this
+check is not a directory sandbox and does not prevent concurrent in-place writes.
+Snapshot-based identity verification and decoding still consume the same bytes.
+
+Hashing now reads at most 16 MiB plus one byte, matching the existing POD object
+ceiling, and rejects excess bytes as DIGEST_TOO_LARGE. The bound applies to actual
+reads even if a regular file grows after opening. Empty-file SHA-256 remains
+supported by this identity helper; the existing image/font validators still
+reject empty inputs. Existing per-source, snapshot and aggregate package limits
+remain in place. Descriptor ownership is released on file-type, wrapper, read
+and size failures. Large generated files are rejected before being recorded as
+valid package objects; no truncation or automatic approval is performed.
+
+Tests use temporary regular files, actual FIFOs without writers and fault-injected
+reads to cover blocking, replacement, size limits and cleanup. These protections
+supplement the production process deadline; they are not live capacity, rights,
+independent-review or marketplace acceptance evidence.

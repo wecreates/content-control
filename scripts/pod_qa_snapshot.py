@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import stat
 import tempfile
-from pod_common import scoped_file
+from pod_common import scoped_file, open_regular_binary
 
 MAX_OBJECT_BYTES = 16 * 1024 * 1024
 MAX_PACKAGE_BYTES = 64 * 1024 * 1024
@@ -14,8 +14,7 @@ MAX_PACKAGE_BYTES = 64 * 1024 * 1024
 
 def bounded_bytes(path, limit):
     # Do not block on a replaced pipe or follow a replaced final symlink.
-    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    with os.fdopen(fd, 'rb') as source:
+    with open_regular_binary(path) as source:
         info = os.fstat(source.fileno())
         if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= limit:
             raise ValueError('ARTIFACT_INVALID')
