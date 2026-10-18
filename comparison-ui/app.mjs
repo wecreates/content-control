@@ -3,18 +3,27 @@ import {createHashWorker} from './worker.mjs';
 const $=id=>document.getElementById(id), names=['candidate','reference'];
 const media={}, urls={}, workers={}, identities={}, versions={candidate:0,reference:0};let findings=[];
 const message=text=>{$('message').textContent=text;};
+const hasDraft=()=>Boolean($('observation').value.trim()||$('repair').value.trim());
 const render=()=>{$('findings').replaceChildren(...findings.map(f=>{const li=document.createElement('li');li.textContent=`${f.category} · candidate ${f.candidate_sec.toFixed(2)}s / reference ${f.reference_sec.toFixed(2)}s\n${f.observation}\nImprove: ${f.repair}`;return li;}));};
 for(const name of names){
  $(name+'-file').onchange=()=>{
  const file=$(name+'-file').files[0];if(!file)return;
- if(findings.length&&!confirm('Replacing this video clears the current findings. Export them first if needed.')){$(name+'-file').value='';return;}
+ const replacing=Boolean(urls[name]);
+ const resetsReference=replacing&&name==='reference';
+ if(replacing&&(findings.length||hasDraft()||(resetsReference&&$('source-url').value.trim()))&&!confirm('Replacing this video clears saved findings and unfinished notes'+(resetsReference?' and the reference link':'')+'. Export your findings first if needed.')){$(name+'-file').value='';return;}
+ if(replacing){$('observation').value='';$('repair').value='';}
+ if(resetsReference)$('source-url').value='';
  findings=[];render();media[name]=null;identities[name]=null;$(name+'-status').dataset.verified='false';workers[name]?.terminate();versions[name]++;const version=versions[name];
- const worker=createHashWorker();workers[name]=worker;
+ let worker;
+ const verificationFailed=()=>{worker?.terminate();if(version!==versions[name])return;identities[name]=null;$(name+'-status').dataset.verified='false';if(media[name])media[name].identity_verified=false;message('File verification failed. Re-select the file or use a desktop browser. Export is blocked.');};
+ try{
+ worker=createHashWorker();workers[name]=worker;
  worker.onmessage=({data})=>{if(version!==versions[name])return;worker.terminate();
- if(data.error){message('File identity could not be verified. Re-select the file or use a desktop browser. Export is blocked.');return;}
+ if(data.error){verificationFailed();return;}
  identities[name]=data.identity;$(name+'-status').dataset.verified='true';if(media[name])Object.assign(media[name],data.identity);message('File identity verified locally. Review remains pending.');};
- worker.onerror=()=>{worker.terminate();if(version===versions[name])message('File verification failed. Try a desktop browser. Export is blocked.');};
+ worker.onerror=event=>{event.preventDefault?.();verificationFailed();};
  worker.postMessage(file);
+ }catch{verificationFailed();}
  $(name).pause();if(urls[name])URL.revokeObjectURL(urls[name]);urls[name]=URL.createObjectURL(file);
  $(name+'-status').textContent='Loading…';const v=$(name);
  v.onloadedmetadata=()=>{if(version!==versions[name])return;if(!Number.isFinite(v.duration)||v.duration<=0||!v.videoWidth){media[name]=null;$(name+'-status').textContent='Unsupported video. Try an MP4 with H.264 video and AAC audio.';return;}
@@ -28,5 +37,5 @@ $('restart').onclick=()=>names.forEach(n=>{$(n).pause();$(n).currentTime=0;});
 $('audio').onchange=()=>names.forEach(n=>{$(n).muted=n!==$('audio').value;});
 $('speed').onchange=()=>names.forEach(n=>{$(n).playbackRate=Number($('speed').value);});
 $('add').onclick=()=>{try{const current=n=>media[n]&&{time:$(n).currentTime,duration:media[n].duration_seconds};findings.push(finding(current('candidate'),current('reference'),$('category').value,$('observation').value,$('repair').value));render();$('observation').value='';$('repair').value='';message('Finding added. Export to keep it.');}catch(e){message(e.message);}};
-$('export').onclick=()=>{try{const report=receipt(media.candidate,media.reference,findings,$('source-url').value.trim());const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='content-comparison.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Comparison exported. Creative approval remains pending.');}catch(e){message(e.message);}};
-window.addEventListener('beforeunload',event=>{if(findings.length){event.preventDefault();event.returnValue='';}});
+$('export').onclick=()=>{try{if(hasDraft())throw Error('Add the unfinished finding before exporting, or clear both note fields.');const report=receipt(media.candidate,media.reference,findings,$('source-url').value.trim());const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='content-comparison.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Comparison exported. Creative approval remains pending.');}catch(e){message(e.message);}};
+window.addEventListener('beforeunload',event=>{if(findings.length||hasDraft()){event.preventDefault();event.returnValue='';}});
