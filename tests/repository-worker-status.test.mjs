@@ -71,6 +71,25 @@ test('duplicate configured tools cannot inflate aggregate coverage',async()=>{
   assert.equal(result.expected_operation_count,null);
   assert.equal(result.verified_operation_count,20);
 });
+for(const [reason,mutate] of [
+  ['missing original receipt',data=>data.report.receipts.pop()],
+  ['mismatched original attempt',data=>{data.report.workflow_run_attempt='2'}],
+  ['invalid late original receipt',data=>{data.report.receipts.at(-1).output_sha256='invalid'}],
+])test(`independent additional evidence survives ${reason}`,async()=>{
+  const data=aggregateFixture();mutate(data);
+  const result=await aggregateReader(data)();
+  assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
+  assert.equal(result.aggregate_status,'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED');
+  assert.equal(result.expected_operation_count,20);
+  assert.equal(result.verified_operation_count,12);
+  assert.equal(result.additional_tools.length,3);
+  assert.ok(result.additional_tools.every(entry=>entry.runtime_status==='HOSTED_OPERATIONS_VERIFIED'));
+  assert.equal(result.repositories,undefined);
+  assert.equal(result.evidence_snapshot_revision,'f'.repeat(40));
+  assert.equal(result.production_ready,false);
+  assert.equal(result.publication_enabled,false);
+  assert.equal(result.paid_generation_enabled,false);
+});
 test('unknown required tools and unavailable registry never claim complete coverage',async()=>{
   const data=aggregateFixture();data.registry.agent_tools.push({id:'unknown',revision:'a'.repeat(40)});
   const result=await aggregateReader(data)();
