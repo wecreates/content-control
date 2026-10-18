@@ -1,0 +1,27 @@
+name: Narration Transcription Regression Tests
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/narration-transcription-gate.yml'
+      - '.github/workflows/narration-transcription-tests.yml'
+      - 'scripts/free_transcription_qa.py'
+      - 'scripts/caption_contract.py'
+      - 'scripts/build_verified_captions.py'
+      - 'scripts/verify_captions.py'
+      - 'scripts/persist_caption_evidence.py'
+      - 'tests/test_narration_transcription_workflow.py'
+      - 'tests/test_caption_provenance.py'
+      - 'tests/test_persist_caption_evidence.py'
+permissions:
+  contents: read
+jobs:
+  offline-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test runtime failure and exact-source caption provenance without models
+        run: python -m unittest -v tests.test_narration_transcription_workflow tests.test_caption_provenance tests.test_persist_caption_evidence

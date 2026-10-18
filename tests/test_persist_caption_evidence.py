@@ -96,6 +96,64 @@ class CaptionPersistenceTests(unittest.TestCase):
         for path, data in original.items():
             self.assertEqual(self.remote_file(path), data)
 
+    def failed_transcription(self, **changes):
+        report = {'status': 'FAIL', 'publication_enabled': False,
+                  'audio_sha256': hashlib.sha256((self.repo / 'public/audio/episode1-narration.mp3').read_bytes()).hexdigest(),
+                  'checks': {'fresh_transcription_completed': False},
+                  'failed_checks': ['fresh_transcription_completed']}
+        report.update(changes)
+        self.write('state/narration-transcription-health.json', report)
+
+    def test_narration_failure_persists_current_source_failed_transcription_only(self):
+        self.fail()
+        self.failed_transcription()
+        original_vtt = self.remote_file('public-review/episode1-v10-free.vtt')
+        original_ledger = self.remote_file('state/accepted-candidate-ledger.json')
+        (self.repo / 'public-review/episode1-v10-free.vtt').write_text('partial unsafe VTT')
+        (self.repo / 'state/accepted-candidate-ledger.json').write_text('partial unsafe ledger')
+        self.assertEqual(self.persist()['status'], 'SAVED')
+        receipt = json.loads(self.remote_file('state/narration-transcription-health.json'))
+        self.assertEqual(receipt['status'], 'FAIL')
+        self.assertFalse(receipt['publication_enabled'])
+        self.assertEqual(self.remote_file('public-review/episode1-v10-free.vtt'), original_vtt)
+        self.assertEqual(self.remote_file('state/accepted-candidate-ledger.json'), original_ledger)
+
+    def test_narration_caption_failure_does_not_persist_unbound_or_stale_pass(self):
+        self.fail()
+        original = self.remote_file('state/narration-transcription-health.json')
+        self.write('state/narration-transcription-health.json', {'status': 'PASS', 'publication_enabled': False, 'unbound': True})
+        self.assertEqual(self.persist()['status'], 'SAVED')
+        self.assertEqual(self.remote_file('state/narration-transcription-health.json'), original)
+
+    def test_narration_failed_transcription_requires_current_hash_and_explicit_failure(self):
+        self.fail()
+        for changes in ({'audio_sha256': None}, {'audio_sha256': 'b' * 64},
+                        {'publication_enabled': True}, {'checks': {}}, {'checks': []},
+                        {'checks': {'fresh_transcription_completed': True}},
+                        {'failed_checks': []}, {'failed_checks': ['unknown']},
+                        {'failed_checks': [[]]}, {'failed_checks': 'fresh_transcription_completed'}):
+            with self.subTest(changes=changes):
+                self.failed_transcription(**changes)
+                payload = module.payload_for(self.repo, 'narration', {})
+                self.assertEqual(set(payload), {'state/caption-health.json'})
+        self.assertEqual(self.persist()['status'], 'SAVED')
+        self.assertEqual(json.loads(self.remote_file('state/narration-transcription-health.json'))['status'], 'PASS')
+
+    def test_missing_or_malformed_transcription_cannot_suppress_caption_failure(self):
+        self.fail()
+        target = self.repo / 'state/narration-transcription-health.json'
+        for contents in ('{partial', 'null', '[]', None):
+            with self.subTest(contents=contents):
+                if contents is None:
+                    target.unlink()
+                else:
+                    target.write_text(contents)
+                payload = module.payload_for(self.repo, 'narration', {})
+                self.assertEqual(set(payload), {'state/caption-health.json'})
+        self.assertEqual(self.persist()['status'], 'SAVED')
+        self.assertEqual(json.loads(self.remote_file('state/caption-health.json'))['status'], 'FAIL')
+        self.assertEqual(json.loads(self.remote_file('state/narration-transcription-health.json'))['status'], 'PASS')
+
     def test_passing_bound_evidence_persists(self):
         self.passing()
         self.assertEqual(self.persist('reconcile')['status'], 'SAVED')
