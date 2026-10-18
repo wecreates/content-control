@@ -367,6 +367,30 @@ class AdapterTests(unittest.TestCase):
             with self.assertRaisesRegex(av.Blocked, "invalid_json"):
                 av.strict_json(value)
 
+    def test_json_nesting_is_bounded_without_misreading_string_contents(self):
+        for depth in (65, 10000):
+            with self.subTest(depth=depth), self.assertRaisesRegex(av.Blocked, "^invalid_json$"):
+                av.strict_json("[" * depth + "0" + "]" * depth)
+        self.assertIsInstance(av.strict_json("[" * 64 + "0" + "]" * 64), list)
+        value = {"text": "[" * 10000 + "]" * 10000}
+        self.assertEqual(av.strict_json(json.dumps(value)), value)
+
+    def test_deep_model_json_blocks_and_cleans_up_without_retry(self):
+        self.http.response["steps"][0]["content"][0]["text"] = "[" * 10000 + "0" + "]" * 10000
+        result = self.run_review()
+        self.assertEqual(result["status"], "BLOCKED")
+        self.assertEqual(result["reason"], "invalid_json")
+        self.assertEqual(result["uploaded_file_cleanup"], "deleted")
+        self.assertEqual(len(self.http.inference_calls()), 1)
+        self.assertNotIn("model_report", result)
+
+    def test_deep_http_json_is_sanitized_as_a_blocker(self):
+        response = io.BytesIO(b"[" * 10000 + b"0" + b"]" * 10000)
+        response.headers = {}
+        client = av.HTTP()
+        with patch.object(client.opener, "open", return_value=response), self.assertRaisesRegex(av.Blocked, "^invalid_json$"):
+            client.request("GET", av.API + "/v1beta/models/" + av.MODEL)
+
     def test_cleanup_failure_preserves_warning_without_second_inference(self):
         class DeleteFails(FakeHTTP):
             def request(self, method, url, **kwargs):
@@ -488,6 +512,25 @@ class MediaTests(unittest.TestCase):
         data, media = av.snapshot_media(fixture, av.digest(fixture.read_bytes()), self.work, POLICY)
         self.assertAlmostEqual(media["duration_seconds"], 1.3, delta=.15)
         self.assertEqual(av.digest(data), media["candidate_sha256"])
+
+    def test_deep_model_json_replaces_stale_receipt_with_blocker(self):
+        output = self.root / "receipt.json"
+        output.write_text('{"status":"PASS","ready":true}')
+        http = FakeHTTP()
+        http.response["steps"][0]["content"][0]["text"] = "[" * 10000 + "0" + "]" * 10000
+        with patch.object(av, "utcnow", return_value=NOW), patch.dict(os.environ, {
+                "GEMINI_API_KEY": "test-key-not-real", "GEMINI_PROJECT_READ_TOKEN": "test-token-not-real"}, clear=True), \
+                patch.object(av, "HTTP", return_value=http), patch.object(av, "snapshot_media", return_value=(DATA, MEDIA)):
+            result = av.main(["--video", str(self.media), "--expected-sha256", av.digest(DATA), "--output", str(output)])
+        self.assertEqual(result, 2)
+        receipt = json.loads(output.read_text())
+        self.assertEqual(receipt["status"], "BLOCKED")
+        self.assertEqual(receipt["reason"], "invalid_json")
+        self.assertEqual(receipt["uploaded_file_cleanup"], "deleted")
+        for flag in ("publication_enabled", "production_approved", "full_video_review", "full_audio_review", "ready"):
+            self.assertIs(receipt[flag], False)
+        self.assertNotIn("test-key", output.read_text())
+        self.assertNotIn("test-token", output.read_text())
 
 
 class WorkflowIsolationTests(unittest.TestCase):
