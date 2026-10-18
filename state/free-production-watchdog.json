@@ -34,7 +34,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,15 +55,9 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest"
+    "provenance_inputs_current"
   ],
-  "integrity_failures": [
-    {
-      "actual": "05f7013996c1f9c5ed185495a8ea6e0afed74ea61d821fe2420183e64c430c09",
-      "expected": "a4bb40c068dfd747921fbf5eda9d98c44a8f819c1ed4b558e785956fd1aa6965",
-      "path": "server-lowmem.js"
-    }
-  ],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "route_smallest_failed_invariant",
