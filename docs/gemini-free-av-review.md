@@ -138,8 +138,15 @@ python scripts/gemini_free_av_review.py \
 
 Limits: 200 MiB MP4 with video and audio, up to 600 seconds, 300-second file
 processing window, one inference request with a 300-second HTTP timeout and 8192
-maximum output tokens. The workflow also has a 20-minute job deadline. HTTP
-timeouts are socket-operation limits, not a promise of total provider completion.
+maximum output tokens. The workflow also has a 20-minute job deadline. Each HTTP
+request has a wall-clock deadline, including connection, response reads and JSON
+parsing, so slow-drip responses cannot extend the request indefinitely. A deadline
+failure is not retried; cleanup of a known uploaded file has its own 30-second
+deadline. This requires POSIX interval timers and the Python main thread. An
+unsupported execution context or an existing active/repeating process timer is
+rejected before network access. A local timeout cannot prove that remote provider
+processing stopped. Direct CLI use has these per-request bounds, not a separate
+overall process deadline.
 `ffprobe` is restricted to the MOV/MP4 demuxer and local file protocol, with no
 runtime secrets inherited. The file is snapshotted and hashed before probing.
 Output cannot alias the original media or policy file. There is no output path
