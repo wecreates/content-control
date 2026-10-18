@@ -87,6 +87,12 @@ def inspect_interior(path, spec):
             for trace in traces:
                 if trace['type'] != 0 or trace['opacity'] != 1:
                     raise ValueError('INTERIOR_TEXT_NOT_VISIBLE')
+                # A ToUnicode map can yield the expected text even when the
+                # font actually draws .notdef. Inspect delivered glyph IDs,
+                # not Unicode values (a real U+FFFD glyph can be intentional).
+                # MuPDF's -1 ligature continuation is not a missing glyph.
+                if any(char[1] == 0 for char in trace['chars']):
+                    raise ValueError('INTERIOR_GLYPH_MISSING')
                 # The supported renderer emits black text on unpainted white
                 # pages. Extraction succeeds even for invisible white text.
                 # Color interiors require a separate validated contract.

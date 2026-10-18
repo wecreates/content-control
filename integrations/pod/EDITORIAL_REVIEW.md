@@ -45,3 +45,22 @@ Database completion/review acceptance and the publication executor require
 receipts must be reevaluated; do not backfill that bit. Non-book POD products
 retain their existing QA requirements. No migration or publication enablement
 is included. Keep PUBLICATION_ENABLED and POD_PUBLICATION_ENABLED false.
+
+
+## Delivered interior glyphs
+
+The independent text-only interior preflight rejects glyph ID zero in the actual
+PDF display-list trace as `INTERIOR_GLYPH_MISSING`. A PDF's ToUnicode mapping can
+return the expected manuscript character while the font draws its missing-glyph
+box; successful extraction is insufficient. This check runs inside existing KDP
+visual QA, alongside geometry, visibility, color and static-document checks.
+A genuine supported replacement character (U+FFFD) and ligature continuations
+remain valid; this gate inspects glyph IDs rather than banning Unicode values.
+
+This does not establish correct spelling, font licensing, complex-script shaping,
+visual quality or editorial approval. A nonzero glyph is not proof that it is the
+right glyph. Existing independent review and exact-package approval still apply.
+Regression fixtures cover missing glyphs on first/later pages, a misleading but
+textually correct ToUnicode map, and supported accented/Greek/Cyrillic text.
+PyMuPDF documents the trace's separate Unicode and glyph fields at
+https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_texttrace

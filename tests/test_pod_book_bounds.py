@@ -14,6 +14,69 @@ from pod_cover_preflight import inspect_cover
 from PIL import Image, ImageChops, ImageStat
 from reportlab.pdfgen import canvas as pdfcanvas
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+
+class InteriorGlyphTests(unittest.TestCase):
+    def fixture(self, root, lines, mapped_missing=False):
+        font, spec = BookBoundsTests().spec()
+        spec['page_count'] = len(lines)
+        pdfmetrics.registerFont(TTFont('GlyphFixture', font))
+        source = root/'source.pdf'
+        pdf = pdfcanvas.Canvas(str(source), pagesize=(144,144), invariant=1)
+        for line in lines:
+            pdf.setFont('GlyphFixture',12)
+            pdf.drawString(27,108,line)
+            pdf.showPage()
+        pdf.save()
+        if mapped_missing:
+            target = root/'mapped.pdf'
+            with fitz.open(source) as doc:
+                changed = False
+                for font_info in doc[0].get_fonts():
+                    kind, value = doc.xref_get_key(font_info[0], 'ToUnicode')
+                    if kind == 'xref':
+                        ref = int(value.split()[0]); data = doc.xref_stream(ref)
+                        if b'<00> <0000>' in data:
+                            doc.update_stream(ref,data.replace(b'<00> <0000>',b'<00> <4E2D>'))
+                            changed = True
+                self.assertTrue(changed)
+                doc.save(target)
+            return target, spec
+        return source, spec
+
+    def test_missing_glyph_rejected_in_actual_delivered_pdf(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path, spec = self.fixture(Path(tmp), ['A中B'])
+            with fitz.open(path) as doc:
+                self.assertTrue(any(c[1] == 0 for t in doc[0].get_texttrace() for c in t['chars']))
+            with self.assertRaisesRegex(ValueError, '^INTERIOR_GLYPH_MISSING$'):
+                inspect_interior(path,spec)
+
+    def test_correct_unicode_extraction_cannot_hide_missing_glyph(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path, spec = self.fixture(Path(tmp), ['A中B'], mapped_missing=True)
+            with fitz.open(path) as doc:
+                self.assertEqual(doc[0].get_text().splitlines(), ['A中B'])
+                self.assertIn((ord('中'),0),[(c[0],c[1]) for t in doc[0].get_texttrace() for c in t['chars']])
+            with self.assertRaisesRegex(ValueError, '^INTERIOR_GLYPH_MISSING$'):
+                inspect_interior(path,spec)
+
+    def test_later_page_missing_glyph_is_not_hidden_by_valid_first_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path, spec = self.fixture(Path(tmp), ['Valid text','A中B'])
+            with self.assertRaisesRegex(ValueError, '^INTERIOR_GLYPH_MISSING$'):
+                inspect_interior(path,spec)
+
+    def test_supported_unicode_and_literal_replacement_glyph_remain_valid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path, spec = self.fixture(Path(tmp), ['É Ω Ж � fi ﬁ'])
+            with fitz.open(path) as doc:
+                chars = [c for t in doc[0].get_texttrace() for c in t['chars']]
+                self.assertTrue(any(c[0] == 0xfffd and c[1] > 0 for c in chars))
+                self.assertTrue(all(c[1] != 0 for c in chars))
+            self.assertTrue(inspect_interior(path,spec))
 
 class BookFontSnapshotTests(unittest.TestCase):
     def setUp(self):
