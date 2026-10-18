@@ -181,6 +181,13 @@ jobs:
       PUBLICATION_ENABLED: 'false'
     steps:
       - uses: actions/checkout@v4
+      - name: Initialize incomplete diagnostic receipt
+        run: |
+          python - <<'PY'
+          from scripts.gemini_free_av_review import POLICY, base_receipt, write_receipt
+          receipt = base_receipt() | {'reason': 'diagnostic_step_not_completed'}
+          write_receipt('receipts/gemini-av-diagnostic.json', receipt, [POLICY])
+          PY
       - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.prepare-or-validate.outputs.artifact }}
