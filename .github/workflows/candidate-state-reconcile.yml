@@ -16,16 +16,18 @@ env:
   GH_TOKEN: ${{ github.token }}
 jobs:
   reconcile:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: "${{ github.sha }}"
           fetch-depth: 0
-      - name: Capture candidate identity
+      - name: Verify pinned main checkout
         run: |
-          echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -46,36 +48,28 @@ jobs:
           assert receipt["publication_enabled"] is False
           print({"candidate_sha256":expected})
           PY
-      - name: Reconcile ledger and captions without rerender
+      - name: Test canonical caption provenance
+        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence
+      - name: Reconcile ledger without rerender
         run: |
           set -euo pipefail
           python scripts/update_acceptance_ledger.py qa-output/free/final-receipt.json public-review/episode1-v10-free.mp4 state/accepted-candidate-ledger.json
           python scripts/verify_acceptance_ledger.py
-          python scripts/build_verified_captions.py state/narration-transcription-health.json public-review/episode1-v10-free.vtt
-          python scripts/verify_captions.py public-review/episode1-v10-free.vtt state/narration-transcription-health.json state/caption-health.json
-      - name: Refuse stale candidate persist
+      - name: Reconcile verified captions without rerender
+        if: ${{ !cancelled() }}
         run: |
-          set -euo pipefail
-          git fetch origin main
-          LATEST=$(git show origin/main:state/content-control-health.json | python -c 'import json,sys; print(json.load(sys.stdin)["candidate_sha256"])')
-          if [ "$LATEST" != "$CANDIDATE_SHA" ]; then
-            echo "candidate advanced from $CANDIDATE_SHA to $LATEST; refusing stale persist"
-            gh workflow run candidate-state-reconcile.yml --ref main || true
-            exit 1
+          verification_args=()
+          if [ "${{ job.status }}" = success ]; then
+            python scripts/build_verified_captions.py state/narration-transcription-health.json public-review/episode1-v10-free.vtt || verification_args+=(--upstream-failed)
+          else
+            verification_args+=(--upstream-failed)
           fi
+          python scripts/verify_captions.py public-review/episode1-v10-free.vtt state/narration-transcription-health.json state/caption-health.json "${verification_args[@]}"
       - name: Persist reconciled candidate state
+        if: ${{ !cancelled() }}
         run: |
-          set -euo pipefail
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
-          git add state/accepted-candidate-ledger.json state/acceptance-ledger-health.json state/caption-health.json
-          git add -f public-review/episode1-v10-free.vtt
-          git diff --cached --quiet || git commit -m "Reconcile candidate ledger and captions"
-          for attempt in 1 2 3; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
-            git rebase --abort || true
-            sleep $((attempt*4))
-          done
-          exit 1
+          python scripts/persist_caption_evidence.py --kind reconcile --source-commit "$GITHUB_SHA" --source-ref "$GITHUB_REF"
       - name: Resume promotion chain
         run: gh workflow run review-server-smoke.yml --ref main

@@ -20,6 +20,8 @@ on:
       - 'scripts/free_transcription_qa.py'
       - 'scripts/build_verified_captions.py'
       - 'scripts/verify_captions.py'
+      - 'scripts/caption_contract.py'
+      - 'scripts/persist_caption_evidence.py'
       - 'public-review/episode1-v10-free.vtt'
       - 'render.yaml'
       - '.github/workflows/runtime-integrity-manifest.yml'
@@ -60,6 +62,8 @@ jobs:
             "scripts/free_transcription_qa.py",
             "scripts/build_verified_captions.py",
             "scripts/verify_captions.py",
+            "scripts/caption_contract.py",
+            "scripts/persist_caption_evidence.py",
             "public-review/episode1-v10-free.vtt",
             "render.yaml",
           ]
