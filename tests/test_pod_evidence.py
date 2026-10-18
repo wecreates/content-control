@@ -4,6 +4,8 @@ import hashlib
 import io
 import json
 import tempfile
+import subprocess
+import stat
 from types import SimpleNamespace
 from pathlib import Path
 import sys
@@ -107,13 +109,17 @@ class BoundedEvidenceReadTests(unittest.TestCase):
 
     def test_reads_at_most_limit_plus_one_and_closes_on_rejection(self):
         class BoundedStream(io.BytesIO):
+            def fileno(self):
+                return 123
             def read(self, size=-1):
                 if size != 4 * 1024 * 1024 + 1:
                     raise AssertionError('unbounded or unexpected read size')
                 return super().read(size)
         stream = BoundedStream(b' ' * (4 * 1024 * 1024 + 2))
         with patch.object(Path, 'stat', return_value=SimpleNamespace(st_size=0)), \
-             patch.object(Path, 'open', return_value=stream):
+             patch('pod_common.os.open', return_value=123), \
+             patch('pod_common.os.fdopen', return_value=stream), \
+             patch('pod_common.os.fstat', return_value=SimpleNamespace(st_mode=stat.S_IFREG)):
             with self.assertRaisesRegex(ValueError, '^JSON_TOO_LARGE$'):
                 read_json(self.path)
         self.assertTrue(stream.closed)
@@ -137,12 +143,67 @@ class BoundedEvidenceReadTests(unittest.TestCase):
             read_json(self.path)
 
     def test_invalid_json_still_fails_and_closes_stream(self):
-        stream = io.BytesIO(b'{broken')
+        class Stream(io.BytesIO):
+            def fileno(self):
+                return 123
+        stream = Stream(b'{broken')
         with patch.object(Path, 'stat', return_value=SimpleNamespace(st_size=7)), \
-             patch.object(Path, 'open', return_value=stream):
+             patch('pod_common.os.open', return_value=123), \
+             patch('pod_common.os.fdopen', return_value=stream), \
+             patch('pod_common.os.fstat', return_value=SimpleNamespace(st_mode=stat.S_IFREG)):
             with self.assertRaises(json.JSONDecodeError):
                 read_json(self.path)
         self.assertTrue(stream.closed)
+
+    def test_fifo_without_writer_is_rejected_without_waiting(self):
+        os.mkfifo(self.path)
+        script = ("from pod_common import read_json\n"
+                  "try: read_json(__import__('sys').argv[1])\n"
+                  "except ValueError as e:\n"
+                  " assert str(e) == 'JSON_FILE_INVALID'\n"
+                  "else: raise AssertionError('FIFO accepted')\n")
+        result = subprocess.run([sys.executable, '-c', script, str(self.path)],
+            env={**os.environ, 'PYTHONPATH': str(Path(__file__).resolve().parents[1] / 'scripts')},
+            capture_output=True, text=True, timeout=2)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_final_symlink_is_rejected_before_reading_target(self):
+        target = self.path.with_name('target.json')
+        target.write_text('{"fixture":true}')
+        self.path.symlink_to(target)
+        with self.assertRaises(OSError):
+            read_json(self.path)
+        self.assertEqual(target.read_text(), '{"fixture":true}')
+
+    def test_device_is_rejected_before_read(self):
+        with self.assertRaisesRegex(ValueError, '^JSON_FILE_INVALID$'):
+            read_json('/dev/null')
+
+    def test_descriptor_closes_when_file_type_check_fails(self):
+        fd = os.open('/dev/null', os.O_RDONLY)
+        with patch('pod_common.os.open', return_value=fd):
+            with self.assertRaisesRegex(ValueError, '^JSON_FILE_INVALID$'):
+                read_json(self.path)
+        with self.assertRaises(OSError):
+            os.fstat(fd)
+
+    def test_directory_descriptor_is_rejected_and_closed(self):
+        fd = os.open(self.path.parent, os.O_RDONLY)
+        with patch('pod_common.os.open', return_value=fd):
+            with self.assertRaisesRegex(ValueError, '^JSON_FILE_INVALID$'):
+                read_json(self.path)
+        with self.assertRaises(OSError):
+            os.fstat(fd)
+
+    def test_descriptor_closes_when_stream_wrapper_fails(self):
+        self.path.write_text('{}')
+        fd = os.open(self.path, os.O_RDONLY)
+        with patch('pod_common.os.open', return_value=fd), \
+             patch('pod_common.os.fdopen', side_effect=OSError('fixture')):
+            with self.assertRaisesRegex(OSError, '^fixture$'):
+                read_json(self.path)
+        with self.assertRaises(OSError):
+            os.fstat(fd)
 
 
 class EvidenceLifetimeTests(unittest.TestCase):
