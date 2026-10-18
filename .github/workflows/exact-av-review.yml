@@ -23,6 +23,7 @@ on:
     paths:
       - 'comparison-ui/**'
       - 'tests/comparison-ui.test.mjs'
+      - 'tests/comparison-app.test.mjs'
       - 'tests/comparison-browser.mjs'
       - 'scripts/build_offline_comparison.mjs'
       - 'scripts/exact_av_review.mjs'
@@ -35,6 +36,7 @@ on:
       - 'tests/exact-av-review.test.mjs'
       - 'tests/review-smoke-contract.test.mjs'
       - 'tests/test_free_review_guards.py'
+      - 'tests/test_exact_av_workflow.py'
       - '.github/workflows/review-server-smoke.yml'
       - '.github/workflows/exact-av-review.yml'
 permissions:
@@ -48,12 +50,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
-      - run: node --test tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs tests/review-smoke-contract.test.mjs
+      - run: node --test --test-concurrency=1 tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs tests/comparison-app.test.mjs tests/review-smoke-contract.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: python -m unittest discover -s tests -p test_gemini_free_av_review.py
       - run: python -m unittest discover -s tests -p test_free_review_guards.py
       - run: python -m unittest discover -s tests -p test_offline_av_review.py
       - run: python -m unittest discover -s tests -p test_review_packets.py
+      - run: python -m unittest discover -s tests -p test_exact_av_workflow.py
   browser-transport:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
@@ -96,6 +99,17 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
+      - name: Initialize isolated current review receipts
+        id: review_workspace
+        run: |
+          export REVIEW_RECEIPTS_DIR="$(mktemp -d "$RUNNER_TEMP/exact-av-review.XXXXXX")"
+          printf 'REVIEW_RECEIPTS_DIR=%s\n' "$REVIEW_RECEIPTS_DIR" >> "$GITHUB_ENV"
+          printf 'receipts=%s\n' "$REVIEW_RECEIPTS_DIR" >> "$GITHUB_OUTPUT"
+          python - <<'PY'
+          import json,os,pathlib
+          receipt={'schema_version':1,'status':'BLOCKED','reason':'review_attempt_incomplete','review_evidence_validated':False,'publication_enabled':False,'production_approved':False}
+          (pathlib.Path(os.environ['REVIEW_RECEIPTS_DIR'])/'review-workflow.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PY
       - name: Validate production provenance
         id: source
         env:
@@ -106,17 +120,18 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import {execFileSync} from 'node:child_process';
-          import {appendFileSync,mkdirSync,writeFileSync} from 'node:fs';
+          import {appendFileSync,writeFileSync} from 'node:fs';
+          import {join} from 'node:path';
           import {reviewSource} from './scripts/exact_av_review.mjs';
           const {RUN_ID,GH_REPO,REVIEW_FORMAT}=process.env;
           if(!/^[1-9][0-9]*$/.test(RUN_ID))throw Error('Numeric production run ID required');
           const run=JSON.parse(execFileSync('gh',['api',`repos/${GH_REPO}/actions/runs/${RUN_ID}`],{encoding:'utf8'}));
           const source=reviewSource(run,{repository:GH_REPO,runId:RUN_ID,format:REVIEW_FORMAT});
-          mkdirSync('receipts',{recursive:true});
-          writeFileSync('receipts/source-provenance.json',JSON.stringify(source,null,2)+'\n');
+          writeFileSync(join(process.env.REVIEW_RECEIPTS_DIR,'source-provenance.json'),JSON.stringify(source,null,2)+'\n');
           appendFileSync(process.env.GITHUB_OUTPUT,`artifact=${source.artifact}\nmedia=review-input/current/${source.media}\n`);
           JS
       - uses: actions/download-artifact@v4
+        id: download
         with:
           name: ${{ steps.source.outputs.artifact }}
           run-id: ${{ inputs.production_run_id }}
@@ -131,28 +146,31 @@ jobs:
         run: |
           node --input-type=module <<'JS'
           import {readFileSync,writeFileSync,appendFileSync} from 'node:fs';
+          import {join} from 'node:path';
           import {inspectMedia,prepareReview} from './scripts/exact_av_review.mjs';
-          const source=JSON.parse(readFileSync('receipts/source-provenance.json','utf8'));
+          const source=JSON.parse(readFileSync(join(process.env.REVIEW_RECEIPTS_DIR,'source-provenance.json'),'utf8'));
           const media=inspectMedia(process.env.MEDIA_PATH);
           if(source.expected_sha256 && media.candidate_sha256!==source.expected_sha256)throw Error('Recovered repair media hash mismatch');
-          writeFileSync('receipts/review-request.json',JSON.stringify(prepareReview(media),null,2)+'\n');
+          writeFileSync(join(process.env.REVIEW_RECEIPTS_DIR,'review-request.json'),JSON.stringify(prepareReview(media),null,2)+'\n');
           appendFileSync(process.env.GITHUB_OUTPUT,`candidate_sha256=${media.candidate_sha256}\n`);
           JS
       - name: Build free local audiovisual inspection package
+        id: offline
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
-        run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out receipts/offline-review
+        run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out "$REVIEW_RECEIPTS_DIR/offline-review"
       - name: Record disabled API identity configuration
         if: inputs.run_free_api_diagnostic && (vars.GEMINI_AV_IDENTITY_ENABLED != 'true' || vars.GEMINI_AV_WIF_PROVIDER == '' || vars.GEMINI_AV_READ_SERVICE_ACCOUNT == '')
         run: |
           python - <<'PY'
-          import json
+          import json,os,pathlib
           from scripts.gemini_free_av_review import base_receipt
           receipt=base_receipt()|{'reason':'approved_short_lived_project_read_identity_not_configured'}
-          with open('receipts/gemini-av-diagnostic.json','w') as f:json.dump(receipt,f,indent=2)
+          with (pathlib.Path(os.environ['REVIEW_RECEIPTS_DIR'])/'gemini-av-diagnostic.json').open('w') as f:json.dump(receipt,f,indent=2)
           print('BLOCKED: approved short-lived project-read identity is not configured; no API upload or review performed.')
           PY
       - name: Validate supplied review against exact media and existing handoff gate
+        id: validate
         if: inputs.review_json_path != ''
         env:
           REVIEW_PATH: ${{ inputs.review_json_path }}
@@ -162,14 +180,71 @@ jobs:
           import os,pathlib,subprocess
           root=pathlib.Path.cwd().resolve();p=(root/os.environ['REVIEW_PATH']).resolve()
           if not p.is_relative_to(root) or p.suffix!='.json' or not p.is_file():raise SystemExit('Existing repository JSON review required')
-          subprocess.run(['node','scripts/exact_av_review.mjs','validate',os.environ['MEDIA_PATH'],'receipts/review-validation.json',str(p)],check=True)
+          # The downloaded production artifact is untrusted review input, never
+          # a substitute for the explicitly requested committed reviewer JSON.
+          relative=p.relative_to(root).as_posix();obj='HEAD:'+relative
+          if p.stat().st_size>512*1024:raise SystemExit('Reviewer JSON is too large')
+          try:
+              size=int(subprocess.check_output(['git','cat-file','-s',obj],stderr=subprocess.DEVNULL))
+              if size>512*1024:raise ValueError('size')
+              committed=subprocess.check_output(['git','show',obj],stderr=subprocess.DEVNULL)
+          except (subprocess.CalledProcessError,ValueError):raise SystemExit('Committed repository JSON review required')
+          if p.read_bytes()!=committed:raise SystemExit('Reviewer JSON must match the checked-out commit')
+          output=str(pathlib.Path(os.environ['REVIEW_RECEIPTS_DIR'])/'review-validation.json')
+          subprocess.run(['node','scripts/exact_av_review.mjs','validate',os.environ['MEDIA_PATH'],output,str(p)],check=True)
+          PY
+      - name: Record current review attempt outcome
+        if: always() && steps.review_workspace.outcome == 'success'
+        env:
+          SOURCE_OUTCOME: ${{ steps.source.outcome }}
+          DOWNLOAD_OUTCOME: ${{ steps.download.outcome }}
+          PREPARE_OUTCOME: ${{ steps.prepare.outcome }}
+          OFFLINE_OUTCOME: ${{ steps.offline.outcome }}
+          VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
+          REVIEW_PATH: ${{ inputs.review_json_path }}
+          SOURCE_RUN_ID: ${{ inputs.production_run_id }}
+          REVIEW_FORMAT: ${{ inputs.format }}
+          EXPECTED_SHA256: ${{ steps.prepare.outputs.candidate_sha256 }}
+        run: |
+          python - <<'PY'
+          import json,os,pathlib,re
+          directory=pathlib.Path(os.environ['REVIEW_RECEIPTS_DIR'])
+          stages={name:os.environ.get(name.upper()+'_OUTCOME','') for name in ('source','download','prepare','offline','validate')}
+          expected=os.environ.get('EXPECTED_SHA256','');review_supplied=bool(os.environ.get('REVIEW_PATH'))
+          complete=all(stages[name]=='success' for name in ('source','download','prepare','offline'))
+          complete=complete and stages['validate']==('success' if review_supplied else 'skipped')
+          def read(name):
+              path=directory/name
+              if path.stat().st_size>2*1024*1024:raise ValueError('receipt too large')
+              data=json.loads(path.read_text())
+              if not isinstance(data,dict):raise ValueError('invalid receipt')
+              return data
+          try:
+              if not re.fullmatch('[0-9a-f]{64}',expected):raise ValueError('missing exact media')
+              request=read('review-request.json');offline=read('offline-review/evidence.json')
+              complete=complete and request.get('status')=='REVIEW_REQUIRED' and request.get('media',{}).get('candidate_sha256')==expected
+              complete=complete and offline.get('candidate_sha256')==expected and offline.get('technical_decode')=='PASS' and offline.get('status')=='REVIEW_PENDING'
+              records=[request,offline]
+              if review_supplied:
+                  validation=read('review-validation.json');records.append(validation)
+                  complete=complete and validation.get('candidate_sha256')==expected and validation.get('status')=='VALIDATED_REVIEW' and validation.get('ready') is True
+              complete=complete and all(record.get('publication_enabled') is False and record.get('production_approved') is False for record in records)
+          except (OSError,ValueError,TypeError,AttributeError):complete=False
+          result={'schema_version':1,'status':('VALIDATED_REVIEW' if review_supplied else 'REVIEW_REQUIRED') if complete else 'BLOCKED',
+              'reason':'current_review_steps_complete' if complete else 'review_attempt_incomplete_or_invalid','stage_outcomes':stages,
+              'workflow_run_id':os.environ['GITHUB_RUN_ID'],'workflow_run_attempt':os.environ['GITHUB_RUN_ATTEMPT'],
+              'source_run_id':os.environ['SOURCE_RUN_ID'],'format':os.environ['REVIEW_FORMAT'],
+              'candidate_sha256':expected if re.fullmatch('[0-9a-f]{64}',expected) else None,
+              'review_evidence_validated':bool(complete and review_supplied),'publication_enabled':False,'production_approved':False,
+              'scope':'Current-run transport and submitted evidence validation only. Does not perform or authenticate creative review; sampled API diagnostics are separate.'}
+          (directory/'review-workflow.json').write_text(json.dumps(result,indent=2)+'\n')
           PY
       - name: Preserve review preparation and validation only
-        if: always()
+        if: always() && steps.review_workspace.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: exact-av-review-${{ inputs.format }}
-          path: receipts/
+          path: ${{ steps.review_workspace.outputs.receipts }}
           retention-days: 14
           if-no-files-found: warn
   free-api-diagnostic:
