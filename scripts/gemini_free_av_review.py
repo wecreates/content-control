@@ -28,6 +28,7 @@ API = "https://generativelanguage.googleapis.com"
 MODEL = "gemini-3.8-flash"
 PROJECT = "gen-lang-client-0010384080"
 MAX_RESPONSE = 2 * 1024 * 1024
+MAX_JSON_DEPTH = 64
 
 
 class Blocked(Exception):
@@ -50,8 +51,21 @@ def strict_json(raw):
             out[key] = value
         return out
     try:
-        return json.loads(raw, parse_constant=reject, object_pairs_hook=unique)
-    except (ValueError, TypeError, UnicodeError):
+        value = json.loads(raw, parse_constant=reject, object_pairs_hook=unique)
+        # A small response can still contain enough nesting to exhaust the JSON
+        # decoder or later serialization. Walk iteratively and reject it before
+        # returning provider data to the rest of the adapter.
+        pending = [(value, 0)]
+        while pending:
+            item, depth = pending.pop()
+            if depth > MAX_JSON_DEPTH:
+                raise ValueError("depth")
+            if isinstance(item, dict):
+                pending.extend((child, depth + 1) for child in item.values())
+            elif isinstance(item, list):
+                pending.extend((child, depth + 1) for child in item)
+        return value
+    except (ValueError, TypeError, UnicodeError, RecursionError):
         raise Blocked("invalid_json") from None
 
 
