@@ -17,7 +17,7 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
  if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.pathname!=='/pod_test')throw Error('DISPOSABLE_TEST_DATABASE_REQUIRED');
  const owner=new pg.Pool({connectionString:url.toString(),max:1});
  const token=crypto.randomUUID().replaceAll('-',''),role='pod_archive_'+token;
- const names=['pod_archive_source_'+token,'pod_archive_target_'+token],pools=[],created=[];
+ const names=['pod_archive_source_'+token,'pod_archive_target_'+token,'pod_archive_cancel_'+token],pools=[],created=[];
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-pg-archive-')),directory=path.join(root,'archive');
  const key=Buffer.alloc(32,9),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
  const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
@@ -59,6 +59,17 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   await fs.writeFile(broken,original);
   assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,2);
   assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,0);
+  // Cancellation delivered after a real COMMIT must reject the returned
+  // receipt without pretending that the committed artifacts were rolled back.
+  const controller=new AbortController(),cancelled=Error('RESTORE_CANCELLED_FIXTURE');
+  const cancelTarget=new PodDB({pool:restricted(pools[2]),bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
+  const transact=cancelTarget.tx.bind(cancelTarget);
+  cancelTarget.tx=async fn=>{const result=await transact(fn);controller.abort(cancelled);return result;};
+  await assert.rejects(restoreArtifactLibrary(cancelTarget,{directory,key,env,signal:controller.signal}),error=>error===cancelled);
+  assert.equal((await pools[2].query('SELECT count(*)::int AS n FROM public.pod_artifacts')).rows[0].n,2);
+  for(const [index,hash] of hashes.entries())assert.deepEqual((await pools[2].query('SELECT body FROM public.pod_artifacts WHERE sha256=$1',[hash])).rows[0].body,contents[index]);
+  cancelTarget.tx=transact;
+  assert.equal((await restoreArtifactLibrary(cancelTarget,{directory,key,env})).inserted,0);
   // Close every pooled connection and verify persisted bytes after reconnect.
   await Promise.all(pools.map(pool=>pool.end()));pools.length=0;
   const restoredURL=new URL(url);restoredURL.pathname='/'+names[1];

@@ -18,7 +18,7 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
  if(!['localhost','127.0.0.1','[::1]'].includes(url.hostname)||url.pathname!=='/pod_test')throw Error('DISPOSABLE_TEST_DATABASE_REQUIRED');
  const owner=new pg.Pool({connectionString:url.toString(),max:1});
  const token=crypto.randomUUID().replaceAll('-',''),role='pod_state_'+token;
- const names=['pod_state_source_'+token,'pod_state_target_'+token],pools=[],created=[];
+ const names=['pod_state_source_'+token,'pod_state_target_'+token,'pod_state_cancel_'+token],pools=[],created=[];
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-state-pg-')),directory=path.join(root,'snapshot');
  const key=Buffer.alloc(32,27),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false',POD_PRODUCTION_ENABLED:'false',POD_OUTBOX_ENABLED:'false'};
  const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
@@ -107,6 +107,16 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   await assert.rejects(targetPool.query('UPDATE pod_financial_events SET amount_minor=1 WHERE id=$1',[financial]),/POD_APPEND_ONLY/);
   await assert.rejects(targetPool.query("UPDATE pod_concepts SET rights_state='PASS',permanently_unpublished=false WHERE id=$1",[tombstone]),/POD_PERMANENTLY_UNPUBLISHED/);
   await assert.rejects(restoreStateArchive(target,{directory,key,env}),/STATE_ARCHIVE_TARGET_NOT_EMPTY/);
+  // A post-COMMIT cancellation rejects the receipt but leaves the entire
+  // restored target and its safety holds committed. Never retry into it blindly.
+  const controller=new AbortController(),cancelled=Error('RESTORE_CANCELLED_FIXTURE');
+  const cancelPool=pools[2],cancelTarget=dbFor(cancelPool),transact=cancelTarget.tx.bind(cancelTarget);
+  cancelTarget.tx=async fn=>{const result=await transact(fn);controller.abort(cancelled);return result;};
+  await assert.rejects(restoreStateArchive(cancelTarget,{directory,key,env,signal:controller.signal}),error=>error===cancelled);
+  assert.equal((await cancelPool.query("SELECT count(*)::int AS n FROM pod_accounts WHERE state='DISABLED'")).rows[0].n,3);
+  assert.equal((await cancelPool.query('SELECT amount_minor::text AS amount FROM pod_financial_events WHERE id=$1',[financial])).rows[0].amount,'9007199254740993');
+  assert.equal((await cancelPool.query("SELECT count(*)::int AS n FROM pod_events WHERE kind='pod.recovery.restored'")).rows[0].n,1);
+  await assert.rejects(restoreStateArchive(dbFor(cancelPool),{directory,key,env}),/STATE_ARCHIVE_TARGET_NOT_EMPTY/);
   // Reconnect: success must not be an uncommitted in-memory fixture.
   await Promise.all(pools.map(p=>p.end()));pools.length=0;
   const reopenedURL=new URL(url);reopenedURL.pathname='/'+names[1];const reopened=new pg.Pool({connectionString:reopenedURL.toString(),max:1});pools.push(reopened);

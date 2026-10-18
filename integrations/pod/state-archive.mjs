@@ -140,7 +140,7 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
  const verified=await verifyStateArchive({...options,budgetBytes});
  const {catalog,archive_sha256}=await catalogFor(options);
  if(archive_sha256!==verified.archive_sha256)throw Error('STATE_ARCHIVE_CHANGED');
- return db.tx(async client=>{
+ const restored=await db.tx(async client=>{
   // Locks also protect the empty-target decision from normal writers. No
   // DELETE/TRUNCATE/DDL privileges or immutability-trigger bypass is needed.
   await client.query(`LOCK TABLE ${NAMES.map(t=>'public.'+t).join(',')} IN SHARE ROW EXCLUSIVE MODE`);
@@ -163,4 +163,9 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   await client.query('INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.recovery.restored',receipt]);
   disabled(env,true);signal?.throwIfAborted();return receipt;
  });
+ // COMMIT and pool release are asynchronous. A completed transaction cannot
+ // be undone here; reject late cancellation/flag changes without claiming rollback.
+ signal?.throwIfAborted();
+ disabled(env,true);
+ return restored;
 }

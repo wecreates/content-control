@@ -97,7 +97,7 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
  // Read and authenticate again during insertion to catch intervening changes.
  await verifyItems(catalog,options);
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
- return db.tx(async client=>{
+ const restored=await db.tx(async client=>{
   await client.query('SELECT pg_advisory_xact_lock($1)',[543211]);
   let used=BigInt((await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts')).rows[0].bytes),inserted=0;
   for(const item of catalog.items){
@@ -116,5 +116,10 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
  });
+ // COMMIT and pool release are asynchronous. A completed transaction cannot
+ // be undone here; reject late cancellation/flag changes without claiming rollback.
+ signal?.throwIfAborted();
+ if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+ return restored;
 }
 

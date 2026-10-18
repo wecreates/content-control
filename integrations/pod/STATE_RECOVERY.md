@@ -64,8 +64,8 @@ The command verifies all archive records before database access, then takes tabl
 locks and refuses any nonempty POD data table. Schema-version rows are expected
 from migration and are not restored. It authenticates each record again while
 inserting in dependency order, with foreign keys and immutability triggers active.
-Any schema mismatch, conflict, corruption, cancellation, flag change or database
-error rolls back the entire restore. No deletes, truncation, DDL, conflict
+Any schema mismatch, conflict, corruption, cancellation or flag change detected
+before COMMIT rolls back the entire restore. No deletes, truncation, DDL, conflict
 overwrites or trigger bypass are used. A second restore is rejected because the
 target is no longer empty; it cannot silently roll live state backward.
 
@@ -120,3 +120,15 @@ overwrite it. Use a previously established durable parent directory and a
 filesystem that supports directory fsync. This does not synchronize newly created
 ancestors owned by another process, qualify storage hardware against power loss,
 create off-host retention, extend database expiry or complete a live restore drill.
+
+## Transaction completion boundary
+
+Restore rechecks cancellation and all four required disabled flags after the
+transaction and connection release finish. A cancellation or flag change during
+COMMIT rejects the returned result even if the full restore and its audit event
+have committed. This rejection is not evidence of rollback. Likewise, a lost
+COMMIT response can leave the outcome uncertain. Keep workers and publication
+disabled, inspect the target and reconcile the recovery audit before deciding
+what to do next. A committed state restore leaves a nonempty target, so another
+restore is rejected; never delete restored rows or bypass that protection to
+force a retry. No recovery failure authorizes automatic activation or publication.
