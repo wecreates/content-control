@@ -1,24 +1,48 @@
 {
   "audio": {
+    "audio_duration_seconds": 30.058667,
+    "audio_start_relative_seconds": 0.0,
+    "audio_start_tolerance_seconds": 0.05,
+    "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
     "channels": 2,
     "checks": {
+      "analysis_complete": true,
+      "audio_duration_match": true,
+      "audio_start_aligned": true,
+      "audio_stream_covers_timeline": true,
       "channels_ok": true,
       "clipping_headroom_ok": true,
+      "decoded_audio_covers_timeline": true,
+      "decoded_audio_duration_match": true,
       "duration_match": true,
       "no_excessive_long_silence": true,
       "not_too_quiet": true,
+      "sample_peak_metric_present": true,
       "sample_rate_ok": true,
+      "silence_analysis_succeeded": true,
+      "silence_metrics_valid": true,
+      "volume_analysis_succeeded": true,
       "volume_metrics_present": true
     },
     "codec": "aac",
+    "decoded_audio_duration_seconds": 30.058666666666667,
     "duration_seconds": 30.058667,
+    "duration_tolerance_seconds": 0.5,
     "engine": "ffmpeg-free-audio-qa-v1",
+    "expected_duration_seconds": 30.0,
+    "full_audio_review": false,
     "long_silence_durations_seconds": [],
     "max_long_silence_seconds": 0.0,
     "max_volume_db": -4.4,
     "mean_volume_db": -28.1,
+    "production_approved": false,
+    "publication_enabled": false,
+    "sample_peak_dbfs": -4.397956,
+    "sample_peak_limit_dbfs": 0.1,
+    "sample_peak_scope": "Floating-point decoded sample peak before 16-bit conversion; not true/intersample peak and not proof of unclipped source history.",
     "sample_rate_hz": 48000,
     "schema_version": 1,
+    "scope": "Technical audio diagnostics only; successful decoding and metrics do not certify listening, creative quality, synchronization, or competitor comparison.",
     "verdict": "PASS"
   },
   "audio_source": "repository-local public/audio",
@@ -108,16 +132,16 @@
     "analysis_status": "COMPLETE",
     "artistic_acceptance": "UNASSESSED",
     "best_reference_similarity_by_candidate": [
-      0.42704087495803833,
-      0.45013362169265747,
-      0.39411085844039917,
-      0.43755924701690674,
-      0.38390159606933594,
-      0.38086435198783875,
-      0.4747011959552765,
-      0.3992650508880615,
-      0.4028263986110687,
-      0.3972346782684326
+      0.4270409047603607,
+      0.45013365149497986,
+      0.39411091804504395,
+      0.4375591278076172,
+      0.38390132784843445,
+      0.38086381554603577,
+      0.47470104694366455,
+      0.39926469326019287,
+      0.4028262495994568,
+      0.39723461866378784
     ],
     "checks": {
       "florence_completed": true,
@@ -164,52 +188,52 @@
     "frame_matches": [
       {
         "candidate": "cand-01.jpg",
-        "cosine_similarity": 0.42704087495803833,
+        "cosine_similarity": 0.4270409047603607,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-02.jpg",
-        "cosine_similarity": 0.45013362169265747,
+        "cosine_similarity": 0.45013365149497986,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-03.jpg",
-        "cosine_similarity": 0.39411085844039917,
+        "cosine_similarity": 0.39411091804504395,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-04.jpg",
-        "cosine_similarity": 0.43755924701690674,
+        "cosine_similarity": 0.4375591278076172,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-05.jpg",
-        "cosine_similarity": 0.38390159606933594,
+        "cosine_similarity": 0.38390132784843445,
         "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-06.jpg",
-        "cosine_similarity": 0.38086435198783875,
+        "cosine_similarity": 0.38086381554603577,
         "reference": "ref-07.jpg"
       },
       {
         "candidate": "cand-07.jpg",
-        "cosine_similarity": 0.4747011959552765,
+        "cosine_similarity": 0.47470104694366455,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-08.jpg",
-        "cosine_similarity": 0.3992650508880615,
+        "cosine_similarity": 0.39926469326019287,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-09.jpg",
-        "cosine_similarity": 0.4028263986110687,
+        "cosine_similarity": 0.4028262495994568,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-10.jpg",
-        "cosine_similarity": 0.3972346782684326,
+        "cosine_similarity": 0.39723461866378784,
         "reference": "ref-01.jpg"
       }
     ],
@@ -219,7 +243,7 @@
       "Sampled frames do not establish timing, animation quality, or full-video parity.",
       "Captions may omit details or hallucinate; they are not visual approval."
     ],
-    "mean_best_frame_similarity": 0.41476383805274963,
+    "mean_best_frame_similarity": 0.4147636294364929,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "openclip_status": "COMPLETE",
     "production_ready": false,
@@ -310,8 +334,8 @@
           "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
         }
       ],
-      "run_id": "39037887140",
-      "source_revision": "0c095d522591adb5e14c0fa1d40c63332c6c06a8"
+      "run_id": "39114090121",
+      "source_revision": "6d882b54c0e1cae940d33d1ada708c5fb9e6e8ba"
     },
     "publication_enabled": false,
     "runtime_versions": {
