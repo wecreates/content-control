@@ -44,3 +44,27 @@ hash checks, HTTPS-only endpoints, redirect rejection, output overwrite protecti
 and publication restrictions remain unchanged. Local HTTP fixtures exercise
 slow headers, slow-drip manifests/artifacts and a valid restore; they establish
 neither live recovery nor independent approval.
+
+
+## Review generation failure recovery
+
+The local review-package producer removes its newly created attempt directory
+when a Python stage raises, including an interrupt delivered as an exception.
+A corrected brief can retry the same destination without manually deleting a
+partial source, cover, interior, manifest or result. Existing output paths still
+fail before generation. Successful packages and REVIEW_REQUIRED receipts remain
+in place; neither production nor publication is enabled.
+
+Cleanup checks the opened attempt directory's device/inode against the current
+path before removal. Holding the directory descriptor prevents inode reuse during
+the attempt. A detected replacement directory or symlink is preserved; a moved
+attempt may remain for manual investigation. Cleanup permission failures retain
+the original stage error and add REVIEW_OUTPUT_CLEANUP_FAILED. This does not
+provide atomic publication, a same-user adversarial filesystem sandbox, or cleanup
+after process crashes, SIGKILL or default SIGTERM termination. Parent directories
+created for the output path are not removed.
+
+Seven regression tests cover five late stage failures followed by genuine
+reproducible rendering, corrected worker-font input, KeyboardInterrupt, existing
+output/symlink protection, concurrent replacements and denied cleanup. Fixtures
+are synthetic and supply no official-template, rights, editorial or live evidence.
