@@ -1,16 +1,47 @@
 """Restore an exact stored package for independent QA. Never signs approval."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import sys
+import threading
+import time
 import urllib.parse
 import urllib.request
 
 HASH = re.compile(r'^[a-f0-9]{64}$')
+REQUEST_TIMEOUT_SECONDS = 20
+
+
+@contextmanager
+def request_deadline():
+    # Socket timeouts limit idle reads, not a response that keeps trickling.
+    # This CLI uses the main-thread POSIX timer to cover open/headers/body/close.
+    if (threading.current_thread() is not threading.main_thread() or
+            not all(hasattr(signal, name) for name in ('SIGALRM','ITIMER_REAL','getitimer','setitimer'))):
+        raise ValueError('RESPONSE_DEADLINE_UNAVAILABLE')
+    if signal.getitimer(signal.ITIMER_REAL) != (0.0,0.0):
+        raise ValueError('RESPONSE_DEADLINE_TIMER_IN_USE')
+    previous = signal.getsignal(signal.SIGALRM)
+    if previous not in (signal.SIG_DFL,signal.SIG_IGN) and not callable(previous):
+        raise ValueError('RESPONSE_DEADLINE_UNAVAILABLE')
+    deadline = time.monotonic() + REQUEST_TIMEOUT_SECONDS
+    def expired(_signum, _frame):
+        raise ValueError('RESPONSE_DEADLINE_EXCEEDED')
+    signal.signal(signal.SIGALRM,expired)
+    try:
+        signal.setitimer(signal.ITIMER_REAL,REQUEST_TIMEOUT_SECONDS)
+        yield
+        if time.monotonic() >= deadline:
+            raise ValueError('RESPONSE_DEADLINE_EXCEEDED')
+    finally:
+        signal.setitimer(signal.ITIMER_REAL,0)
+        signal.signal(signal.SIGALRM,previous)
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
@@ -26,11 +57,12 @@ def export_package(base_url, job_id, output, key, fetch=None):
         opener = urllib.request.build_opener(NoRedirect)
         def fetch(route, limit):
             req = urllib.request.Request(base_url.rstrip('/') + route, headers={'Authorization': 'Bearer ' + key})
-            with opener.open(req, timeout=20) as response:
-                body = response.read(limit + 1)
-                if len(body) > limit:
-                    raise ValueError('RESPONSE_TOO_LARGE')
-                return body
+            with request_deadline():
+                with opener.open(req, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                    body = response.read(limit + 1)
+                    if len(body) > limit:
+                        raise ValueError('RESPONSE_TOO_LARGE')
+            return body
     record = json.loads(fetch('/jobs/' + job_id + '/package', 262144))
     manifest = record.get('manifest')
     if record.get('id') != job_id or not isinstance(manifest, dict) or manifest.get('schema_version') != 1 or manifest.get('publication_enabled') is not False:
