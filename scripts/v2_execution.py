@@ -20,6 +20,21 @@ ROOT = Path(__file__).resolve().parents[1]
 _cancellation_state = None
 
 
+def video_render_command(composition, output, props, concurrency):
+    # The mux copies video; encode limited-range BT.709 here for mobile playback.
+    return [ROOT / 'node_modules/.bin/remotion', 'render',
+            'remotion/studio-animatic-index.jsx', composition, output,
+            '--props=' + str(props), '--codec=h264', '--crf=18',
+            '--concurrency=' + str(concurrency), '--pixel-format=yuv420p',
+            '--color-space=bt709']
+
+
+def video_mux_command(video, audio, output):
+    return ['ffmpeg', '-nostdin', '-y', '-i', video, '-i', audio,
+            '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy',
+            '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output]
+
+
 def sha(path):
     with Path(path).open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -270,8 +285,8 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
         render_inputs += sorted(ROOT.glob('remotion.config.*'))
 
         def render(force=False):
-            runner.stage('render', render_inputs, lambda: command('render', [ROOT / 'node_modules/.bin/remotion', 'render', 'remotion/studio-animatic-index.jsx', composition, silent, '--props=' + str(props), '--codec=h264', '--crf=18', '--concurrency=' + str(render_concurrency)], [silent], timeout=7200), attempts=2, force=force)
-            runner.stage('mux', [silent, mixdir / 'mix.wav'], lambda: command('mux', ['ffmpeg', '-nostdin', '-y', '-i', silent, '-i', mixdir / 'mix.wav', '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', final], [final]), attempts=2, force=force)
+            runner.stage('render', render_inputs, lambda: command('render', video_render_command(composition, silent, props, render_concurrency), [silent], timeout=7200), attempts=2, force=force)
+            runner.stage('mux', [silent, mixdir / 'mix.wav'], lambda: command('mux', video_mux_command(silent, mixdir / 'mix.wav', final), [final]), attempts=2, force=force)
 
         def inspect():
             qa.unlink(missing_ok=True)
