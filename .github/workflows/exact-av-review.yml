@@ -28,6 +28,9 @@ on:
       - 'tests/comparison-pipeline.test.mjs'
       - 'tests/comparison-playback.test.mjs'
       - 'tests/comparison-bound-entrypoints.test.mjs'
+      - 'tests/comparison-http-fixture.mjs'
+      - 'tests/comparison-input-safety.test.mjs'
+      - 'scripts/hosted_comparison_receipt.mjs'
       - 'tests/comparison-fixtures.mjs'
       - 'scripts/comparison_sessions.mjs'
       - 'server-lowmem.js'
@@ -62,7 +65,7 @@ jobs:
         with: {node-version: '20'}
       - run: node --test --test-concurrency=1 tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs tests/comparison-app.test.mjs tests/comparison-playback.test.mjs tests/review-smoke-contract.test.mjs
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: node --test tests/comparison-pipeline.test.mjs tests/comparison-bound-entrypoints.test.mjs
+      - run: node --test tests/comparison-pipeline.test.mjs tests/comparison-bound-entrypoints.test.mjs tests/comparison-input-safety.test.mjs
       - run: python -m unittest discover -s tests -p test_creator_parity_compare.py
       - run: python -m unittest discover -s tests -p test_gemini_free_av_review.py
       - run: python -m unittest discover -s tests -p test_free_review_guards.py

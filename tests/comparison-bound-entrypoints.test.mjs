@@ -10,8 +10,10 @@ import {execFileSync,spawnSync} from 'node:child_process';
 import {inspectMedia,validateBoundHandoff} from '../scripts/exact_av_review.mjs';
 import {creativeHandoff,CREATIVE_CHECKS} from '../creative-handoff.js';
 import {syntheticSessions} from './comparison-fixtures.mjs';
+import {createHostedComparisonGate} from '../scripts/hosted_comparison_receipt.mjs';
+import {exerciseHostedHttp} from './comparison-http-fixture.mjs';
 
-test('actual hosted acceptance and scorer CLI require bytes, sessions, coverage AND separate observations',()=>{
+test('actual hosted acceptance and scorer CLI require bytes, sessions, coverage AND separate observations',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'synthetic-bound-entrypoints-'));
  try{
  const files=Array.from({length:8},(_,i)=>{
@@ -43,12 +45,14 @@ test('actual hosted acceptance and scorer CLI require bytes, sessions, coverage 
  writeFileSync(runtimePath,JSON.stringify({status:'READY',candidate_sha256:m.candidate_sha256}));
  const source=readFileSync(new URL('../server-lowmem.js',import.meta.url),'utf8');
  const body=source.match(/function v2Acceptance\(\)\s*\{[\s\S]*?\n\}/)[0];
- assert.match(body,/validateBoundHandoff/);
+ assert.match(body,/hostedComparisonGate/);
+ const receiptPath=join(dir,'bound-receipt.json'),gate=createHostedComparisonGate();
+ const validate=()=>{const result=validateBoundHandoff(review,files[0].file,manifest,sessionPath);writeFileSync(receiptPath,JSON.stringify(result));return result;};
  const hosted=()=>{
-  writeFileSync(healthPath,JSON.stringify({status:'READY',publication_enabled:false,creative_qa:true,technical_qa:true,visual_parity_qa:true,candidate_sha256:m.candidate_sha256,media_evidence:m,creative_review:review,comparison_evidence:{manifest_path:manifest,sessions_path:sessionPath}}));
+  writeFileSync(healthPath,JSON.stringify({status:'READY',publication_enabled:false,creative_qa:true,technical_qa:true,visual_parity_qa:true,candidate_sha256:m.candidate_sha256,media_evidence:m,creative_review:review,comparison_evidence:{receipt_path:receiptPath}}));
   return vm.runInNewContext(body+'\nv2Acceptance()',{
    readJson:p=>JSON.parse(readFileSync(p)),fileHash:p=>createHash('sha256').update(readFileSync(p)).digest('hex'),
-   v2HealthPath:healthPath,v2Output:files[0].file,path:{resolve:()=>runtimePath},creativeHandoff,validateBoundHandoff});
+   v2HealthPath:healthPath,v2Output:files[0].file,path:{resolve:()=>runtimePath},creativeHandoff,hostedComparisonGate:gate});
  };
  const scorer=(omitBinding=false)=>{
   writeFileSync(candidatePath,JSON.stringify(review));
@@ -57,7 +61,12 @@ test('actual hosted acceptance and scorer CLI require bytes, sessions, coverage 
   assert.ifError(run.error);return {run,result:JSON.parse(readFileSync(out))};
  };
  const save=()=>writeFileSync(sessionPath,JSON.stringify(sessions));save();
+ assert.equal(validate().ready,true);
+ assert.equal(hosted().ready,false,'Cold admission must fail closed');await gate.settled();
  assert.equal(hosted().ready,true);
+ await exerciseHostedHttp({source,healthPath,runtimePath,video:files[0].file,receiptPath,review,reference:files[1].file});
+ // The HTTP invalidation regression restores reference bytes, so regenerate its receipt.
+ assert.equal(validate().ready,true);hosted();await gate.settled();assert.equal(hosted().ready,true);
  const good=scorer();assert.equal(good.run.status,0,good.run.stderr);assert.equal(good.result.status,'PASS');
  assert.equal(good.result.binding.imported_sessions.length,8);assert.equal(good.result.perception_verified,false);assert.equal(good.result.production_approved,false);assert.equal(good.result.publication_enabled,false);
  assert.equal(scorer(true).result.approval_allowed,false,'Missing CLI binding arguments must reject');

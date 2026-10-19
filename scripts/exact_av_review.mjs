@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {creativeHandoff,CREATIVE_CHECKS,completeCoverage} from '../creative-handoff.js';
 import {importComparisonSessions} from './comparison_sessions.mjs';
+import {comparisonFileVersion,comparisonReviewDigest} from './hosted_comparison_receipt.mjs';
 
 const RETAINED_REPAIRS = {
  '38574413400': {sha:'dcb4775fe1891df8d8bcaab477bcb919e6771b50',workflow:'.github/workflows/repair-retained-captions.yml',prefix:'caption-repair',
@@ -82,10 +83,28 @@ export function validateReview(review,media) {
  const {reasons}=creativeHandoff(review,media.candidate_sha256,media);
  return {schema_version:1,status:reasons.length?'BLOCKED':'VALIDATED_REVIEW',ready:reasons.length===0,reasons:[...new Set(reasons)],candidate_sha256:media.candidate_sha256,duration_seconds:media.duration_seconds,publication_enabled:false,production_approved:false,scope:'Validates submitted evidence structure and the existing creative handoff gate; does not itself observe audiovisual content or authenticate reviewer claims.'};
 }
+export function boundedMediaRunner(run=execFileSync,{budgetMs=300000,now=()=>performance.now()}={}) {
+ const deadline=now()+budgetMs;
+ return (command,args,options={})=>{
+  const remaining=deadline-now();if(remaining<=0)throw Error('Comparison validation budget exceeded');
+  const result=run(command,args,{...options,timeout:Math.max(1,Math.min(options.timeout||remaining,remaining))});
+  if(now()>deadline)throw Error('Comparison validation budget exceeded');
+  return result;
+ };
+}
 export function inspectDecodedMedia(path,run=execFileSync) {
- const before=inspectMedia(path,run);
- run('ffmpeg',['-nostdin','-v','error','-xerror','-err_detect','explode','-i',path,'-map','0:v:0','-map','0:a:0','-f','null','-'],{encoding:'utf8',timeout:180_000,killSignal:'SIGKILL'});
- const after=inspectMedia(path,run);
+ // A path/hash must identify the media itself, never a playlist and its mutable
+ // dependencies. Inspect bytes, force the MP4 demuxer, and disable external tracks.
+ const fd=openSync(path,constants.O_RDONLY|constants.O_NONBLOCK);
+ try {
+  const header=Buffer.alloc(32),s=fstatSync(fd);
+  if(!s.isFile()||s.size<16||readSync(fd,header,0,32,0)<16||header.toString('ascii',4,8)!=='ftyp'||header.readUInt32BE(0)<16||header.readUInt32BE(0)>s.size||!['isom','iso2','mp41','mp42','avc1'].includes(header.toString('ascii',8,12)))throw Error('Bound comparison requires direct MP4 media');
+ } finally {closeSync(fd);}
+ const options=['-protocol_whitelist','file','-f','mov','-enable_drefs','0','-use_absolute_path','0'];
+ const probe=(command,args,opts)=>run(command,[...options,...args],opts);
+ const before=inspectMedia(path,probe);
+ run('ffmpeg',['-nostdin','-v','error','-xerror','-err_detect','explode',...options,'-i',path,'-map','0:v:0','-map','0:a:0','-f','null','-'],{encoding:'utf8',timeout:180_000,killSignal:'SIGKILL'});
+ const after=inspectMedia(path,probe);
  if(before.candidate_sha256!==after.candidate_sha256||before.duration_seconds!==after.duration_seconds)throw Error('Media changed during decode');
  return {...after,technical_decode:'PASS'};
 }
@@ -94,7 +113,7 @@ function referenceInputs(manifestPath) {
  if(!Array.isArray(rows)||rows.length<2||rows.length>20||rows.some(r=>!r||typeof r.url!=='string'||!r.url.trim()||typeof r.path!=='string'||!r.path.trim())||new Set(rows.map(r=>r.url)).size!==rows.length)throw Error('Reference manifest must contain 2..20 distinct URL/local-path mappings');
  return rows.map(r=>({url:r.url,path:resolve(dirname(resolve(manifestPath)),r.path)}));
 }
-export function validateMediaBindings(review,video,references,receipts,run=execFileSync) {
+export function validateMediaBindings(review,video,references,receipts,run=boundedMediaRunner()) {
  const media=inspectDecodedMedia(resolve(video),run),reasons=[];
  if(review?.full_video_review!==true||review?.full_audio_review!==true)reasons.push('candidate_audiovisual_review_missing');
  if(review?.candidate_sha256!==media.candidate_sha256||!Number.isFinite(review?.duration_seconds)||Math.abs(review.duration_seconds-media.duration_seconds)>.05)reasons.push('candidate_bytes_or_duration_mismatch');
@@ -116,14 +135,14 @@ export function validateMediaBindings(review,video,references,receipts,run=execF
  return {ready:reasons.length===0,reasons:[...new Set(reasons)],media,reference_media:measured,
   imported_sessions:sessions.sessions,perception_verified:false,production_approved:false,publication_enabled:false};
 }
-export function validateBindingFiles(review,video,manifestPath,sessionsPath,run=execFileSync) {
+export function validateBindingFiles(review,video,manifestPath,sessionsPath,run=boundedMediaRunner()) {
  if(!manifestPath||!sessionsPath)throw Error('Comparison manifest and session receipts required');
  const paths=[manifestPath,sessionsPath],before=paths.map(p=>mediaDigest(p).sha256);
  const result=validateMediaBindings(review,video,referenceInputs(manifestPath),readReview(sessionsPath),run);
  if(paths.some((p,i)=>mediaDigest(p).sha256!==before[i]))throw Error('Comparison evidence changed during validation');
  return {...result,reference_manifest_sha256:before[0],session_receipts_sha256:before[1]};
 }
-export function validateBoundHandoff(review,video,manifestPath,sessionsPath,run=execFileSync) {
+export function validateBoundHandoff(review,video,manifestPath,sessionsPath,run=boundedMediaRunner()) {
  try {
   if(!manifestPath||!sessionsPath)throw Error('Comparison manifest and session receipts required');
   const binding=validateBindingFiles(review,video,manifestPath,sessionsPath,run);
@@ -132,7 +151,15 @@ export function validateBoundHandoff(review,video,manifestPath,sessionsPath,run=
    return actual?{...claim,duration_seconds:actual.duration_seconds}:claim;
   }):review?.comparisons};
   const result=validateReview(measuredReview,binding.media),reasons=[...new Set([...result.reasons,...binding.reasons])];
-  return {...result,...binding,comparison_evidence:{manifest_path:resolve(manifestPath),sessions_path:resolve(sessionsPath)},status:reasons.length?'BLOCKED':'VALIDATED_BOUND_REVIEW',ready:!reasons.length,reasons,
+  let runtime_binding;
+  if(!reasons.length){
+   const inputs=[video,manifestPath,sessionsPath,...referenceInputs(manifestPath).map(r=>r.path)];
+   const files=inputs.map(input=>{const path=resolve(input),before=comparisonFileVersion(path),digest=mediaDigest(path);if(comparisonFileVersion(path)!==before)throw Error('Binding changed');return {path,sha256:digest.sha256,byte_length:digest.byte_length,version:before};});
+   const expected=[binding.media.candidate_sha256,binding.reference_manifest_sha256,binding.session_receipts_sha256,...binding.reference_media.map(r=>r.candidate_sha256)];
+   if(files.some((f,i)=>f.sha256!==expected[i]))throw Error('Binding changed before receipt');
+   runtime_binding={schema_version:1,candidate_path:resolve(video),review_sha256:comparisonReviewDigest(review),files};
+  }
+  return {...result,...binding,runtime_binding,comparison_evidence:{manifest_path:resolve(manifestPath),sessions_path:resolve(sessionsPath)},status:reasons.length?'BLOCKED':'VALIDATED_BOUND_REVIEW',ready:!reasons.length,reasons,
    scope:'Local byte/decode binding and imported player telemetry; audiovisual observations remain separate reviewer assertions. No perception, source authenticity, or creative approval is certified.'};
  } catch {
   return {status:'BLOCKED',ready:false,reasons:['comparison_inputs_unavailable_or_invalid'],perception_verified:false,production_approved:false,publication_enabled:false};
@@ -188,10 +215,11 @@ export function main(args,{probe=execFileSync}={}) {
  // earlier VALIDATED_REVIEW receipt looking like the result of this attempt.
  writeReceipt(destination,inputs,{schema_version:1,status:'BLOCKED',ready:false,reasons:['review_attempt_incomplete'],publication_enabled:false,production_approved:false});
  if(manifestError)throw manifestError;
+ const run=bound?boundedMediaRunner(probe):probe;
  const media=bound?null:inspectMedia(resolve(video),probe);
  const result=mode==='prepare'?prepareReview(media):bound?(bindingsOnly?
-  validateBindingFiles(readReview(reviewPath),video,manifestPath,sessionsPath,probe):
-  validateBoundHandoff(readReview(reviewPath),video,manifestPath,sessionsPath,probe)):validateReview(readReview(reviewPath),media);
+  validateBindingFiles(readReview(reviewPath),video,manifestPath,sessionsPath,run):
+  validateBoundHandoff(readReview(reviewPath),video,manifestPath,sessionsPath,run)):validateReview(readReview(reviewPath),media);
  if(bindingsOnly)result.status=result.ready?'BOUND_EVIDENCE':'BLOCKED';
  // Recheck aliases immediately before atomic replace; never follow a destination symlink.
  writeReceipt(destination,inputs,result);
