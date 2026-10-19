@@ -81,6 +81,36 @@ export function validateReview(review,media) {
  const {reasons}=creativeHandoff(review,media.candidate_sha256,media);
  return {schema_version:1,status:reasons.length?'BLOCKED':'VALIDATED_REVIEW',ready:reasons.length===0,reasons:[...new Set(reasons)],candidate_sha256:media.candidate_sha256,duration_seconds:media.duration_seconds,publication_enabled:false,production_approved:false,scope:'Validates submitted evidence structure and the existing creative handoff gate; does not itself observe audiovisual content or authenticate reviewer claims.'};
 }
+export function inspectDecodedMedia(path,run=execFileSync) {
+ const before=inspectMedia(path,run);
+ run('ffmpeg',['-nostdin','-v','error','-xerror','-err_detect','explode','-i',path,'-map','0:v:0','-map','0:a:0','-f','null','-'],{encoding:'utf8',timeout:180_000,killSignal:'SIGKILL'});
+ const after=inspectMedia(path,run);
+ if(before.candidate_sha256!==after.candidate_sha256||before.duration_seconds!==after.duration_seconds)throw Error('Media changed during decode');
+ return {...after,technical_decode:'PASS'};
+}
+function referenceInputs(manifestPath) {
+ const rows=readReview(manifestPath);
+ if(!Array.isArray(rows)||rows.length<2||rows.length>20||rows.some(r=>!r||typeof r.url!=='string'||!r.url.trim()||typeof r.path!=='string'||!r.path.trim())||new Set(rows.map(r=>r.url)).size!==rows.length)throw Error('Reference manifest must contain 2..20 distinct URL/local-path mappings');
+ return rows.map(r=>({url:r.url,path:resolve(dirname(resolve(manifestPath)),r.path)}));
+}
+function boundReview(review,media,references,run) {
+ const result=validateReview(review,media),reasons=[...result.reasons];
+ const comparisons=review?.comparisons;
+ if(!Array.isArray(comparisons)||comparisons.length!==references.length||new Set(comparisons.map(r=>r?.url)).size!==comparisons.length)reasons.push('reference_mapping_mismatch');
+ const measured=references.map(r=>({...inspectDecodedMedia(r.path,run),url:r.url}));
+ for(const ref of measured) {
+  const claims=Array.isArray(comparisons)?comparisons.filter(r=>r?.url===ref.url):[];
+  if(claims.length!==1||claims[0].artifact_sha256!==ref.candidate_sha256||!Number.isFinite(claims[0].duration_seconds)||Math.abs(claims[0].duration_seconds-ref.duration_seconds)>.05)reasons.push('reference_bytes_or_duration_mismatch');
+ }
+ if(Array.isArray(comparisons))reasons.push(...validateReview({...review,comparisons:comparisons.map(claim=>{
+  const actual=measured.find(r=>r.url===claim?.url);
+  return actual?{...claim,duration_seconds:actual.duration_seconds}:claim;
+ })},media).reasons);
+ return {...result,status:reasons.length?'BLOCKED':'VALIDATED_BOUND_REVIEW',ready:reasons.length===0,reasons:[...new Set(reasons)],
+  reference_media:measured.map(r=>({url:r.url,artifact_sha256:r.candidate_sha256,duration_seconds:r.duration_seconds,byte_length:r.byte_length,technical_decode:r.technical_decode})),
+  reference_bytes_verified:!reasons.length,perception_verified:false,
+  scope:'Local candidate/reference hashes, durations and full-stream decode checked against submitted claims. Does not authenticate source URLs, playback logs, listening, visual perception or creative judgments.'};
+}
 function inputIdentity(input) {
  let current=resolve(input);const missing=[];
  for(;;) {
@@ -119,18 +149,28 @@ function writeReceipt(destination,inputs,result) {
  } finally {rmSync(temporary,{recursive:true,force:true});}
 }
 export function main(args,{probe=execFileSync}={}) {
- const [mode,video,output,reviewPath]=args;
- if(!['prepare','validate'].includes(mode)||!video||!output||(mode==='validate'&&!reviewPath))throw Error('Usage: exact_av_review.mjs prepare VIDEO OUTPUT | validate VIDEO OUTPUT REVIEW_JSON');
- const inputs=mode==='validate'?[video,reviewPath]:[video];
+ const [mode,video,output,reviewPath,manifestPath]=args;
+ const bound=mode==='validate-bound',validating=mode==='validate'||bound;
+ if(!['prepare','validate','validate-bound'].includes(mode)||!video||!output||(validating&&!reviewPath)||(bound&&!manifestPath))throw Error('Usage: exact_av_review.mjs prepare VIDEO OUTPUT | validate VIDEO OUTPUT REVIEW_JSON | validate-bound VIDEO OUTPUT REVIEW_JSON REFERENCES_JSON');
+ const inputs=validating?[video,reviewPath]:[video];
+ let references=[],manifestError;
+ if(bound){inputs.push(manifestPath);try{references=referenceInputs(manifestPath);inputs.push(...references.map(r=>r.path));}catch(error){manifestError=error;}}
  const destination=safeOutputPath(output,inputs);
  // Fail closed before probing or parsing. A failed attempt must not leave an
  // earlier VALIDATED_REVIEW receipt looking like the result of this attempt.
  writeReceipt(destination,inputs,{schema_version:1,status:'BLOCKED',ready:false,reasons:['review_attempt_incomplete'],publication_enabled:false,production_approved:false});
- const media=inspectMedia(resolve(video),probe);
- const result=mode==='prepare'?prepareReview(media):validateReview(readReview(reviewPath),media);
+ if(manifestError)throw manifestError;
+ const media=bound?inspectDecodedMedia(resolve(video),probe):inspectMedia(resolve(video),probe);
+ const result=mode==='prepare'?prepareReview(media):bound?boundReview(readReview(reviewPath),media,references,probe):validateReview(readReview(reviewPath),media);
+ if(bound){
+  // A reference or candidate changed while another file was processed must not
+  // receive a successful binding receipt from the earlier snapshot.
+  if(mediaDigest(resolve(video)).sha256!==media.candidate_sha256)throw Error('Candidate changed during comparison');
+  for(let i=0;i<references.length;i++)if(mediaDigest(references[i].path).sha256!==result.reference_media[i].artifact_sha256)throw Error('Reference changed during comparison');
+ }
  // Recheck aliases immediately before atomic replace; never follow a destination symlink.
  writeReceipt(destination,inputs,result);
  console.log(JSON.stringify({status:result.status,candidate_sha256:media.candidate_sha256,publication_enabled:false}));
- return mode==='validate'&&!result.ready?2:0;
+ return validating&&!result.ready?2:0;
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){try{process.exitCode=main(process.argv.slice(2));}catch(e){console.error(e.message);process.exitCode=2;}}
