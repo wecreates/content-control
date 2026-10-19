@@ -20,6 +20,11 @@ The local startup probe waits at most 60 seconds for `/api/print/status`, reject
 redirects and invalid or oversized responses, and requires the service, production
 loop and outbox to be DISABLED with publication neither enabled nor requested.
 It checks image defaults without injecting enabling flags or cloud credentials.
+Each probe attempt owns a referenced timer, so standalone Node cannot exit while
+awaiting an unreferenced transport. Header and body waits share that attempt's
+abort signal and monotonic deadline; failed-response cancellation is best effort
+and cannot hold the probe open. Child-process regressions exercise these limits
+without a test server keeping the child alive.
 The shared `/health` route measures video acceptance and is not used as POD startup
 evidence. These image checks do not change Render's configured health route or
 replace the separate live deployment smoke.

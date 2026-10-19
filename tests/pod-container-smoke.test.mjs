@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import {spawnSync} from 'node:child_process';
 import {waitForDisabledPod} from '../scripts/pod_container_smoke.mjs';
 
 const disabled={status:'DISABLED',publication_enabled:false,publication_requested:false,
@@ -69,4 +70,30 @@ for(const [name,send] of [
  const {url}=await serve(t,(_req,res)=>{requests++;send(res);});
  await assert.rejects(waitForDisabledPod({url}),/POD_SMOKE_INVALID_RESPONSE/);
  assert.equal(requests,1);
+});
+
+function standalone(fetchSource,options){
+ const script=`import {waitForDisabledPod} from ${JSON.stringify(new URL('../scripts/pod_container_smoke.mjs',import.meta.url).href)};
+ globalThis.fetch=${fetchSource};
+ try{console.log(JSON.stringify(await waitForDisabledPod(${JSON.stringify(options)})));}
+ catch(error){console.error(error.message);process.exitCode=1;}`;
+ const result=spawnSync(process.execPath,['--input-type=module','-e',script],{encoding:'utf8',timeout:5000});
+ assert.equal(result.error,undefined);assert.equal(result.signal,null);
+ assert.doesNotMatch(result.stderr,/unsettled top-level await/i);
+ return result;
+}
+test('standalone smoke stays alive for a delayed body with no other referenced handles',()=>{
+ const result=standalone(`async()=>new Response(new ReadableStream({start(controller){
+  const timer=setTimeout(()=>{controller.enqueue(new TextEncoder().encode(${JSON.stringify(JSON.stringify(disabled))}));controller.close();},30);
+  timer.unref();
+ }}))`,{timeoutMs:1000,requestTimeoutMs:500});
+ assert.equal(result.status,0);assert.equal(JSON.parse(result.stdout).status,'PASS');
+});
+for(const [name,source,expected] of [
+ ['stalled headers','()=>new Promise(()=>{})','POD_SMOKE_STARTUP_TIMEOUT'],
+ ['stalled body','async()=>new Response(new ReadableStream({start(){}}))','POD_SMOKE_INVALID_RESPONSE'],
+ ['stalled error-body cancellation',"async()=>({status:503,body:{cancel:()=>new Promise(()=>{})}})",'POD_SMOKE_INVALID_RESPONSE']
+])test(`standalone smoke bounds ${name} without other referenced handles`,()=>{
+ const result=standalone(source,{timeoutMs:120,requestTimeoutMs:40,retryMs:10});
+ assert.equal(result.status,1);assert.equal(result.stderr.trim(),expected);
 });
