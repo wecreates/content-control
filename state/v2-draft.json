@@ -1,10 +1,10 @@
 {
-  "run_id": 39195413677,
-  "source_commit": "10c83df1a21eb2471721daf7d66cf13802f41101",
+  "run_id": 39202085382,
+  "source_commit": "00f7f5a17f9370dba1624c504bec7bcdd11d14f6",
   "status": "DRAFT",
   "publication_enabled": false,
   "production_approved": false,
   "voice_provider": "kokoro_local_cpu",
-  "candidate_sha256": "1f1a2b090cff4c75bf22fbe297141257d7c17d7bd2b14c2409214289eb2e8056",
+  "candidate_sha256": "730a1de88383bab9feb13a2adac176f68d636add70885eff7832a6e0e9db8888",
   "full_av_review": false
 }
