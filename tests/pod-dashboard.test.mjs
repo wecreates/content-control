@@ -7,7 +7,7 @@ const source=await fs.readFile(new URL('../integrations/pod/dashboard.js',import
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const record=bytes=>({id:'fixture-job',state:'qa_failed',manifest:{schema_version:1,publication_enabled:false,platform:'redbubble',package_sha256:'b'.repeat(64),files:{'print.png':sha(bytes)}}});
-function harness(fetcher){
+function harness(fetcher,timers={setTimeout,clearTimeout}){
  class Element{
   constructor(){this.value='';this.textContent='';this.hidden=false;this.listeners={};this.children=[];}
   addEventListener(name,fn){this.listeners[name]=fn;}
@@ -20,6 +20,7 @@ function harness(fetcher){
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
  const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:{addEventListener:(k,v)=>events[k]=v},
   AbortController,TextDecoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
+  setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,
   URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:fixture-'+urls.length;},revokeObjectURL:url=>revoked.push(url)},
   fetch:async(url,options)=>{requests.push({url,options});return fetcher(url,options);}});
  vm.runInContext(source,context);get('key').value='synthetic-key-'.repeat(4);get('state').value='review_required';
@@ -130,4 +131,66 @@ test('bounded response reader cancels oversized streams and redacts failures',as
  assert.equal(h.get('notice').textContent,'Response exceeds the preview limit.');
  const denied=harness(()=>new Response('private details',{status:401}));
  await denied.context.openPreview('fixture-job');assert.equal(denied.get('notice').textContent,'Authentication failed.');
+});
+
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+function controlledTimers(){
+ const pending=new Map();let id=0;
+ return {pending,setTimeout(fn,ms){pending.set(++id,{fn,ms});return id;},clearTimeout(id){pending.delete(id);},
+  fire(){for(const [id,{fn,ms}] of [...pending]){assert.equal(ms,30000);pending.delete(id);fn();}}};
+}
+test('oversized preview rejects promptly even when stream cancellation never settles',async()=>{
+ let cancelled=0;
+ const h=harness(()=>new Response(new ReadableStream({
+  start(c){c.enqueue(new Uint8Array(262145));},cancel(){cancelled++;return new Promise(()=>{});}
+ })));
+ const operation=h.context.openPreview('fixture-job');
+ const settled=await Promise.race([operation.then(()=>true),new Promise(r=>setTimeout(()=>r(false),100))]);
+ assert.equal(settled,true,'transport cleanup must not hold the size rejection');
+ assert.equal(cancelled,1);assert.equal(h.get('notice').textContent,'Response exceeds the preview limit.');
+});
+test('cleanup rejection cannot replace the bounded response error',async()=>{
+ const h=harness(()=>new Response(new ReadableStream({
+  start(c){c.enqueue(new Uint8Array(262145));},cancel(){return Promise.reject(Error('private cleanup details'));}
+ })));
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.get('notice').textContent,'Response exceeds the preview limit.');assert.equal(h.urls.length,0);
+});
+for(const stage of ['fetch','body'])test('shared preview deadline bounds stalled '+stage+' without rendering',async()=>{
+ const timers=controlledTimers();let cancelled=0;
+ const h=harness(()=>stage==='fetch'?new Promise(()=>{}):new Response(new ReadableStream({
+  pull(){return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}
+ })),timers);
+ const operation=h.context.openPreview('fixture-job');await flush();
+ assert.equal(timers.pending.size,1);timers.fire();await operation;
+ assert.equal(h.get('notice').textContent,'POD request timed out. Try again.');
+ assert.equal(h.urls.length,0);assert.equal(h.requests[0].options.signal.aborted,true);
+ assert.equal(timers.pending.size,0);if(stage==='body')assert.equal(cancelled,1);
+});
+test('timeout retains completed operations panels while bounding a stalled peer',async()=>{
+ const timers=controlledTimers();
+ const h=harness(url=>url.includes('/jobs')?new Promise(()=>{}):response(url.endsWith('/capacity')?activity():{health:{status:'CRITICAL'}}),timers);
+ const operation=submit(h);await flush();assert.equal(timers.pending.size,1);timers.fire();await operation;
+ assert.match(h.get('result').textContent,/CRITICAL/);assert.equal(h.get('activity-counts').children.length,6);
+ assert.equal(h.get('notice').textContent,'POD request timed out. Try again.');assert.equal(timers.pending.size,0);
+});
+test('session clearing cancels deadline and late fetch cannot restore protected content',async()=>{
+ const timers=controlledTimers();let release;
+ const pending=new Promise(resolve=>release=resolve),h=harness(()=>pending,timers);
+ const operation=h.context.openPreview('fixture-job');await flush();assert.equal(timers.pending.size,1);
+ h.get('clear').listeners.click();await operation;assert.equal(timers.pending.size,0);
+ release(response(record(png)));await flush();
+ assert.equal(h.get('notice').textContent,'Session cleared.');assert.equal(h.get('key').value,'');assert.equal(h.urls.length,0);
+});
+test('completed preview removes deadline without clearing its valid blob',async()=>{
+ const timers=controlledTimers(),h=harness(url=>url.includes('/package')?response(record(png)):new Response(png),timers);
+ await h.context.openPreview('fixture-job');assert.equal(h.urls.length,1);assert.equal(timers.pending.size,0);
+ timers.fire();assert.equal(h.get('preview').hidden,false);
+});
+
+test('cancellation during fetch admission consumes a later rejection without restoring the session',async()=>{
+ const timers=controlledTimers();let h;
+ h=harness(()=>{h.get('clear').listeners.click();return Promise.reject(Error('private late transport failure'));},timers);
+ await h.context.openPreview('fixture-job');await flush();
+ assert.equal(h.get('notice').textContent,'Session cleared.');assert.equal(h.urls.length,0);assert.equal(timers.pending.size,0);
 });
