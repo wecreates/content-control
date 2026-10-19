@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import {parseSignedJSON} from './signed-json.mjs';
 export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
 const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
+const evidenceId=value=>typeof value==='string'&&value.trim().length>0&&value.length<=256;
 export const BRIDGE_RULES = Object.freeze([
  'Content Control may never exceed the business max_mode',
  'LAUNCH CTA is blocked unless launch_content_allowed=true',
@@ -46,20 +47,24 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  if(publishing&&(job.mode!=='LAUNCH'||typeof job.package_sha256!=='string'||
   !/^[a-f0-9]{64}$/.test(job.package_sha256)||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
  if(job.task_sha256!==undefined&&(!/^[a-f0-9]{64}$/.test(job.task_sha256)||grant.task_sha256!==job.task_sha256))throw Error('TASK_SCOPE_MISMATCH');
- const facts=grant.verified_facts&&typeof grant.verified_facts==='object'?grant.verified_facts:{};
+ const facts=grant.verified_facts&&typeof grant.verified_facts==='object'&&!Array.isArray(grant.verified_facts)?grant.verified_facts:{};
  // Downstream metadata comes ONLY from the signed upstream allowlist, never arbitrary client text.
  const forbidden=new Set(Array.isArray(grant.forbidden_claims)?grant.forbidden_claims:[]);
- const approved=Object.fromEntries(Object.entries(facts).filter(([k,v])=>v?.verified===true&&
-  typeof v.value==='string'&&!forbidden.has(k)&&!forbidden.has(v.value)&&Array.isArray(v.evidence_ids)&&v.evidence_ids.length>0));
+ // A verified flag cannot turn missing/malformed references into evidence.
+ // Match the existing economics reference bounds without repairing identifiers.
+ const approved=Object.fromEntries(Object.entries(facts).filter(([k,v])=>evidenceId(k)&&v?.verified===true&&
+  typeof v.value==='string'&&v.value.trim().length>0&&!forbidden.has(k)&&!forbidden.has(v.value)&&
+  Array.isArray(v.evidence_ids)&&v.evidence_ids.length>0&&v.evidence_ids.length<=32&&
+  v.evidence_ids.every(evidenceId)&&new Set(v.evidence_ids).size===v.evidence_ids.length));
  for(const [k,v] of Object.entries(approved)) {
   if(['shipping','safety','warranty'].includes(k)&&v.provider_verified!==true) delete approved[k];
   if(['revenue','profit'].includes(k)&&v.money_factory_event_verified!==true) delete approved[k];
  }
  return {id:job.id,account_id:job.account_id,business_id:job.business_id,platform:job.platform,
   destination_platform:job.platform,mode:job.mode,package_sha256:job.package_sha256,
-  ...(job.task_sha256?{task_sha256:job.task_sha256}:{}),facts:approved,price:grant.price?.verified===true&&grant.price?.evidence_id&&
+  ...(job.task_sha256?{task_sha256:job.task_sha256}:{}),facts:approved,price:grant.price?.verified===true&&evidenceId(grant.price?.evidence_id)&&
    Number.isSafeInteger(grant.price.amount_minor)&&grant.price.amount_minor>=0&&
-   /^[A-Z]{3}$/.test(grant.price.currency||'')?grant.price:null};
+   typeof grant.price.currency==='string'&&grant.price.currency.length===3&&/^[A-Z]{3}$/.test(grant.price.currency)?grant.price:null};
 }
 export const REQUIRED_QA=['text','geometry','resolution','rights','competitive','print_preflight'];
 export function enforceQA(qa,packageHash,templateHash,platform) {
