@@ -104,3 +104,22 @@ test('future observation timestamps remain blocked',async()=>{
  assert.equal(f.writes.length,0);
 });
 
+
+for(const [field,code] of [['source_url','MARKET_SOURCE_INVALID'],['country','MARKET_EVIDENCE_INVALID'],
+ ['currency','PRICE_EVIDENCE_INVALID'],['source_sha256','MARKET_EVIDENCE_INVALID']]){
+ test(`signed ${field} must be a primitive string before database access`,async()=>{
+  for(const wrap of [value=>[value],value=>[[value]],()=>({}),()=>null,()=>true]){
+   const o=observation();
+   await assert.rejects(recordMarketObservation({tx(){assert.fail('malformed scalar reached database');}},
+    sign({...o,[field]:wrap(o[field])}),key),new RegExp(code));
+  }
+ });
+}
+test('validated scalar source identity is passed unchanged for insert and exact replay',async()=>{
+ const o={...observation(),source_url:'https://example.org/Source%2fExact?b=2&a=1#fragment'};
+ const f=fixture();await recordMarketObservation(f.db,sign(o),key);
+ for(const [index,field] of [[2,'source_url'],[4,'country'],[8,'currency'],[10,'source_sha256']])
+  assert.equal(f.writes[0][index],o[field]);
+ const replay=fixture({...o,id:'original-id',price_minor:'1200'});
+ assert.deepEqual(await recordMarketObservation(replay.db,sign(o),key),{inserted:false,id:'original-id'});
+});

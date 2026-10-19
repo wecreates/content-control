@@ -106,3 +106,17 @@ All 34 focused time/market/finance tests pass locally; hosted integration and im
 verification are required before merge. Original accepted timestamp strings are
 unchanged. No clock skew allowance, evidence freshness, rights, income, official
 source approval, publication permission or live acceptance is fabricated.
+
+## Scalar source identity
+
+The signed source URL, country, source digest and any supplied price currency
+must be primitive JSON strings. URL parsing and regular expressions must not
+coerce arrays into accepted scalar values. Malformed scalar fields fail before
+transaction entry, including on retries, rather than reaching SQL with an array
+parameter or an inconsistent stored source identity. Valid values are passed
+unchanged; URLs are not canonicalized and immutable replay rules remain intact.
+
+Synthetic signed-envelope regressions cover arrays, nested arrays, objects,
+null and booleans, plus unchanged insert/replay parameters. This validates the
+intake contract only; collection permission, source truth and live acceptance
+still require attributable real evidence.
