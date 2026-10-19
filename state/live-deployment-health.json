@@ -2,16 +2,18 @@
   "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "checks": {
     "actual_hash_matches": false,
-    "caption_hash_matches": true,
+    "caption_hash_matches": false,
     "captions_present": false,
     "expected_hash_matches": false,
     "hash_bound": false,
     "health_200_and_green": false,
+    "probe_completed": false,
     "publication_disabled": false,
     "range_streaming_present": false,
     "watch_page_present": false
   },
   "failed_checks": [
+    "probe_completed",
     "health_200_and_green",
     "publication_disabled",
     "hash_bound",
@@ -19,7 +21,8 @@
     "actual_hash_matches",
     "watch_page_present",
     "range_streaming_present",
-    "captions_present"
+    "captions_present",
+    "caption_hash_matches"
   ],
   "live_actual_sha256": null,
   "live_expected_sha256": null,
