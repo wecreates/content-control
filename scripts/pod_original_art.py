@@ -2,8 +2,10 @@
 import argparse
 import hashlib
 import math
+import os
 from pathlib import Path
 import random
+import tempfile
 from PIL import Image, ImageDraw
 from pod_common import canonical, digest, read_json, save_json
 
@@ -34,8 +36,32 @@ def create_art(spec, output):
     if target.exists():
         raise ValueError('OUTPUT_EXISTS')
     target.parent.mkdir(parents=True, exist_ok=True)
-    img.save(target, dpi=(300,300))
-    return {'source_sha256':digest(target),'generator':'procedural-geometric-v1','concept_id':seed,
+    temporary = None
+    try:
+        # Encode privately before exposing a complete output. Linking is an
+        # atomic no-replace operation, including against dangling symlinks and
+        # files created after the optional early existence check.
+        with tempfile.NamedTemporaryFile(dir=target.parent, prefix='.pod-art-',
+                                         suffix=target.suffix, delete=False) as stream:
+            temporary = Path(stream.name)
+            img.save(stream, dpi=(300,300))
+            stream.flush()
+            os.fsync(stream.fileno())
+        source_sha256 = digest(temporary)
+        try:
+            os.link(temporary, target)
+        except FileExistsError:
+            raise ValueError('OUTPUT_EXISTS') from None
+        directory = os.open(target.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        img.close()
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return {'source_sha256':source_sha256,'generator':'procedural-geometric-v1','concept_id':seed,
             'spec_sha256':hashlib.sha256(canonical(spec).encode()).hexdigest(),'rights_status':'UNASSESSED','publication_enabled':False}
 
 if __name__ == '__main__':

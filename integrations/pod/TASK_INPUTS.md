@@ -115,3 +115,25 @@ objects retain their meaning. The existing 256 KiB descriptor limit, role checks
 64 MiB restored-input budget, fresh grants and cleanup contract are unchanged.
 This validates the interpretation of stored bytes; it does not approve the task,
 verify rights or establish live production acceptance.
+
+
+## Original artwork output collisions
+
+The deterministic geometric generator encodes into a private 0600 temporary file
+in the output directory, flushes and syncs it, and computes the bounded source
+hash before exposing the output. An atomic hard link installs the completed file
+without replacing an existing path, including a dangling symlink or a concurrent
+writer's file. Collisions return OUTPUT_EXISTS. The early existence check is only
+an optimization; it is not the overwrite safeguard.
+
+Encoder, size/hash and file-sync failures clean the temporary file without
+installing the output. A failure after linking, such as directory-sync failure,
+can leave a complete output while the call fails and returns no receipt. Inspect
+that output through the existing evidence process; do not overwrite it or claim
+successful generation from the failed call. These filesystem operations require
+hard-link support within the selected output directory. They are not a directory
+sandbox, an independently retained backup or a physical power-loss test.
+
+The artwork and receipt remain deterministic for the same specification, with
+rights UNASSESSED and publication false. This change does not establish original
+content clearance, quality, capacity, provider approval or live acceptance.
