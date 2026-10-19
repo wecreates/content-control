@@ -3,7 +3,23 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from scripts.v2_execution import StageRunner, job_lock
+from scripts.v2_execution import StageRunner, job_lock, video_render_command
+
+
+class RenderCommandTests(unittest.TestCase):
+    def test_both_production_formats_require_yuv420p(self):
+        for composition in ('StudioAnimatic', 'StudioLong'):
+            with self.subTest(composition=composition):
+                args = video_render_command(composition, Path('out.mp4'), Path('props.json'), 1)
+                self.assertEqual([arg for arg in args if str(arg).startswith('--pixel-format=')],
+                                 ['--pixel-format=yuv420p'])
+
+    def test_both_production_formats_require_bt709(self):
+        for composition in ('StudioAnimatic', 'StudioLong'):
+            with self.subTest(composition=composition):
+                args = video_render_command(composition, Path('out.mp4'), Path('props.json'), 1)
+                self.assertEqual([arg for arg in args if str(arg).startswith('--color-space=')],
+                                 ['--color-space=bt709'])
 
 
 class ResumeTests(unittest.TestCase):

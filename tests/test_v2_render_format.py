@@ -79,3 +79,6 @@ class RenderFormatTests(unittest.TestCase):
                 '--video', final, '--output', out / 'mobile-qa.json'], capture_output=True, text=True)
             self.assertEqual(qa.returncode, 0, qa.stdout + qa.stderr)
             self.assertEqual(video['color_space'], 'bt709')
+            self.assertEqual(video['color_range'], 'tv')
+            self.assertEqual(video['color_primaries'], 'bt709')
+            self.assertEqual(video['color_transfer'], 'bt709')
