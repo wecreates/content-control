@@ -239,8 +239,10 @@ export class PodDB {
   });
  }
  async recover(){return this.tx(async c=>{
-  await c.query("UPDATE pod_production_queue SET state='ambiguous',reason_code='LEASE_EXPIRED' WHERE state='publishing' AND lease_until<now()");
-  await c.query("UPDATE pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED' WHERE state='processing' AND lease_until<now()");
+  // Relation/row-lock waits can outlive a lease. BEGIN's frozen now() must
+  // not defer already-expired work to another sweep or misdate its transition.
+  await c.query("UPDATE pod_production_queue SET state='ambiguous',reason_code='LEASE_EXPIRED',updated_at=clock_timestamp() WHERE state='publishing' AND lease_until<clock_timestamp()");
+  await c.query("UPDATE pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',updated_at=clock_timestamp() WHERE state='processing' AND lease_until<clock_timestamp()");
  });}
  async close(){await this.pool.end();}
 }
