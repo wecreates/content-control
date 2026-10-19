@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {ArtifactStore} from './artifacts.mjs';
 import {createGrantResolver} from './grant-client.mjs';
+import {parseSignedJSON} from './signed-json.mjs';
 const hash=/^[a-f0-9]{64}$/;
 const outputNames=new Set(['package','qa.json','qa-signed.json']);
 const interiorRoles=['template','pages','font'];
@@ -37,7 +38,12 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
    const descriptor=await store.get(job.brief.task_sha256);
    active();
    if(descriptor.media_type!=='application/json'||descriptor.body.length>262144)throw Error('TASK_INVALID');
-   const task=validateTask(JSON.parse(descriptor.body.toString('utf8')));
+   // ArtifactStore authenticates the stored bytes by hash. Do not change those
+   // bytes through replacement decoding or choose among duplicate JSON fields.
+   let parsed;
+   try{parsed=parseSignedJSON(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(descriptor.body));}
+   catch{throw Error('TASK_INVALID');}
+   const task=validateTask(parsed);
    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'cyzor-pod-'));
    const cleanup=()=>fs.rm(directory,{recursive:true,force:true});
    try{

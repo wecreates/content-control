@@ -98,3 +98,20 @@ Tests use temporary regular files, actual FIFOs without writers and fault-inject
 reads to cover blocking, replacement, size limits and cleanup. These protections
 supplement the production process deadline; they are not live capacity, rights,
 independent-review or marketplace acceptance evidence.
+
+
+## Unambiguous stored descriptor JSON
+
+After the artifact store verifies the descriptor's byte hash, the resolver uses
+strict UTF-8 decoding and the shared iterative JSON validator. Invalid byte
+sequences, a leading UTF-8 BOM, duplicate decoded object keys at any depth
+(including escaped spellings and identical repeated values), numeric overflow
+and invalid JSON all fail as TASK_INVALID. No input artifact is fetched and no
+workspace is created for these parse failures. Error details and source text are
+not persisted in the production reason.
+
+Valid Unicode strings, JSON escapes, finite numbers and repeated keys in separate
+objects retain their meaning. The existing 256 KiB descriptor limit, role checks,
+64 MiB restored-input budget, fresh grants and cleanup contract are unchanged.
+This validates the interpretation of stored bytes; it does not approve the task,
+verify rights or establish live production acceptance.
