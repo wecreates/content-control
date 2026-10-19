@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {parseSignedJSON} from './signed-json.mjs';
 export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
 const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
 export const BRIDGE_RULES = Object.freeze([
@@ -15,14 +16,15 @@ export function assertBridge(bridge) {
 }
 export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
  if(typeof key!=='string'||Buffer.byteLength(key)<32) throw Error('SIGNING_KEY_REQUIRED');
- if(typeof envelope?.payload!=='string'||envelope.payload.length>262144||
-  !/^[a-f0-9]{64}$/.test(envelope?.signature||'')) throw Error('ENVELOPE_INVALID');
+ if(typeof envelope?.payload!=='string'||Buffer.byteLength(envelope.payload)>262144||
+  typeof envelope.signature!=='string'||envelope.signature.length!==64||
+  !/^[a-f0-9]{64}$/.test(envelope.signature)) throw Error('ENVELOPE_INVALID');
  const expected=crypto.createHmac('sha256',key).update(envelope.payload).digest();
  if(!crypto.timingSafeEqual(expected,Buffer.from(envelope.signature,'hex'))) throw Error('SIGNATURE_INVALID');
- const p=JSON.parse(envelope.payload);
+ const p=parseSignedJSON(envelope.payload);
  // Relational comparisons coerce values and are all false for NaN. Validate
  // the clock and signed millisecond integers before making an expiry decision.
- if(!Number.isSafeInteger(now)||now<0||p.audience!==audience||p.schema_version!==1||
+ if(!p||typeof p!=='object'||Array.isArray(p)||!Number.isSafeInteger(now)||now<0||p.audience!==audience||p.schema_version!==1||
   !Number.isSafeInteger(p.issued_at_ms)||p.issued_at_ms<0||
   !Number.isSafeInteger(p.expires_at_ms)||p.expires_at_ms<0||p.issued_at_ms>now||p.expires_at_ms<=now||
   p.expires_at_ms-p.issued_at_ms>900000) throw Error('ENVELOPE_EXPIRED_OR_INVALID');

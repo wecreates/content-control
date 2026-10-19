@@ -1,0 +1,54 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import {verifyEnvelope} from '../integrations/pod/policy.mjs';
+const key='fixture-only-envelope-key'.repeat(2),audience='content-control:pod',now=1000;
+const fields='"schema_version":1,"audience":"content-control:pod","issued_at_ms":1000,"expires_at_ms":2000';
+const signed=payload=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')});
+const verify=envelope=>verifyEnvelope(envelope,key,audience,now);
+test('duplicate decoded signed fields cannot overwrite revocation, scope or nested QA',()=>{
+ for(const extra of ['"revoked":true,"revoked":false','"job_id":"other","job_id":"job"',
+  '"revoked":false,"revo\\u006bed":false','"checks":{"rights":false,"rights":true}',
+  '"items":[{"verdict":"FAIL","verdict":"PASS"}]','"__proto__":{},"__proto__":{}']){
+  assert.throws(()=>verify(signed('{'+fields+','+extra+'}')),/ENVELOPE_JSON_DUPLICATE_KEY/);
+ }
+});
+test('signed numbers cannot become infinity or silently serialize as null',()=>{
+ for(const number of ['1e400','-1e400','9'.repeat(400)]){
+  assert.throws(()=>verify(signed('{'+fields+',"facts":[{"amount":'+number+'}]}')),/ENVELOPE_JSON_NONFINITE/);
+ }
+});
+test('signature must be an exact primitive lowercase hex string',()=>{
+ const e=signed('{'+fields+'}');
+ for(const signature of [[e.signature],new String(e.signature),{toString:()=>e.signature},null,0,true,
+  e.signature+'\n',e.signature+'\r\n',e.signature.toUpperCase(),e.signature.slice(1)]){
+  assert.throws(()=>verify({...e,signature}),/^Error: ENVELOPE_INVALID$/);
+ }
+});
+test('signed payload ceiling counts UTF-8 bytes with an inclusive exact boundary',()=>{
+ const prefix='{'+fields+',"text":"',suffix='"}';
+ const remaining=262144-Buffer.byteLength(prefix+suffix),fill='😀'.repeat(Math.floor(remaining/4))+'a'.repeat(remaining%4);
+ const payload=prefix+fill+suffix;assert.equal(Buffer.byteLength(payload),262144);
+ assert.equal(verify(signed(payload)).text,fill);
+ const oversized=prefix+fill+'a'+suffix;assert.ok(oversized.length<262144);
+ assert.throws(()=>verify(signed(oversized)),/^Error: ENVELOPE_INVALID$/);
+});
+test('signed envelope root must be an object rather than a primitive or array',()=>{
+ for(const payload of ['null','[]','true','0','"text"']){
+  assert.throws(()=>verify(signed(payload)),/^Error: ENVELOPE_EXPIRED_OR_INVALID$/);
+ }
+});
+test('authentication precedes semantic JSON parsing and does not canonicalize payloads',()=>{
+ for(const payload of ['{'+fields+',"revoked":true,"revoked":false}','{'+fields+',"amount":1e400}','not-json']){
+  assert.throws(()=>verify({payload,signature:'0'.repeat(64)}),/^Error: SIGNATURE_INVALID$/);
+ }
+ const e=signed('{'+fields+'}');assert.throws(()=>verify({...e,payload:e.payload+' '}),/^Error: SIGNATURE_INVALID$/);
+});
+test('unambiguous JSON preserves Unicode, escaped text, arrays and separate object keys',()=>{
+ const value={schema_version:1,audience,issued_at_ms:now,expires_at_ms:2000,
+  text:'é e\u0301 😀 "quoted" \\ escaped',items:[{a:1},{a:2}],strings:['1e400','{"a":1,"a":2}'],
+  finite:[-0,1e-300,1.25,Number.MAX_VALUE],empty:{},array:[]};
+ const payload=JSON.stringify(value);assert.deepEqual(verify(signed(payload)),JSON.parse(payload));
+ const deep='{'+fields+',"nested":'+'['.repeat(1000)+'0'+']'.repeat(1000)+'}';
+ assert.ok(verify(signed(deep)).nested);
+});
