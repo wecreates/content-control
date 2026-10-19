@@ -20,7 +20,7 @@ HEALTH = Path('state/content-control-health.json')
 
 
 def snapshot(path, limit=MAX_JSON_BYTES):
-    fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
+    fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NONBLOCK', 0))
     try:
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= limit:

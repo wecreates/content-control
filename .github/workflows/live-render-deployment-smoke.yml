@@ -37,8 +37,10 @@ jobs:
         run: |
           echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
       - name: Probe live hosted review service
+        id: probe
         run: |
           set -euo pipefail
+          python scripts/review_smoke_inputs.py
           BASE=$(python - <<'PY'
           import json
           print(json.load(open("state/deployment-contract.json"))["public_base_url"].rstrip("/"))
@@ -81,7 +83,7 @@ jobs:
             watch_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/watch.headers -o /tmp/live-probe/watch.html -w "%{http_code}" "$BASE/watch" || true)
             caption_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/captions.headers -o /tmp/live-probe/captions.vtt -w "%{http_code}" "$BASE/captions" || true)
             media_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -H 'Range: bytes=0-1023' -D /tmp/live-probe/media.headers -o /tmp/live-probe/range.bin -w "%{http_code}" "$BASE/media" || true)
-            if [ "$watch_code" = "200" ] && [ "$caption_code" = "200" ] && [ "$media_code" = "206" ]               && grep -q 'FREE_QA' /tmp/live-probe/watch.html               && grep -q 'publication disabled' /tmp/live-probe/watch.html               && grep -q 'src="/captions"' /tmp/live-probe/watch.html               && grep -qi '^content-type: text/vtt' /tmp/live-probe/captions.headers               && grep -qi "etag: \"$EXPECTED_CAPTION\"" /tmp/live-probe/captions.headers               && grep -q '^WEBVTT' /tmp/live-probe/captions.vtt               && [ "$(wc -c < /tmp/live-probe/range.bin)" = "1024" ]               && grep -qi '^accept-ranges: bytes' /tmp/live-probe/media.headers               && grep -qi '^content-range: bytes 0-1023/' /tmp/live-probe/media.headers; then
+            if [ "$watch_code" = "200" ] && [ "$caption_code" = "200" ] && [ "$media_code" = "206" ]               && grep -q 'FREE_QA' /tmp/live-probe/watch.html               && grep -q 'publication disabled' /tmp/live-probe/watch.html               && grep -Fq "src=\"/captions?sha256=$EXPECTED_CAPTION\"" /tmp/live-probe/watch.html               && grep -qi '^content-type: text/vtt' /tmp/live-probe/captions.headers               && grep -qi "etag: \"$EXPECTED_CAPTION\"" /tmp/live-probe/captions.headers               && grep -q '^WEBVTT' /tmp/live-probe/captions.vtt               && [ "$(wc -c < /tmp/live-probe/range.bin)" = "1024" ]               && grep -qi '^accept-ranges: bytes' /tmp/live-probe/media.headers               && grep -qi '^content-range: bytes 0-1023/' /tmp/live-probe/media.headers; then
               surface_ok=1
               break
             fi
@@ -101,6 +103,7 @@ jobs:
               try: live=json.loads(hp.read_text())
               except Exception: pass
           checks={
+              "probe_completed":"${{ steps.probe.outcome }}"=="success",
               "health_200_and_green":live.get("ok") is True,
               "publication_disabled":live.get("publication") is False,
               "hash_bound":live.get("hashBound") is True,
@@ -109,7 +112,7 @@ jobs:
               "watch_page_present":pathlib.Path("/tmp/live-probe/watch.html").exists(),
               "range_streaming_present":pathlib.Path("/tmp/live-probe/range.bin").exists() and pathlib.Path("/tmp/live-probe/range.bin").stat().st_size==1024,
               "captions_present":pathlib.Path("/tmp/live-probe/captions.vtt").exists() and pathlib.Path("/tmp/live-probe/captions.vtt").read_text(errors="ignore").startswith("WEBVTT"),
-              "caption_hash_matches":live.get("captionSha256")==json.load(open("state/caption-health.json")).get("caption_sha256"),
+              "caption_hash_matches":isinstance(live.get("captionSha256"),str) and len(live["captionSha256"])==64 and live["captionSha256"]==json.load(open("state/caption-health.json")).get("caption_sha256"),
           }
           r={
               "schema_version":1,
@@ -126,6 +129,8 @@ jobs:
           print(json.dumps(r,sort_keys=True))
           PY
       - name: Refuse stale candidate persist
+        id: source_guard
+        if: always()
         run: |
           set -euo pipefail
           git fetch origin main
@@ -136,7 +141,7 @@ jobs:
             exit 1
           fi
       - name: Persist live deployment evidence
-        if: always()
+        if: always() && steps.source_guard.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
