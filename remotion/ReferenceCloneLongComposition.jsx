@@ -28,7 +28,8 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
   const intensity=Math.max(.5,Math.min(1,(s.motion_intensity||0)*8));
   const fallback=s.camera==="whip_pan"?("translateX("+((1-p)*180)+"px)"):s.camera==="punch_in"?("scale("+(1+.1*p)+")"):("scale("+(1+.025*Math.sin(Math.PI*p))+")");
   const camera=ch.camera_events?.length?choreographyCamera(ch,localFrame):fallback;
-  const transition={...transitionStyle(ch.transition_in,localFrame,totalFrames,false),...transitionStyle(ch.transition_out,localFrame,totalFrames,true)};
+  const entrance=transitionStyle(ch.transition_in,localFrame,totalFrames,false);
+  const exit=transitionStyle(ch.transition_out,localFrame,totalFrames,true);
   const voiceover=scenePlan?.voiceover_path||null;
   const soundscape=scenePlan?.soundscape_path||null;
   const chars=(s.characters?.length?s.characters:[{id:s.character,pose:s.pose,acting:s.acting,face_track:s.facial_performance}]).slice(0,4);
@@ -36,7 +37,10 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
   return <AbsoluteFill style={{background:"#fff",overflow:"hidden"}}>
     {soundscape?<Audio src={staticFile(soundscape)} volume={0.72}/>:<Audio src={staticFile("audio/episode1-music.mp3")} volume={0.035}/>}
     {voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
-    <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center",...transition}}>
+    {/* Separate layers preserve entrance, exit and camera transforms/clipping. */}
+    <div style={{position:"absolute",inset:0,transformOrigin:"center",...exit}}>
+     <div style={{position:"absolute",inset:0,transformOrigin:"center",...entrance}}>
+      <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center"}}>
       <svg width="1920" height="1080" viewBox="0 0 1920 1080">
         <Environment id={s.environment?.id||"white_stage"} width={1920} height={1080} frame={localFrame}/>
         <DepthBackground choreography={ch} localFrame={localFrame} width={1920} height={1080}/>
@@ -78,6 +82,8 @@ export const ReferenceCloneLongComposition=({scenePlan})=>{
         <MicroGags choreography={ch} localFrame={localFrame} width={1920} height={1080}/>
         {!(ch.text_actions||[]).length?<text x="960" y="1000" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="34" fill="#666">{s.camera} • {s.shot_scale} • act {s.longform?.act||s.index+1}</text>:null}
       </svg>
+      </div>
+     </div>
     </div>
   </AbsoluteFill>;
 };

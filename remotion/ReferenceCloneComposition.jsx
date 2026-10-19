@@ -43,13 +43,17 @@ export const ReferenceCloneComposition=({scenePlan})=>{
   const voiceover=scenePlan?.voiceover_path||null;
   const soundscape=scenePlan?.soundscape_path||null;
   const camera=ch.camera_events?.length?choreographyCamera(ch,localFrame):fallbackCamera(s.camera,p);
-  const transition={...transitionStyle(ch.transition_in,localFrame,totalFrames,false),...transitionStyle(ch.transition_out,localFrame,totalFrames,true)};
+  const entrance=transitionStyle(ch.transition_in,localFrame,totalFrames,false);
+  const exit=transitionStyle(ch.transition_out,localFrame,totalFrames,true);
   const chars=(s.characters?.length?s.characters:[{id:s.character,pose:s.pose,acting:s.acting,face_track:s.facial_performance}]).slice(0,3);
 
   return <AbsoluteFill style={{background:bg,overflow:"hidden"}}>
     {soundscape?<Audio src={staticFile(soundscape)} volume={0.72}/>:<Audio src={staticFile("audio/episode1-music.mp3")} volume={0.04}/>}
     {voiceover?<Audio src={staticFile(voiceover)} volume={1}/>:null}
-    <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center",...transition}}>
+    {/* Separate layers preserve entrance, exit and camera transforms/clipping. */}
+    <div style={{position:"absolute",inset:0,transformOrigin:"center",...exit}}>
+     <div style={{position:"absolute",inset:0,transformOrigin:"center",...entrance}}>
+      <div style={{position:"absolute",inset:0,transform:camera,transformOrigin:"center"}}>
       <svg width="720" height="1280" viewBox="0 0 720 1280">
         <Environment id={s.environment?.id||"white_stage"} width={720} height={1280} frame={localFrame}/>
         <DepthBackground choreography={ch} localFrame={localFrame} width={720} height={1280}/>
@@ -91,6 +95,8 @@ export const ReferenceCloneComposition=({scenePlan})=>{
         <MicroGags choreography={ch} localFrame={localFrame} width={720} height={1280}/>
         {!(ch.text_actions||[]).length?<text x="360" y="1160" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="28" fill="#666">{s.camera} • {s.shot_scale}</text>:null}
       </svg>
+      </div>
+     </div>
     </div>
   </AbsoluteFill>;
 };
