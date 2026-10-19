@@ -99,8 +99,8 @@
       "sha256": "9882ad156a7a803800c02390411f074a57c677a0f33bc21027ba7dfc4c65f063"
     },
     "scripts/caption_contract.py": {
-      "bytes": 7204,
-      "sha256": "93f34ffbba07099d5ea270c4bd8e768a57f5771a029a916a83a8f29868911dc1"
+      "bytes": 7219,
+      "sha256": "1b37c9c332452d6b5f513a256d49266e08259965a349a96f64cf823ddc26c75b"
     },
     "scripts/free_mobile_compat_qa.py": {
       "bytes": 2816,
@@ -123,8 +123,8 @@
       "sha256": "bf0c464379502bbb17a8af14b46eb2eed6cf5fdbe9af72350e5f9bc30eed057c"
     },
     "server-lowmem.js": {
-      "bytes": 28871,
-      "sha256": "2409db5266fb0f5abe99f4f0992212a8efbcd6ca381ba9de6fbae459be7451f8"
+      "bytes": 29141,
+      "sha256": "b7fdfbf8d68792c5468555bf277f27abbc99054bc0388426fe5fe63fc7c9353b"
     },
     "server.js": {
       "bytes": 29,
