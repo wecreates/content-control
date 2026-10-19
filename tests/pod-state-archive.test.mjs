@@ -38,6 +38,33 @@ for(const phase of ['commit','catalog','parent'])test('state export rejects canc
   run:signal=>exportStateArchive(f.db,{...f,key,env,signal}),
   verify:()=>verifyStateArchive({...f,key})});
 });
+for(const phase of ['commit','catalog','archive','parent'])for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+ test(`state export rejects ${flag} changing during ${phase} completion`,async t=>{
+  const f=await fixture(t),settings={...env},client=await f.db.pool.connect(),releases=[];
+  t.mock.method(client,'release',discard=>releases.push(discard));
+  const query=client.query.bind(client);
+  t.mock.method(client,'query',async(...args)=>{
+   const result=await query(...args);
+   if(phase==='commit'&&args[0]==='COMMIT')settings[flag]='true';
+   return result;
+  });
+  const open=fs.open.bind(fs),target=phase==='catalog'?path.join(f.directory,'catalog.pod'):
+   phase==='archive'?f.directory:path.dirname(f.directory);
+  const mock=t.mock.method(fs,'open',async(file,...args)=>{
+   const handle=await open(file,...args);
+   if(phase==='commit'||file!==target||(phase==='catalog'&&args[0]!=='wx'))return handle;
+   return {writeFile:handle.writeFile.bind(handle),
+    async sync(){await handle.sync();settings[flag]='true';},close:handle.close.bind(handle)};
+  });
+  try{
+   await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env:settings}),/^Error: STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED$/);
+   assert.deepEqual(releases,[false]);assert.equal(f.queries.includes('COMMIT'),true);
+   assert.equal(f.queries.some(sql=>/^(INSERT|UPDATE|DELETE|TRUNCATE)/.test(sql)),false);
+   if(phase==='commit')await assert.rejects(fs.stat(path.join(f.directory,'catalog.pod')),{code:'ENOENT'});
+   else assert.equal((await verifyStateArchive({directory:f.directory,key})).status,'VERIFIED');
+  }finally{mock.mock.restore();}
+ });
+}
 for(const fault of [undefined,'archive:sync','parent:open','parent:sync'])test('state export requires complete directory flush: '+(fault||'success'),async t=>{
  const f=await fixture(t);
  await verifyExportFlush(t,f.directory,()=>exportStateArchive(f.db,{...f,key,env}),{fault});
