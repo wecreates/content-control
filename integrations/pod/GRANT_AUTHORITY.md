@@ -36,3 +36,21 @@ are rejected rather than normalized; valid mode ceilings, publication permission
 launch readiness and economic checks are unchanged. Regression fixtures verify
 issuer, HTTP snapshot and signed-consumer rejection; they do not establish live
 authority mounting, approval, revocation, or publication acceptance.
+
+
+## Unambiguous signed envelopes
+
+The shared verifier accepts payloads up to 262144 UTF-8 bytes and requires an
+exact primitive 64-character lowercase hexadecimal signature. Arrays, boxed
+strings and trailing line terminators cannot enter hex decoding. The HMAC still
+authenticates the original payload before semantic JSON parsing; payloads are
+never normalized or reserialized to make a signature match.
+
+After authentication, duplicate decoded object member names and numbers that
+overflow to infinity are rejected at every nesting level. Escaped spellings of
+the same key count as duplicates, including identical repeated values. Separate
+objects may reuse names, and text containing JSON-like strings is unchanged.
+The root must be an object; timestamp, audience and schema checks still apply.
+These rules cover all callers of the shared verifier, including grants and QA.
+They align with the existing Money Factory event parser. They do not establish
+arbitrary-precision numeric semantics, real approvals or live acceptance.
