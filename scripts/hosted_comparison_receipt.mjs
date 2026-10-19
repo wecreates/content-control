@@ -3,10 +3,12 @@
 import {constants,statSync,openSync,closeSync,fstatSync,readSync,realpathSync,createReadStream} from 'node:fs';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
+import {open} from 'node:fs/promises';
 const MAX_JSON=512*1024,MAX_FILE=512*1024*1024,MAX_TOTAL=2*1024*1024*1024;
+const fileVersion=(path,s)=>[realpathSync(path),s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs].map(String).join(':');
 export function comparisonFileVersion(path){
  const s=statSync(path,{bigint:true});if(!s.isFile())throw Error('Regular file required');
- return [realpathSync(path),s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs].map(String).join(':');
+ return fileVersion(path,s);
 }
 function canonical(value){
  if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';
@@ -24,15 +26,28 @@ function readReceipt(path){
   return {version,receipt:JSON.parse(bytes.subarray(0,size).toString('utf8'))};
  }finally{closeSync(fd);}
 }
-async function hashFile(path,signal){
- const hash=createHash('sha256');let size=0;
- for await(const chunk of createReadStream(path,{highWaterMark:64*1024,signal})){
-  size+=chunk.length;if(size>MAX_FILE)throw Error('File too large');hash.update(chunk);
- }
- return hash.digest('hex');
+export async function hashComparisonFile(path,signal,expectedVersion){
+ signal.throwIfAborted();
+ // Never let an asynchronous path open wait for a FIFO writer. The descriptor
+ // must be the same regular file checked by the gate before any bytes are read.
+ const handle=await open(path,constants.O_RDONLY|constants.O_NONBLOCK);
+ try{
+  signal.throwIfAborted();
+  const before=await handle.stat({bigint:true});
+  if(!before.isFile()||before.size<=0n||before.size>BigInt(MAX_FILE)||fileVersion(path,before)!==expectedVersion)throw Error('Opened input changed or is not regular');
+  const hash=createHash('sha256');let size=0;
+  // Supplying fd prevents a second path open. Keep ownership until the stream
+  // has settled, then close before releasing admission; no detached timeout work.
+  for await(const chunk of createReadStream(path,{fd:handle.fd,autoClose:false,highWaterMark:64*1024,signal})){
+   size+=chunk.length;if(size>MAX_FILE)throw Error('File too large');hash.update(chunk);
+  }
+  signal.throwIfAborted();
+  if(size!==Number(before.size)||fileVersion(path,await handle.stat({bigint:true}))!==expectedVersion)throw Error('Opened input changed during read');
+  return hash.digest('hex');
+ }finally{await handle.close();}
 }
 const blocked=reason=>({ready:false,status:'BLOCKED',reasons:[reason],production_approved:false,publication_enabled:false,perception_verified:false});
-export function createHostedComparisonGate({hash=hashFile,admissionBudgetMs=30000}={}){
+export function createHostedComparisonGate({hash=hashComparisonFile,admissionBudgetMs=30000}={}){
  let state=null,pending=null;
  const check=(review,video,receiptPath)=>{
   try{
@@ -55,7 +70,7 @@ export function createHostedComparisonGate({hash=hashFile,admissionBudgetMs=3000
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),admissionBudgetMs);
     try{
      for(const f of files){
-      if(controller.signal.aborted||comparisonFileVersion(f.path)!==f.version||await hash(f.path,controller.signal)!==f.sha256||comparisonFileVersion(f.path)!==f.version)throw Error('Input changed or mismatched');
+      if(controller.signal.aborted||comparisonFileVersion(f.path)!==f.version||await hash(f.path,controller.signal,f.version)!==f.sha256||comparisonFileVersion(f.path)!==f.version)throw Error('Input changed or mismatched');
      }
      if(controller.signal.aborted||comparisonFileVersion(receiptPath)!==version||files.some(f=>comparisonFileVersion(f.path)!==f.version))throw Error('Evidence changed');
      attempt.result={ready:true,status:'VALIDATED_BOUND_REVIEW',reasons:[],candidate_sha256:review.candidate_sha256,production_approved:false,publication_enabled:false,perception_verified:false};

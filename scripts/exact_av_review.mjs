@@ -84,10 +84,14 @@ export function validateReview(review,media) {
  return {schema_version:1,status:reasons.length?'BLOCKED':'VALIDATED_REVIEW',ready:reasons.length===0,reasons:[...new Set(reasons)],candidate_sha256:media.candidate_sha256,duration_seconds:media.duration_seconds,publication_enabled:false,production_approved:false,scope:'Validates submitted evidence structure and the existing creative handoff gate; does not itself observe audiovisual content or authenticate reviewer claims.'};
 }
 export function boundedMediaRunner(run=execFileSync,{budgetMs=300000,now=()=>performance.now()}={}) {
+ if(!Number.isFinite(budgetMs)||budgetMs<=0)throw Error('Comparison validation budget must be positive');
  const deadline=now()+budgetMs;
  return (command,args,options={})=>{
-  const remaining=deadline-now();if(remaining<=0)throw Error('Comparison validation budget exceeded');
-  const result=run(command,args,{...options,timeout:Math.max(1,Math.min(options.timeout||remaining,remaining))});
+  const remaining=deadline-now(),limit=options.timeout??remaining;
+  if(!Number.isFinite(remaining)||remaining<=0)throw Error('Comparison validation budget exceeded');
+  if(!Number.isFinite(limit)||limit<=0)throw Error('Comparison subprocess timeout must be positive');
+  const timeout=Math.floor(Math.min(limit,remaining,2147483647));if(timeout<1)throw Error('Comparison validation budget exceeded');
+  const result=run(command,args,{...options,timeout});
   if(now()>deadline)throw Error('Comparison validation budget exceeded');
   return result;
  };

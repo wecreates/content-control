@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {execFileSync} from 'node:child_process';
 import {inspectDecodedMedia,boundedMediaRunner} from '../scripts/exact_av_review.mjs';
 test('SYNTHETIC playlists renamed mp4 reject before probing, including changed local dependencies and remote URLs',()=>{
  const dir=mkdtempSync(join(tmpdir(),'synthetic-indirect-'));
@@ -31,4 +32,15 @@ test('bound media tools force direct demuxing and disable external tracks even w
 test('explicit validation shares one overall subprocess budget',()=>{
  let time=0,calls=0;const run=boundedMediaRunner((_cmd,_args,opts)=>{calls++;assert.equal(opts.timeout,10);time+=11;},{budgetMs:10,now:()=>time});
  assert.throws(()=>run('ffprobe',[],{timeout:30000}),/budget/);assert.throws(()=>run('ffmpeg',[]),/budget/);assert.equal(calls,1);
+});
+test('fractional remaining budget runs a real subprocess with an integer timeout',()=>{
+ let tick=0;const run=boundedMediaRunner(execFileSync,{budgetMs:10000,now:()=>tick++===0?0:9000.038377});
+ assert.equal(run(process.execPath,['-e','process.stdout.write("SYNTHETIC")'],{timeout:180000,encoding:'utf8'}),'SYNTHETIC');
+});
+test('submillisecond or invalid budgets fail before starting a subprocess',()=>{
+ let calls=0;const run=()=>{calls++;};
+ for(const budgetMs of [0,-1,NaN,Infinity])assert.throws(()=>boundedMediaRunner(run,{budgetMs}),/positive/);
+ assert.throws(()=>boundedMediaRunner(run,{budgetMs:.5})('unused',[]),/budget/);
+ assert.throws(()=>boundedMediaRunner(run)('unused',[],{timeout:NaN}),/positive/);
+ assert.equal(calls,0);
 });
