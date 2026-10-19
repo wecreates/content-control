@@ -6,9 +6,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {createRepositoryIntegrationRouter} from '../repository-integrations.js';
 
-async function request(root){
+async function request(root,options={}){
   const app=express();
-  app.use('/api/integrations',createRepositoryIntegrationRouter({moneyFactoryRoot:root}));
+  app.use('/api/integrations',createRepositoryIntegrationRouter({moneyFactoryRoot:root,backend:'local',...options}));
   const server=app.listen(0,'127.0.0.1');
   await new Promise(resolve=>server.once('listening',resolve));
   try{
@@ -23,6 +23,21 @@ test('missing hosted worker cannot become production ready',async()=>{
   assert.equal(body.status,'WORKER_NOT_CONFIGURED');
   assert.equal(body.production_ready,false);
   assert.equal(body.publication_enabled,false);
+});
+
+test('hosted HTTP preserves original status while exposing independent aggregate verification',async()=>{
+  for(const aggregate_status of [undefined,'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED','HOSTED_REQUIRED_OPERATIONS_VERIFIED']) {
+    const status={status:'HOSTED_CPU_OPERATIONS_VERIFIED',aggregate_status,
+      expected_operation_count:20,verified_operation_count:aggregate_status==='HOSTED_REQUIRED_OPERATIONS_VERIFIED'?20:8,
+      production_ready:false,publication_enabled:false};
+    const response=await request('',{backend:'github-actions',hostedStatus:async()=>status});
+    assert.equal(response.status,200);
+    assert.equal(response.body.status,'HOSTED_CPU_OPERATIONS_VERIFIED');
+    assert.equal(response.body.aggregate_status,aggregate_status);
+    assert.equal(response.body.verified_operation_count,status.verified_operation_count);
+    assert.equal(response.body.production_ready,false);
+    assert.equal(response.body.publication_enabled,false);
+  }
 });
 
 test('source configuration does not imply runtime health or expose private paths',async()=>{

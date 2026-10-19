@@ -20,7 +20,7 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
     if(!response.ok)throw Error('HOSTED_EVIDENCE_UNAVAILABLE');
     return response.json();
   }
-  async function read() {
+  async function read(independentEvidence) {
     const ref=await json(`https://api.github.com/repos/${repository}/git/ref/heads/main`);
     const snapshot=ref.object?.sha;
     if(!/^[a-f0-9]{40}$/.test(snapshot)||ref.object?.type!=='commit')throw Error('INVALID_SOURCE_SNAPSHOT');
@@ -43,6 +43,9 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
         required_for_production:e.required_for_production!==false,
         runtime_status:e.id==='wan21'?(e.required_for_production===false?'OPTIONAL_DISABLED':'BLOCKED_CUDA_AND_MODEL_REQUIRED'):'HOSTED_EXECUTION_NOT_VERIFIED',
         verified_operations:[]}))};
+    // Preserve only independently validated scope if original-suite validation throws.
+    independentEvidence.additional_tools=result.additional_tools;
+    independentEvidence.evidence_snapshot_revision=snapshot;
     if(!latest)return result;
     if(latest.path!==workflow || latest.head_branch!=='main' || !Number.isSafeInteger(latest.id))throw Error('INVALID_WORKFLOW');
     result.run={id:latest.id,status:latest.status,conclusion:latest.conclusion,
@@ -75,9 +78,24 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
   return async()=>{
     if(cached&&now()<expires)return cached;
     if(inflight)return inflight;
-    inflight=read().catch(()=>({backend:'github-actions',status:'HOSTED_EVIDENCE_UNAVAILABLE',
+    const independentEvidence={};
+    inflight=read(independentEvidence).catch(()=>({...independentEvidence,backend:'github-actions',status:'HOSTED_EVIDENCE_UNAVAILABLE',
       production_ready:false,publication_enabled:false,paid_generation_enabled:false}))
-      .then(result=>{cached=result;expires=now()+cacheMs;return result;})
+      .then(result=>{
+        const required=result.additional_tools?.filter(entry=>entry.required_for_aggregate);
+        const known=required!==undefined && required.every(entry=>Array.isArray(entry.expected_operations)) &&
+          new Set(result.additional_tools.map(entry=>entry.id)).size===result.additional_tools.length;
+        const originalVerified=result.status==='HOSTED_CPU_OPERATIONS_VERIFIED';
+        const verifiedAdditional=[...new Map((required ?? [])
+          .filter(entry=>entry.runtime_status==='HOSTED_OPERATIONS_VERIFIED').map(entry=>[entry.id,entry])).values()];
+        const aggregateVerified=known && originalVerified && verifiedAdditional.length===required.length;
+        cached={...result,
+          aggregate_status:aggregateVerified?'HOSTED_REQUIRED_OPERATIONS_VERIFIED':'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED',
+          aggregate_scope:'Original CPU suite and required configured additional hosted operations only; not provider, creative, production or publishing readiness',
+          expected_operation_count:known?8+required.reduce((sum,entry)=>sum+entry.expected_operations.length,0):null,
+          verified_operation_count:(originalVerified?8:0)+verifiedAdditional.reduce((sum,entry)=>sum+entry.verified_operations.length,0)};
+        expires=now()+cacheMs;return cached;
+      })
       .finally(()=>{inflight=null;});
     return inflight;
   };

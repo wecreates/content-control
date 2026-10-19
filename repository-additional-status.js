@@ -11,11 +11,13 @@ const hash=/^[a-f0-9]{64}$/;
 export async function additionalToolStatus(registry,{json,now,rawBase}) {
   const entries=[...(registry.engineering_tools||[]),...(registry.media_tools||[]),...(registry.agent_tools||[])];
   return Promise.all(entries.map(async entry=>{
+    const config=Object.hasOwn(configurations,entry.id)?configurations[entry.id]:null;
     const result={id:entry.id,revision:entry.revision,capability:entry.capability,
+      required_for_aggregate:entry.required_for_production!==false,
+      expected_operations:config?.operations.slice() ?? null,
       runtime_status:'HOSTED_EXECUTION_NOT_VERIFIED',verified_operations:[],production_ready:false,
       publication_enabled:false,paid_generation_enabled:false,
       scope:'Named hosted operations only; not complete upstream application readiness'};
-    const config=configurations[entry.id];
     if(!config)return result;
     try {
       const [report,runs]=await Promise.all([
