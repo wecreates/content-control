@@ -13,20 +13,22 @@ function resetView(){
 function begin(){
  resetView();const controller=request=new AbortController();
  deadlineTimer=setTimeout(()=>controller.abort(Error(timeoutMessage)),30000);
- return {signal:controller.signal,version:generation,key:element('key').value};
+ return {controller,signal:controller.signal,deadline:performance.now()+30000,version:generation,key:element('key').value};
 }
+function checkDeadline(context){if(performance.now()>=context.deadline&&!context.signal.aborted)context.controller.abort(Error(timeoutMessage));}
 function end(context){if(context.version===generation){clearTimeout(deadlineTimer);deadlineTimer=undefined;}}
 async function waitFor(pending,context){
  const {signal}=context;let onAbort;
  try{
+  checkDeadline(context);
   const aborted=new Promise((_,reject)=>{onAbort=()=>reject(signal.reason);signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort();});
-  const value=await Promise.race([pending,aborted]);signal.throwIfAborted();return value;
+  const value=await Promise.race([pending,aborted]);checkDeadline(context);signal.throwIfAborted();return value;
  }finally{if(onAbort)signal.removeEventListener('abort',onAbort);}
 }
 function cancelBody(body){try{Promise.resolve(body?.cancel()).catch(()=>{});}catch{}}
 async function read(route,context,limit){
  if(!context.key)throw Error('Enter your operations key.');
- context.signal.throwIfAborted();
+ checkDeadline(context);context.signal.throwIfAborted();
  let response,reader;
  try{
   const pending=fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal})
@@ -109,6 +111,7 @@ async function openPreview(id){
   const width=view.getUint32(16),height=view.getUint32(20);
   if(!width||!height||width*height>25000000)throw Error('Response exceeds the preview limit.');
   if(context.version!==generation)return;
+  checkDeadline(context);context.signal.throwIfAborted();
   previewURL=URL.createObjectURL(new Blob([bytes],{type:'image/png'}));element('print-preview').src=previewURL;
   element('preview').hidden=false;element('preview-status').textContent='Verified stored print bytes · '+record.state;
   element('package-info').textContent=JSON.stringify({job_id:id,platform:manifest.platform,package_sha256:manifest.package_sha256,print_sha256:hash,size_px:[width,height]},null,2);

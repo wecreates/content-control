@@ -13,7 +13,8 @@ Automated coverage includes request authentication, filter allowlisting, Postgre
 ## Bounded operations and preview waits
 
 Each refresh or preview uses one shared 30-second deadline for its asynchronous
-fetch, body-read and preview-digest waits. A stalled transport cannot keep the
+fetch, body-read and preview-digest waits. Monotonic elapsed-time checks also
+reject completion at or beyond the deadline if its timer callback was delayed. A stalled transport cannot keep the
 page waiting indefinitely even if it fails to propagate an abort. Timeout displays
 "POD request timed out. Try again." Completed metrics/activity panels remain
 visible when a peer request times out; incomplete or late previews never appear.

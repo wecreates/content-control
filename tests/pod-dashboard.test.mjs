@@ -20,7 +20,7 @@ function harness(fetcher,timers={setTimeout,clearTimeout}){
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
  const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:{addEventListener:(k,v)=>events[k]=v},
   AbortController,TextDecoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
-  setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,
+  setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,performance:timers.performance||performance,
   URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:fixture-'+urls.length;},revokeObjectURL:url=>revoked.push(url)},
   fetch:async(url,options)=>{requests.push({url,options});return fetcher(url,options);}});
  vm.runInContext(source,context);get('key').value='synthetic-key-'.repeat(4);get('state').value='review_required';
@@ -194,4 +194,13 @@ test('cancellation during fetch admission consumes a later rejection without res
  h=harness(()=>{h.get('clear').listeners.click();return Promise.reject(Error('private late transport failure'));},timers);
  await h.context.openPreview('fixture-job');await flush();
  assert.equal(h.get('notice').textContent,'Session cleared.');assert.equal(h.urls.length,0);assert.equal(timers.pending.size,0);
+});
+
+test('late completion cannot beat an overdue deadline when its timer callback was delayed',async()=>{
+ let now=0,release;const timers=controlledTimers();timers.performance={now:()=>now};
+ const pending=new Promise(resolve=>release=resolve),h=harness(()=>pending,timers);
+ const operation=h.context.openPreview('fixture-job');await flush();
+ now=30000;release(response(record(png)));await operation;
+ assert.equal(h.get('notice').textContent,'POD request timed out. Try again.');
+ assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(timers.pending.size,0);
 });
