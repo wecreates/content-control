@@ -54,3 +54,26 @@ The root must be an object; timestamp, audience and schema checks still apply.
 These rules cover all callers of the shared verifier, including grants and QA.
 They align with the existing Money Factory event parser. They do not establish
 arbitrary-precision numeric semantics, real approvals or live acceptance.
+
+
+## Claim and price evidence references
+
+A signed verified flag alone does not supply evidence. The consumer includes a
+fact in its brief only when its name is a nonblank string of at most 256
+characters, its value is a nonblank string and its evidence_ids array contains
+1–32 distinct nonblank primitive strings of at most 256 characters each. These
+reference bounds match the existing release-economics convention. An array in
+place of the fact collection is not an allowlist. Malformed or unsupported
+claims are omitted; identifiers and claim text are never repaired or normalized.
+
+Provider verification remains required for shipping, safety and warranty claims.
+Money Factory event verification remains required for revenue and profit claims.
+The upstream forbidden-claim list still removes a claim by name or exact value.
+Verified price metadata additionally needs a valid evidence reference and an
+exact three-uppercase-letter primitive currency string; malformed prices become
+null. Publication still requires the separate complete economic release budget.
+
+These are reference-shape checks, not proof that an event exists or supports the
+claim. The authoritative Money Factory host must supply authentic current source
+records and verification. Synthetic contract tests do not establish verified
+revenue, provider facts, rights, deployment or marketplace acceptance.
