@@ -6,9 +6,20 @@ function cancelBody(response){
  try{if(response?.body&&!response.body.locked)Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
 }
 
-export async function fetchBridgeResponse(fetchImpl,url,options){
- const {signal}=options;
+// Timers interrupt stalled I/O; elapsed-time checks reject late completion even
+// when the event loop has not dispatched a timeout callback yet.
+export function assertBridgeRequest(signal,deadline){
  signal?.throwIfAborted();
+ if(deadline!==undefined){
+  const now=performance.now();
+  if(!Number.isFinite(deadline)||!Number.isFinite(now)||now>=deadline)
+   throw new DOMException('Bridge request timed out','TimeoutError');
+ }
+}
+
+export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
+ const {signal}=options;
+ assertBridgeRequest(signal,deadline);
  const count=pendingRequests.get(fetchImpl)||0;
  if(count>=MAX_PENDING_REQUESTS)throw Error('BRIDGE_REQUEST_BUSY');
  pendingRequests.set(fetchImpl,count+1);
@@ -19,10 +30,10 @@ export async function fetchBridgeResponse(fetchImpl,url,options){
    signal.addEventListener('abort',onAbort,{once:true});
   });
   const pending=Promise.resolve().then(()=>{
-   signal?.throwIfAborted();
+   assertBridgeRequest(signal,deadline);
    return fetchImpl(url,options);
   }).then(response=>{
-   if(signal?.aborted){cancelBody(response);signal.throwIfAborted();}
+   try{assertBridgeRequest(signal,deadline);}catch(error){cancelBody(response);throw error;}
    return response;
   }).finally(()=>{
    const remaining=pendingRequests.get(fetchImpl)-1;
@@ -38,10 +49,10 @@ export async function fetchBridgeResponse(fetchImpl,url,options){
 // All bridge responses have a byte limit, including chunked/decoded bodies.
 // Body reads share the request deadline even if a transport does not propagate
 // aborts. Best-effort cancellation must not delay a result or replace its error.
-export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,signal}){
+export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,signal,deadline}){
  let reader,onAbort;
  try{
-  signal?.throwIfAborted();
+  assertBridgeRequest(signal,deadline);
   if(!response.ok)throw Error(statusError);
   if(Number(response.headers.get('content-length'))>maxBytes)throw Error(sizeError);
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
@@ -52,17 +63,20 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,si
   });
   const chunks=[];let size=0;
   while(true){
-   signal?.throwIfAborted();
+   assertBridgeRequest(signal,deadline);
    const pending=reader.read();
    const {done,value}=await (aborted?Promise.race([pending,aborted]):pending);
+   assertBridgeRequest(signal,deadline);
    if(done)break;
    size+=value.byteLength;if(size>maxBytes)throw Error(sizeError);
    chunks.push(value);
   }
-  signal?.throwIfAborted();
+  assertBridgeRequest(signal,deadline);
   // Decode once so UTF-8 split across network chunks is preserved. Reject
   // malformed byte sequences instead of silently substituting characters.
-  return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));
+  const result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));
+  assertBridgeRequest(signal,deadline);
+  return result;
  }finally{
   if(onAbort)signal.removeEventListener('abort',onAbort);
   // A remote/custom stream may never settle cancel(). Invoke it and consume
