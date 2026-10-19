@@ -1,30 +1,55 @@
 // Read-only operations UI. No approvals, mutations, persisted credentials or external URLs.
 const element=id=>document.getElementById(id);
-let request,previewURL=null,generation=0;
+let request,deadlineTimer,previewURL=null,generation=0;
+const timeoutMessage='POD request timed out. Try again.';
 function resetView(){
- generation++;request?.abort();request=null;
+ generation++;clearTimeout(deadlineTimer);deadlineTimer=undefined;request?.abort();request=null;
  if(previewURL)URL.revokeObjectURL(previewURL);previewURL=null;
  element('print-preview').removeAttribute('src');element('preview').hidden=true;
  element('package-info').textContent='';element('preview-status').textContent='';
  element('jobs').replaceChildren();element('result').textContent='Authenticate to load metrics.';
  element('activity-counts').replaceChildren();element('activity-window').textContent='Authenticate to load recorded activity.';
 }
-function begin(){resetView();request=new AbortController();return {signal:request.signal,version:generation,key:element('key').value};}
+function begin(){
+ resetView();const controller=request=new AbortController();
+ deadlineTimer=setTimeout(()=>controller.abort(Error(timeoutMessage)),30000);
+ return {controller,signal:controller.signal,deadline:performance.now()+30000,version:generation,key:element('key').value};
+}
+function checkDeadline(context){if(performance.now()>=context.deadline&&!context.signal.aborted)context.controller.abort(Error(timeoutMessage));}
+function end(context){if(context.version===generation){clearTimeout(deadlineTimer);deadlineTimer=undefined;}}
+async function waitFor(pending,context){
+ const {signal}=context;let onAbort;
+ try{
+  checkDeadline(context);
+  const aborted=new Promise((_,reject)=>{onAbort=()=>reject(signal.reason);signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort();});
+  const value=await Promise.race([pending,aborted]);checkDeadline(context);signal.throwIfAborted();return value;
+ }finally{if(onAbort)signal.removeEventListener('abort',onAbort);}
+}
+function cancelBody(body){try{Promise.resolve(body?.cancel()).catch(()=>{});}catch{}}
 async function read(route,context,limit){
  if(!context.key)throw Error('Enter your operations key.');
- const response=await fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal});
- if(!response.ok)throw Error(response.status===401?'Authentication failed.':'POD data is unavailable.');
- const reader=response.body.getReader(),chunks=[];let length=0;
- try{while(true){const {done,value}=await reader.read();if(done)break;length+=value.byteLength;
-   if(length>limit)throw Error('Response exceeds the preview limit.');chunks.push(value);}}
- finally{await reader.cancel();reader.releaseLock();}
- if(context.version!==generation)throw Error('STALE_REQUEST');
- const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
- return bytes;
+ checkDeadline(context);context.signal.throwIfAborted();
+ let response,reader;
+ try{
+  const pending=fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal})
+   .then(value=>{response=value;if(context.signal.aborted){cancelBody(response.body);context.signal.throwIfAborted();}return value;});
+  response=await waitFor(pending,context);
+  if(!response.ok)throw Error(response.status===401?'Authentication failed.':'POD data is unavailable.');
+  reader=response.body.getReader();const chunks=[];let length=0;
+  while(true){const {done,value}=await waitFor(reader.read(),context);if(done)break;length+=value.byteLength;
+   if(length>limit)throw Error('Response exceeds the preview limit.');chunks.push(value);}
+  if(context.version!==generation)throw Error('STALE_REQUEST');
+  const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+  return bytes;
+ }finally{
+  // Transport cleanup is best effort: it must not hold a timeout/size rejection.
+  if(reader){try{Promise.resolve(reader.cancel()).catch(()=>{});}catch{}try{reader.releaseLock();}catch{}}
+  else if(response?.body&&!response.body.locked)cancelBody(response.body);
+ }
 }
 const json=async(route,context)=>JSON.parse(new TextDecoder().decode(await read(route,context,262144)));
-function failure(error,context){if(context.version===generation&&!context.signal.aborted)element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
- ['Authentication failed.','Enter your operations key.','POD data is unavailable.','Response exceeds the preview limit.','Print preview is unavailable.'].includes(error.message)?error.message:'Unable to verify this preview or response.';}
+function failure(error,context){if(context.version===generation&&(!context.signal.aborted||context.signal.reason?.message===timeoutMessage))element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
+ [timeoutMessage,'Authentication failed.','Enter your operations key.','POD data is unavailable.','Response exceeds the preview limit.','Print preview is unavailable.'].includes(error.message)?error.message:'Unable to verify this preview or response.';}
 function listJobs(rows){
  if(!Array.isArray(rows)||rows.length>50)throw Error('INVALID_JOBS');
  const items=rows.map(job=>{
@@ -67,7 +92,7 @@ element('form').addEventListener('submit',async event=>{
   if(metrics.status==='rejected')throw metrics.reason;if(jobs.status==='rejected')throw jobs.reason;
   if(activityError)throw activityError;
   element('notice').textContent=jobs.value.jobs.length?'Select a job to inspect its print artwork.':'No matching jobs.';
- }catch(error){failure(error,context);}
+ }catch(error){failure(error,context);}finally{end(context);}
 });
 async function openPreview(id){
  const context=begin();element('notice').textContent='Verifying print preview…';
@@ -78,7 +103,7 @@ async function openPreview(id){
   if(record.id!==id||manifest?.schema_version!==1||manifest.publication_enabled!==false||
    !/^[a-f0-9]{64}$/.test(hash)||!/^[a-f0-9]{64}$/.test(manifest.package_sha256))throw Error('Print preview is unavailable.');
   const bytes=await read('/artifacts/'+hash,context,16777216);
-  const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
   if(actual!==hash)throw Error('HASH_MISMATCH');
   // Reject non-PNG and decompression-sized previews before the browser image decoder.
   const header=[137,80,78,71,13,10,26,10],view=new DataView(bytes.buffer);
@@ -86,11 +111,12 @@ async function openPreview(id){
   const width=view.getUint32(16),height=view.getUint32(20);
   if(!width||!height||width*height>25000000)throw Error('Response exceeds the preview limit.');
   if(context.version!==generation)return;
+  checkDeadline(context);context.signal.throwIfAborted();
   previewURL=URL.createObjectURL(new Blob([bytes],{type:'image/png'}));element('print-preview').src=previewURL;
   element('preview').hidden=false;element('preview-status').textContent='Verified stored print bytes · '+record.state;
   element('package-info').textContent=JSON.stringify({job_id:id,platform:manifest.platform,package_sha256:manifest.package_sha256,print_sha256:hash,size_px:[width,height]},null,2);
   element('notice').textContent='Preview loaded. This does not grant QA or publication approval.';
- }catch(error){failure(error,context);}
+ }catch(error){failure(error,context);}finally{end(context);}
 }
 element('preview-form').addEventListener('submit',event=>{event.preventDefault();openPreview(element('job-id').value.trim());});
 function clearSession(){resetView();element('key').value='';element('job-id').value='';element('notice').textContent='Session cleared.';}
