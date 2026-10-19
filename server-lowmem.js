@@ -174,6 +174,12 @@ app.get("/infra/status",(req,res)=>{
   res.json(infraStatus(process.env));
 });
 
+// Process liveness is independent of evidence readiness; never use it to serve media.
+app.get("/livez",(req,res)=>{
+  res.setHeader("Cache-Control","no-store");
+  res.json({alive:true,service:"content-control-review",production_approved:false,publication:false});
+});
+
 app.get("/health",(req,res)=>{
   const a=acceptance();
   res.setHeader("Cache-Control","no-store");

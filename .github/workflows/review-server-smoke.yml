@@ -51,14 +51,18 @@ jobs:
           PORT=10000 node server-lowmem.js > /tmp/review-server.log 2>&1 &
           echo $! > /tmp/review-server.pid
           for i in {1..30}; do
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health || true)
+            code=$(curl -s -o /tmp/liveness.json -w "%{http_code}" http://127.0.0.1:10000/livez || true)
             if [ "$code" = "200" ]; then break; fi
             sleep 1
           done
-          test "$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health)" = "200"
+          test "$(curl -s -o /tmp/liveness.json -w "%{http_code}" http://127.0.0.1:10000/livez)" = "200"
+      - name: Require exact candidate and caption evidence
+        run: python scripts/review_smoke_inputs.py
       - name: Verify accepted hash-bound routes
+        id: routes
         run: |
           set -euo pipefail
+          test "$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health)" = "200"
           python - <<'PY'
           import json
           h=json.load(open("/tmp/health.json"))
@@ -115,6 +119,7 @@ jobs:
           print({"served_sha256":actual})
           PY
       - name: Prove fail-closed behavior on corruption
+        id: corruption
         run: |
           set -euo pipefail
           kill $(cat /tmp/review-server.pid) || true
@@ -140,7 +145,7 @@ jobs:
         run: |
           python - <<'PY'
           import json,pathlib
-          ok=pathlib.Path("/tmp/served.mp4").exists() and pathlib.Path("/tmp/badhealth.json").exists()
+          ok="${{ steps.routes.outcome }}"=="success" and "${{ steps.corruption.outcome }}"=="success"
           health=json.loads(pathlib.Path("state/content-control-health.json").read_text())
           r={
             "schema_version":1,
