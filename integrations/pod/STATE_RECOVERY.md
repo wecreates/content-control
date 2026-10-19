@@ -121,6 +121,15 @@ filesystem that supports directory fsync. This does not synchronize newly create
 ancestors owned by another process, qualify storage hardware against power loss,
 create off-host retention, extend database expiry or complete a live restore drill.
 
+State export also rechecks both explicitly false publication flags after its
+read-only COMMIT and after the final directory flush. A flag change during
+COMMIT prevents catalog creation; a change during later file/directory flushing
+rejects EXPORTED even when readable, authenticated ciphertext remains. The
+completed read-only transaction is not undone by this rejection. Offline
+VERIFIED describes the remaining bytes, not successful completion of the
+rejected export or permission to activate workers or publication. Resolve the
+flag change and use a new destination; failed exports are never overwritten.
+
 ## Transaction completion boundary
 
 Restore rechecks cancellation and all four required disabled flags after the
