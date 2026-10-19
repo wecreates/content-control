@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,7 +55,6 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
     "live_deployment_green",
     "caption_candidate_match",
     "caption_health_green",
@@ -63,18 +62,7 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [
-    {
-      "actual": "1b37c9c332452d6b5f513a256d49266e08259965a349a96f64cf823ddc26c75b",
-      "expected": "93f34ffbba07099d5ea270c4bd8e768a57f5771a029a916a83a8f29868911dc1",
-      "path": "scripts/caption_contract.py"
-    },
-    {
-      "actual": "b7fdfbf8d68792c5468555bf277f27abbc99054bc0388426fe5fe63fc7c9353b",
-      "expected": "2409db5266fb0f5abe99f4f0992212a8efbcd6ca381ba9de6fbae459be7451f8",
-      "path": "server-lowmem.js"
-    }
-  ],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
