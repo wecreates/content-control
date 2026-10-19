@@ -40,6 +40,11 @@ rejected with INTAKE_SCOPE_INVALID rather than passed to PostgreSQL text
 parameters. The original envelope is authenticated before this shape check.
 Valid opaque strings retain their exact text, including leading/trailing spaces
 and Unicode; the consumer does not trim, normalize or derive a replacement.
+Text must round-trip through UTF-8 unchanged and contain no NUL. Unpaired
+surrogates are rejected before transaction/lock acquisition rather than allowing
+the driver to replace them with U+FFFD and select another concept's fingerprint.
+Literal U+FFFD, valid surrogate pairs and distinct Unicode normalization forms
+remain valid exact text; rejected input is never repaired or normalized.
 
 This prevents driver coercion from selecting an existing text fingerprint and
 returning or tombstoning its concept under a differently typed signed value.

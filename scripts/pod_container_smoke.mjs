@@ -1,6 +1,6 @@
 import {setTimeout as pause} from 'node:timers/promises';
 import {pathToFileURL} from 'node:url';
-import {readBridgeJSON} from '../integrations/pod/http-response.mjs';
+import {fetchBridgeResponse,readBridgeJSON} from '../integrations/pod/http-response.mjs';
 
 // Local image startup acceptance only. This does not assert live readiness.
 export async function waitForDisabledPod({url='http://127.0.0.1:10000/api/print/status',
@@ -13,9 +13,15 @@ export async function waitForDisabledPod({url='http://127.0.0.1:10000/api/print/
  }
  const deadline=performance.now()+timeoutMs;
  while(performance.now()<deadline){
-  const signal=AbortSignal.timeout(Math.max(1,Math.ceil(Math.min(requestTimeoutMs,deadline-performance.now()))));
+  const attemptDeadline=Math.min(deadline,performance.now()+requestTimeoutMs);
+  const controller=new AbortController(),{signal}=controller;
+  // AbortSignal.timeout() uses an unreferenced timer. A standalone probe must
+  // stay alive until acceptance or timeout even with no referenced socket.
+  const timer=setTimeout(()=>controller.abort(new DOMException('POD smoke request timed out','TimeoutError')),
+   Math.max(1,Math.ceil(attemptDeadline-performance.now())));
+  try{
   let response;
-  try{response=await fetch(target,{redirect:'manual',signal});}
+  try{response=await fetchBridgeResponse(fetch,target,{redirect:'manual',signal},{deadline:attemptDeadline});}
   catch{
    const remaining=deadline-performance.now();
    if(remaining>0)await pause(Math.min(retryMs,remaining));
@@ -23,8 +29,11 @@ export async function waitForDisabledPod({url='http://127.0.0.1:10000/api/print/
   }
   let status;
   try{
-   if(response.status!==200){await response.body?.cancel();throw Error('status');}
-   status=await readBridgeJSON(response,{maxBytes:65536,statusError:'status',sizeError:'size'});
+   if(response.status!==200){
+    try{Promise.resolve(response.body?.cancel()).catch(()=>{});}catch{}
+    throw Error('status');
+   }
+   status=await readBridgeJSON(response,{maxBytes:65536,statusError:'status',sizeError:'size',signal,deadline:attemptDeadline});
   }catch{throw Error('POD_SMOKE_INVALID_RESPONSE');}
   if(performance.now()>=deadline)throw Error('POD_SMOKE_STARTUP_TIMEOUT');
   if(status?.status!=='DISABLED'||status.publication_enabled!==false||
@@ -33,6 +42,7 @@ export async function waitForDisabledPod({url='http://127.0.0.1:10000/api/print/
    throw Error('POD_SMOKE_UNSAFE_STATE');
   }
   return {status:'PASS',publication_enabled:false,production_status:'DISABLED',outbox_status:'DISABLED'};
+  }finally{clearTimeout(timer);}
  }
  throw Error('POD_SMOKE_STARTUP_TIMEOUT');
 }
