@@ -150,6 +150,8 @@ function hostedAcceptance(reviewPatch={},healthPatch={},runtimePatch={}){
  return vm.runInNewContext(hostedAcceptanceSource+'\nv2Acceptance()',{
   readJson:file=>file==='health.json'?health:runtime,fileHash:()=>hash,
   v2HealthPath:'health.json',v2Output:'candidate.mp4',path,creativeHandoff:gate,
+  // Binding I/O is isolated here; real files/session import run in comparison-pipeline.test.mjs.
+  validateBoundHandoff:()=>({ready:true,reasons:[]}),
  });
 }
 test('hosted V2 acceptance uses the same strict evidence gate as exact validation',()=>{

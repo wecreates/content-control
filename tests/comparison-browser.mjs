@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
+import {completeCoverage} from '../creative-handoff.js';
 const require=createRequire(resolve(process.env.BROWSER_QA_MODULES||'.','package.json'));
 const {chromium}=require('playwright');
 const root=resolve('comparison-ui');
@@ -40,6 +41,10 @@ try{
  assert.match(receipt.candidate.sha256,/^[a-f0-9]{64}$/);assert.equal(receipt.reference.sha256,receipt.candidate.sha256);
  for(const key of ['full_audio_review','full_video_review','production_approved','publication_enabled'])assert.equal(receipt[key],false);
  assert.equal(receipt.findings.length,1);
+ assert.match(receipt.playback_sessions.candidate.session_id,/^[a-f0-9]{32}$/);
+ assert.equal(receipt.playback_sessions.candidate.artifact_sha256,receipt.candidate.sha256);
+ assert.equal(receipt.playback_sessions.reference.perception_verified,false);
+ assert.deepEqual(receipt.playback_sessions.reference.unmuted_playback_intervals,[]);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  // A valid MP4 free box makes a distinct local identity without changing fixture playback.
  const replacement=Buffer.concat([readFileSync(process.argv[2]),Buffer.from([0,0,0,12,102,114,101,101,0,0,0,0])]);
@@ -68,6 +73,20 @@ try{
  const afterCancel=page.waitForEvent('download');await page.click('#export');
  const cancelled=JSON.parse(readFileSync(await (await afterCancel).path(),'utf8'));
  assert.equal(cancelled.reference.sha256,replacementHash);assert.equal(cancelled.reference.source_url,'https://example.com/current-reference');
+ // Full synthetic playback in each audio selection must be usable as telemetry,
+ // while still never setting observation or approval flags.
+ for(const audio of ['candidate','reference']){
+  await page.selectOption('#audio',audio);await page.click('#restart');await page.click('#play');
+  await page.waitForFunction(()=>['candidate','reference'].every(n=>document.getElementById(n).ended));
+ }
+ const playedDownload=page.waitForEvent('download');await page.click('#export');
+ const played=JSON.parse(readFileSync(await (await playedDownload).path(),'utf8'));
+ for(const role of ['candidate','reference']){
+  assert.equal(completeCoverage(played.playback_sessions[role].video_playback_intervals,played[role].duration_seconds),true);
+  assert.equal(completeCoverage(played.playback_sessions[role].unmuted_playback_intervals,played[role].duration_seconds),true);
+  assert.equal(played.playback_sessions[role].perception_verified,false);
+ }
+ assert.equal(played.full_audio_review,false);assert.equal(played.full_video_review,false);
  // Worker-start failure remains a handled, non-certifying state, with local playback available.
  const failedPage=await context.newPage(),workerErrors=[];failedPage.on('pageerror',e=>workerErrors.push(e.message));
  await failedPage.addInitScript(()=>{window.Worker=class{constructor(){throw Error('Fixture worker startup failure');}};});

@@ -36,13 +36,16 @@ for(const name of names){
 for(const name of names){
  const v=$(name);
  const interrupt=()=>sessions[name]?.interrupt();
- for(const event of ['seeking','pause','waiting','stalled','emptied','error','ratechange','volumechange'])v.addEventListener(event,interrupt);
- v.addEventListener('timeupdate',()=>{
+ for(const event of ['seeking','waiting','stalled','emptied','error','ratechange','volumechange'])v.addEventListener(event,interrupt);
+ v.addEventListener('pause',()=>{if(!v.ended)interrupt();});
+ const sample=()=>{
   if(!media[name]||v.currentSrc!==urls[name])return interrupt();
   sessions[name]?.sample({time:v.currentTime,duration:v.duration,wall:performance.now(),rate:v.playbackRate,
-   playing:!v.paused&&!v.seeking&&v.readyState>=3,visible:document.visibilityState==='visible',
+   playing:(!v.paused||v.ended)&&!v.seeking&&v.readyState>=3,visible:document.visibilityState==='visible',
    audible:!v.muted&&v.volume>0&&$('audio').value===name});
- });
+ };
+ for(const event of ['play','playing','timeupdate'])v.addEventListener(event,sample);
+ v.addEventListener('ended',()=>{sample();interrupt();});
 }
 document.addEventListener('visibilitychange',()=>names.forEach(n=>sessions[n]?.interrupt()));
 $('play').onclick=async()=>{if(!media.candidate||!media.reference)return message('Load both videos first.');const result=await Promise.allSettled(names.map(n=>$(n).play()));if(result.some(r=>r.status==='rejected')){names.forEach(n=>$(n).pause());message('Playback was blocked. Use each player’s Play button.');}else message('Playing both. Only the selected audio track is audible.');};

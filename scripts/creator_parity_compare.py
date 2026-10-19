@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, pathlib, statistics, math, re
+import argparse, json, pathlib, statistics, math, re, subprocess, tempfile
 from urllib.parse import urlsplit, parse_qs
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -247,12 +247,57 @@ def main():
     ap.add_argument("--candidate",required=True)
     ap.add_argument("--competitor",action="append",required=True)
     ap.add_argument("--out",required=True)
+    ap.add_argument("--candidate-media")
+    ap.add_argument("--references-manifest")
+    ap.add_argument("--sessions")
     args=ap.parse_args()
+    inputs=[pathlib.Path(p).resolve() for p in [args.candidate,*args.competitor,args.candidate_media,args.references_manifest,args.sessions] if p]
+    # Include all declared local reference files in output-alias protection.
+    if args.references_manifest:
+        try:
+            for row in load(args.references_manifest):
+                inputs.append((pathlib.Path(args.references_manifest).resolve().parent / row['path']).resolve())
+        except (OSError, ValueError, TypeError, KeyError):
+            pass
+    output=pathlib.Path(args.out).resolve()
+    if any(output==p or output.exists() and p.exists() and output.samefile(p) for p in inputs):
+        raise SystemExit('Output must not overwrite input evidence or media')
+    blocked={'schema_version':1,'status':'REJECT','approval_allowed':False,'publication_enabled':False,
+             'production_approved':False,'reasons':['comparison_attempt_incomplete']}
+    output.write_text(json.dumps(blocked,indent=2)+'\n')
     rubric=load(RUBRIC)
     candidate=load(args.candidate)
     reports=[load(p) for p in args.competitor]
     result=compare(candidate,reports,rubric)
-    pathlib.Path(args.out).write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")
+    binding={'ready':False,'reasons':['comparison_media_and_sessions_required']}
+    if args.candidate_media and args.references_manifest and args.sessions:
+        normalized={**candidate,'candidate_sha256':candidate.get('artifact_sha256'),
+                    'full_video_review':full_av_access(candidate),'full_audio_review':full_av_access(candidate),
+                    'comparisons':[{**r,'full_video_review':full_av_access(r),'full_audio_review':full_av_access(r),'url':r.get('source_url') or r.get('video_url') or r.get('url')} for r in reports]}
+        with tempfile.TemporaryDirectory(prefix='comparison-binding-') as directory:
+            request=pathlib.Path(directory)/'request.json';receipt=pathlib.Path(directory)/'binding.json'
+            request.write_text(json.dumps(normalized))
+            try:
+                child=subprocess.run(['node',str(ROOT/'scripts/exact_av_review.mjs'),'bind-evidence',
+                    str(pathlib.Path(args.candidate_media).resolve()),str(receipt),str(request),
+                    str(pathlib.Path(args.references_manifest).resolve()),str(pathlib.Path(args.sessions).resolve())],
+                    capture_output=True,text=True,timeout=600)
+                binding=load(receipt)
+                if child.returncode!=0 or binding.get('ready') is not True:
+                    binding['ready']=False
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                binding={'ready':False,'reasons':['comparison_binding_failed']}
+    result['binding']=binding
+    result['production_approved']=False
+    result['perception_verified']=False
+    result['scope']='Scorer findings plus local byte/session binding; observation prose remains reviewer claims, not authenticated perception.'
+    if binding.get('ready') is not True:
+        result['status']='REJECT';result['approval_allowed']=False
+        result['faults'].insert(0,{'dimension':'media_session_binding','severity':'critical',
+            'evidence':binding.get('reasons',[]),'repair':'Supply current accessible files and matching complete playback sessions plus independent audiovisual observations.'})
+        result['fault_counts']['critical']+=1
+        result['unresolved_hard_fail_dimensions'].append('media_session_binding')
+    output.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
     print(json.dumps({"status":result["status"],"fault_counts":result["fault_counts"],"approval_allowed":result["approval_allowed"]},sort_keys=True))
     if not result["approval_allowed"]:
         raise SystemExit(2)

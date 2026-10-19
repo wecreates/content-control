@@ -1,31 +1,35 @@
-# Local comparison byte binding and playback telemetry
+# Comparison media and session binding
 
-Local follow-up on `local/comparison-media-binding`, based on PR #278 head `cfeee40620d2f855464dadce409899448d722666`. This work has not been pushed, submitted as a PR, merged or deployed.
+This follow-up connects local media binding and playback-record import to the existing hosted V2 acceptance function and creator-parity scorer CLI. It preserves production approval/publication false in binding receipts and does not infer perception from decoding or player events.
 
-## Explicit local validation
+## Review inputs and workflow
+
+1. Load authorized candidate/reference files in the existing `/compare` workspace. It hashes the same browser Files used for playback. Each accepted file selection creates a new session ID. Export each reference pair's notes/session records, then collect the exported objects in a JSON array (`sessions.json`). Choose and play each audio track separately. Muted, skipped, stalled or otherwise unrecorded intervals do not count toward unmuted playback coverage.
+2. Supply `references.json`: an array of 2..20 `{ "url": "https://...", "path": "local/reference.mp4" }` objects. Paths resolve relative to that manifest. URLs must exactly match submitted comparisons. Nothing is fetched from those URLs.
+3. Independently perform the audiovisual review. In the existing reviewer report, set root `review_session_id` to the candidate session and each comparison's `review_session_id` to its reference session. Preserve separate actual audiovisual observations, full-review declarations and reviewed intervals. Copying playback intervals into observation fields without actual review is not valid evidence.
+4. Run:
 
 ```
-node scripts/exact_av_review.mjs validate-bound candidate.mp4 receipt.json review.json references.json
+node scripts/exact_av_review.mjs validate-bound candidate.mp4 result.json review.json references.json sessions.json
 ```
 
-`references.json` is an array of 2..20 objects with `url` (matching the submitted comparison URL exactly) and `path` (local file, relative to the manifest or absolute). Files must be explicitly supplied and authorized. Nothing is fetched by URL. Existing candidate/review schemas remain in use.
+The shared validator independently hashes, probes and fully decodes both streams for all supplied files. It compares actual hashes, sizes and durations with reports and session records; checks coverage against measured durations; rechecks media hashes and manifest/session-file hashes; and blocks missing, changed or mismatched inputs. Successful output includes imported sessions separately from reviewer observations and a `comparison_evidence` object containing manifest/session paths. The original `validate` command remains structural-only for existing preparation/diagnostic workflows and is not a substitute for this gate.
 
-The bound path independently hashes/probes and fully decodes video and audio for the candidate and each reference. Reference hashes and durations must match review claims; interval coverage is revalidated against measured durations. Every reference must have one mapping. It rechecks hashes after processing all files, protects media/review/manifest paths from receipt overwrite, and writes a BLOCKED marker before media operations so an unsuccessful attempt cannot leave stale success. Success is `VALIDATED_BOUND_REVIEW`, with independently measured `reference_media` and `perception_verified:false`. Production approval and publication remain false.
+## Existing entrypoints
 
-The existing `validate` command still validates declarations only; this opt-in path has NOT been wired into hosted acceptance, production workflows or the Python scorer. Promoting it to those entry points requires a separately reviewed integration and authorized reference-file transport. No existing production gate has been silently represented as byte-bound.
+- Hosted `server-lowmem.js::v2Acceptance` still requires the existing creative, technical, runtime and publication gates. It additionally calls the shared bound validator using `health.comparison_evidence.manifest_path` and `.sessions_path`. Missing configuration or files blocks acceptance. Place the authorized files on the same host and preserve paths in the locally prepared health record; a bound receipt alone does not mark health READY. No production health record was changed here.
+- `scripts/creator_parity_compare.py` retains the Episode 1 rubric. Its CLI additionally requires `--candidate-media`, `--references-manifest`, and `--sessions` to permit a passing result, invokes the same Node binding/importer code, and records a critical binding fault on failure. Candidate/reference reports use their own `review_session_id`. The pure `compare()` function remains a structural scoring function for unit tests; CLI acceptance requires binding as well.
 
-## Playback sessions
+## Honest scope and operational limits
 
-The existing UI now assigns a new random session ID on accepted file selection and exports `playback_sessions` bound to its independently computed file hash. Conservative media progression samples produce `video_playback_intervals` and `unmuted_playback_intervals`. Seeking, pauses, stalls, visibility changes, volume/rate changes and media replacement break continuity. Samples farther than one second apart or inconsistent with elapsed time do not bridge gaps. Muted/unselected reference audio receives no audio credit. Unsupported or unavailable sampling simply leaves coverage incomplete.
+Player telemetry records media progression and unmuted routing, not frame-by-frame display, audible hardware output, attention or semantic perception. Hidden, paused, seeking, stalled, replacement and rate/volume boundaries break continuity. Missing boundary samples fail closed; replay unrecorded portions rather than filling gaps manually. Session IDs correlate files and reviewer records; they do not authenticate a reviewer. Exported JSON and observation prose remain editable claims. Hashing cannot authenticate the footage-to-source-URL association. All bound results explicitly retain `perception_verified:false` and `production_approved:false`; separate authentic review remains required.
 
-These are player telemetry intervals, NOT observed/perceived coverage, frame-by-frame delivery, audible hardware output or proof of attention. They never set full-review flags. Session identifiers are correlation identifiers, not authentication. Exported JSON is editable. An importer joining reviewer observations to these sessions and a trusted independent review process remain future work; the validator does not yet consume the UI playback records.
+Hosted validation currently performs synchronous local hashing/probing/decoding when the structural gate passes. This is conservative and bounded per subprocess but can be expensive for long media; it must be assessed during review before deployment. No background production jobs, infrastructure or credentials were added.
 
-## Local evidence
+## Tests and limitations
 
-- `node --test tests/comparison-playback.test.mjs tests/comparison-app.test.mjs tests/comparison-pipeline.test.mjs tests/exact-av-review.test.mjs tests/creative-handoff.test.mjs tests/comparison-ui.test.mjs`: 84 passed, 4 existing POSIX-only skips on Windows, zero failures.
-- `python -m unittest discover -s tests -p test_creator_parity_compare.py`: 10 passed.
-- `git diff --check`: passed.
+The combined local Node suites passed 85 tests with 4 existing POSIX-only skips on Windows. The new integration test generates eight one-second SYNTHETIC color/tone videos, produces session records through the real UI model/tracker with explicitly synthetic events, invokes the actual server acceptance function against temporary persisted records (without unrelated service startup), and invokes the real Python scorer CLI. Both pass valid binding and reject missing sessions/files, stale session IDs, mismatched file hashes, partial visual playback, muted reference audio, partial observation coverage, absent audio observations and absent candidate audiovisual review. No real candidate/competitor creative acceptance is asserted.
 
-The synthetic media test uses locally generated one-second color/sine-tone files. It invokes the real CLI and checks valid byte binding, forged hash rejection, short claimed reference duration/coverage rejection, swapped/missing reference rejection, missing audio rejection, malformed manifest rejection and reference-file overwrite protection. UI handler tests verify session replacement and audio/seek interval behavior. These are not real-media creative acceptance or an actual browser run. No external CI was triggered.
+Local Python: scorer 10 passed; free-review guards 4 passed; offline packaging 3 passed; packet tests 2 passed. The existing 52-test Gemini mock suite had 4 failures and 5 errors on Windows due to unavailable POSIX `signal.setitimer`/deadline facilities; it made no real provider inference. Bash-backed workflow/smoke tests require the normal Linux CI. Browser CI additionally checks both served and standalone offline exports, file/session binding and full synthetic playback in both audio selections while review flags stay false.
 
-No restricted media, provider calls, paid inference, security/credential configuration, production renderer/VPS resources or publication were used.
+No restricted media, paid inference, credential/security changes, renderer/VPS operations or publishing were used. PR #278 is the separately reviewed structural prerequisite; this follow-up requires independent review before merge.

@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {execFileSync,spawnSync} from 'node:child_process';
 import {inspectMedia,prepareReview} from '../scripts/exact_av_review.mjs';
+import {syntheticSessions} from './comparison-fixtures.mjs';
 import {CREATIVE_CHECKS} from '../creative-handoff.js';
 
 test('SYNTHETIC audiovisual files -> exact identities -> prepared contract -> CLI validation',t=>{
@@ -44,16 +45,17 @@ test('SYNTHETIC audiovisual files -> exact identities -> prepared contract -> CL
  };
  const valid=run();assert.equal(valid.result.status,0,valid.result.stderr);assert.equal(valid.receipt.status,'VALIDATED_REVIEW');
  // Local bound mode recomputes reference bytes rather than trusting declarations.
- const mapping=join(dir,'references.json');
+ const mapping=join(dir,'references.json'),sessionsPath=join(dir,'sessions.json');
+ writeFileSync(sessionsPath,JSON.stringify(syntheticSessions(files,review)));
  const mappings=files.slice(1).map(({file},i)=>({url:review.comparisons[i].url,path:file}));
  writeFileSync(mapping,JSON.stringify(mappings));
  const bound=()=>{
   writeFileSync(input,JSON.stringify(review));
-  const result=spawnSync(process.execPath,['scripts/exact_av_review.mjs','validate-bound',files[0].file,output,input,mapping],{encoding:'utf8',timeout:30000});
+  const result=spawnSync(process.execPath,['scripts/exact_av_review.mjs','validate-bound',files[0].file,output,input,mapping,sessionsPath],{encoding:'utf8',timeout:30000});
   assert.ifError(result.error);return {result,receipt:JSON.parse(readFileSync(output))};
  };
  const boundValid=bound();assert.equal(boundValid.result.status,0,boundValid.result.stderr);
- assert.equal(boundValid.receipt.status,'VALIDATED_BOUND_REVIEW');assert.equal(boundValid.receipt.reference_bytes_verified,true);
+ assert.equal(boundValid.receipt.status,'VALIDATED_BOUND_REVIEW');assert.equal(boundValid.receipt.imported_sessions.length,3);
  assert.equal(boundValid.receipt.perception_verified,false);assert.equal(boundValid.receipt.production_approved,false);
  const original=review.comparisons[0].artifact_sha256;
  review.comparisons[0].artifact_sha256='f'.repeat(64);
@@ -75,7 +77,7 @@ test('SYNTHETIC audiovisual files -> exact identities -> prepared contract -> CL
 
  writeFileSync(mapping,JSON.stringify(mappings));
  const referenceBefore=readFileSync(files[1].file);
- const alias=spawnSync(process.execPath,['scripts/exact_av_review.mjs','validate-bound',files[0].file,files[1].file,input,mapping],{encoding:'utf8',timeout:30000});
+ const alias=spawnSync(process.execPath,['scripts/exact_av_review.mjs','validate-bound',files[0].file,files[1].file,input,mapping,sessionsPath],{encoding:'utf8',timeout:30000});
  assert.equal(alias.status,2);assert.deepEqual(readFileSync(files[1].file),referenceBefore);
 
  review.comparisons[0].reviewed_intervals=[[0,.1]];

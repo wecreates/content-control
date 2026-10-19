@@ -55,7 +55,7 @@ class ExactAVWorkflowTests(unittest.TestCase):
         self.work = tempfile.TemporaryDirectory(prefix='synthetic-exact-av-workflow-')
         self.addCleanup(self.work.cleanup)
         self.root = Path(self.work.name)
-        for relative in ('scripts/exact_av_review.mjs', 'creative-handoff.js', 'social-intake.js', 'scripts/offline_av_review.py',
+        for relative in ('scripts/exact_av_review.mjs', 'scripts/comparison_sessions.mjs', 'creative-handoff.js', 'social-intake.js', 'scripts/offline_av_review.py',
                          'scripts/gemini_free_av_review.py', 'control/gemini-free-av-policy.json'):
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
