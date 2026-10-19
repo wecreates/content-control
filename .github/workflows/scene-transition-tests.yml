@@ -1,0 +1,48 @@
+name: Scene transition regressions
+on:
+  pull_request:
+    paths:
+      - 'remotion/**'
+      - 'tests/scene-transitions.test.mjs'
+      - 'tests/character-renderer-binding.test.mjs'
+      - 'tests/studio-layout.test.mjs'
+      - 'tests/studio-long-layout.test.mjs'
+      - 'tests/test_visual_choreography.py'
+      - 'scripts/visual_choreography.py'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/scene-transition-tests.yml'
+permissions:
+  contents: read
+env:
+  PUBLICATION_ENABLED: 'false'
+jobs:
+  motion-regressions:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run 37 character, layout and transition regressions
+        run: node --test tests/scene-transitions.test.mjs tests/character-renderer-binding.test.mjs tests/studio-layout.test.mjs tests/studio-long-layout.test.mjs
+      - name: Run 5 choreography regressions
+        run: python -m unittest discover -s tests -p test_visual_choreography.py -v
+      - name: Bundle both real reference-clone entry points without media
+        run: |
+          node --input-type=module <<'JS'
+          import {build} from 'esbuild';
+          for (const entry of ['remotion/reference-clone-index.jsx','remotion/reference-clone-long-index.jsx']) {
+            await build({entryPoints:[entry],bundle:true,write:false,platform:'browser',external:['react','remotion']});
+            console.log(`PASS: ${entry}`);
+          }
+          JS
