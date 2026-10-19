@@ -137,3 +137,13 @@ test('app records unmuted playback separately and cannot credit a seek gap',asyn
  assert.deepEqual(r.playback_sessions.reference.unmuted_playback_intervals,[[.5,.75],[4,4.25]]);
  assert.equal(r.full_audio_review,false);assert.equal(r.full_video_review,false);
 });
+
+test('play request anchors exact start without granting coverage before progression',async()=>{
+ const a=app();await a.pair();
+ for(const name of ['candidate','reference']){const v=a.element(name);v.currentSrc=v.src;v.readyState=4;v.volume=1;}
+ await a.element('play').onclick();
+ let r=await a.exportJson();assert.deepEqual(r.playback_sessions.reference.video_playback_intervals,[]);
+ a.tick('reference',.00375,3.75);
+ r=await a.exportJson();assert.deepEqual(r.playback_sessions.reference.video_playback_intervals,[[0,.00375]]);
+ assert.deepEqual(r.playback_sessions.reference.unmuted_playback_intervals,[]);assert.equal(r.full_video_review,false);
+});

@@ -1,7 +1,7 @@
 // Browser transport regression, not human listening or physical Android acceptance.
 import {createServer} from 'node:http';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
-import {resolve,extname} from 'node:path';
+import {resolve,extname,relative,isAbsolute,sep} from 'node:path';
 import {createRequire} from 'node:module';
 import {pathToFileURL} from 'node:url';
 import assert from 'node:assert/strict';
@@ -12,7 +12,8 @@ const {chromium}=require('playwright');
 const root=resolve('comparison-ui');
 const server=createServer((req,res)=>{
  const p=resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname.replace(/^\/compare/,'')));
- if(p!==root&&!p.startsWith(root+'/')){res.writeHead(403).end();return;}
+ const local=relative(root,p);
+ if(local==='..'||local.startsWith('..'+sep)||isAbsolute(local)){res.writeHead(403).end();return;}
  try{res.setHeader('Content-Type',({'.mjs':'text/javascript','.js':'text/javascript','.html':'text/html'})[extname(p)]||'text/html');res.end(readFileSync(p===root||p===root+'/'?root+'/index.html':p));}catch{res.writeHead(404).end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -21,7 +22,7 @@ mkdirSync('receipts',{recursive:true});
 writeFileSync(evidencePath,JSON.stringify({status:'BLOCKED',reason:'browser_test_not_completed',publication_enabled:false},null,2));
 let browser, page;
 try{
- browser=await chromium.launch({headless:true});
+ browser=await chromium.launch({headless:true,...(process.env.BROWSER_QA_EXECUTABLE?{executablePath:process.env.BROWSER_QA_EXECUTABLE}:{})});
  const context=await browser.newContext({viewport:{width:360,height:800},isMobile:true,hasTouch:true,acceptDownloads:true});
  page=await context.newPage();const errors=[],downloads=[];page.on('pageerror',e=>errors.push(e.message));page.on('download',d=>downloads.push(d));
  await page.goto(process.argv[3]?pathToFileURL(resolve(process.argv[3])).href:`http://127.0.0.1:${server.address().port}/compare`);
@@ -81,6 +82,7 @@ try{
  }
  const playedDownload=page.waitForEvent('download');await page.click('#export');
  const played=JSON.parse(readFileSync(await (await playedDownload).path(),'utf8'));
+ console.log(JSON.stringify({synthetic_playback_coverage:played.playback_sessions}));
  for(const role of ['candidate','reference']){
   assert.equal(completeCoverage(played.playback_sessions[role].video_playback_intervals,played[role].duration_seconds),true);
   assert.equal(completeCoverage(played.playback_sessions[role].unmuted_playback_intervals,played[role].duration_seconds),true);

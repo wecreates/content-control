@@ -2,7 +2,7 @@ import {finding,receipt} from './model.mjs';
 import {createHashWorker} from './worker.mjs';
 import {createPlaybackTracker} from './playback.mjs';
 const $=id=>document.getElementById(id), names=['candidate','reference'];
-const sessions={}, media={}, urls={}, workers={}, identities={}, versions={candidate:0,reference:0};let findings=[];
+const sessions={}, startPlayback={}, media={}, urls={}, workers={}, identities={}, versions={candidate:0,reference:0};let findings=[];
 const message=text=>{$('message').textContent=text;};
 const hasDraft=()=>Boolean($('observation').value.trim()||$('repair').value.trim());
 const render=()=>{$('findings').replaceChildren(...findings.map(f=>{const li=document.createElement('li');li.textContent=`${f.category} · candidate ${f.candidate_sec.toFixed(2)}s / reference ${f.reference_sec.toFixed(2)}s\n${f.observation}\nImprove: ${f.repair}`;return li;}));};
@@ -38,17 +38,20 @@ for(const name of names){
  const interrupt=()=>sessions[name]?.interrupt();
  for(const event of ['seeking','waiting','stalled','emptied','error','ratechange','volumechange'])v.addEventListener(event,interrupt);
  v.addEventListener('pause',()=>{if(!v.ended)interrupt();});
- const sample=()=>{
+ const sample=(starting=false)=>{
   if(!media[name]||v.currentSrc!==urls[name])return interrupt();
   sessions[name]?.sample({time:v.currentTime,duration:v.duration,wall:performance.now(),rate:v.playbackRate,
-   playing:(!v.paused||v.ended)&&!v.seeking&&v.readyState>=3,visible:document.visibilityState==='visible',
+   playing:(starting===true||!v.paused||v.ended)&&!v.seeking&&v.readyState>=3,visible:document.visibilityState==='visible',
    audible:!v.muted&&v.volume>0&&$('audio').value===name});
  };
- for(const event of ['play','playing','timeupdate'])v.addEventListener(event,sample);
+ // Capture the exact requested start before asynchronous play events arrive.
+ // This anchor alone credits nothing; only subsequent real progression adds intervals.
+ startPlayback[name]=()=>{interrupt();sample(true);return v.play();};
+ for(const event of ['play','playing','timeupdate'])v.addEventListener(event,()=>sample());
  v.addEventListener('ended',()=>{sample();interrupt();});
 }
 document.addEventListener('visibilitychange',()=>names.forEach(n=>sessions[n]?.interrupt()));
-$('play').onclick=async()=>{if(!media.candidate||!media.reference)return message('Load both videos first.');const result=await Promise.allSettled(names.map(n=>$(n).play()));if(result.some(r=>r.status==='rejected')){names.forEach(n=>$(n).pause());message('Playback was blocked. Use each player’s Play button.');}else message('Playing both. Only the selected audio track is audible.');};
+$('play').onclick=async()=>{if(!media.candidate||!media.reference)return message('Load both videos first.');const result=await Promise.allSettled(names.map(n=>startPlayback[n]()));if(result.some(r=>r.status==='rejected')){names.forEach(n=>{sessions[n]?.interrupt();$(n).pause();});message('Playback was blocked. Use each player’s Play button.');}else message('Playing both. Only the selected audio track is audible.');};
 $('pause').onclick=()=>names.forEach(n=>$(n).pause());
 $('restart').onclick=()=>names.forEach(n=>{$(n).pause();$(n).currentTime=0;});
 $('audio').onchange=()=>names.forEach(n=>{$(n).muted=n!==$('audio').value;});
