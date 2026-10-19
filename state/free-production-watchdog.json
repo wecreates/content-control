@@ -65,8 +65,13 @@
   ],
   "integrity_failures": [
     {
-      "actual": "2409db5266fb0f5abe99f4f0992212a8efbcd6ca381ba9de6fbae459be7451f8",
-      "expected": "05f7013996c1f9c5ed185495a8ea6e0afed74ea61d821fe2420183e64c430c09",
+      "actual": "1b37c9c332452d6b5f513a256d49266e08259965a349a96f64cf823ddc26c75b",
+      "expected": "93f34ffbba07099d5ea270c4bd8e768a57f5771a029a916a83a8f29868911dc1",
+      "path": "scripts/caption_contract.py"
+    },
+    {
+      "actual": "b7fdfbf8d68792c5468555bf277f27abbc99054bc0388426fe5fe63fc7c9353b",
+      "expected": "2409db5266fb0f5abe99f4f0992212a8efbcd6ca381ba9de6fbae459be7451f8",
       "path": "server-lowmem.js"
     }
   ],
