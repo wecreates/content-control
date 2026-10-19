@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {performance} from 'node:perf_hooks';
 import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 import {createGrantResolver} from '../integrations/pod/grant-client.mjs';
 import {startOutboxRuntime} from '../integrations/pod/outbox-runtime.mjs';
@@ -244,4 +245,60 @@ test('outbox shutdown drains a header wait without accepting a late acknowledgem
  respond(new Response(new ReadableStream({start(c){c.enqueue(Buffer.from('{"accepted_event_id":"event"}'));},cancel(){cancelled++;return new Promise(()=>{});}})));
  await new Promise(resolve=>setImmediate(resolve));
  assert.equal(cancelled,1);assert.deepEqual(db.updated,[]);assert.equal(runtime.status().delivered,0);
+});
+
+function scopedGrant(){
+ const brief={id:'job',account_id:'account',business_id:'business',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ return {brief,envelope:{payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}};
+}
+for(const caller of ['grant','outbox'])for(const phase of ['headers','body','parse']){
+ test(`${caller} rejects late ${phase} completion when its timeout callback is delayed`,async t=>{
+  const budget=caller==='grant'?10000:15000,grant=scopedGrant();let now=0,completion;
+  t.mock.method(performance,'now',()=>now);
+  // Model an event loop that has not dispatched the timeout callback yet.
+  t.mock.method(AbortSignal,'timeout',ms=>{assert.equal(ms,budget);return new AbortController().signal;});
+  const parse=JSON.parse;
+  if(phase==='parse')t.mock.method(JSON,'parse',(...args)=>{const result=parse(...args);now=completion;return result;});
+  for(const elapsed of [budget-1,budget,budget+1]){
+   now=0;completion=elapsed;const db=dbFixture();let body,pulls=0,cancelled=0;
+   const text=JSON.stringify(caller==='grant'?grant.envelope:{accepted_event_id:'event'});
+   const fetchImpl=async()=>{
+    if(phase==='headers')now=completion;
+    body=new ReadableStream({pull(c){pulls++;if(phase==='body')now=completion;c.enqueue(Buffer.from(text));c.close();},
+     cancel(){cancelled++;return new Promise(()=>{});}},{highWaterMark:0});
+    return new Response(body);
+   };
+   const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job',brief:grant.brief}):
+    deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl});
+   if(elapsed<budget){
+    const result=await operation;
+    if(caller==='grant')assert.deepEqual(result,grant.envelope);
+    else assert.deepEqual(result,{delivered:1});
+    assert.deepEqual(db.updated,caller==='outbox'?['event']:[]);
+   }else{
+    await assert.rejects(operation,{name:'TimeoutError'});
+    assert.deepEqual(db.updated,[]);
+    if(phase==='headers'){assert.equal(pulls,0);assert.equal(cancelled,1);}
+   }
+   assert.equal(body.locked,false);
+  }
+ });
+}
+test('expired header deadline refuses admission before calling a transport',async t=>{
+ let now=100,calls=0;t.mock.method(performance,'now',()=>now);
+ const fetchImpl=async()=>{calls++;return new Response('{}');};
+ await assert.rejects(fetchBridgeResponse(fetchImpl,'https://authority.example',{}, {deadline:100}),{name:'TimeoutError'});
+ now=0;const deferred=fetchBridgeResponse(fetchImpl,'https://authority.example',{}, {deadline:100});
+ now=100;await assert.rejects(deferred,{name:'TimeoutError'});
+ assert.equal(calls,0);
+});
+test('grant validation cannot return an envelope after the shared request deadline',async t=>{
+ const grant=scopedGrant(),wall=Date.now();let now=0,clockReads=0;
+ t.mock.method(performance,'now',()=>now);
+ t.mock.method(AbortSignal,'timeout',()=>new AbortController().signal);
+ t.mock.method(Date,'now',()=>{if(++clockReads===2)now=10000;return wall;});
+ const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify(grant.envelope))});
+ await assert.rejects(resolve({id:'job',brief:grant.brief}),{name:'TimeoutError'});
 });

@@ -74,3 +74,16 @@ repair or process restart to release those slots. This is an admission safety
 bound, not a measured capacity claim or a guarantee that a broken transport has
 stopped remote work. Existing retry/backoff and exact-acknowledgement rules remain
 in effect. There is no cached authorization fallback.
+
+Each request also shares one absolute monotonic deadline across header admission,
+header completion, body reads and UTF-8/JSON completion. The grant client checks
+it again after signature/scope/lifetime validation; the outbox checks it before
+starting the delivered-marker transaction. Completion at or beyond 10 seconds
+for grants or 15 seconds for acknowledgements fails with TimeoutError even if
+the event loop has not dispatched the timeout callback. Timer/signal races still
+interrupt stalled asynchronous work. These checks cannot preempt synchronous
+JavaScript; they reject an overdue result when control returns. They do not put
+the subsequent database transaction under the network deadline or undo an event
+already committed remotely. Failed acknowledgements remain pending for the
+existing idempotent retry path. Controlled-clock tests are not a live timeout
+drill, production capacity measurement or completed acceptance area.
