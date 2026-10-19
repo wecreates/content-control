@@ -1,5 +1,5 @@
 import {verifyEnvelope,enforceBrief} from './policy.mjs';
-import {readBridgeJSON} from './http-response.mjs';
+import {fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 
 export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
  let endpoint;
@@ -10,7 +10,7 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
  return async(job,{signal}={})=>{
   const timeout=AbortSignal.timeout(10000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
-  const response=await fetchImpl(endpoint,{method:'POST',redirect:'error',signal:requestSignal,
+  const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
    headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:job.id})});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',sizeError:'GRANT_TOO_LARGE'});
   const grant=verifyEnvelope(envelope,env.POD_UPSTREAM_KEY,'content-control:pod');
