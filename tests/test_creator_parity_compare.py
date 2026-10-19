@@ -24,6 +24,39 @@ def comp(name):
     }
 
 class CreatorParityTests(unittest.TestCase):
+    def test_complete_synthetic_episode1_evidence_can_pass_actual_rubric(self):
+        # Contract fixture only: no actual media, perception or creative acceptance.
+        # Load the unmodified Episode 1 requirements, not the reduced test rubric.
+        rubric=json.loads((ROOT/'control/creator-parity-ruthless-gate.json').read_text())
+        candidate=comp('SYNTHETIC_CANDIDATE') | {
+            'duration_seconds':30, 'reviewed_intervals':[[0,15],[15,30]],
+            'opening':{'first_3_seconds':'SYNTHETIC physical conflict immediately happens here',
+                       'first_15_seconds':'SYNTHETIC clear stakes and entertainment promise emerge through physical action.'},
+            'story_and_retention':{
+                'why_it_does_not_feel_like_a_lecture':'SYNTHETIC physical action carries the explanation and creates escalating story consequences.',
+                'retention_resets':[1,2,3], 'callbacks':[1,2],
+                'ending_payoff':'SYNTHETIC callback closes the opening conflict with a final visual joke.'},
+            'humor':{'mechanisms':['visual','deadpan','callback']},
+            'sound':{'sfx_density':'SYNTHETIC high','sfx_sync':'SYNTHETIC contact-synced'},
+            'credit_card_adaptations':['fees','APR','points'],
+            'distinctive_elements_not_to_copy':['SYNTHETIC creator-specific characters'],
+            'slideshow_detected':False, 'lecture_detected':False,
+        }
+        references=[comp(f'SYNTHETIC_REEL_{i}') | {'creator':f'SYNTHETIC_CREATOR_{i%5}'}
+                    for i in range(7)]
+        self.assertTrue(full_av_access(candidate))
+        self.assertTrue(all(full_av_access(r) for r in references))
+        result=compare(candidate,references,rubric)
+        self.assertEqual(result['status'],'PASS',result['faults'])
+        self.assertTrue(result['approval_allowed'])  # Scorer output only, not real approval.
+        self.assertFalse(result['publication_enabled'])
+        self.assertEqual(result['fault_counts'],{'critical':0,'major':0,'medium':0})
+        self.assertEqual(result['faults'],[])
+        self.assertEqual(result['unresolved_hard_fail_dimensions'],[])
+        self.assertEqual(result['benchmark']['full_av_count'],7)
+        self.assertEqual(result['benchmark']['creator_count'],5)
+        self.assertEqual(result['benchmark']['instagram_reel_full_av_count'],7)
+
     def test_reference_evidence_must_include_identity_observations_and_coverage(self):
         for patch in [dict(artifact_sha256=None), dict(duration_seconds=True),
                       dict(reviewed_intervals=[[0,1],[4,5]]), dict(reviewed_intervals=[[0,4.99]]),
