@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import {finding,receipt} from '../comparison-ui/model.mjs';
 import {fileIdentity} from '../comparison-ui/hash.mjs';
 
-const source=fs.readFileSync(new URL('../comparison-ui/app.mjs',import.meta.url),'utf8').replace(/^import .*;\n/gm,'');
+const source=fs.readFileSync(new URL('../comparison-ui/app.mjs',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
 function app({workerError=false,postError=false}={}){
  const elements=new Map(),workers=[],downloads=[],objects=new Map(),events={},confirmations=[];
  let objectId=0,confirmResult=true;

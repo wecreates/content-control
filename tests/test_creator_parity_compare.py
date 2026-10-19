@@ -1,4 +1,5 @@
-import json, pathlib, tempfile, unittest
+import json, pathlib, tempfile, unittest, hashlib
+from scripts.creator_parity_compare import full_av_access
 from scripts.creator_parity_compare import compare, collect_competitor_signals, safe_num
 
 ROOT=pathlib.Path(__file__).resolve().parents[1]
@@ -8,6 +9,10 @@ RUBRIC['pass_contract']['minimum_competitor_full_av_videos']=2
 def comp(name):
     return {
       'creator':name,
+      'artifact_sha256':hashlib.sha256(('SYNTHETIC '+name).encode()).hexdigest(),
+      'duration_seconds':5, 'reviewed_intervals':[[0,5]],
+      'video_observation':'SYNTHETIC visual observation',
+      'audio_observation':'SYNTHETIC audio observation',
       'source_url':'https://www.instagram.com/reel/'+name+'/',
       'source_av_access':{'visual':True,'audio':True,'complete_end_to_end':True},
       'opening':{'intro_length_est_sec':2},
@@ -19,6 +24,20 @@ def comp(name):
     }
 
 class CreatorParityTests(unittest.TestCase):
+    def test_reference_evidence_must_include_identity_observations_and_coverage(self):
+        for patch in [dict(artifact_sha256=None), dict(duration_seconds=True),
+                      dict(reviewed_intervals=[[0,1],[4,5]]), dict(reviewed_intervals=[[0,4.99]]),
+                      dict(reviewed_intervals=[[0,6]]), dict(audio_observation=None),
+                      dict(video_observation=None), dict(source_av_access=None)]:
+            with self.subTest(patch=patch):
+                self.assertFalse(full_av_access(comp('A') | patch))
+                self.assertEqual(collect_competitor_signals([comp('A') | patch])['full_av_count'],0)
+
+    def test_duplicate_bytes_and_candidate_self_comparison_are_excluded(self):
+        a=comp('A'); b=comp('B'); b['artifact_sha256']=a['artifact_sha256']
+        self.assertEqual(collect_competitor_signals([a,b])['full_av_count'],1)
+        self.assertEqual(compare(a,[a,b],RUBRIC)['benchmark']['full_av_count'],0)
+
     def test_duplicates_and_incomplete_reviews_cannot_inflate_benchmark(self):
         a=comp('A'); duplicate=comp('Other');duplicate['source_url']='https://instagram.com/reel/A/?tracking=1'
         incomplete=comp('B');incomplete['source_av_access']['audio']=False

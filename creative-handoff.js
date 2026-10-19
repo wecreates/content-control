@@ -50,7 +50,22 @@ export function creativeHandoff(review, hash, mediaEvidence) {
  if(mediaEvidence?.verified!==true||mediaEvidence?.candidate_sha256!==hash||!Number.isFinite(duration)||duration<=0||!Number.isFinite(review?.duration_seconds)||review.duration_seconds<=0||Math.abs(review.duration_seconds-duration)>.05)reasons.push('verified_media_duration_missing_or_mismatched');
  if(!completeCoverage(coverage,duration))reasons.push('review_coverage_incomplete');
  const refs=review?.comparisons;
- if(!Array.isArray(refs)||new Set(refs.filter(r=>r&&r.full_video_review===true&&r.full_audio_review===true&&r.access_scope==='full audiovisual review'&&documented(r.observation)&&documented(r.applied_difference)).map(r=>referenceIdentity(r.url)).filter(Boolean)).size<2) reasons.push('competitor_comparison_pending');
+ const identities=new Set(),digests=new Set();
+ for(const r of Array.isArray(refs)?refs:[]) {
+  const identity=referenceIdentity(r?.url);
+  // A source URL and full-review flags alone do not establish audiovisual
+  // observations or coverage. These are submitted reviewer claims, not proof
+  // that a provider accessed the source or that a human actually watched it.
+  if(!identity||!r||r.full_video_review!==true||r.full_audio_review!==true||r.access_scope!=='full audiovisual review'||
+     typeof r.artifact_sha256!=='string'||!/^[a-f0-9]{64}$/.test(r.artifact_sha256)||r.artifact_sha256===hash||
+     !completeCoverage(r.reviewed_intervals,r.duration_seconds)||
+     !documented(r.video_observation)||!documented(r.audio_observation)||
+     !documented(r.observation)||!documented(r.applied_difference))continue;
+  // Reuploads and URL aliases cannot inflate the distinct reference count.
+  if(identities.has(identity)||digests.has(r.artifact_sha256))continue;
+  identities.add(identity);digests.add(r.artifact_sha256);
+ }
+ if(identities.size<2) reasons.push('competitor_comparison_pending');
  if(!Array.isArray(review?.unresolved_issues)||review.unresolved_issues.length) reasons.push('unresolved_creative_issues');
  return {ready:reasons.length===0,reasons:[...new Set(reasons)],publication:false};
 }
