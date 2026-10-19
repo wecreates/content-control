@@ -71,3 +71,23 @@ test('fingerprint admission still authenticates the original envelope first',asy
  f.db.tx=async()=>assert.fail('database must not be reached');
  await assert.rejects(f.db.registerIntake(request),/^Error: SIGNATURE_INVALID$/);
 });
+
+for(const [name,values] of [
+ ['unpaired surrogate',['prefix-\ud800','prefix-\udfff','prefix-\ud800x','prefix-\udfff\ud800']],
+ ['NUL',['prefix-\u0000','\u0000prefix']]
+])test(`${name} fingerprint is rejected before transaction or lock acquisition`,async()=>{
+ const f=fixture();let calls=0;f.db.tx=async()=>{calls++;throw Error('UNEXPECTED_DATABASE_ACCESS');};
+ for(const fingerprint of values)await assert.rejects(f.db.registerIntake(f.request('UNKNOWN','business',fingerprint)),/^Error: INTAKE_SCOPE_INVALID$/);
+ assert.equal(calls,0);assert.equal(f.concept.rights_state,'PASS');assert.equal(f.writes.length,0);
+});
+test('literal replacement characters and paired Unicode remain exact fingerprint text',async()=>{
+ for(const fingerprint of ['prefix-\ufffd','prefix-\ud800\udc00','prefix-\udbff\udfff',' e\u0301 / é ']){
+  const f=fixture(),original=f.db.tx,seen=[];
+  f.db.tx=fn=>original(client=>fn({query:async(sql,args)=>{
+   if(sql.includes('pg_advisory_xact_lock')||sql.includes('WHERE fingerprint'))seen.push(args[0]);
+   return client.query(sql,args);
+  }}));
+  assert.deepEqual(await f.db.registerIntake(f.request('PASS','business',fingerprint)),{id:f.concept.id});
+  assert.deepEqual(seen,[fingerprint,fingerprint]);assert.equal(f.writes.length,0);
+ }
+});
