@@ -36,9 +36,10 @@ export async function hashComparisonFile(path,signal,expectedVersion){
   const before=await handle.stat({bigint:true});
   if(!before.isFile()||before.size<=0n||before.size>BigInt(MAX_FILE)||fileVersion(path,before)!==expectedVersion)throw Error('Opened input changed or is not regular');
   const hash=createHash('sha256');let size=0;
-  // Supplying fd prevents a second path open. Keep ownership until the stream
-  // has settled, then close before releasing admission; no detached timeout work.
-  for await(const chunk of createReadStream(path,{fd:handle.fd,autoClose:false,highWaterMark:64*1024,signal})){
+  // Share the FileHandle itself with the stream: abort-driven stream destruction
+  // and finally must coordinate ownership, never close a reused numeric fd twice.
+  // The stream uses this descriptor without reopening the path.
+  for await(const chunk of createReadStream(path,{fd:handle,autoClose:false,highWaterMark:64*1024,signal})){
    size+=chunk.length;if(size>MAX_FILE)throw Error('File too large');hash.update(chunk);
   }
   signal.throwIfAborted();
