@@ -43,3 +43,19 @@ A reviewer ignoring the signal can still delay shutdown, as can outstanding
 database or cleanup work. The host must enforce its own review I/O deadlines.
 The default stored resolver still holds work for independent review; no reviewer,
 approval, timeout-based pass, or publication permission is created here.
+
+## Print process completion deadline
+
+The Python-stage runner uses one absolute monotonic deadline from before process
+launch through child/pipe closure and successful output decoding. A zero exit
+code at or beyond that deadline returns the fixed PYTHON_STAGE_TIMEOUT error,
+even when the timer callback has not run. Timer-based termination still stops
+stalled processes, and existing process-group cleanup is awaited before workspace
+deletion. Earlier abort, output-limit, spawn or descendant-cleanup failures retain
+their existing fixed reasons; raw process output is never added to timeout errors.
+
+Elapsed checks cannot preempt synchronous JavaScript or force an immediate
+callback while the event loop is blocked. The kill grace period can extend the
+time needed to reap stopped processes; it does not extend the budget for a
+successful stage result. Tests use real child processes with a controlled
+monotonic clock and do not measure production capacity or confer QA approval.

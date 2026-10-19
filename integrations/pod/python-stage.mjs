@@ -10,6 +10,9 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
  if(signal?.aborted)throw Error('PYTHON_STAGE_ABORTED');
  if(process.platform==='win32')throw Error('PYTHON_STAGE_PLATFORM_UNSUPPORTED');
  for(const n of [timeoutMs,killGraceMs,maxOutputBytes])if(!Number.isSafeInteger(n)||n<1)throw Error('PYTHON_STAGE_CONFIG_INVALID');
+ const started=performance.now();if(!Number.isFinite(started))throw Error('PYTHON_STAGE_CONFIG_INVALID');
+ const deadline=started+timeoutMs;
+ const expired=()=>{const now=performance.now();return !Number.isFinite(now)||now>=deadline;};
  return new Promise((resolve,reject)=>{
   let child;
   try{child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...args],
@@ -32,13 +35,20 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
   const abort=()=>terminate('PYTHON_STAGE_ABORTED');
   const cleanup=()=>{clearTimeout(timer);clearTimeout(forceTimer);signal?.removeEventListener('abort',abort);};
   const finish=code=>{
-   if(settled)return;settled=true;cleanup();
+   if(settled)return;
+   // Timer dispatch can be delayed by other synchronous work. A zero exit
+   // code cannot authorize a result after the elapsed execution budget.
+   if(!failure&&expired())failure='PYTHON_STAGE_TIMEOUT';
+   settled=true;cleanup();
    if(failure||code!==0){
     const error=Error(failure||'PYTHON_STAGE_FAILED');
     if(!failure)error.reasonCode=stageFailureReason(Buffer.concat(chunks).toString('utf8'));
     reject(error);
    }
-   else resolve(Buffer.concat(chunks).toString('utf8'));
+   else{
+    const output=Buffer.concat(chunks).toString('utf8');
+    if(expired())reject(Error('PYTHON_STAGE_TIMEOUT'));else resolve(output);
+   }
   };
   child.stdout.on('data',chunk=>{
    bytes+=chunk.length;
@@ -56,7 +66,7 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
    if(signalGroup('SIGKILL'))failure=failure||'PYTHON_STAGE_DESCENDANTS_REMAIN';
   });
   child.on('close',finish);
-  timer=setTimeout(()=>terminate('PYTHON_STAGE_TIMEOUT'),timeoutMs);
+  timer=setTimeout(()=>terminate('PYTHON_STAGE_TIMEOUT'),Math.max(1,Math.ceil(deadline-performance.now())));
   signal?.addEventListener('abort',abort,{once:true});
   if(signal?.aborted)abort();
  });
