@@ -71,6 +71,51 @@ export async function verifyProductionClock(pool,bridge){
   const claims=await Promise.all([dbFor(pool).claimProduction(),dbFor(pool).claimProduction()]);
   assert.equal(claims.filter(Boolean).length,1);assert.equal(claims.find(Boolean).id,first);
   for(const id of [first,second])assert.deepEqual((await pool.query('SELECT attempt,fencing_token FROM pod_production_queue WHERE id=$1',[id])).rows[0],{attempt:1,fencing_token:'1'});
+
+  // Recovery must use the clock after a real relation-lock wait, not BEGIN.
+  // No production adapter or privileged production database is involved.
+  for(const state of ['processing','publishing'])for(const kind of ['elapsed-lease','future-lease','already-expired']){
+   const job=await addJob();
+   await pool.query(`UPDATE pod_production_queue SET state=$2,attempt=1,fencing_token=7,
+    lease_until=clock_timestamp()+$3::interval,updated_at='2026-01-01T00:00:00Z' WHERE id=$1`,
+    [job,state,kind==='elapsed-lease'?'1 second':kind==='future-lease'?'1 hour':'-1 second']);
+   const blocker=await pool.connect();let pending,workerPid;
+   const db=dbFor({connect:async()=>{
+    const client=await pool.connect();workerPid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+    return client;
+   }});
+   try{
+    await blocker.query('BEGIN');
+    await blocker.query('LOCK TABLE pod_production_queue IN SHARE MODE');
+    pending=db.recover().then(value=>({value}),error=>({error}));
+    let waiting=false;
+    for(let i=0;i<100;i++){
+     if(workerPid)waiting=(await pool.query('SELECT cardinality(pg_blocking_pids($1))>0 AS waiting',[workerPid])).rows[0].waiting;
+     if(waiting)break;await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    assert.equal(waiting,true,state+' recovery reached relation lock');
+    if(kind==='elapsed-lease'){
+     assert.equal((await pool.query(`SELECT a.xact_start<q.lease_until AS initially_valid
+      FROM pg_stat_activity a CROSS JOIN pod_production_queue q WHERE a.pid=$1 AND q.id=$2`,[workerPid,job])).rows[0].initially_valid,true);
+     await blocker.query(`SELECT pg_sleep(GREATEST(0,EXTRACT(EPOCH FROM lease_until-clock_timestamp()))+0.1)
+      FROM pod_production_queue WHERE id=$1`,[job]);
+    }
+    const barrier=(await blocker.query('SELECT clock_timestamp()::text AS stamp')).rows[0].stamp;
+    await blocker.query('COMMIT');
+    const result=await pending;assert.equal(result.error,undefined,state+' '+kind);
+    const current=(await pool.query(`SELECT state,reason_code,attempt,fencing_token,
+     updated_at >= $2::timestamptz AS timestamp_fresh FROM pod_production_queue WHERE id=$1`,[job,barrier])).rows[0];
+    assert.equal(current.state,kind==='future-lease'?state:state==='processing'?'blocked':'ambiguous',
+     state+' '+kind+' must recover according to wall time after the lock');
+    assert.equal(current.reason_code,kind==='future-lease'?null:state==='processing'?'PRODUCTION_LEASE_EXPIRED':'LEASE_EXPIRED');
+    assert.equal(current.timestamp_fresh,kind!=='future-lease','only recovered rows receive a fresh transition timestamp');
+    assert.equal(current.attempt,1);assert.equal(current.fencing_token,'7');
+    await db.recover();
+    assert.deepEqual((await pool.query('SELECT state,reason_code,attempt,fencing_token,updated_at >= $2::timestamptz AS timestamp_fresh FROM pod_production_queue WHERE id=$1',[job,barrier])).rows[0],current,
+     'repeating recovery must not requeue, consume attempts or change fencing');
+   }finally{await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
+   await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[job]);
+  }
  }finally{
   await pool.query('DELETE FROM pod_production_queue WHERE account_id=$1',[account]);
   await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
