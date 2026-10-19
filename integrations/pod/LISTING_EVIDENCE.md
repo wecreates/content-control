@@ -50,3 +50,24 @@ mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not upda
 queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
 for recovery investigation. Integrity establishes byte identity only, not source
 authorization, legal clearance, listing truth or verified income.
+
+## Submission receipt identity
+
+A successful adapter response must identify the listing with a primitive string
+containing non-whitespace text and at most 256 JavaScript string characters,
+matching the observation identity contract. The publisher and direct submitted
+database transition both enforce this boundary. Valid opaque IDs retain their
+original case, spacing and characters; they are never trimmed or invented.
+
+A blank, oversized, missing or non-string receipt cannot mark a job submitted.
+Because the adapter may already have created a listing, the publisher records
+ambiguous with SUBMISSION_UNCERTAIN and no malformed provider ID. It makes only
+one submission attempt. Existing authenticated, evidence-backed readback may
+resolve that ambiguous job to its actual listing ID without resubmission.
+A database failure still requires the existing ambiguity/recovery investigation;
+no successful state write or live listing is inferred from an exception.
+
+Synthetic adapter and signed-readback tests cover both malformed and valid
+receipt boundaries, plus direct database-transition admission. Test publication
+flags enable in-memory doubles only; live publication flags remain false and
+actual adapters/readback still require separate acceptance.

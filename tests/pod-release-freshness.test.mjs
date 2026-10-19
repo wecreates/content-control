@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {PodDB} from '../pod-db-bridge.js';
+import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {publishOnce} from '../scripts/pod_stealth_publisher.mjs';
+import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 import {economicsFixture} from './pod-economics-fixture.mjs';
 
 const key='synthetic-release-freshness-key-'.repeat(2);
@@ -127,4 +130,71 @@ test('adapter receives only validated economics and exact calculated contributio
   assert.equal(brief.economics.evidence_event_id,'fixture-economics');return {id:'fixture-receipt'};
  };
  assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+});
+
+test('blank and oversized provider receipts are ambiguous after exactly one submission',async()=>{
+ for(const platform of ['redbubble','kdp'])for(const id of [' ', '\t\r\n', 'x'.repeat(257)]){
+  const f=fixture(Date.now(),platform,true),finishes=[];let calls=0;
+  f.options.adapters[platform].submit=async()=>{calls++;return {id};};
+  f.options.db.finish=async(_job,state,receipt,reason)=>finishes.push({state,receipt,reason});
+  assert.equal((await publishOnce(f.options)).status,'AMBIGUOUS');
+  assert.equal(calls,1);
+  assert.deepEqual(finishes,[{state:'ambiguous',receipt:{},reason:'SUBMISSION_UNCERTAIN'}]);
+ }
+});
+test('missing and non-string provider receipts remain ambiguous',async()=>{
+ for(const receipt of [null,{}, {id:''},{id:['listing']},{id:42},{id:{}}]){
+  const f=fixture(),finishes=[];let calls=0;
+  f.options.adapters.redbubble.submit=async()=>{calls++;return receipt;};
+  f.options.db.finish=async(_job,state,value)=>finishes.push({state,value});
+  assert.equal((await publishOnce(f.options)).status,'AMBIGUOUS');assert.equal(calls,1);
+  assert.deepEqual(finishes,[{state:'ambiguous',value:{}}]);
+ }
+});
+test('valid opaque receipt IDs retain exact case, spacing and 256-character boundary',async()=>{
+ for(const id of ['Provider/Case-A?part=1',' leading-and-trailing ', 'é'.repeat(256)]){
+  const f=fixture(),finishes=[];
+  f.options.adapters.redbubble.submit=async()=>({id});
+  f.options.db.finish=async(_job,state,value)=>finishes.push({state,value});
+  assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+  assert.deepEqual(finishes,[{state:'submitted',value:{id}}]);
+ }
+});
+test('malformed receipt can reconcile from synthetic signed readback without submitting again',async()=>{
+ const f=fixture(),proof='c'.repeat(64),providerId='verified-readback-listing';let calls=0,state='publishing',savedId=null;
+ f.options.adapters.redbubble.submit=async()=>{calls++;return {id:' '};};
+ f.options.db.finish=async(_job,next,receipt)=>{state=next;savedId=receipt.id??null;};
+ assert.equal((await publishOnce(f.options)).status,'AMBIGUOUS');
+ const observation={schema_version:1,audience:'content-control:pod:listing-observation',issued_at_ms:Date.now()-1,
+  expires_at_ms:Date.now()+60000,job_id:'fixture-job',account_id:'fixture-account',platform:'redbubble',
+  package_sha256:f.manifest.package_sha256,status:'LIVE',provider_verified:true,
+  provider_id:providerId,provider_event_id:'fixture-observation',evidence_sha256:proof};
+ const writes=[];
+ const db={tx:async fn=>fn({query:async(sql,args)=>{
+  if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{account_id:observation.account_id,
+   platform:observation.platform,manifest:f.manifest,state,provider_id:savedId}]};
+  if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:proof,body_sha256:proof}]};
+  if(sql.includes('FROM pod_provider_inbox'))return {rowCount:0,rows:[]};
+  writes.push(sql);
+  if(sql.startsWith('UPDATE pod_production_queue')){state='published';savedId=args[1];}
+  return {rowCount:1};
+ }})};
+ assert.deepEqual(await reconcilePublication(db,sign(observation),key),{published:true});
+ assert.equal(state,'published');assert.equal(savedId,providerId);assert.equal(calls,1);assert.equal(writes.length,3);
+});
+
+const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
+test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
+ const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});
+ for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),['listing'],42,{}])
+  await assert.rejects(db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id}),/RECEIPT_INVALID/);
+});
+test('direct submitted transition preserves a valid opaque listing ID',async()=>{
+ const queries=[],id=' Provider/Case-A ';
+ const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>({
+  query:async(sql,args)=>{queries.push({sql,args});return {rows:sql.startsWith('UPDATE')?[{id:'fixture-job'}]:[]};},release(){}
+ })}});
+ await db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id});
+ assert.equal(queries.find(q=>q.sql.startsWith('UPDATE')).args[1],id);
+ assert.equal(queries.at(-1).sql,'COMMIT');
 });
