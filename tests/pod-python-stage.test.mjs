@@ -55,6 +55,34 @@ test('deadline and pre-aborted signal cannot succeed',async()=>{
   await assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal:controller.signal}),/PYTHON_STAGE_ABORTED/);
  });
 });
+for(const [name,elapsed,expired] of [['before',59999,false],['at',60000,true],['after',60001,true]]){
+ test(`stage completion ${name} elapsed deadline does not depend on timer dispatch`,async t=>{
+  await fixture("process.stdout.write('completed stage');",async options=>{
+   let now=100;const clock=t.mock.method(performance,'now',()=>now);
+   try{
+    const result=runPythonStage('fixture.cjs',[],{...options,timeoutMs:60000});
+    // Advance only the monotonic observation. The real 60-second timer has
+    // not fired; the actual child still exits and closes its output pipes.
+    now=100+elapsed;
+    if(expired)await assert.rejects(result,/^Error: PYTHON_STAGE_TIMEOUT$/);
+    else assert.equal(await result,'completed stage');
+   }finally{clock.mock.restore();}
+  });
+ });
+}
+test('stage output decoding cannot return success after the elapsed deadline',async t=>{
+ await fixture("process.stdout.write('completion-boundary-output');",async options=>{
+  let now=100;const clock=t.mock.method(performance,'now',()=>now);
+  const decode=Buffer.prototype.toString;
+  const decoded=t.mock.method(Buffer.prototype,'toString',function(...args){
+   const value=decode.apply(this,args);
+   if(value==='completion-boundary-output')now=60100;
+   return value;
+  });
+  try{await assert.rejects(runPythonStage('fixture.cjs',[],{...options,timeoutMs:60000}),/^Error: PYTHON_STAGE_TIMEOUT$/);}
+  finally{decoded.mock.restore();clock.mock.restore();}
+ });
+});
 test('structured stage failures expose only a fixed reason code',async()=>{
  for(const [stdout,expected] of [
   [JSON.stringify({status:'BLOCKED',reason_code:'NATIVE_RESOLUTION_INSUFFICIENT',private:'secret'}),'NATIVE_RESOLUTION_INSUFFICIENT'],
