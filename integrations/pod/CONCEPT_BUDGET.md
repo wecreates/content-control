@@ -30,3 +30,21 @@ performed.
 Tests distinguish controlled rollover-clock fixtures from actual PostgreSQL
 concurrency and advisory-lock waits. Neither is a live 100/1,000-per-day
 capacity measurement. Publication remains disabled.
+
+
+## Exact fingerprint text admission
+
+Signed intake fingerprints must be primitive, nonblank strings before any
+transaction or lock is acquired. Numbers, booleans, arrays and objects are
+rejected with INTAKE_SCOPE_INVALID rather than passed to PostgreSQL text
+parameters. The original envelope is authenticated before this shape check.
+Valid opaque strings retain their exact text, including leading/trailing spaces
+and Unicode; the consumer does not trim, normalize or derive a replacement.
+
+This prevents driver coercion from selecting an existing text fingerprint and
+returning or tombstoning its concept under a differently typed signed value.
+Exact-string deduplication, adverse-rights tombstones and unique-concept budget
+rules remain unchanged. Disposable PostgreSQL fixtures check numeric/array text
+aliases, unchanged rights, exact replay and budget counts. They do not establish
+authentic concept identity, actual regional clearance, market demand or measured
+production capacity. Publication remains disabled.

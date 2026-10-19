@@ -21,9 +21,9 @@ function fixture({rights_state='PASS',permanently_unpublished=false}={}){
   if(sql.includes('pg_advisory_xact_lock'))return {rows:[]};
   throw Error('Unexpected query');
  }});
- const request=(state,business='business')=>{
+ const request=(state,business='business',fingerprint='same-concept-fingerprint')=>{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:intake',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
-   concept_id:'retry-concept',business_id:business,fingerprint:'same-concept-fingerprint',rights_state:state});
+   concept_id:'retry-concept',business_id:business,fingerprint,rights_state:state});
   return {id:'retry-concept',businessId:business,intakeKey:key,envelope:{payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}};
  };
  return {db,concept,writes,request};
@@ -45,4 +45,29 @@ test('PASS duplicate is idempotent and consumes no additional concept budget',as
 test('matching fingerprint cannot return or mutate another business concept',async()=>{
  const f=fixture();await assert.rejects(f.db.registerIntake(f.request('UNKNOWN','other-business')),/INTAKE_FINGERPRINT_CONFLICT/);
  assert.equal(f.concept.rights_state,'PASS');assert.equal(f.writes.length,0);
+});
+
+for(const [name,values] of [['non-string',[1,true,[],['fingerprint'],{},null]],['blank',['',' ','\t\n','\u2003']]]){
+ test(`${name} fingerprint is rejected before database admission`,async()=>{
+  const f=fixture();let calls=0;f.db.tx=async()=>{calls++;throw Error('UNEXPECTED_DATABASE_ACCESS');};
+  for(const fingerprint of values)await assert.rejects(f.db.registerIntake(f.request('UNKNOWN','business',fingerprint)),/^Error: INTAKE_SCOPE_INVALID$/);
+  assert.equal(calls,0);assert.equal(f.writes.length,0);assert.equal(f.concept.rights_state,'PASS');
+ });
+}
+test('opaque string fingerprint reaches deduplication without trimming or normalization',async()=>{
+ const f=fixture(),original=f.db.tx,seen=[],fingerprint='  résumé / 😀 / "opaque"  ';
+ f.db.tx=fn=>original(client=>fn({query:async(sql,args)=>{
+  if(sql.includes('pg_advisory_xact_lock')||sql.includes('WHERE fingerprint'))seen.push(args[0]);
+  return client.query(sql,args);
+ }}));
+ const request=f.request('PASS','business',fingerprint);
+ assert.deepEqual(await f.db.registerIntake(request),{id:f.concept.id});
+ assert.deepEqual(seen,[fingerprint,fingerprint]);assert.equal(f.writes.length,0);
+ assert.equal(JSON.parse(request.envelope.payload).fingerprint,fingerprint);
+});
+test('fingerprint admission still authenticates the original envelope first',async()=>{
+ const f=fixture(),request=f.request('UNKNOWN','business',1);
+ request.envelope.signature='0'.repeat(64);
+ f.db.tx=async()=>assert.fail('database must not be reached');
+ await assert.rejects(f.db.registerIntake(request),/^Error: SIGNATURE_INVALID$/);
 });
