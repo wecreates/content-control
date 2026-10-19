@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 import {createGrantResolver} from '../integrations/pod/grant-client.mjs';
-import {readBridgeJSON} from '../integrations/pod/http-response.mjs';
+import {startOutboxRuntime} from '../integrations/pod/outbox-runtime.mjs';
+import {fetchBridgeResponse,readBridgeJSON} from '../integrations/pod/http-response.mjs';
 
 const key='k'.repeat(32);
 const env={POD_GRANT_URL:'https://authority.example/grant',POD_GRANT_AUTH_KEY:'a'.repeat(32),POD_UPSTREAM_KEY:key};
@@ -118,8 +119,8 @@ for(const caller of ['grant','outbox']){
  test(`${caller} forwards cancellation to a body that ignores fetch's signal`,async()=>{
   const controller=new AbortController();let reading,cancelled=0;
   const entered=new Promise(resolve=>reading=resolve),db=dbFixture();
-  const body=new ReadableStream({pull(){reading();return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});
-  const fetchImpl=async()=>new Response(body);
+  let body;
+  const fetchImpl=async()=>{body=new ReadableStream({pull(){reading();return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});return new Response(body);};
   const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'},{signal:controller.signal}):
    deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl,signal:controller.signal});
   await entered;controller.abort();
@@ -142,4 +143,105 @@ test('already aborted response is cancelled without acquiring a reader',async()=
  await assert.rejects(bounded(readBridgeJSON(new Response(body),
   {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal:AbortSignal.abort()})),{name:'AbortError'});
  assert.equal(cancelled,1);assert.equal(body.locked,false);
+});
+
+async function outcomeAfterTurn(operation){
+ let outcome;
+ operation.then(value=>outcome={value},error=>outcome={error});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(outcome,'cancelled operation must settle without transport cooperation');
+ return outcome;
+}
+for(const caller of ['grant','outbox']){
+ test(`${caller} abort interrupts a transport stalled before response headers`,async()=>{
+  const controller=new AbortController(),db=dbFixture();let entered;
+  const started=new Promise(resolve=>entered=resolve);
+  const fetchImpl=()=>{entered();return new Promise(()=>{});};
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'},{signal:controller.signal}):
+   deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl,signal:controller.signal});
+  await started;controller.abort();
+  const result=await outcomeAfterTurn(operation);
+  if(caller==='grant')assert.equal(result.error?.name,'AbortError');
+  else assert.deepEqual(result,{value:{delivered:0}});
+  assert.deepEqual(db.updated,[]);
+ });
+}
+test('already aborted grant never starts the authority transport',async()=>{
+ let calls=0;
+ const resolve=createGrantResolver({env,fetchImpl:()=>{calls++;return new Promise(()=>{});}});
+ const result=await outcomeAfterTurn(resolve({id:'job'},{signal:AbortSignal.abort()}));
+ assert.equal(result.error?.name,'AbortError');assert.equal(calls,0);
+});
+
+for(const ending of ['response','rejection']){
+ test(`late transport ${ending} after abort is discarded without delaying the caller`,async()=>{
+  const controller=new AbortController();let finish,entered,cancelled=0;
+  const started=new Promise(resolve=>entered=resolve);
+  const operation=fetchBridgeResponse(()=>new Promise((resolve,reject)=>{
+   finish=ending==='response'?resolve:reject;entered();
+  }),'https://authority.example',{signal:controller.signal});
+  await started;controller.abort();
+  assert.equal((await outcomeAfterTurn(operation)).error?.name,'AbortError');
+  if(ending==='response')finish(new Response(new ReadableStream({cancel(){cancelled++;return new Promise(()=>{});}})));
+  else finish(Error('private late failure'));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(cancelled,ending==='response'?1:0);
+ });
+}
+for(const caller of ['grant','outbox']){
+ test(`${caller} request deadline interrupts an uncooperative header wait`,async t=>{
+  const controller=new AbortController(),db=dbFixture();let entered,deadline;
+  t.mock.method(AbortSignal,'timeout',ms=>{deadline=ms;return controller.signal;});
+  const started=new Promise(resolve=>entered=resolve);
+  const fetchImpl=()=>{entered();return new Promise(()=>{});};
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'}):
+   deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl});
+  await started;controller.abort(new DOMException('deadline','TimeoutError'));
+  assert.equal((await outcomeAfterTurn(operation)).error?.name,'TimeoutError');
+  assert.equal(deadline,caller==='grant'?10000:15000);assert.deepEqual(db.updated,[]);
+ });
+}
+test('unsettled header calls retain a shared per-transport admission bound after abort',async()=>{
+ let calls=0;const deferred=[],controllers=[];
+ const fetchImpl=()=>{calls++;return calls<=32?new Promise((resolve,reject)=>deferred.push({resolve,reject})):Promise.resolve(new Response('{}'));};
+ const operations=Array.from({length:32},()=>{
+  const controller=new AbortController();controllers.push(controller);
+  return fetchBridgeResponse(fetchImpl,'https://authority.example',{signal:controller.signal});
+ });
+ const outcomes=Promise.all(operations.map(p=>p.catch(error=>error.name)));
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,32);
+ controllers.forEach(c=>c.abort());assert.deepEqual(await outcomes,Array(32).fill('AbortError'));
+ // Both clients use the same bound when they reuse a transport function.
+ await assert.rejects(createGrantResolver({env,fetchImpl})({id:'job'}),/^Error: BRIDGE_REQUEST_BUSY$/);
+ const db=dbFixture();
+ await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl}),/^Error: BRIDGE_REQUEST_BUSY$/);
+ assert.equal(calls,32);assert.deepEqual(db.updated,[]);
+ const independent=await fetchBridgeResponse(async()=>new Response('{}'),'https://authority.example',{});
+ assert.deepEqual(await independent.json(),{});
+ let cancelled=0;
+ deferred[0].resolve(new Response(new ReadableStream({cancel(){cancelled++;return new Promise(()=>{});}})));
+ deferred[1].reject(Error('late private detail'));
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(cancelled,1);
+ const recovered=await fetchBridgeResponse(fetchImpl,'https://authority.example',{});
+ assert.deepEqual(await recovered.json(),{});assert.equal(calls,33);
+ // Settle remaining transports so the fixture leaves no retained admissions.
+ deferred.slice(2).forEach(d=>d.reject(Error('late private detail')));
+ await new Promise(resolve=>setImmediate(resolve));
+});
+test('synchronous transport failures release admission and preserve the error',async()=>{
+ let calls=0;const failure=Error('transport failed'),fetchImpl=()=>{calls++;throw failure;};
+ for(let i=0;i<40;i++)await assert.rejects(fetchBridgeResponse(fetchImpl,'https://authority.example',{}),error=>error===failure);
+ assert.equal(calls,40);
+});
+test('outbox shutdown drains a header wait without accepting a late acknowledgement',async()=>{
+ const db=dbFixture();let entered,respond,cancelled=0;
+ const started=new Promise(resolve=>entered=resolve);
+ const fetchImpl=()=>new Promise(resolve=>{respond=resolve;entered();});
+ const runtime=startOutboxRuntime({db,env:{POD_OUTBOX_ENABLED:'true',POD_OUTBOX_URL:'https://authority.example/events',POD_OUTBOX_KEY:key},
+  deliver:(db,options)=>deliverOutbox(db,{...options,fetchImpl})});
+ await started;assert.deepEqual(await outcomeAfterTurn(runtime.stop()),{value:undefined});
+ assert.equal(runtime.status().status,'STOPPED');assert.equal(runtime.status().failures,0);
+ respond(new Response(new ReadableStream({start(c){c.enqueue(Buffer.from('{"accepted_event_id":"event"}'));},cancel(){cancelled++;return new Promise(()=>{});}})));
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(cancelled,1);assert.deepEqual(db.updated,[]);assert.equal(runtime.status().delivered,0);
 });

@@ -58,3 +58,19 @@ require signature, audience, scope, permission and lifetime verification.
 Request deadlines and redirect rejection remain unchanged. Failed events stay
 pending for the existing retry/backoff loop. Stream-fixture tests are not a live
 authority/inbox acceptance or a measured production capacity claim.
+
+Header acquisition independently observes the same request signal as body reads:
+grant requests retain their 10-second deadline and outbox requests their 15-second
+deadline even when a custom transport ignores abort. An already aborted grant
+does not dispatch a request. A late response after abort is discarded and its
+unlocked body is cancelled best-effort; late rejections are consumed. Neither a
+late acknowledgement nor a late grant can advance local state after cancellation.
+
+At most 32 unresolved header acquisitions may use one reused transport function
+in this process, shared across grant and outbox clients. An aborted call retains
+its slot until the underlying transport settles; overflow fails with
+BRIDGE_REQUEST_BUSY before dispatch. A transport that never settles requires
+repair or process restart to release those slots. This is an admission safety
+bound, not a measured capacity claim or a guarantee that a broken transport has
+stopped remote work. Existing retry/backoff and exact-acknowledgement rules remain
+in effect. There is no cached authorization fallback.
