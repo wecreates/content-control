@@ -8,7 +8,7 @@ import path from 'node:path';
 const hash='a'.repeat(64);
 const media={verified:true,candidate_sha256:hash,duration_seconds:50};
 const creativeHandoff=(review,hash)=>gate(review,hash,media);
-const review=()=>({candidate_sha256:hash,status:'PASS',method:'rendered_video_review',full_video_review:true,full_audio_review:true,duration_seconds:50,reviewed_intervals:[[0,25],[25,50]],checks:Object.fromEntries(CREATIVE_CHECKS.map(k=>[k,{pass:true,evidence:'Timestamped observed evidence for '+k}])),comparisons:['abcdefghijk','lmnopqrstuv'].map(id=>({url:`https://www.youtube.com/watch?v=${id}`,access_scope:'full audiovisual review',full_video_review:true,full_audio_review:true,observation:'Specific observation',applied_difference:'Specific application'})),unresolved_issues:[],publication_enabled:false,reviewer:{identity:'Independent test reviewer',method:'Full audiovisual playback inspection',evidence:'Traceable review session identifier'},findings:[],critical_count:0,major_count:0});
+const review=()=>({candidate_sha256:hash,status:'PASS',method:'rendered_video_review',full_video_review:true,full_audio_review:true,duration_seconds:50,reviewed_intervals:[[0,25],[25,50]],checks:Object.fromEntries(CREATIVE_CHECKS.map(k=>[k,{pass:true,evidence:'Timestamped observed evidence for '+k}])),comparisons:['abcdefghijk','lmnopqrstuv'].map((id,i)=>({artifact_sha256:String(i+1).repeat(64),duration_seconds:5,reviewed_intervals:[[0,5]],video_observation:"SYNTHETIC: observed moving test pattern",audio_observation:"SYNTHETIC: heard continuous test tone",url:`https://www.youtube.com/watch?v=${id}`,access_scope:'full audiovisual review',full_video_review:true,full_audio_review:true,observation:'Specific observation',applied_difference:'Specific application'})),unresolved_issues:[],publication_enabled:false,reviewer:{identity:'Independent test reviewer',method:'Full audiovisual playback inspection',evidence:'Traceable review session identifier'},findings:[],critical_count:0,major_count:0});
 test('only fully reviewed exact render can be offered',()=>{assert.equal(creativeHandoff(review(),hash).ready,true);assert.equal(creativeHandoff(review(),'b'.repeat(64)).ready,false);assert.equal(creativeHandoff(null,hash).ready,false)});
 test('samples, transcript and technical success do not replace audiovisual review',()=>{for(const field of ['full_audio_review','full_video_review']){const r=review();r[field]=false;assert.equal(creativeHandoff(r,hash).ready,false)}const r=review();r.reviewed_intervals=[[0,2],[45,50]];assert.equal(creativeHandoff(r,hash).ready,false)});
 test('unresolved issues, undocumented criteria and repeated reference block handoff',()=>{const r=review();r.unresolved_issues=['bad mix'];assert.equal(creativeHandoff(r,hash).ready,false);r.unresolved_issues=[];r.checks.hook.evidence='';assert.equal(creativeHandoff(r,hash).ready,false);r.checks=review().checks;r.comparisons=[r.comparisons[0],r.comparisons[0]];assert.equal(creativeHandoff(r,hash).ready,false)});
@@ -99,7 +99,7 @@ test('known-site non-content URLs and ambiguous unknown identities cannot certif
   ['https://example.org/video/1','https://example.org/video/2'],
   ['https://fb.watch/abc','https://fb.watch/def']
  ]){
-  const r=review();r.comparisons=urls.map(url=>({...r.comparisons[0],url}));
+  const r=review();r.comparisons=urls.map((url,i)=>({...r.comparisons[0],artifact_sha256:String(i+1).repeat(64),url}));
   assert.equal(gate(r,hash,media).ready,false,JSON.stringify(urls));
   assert.equal(validateReview(r,media).ready,false,JSON.stringify(urls));
  }
@@ -116,7 +116,7 @@ test('known social providers retain concrete distinct content identities',()=>{
   ['https://linkedin.com/feed/update/urn:li:activity:123','https://linkedin.com/feed/update/urn:li:activity:456'],
   ['https://reddit.com/comments/abc/','https://redd.it/xyz']
  ]){
-  const r=review();r.comparisons=urls.map(url=>({...r.comparisons[0],url}));
+  const r=review();r.comparisons=urls.map((url,i)=>({...r.comparisons[0],artifact_sha256:String(i+1).repeat(64),url}));
   assert.equal(gate(r,hash,media).ready,true,JSON.stringify(urls));
  }
 });
@@ -166,4 +166,32 @@ test('hosted V2 acceptance still blocks stale runtime and media evidence identit
  assert.equal(hostedAcceptance({}, {candidate_sha256:'b'.repeat(64)}).ready,false);
  assert.equal(hostedAcceptance({}, {media_evidence:{...media,candidate_sha256:'b'.repeat(64)}}).ready,false);
  assert.equal(hostedAcceptance({}, {publication_enabled:true}).ready,false);
+});
+
+test('reference coverage, exact identity and both observations are required by hosted and CLI gates',()=>{
+ const invalid=[
+  {artifact_sha256:undefined},{artifact_sha256:hash},{artifact_sha256:'not-a-digest'},
+  {duration_seconds:undefined},{duration_seconds:0},{duration_seconds:Infinity},{duration_seconds:'5'},
+  {reviewed_intervals:undefined},{reviewed_intervals:[[0,1],[4,5]]},{reviewed_intervals:[[.01,5]]},
+  {reviewed_intervals:[[0,4.99]]},{reviewed_intervals:[[0,6]]},{reviewed_intervals:[[0,true]]},
+  {video_observation:undefined},{audio_observation:undefined},{audio_observation:true},
+ ];
+ for(const patch of invalid){
+  const r=review();Object.assign(r.comparisons[0],patch);
+  assert.ok(gate(r,hash,media).reasons.includes('competitor_comparison_pending'),JSON.stringify(patch));
+  assert.equal(validateReview(r,media).ready,false);
+  assert.equal(hostedAcceptance({comparisons:r.comparisons}).ready,false);
+ }
+});
+
+test('distinct URLs with identical reference bytes cannot inflate benchmark',()=>{
+ const r=review();r.comparisons[1].artifact_sha256=r.comparisons[0].artifact_sha256;
+ assert.equal(gate(r,hash,media).ready,false);
+});
+
+test('reference coverage accepts overlapping unordered intervals but rejects accumulated sample gaps',()=>{
+ const r=review();r.comparisons[0].reviewed_intervals=[[2,5],[0,3]];
+ assert.equal(gate(r,hash,media).ready,true);
+ r.comparisons[0].reviewed_intervals=Array.from({length:100},(_,i)=>[i*.05,i*.05+.000001]);
+ assert.equal(gate(r,hash,media).ready,false);
 });

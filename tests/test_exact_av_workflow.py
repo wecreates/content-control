@@ -151,7 +151,11 @@ class ExactAVWorkflowTests(unittest.TestCase):
                              'evidence': 'Synthetic offline workflow test evidence identifier'},
                 'reviewed_intervals': [[0, duration]],
                 'checks': {name: {'pass': True, 'evidence': 'Synthetic schema evidence, not creative approval'} for name in self.checks},
-                'comparisons': [{'url': url, 'full_video_review': True, 'full_audio_review': True,
+                'comparisons': [{'artifact_sha256': hashlib.sha256(('SYNTHETIC '+url).encode()).hexdigest(),
+                                 'duration_seconds': 5, 'reviewed_intervals': [[0,5]],
+                                 'video_observation': 'SYNTHETIC visual fixture observation',
+                                 'audio_observation': 'SYNTHETIC audio fixture observation',
+                                 'url': url, 'full_video_review': True, 'full_audio_review': True,
                                  'access_scope': 'full audiovisual review',
                                  'observation': 'Synthetic schema fixture, never actual reference observation',
                                  'applied_difference': 'Synthetic comparison evidence, no creative approval'}

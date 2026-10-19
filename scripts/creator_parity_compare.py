@@ -16,8 +16,34 @@ def safe_num(v, default=None):
         return default
 
 def full_av_access(report):
+    if not isinstance(report, dict):
+        return False
     access = report.get("source_av_access", {})
-    return all(access.get(k) is True for k in ("visual", "audio", "complete_end_to_end"))
+    if not isinstance(access, dict) or not all(access.get(k) is True for k in ("visual", "audio", "complete_end_to_end")):
+        return False
+    digest = report.get('artifact_sha256')
+    duration = report.get('duration_seconds')
+    intervals = report.get('reviewed_intervals')
+    if not isinstance(digest, str) or not re.fullmatch('[a-f0-9]{64}', digest):
+        return False
+    if type(duration) not in (int, float) or safe_num(duration) is None or duration <= 0:
+        return False
+    if not all(isinstance(report.get(k), str) and len(report[k].strip()) >= 12
+               for k in ('video_observation', 'audio_observation')):
+        return False
+    if not isinstance(intervals, list) or not intervals:
+        return False
+    tolerance = math.ulp(float(duration)) * 8
+    for row in intervals:
+        if (not isinstance(row, list) or len(row) != 2 or
+            any(type(n) not in (int, float) or safe_num(n) is None for n in row) or
+            not 0 <= row[0] < row[1] <= duration + tolerance):
+            return False
+    end = gaps = 0
+    for start, stop in sorted(intervals):
+        gaps += max(0, start - end)
+        end = max(end, stop)
+    return gaps + max(0, duration - end) <= tolerance
 
 def source_identity(report):
     try:
@@ -49,11 +75,15 @@ def collect_competitor_signals(reports):
         "lecture_failure_modes": [],
     }
     seen = set()
+    digests = set()
     for r in reports:
+        if not full_av_access(r):
+            continue
         identity, is_reel = source_identity(r)
-        if not full_av_access(r) or not identity or identity in seen:
+        if not identity or identity in seen or r['artifact_sha256'] in digests:
             continue
         seen.add(identity)
+        digests.add(r['artifact_sha256'])
         signals["full_av_count"] += 1
         signals["instagram_reel_full_av_count"] += int(is_reel)
         creator = r.get("creator")
@@ -93,7 +123,9 @@ def candidate_bool(candidate, key):
     return bool(v) if isinstance(v, bool) else None
 
 def compare(candidate, competitor_reports, rubric):
-    benchmark = collect_competitor_signals(competitor_reports)
+    benchmark = collect_competitor_signals([
+        r for r in competitor_reports if isinstance(r, dict)
+        and r.get('artifact_sha256') != candidate.get('artifact_sha256')])
     faults = []
     repairs = []
 
