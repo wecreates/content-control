@@ -13,6 +13,84 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import pod_common as common
 from pod_asset_generator import input_snapshot
+from pod_original_art import create_art
+
+
+class OriginalArtOutputTests(unittest.TestCase):
+    spec = {'concept_id': 'output-fixture', 'size_px': [300, 300],
+            'palette': [[0, 0, 0, 255], [80, 90, 120, 255]]}
+
+    def test_collision_after_initial_check_preserves_concurrent_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'art.png'
+            target.write_bytes(b'concurrent-original')
+            with patch.object(Path, 'exists', return_value=False):
+                with self.assertRaises((ValueError, FileExistsError)):
+                    create_art(self.spec, target)
+            self.assertEqual(target.read_bytes(), b'concurrent-original')
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
+
+    def test_dangling_symlink_never_creates_its_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target, destination = Path(tmp) / 'art.png', Path(tmp) / 'other.png'
+            target.symlink_to(destination)
+            with self.assertRaises((ValueError, OSError)):
+                create_art(self.spec, target)
+            self.assertTrue(target.is_symlink())
+            self.assertFalse(destination.exists())
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
+
+    def test_success_is_private_deterministic_and_hash_bound(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            outputs = [Path(tmp) / name for name in ('one.png', 'two.png')]
+            receipts = [create_art(self.spec, target) for target in outputs]
+            self.assertEqual(receipts[0], receipts[1])
+            for target, receipt in zip(outputs, receipts):
+                self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+                self.assertEqual(receipt['source_sha256'], common.digest(target))
+                self.assertFalse(receipt['publication_enabled'])
+                self.assertEqual(receipt['rights_status'], 'UNASSESSED')
+            self.assertEqual(set(Path(tmp).iterdir()), set(outputs))
+
+    def test_failed_encoder_leaves_no_output_or_temporary_file(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'art.png'
+            def fail(_image, stream, *args, **kwargs):
+                if hasattr(stream, 'write'):
+                    stream.write(b'partial-fixture')
+                else:
+                    Path(stream).write_bytes(b'partial-fixture')
+                raise OSError('encoder fixture')
+            with patch.object(Image.Image, 'save', autospec=True, side_effect=fail):
+                with self.assertRaisesRegex(OSError, '^encoder fixture$'):
+                    create_art(self.spec, target)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_failed_file_sync_does_not_publish_partial_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'art.png'
+            with patch('pod_original_art.os.fsync', side_effect=OSError('sync fixture')):
+                with self.assertRaisesRegex(OSError, '^sync fixture$'):
+                    create_art(self.spec, target)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_failed_directory_sync_preserves_complete_output_without_receipt(self):
+        real_sync = os.fsync
+        def sync(fd):
+            if stat.S_ISDIR(os.fstat(fd).st_mode):
+                raise OSError('directory fixture')
+            real_sync(fd)
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'art.png'
+            with patch('pod_original_art.os.fsync', side_effect=sync):
+                with self.assertRaisesRegex(OSError, '^directory fixture$'):
+                    create_art(self.spec, target)
+            from PIL import Image
+            with Image.open(target) as image:
+                self.assertEqual(image.size, (300, 300))
+                image.verify()
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
 
 
 class BinaryInputTests(unittest.TestCase):
