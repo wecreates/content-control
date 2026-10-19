@@ -145,7 +145,8 @@ test('oversized preview rejects promptly even when stream cancellation never set
   start(c){c.enqueue(new Uint8Array(262145));},cancel(){cancelled++;return new Promise(()=>{});}
  })));
  const operation=h.context.openPreview('fixture-job');
- const settled=await Promise.race([operation.then(()=>true),new Promise(r=>setTimeout(()=>r(false),100))]);
+ let settled=false;operation.then(()=>{settled=true;});
+ for(let i=0;i<10&&!settled;i++)await flush();
  assert.equal(settled,true,'transport cleanup must not hold the size rejection');
  assert.equal(cancelled,1);assert.equal(h.get('notice').textContent,'Response exceeds the preview limit.');
 });
