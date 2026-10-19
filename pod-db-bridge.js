@@ -231,6 +231,7 @@ export class PodDB {
  });}
  async finish(job,state,receipt={},reason=null){
   if(!['blocked','ambiguous','submitted'].includes(state))throw Error('INVALID_FINISH');
+  if(state==='submitted'&&(typeof receipt?.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256))throw Error('RECEIPT_INVALID');
   return this.tx(async c=>{
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='publishing' RETURNING id`,[state,receipt.id||null,reason,job.id,job.fencing_token]);

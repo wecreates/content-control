@@ -36,7 +36,9 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true')throw Error('PUBLICATION_DISABLED');
   submitted=true;
   const receipt=await adapter.submit({brief,manifest,idempotencyKey:job.idempotency_key,signal});
-  if(typeof receipt?.id!=='string'||receipt.id.length===0)throw Error('RECEIPT_MISSING');
+  // Match the observer's opaque listing-ID contract. A malformed receipt is
+  // uncertain submission, never a submitted row that readback cannot reconcile.
+  if(typeof receipt?.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256)throw Error('RECEIPT_INVALID');
   await db.finish(job,'submitted',{id:receipt.id});
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){
