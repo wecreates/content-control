@@ -3,17 +3,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto as crypto} from 'node:crypto';
+import {createPlaybackTracker} from '../comparison-ui/playback.mjs';
 import {finding,receipt} from '../comparison-ui/model.mjs';
 import {fileIdentity} from '../comparison-ui/hash.mjs';
 
 const source=fs.readFileSync(new URL('../comparison-ui/app.mjs',import.meta.url),'utf8').replace(/^import .*;\r?\n/gm,'');
 function app({workerError=false,postError=false}={}){
  const elements=new Map(),workers=[],downloads=[],objects=new Map(),events={},confirmations=[];
- let objectId=0,confirmResult=true;
+ let objectId=0,confirmResult=true,wall=0;
  const element=id=>{
   if(elements.has(id))return elements.get(id);
   const e={id,value:'',textContent:'',dataset:{},files:[],children:[],paused:true,currentTime:0,duration:5,videoWidth:360,videoHeight:640,muted:id==='reference',playbackRate:1,
-   replaceChildren(...children){this.children=children;},pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();},load(){},click(){if(this.href)downloads.push(objects.get(this.href));}};
+   addEventListener(event,fn){this['event_'+event]=fn;},replaceChildren(...children){this.children=children;},pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();},load(){},click(){if(this.href)downloads.push(objects.get(this.href));}};
   elements.set(id,e);return e;
  };
  element('audio').value='candidate';element('speed').value='1';element('category').value='Hook';
@@ -21,7 +23,7 @@ function app({workerError=false,postError=false}={}){
   static createObjectURL(value){const key=`blob:test-${++objectId}`;objects.set(key,value);return key;}
   static revokeObjectURL(key){objects.delete(key);}
  }
- vm.runInNewContext(source,{document:{getElementById:element,createElement:tag=>element(`created-${tag}-${elements.size}`)},window:{addEventListener:(name,fn)=>events[name]=fn},confirm:message=>{confirmations.push(message);return confirmResult;},URL:LocalURL,Blob,finding,receipt,setTimeout:()=>{},createHashWorker:()=>{
+ vm.runInNewContext(source,{crypto,performance:{now:()=>wall},createPlaybackTracker,document:{visibilityState:'visible',addEventListener(){},getElementById:element,createElement:tag=>element(`created-${tag}-${elements.size}`)},window:{addEventListener:(name,fn)=>events[name]=fn},confirm:message=>{confirmations.push(message);return confirmResult;},URL:LocalURL,Blob,finding,receipt,setTimeout:()=>{},createHashWorker:()=>{
   if(workerError)throw Error('Worker blocked');
   const worker={postMessage(file){if(postError)throw Error("File could not be cloned");this.file=file;},terminate(){this.terminated=true;}};workers.push(worker);return worker;
  }});
@@ -30,7 +32,8 @@ function app({workerError=false,postError=false}={}){
  const pair=async()=>{for(const name of ['candidate','reference']){select(name,name+'.mp4');await complete(name);}};
  const draft=()=>{element('observation').value='Observed on the original candidate';element('repair').value='Repair the original candidate';};
  const exportJson=async()=>{element('export').onclick();return downloads.length?JSON.parse(await downloads.at(-1).text()):null;};
- return {element,workers,downloads,events,confirmations,select,complete,pair,draft,exportJson,setConfirm:value=>confirmResult=value};
+ const tick=(name,time,clock)=>{wall=clock;const v=element(name);v.currentSrc=v.src;v.currentTime=time;v.readyState=4;v.volume=1;v.paused=false;v.event_timeupdate();};
+ return {tick,element,workers,downloads,events,confirmations,select,complete,pair,draft,exportJson,setConfirm:value=>confirmResult=value};
 }
 
 test('real app selection, file identity, independent timestamps and export remain pending',async()=>{
@@ -107,4 +110,40 @@ test('worker message and error failures block export, and reselection recovers',
   assert.equal(a.element('candidate-status').dataset.verified,'false');assert.equal(await a.exportJson(),null);
   a.select('candidate','recovered.mp4');await a.complete('candidate');assert.equal((await a.exportJson()).candidate.filename,'recovered.mp4');
  }
+});
+
+test('playback export binds current session to file hash and replacement resets session',async()=>{
+ const a=app();await a.pair();const before=await a.exportJson();
+ assert.equal(before.playback_sessions.candidate.artifact_sha256,before.candidate.sha256);
+ assert.equal(before.playback_sessions.candidate.perception_verified,false);
+ a.select('candidate','new.mp4');await a.complete('candidate');const after=await a.exportJson();
+ assert.notEqual(after.playback_sessions.candidate.session_id,before.playback_sessions.candidate.session_id);
+ assert.equal(after.playback_sessions.candidate.artifact_sha256,after.candidate.sha256);
+ assert.deepEqual(after.playback_sessions.candidate.video_playback_intervals,[]);
+});
+
+test('app records unmuted playback separately and cannot credit a seek gap',async()=>{
+ const a=app();await a.pair();
+ for(const n of ['candidate','reference']){a.tick(n,0,0);a.tick(n,.25,250);}
+ let r=await a.exportJson();
+ assert.deepEqual(r.playback_sessions.candidate.video_playback_intervals,[[0,.25]]);
+ assert.deepEqual(r.playback_sessions.candidate.unmuted_playback_intervals,[[0,.25]]);
+ assert.deepEqual(r.playback_sessions.reference.unmuted_playback_intervals,[]);
+ a.element('audio').value='reference';a.element('audio').onchange();
+ a.element('reference').event_volumechange();
+ a.tick('reference',.5,500);a.tick('reference',.75,750);
+ a.element('reference').event_seeking();a.tick('reference',4,1000);a.tick('reference',4.25,1250);
+ r=await a.exportJson();
+ assert.deepEqual(r.playback_sessions.reference.unmuted_playback_intervals,[[.5,.75],[4,4.25]]);
+ assert.equal(r.full_audio_review,false);assert.equal(r.full_video_review,false);
+});
+
+test('play request anchors exact start without granting coverage before progression',async()=>{
+ const a=app();await a.pair();
+ for(const name of ['candidate','reference']){const v=a.element(name);v.currentSrc=v.src;v.readyState=4;v.volume=1;}
+ await a.element('play').onclick();
+ let r=await a.exportJson();assert.deepEqual(r.playback_sessions.reference.video_playback_intervals,[]);
+ a.tick('reference',.00375,3.75);
+ r=await a.exportJson();assert.deepEqual(r.playback_sessions.reference.video_playback_intervals,[[0,.00375]]);
+ assert.deepEqual(r.playback_sessions.reference.unmuted_playback_intervals,[]);assert.equal(r.full_video_review,false);
 });

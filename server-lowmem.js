@@ -16,6 +16,8 @@ const socialService=await initializeSocialService();
 import {createRepositoryIntegrationRouter} from "./repository-integrations.js";
 
 import {creativeHandoff} from "./creative-handoff.js";
+import {createHostedComparisonGate} from "./scripts/hosted_comparison_receipt.mjs";
+const hostedComparisonGate=createHostedComparisonGate();
 
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
 
@@ -95,8 +97,10 @@ function episode3Acceptance(){
 function v2Acceptance(){
   const h=readJson(v2HealthPath);
   const runtime=readJson(path.resolve("state/v2-runtime-validation.json"));
-  const actual=fileHash(v2Output),expected=h?.candidate_sha256||null;
-  const handoff=creativeHandoff(h?.creative_review,actual,h?.media_evidence);
+  const binding=hostedComparisonGate(h?.creative_review,v2Output,h?.comparison_evidence?.receipt_path);
+  const actual=binding.candidate_sha256||null,expected=h?.candidate_sha256||null;
+  const structural=creativeHandoff(h?.creative_review,actual,h?.media_evidence);
+  const handoff={...binding,ready:structural.ready&&binding.ready,reasons:[...new Set([...structural.reasons,...binding.reasons])],publication:false};
   const ready=Boolean(handoff.ready&&runtime?.status==="READY"&&runtime?.candidate_sha256===actual&&h?.status==="READY"&&h?.publication_enabled===false&&h?.creative_qa===true&&h?.technical_qa===true&&h?.visual_parity_qa===true&&actual&&expected&&actual===expected);
   return {health:h,actual,expected,ready,runtime,handoff};
 }
@@ -370,7 +374,7 @@ function v2Draft(){
 app.get("/v2/draft/status",(req,res)=>{const d=v2Draft();res.setHeader("Cache-Control","no-store");res.status(d.ready?200:503).json({status:d.ready?"DRAFT":"NOT_AVAILABLE",publication:false,production_approved:false,voice_provider:d.health?.voice_provider||null,watchUrl:null,handoff_status:"INTERNAL_REVIEW_ONLY",full_av_review:false});});
 app.get("/v2/health",(req,res)=>{
   const a=v2Acceptance();res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,creativeHandoff:a.handoff,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:v2Draft().ready?"free_dialogue_generated_review_pending":"free_generation_pending",voiceProvider:"kokoro_local_cpu",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
+  res.status(a.ready?200:503).json({ok:a.ready,id:"content-control-v2",publication:false,runtimeValidation:a.runtime,creativeHandoff:a.handoff,qaStatus:a.ready?"READY":"BLOCKED",creativeQa:a.health?.creative_qa===true,technicalQa:a.health?.technical_qa===true,visualParityQa:a.health?.visual_parity_qa===true,expectedSha256:a.expected,actualSha256:a.actual,watchUrl:a.ready?"/v2/watch":null,dependencies:{characterAudioManifest:readJson(path.resolve("state/v2-draft.json"))?.status==="DRAFT"?"free_dialogue_reported_review_pending":"free_generation_pending",voiceProvider:"kokoro_local_cpu",renderedCreativeReview:fs.existsSync(path.resolve("projects/v2/amex-vs-chase-boss-fight/rendered-creative-review.json"))?"present_not_validated_here":"missing",paidGenerationEnabled:false}});
 });
 app.get("/v2/media",(req,res)=>{res.setHeader("Cache-Control","no-store, max-age=0");const a=v2Acceptance();if(!a.ready)return res.status(409).json({error:"V2 is not READY",publication:false});return streamMp4(req,res,v2Output,a.expected);});
 app.get("/v2/watch",(req,res)=>{

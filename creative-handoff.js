@@ -14,7 +14,7 @@ function referenceIdentity(raw) {
  } catch {return null;}
 }
 const documented=value=>typeof value==='string'&&value.trim().length>=12;
-function completeCoverage(coverage,duration) {
+export function completeCoverage(coverage,duration) {
  if(!Number.isFinite(duration)||duration<=0||!Array.isArray(coverage)||!coverage.length)return false;
  // One roundoff budget for the entire union, never a per-gap frame allowance.
  const tolerance=Number.EPSILON*Math.max(1,duration)*8;
