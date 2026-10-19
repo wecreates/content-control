@@ -10,13 +10,31 @@ export async function verifyConceptBudget(pool,bridge){
   return {id,businessId,intakeKey:key,dailyLimit:2,envelope:{payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}};
  };
  const settings={bridge,expiresAt:'2099-01-01T00:00:00Z'},db=new PodDB({pool,...settings});
- const rolloverBusiness=crypto.randomUUID(),blockedBusiness=crypto.randomUUID();
+ const rolloverBusiness=crypto.randomUUID(),blockedBusiness=crypto.randomUUID(),aliasBusiness=crypto.randomUUID();
  try{
   const results=await Promise.allSettled(Array.from({length:3},()=>db.registerIntake(intake())));
   assert.equal(results.filter(x=>x.status==='fulfilled').length,2);
   assert.equal(results.find(x=>x.status==='rejected').reason.message,'DAILY_CONCEPT_LIMIT');
   assert.equal((await pool.query('SELECT used FROM pod_daily_concept_budget WHERE business_id=$1',[business])).rows[0].used,2);
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_concepts WHERE business_id=$1',[business])).rows[0].n,2);
+
+  // Native pg text encoding can make a number or array alias an opaque string.
+  // A signed malformed fingerprint must not deduplicate/tombstone that record.
+  const signed=(fingerprint,rights_state='PASS')=>{
+   const request=intake(aliasBusiness),payload=JSON.stringify({...JSON.parse(request.envelope.payload),fingerprint,rights_state});
+   return {...request,envelope:{payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}};
+  };
+  for(const value of [crypto.randomInt(100000000,1000000000),['fixture-'+crypto.randomUUID()]]){
+   const fingerprint=(await pool.query('SELECT $1::text AS fingerprint',[value])).rows[0].fingerprint;
+   const canonical=await db.registerIntake(signed(fingerprint));
+   await assert.rejects(db.registerIntake(signed(value,'UNKNOWN')),/^Error: INTAKE_SCOPE_INVALID$/);
+   const row=(await pool.query('SELECT fingerprint,rights_state,permanently_unpublished FROM pod_concepts WHERE id=$1',[canonical.id])).rows[0];
+   assert.deepEqual(row,{fingerprint,rights_state:'PASS',permanently_unpublished:false});
+   assert.deepEqual(await db.registerIntake(signed(fingerprint)),{id:canonical.id});
+  }
+  assert.equal((await pool.query('SELECT used FROM pod_daily_concept_budget WHERE business_id=$1',[aliasBusiness])).rows[0].used,2);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_concepts WHERE business_id=$1',[aliasBusiness])).rows[0].n,2);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE kind='pod.concept.rights_blocked' AND payload->>'business_id'=$1",[aliasBusiness])).rows[0].n,0);
 
   // Controlled clock responses simulate midnight; all budget/concept writes and
   // the subsequent rollback are real PostgreSQL transactions, not an in-memory DB.
@@ -52,7 +70,8 @@ export async function verifyConceptBudget(pool,bridge){
    assert.ok(row.created_at>=released);assert.equal(row.same_day,true);
   }finally{await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
  }finally{
-  await pool.query('DELETE FROM pod_concepts WHERE business_id=ANY($1::text[])',[[business,rolloverBusiness,blockedBusiness]]);
-  await pool.query('DELETE FROM pod_daily_concept_budget WHERE business_id=ANY($1::text[])',[[business,rolloverBusiness,blockedBusiness]]);
+  await pool.query("DELETE FROM pod_events WHERE kind='pod.concept.rights_blocked' AND payload->>'business_id'=$1",[aliasBusiness]);
+  await pool.query('DELETE FROM pod_concepts WHERE business_id=ANY($1::text[])',[[business,rolloverBusiness,blockedBusiness,aliasBusiness]]);
+  await pool.query('DELETE FROM pod_daily_concept_budget WHERE business_id=ANY($1::text[])',[[business,rolloverBusiness,blockedBusiness,aliasBusiness]]);
  }
 }

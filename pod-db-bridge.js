@@ -35,7 +35,7 @@ export class PodDB {
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
-  if(intake.concept_id!==id||intake.business_id!==businessId||!intake.fingerprint||
+  if(intake.concept_id!==id||intake.business_id!==businessId||typeof intake.fingerprint!=='string'||intake.fingerprint.trim().length===0||
     !['PASS','FAIL','UNKNOWN'].includes(intake.rights_state))throw Error('INTAKE_SCOPE_INVALID');
   return this.tx(async c=>{
    // Serialize fingerprint deduplication so duplicate retries never consume unique-concept budget.
