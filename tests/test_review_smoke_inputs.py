@@ -6,7 +6,10 @@ import sys
 import tempfile
 import textwrap
 import unittest
-from scripts.review_smoke_inputs import inspect
+from unittest.mock import patch
+from types import SimpleNamespace
+import os
+from scripts.review_smoke_inputs import inspect, observed_hash
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -49,6 +52,45 @@ class SmokeInputTests(unittest.TestCase):
         self.assertEqual(result['status'], 'BLOCKED')
         self.assertIn('candidate_binding_missing_or_mismatched', result['reasons'])
         self.assertIn('caption_bytes_missing_or_invalid', result['reasons'])
+
+    def stat_with(self, info, **changes):
+        values = {k: getattr(info, k) for k in ('st_dev', 'st_ino', 'st_size', 'st_mtime_ns', 'st_ctime_ns', 'st_mode')}
+        return SimpleNamespace(**(values | changes))
+
+    def test_unchanged_file_accepts_different_stat_and_fstat_ctime_semantics(self):
+        original = Path.stat
+        def path_stat(path, *args, **kwargs):
+            info = original(path, *args, **kwargs)
+            return self.stat_with(info, st_ctime_ns=info.st_ctime_ns + 1000000000)
+        with patch.object(Path, 'stat', path_stat):
+            self.assertEqual(inspect(self.root)['status'], 'INPUTS_BOUND')
+
+    def test_path_change_timestamp_still_detects_mutation(self):
+        path = self.root / 'public-review/episode1-v10-free.mp4'
+        info = path.stat()
+        with patch.object(Path, 'stat', side_effect=[info, self.stat_with(info, st_ctime_ns=info.st_ctime_ns + 1)]):
+            with self.assertRaisesRegex(ValueError, 'Input replaced'):
+                observed_hash(path, 1024)
+
+    def test_descriptor_change_timestamp_still_detects_mutation(self):
+        path = self.root / 'public-review/episode1-v10-free.mp4'
+        original = os.fstat
+        calls = 0
+        def fstat(fd):
+            nonlocal calls
+            calls += 1
+            info = original(fd)
+            return self.stat_with(info, st_ctime_ns=info.st_ctime_ns + (calls - 1))
+        with patch('scripts.review_smoke_inputs.os.fstat', fstat):
+            with self.assertRaisesRegex(ValueError, 'Input changed'):
+                observed_hash(path, 1024)
+
+    def test_path_replacement_still_detected_even_when_size_and_times_match(self):
+        path = self.root / 'public-review/episode1-v10-free.mp4'
+        info = path.stat()
+        with patch.object(Path, 'stat', side_effect=[info, self.stat_with(info, st_ino=info.st_ino + 1)]):
+            with self.assertRaisesRegex(ValueError, 'Input replaced'):
+                observed_hash(path, 1024)
 
     def receipt_script(self, workflow, step):
         source = (REPO / '.github/workflows' / workflow).read_text()

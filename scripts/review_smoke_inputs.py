@@ -9,12 +9,18 @@ import stat
 
 
 def observed_hash(path, limit):
+    # Compare change timestamps only within the same API: Windows Python can
+    # expose different creation/change-time semantics through stat and fstat.
+    path_before = path.stat()
     fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NONBLOCK', 0))
     try:
         before = os.fstat(fd)
-        identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        shared_identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns)
+        identity = lambda s: shared_identity(s) + (s.st_ctime_ns,)
         if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= limit:
             raise ValueError('Bounded regular file required')
+        if shared_identity(before) != shared_identity(path_before):
+            raise ValueError('Input replaced before open')
         h, size = hashlib.sha256(), 0
         with os.fdopen(fd, 'rb') as stream:
             fd = None
@@ -25,7 +31,7 @@ def observed_hash(path, limit):
                 h.update(chunk)
             if size != before.st_size or identity(os.fstat(stream.fileno())) != identity(before):
                 raise ValueError('Input changed')
-        if identity(path.stat()) != identity(before):
+        if identity(path.stat()) != identity(path_before):
             raise ValueError('Input replaced')
         return h.hexdigest()
     finally:
