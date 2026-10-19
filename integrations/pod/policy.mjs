@@ -36,7 +36,10 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  if(publishing||job.mode==='LAUNCH'){
   if(grant.publication_permission!==true)throw Error('PUBLICATION_PERMISSION_REQUIRED');
  }else if(grant.production_permission!==true&&grant.publication_permission!==true)throw Error('PRODUCTION_PERMISSION_REQUIRED');
- if(!Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
+ // Property lookups coerce arrays/objects; launch checks use exact strings.
+ // Both must interpret the same mode before any brief is authorized.
+ if(typeof job.mode!=='string'||typeof grant.max_mode!=='string'||
+  !Object.hasOwn(modes,job.mode)||!Object.hasOwn(modes,grant.max_mode)||modes[job.mode]>modes[grant.max_mode]) throw Error('READINESS_CEILING');
  if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
  if(publishing&&(job.mode!=='LAUNCH'||typeof job.package_sha256!=='string'||
   !/^[a-f0-9]{64}$/.test(job.package_sha256)||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');

@@ -23,3 +23,16 @@ This applies to every audience using the shared verifier, including QA and
 intake evidence. Normal Money Factory integer timestamps remain compatible.
 Clock validation is not proof of synchronized production clocks, current grants
 or live revocation; those acceptance checks remain required.
+
+
+## Exact readiness mode types
+
+Both the authority and consumer require primitive, exact RESEARCH, PRELAUNCH or
+LAUNCH strings for the requested mode and readiness ceiling. Arrays and objects
+are rejected before a grant or accepted brief is returned. JavaScript property
+lookups otherwise coerce an array such as ["LAUNCH"] into a mode name while exact
+launch comparisons do not, which can skip launch-specific checks. Invalid inputs
+are rejected rather than normalized; valid mode ceilings, publication permission,
+launch readiness and economic checks are unchanged. Regression fixtures verify
+issuer, HTTP snapshot and signed-consumer rejection; they do not establish live
+authority mounting, approval, revocation, or publication acceptance.
