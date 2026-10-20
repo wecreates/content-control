@@ -1,6 +1,7 @@
 """Short-lived evidence policy parity, using only synthetic signing keys."""
 import os
 import hashlib
+import hmac
 import io
 import json
 import tempfile
@@ -248,6 +249,96 @@ class EvidenceLifetimeTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'EVIDENCE_SCOPE_INVALID'):
             self.verify(audience='pod:other')
 
+
+class EvidenceJSONTests(unittest.TestCase):
+    def setUp(self):
+        self.key = 'synthetic-json-evidence-key-' * 2
+        self.env = patch.dict(os.environ, {'POD_TEST_EVIDENCE_KEY': self.key})
+        self.env.start()
+        self.addCleanup(self.env.stop)
+        self.clock = patch('pod_common.time.time', return_value=2000)
+        self.clock.start()
+        self.addCleanup(self.clock.stop)
+        self.fields = ('"schema_version":1,"audience":"pod:test",'
+                       '"issued_at_ms":2000000,"expires_at_ms":2900000')
+
+    def signed(self, payload):
+        return {'payload': payload, 'signature': hmac.new(
+            self.key.encode(), payload.encode(), hashlib.sha256).hexdigest()}
+
+    def verify(self, envelope):
+        return verified(envelope, 'POD_TEST_EVIDENCE_KEY', 'pod:test')
+
+    def test_duplicate_decoded_keys_cannot_override_authorization_or_nested_review(self):
+        for fields in ('"collection_authorized":false,"collection_authorized":true',
+                       '"revoked":true,"revo\\u006bed":false',
+                       '"checks":{"rights":false,"rights":true}',
+                       '"items":[{"verdict":"FAIL","verdict":"PASS"}]',
+                       '"audience":"pod:other","audience":"pod:test"'):
+            with self.subTest(fields=fields), self.assertRaisesRegex(ValueError, '^JSON_DUPLICATE_KEY$'):
+                self.verify(self.signed('{'+self.fields+','+fields+'}'))
+
+    def test_nonfinite_signed_numbers_fail_at_every_depth(self):
+        for number in ('NaN', 'Infinity', '-Infinity', '1e400', '-1e400', '9'*400):
+            with self.subTest(number=number), self.assertRaisesRegex(ValueError, '^JSON_NONFINITE$'):
+                self.verify(self.signed('{'+self.fields+',"facts":[{"amount":'+number+'}]}'))
+
+    def test_json_file_rejects_outer_and_nested_ambiguity_and_nonfinite(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'input.json'
+            for body, reason in (('{"signature":"a","signature":"b"}', 'JSON_DUPLICATE_KEY'),
+                                 ('{"text":"a","te\\u0078t":"b"}', 'JSON_DUPLICATE_KEY'),
+                                 ('[{"x":0,"x":1}]', 'JSON_DUPLICATE_KEY'),
+                                 ('{"x":NaN}', 'JSON_NONFINITE'),
+                                 ('{"x":1e400}', 'JSON_NONFINITE')):
+                path.write_text(body)
+                with self.subTest(body=body), self.assertRaisesRegex(ValueError, '^'+reason+'$'):
+                    read_json(path)
+
+    def test_signature_must_be_exact_primitive_lowercase_sha256(self):
+        envelope = self.signed('{'+self.fields+'}')
+        for signature in ([envelope['signature']], None, 0, True, {},
+                          envelope['signature'].upper(), envelope['signature']+'\n',
+                          envelope['signature'][:-1], 'é'*64):
+            with self.subTest(signature=signature), self.assertRaisesRegex(ValueError, '^EVIDENCE_INVALID$'):
+                self.verify({**envelope, 'signature': signature})
+
+    def test_envelope_must_be_a_mapping(self):
+        for envelope in (None, [], True, 0, 'text'):
+            with self.subTest(envelope=envelope), self.assertRaisesRegex(ValueError, '^EVIDENCE_INVALID$'):
+                self.verify(envelope)
+
+    def test_payload_ceiling_counts_utf8_bytes_inclusively(self):
+        prefix = '{'+self.fields+',"text":"'
+        remaining = 256-len((prefix+'"}').encode())
+        payload = prefix+'😀'*(remaining//4)+'a'*(remaining%4)+'"}'
+        self.assertEqual(len(payload.encode()), 256)
+        with patch('pod_common.MAX_JSON_BYTES', 256):
+            self.assertEqual(self.verify(self.signed(payload))['text'], json.loads(payload)['text'])
+            oversized = payload[:-2]+'a"}'
+            self.assertLess(len(oversized), 256)
+            with self.assertRaisesRegex(ValueError, '^EVIDENCE_INVALID$'):
+                self.verify(self.signed(oversized))
+
+    def test_authentication_precedes_payload_parsing_without_normalization(self):
+        for payload in ('not-json', '{'+self.fields+',"x":1,"x":2}',
+                        '{'+self.fields+',"x":1e400}'):
+            with self.subTest(payload=payload), self.assertRaisesRegex(ValueError, '^EVIDENCE_SIGNATURE_INVALID$'):
+                self.verify({'payload': payload, 'signature': '0'*64})
+        envelope = self.signed('{'+self.fields+'}')
+        with self.assertRaisesRegex(ValueError, '^EVIDENCE_SIGNATURE_INVALID$'):
+            self.verify({**envelope, 'payload': envelope['payload']+' '})
+
+    def test_unambiguous_unicode_arrays_and_finite_numbers_remain_valid(self):
+        extra = {'text': 'é e\u0301 😀 "quoted" \\ escaped', 'items': [{'a': 1}, {'a': 2}],
+                 'strings': ['1e400', '{"a":1,"a":2}'], 'finite': [-0.0, 1e-300, 1.25, 1e308]}
+        payload = '{'+self.fields+','+json.dumps(extra, ensure_ascii=False)[1:]
+        self.assertEqual(self.verify(self.signed(payload)), json.loads(payload))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/'input.json'
+            for value in (extra, [], None, 3, 'text'):
+                path.write_text(json.dumps(value, ensure_ascii=False))
+                self.assertEqual(read_json(path), value)
 
 if __name__ == '__main__':
     unittest.main()
