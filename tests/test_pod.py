@@ -134,6 +134,9 @@ class PODTests(unittest.TestCase):
         from pod_cover_regions import barcode_region_px
         for filename in ('text-mask.png','art-mask.png'):
             def overlap(manifest,root):
+                import math
+                template=manifest['template'];dpi=template['dpi'];edge=math.ceil(.25*dpi)
+                template['safe_box_px']=[edge,edge,*[math.floor((v-.25)*dpi)-edge for v in template['size_inches']]]
                 _,box=barcode_region_px(manifest['template'])
                 with Image.open(root/filename) as source:mask=source.convert('L')
                 mask.putpixel((box[0],box[1]),1);mask.save(root/filename)
@@ -141,6 +144,7 @@ class PODTests(unittest.TestCase):
             with self.subTest(mask=filename):
                 result=self.package_result(overlap,kdp=True)
                 self.assertEqual(result['binary_pass'],0)
+                self.assertTrue(result['checks']['geometry'])
                 self.assertIn('COVER_BARCODE_CONTENT_INVALID',result['errors'])
 
     def test_kdp_qa_rejects_local_cover_damage_despite_rebound_hashes(self):
