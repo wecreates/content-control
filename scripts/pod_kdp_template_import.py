@@ -12,6 +12,7 @@ import fitz
 from pod_common import canonical, open_regular_binary, read_json
 from pod_raster import open_raster
 from pod_pdf_policy import inspect_static_document, inspect_static_page
+from pod_cover_regions import ltr_barcode_box
 
 MAX_ARCHIVE_BYTES=16*1024*1024
 MAX_MEMBER_BYTES=16*1024*1024
@@ -86,9 +87,19 @@ def inspect_template_archive(path, profile, expected_sha256):
                       profile['paper_type'].title()+' Paper','Black & White',
                       f'{full[0]:.3f}" x {full[1]:.3f}" Overall Dimensions',
                       f'{spine:.3f}" Spine Width',
+                      'Barcode','Location & Size','2.000" x 1.200"',
                       'REMOVE THIS TEMPLATE LAYER FROM FINAL ARTWORK.')
             if len(text)>65536 or any(value not in text for value in required):
                 raise ValueError()
+            barcode_box=ltr_barcode_box(trim)
+            yellow=[drawing for drawing in page.get_drawings()
+                    if drawing['fill']==(1.,1.,0.)]
+            if (len(yellow)!=1 or yellow[0]['type']!='f' or
+                    yellow[0]['fill_opacity']!=1 or len(yellow[0]['items'])!=1 or
+                    yellow[0]['items'][0][0]!='re' or
+                    any(abs(a-b*72)>.01 for a,b in zip(yellow[0]['items'][0][1],barcode_box))):
+                raise ValueError()
+            barcode_points=list(yellow[0]['items'][0][1])
             points=list(page.rect)
     except Exception:
         raise ValueError('KDP_TEMPLATE_GUIDE_INVALID') from None
@@ -117,6 +128,8 @@ def inspect_template_archive(path, profile, expected_sha256):
             'guide':{'pdf_page_box_pt':points,'png_size_px':pixels,
                      'png_header_dpi':list(dpi),'declared_cover_inches':full,
                      'declared_spine_inches':spine,'png_header_crc_validated':True},
+            'regions':{'barcode_box_inches':barcode_box,'barcode_box_pdf_pt':barcode_points,
+                       'scope':'left_to_right_amazon_placed'},
             'source_authority_verified':False,'production_template_approved':False,
             'publication_enabled':False}
 

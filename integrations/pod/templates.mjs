@@ -78,6 +78,7 @@ export function kdpCalculatorProfile(cover,interior){
  // The retained guide inspector currently supports this explicit source format.
  // Its locale is not a claim of marketplace availability or regional rights.
  if(cover.kdp.reading_direction!=='left_to_right'||cover.kdp.locale!=='en_US')throw Error('KDP_TEMPLATE_PROFILE_INVALID');
+ if(cover.kdp.barcode_mode!=='amazon_placed')throw Error('KDP_BARCODE_MODE_UNSUPPORTED');
  return {binding:interior.binding,ink_type:interior.ink_type,paper_type:interior.paper_type,
   reading_direction:cover.kdp.reading_direction,trim_inches:[...interior.trim_inches],
   page_count:interior.page_count,locale:cover.kdp.locale};

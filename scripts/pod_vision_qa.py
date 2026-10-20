@@ -166,8 +166,9 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 require_paperback_options(spec,target_country)
                 report['target_country']=target_country
                 inspect_interior(scoped_file(root,'interior.pdf'),spec)
-                from pod_cover_preflight import inspect_cover, inspect_spine_text
+                from pod_cover_preflight import inspect_cover, inspect_spine_text, inspect_barcode_region
                 inspect_spine_text(m['template'],text)
+                inspect_barcode_region(m['template'],art,text)
                 preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
             report['checks']['print_preflight']=bool(preflight)
             if m['platform']=='kdp':

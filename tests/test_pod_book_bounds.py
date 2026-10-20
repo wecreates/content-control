@@ -19,6 +19,72 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 
+class BarcodeRegionTests(unittest.TestCase):
+    def template(self,dpi=300,width=6,height=9):
+        spine=24*.002252
+        return {'platform':'kdp','dpi':dpi,'size_inches':[2*width+spine+.25,height+.25],
+                'kdp':{'trim_width_inches':width,'spine_width_inches':spine,'bleed_inches':.125,
+                       'reading_direction':'left_to_right','barcode_mode':'amazon_placed'}}
+
+    def test_exact_reference_box_and_conservative_pixel_boundaries(self):
+        from pod_cover_regions import ltr_barcode_box,barcode_region_px
+        self.assertEqual(ltr_barcode_box([6,9]),[3.875,7.675,5.875,8.875])
+        for dpi,width,height,expected in [(300,6,9,[1162,2302,1763,2663]),
+                (600,6,9,[2325,4605,3525,5325]),(1200,4,6,[2250,5610,4650,7050])]:
+            with self.subTest(dpi=dpi):
+                _,box=barcode_region_px(self.template(dpi,width,height))
+                self.assertEqual(box,expected)
+
+    def test_every_reserved_edge_rejects_text_and_critical_art_but_allows_background(self):
+        from pod_cover_regions import barcode_region_px
+        from pod_cover_preflight import inspect_barcode_region
+        for dpi in (300,600):
+            template=self.template(dpi,width=4,height=6)
+            size,(left,top,right,bottom)=barcode_region_px(template)
+            art=Image.new('L',size,0);text=Image.new('L',size,0)
+            self.assertTrue(inspect_barcode_region(template,art,text))
+            for mask in (art,text):
+                for point in ((left,top),(right-1,top),(left,bottom-1),(right-1,bottom-1)):
+                    mask.putpixel(point,1)
+                    with self.assertRaisesRegex(ValueError,'^COVER_BARCODE_CONTENT_INVALID$'):
+                        inspect_barcode_region(template,art,text)
+                    mask.putpixel(point,0)
+                for point in ((left-1,top),(right,top),(left,top-1),(left,bottom)):
+                    mask.putpixel(point,255)
+                    self.assertTrue(inspect_barcode_region(template,art,text))
+                    mask.putpixel(point,0)
+            art.putpixel((left,top),255)
+            background={**template,'art_is_critical':False}
+            self.assertTrue(inspect_barcode_region(background,art,text))
+            text.putpixel((left,top),1)
+            with self.assertRaisesRegex(ValueError,'^COVER_BARCODE_CONTENT_INVALID$'):
+                inspect_barcode_region(background,art,text)
+
+    def test_explicit_mode_geometry_and_mask_types_cannot_be_coerced(self):
+        import copy
+        from pod_cover_regions import barcode_region_px
+        from pod_cover_preflight import inspect_barcode_region
+        template=self.template();size,_=barcode_region_px(template)
+        art=Image.new('L',size);text=Image.new('L',size)
+        for mode in (None,False,[],'own','amazon'):
+            bad=copy.deepcopy(template);bad['kdp']['barcode_mode']=mode
+            with self.assertRaisesRegex(ValueError,'^KDP_BARCODE_MODE_UNSUPPORTED$'):
+                inspect_barcode_region(bad,art,text)
+        patches=[{'dpi':True},{'dpi':299},{'size_inches':[12,9.25]},
+                 {'size_inches':[float('nan'),9.25]}]
+        patches += [{'art_is_critical':value} for value in (None,0,'false',[])]
+        for patch_value in patches:
+            with self.assertRaisesRegex(ValueError,'^COVER_BARCODE_SPEC_INVALID$'):
+                inspect_barcode_region({**template,**patch_value},art,text)
+        for direction in (None,'right_to_left',True):
+            bad=copy.deepcopy(template);bad['kdp']['reading_direction']=direction
+            with self.assertRaisesRegex(ValueError,'^COVER_BARCODE_SPEC_INVALID$'):
+                inspect_barcode_region(bad,art,text)
+        for wrong in (art.convert('RGB'),Image.new('L',(size[0]+1,size[1]))):
+            with self.assertRaisesRegex(ValueError,'^COVER_BARCODE_SPEC_INVALID$'):
+                inspect_barcode_region(template,wrong,text)
+
+
 class PaperbackOptionsTests(unittest.TestCase):
     def spec(self,trim=(6,9),paper='white',count=24):
         return dict(ink_type='black',paper_type=paper,trim_inches=list(trim),page_count=count)
@@ -170,6 +236,8 @@ class CalculatorArchiveTests(unittest.TestCase):
         self.assertEqual(report['guide']['png_size_px'],[7383,5550])
         self.assertEqual(report['guide']['pdf_page_box_pt'],[0,0,886,666])
         self.assertEqual(report['guide']['declared_cover_inches'],[12.304048,9.25])
+        self.assertEqual(report['regions']['barcode_box_inches'],[3.875,7.675,5.875,8.875])
+        self.assertEqual(report['regions']['barcode_box_pdf_pt'],[279.,552.5999755859375,423.,639.])
         self.assertEqual(len(report['members']),3)
         self.assertEqual(report,inspect_template_archive(self.archive,self.profile(),self.sha))
         self.assertFalse(report['source_authority_verified'])
@@ -243,6 +311,27 @@ class CalculatorArchiveTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_ARCHIVE_INVALID$'):
                 inspect_template_archive(p,self.profile(),hashlib.sha256(data).hexdigest())
 
+    def test_guide_barcode_region_is_required_even_with_rebound_archive_identity(self):
+        original=self.entries();data=next(data for name,data in original if name.endswith('.pdf'))
+        for fault in ('missing','duplicate','moved'):
+            with fitz.open(stream=data,filetype='pdf') as doc:
+                page=doc[0]
+                if fault=='duplicate':
+                    page.draw_rect(fitz.Rect(279,552.6,423,639),color=None,fill=(1,1,0))
+                else:
+                    changed=False
+                    for xref in page.get_contents():
+                        stream=doc.xref_stream(xref)
+                        if b'1 1 0 rg' in stream:
+                            if fault=='missing':stream=stream.replace(b'1 1 0 rg',b'1 1 1 rg')
+                            else:stream=stream.replace(b'1 1 0 rg',b'1 1 0 rg 1 0 0 1 1 0 cm')
+                            doc.update_stream(xref,stream);changed=True
+                    self.assertTrue(changed)
+                mutated=doc.tobytes()
+            with self.subTest(fault=fault):
+                self.check_archive([(name,mutated if name.endswith('.pdf') else body)
+                                    for name,body in original],'KDP_TEMPLATE_GUIDE_INVALID')
+
     def test_offline_import_cli_emits_inspection_only(self):
         import json,subprocess
         with tempfile.TemporaryDirectory() as d:
@@ -308,7 +397,7 @@ const record={...scope,official_source_verified:true,source_url:'https://example
  source_sha256:'27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',observed_at:new Date().toISOString()};
 const cover={platform:'kdp',dpi:300,size_inches:[12+spine+.25,9.25],safe_box_px:[75,75,500,500],
  kdp:{binding:'paperback',ink_type:'black',paper_type:'white',page_count:count,
- trim_width_inches:6,spine_width_inches:spine,bleed_inches:.125,reading_direction:'left_to_right',locale:'en_US'}};
+ trim_width_inches:6,spine_width_inches:spine,bleed_inches:.125,reading_direction:'left_to_right',locale:'en_US',barcode_mode:'amazon_placed'}};
 const interior={platform:'kdp',binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',
  page_count:count,trim_inches:[6,9],font_size_pt:10,margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25}};
 await fs.writeFile(path.join(root,'cover.json'),JSON.stringify(sign({...record,audience:'pod:template',template:cover})));

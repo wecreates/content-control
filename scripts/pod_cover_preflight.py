@@ -46,6 +46,20 @@ def inspect_cover(path, image, dpi):
     return True
 
 
+def inspect_barcode_region(template, art_mask, text_mask):
+    """Protect declared critical content; do not generate or scan a barcode."""
+    from pod_cover_regions import barcode_region_px
+    canvas,box=barcode_region_px(template)
+    critical=template.get('art_is_critical',True)
+    if (type(critical) is not bool or art_mask.mode!='L' or text_mask.mode!='L' or
+            art_mask.size!=canvas or text_mask.size!=canvas):
+        raise ValueError('COVER_BARCODE_SPEC_INVALID')
+    if (text_mask.crop(box).getbbox() is not None or
+            (critical and art_mask.crop(box).getbbox() is not None)):
+        raise ValueError('COVER_BARCODE_CONTENT_INVALID')
+    return True
+
+
 def inspect_spine_text(template, text_mask):
     """Check declared text-mask pixels in the supported full-cover geometry.
 

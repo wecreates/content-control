@@ -61,3 +61,44 @@ it does not discover unlabelled text in art, rotate/resize typography, import an
 official calculator template, approve barcode placement or establish actual
 print registration. The full-cover raster remains lossless. Corrected immutable
 inputs require fresh authority. Publication remains disabled.
+
+
+## Amazon-placed barcode reservation
+
+The supported LTR paperback path now requires signed cover.kdp.barcode_mode to
+be exactly amazon_placed. Missing/other modes fail KDP_BARCODE_MODE_UNSUPPORTED
+before guide inspection or generation. Existing tasks need a newly reviewed
+immutable descriptor and fresh authority; no barcode choice is inferred or
+approval rewritten. The pipeline creates no barcode or ISBN and never submits
+a cover automatically. User-supplied barcodes need a separate validated path;
+KDP's own-barcode rules require a distinct barcode object, which this single
+raster-cover pipeline does not provide.
+
+The retained official 6x9/24-page guide marks a yellow 2 by 1.2 inch rectangle
+0.25 inch from the back-cover spine fold and bottom trim, beyond the 0.125 inch
+bleed. Its observed PDF box is [279,552.5999755859375,423,639] points and physical
+box is [3.875,7.675,5.875,8.875] inches. The offline inspector now requires one
+opaque yellow rectangle at the profile-derived coordinates, checks its labels
+and records these observed regions. Missing, shifted or duplicate regions fail
+KDP_TEMPLATE_GUIDE_INVALID even when a caller recomputes the archive hash.
+The original archive/member hashes and acquisition record are unchanged; the
+inspection report is refreshed with these additional technical observations.
+
+Independent QA derives this supported region from the paired physical geometry.
+It expands forbidden bounds outward with floor(left/top) and ceil(right/bottom),
+using exclusive right/bottom pixels. Every nonzero text-mask pixel and every
+critical-art-mask pixel inside fails COVER_BARCODE_CONTENT_INVALID. Explicit
+boolean-false background art may occupy the region, as the retained guide
+instructs; text is always prohibited. Invalid geometry, direction, mask shape
+or critical-art flags fail COVER_BARCODE_SPEC_INVALID. Existing hash binding,
+whole-art OCR, exact raster/PDF equivalence and independent reviews still apply.
+
+References checked October 20, 2026:
+https://kdp.amazon.com/en_US/help/topic/G5HDYGP4BXLX4RUW
+and integrations/pod/templates/kdp/2026-10-20/readme.txt inside the original ZIP.
+This is a necessary check of declared masks and one supported guide layout. It
+does not identify unlabelled important content or barcode pixels in background
+art, scan/validate an ISBN, prove provider placement, handle RTL/custom barcode
+layouts, establish CMYK/press quality or constitute preview/print acceptance.
+The signer/independent reviewer still owns content classification and current
+source approval. Publication remains disabled and live acceptance remains open.
