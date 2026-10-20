@@ -82,7 +82,7 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             if kdp:
-                template.update({'platform':'kdp','size_inches':[12+24*.002252+.25,9.25],
+                template.update({'platform':'kdp','safe_box_px':[75,75,500,500],'size_inches':[12+24*.002252+.25,9.25],
                     'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
                            'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24}})
             m=generate(src,template,[],root)
@@ -325,6 +325,40 @@ class PODTests(unittest.TestCase):
         result=self.package_result(change,kdp=True)
         self.assertEqual(result['binary_pass'],0,result)
         self.assertIn('INTERIOR_FONT_EMBEDDING_REQUIRED',result['errors'])
+
+    def test_kdp_safe_box_edge_rejected_after_hashes_and_approvals_are_rebound(self):
+        for box in ([74,75,500,500],[75,74,500,500],[75,75,3542,500],[75,75,500,2626]):
+            with self.subTest(box=box):
+                result=self.package_result(lambda m,r:m['template'].update(safe_box_px=box),kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertFalse(result['checks']['geometry'])
+
+    def test_kdp_spatial_edges_and_actual_critical_pixels(self):
+        import math
+        for dpi in (300,600,1200):
+            inches=[2.001,2.003];w,h=[math.ceil(v*dpi) for v in inches]
+            edge=math.ceil(.25*dpi);right,bottom=[math.floor((v-.25)*dpi) for v in inches]
+            safe_box=[edge,edge,right-edge,bottom-edge]
+            m={'platform':'kdp','template':{'dpi':dpi,'size_inches':inches,'safe_box_px':safe_box},
+               'source_size_px':[100,100],'placed_size_px':[100,100]}
+            image=Image.new('RGB',(w,h),'white');art=Image.new('L',(w,h),0);text=Image.new('L',(w,h),0)
+            art.putpixel((edge,edge),255)
+            self.assertTrue(spatial_checks(m,image,art,text))
+            for critical in (0,'false',[],None):
+                m['template']['art_is_critical']=critical
+                self.assertFalse(spatial_checks(m,image,art,text))
+            m['template'].pop('art_is_critical')
+            for box in ([edge-1,edge,right-edge,bottom-edge],[edge,edge-1,right-edge,bottom-edge],
+                        [edge,edge,right-edge+1,bottom-edge],[edge,edge,right-edge,bottom-edge+1]):
+                m['template']['safe_box_px']=box
+                self.assertFalse(spatial_checks(m,image,art,text))
+            m['template']['safe_box_px']=safe_box
+            art.putpixel((edge-1,edge),255)
+            self.assertFalse(spatial_checks(m,image,art,text))
+            m['template']['art_is_critical']=False
+            self.assertTrue(spatial_checks(m,image,art,text))
+            text.putpixel((edge-1,edge),255)
+            self.assertFalse(spatial_checks(m,image,art,text))
 
     def test_qa_rejects_unsupported_and_mismatched_platforms(self):
         for platform in ('etsy','zazzle'):
