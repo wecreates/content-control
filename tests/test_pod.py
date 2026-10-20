@@ -73,7 +73,8 @@ class PODTests(unittest.TestCase):
 
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
-                       template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000):
+                       template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
+                       text_layers=None,ocr_text=''):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -87,7 +88,8 @@ class PODTests(unittest.TestCase):
                     'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
                            'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24,
                            'reading_direction':'left_to_right','locale':'en_US','barcode_mode':'amazon_placed'}})
-            m=generate(src,template,[],root)
+            layers=text_layers or []
+            m=generate(src,template,layers,root)
             if kdp:
                 font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
                 spec={'platform':'kdp','binding':'paperback','ink_type':'black','paper_type':'white',
@@ -115,9 +117,11 @@ class PODTests(unittest.TestCase):
             source_evidence=None
             if source_inputs:
                 asset_rights_path=Path(tmp)/'asset-rights.json'
+                text_layers_path=Path(tmp)/'text-layers.json';save_json(text_layers_path,layers)
                 save_json(asset_rights_path,sign({**common,'expires_at_ms':now+source_ttl,
-                    'audience':'pod:asset-rights','status':'PASS','source_sha256':digest(src)},'POD_RIGHTS_KEY'))
-                source_evidence={'source':src,'rights':asset_rights_path}
+                    'audience':'pod:asset-rights','status':'PASS','source_sha256':digest(src),
+                    'text_layers_sha256':hashlib.sha256(canonical(layers).encode()).hexdigest()},'POD_RIGHTS_KEY'))
+                source_evidence={'source':src,'rights':asset_rights_path,'text_layers':text_layers_path}
             if kdp and template_inputs:
                 from datetime import datetime,timezone
                 common_template={**common,'expires_at_ms':now+template_ttl,'product':'fixture-book','country':'US',
@@ -130,11 +134,34 @@ class PODTests(unittest.TestCase):
                 original_templates={'cover':cover_path,'interior':interior_path,
                     'source':Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'}
             # OCR is tested independently; these tests isolate package geometry and binding.
-            with patch('pod_vision_qa.ocr',return_value=''):
+            with patch('pod_vision_qa.ocr',return_value=ocr_text):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
                     target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
                     source_evidence=source_evidence)
+
+    def test_kdp_original_title_fonts_and_all_rendered_pixels_pass_independent_preflight(self):
+        font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        layer=dict(font_path=font,font_sha256=digest(font),font_size_px=32,
+            position_px=[100,100],text='Title',rgba=[0,0,0,255])
+        result=self.package_result(lambda m,r:None,kdp=True,text_layers=[layer],ocr_text='Title')
+        self.assertEqual(result['binary_pass'],1,result)
+        self.assertTrue(result['checks']['text_provenance'])
+        self.assertTrue(result['checks']['print_preflight'])
+        self.assertEqual(result['text_layers_sha256'],hashlib.sha256(canonical([layer]).encode()).hexdigest())
+
+    def test_qa_rejects_unapproved_text_masks_even_with_rebound_artifact_hashes(self):
+        def hidden(manifest,root):
+            with Image.open(root/'print.png') as image:
+                image.putpixel((500,500),(255,0,255,255));image.save(root/'print.png',dpi=(300,300))
+            with Image.open(root/'text-mask.png') as mask:
+                mask.putpixel((500,500),255);mask.save(root/'text-mask.png')
+            for name in ('print.png','text-mask.png'):manifest['files'][name]=digest(root/name)
+        result=self.package_result(hidden)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertTrue(result['checks']['geometry'])
+        self.assertTrue(result['checks']['text'])
+        self.assertIn('TEXT_MASK_MISMATCH',result['errors'])
 
     def test_qa_requires_original_source_and_rejects_plausible_inflated_native_resolution(self):
         for kdp in (False,True):
@@ -274,7 +301,11 @@ class PODTests(unittest.TestCase):
             with self.subTest(position=position):
                 result=self.package_result(mutate,kdp=True)
                 if position.endswith('_safe'):
-                    self.assertEqual(result['binary_pass'],1,result)
+                    # Outside the fold restriction, but still an unapproved
+                    # mask pixel without an original text layer or glyph.
+                    self.assertEqual(result['binary_pass'],0,result)
+                    self.assertIn('TEXT_MASK_MISMATCH',result['errors'])
+                    self.assertTrue(result['checks']['print_preflight'],result)
                 else:
                     self.assertEqual(result['binary_pass'],0,result)
                     self.assertIn('COVER_SPINE_TEXT_INVALID',result['errors'])
@@ -585,9 +616,10 @@ class PODTests(unittest.TestCase):
                          'swapped_order_consistent':True,'weighted_margin':1},'POD_REVIEW_KEY')
             from pod_common import save_json
             asset_rights=Path(tmp)/'asset-rights.json'
+            text_layers=Path(tmp)/'text-layers.json';save_json(text_layers,[])
             save_json(asset_rights,sign({**common,'audience':'pod:asset-rights','status':'PASS',
-                'source_sha256':digest(src)},'POD_RIGHTS_KEY'))
-            originals={'source':src,'rights':asset_rights}
+                'source_sha256':digest(src),'text_layers_sha256':hashlib.sha256(canonical([]).encode()).hexdigest()},'POD_RIGHTS_KEY'))
+            originals={'source':src,'rights':asset_rights,'text_layers':text_layers}
             with patch('pod_vision_qa.similarity',side_effect=AssertionError('must not download')):
                 result=evaluate(Path(tmp)/'package',src,rights,review,['test-fixture'],source_evidence=originals)
                 self.assertEqual(result['verdict'],'PASS',result)

@@ -79,7 +79,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   enabled();
   const args=['--package-dir',task.output,'--reference',task.reference,'--rights',attestation.rights,
    '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput,
-   '--source',task.source,'--asset-rights',task.assetRights];
+   '--source',task.source,'--asset-rights',task.assetRights,'--text-layers',task.textLayers];
+  if(task.assetRoot)args.push('--asset-root',task.assetRoot);
   if(job.brief.platform==='kdp')args.push('--country',scope.country,'--product',scope.product,
    '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);

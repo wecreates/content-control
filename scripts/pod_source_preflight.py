@@ -6,6 +6,7 @@ from PIL import Image,ImageChops
 from pod_common import open_regular_binary,verified,MAX_JSON_BYTES
 from pod_raster import open_raster
 from pod_template_evidence import strict_json
+from pod_text_preflight import capture_text_layers,render_text_strip
 
 MAX_SOURCE_BYTES=16*1024*1024
 STRIP_ROWS=128
@@ -19,7 +20,9 @@ def source_evidence_deadline(evidence):
 
 
 def inspect_original_source(manifest,image,art_mask,text_mask,paths):
-    if not isinstance(paths,dict) or set(paths)!={'source','rights'} or any(paths[k] is None for k in paths):
+    required={'source','rights','text_layers'}
+    if (not isinstance(paths,dict) or not required.issubset(paths) or set(paths)-required-{'asset_root'} or
+            any(paths[k] is None for k in required)):
         raise ValueError('SOURCE_EVIDENCE_REQUIRED')
     try:
         with open_regular_binary(paths['rights']) as f:data=f.read(MAX_JSON_BYTES+1)
@@ -38,6 +41,7 @@ def inspect_original_source(manifest,image,art_mask,text_mask,paths):
     sha=hashlib.sha256(source_bytes).hexdigest()
     if rights.get('source_sha256')!=sha or manifest.get('source_sha256')!=sha:
         raise ValueError('SOURCE_HASH_MISMATCH')
+    layers,text_sha=capture_text_layers(paths,rights,manifest,image.size)
     # Identity, header inspection and decoding use one bounded byte capture.
     with open_raster(io.BytesIO(source_bytes)) as source:
         sw,sh=source.size
@@ -71,7 +75,8 @@ def inspect_original_source(manifest,image,art_mask,text_mask,paths):
         source.load()
         resized=source.convert('RGBA').resize((nw,nh),Image.Resampling.LANCZOS)
     # Compare fixed-height strips to avoid allocating another complete canvas.
-    # Only declared text pixels are excluded; they cannot hide original art.
+    # Original glyphs and masks are reconstructed too; producer text masks
+    # cannot exclude arbitrary pixels from the comparison.
     try:
         for top in range(0,h,STRIP_ROWS):
             bottom=min(h,top+STRIP_ROWS);region=(0,top,w,bottom)
@@ -83,14 +88,16 @@ def inspect_original_source(manifest,image,art_mask,text_mask,paths):
                 tile.alpha_composite(part,(ox,start-top));mask.paste(part.getchannel('A'),(ox,start-top))
             if ImageChops.difference(mask,art_mask.crop(region)).getbbox() is not None:
                 raise ValueError('SOURCE_MASK_MISMATCH')
-            text=text_mask.crop(region).point(lambda value:255 if value else 0)
-            if ImageChops.multiply(mask,text).getbbox() is not None:
+            text=render_text_strip(tile,layers,top)
+            if ImageChops.difference(text,text_mask.crop(region)).getbbox() is not None:
+                raise ValueError('TEXT_MASK_MISMATCH')
+            if ImageChops.multiply(mask,text.point(lambda value:255 if value else 0)).getbbox() is not None:
                 raise ValueError('SOURCE_PIXELS_MISMATCH')
             difference=ImageChops.difference(tile.convert('RGB'),image.crop(region))
-            difference.paste(0,(0,0,w,bottom-top),text)
             if difference.getbbox() is not None:raise ValueError('SOURCE_PIXELS_MISMATCH')
     finally:
         resized.close()
-    evidence={'rights':envelope,'source_sha256':sha,'source_size_px':[sw,sh],'effective_native_ppi':native}
+    evidence={'rights':envelope,'source_sha256':sha,'text_layers_sha256':text_sha,
+              'source_size_px':[sw,sh],'effective_native_ppi':native}
     source_evidence_deadline(evidence)
     return evidence

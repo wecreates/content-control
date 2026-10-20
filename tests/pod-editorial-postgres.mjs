@@ -12,7 +12,7 @@ export async function verifyEditorialGate(pool,bridge){
  const qa=editorial=>{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
-   checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','template_provenance'].map(k=>[k,true])),editorial}});
+   checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance'].map(k=>[k,true])),editorial}});
   return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
  };
  try{

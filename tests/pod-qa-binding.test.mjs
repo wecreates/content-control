@@ -2,6 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enforceQA,enforceBrief,REQUIRED_QA} from '../integrations/pod/policy.mjs';
 const checks={...Object.fromEntries(REQUIRED_QA.map(k=>[k,true])),template_provenance:true};
+test('all platforms require independently reconstructed original text and font checks',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64);
+ for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
+  for(const text_provenance of [undefined,false,1,'true',null]){
+   assert.throws(()=>enforceQA({verdict:'PASS',package_sha256:p,template_sha256:t,
+    checks:{...checks,editorial:true,original_source:true,text_provenance}},p,t,platform),/QA_BLOCKED/);
+  }
+ }
+});
 test('all five platforms reject signed-style PASS receipts without original-source checks',()=>{
  const p='a'.repeat(64),t='b'.repeat(64);
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){

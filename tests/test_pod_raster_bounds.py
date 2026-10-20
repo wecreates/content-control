@@ -136,12 +136,14 @@ class OriginalSourceTests(unittest.TestCase):
         template={'platform':'redbubble','dpi':300,'size_inches':[1,1],
             'art_box_px':[30,40,23,21],'background_rgba':[220,210,200,180]}
         out=self.root/('package-'+str(len(list(self.root.glob('package-*')))))
-        manifest=generate(self.source,template,layers or [],out)
+        layers=layers or [];manifest=generate(self.source,template,layers,out)
+        layers_path=self.root/'text-layers.json';save_json(layers_path,layers)
         now=int(time.time()*1000)
         record=dict(schema_version=1,issued_at_ms=now-1,expires_at_ms=now+60000,
-            audience='pod:asset-rights',status='PASS',source_sha256=digest(self.source))
+            audience='pod:asset-rights',status='PASS',source_sha256=digest(self.source),
+            text_layers_sha256=hashlib.sha256(canonical(layers).encode()).hexdigest())
         rights=self.root/'rights.json';save_json(rights,sign(record,'POD_RIGHTS_KEY'))
-        return manifest,out,{'source':self.source,'rights':rights},record
+        return manifest,out,{'source':self.source,'rights':rights,'text_layers':layers_path},record
 
     def inspect(self,manifest,out,paths):
         from pod_source_preflight import inspect_original_source
@@ -176,7 +178,7 @@ class OriginalSourceTests(unittest.TestCase):
                 self.inspect(altered,out,paths)
         for filename,point,reason in [('art-mask.png',(0,299),'SOURCE_MASK_MISMATCH'),
                 ('print.png',(0,299),'SOURCE_PIXELS_MISMATCH'),
-                ('text-mask.png',tuple(manifest['placed_origin_px']),'SOURCE_PIXELS_MISMATCH')]:
+                ('text-mask.png',tuple(manifest['placed_origin_px']),'TEXT_MASK_MISMATCH')]:
             original=(out/filename).read_bytes()
             with Image.open(out/filename) as image:
                 image.putpixel(point,255 if image.mode=='L' else (0,0,0,255));image.save(out/filename)
@@ -223,6 +225,86 @@ class OriginalSourceTests(unittest.TestCase):
         self.assertEqual(source_evidence_deadline(evidence),record['expires_at_ms'])
         with patch('pod_common.time.time',return_value=record['expires_at_ms']/1000):
             with self.assertRaisesRegex(ValueError,'^SOURCE_RIGHTS_INVALID$'):source_evidence_deadline(evidence)
+
+    def text_layer(self):
+        font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        return dict(font_path=font,font_sha256=digest(font),font_size_px=32,
+            position_px=[70,115],text='Original\nGlyphs',rgba=[80,10,120,150])
+
+    def authorize_layers(self,paths,record,layers):
+        save_json(paths['text_layers'],layers)
+        save_json(paths['rights'],sign({**record,'text_layers_sha256':hashlib.sha256(canonical(layers).encode()).hexdigest()},'POD_RIGHTS_KEY'))
+
+    def test_unapproved_text_mask_cannot_hide_changed_background_pixels(self):
+        manifest,out,paths,_=self.case()
+        with Image.open(out/'print.png') as image:
+            image.putpixel((200,200),(255,0,255,255));image.save(out/'print.png')
+        with Image.open(out/'text-mask.png') as mask:
+            mask.putpixel((200,200),255);mask.save(out/'text-mask.png')
+        with self.assertRaisesRegex(ValueError,'^TEXT_MASK_MISMATCH$'):self.inspect(manifest,out,paths)
+
+    def test_original_multiline_glyphs_across_strips_match_and_pixels_are_not_exempt(self):
+        manifest,out,paths,_=self.case([self.text_layer()])
+        result=self.inspect(manifest,out,paths)
+        self.assertEqual(result['text_layers_sha256'],hashlib.sha256(canonical([self.text_layer()]).encode()).hexdigest())
+        with Image.open(out/'text-mask.png') as mask:
+            points=[(x,y) for y in range(mask.height) for x in range(mask.width) if mask.getpixel((x,y))>0]
+            self.assertTrue(any(y<128 for x,y in points));self.assertTrue(any(y>=128 for x,y in points))
+        with Image.open(out/'print.png') as image:
+            image.putpixel(points[0],(0,255,0,255));image.save(out/'print.png')
+        with self.assertRaisesRegex(ValueError,'^SOURCE_PIXELS_MISMATCH$'):self.inspect(manifest,out,paths)
+
+    def test_original_text_identity_and_manifest_text_claims_cannot_be_substituted(self):
+        layer=self.text_layer();manifest,out,paths,record=self.case([layer])
+        save_json(paths['text_layers'],[{**layer,'text':'Substituted'}])
+        with self.assertRaisesRegex(ValueError,'^TEXT_LAYERS_HASH_MISMATCH$'):self.inspect(manifest,out,paths)
+        self.authorize_layers(paths,record,[layer]);manifest['expected_text'][0]['text']='Substituted'
+        with self.assertRaisesRegex(ValueError,'^TEXT_LAYOUT_INVALID$'):self.inspect(manifest,out,paths)
+
+    def test_font_capture_survives_path_replacement_and_rejects_changed_bytes(self):
+        import pod_text_preflight as text_qa
+        font=self.root/'font.ttf';font.write_bytes(Path(self.text_layer()['font_path']).read_bytes())
+        layer={**self.text_layer(),'font_path':str(font)};manifest,out,paths,_=self.case([layer])
+        real_font=text_qa.ImageFont.truetype
+        def replace_then_decode(captured,*args,**kwargs):
+            font.write_bytes(b'unverified replacement')
+            return real_font(captured,*args,**kwargs)
+        with patch.object(text_qa.ImageFont,'truetype',side_effect=replace_then_decode):self.inspect(manifest,out,paths)
+        with patch.object(text_qa.ImageFont,'truetype',side_effect=AssertionError('decoder reached')):
+            with self.assertRaisesRegex(ValueError,'^TEXT_FONT_INVALID$'):self.inspect(manifest,out,paths)
+
+    def test_font_scope_regular_files_and_input_decoder_budgets_are_bounded(self):
+        import pod_text_preflight as text_qa
+        font=self.root/'font.ttf';font.write_bytes(Path(self.text_layer()['font_path']).read_bytes())
+        layer={**self.text_layer(),'font_path':str(font)};manifest,out,paths,record=self.case([layer])
+        relative={**layer,'font_path':'font.ttf'};paths['asset_root']=self.root
+        self.authorize_layers(paths,record,[relative]);self.inspect(manifest,out,paths)
+        for replacement,reason in [('../outside.ttf','TEXT_LAYOUT_INVALID'),('pipe.ttf','TEXT_FONT_INVALID'),('link.ttf','TEXT_FONT_INVALID')]:
+            if replacement=='pipe.ttf':os.mkfifo(self.root/replacement)
+            if replacement=='link.ttf':(self.root/replacement).symlink_to(font)
+            self.authorize_layers(paths,record,[{**relative,'font_path':replacement}])
+            with self.assertRaisesRegex(ValueError,'^'+reason+'$'):self.inspect(manifest,out,paths)
+        self.authorize_layers(paths,record,[relative]);size=font.stat().st_size
+        for field in ('MAX_FONT_BYTES','MAX_FONT_BATCH_BYTES'):
+            with patch.object(text_qa,field,size-1),patch.object(text_qa.ImageFont,'truetype',side_effect=AssertionError('decoder reached')):
+                with self.assertRaisesRegex(ValueError,'^TEXT_FONT_INVALID$'):self.inspect(manifest,out,paths)
+        self.authorize_layers(paths,record,[relative,{**relative,'font_size_px':33}])
+        with patch.object(text_qa,'MAX_FONT_BATCH_BYTES',size*2-1):
+            with self.assertRaisesRegex(ValueError,'^TEXT_FONT_INVALID$'):self.inspect(manifest,out,paths)
+
+    def test_text_json_layer_size_and_character_limits_fail_before_rendering(self):
+        layer=self.text_layer();manifest,out,paths,record=self.case([layer])
+        for raw in (b'\xff',b'x'*(4*1024*1024+1),b'[{"text":"a","te\\u0078t":"b"}]'):
+            paths['text_layers'].write_bytes(raw)
+            with self.assertRaisesRegex(ValueError,'^TEXT_LAYERS_INVALID$'):self.inspect(manifest,out,paths)
+        for layers,reason in [([layer]*33,'TEXT_LAYERS_INVALID'),([{**layer,'font_size_px':True}],'TEXT_LAYOUT_INVALID'),
+                ([{**layer,'font_size_px':4097}],'TEXT_LAYOUT_INVALID'),([{**layer,'text':'a'*4097}],'TEXT_LAYOUT_INVALID')]:
+            self.authorize_layers(paths,record,layers)
+            with self.assertRaisesRegex(ValueError,'^'+reason+'$'):self.inspect(manifest,out,paths)
+        import pod_text_preflight as text_qa
+        self.authorize_layers(paths,record,[layer])
+        with patch.object(text_qa,'MAX_TEXT_CHARS',len(layer['text'])-1):
+            with self.assertRaisesRegex(ValueError,'^TEXT_LAYOUT_INVALID$'):self.inspect(manifest,out,paths)
 
 
 class GenerationSnapshotTests(unittest.TestCase):
