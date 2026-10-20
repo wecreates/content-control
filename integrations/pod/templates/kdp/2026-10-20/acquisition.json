@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "kind": "observed-kdp-calculator-download",
+  "retrieved_date_utc": "2026-10-20",
+  "source_page": "https://kdp.amazon.com/cover-calculator",
+  "method": "Public calculator UI: paperback, black and white, white paper, left to right, inches, custom width 6 and height 9, 24 pages; Calculate dimensions then Download Template.",
+  "profile": {
+    "binding": "paperback",
+    "ink_type": "black",
+    "paper_type": "white",
+    "reading_direction": "left_to_right",
+    "trim_inches": [
+      6,
+      9
+    ],
+    "page_count": 24,
+    "locale": "en_US"
+  },
+  "archive_filename": "paperback-6x9-24-bw-white-en_US.zip",
+  "archive_sha256": "27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac",
+  "archive_bytes": 288195,
+  "screenshot_sha256": "d04eb6aeeadeca6c5d9f0c051b12810abb44247519e928928a3d316348ab22d5",
+  "approval_status": "UNASSESSED",
+  "production_template_approved": false,
+  "publication_enabled": false
+}

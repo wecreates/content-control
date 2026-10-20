@@ -74,6 +74,125 @@ class SpineTextTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'^COVER_SPINE_SPEC_INVALID$'):
                 inspect_spine_text(template,bad)
 
+
+class CalculatorArchiveTests(unittest.TestCase):
+    archive=Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'
+    sha='27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac'
+
+    def profile(self):
+        return dict(binding='paperback',ink_type='black',paper_type='white',
+                    reading_direction='left_to_right',trim_inches=[6,9],page_count=24,locale='en_US')
+
+    def entries(self):
+        import zipfile
+        with zipfile.ZipFile(self.archive) as z:
+            return [(i.filename,z.read(i)) for i in z.infolist()]
+
+    def check_archive(self, entries, reason, compression=None):
+        import hashlib,zipfile
+        from pod_kdp_template_import import inspect_template_archive
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'source.zip'
+            with zipfile.ZipFile(p,'w',compression=zipfile.ZIP_DEFLATED if compression is None else compression) as z:
+                for name,data in entries:
+                    z.writestr(name,data)
+            sha=hashlib.sha256(p.read_bytes()).hexdigest()
+            with self.assertRaisesRegex(ValueError,'^'+reason+'$'):
+                inspect_template_archive(p,self.profile(),sha)
+            self.assertEqual(list(Path(d).iterdir()),[p])
+
+    def test_retained_official_archive_identity_profile_and_no_approval(self):
+        from pod_kdp_template_import import inspect_template_archive
+        report=inspect_template_archive(self.archive,self.profile(),self.sha)
+        self.assertEqual(report['archive_bytes'],288195)
+        self.assertEqual(report['guide']['png_size_px'],[7383,5550])
+        self.assertEqual(report['guide']['pdf_page_box_pt'],[0,0,886,666])
+        self.assertEqual(report['guide']['declared_cover_inches'],[12.304048,9.25])
+        self.assertEqual(len(report['members']),3)
+        self.assertEqual(report,inspect_template_archive(self.archive,self.profile(),self.sha))
+        self.assertFalse(report['source_authority_verified'])
+        self.assertFalse(report['production_template_approved'])
+        self.assertFalse(report['publication_enabled'])
+
+    def test_archive_requires_expected_hash_and_supported_explicit_profile(self):
+        from pod_kdp_template_import import inspect_template_archive
+        for sha,reason in ((None,'KDP_TEMPLATE_HASH_REQUIRED'),('A'*64,'KDP_TEMPLATE_HASH_REQUIRED'),
+                           ('0'*64,'KDP_TEMPLATE_HASH_MISMATCH')):
+            with self.subTest(sha=sha),self.assertRaisesRegex(ValueError,'^'+reason+'$'):
+                inspect_template_archive(self.archive,self.profile(),sha)
+        for field,values in (('binding',(None,'hardcover')),('paper_type',(True,[],'color')),
+                             ('locale',('ja_JP',None)),('page_count',(True,23,25,830)),
+                             ('trim_inches',([True,9],[10**400,9],[float('nan'),9],[6,float('inf')]))):
+            for value in values:
+                profile=self.profile();profile[field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROFILE_INVALID$'):
+                    inspect_template_archive(self.archive,profile,self.sha)
+        profile=self.profile();profile['country']='US'
+        with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROFILE_INVALID$'):
+            inspect_template_archive(self.archive,profile,self.sha)
+
+    def test_archive_rejects_duplicate_extra_traversing_and_link_entries(self):
+        import stat,zipfile
+        original=self.entries()
+        for entries in (original+[original[0]],original+[('../escape',b'x')],
+                        [('nested/'+name,data) for name,data in original]):
+            self.check_archive(entries,'KDP_TEMPLATE_ARCHIVE_INVALID')
+        name,data=original[0];link=zipfile.ZipInfo(name)
+        link.create_system=3;link.external_attr=(stat.S_IFLNK|0o777)<<16
+        self.check_archive([(link,data)]+original[1:],'KDP_TEMPLATE_ARCHIVE_INVALID')
+        self.check_archive(original,'KDP_TEMPLATE_ARCHIVE_INVALID',zipfile.ZIP_BZIP2)
+
+    def test_archive_declared_expansion_limits_precede_pdf_parsing(self):
+        original=self.entries()
+        self.check_archive([(name,b'x'*(16*1024*1024+1) if name=='readme.txt' else data)
+                            for name,data in original],'KDP_TEMPLATE_ARCHIVE_INVALID')
+        self.check_archive([(name,b'x'*(11*1024*1024)) for name,_ in original],
+                           'KDP_TEMPLATE_ARCHIVE_INVALID')
+
+    def test_archive_rejects_wrong_pdf_geometry_and_profile_text(self):
+        original=self.entries()
+        for size in ((100,100),(886,666)):
+            with fitz.open() as doc:
+                page=doc.new_page(width=size[0],height=size[1])
+                page.insert_text((10,30),'Wrong guide profile')
+                pdf=doc.tobytes()
+            self.check_archive([(name,pdf if name.endswith('.pdf') else data) for name,data in original],
+                               'KDP_TEMPLATE_GUIDE_INVALID')
+
+    def test_archive_rejects_wrong_png_dimensions_crc_and_readme(self):
+        import io
+        original=self.entries();buf=io.BytesIO()
+        Image.new('RGB',(1,1)).save(buf,format='PNG',dpi=(600,600))
+        png=next(data for name,data in original if name.endswith('.png'))
+        bad=bytearray(png);bad[png.index(b'IDAT')+10]^=1
+        for data in (buf.getvalue(),bytes(bad)):
+            self.check_archive([(name,data if name.endswith('.png') else body) for name,body in original],
+                               'KDP_TEMPLATE_RASTER_INVALID')
+        for data in (b'',b'\xff',b'x'*65537):
+            # Empty members are rejected at the archive layer.
+            self.check_archive([(name,data if name=='readme.txt' else body) for name,body in original],
+                               'KDP_TEMPLATE_ARCHIVE_INVALID' if not data else 'KDP_TEMPLATE_README_INVALID')
+
+    def test_archive_rejects_truncated_bytes_even_with_rebound_hash(self):
+        import hashlib
+        from pod_kdp_template_import import inspect_template_archive
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'source.zip';data=self.archive.read_bytes()[:-32];p.write_bytes(data)
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_ARCHIVE_INVALID$'):
+                inspect_template_archive(p,self.profile(),hashlib.sha256(data).hexdigest())
+
+    def test_offline_import_cli_emits_inspection_only(self):
+        import json,subprocess
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/'profile.json';p.write_text(json.dumps(self.profile()))
+            result=subprocess.run([sys.executable,str(Path(__file__).resolve().parents[1]/'scripts/pod_kdp_template_import.py'),
+                                   '--archive',str(self.archive),'--profile',str(p),'--expected-sha256',self.sha],
+                                  capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,result.stderr)
+            report=json.loads(result.stdout)
+            self.assertEqual(report['archive_sha256'],self.sha)
+            self.assertFalse(report['production_template_approved'])
+
 class InteriorEmbeddingTests(unittest.TestCase):
     def test_renderer_references_only_embedded_fonts(self):
         font,spec=BookBoundsTests().spec()
