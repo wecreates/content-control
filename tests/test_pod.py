@@ -74,7 +74,7 @@ class PODTests(unittest.TestCase):
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
-                       text_layers=None,ocr_text='',manuscript_inputs=True):
+                       text_layers=None,ocr_text='',manuscript_inputs=True,font_inputs=True):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -90,8 +90,10 @@ class PODTests(unittest.TestCase):
                            'reading_direction':'left_to_right','locale':'en_US','barcode_mode':'amazon_placed'}})
             layers=text_layers or []
             m=generate(src,template,layers,root)
+            interior_font=None
             if kdp:
                 font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+                interior_font=font
                 spec={'platform':'kdp','binding':'paperback','ink_type':'black','paper_type':'white',
                     'interior_type':'text_no_bleed','trim_inches':[6,9],
                     'page_count':24,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25),
@@ -141,7 +143,8 @@ class PODTests(unittest.TestCase):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
                     target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
-                    source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None)
+                    source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None,
+                    interior_font=interior_font if kdp and font_inputs else None)
 
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
@@ -154,6 +157,16 @@ class PODTests(unittest.TestCase):
         valid=self.package_result(lambda m,r:None,kdp=True)
         self.assertEqual(valid['binary_pass'],1,valid)
         self.assertTrue(valid['checks']['manuscript_provenance'])
+
+    def test_kdp_original_font_source_is_required_and_reported(self):
+        missing=self.package_result(lambda m,r:None,kdp=True,font_inputs=False)
+        self.assertEqual(missing['binary_pass'],0,missing)
+        self.assertIn('INTERIOR_FONT_SOURCE_REQUIRED',missing['errors'])
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        self.assertTrue(valid['checks']['source_font'])
+        self.assertEqual(valid['font_sha256'],valid['font_sha256'].lower())
+        self.assertEqual(len(valid['font_sha256']),64)
 
     def test_rebound_substituted_interior_text_does_not_match_original_manuscript(self):
         from pod_common import save_json

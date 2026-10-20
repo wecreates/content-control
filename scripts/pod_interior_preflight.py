@@ -4,8 +4,103 @@ This reads the delivered PDF; a renderer receipt is not evidence of these checks
 It does not assess editorial quality, licensing or official platform acceptance.
 """
 import math
+import hashlib
+import io
 import fitz
 from pod_pdf_policy import inspect_static_document, inspect_static_page
+
+MAX_FONT_BYTES = 16 * 1024 * 1024
+
+
+def inspect_font_source(path, font_path, spec):
+    """Bind every delivered glyph to the authenticated original TTF bytes.
+
+    This proves the visible glyph programs and metrics came from the source
+    whose SHA-256 is signed in the interior template. It does not establish
+    that the source is licensed; rights evidence remains a separate gate.
+
+    The supported renderer emits one TrueType subset. Requiring exactly one
+    resource prevents an unused matching font from masking a different active
+    resource when PyMuPDF's text trace does not expose the PDF resource name.
+    """
+    from fontTools.pens.recordingPen import DecomposingRecordingPen
+    from fontTools.ttLib import TTFont
+    from pod_common import open_regular_binary
+
+    if font_path is None:
+        raise ValueError('INTERIOR_FONT_SOURCE_REQUIRED')
+    with open_regular_binary(font_path) as source_file:
+        source_bytes = source_file.read(MAX_FONT_BYTES + 1)
+    if not source_bytes or len(source_bytes) > MAX_FONT_BYTES:
+        raise ValueError('INTERIOR_FONT_SOURCE_INVALID')
+    if hashlib.sha256(source_bytes).hexdigest() != spec.get('font_sha256'):
+        raise ValueError('INTERIOR_FONT_SOURCE_HASH_MISMATCH')
+
+    try:
+        source = TTFont(io.BytesIO(source_bytes), lazy=False,
+                        recalcBBoxes=False, recalcTimestamp=False)
+        if (source.sfntVersion != '\x00\x01\x00\x00' or
+                not {'head', 'hhea', 'maxp', 'hmtx', 'cmap', 'glyf'}.issubset(source.keys())):
+            raise ValueError()
+        source_cmap = source.getBestCmap()
+        if not source_cmap:
+            raise ValueError()
+    except Exception:
+        raise ValueError('INTERIOR_FONT_SOURCE_INVALID') from None
+
+    def outline(font, glyph_name):
+        glyphs = font.getGlyphSet()
+        pen = DecomposingRecordingPen(glyphs)
+        glyphs[glyph_name].draw(pen)
+        return pen.value
+
+    try:
+        with fitz.open(path) as book:
+            resources = {}
+            for page in book:
+                for item in page.get_fonts(full=True):
+                    resources[item[0]] = item
+            if len(resources) != 1:
+                raise ValueError('INTERIOR_FONT_RESOURCE_AMBIGUOUS')
+            xref, item = next(iter(resources.items()))
+            if item[1] != 'ttf' or item[2] not in ('TrueType', 'Type0'):
+                raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+            embedded_bytes = book.extract_font(xref)[3]
+            if not embedded_bytes or len(embedded_bytes) > MAX_FONT_BYTES:
+                raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+            embedded = TTFont(io.BytesIO(embedded_bytes), lazy=False,
+                              recalcBBoxes=False, recalcTimestamp=False)
+            if (embedded.sfntVersion != source.sfntVersion or
+                    not {'head', 'hhea', 'maxp', 'hmtx', 'glyf'}.issubset(embedded.keys()) or
+                    embedded['head'].unitsPerEm != source['head'].unitsPerEm or
+                    any(getattr(embedded['hhea'], field) != getattr(source['hhea'], field)
+                        for field in ('ascent', 'descent', 'lineGap'))):
+                raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+            embedded_order = embedded.getGlyphOrder()
+            checked = set()
+            for page in book:
+                for trace in page.get_texttrace():
+                    for codepoint, glyph_id, *_ in trace['chars']:
+                        pair = (codepoint, glyph_id)
+                        if pair in checked:
+                            continue
+                        checked.add(pair)
+                        if (type(codepoint) is not int or type(glyph_id) is not int or
+                                codepoint not in source_cmap or
+                                not 0 < glyph_id < len(embedded_order)):
+                            raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+                        source_name = source_cmap[codepoint]
+                        embedded_name = embedded_order[glyph_id]
+                        if (source['hmtx'][source_name] != embedded['hmtx'][embedded_name] or
+                                outline(source, source_name) != outline(embedded, embedded_name)):
+                            raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+            if not checked:
+                raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH')
+    except ValueError:
+        raise
+    except Exception:
+        raise ValueError('INTERIOR_FONT_SOURCE_MISMATCH') from None
+    return spec['font_sha256']
 
 
 def inspect_pairing(spec, cover):

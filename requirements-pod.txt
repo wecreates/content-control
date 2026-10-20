@@ -3,3 +3,4 @@
 # Versions used for the local Python 3.12 PDF tests; validate target clean build.
 reportlab==4.4.9
 PyMuPDF==1.26.6
+fonttools==4.61.1
