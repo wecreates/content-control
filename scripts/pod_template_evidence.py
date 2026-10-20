@@ -1,29 +1,12 @@
 """Authenticate original KDP template evidence independently of the producer."""
-import json
-import math
 import re
 import time
 from datetime import datetime,timezone
 from urllib.parse import urlsplit
-from pod_common import canonical,open_regular_binary,verified,MAX_JSON_BYTES
+from pod_common import canonical,open_regular_binary,verified,MAX_JSON_BYTES,strict_json
 from pod_interior_preflight import inspect_pairing
 from pod_kdp_options import require_paperback_options
 from pod_kdp_template_import import inspect_template_archive
-
-
-def strict_json(text):
-    def pairs(values):
-        result={}
-        for key,value in values:
-            if key in result:raise ValueError()
-            result[key]=value
-        return result
-    def finite(value):
-        value=float(value)
-        if not math.isfinite(value):raise ValueError()
-        return value
-    def invalid(value):raise ValueError()
-    return json.loads(text,object_pairs_hook=pairs,parse_float=finite,parse_constant=invalid)
 
 
 def original_envelope(path,audience):

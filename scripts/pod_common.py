@@ -2,6 +2,7 @@
 import hashlib
 import hmac
 import json
+import math
 import os
 import stat
 import time
@@ -9,6 +10,38 @@ from pathlib import Path
 
 PLATFORMS = {'kdp', 'redbubble', 'teepublic', 'zazzle', 'spreadshirt'}
 MAX_JSON_BYTES = 4 * 1024 * 1024
+
+def strict_json(text):
+    """Reject duplicate decoded keys and nonfinite numbers at every depth."""
+    def pairs(values):
+        result = {}
+        for key, value in values:
+            if key in result:
+                raise ValueError('JSON_DUPLICATE_KEY')
+            result[key] = value
+        return result
+
+    def number(token):
+        value = float(token)
+        if not math.isfinite(value):
+            raise ValueError('JSON_NONFINITE')
+        return value
+
+    def integer(token):
+        value = int(token)
+        try:
+            finite = math.isfinite(value)
+        except OverflowError:
+            finite = False
+        if not finite:
+            raise ValueError('JSON_NONFINITE')
+        return value
+
+    def invalid(_token):
+        raise ValueError('JSON_NONFINITE')
+
+    return json.loads(text, object_pairs_hook=pairs, parse_float=number,
+                      parse_int=integer, parse_constant=invalid)
 
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)
@@ -48,7 +81,7 @@ def read_json(path):
         data = source.read(MAX_JSON_BYTES + 1)
     if len(data) > MAX_JSON_BYTES:
         raise ValueError('JSON_TOO_LARGE')
-    return json.loads(data.decode('utf-8', errors='strict'))
+    return strict_json(data.decode('utf-8', errors='strict'))
 
 def save_json(path, value):
     p = Path(path)
@@ -67,13 +100,24 @@ def verified(envelope, key_env, audience):
     key = os.environ.get(key_env, '')
     if len(key.encode()) < 32:
         raise ValueError('EVIDENCE_KEY_REQUIRED')
-    payload = envelope.get('payload')
-    if not isinstance(payload, str) or len(payload) > 4 * 1024 * 1024:
+    if not isinstance(envelope, dict):
         raise ValueError('EVIDENCE_INVALID')
-    signature = hmac.new(key.encode(), payload.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(signature, str(envelope.get('signature', ''))):
+    payload = envelope.get('payload')
+    supplied = envelope.get('signature')
+    if (type(payload) is not str or len(payload) > MAX_JSON_BYTES
+            or type(supplied) is not str or len(supplied) != 64
+            or any(c not in '0123456789abcdef' for c in supplied)):
+        raise ValueError('EVIDENCE_INVALID')
+    try:
+        encoded = payload.encode('utf-8', errors='strict')
+    except UnicodeEncodeError:
+        raise ValueError('EVIDENCE_INVALID') from None
+    if len(encoded) > MAX_JSON_BYTES:
+        raise ValueError('EVIDENCE_INVALID')
+    signature = hmac.new(key.encode(), encoded, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, supplied):
         raise ValueError('EVIDENCE_SIGNATURE_INVALID')
-    value = json.loads(payload)
+    value = strict_json(payload)
     now = int(time.time() * 1000)
     if (not isinstance(value, dict) or value.get('audience') != audience
             or type(value.get('schema_version')) is not int or value['schema_version'] != 1):
