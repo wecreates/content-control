@@ -36,8 +36,8 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
         response.status>=500?'UPSTREAM_UNAVAILABLE':'UPSTREAM_REQUEST_REJECTED');
       try { return await response.json(); }
       catch (error) {
-        if(error?.name==='AbortError'||error?.name==='TimeoutError')throw error;
-        throw new EvidenceReadError('INVALID_UPSTREAM_JSON');
+        if(error instanceof SyntaxError)throw new EvidenceReadError('INVALID_UPSTREAM_JSON');
+        throw error;
       }
     } catch (error) {
       if(error instanceof EvidenceReadError)throw error;

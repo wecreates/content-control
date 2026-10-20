@@ -179,6 +179,7 @@ test('upstream failures expose only fixed diagnostic codes while preserving read
     ['UPSTREAM_TIMEOUT',async()=>{throw Object.assign(new Error('private timeout URL'),{name:'TimeoutError'})}],
     ['UPSTREAM_TIMEOUT',async()=>({ok:true,json:async()=>{throw Object.assign(new Error('private body URL'),{name:'AbortError'})}})],
     ['INVALID_UPSTREAM_JSON',async()=>({ok:true,json:async()=>{throw new SyntaxError('private body token')}})],
+    ['UPSTREAM_NETWORK_FAILURE',async()=>({ok:true,json:async()=>{throw new TypeError('private interrupted body URL')}})],
   ]) {
     const result=await createHostedWorkerStatus({fetchImpl})();
     assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
