@@ -292,6 +292,22 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
         self.assertEqual(list(self.package.glob('.pod-book-*')),[])
 
+    def test_concurrent_manifest_replacement_is_preserved(self):
+        original_commit=books._commit_manifest
+        concurrent=b'{"concurrent":true}\n'
+        def replace_manifest(stage_fd,root_fd,identity,contents):
+            os.unlink('manifest.json',dir_fd=root_fd)
+            fd=os.open('manifest.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600,dir_fd=root_fd)
+            try:os.write(fd,concurrent)
+            finally:os.close(fd)
+            return original_commit(stage_fd,root_fd,identity,contents)
+        with patch.object(books,'_commit_manifest',side_effect=replace_manifest):
+            with self.assertRaisesRegex(ValueError,'^MANIFEST_CHANGED$'):self.run_assembly()
+        self.assertEqual((self.package/'manifest.json').read_bytes(),concurrent)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
 
 if __name__ == '__main__': unittest.main()
 
