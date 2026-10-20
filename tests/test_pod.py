@@ -154,7 +154,8 @@ class PODTests(unittest.TestCase):
                 with Image.open(root/'text-mask.png') as source:
                     mask=source.convert('L')
                 # A compliant outer safe box cannot authorize spine/fold text.
-                t['safe_box_px']=[75,75,mask.width-150,mask.height-150]
+                t['safe_box_px']=[75,75,math.floor((t['size_inches'][0]-.25)*dpi)-75,
+                                  math.floor((t['size_inches'][1]-.25)*dpi)-75]
                 left=(.125+k['trim_width_inches'])*dpi
                 right=left+k['spine_width_inches']*dpi
                 x={'spine':round((left+right)/2),'back_fold':math.floor(left-.0625*dpi),
