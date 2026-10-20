@@ -131,6 +131,32 @@ shaping, substantive content or editorial quality. Genuine templates, calibrated
 independent review and actual KDP preview/print acceptance remain required.
 Publication stays disabled.
 
+## Delivered interior font embedding
+
+Independent KDP QA requires every referenced interior font resource to contain
+a decodable TrueType program. This intentionally includes unused references;
+text display names cannot reliably identify the underlying PDF font resource.
+The renderer now initializes its canvas with the verified font, avoiding
+ReportLab's unused default Helvetica reference. No PDF is cleaned, rewritten or
+substituted by the inspector. Existing valid text/layout errors retain precedence.
+
+Unembedded Base-14/Type3 fallback fonts fail INTERIOR_FONT_EMBEDDING_REQUIRED.
+The supported TrueType subset accepts ttf programs exposed as TrueType or Type0,
+checks their signature and decoder glyph count, and rejects malformed programs
+as INTERIOR_FONT_EMBEDDING_INVALID. Font objects are checked once per document,
+with at most32 distinct resources,16MiB per extracted program and32MiB total.
+These are admission bounds after parser/extraction, not a general PDF decompression
+sandbox or measured production capacity. Other font formats need a separate
+validated contract.
+
+Source requirements and parser behavior, checked October20, 2026:
+[KDP submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950)
+and [PyMuPDF font extraction](https://pymupdf.readthedocs.io/en/latest/document.html#Document.extract_font).
+A valid embedded subset does not prove its source font identity, licence,
+commercial-use permission, correct glyph shaping, readability or editorial
+quality. Keep actual source-font rights and independent review separate.
+Publication remains disabled.
+
 ## Separate editorial authority
 
 Technical PDF checks and cover comparisons do not approve a manuscript. KDP QA

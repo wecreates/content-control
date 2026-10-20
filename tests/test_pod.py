@@ -306,6 +306,26 @@ class PODTests(unittest.TestCase):
         self.assertEqual(result['binary_pass'],0,result)
         self.assertIn('INTERIOR_FONT_SIZE_INVALID',result['errors'])
 
+    def test_kdp_qa_rejects_unembedded_font_despite_rebound_receipt(self):
+        import fitz
+        from pod_common import save_json
+        def change(m,root):
+            target=root/'replacement.pdf'
+            with fitz.open() as book:
+                for i in range(24):
+                    page=book.new_page(width=432,height=648)
+                    page.insert_text((40,55),f'Fixture page {i+1}',fontsize=10)
+                book.save(target)
+            target.replace(root/'interior.pdf')
+            receipt=m['interior']['receipt']
+            receipt['interior_sha256']=digest(root/'interior.pdf')
+            save_json(root/'interior.receipt.json',receipt)
+            for filename in ('interior.pdf','interior.receipt.json'):
+                m['files'][filename]=digest(root/filename)
+        result=self.package_result(change,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('INTERIOR_FONT_EMBEDDING_REQUIRED',result['errors'])
+
     def test_qa_rejects_unsupported_and_mismatched_platforms(self):
         for platform in ('etsy','zazzle'):
             result=self.package_result(lambda m,r:m.update(platform=platform))

@@ -75,6 +75,7 @@ def inspect_interior(path, spec):
         inspect_static_document(book, 'INTERIOR')
         if book.needs_pass or len(book) != count:
             raise ValueError('INTERIOR_INVALID')
+        font_pages=[]
         for index, page in enumerate(book):
             inspect_static_page(book, page, 'INTERIOR')
             expected = (0, 0, width, height)
@@ -154,4 +155,36 @@ def inspect_interior(path, spec):
                         for operation in page.get_drawings(extended=True)) or
                     next(page.annots(), None) is not None or next(page.widgets(), None) is not None):
                 raise ValueError('INTERIOR_CONTENT_UNSUPPORTED')
+            font_pages.append(page.number)
+        # Inspect every referenced resource, even if unused. Display names do
+        # not identify PDF font resources reliably. No Base-14 fallback or
+        # ambiguous name-to-resource inference is allowed in this TTF subset.
+        # KDP G201857950 / PyMuPDF Document.extract_font, checked 2026-10-20.
+        checked=set();total_font_bytes=0
+        for page_number in font_pages:
+            for font in book[page_number].get_fonts(full=True):
+                xref=font[0]
+                if xref in checked:
+                    continue
+                if type(xref) is not int or xref<=0 or len(checked)>=32:
+                    raise ValueError('INTERIOR_FONT_EMBEDDING_INVALID')
+                checked.add(xref)
+                _,ext,kind,_=book.extract_font(xref,info_only=True)
+                if ext=='n/a':
+                    raise ValueError('INTERIOR_FONT_EMBEDDING_REQUIRED')
+                if ext!='ttf' or kind not in ('TrueType','Type0'):
+                    raise ValueError('INTERIOR_FONT_EMBEDDING_INVALID')
+                data=book.extract_font(xref)[3]
+                total_font_bytes+=len(data)
+                if (not data or len(data)>16*1024*1024 or total_font_bytes>32*1024*1024 or
+                        data[:4] not in (b'\x00\x01\x00\x00',b'true')):
+                    raise ValueError('INTERIOR_FONT_EMBEDDING_INVALID')
+                try:
+                    parsed=fitz.Font(fontbuffer=data)
+                    if parsed.glyph_count<=0:
+                        raise ValueError()
+                except Exception:
+                    raise ValueError('INTERIOR_FONT_EMBEDDING_INVALID') from None
+        if not checked:
+            raise ValueError('INTERIOR_FONT_EMBEDDING_REQUIRED')
     return True
