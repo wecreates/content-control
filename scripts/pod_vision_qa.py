@@ -179,7 +179,9 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             from pod_source_preflight import inspect_original_source,source_evidence_deadline
             original_source=inspect_original_source(m,image,art,text,source_evidence)
             report['checks']['original_source']=True
+            report['checks']['text_provenance']=True
             report['source_sha256']=original_source['source_sha256']
+            report['text_layers_sha256']=original_source['text_layers_sha256']
             if m['platform']=='kdp':
                 report['checks']['editorial']=False
                 if editorial_envelope is None:
@@ -214,7 +216,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                     template_evidence_deadline(original_templates))
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
-    required=('text','geometry','resolution','rights','competitive','print_preflight','original_source')
+    required=('text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance')
     if report.get('platform')=='kdp':
         required+=('editorial','template_provenance')
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
@@ -246,13 +248,15 @@ def main():
         p.add_argument('--'+name)
     p.add_argument('--source')
     p.add_argument('--asset-rights')
+    p.add_argument('--text-layers')
+    p.add_argument('--asset-root')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
         report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
                         read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country,
                         {'cover':a.cover_template,'interior':a.interior_template,'source':a.template_source},a.product,
-                        {'source':a.source,'rights':a.asset_rights})
+                        {'source':a.source,'rights':a.asset_rights,'text_layers':a.text_layers,'asset_root':a.asset_root})
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

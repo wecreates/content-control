@@ -141,3 +141,35 @@ Signed PASS receipts that omit or weaken those booleans fail at production
 completion and the existing release boundary, even while their signatures and
 expiry remain valid. Positive unit/database fixtures explicitly attest the new
 checks; they remain synthetic and do not provide a live approval.
+
+## Original text layers and font pixels
+
+QA also requires the original `--text-layers` path and the task's `--asset-root`
+when relative font paths use that root. It strictly captures the layers and
+matches their canonical SHA-256 to the original signed asset-rights record before
+reading fonts. Each font is a bounded regular-file capture whose actual hash
+must match the original layer; decoding uses that same capture. A configured
+asset root confines resolved font parents, with no final-symlink following.
+This is a private-task workspace check, not an adversarial filesystem sandbox.
+
+Independent QA derives expected text strings, font identities and bounding boxes
+from those originals, reconstructs text masks and colored glyph pixels in the
+existing strips, and compares all output pixels without text-mask exemptions.
+Forged mask pixels cannot hide changed background or glyph colors. Existing OCR,
+geometry, source/rights, template, PDF, comparative and editorial checks remain
+mandatory. The shared backend requires explicit `text_provenance=true` for every
+platform at production, review acceptance and release validation. Older QA
+receipts do not satisfy this expanded contract.
+
+The supported bound is 32 layers, 4,096 characters per layer and 16,384 total,
+font sizes 1–4,096 pixels, 16 MiB per font and 32 MiB aggregate captured font
+bytes. Unique decoded font/size inputs also share a 32 MiB budget; repeated
+identical font/size instances reuse the capture and decoder. Layer JSON retains
+the existing 4 MiB ceiling and strict duplicate/nonfinite/UTF-8 checks. These are
+safety limits, not measured throughput or a license grant. Current original
+asset rights still cap the passing receipt and are rechecked after review.
+
+Tests use synthetic signed rights and installed fixture fonts. Matching pixels
+does not establish legal font/asset authority, editorial quality, calibrated
+independent review, CMYK/preview/print acceptance or capacity. Publication flags
+remain false and all 24 live acceptance areas remain open.

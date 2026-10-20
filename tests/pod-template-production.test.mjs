@@ -29,7 +29,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -62,6 +62,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
+    ...(assetRoot?{assetRoot:root}:{}),
     ...(templateSource?{templateSource:sourcePath}:{}),
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused'}}:{}),
     ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
@@ -84,12 +85,14 @@ test('all platform QA stages receive original art and original asset rights',asy
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
   const result=await exercise({platform,template:record(platform),
    ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
-   review:true,captureQaArgs:true});
+   review:true,captureQaArgs:true,assetRoot:true});
   assert.equal(result.status,'QA_PASSED');
-  for(const flag of ['--source','--asset-rights']){
+  for(const flag of ['--source','--asset-rights','--text-layers']){
    assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
    assert.equal(result.qaArgs[result.qaArgs.indexOf(flag)+1],'unused');
   }
+  assert.equal(result.qaArgs.filter(x=>x==='--asset-root').length,1);
+  assert.match(path.basename(result.qaArgs[result.qaArgs.indexOf('--asset-root')+1]),/^pod-template-gate-/);
  }
 });
 test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
@@ -108,6 +111,7 @@ test('KDP QA receives the authenticated target country independently of guide lo
   }
  }
  const other=await exercise({review:true,captureQaArgs:true});
+ assert.equal(other.qaArgs.includes('--asset-root'),false);
  assert.equal(other.qaArgs.includes('--country'),false);
  for(const flag of ['--product','--cover-template','--interior-template','--template-source'])assert.equal(other.qaArgs.includes(flag),false);
 });
