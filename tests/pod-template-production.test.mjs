@@ -18,7 +18,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
  source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
  template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500],
-  ...(platform==='kdp'?{binding:'paperback',interior_type:'text_no_bleed',page_count:24,
+  ...(platform==='kdp'?{binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
 async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
@@ -115,12 +115,47 @@ test('paperback production rejects unsupported or malformed physical specificati
    template:{...valid,...patch}}),key,{platform:'kdp',...scope}),/KDP_PAPERBACK_SPEC_INVALID/);
  }
 });
-test('paperback baseline permits exact size and font minima without claiming print acceptance',()=>{
- for(const trim_inches of [[4,6],[8.5,11.69]]){
+test('paperback baseline permits supported trims and font minimum without claiming print acceptance',()=>{
+ for(const trim_inches of [[5,8],[8.25,6],[8.5,11],[8.27,11.69]]){
   const template={...record('kdp').template,trim_inches,font_size_pt:7};
   assert.deepEqual(validateInteriorTemplate(sign({...record('kdp'),audience:'pod:interior-template',template}),key,
    {platform:'kdp',...scope}),template);
  }
+});
+test('paperback page ceilings follow the selected paper and listed trim',()=>{
+ for(const [country,trim_inches,ceilings] of [
+  ['US',[6,9],[828,776,812]],['US',[8.25,8.25],[800,750,784]],
+  ['US',[8.27,11.69],[780,730,764]],['US',[8.5,11],[590,550,578]],
+  ['JP',[8.27,10.12],[780,730,764]]]){
+  for(const [index,paper_type] of ['white','cream','groundwood'].entries()){
+   const page_count=ceilings[index],template={...record('kdp').template,paper_type,trim_inches,
+    margins_inches:{inside:.875,outside:.25,top:.25,bottom:.25}};
+   const validate=count=>validateInteriorTemplate(sign({...record('kdp'),country,audience:'pod:interior-template',
+    template:{...template,page_count:count}}),key,{platform:'kdp',...scope,country});
+   assert.equal(validate(page_count).page_count,page_count);
+   assert.throws(()=>validate(page_count+1),/KDP_(PRINT_PAGE_LIMIT|PAPERBACK_SPEC_INVALID)/);
+  }
+ }
+});
+test('paperback print options reject unknown paper ink trim and regional tables',()=>{
+ const valid=record('kdp').template;
+ for(const [country,patch] of [['US',{paper_type:undefined}],['US',{ink_type:undefined}],
+  ['US',{paper_type:['white']}],['US',{paper_type:'recycled'}],['US',{ink_type:'premium_color'}],
+  ['US',{ink_type:['black']}],['US',{trim_inches:[4,6]}],['US',{trim_inches:[4.06,7.17]}],['CA',{}]]){
+  assert.throws(()=>validateInteriorTemplate(sign({...record('kdp'),country,audience:'pod:interior-template',
+   template:{...valid,...patch}}),key,{platform:'kdp',...scope,country}),/KDP_PRINT_OPTIONS_UNSUPPORTED/);
+ }
+ const template={...valid,trim_inches:[4.06,7.17]};
+ assert.deepEqual(validateInteriorTemplate(sign({...record('kdp'),country:'JP',audience:'pod:interior-template',template}),
+  key,{platform:'kdp',...scope,country:'JP'}),template);
+});
+test('paper-specific page overflow blocks production before cover generation',async()=>{
+ const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),
+  audience:'pod:interior-template',template:{...record('kdp').template,paper_type:'cream',page_count:800,
+   margins_inches:{inside:.875,outside:.25,top:.25,bottom:.25}}},detailed:true});
+ assert.equal(r.status,'BLOCKED');assert.equal(r.reason,'KDP_PRINT_PAGE_LIMIT');
+ assert.equal(r.started,false);assert.equal(r.bookStarted,false);assert.equal(r.held,0);
+ assert.equal(r.completed,0);assert.equal(r.cleaned,1);
 });
 test('undersized gutter or font blocks KDP before cover generation with a fixed reason',async()=>{
  for(const patch of [{font_size_pt:6},{page_count:301,margins_inches:{inside:.5,outside:.25,top:.25,bottom:.25}}]){

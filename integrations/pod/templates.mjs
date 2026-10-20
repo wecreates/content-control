@@ -1,5 +1,6 @@
 import {verifyEnvelope,PLATFORMS} from './policy.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
+import {requireKdpPaperbackOptions} from './kdp-paperback-options.mjs';
 function provenance(envelope,key,{platform,product,country},audience,now){
  const record=verifyEnvelope(envelope,key,audience,now),t=record.template;
  let source;try{source=new URL(record.source_url);}catch{throw Error('TEMPLATE_PROVENANCE_REQUIRED');}
@@ -14,9 +15,9 @@ function provenance(envelope,key,{platform,product,country},audience,now){
 export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){
  if(scope?.platform!=='kdp')throw Error('TEMPLATE_PROVENANCE_REQUIRED');
  const t=provenance(envelope,key,scope,'pod:interior-template',now);
- // Necessary paperback baselines from KDP's G201834180, G202145400 and
- // G201857950, checked 2026-10-20. These do not validate a particular ink,
- // paper, marketplace or official calculator template, or approve content.
+ // General paperback baselines from KDP's G201834180, G202145400 and
+ // G201857950, checked 2026-10-20. Option-specific limits follow below;
+ // neither check is an official calculator template or content approval.
  const count=t?.page_count,trim=t?.trim_inches,m=t?.margins_inches;
  const number=n=>typeof n==='number'&&Number.isFinite(n);
  const minimumInside=Number.isInteger(count)
@@ -31,6 +32,7 @@ export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){
   m.inside<minimumInside||
   Math.min(m.outside,m.top,m.bottom)<.25||
   m.inside+m.outside>=trim[0]||m.top+m.bottom>=trim[1])throw Error('KDP_PAPERBACK_SPEC_INVALID');
+ requireKdpPaperbackOptions(t,scope.country);
  // Actual PDF geometry, font embedding, text and cover pairing remain checked
  // by Python. Small technical fixtures are not production templates.
  return t;

@@ -21,10 +21,10 @@ Necessary physical baselines, checked against KDP on October 20, 2026:
 
 Values must be finite numbers; margins must leave usable page area. These are
 necessary baselines, not the complete requirements for a selected print option.
-Specific ink/paper/trim/marketplace combinations can have stricter page limits
-or unavailable sizes. Obtain and retain the actual matching official calculator
-template and verify those options separately. No such template or print proof
-is imported or approved by these checks. Hardcover needs a separate contract.
+The option gate below applies the reviewed paper/trim limits. Obtain and retain
+the actual matching official calculator template and verify the selected options
+separately. No such template or print proof is imported or approved by these
+checks. Hardcover needs a separate contract.
 
 Sources: [KDP print options](https://kdp.amazon.com/en_US/help/topic/G201834180),
 [paperback margin chart](https://kdp.amazon.com/en_US/help/topic/G202145400),
@@ -35,6 +35,30 @@ technical fixtures. Their success does not satisfy this durable-production gate
 or grant print acceptance. Actual PDF inspection, embedded fonts, exact
 cover/interior pairing and separate editorial/comparative approval remain
 required. Non-KDP products are unaffected. Both publication flags remain false.
+
+## Explicit print options and paper-specific limits
+
+The signed interior now also requires `ink_type: "black"` and a primitive
+`paper_type` string: `white`, `cream` or `groundwood`. The text-only renderer
+does not support color interiors. The signed target country selects the reviewed
+US or JP table from KDP's submission specifications, rechecked October20, 2026.
+Only the exact listed trims in that table are supported. Other countries,
+custom sizes, missing options and color profiles return
+KDP_PRINT_OPTIONS_UNSUPPORTED; there is no inferred paper or regional fallback.
+
+`kdp-paperback-options.mjs` records the table version and source. Page ceilings
+vary with paper and trim; overflow returns KDP_PRINT_PAGE_LIMIT. For example,
+a US 6×9 cream book is capped at776 pages, while a US 8.5×11 cream book is
+capped at550. The general828-page ceiling cannot authorize either overflow.
+No rounding, clipping, substitution or automatic manuscript edits are applied.
+
+This validates declared options, not actual provider configuration, worldwide
+availability, regional rights, cover spine measurements, print proof or platform
+acceptance. Bind the actual matching calculator template and independently
+verify cover/interior pairing and selected submission options. Unsupported
+profiles require a separately verified contract before admission. Correcting
+template fields requires a new immutable task and fresh authority for its hash.
+Low-level technical/review helpers remain separate, and publication stays false.
 
 ## Separate editorial authority
 
