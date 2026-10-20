@@ -279,15 +279,23 @@ class BookBoundsTests(unittest.TestCase):
             with self.subTest(color=color),self.assertRaisesRegex(ValueError,'INTERIOR_TEXT_COLOR_UNSUPPORTED'):
                 self.inspect_fixture(lambda page:page.insert_text((27,36),'gyp',color=color))
 
+    def production_pair(self, count=24, paper='white'):
+        # Synthetic specifications only; no actual template or rights approval.
+        spec={'platform':'kdp','binding':'paperback','ink_type':'black',
+              'paper_type':paper,'trim_inches':[6,9],'page_count':count}
+        spine=count*{'white':.002252,'cream':.0025,'groundwood':.00235}[paper]
+        cover={'platform':'kdp','size_inches':[12+spine+.25,9.25],
+               'kdp':{'binding':'paperback','ink_type':'black','paper_type':paper,
+                      'trim_width_inches':6,'spine_width_inches':spine,'bleed_inches':.125,'page_count':count}}
+        return spec,cover
+
     def test_cover_pairing_dimensions_and_strict_numeric_values(self):
         import copy
-        _,spec=self.spec()
-        cover={'platform':'kdp','size_inches':[4.35,2.25],
-               'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':1}}
+        spec,cover=self.production_pair()
         self.assertTrue(inspect_pairing(spec,cover))
-        changes=[lambda c:c.update(platform='redbubble'),lambda c:c.update(size_inches=[4.4,2.25]),
-                 lambda c:c.update(size_inches=[4.35,2.5]),lambda c:c['kdp'].update(trim_width_inches=1.5),
-                 lambda c:c['kdp'].update(page_count=2),lambda c:c['kdp'].update(page_count=True)]
+        changes=[lambda c:c.update(platform='redbubble'),lambda c:c.update(size_inches=[12.4,9.25]),
+                 lambda c:c.update(size_inches=[12.304048,9.5]),lambda c:c['kdp'].update(trim_width_inches=5),
+                 lambda c:c['kdp'].update(page_count=26),lambda c:c['kdp'].update(page_count=True)]
         changes += [lambda c,key=key,v=v:c['kdp'].update({key:v})
                     for key in ('trim_width_inches','spine_width_inches','bleed_inches')
                     for v in (True,float('nan'),float('inf'),-1,'0.1')]
@@ -295,6 +303,48 @@ class BookBoundsTests(unittest.TestCase):
             candidate=copy.deepcopy(cover);change(candidate)
             with self.subTest(candidate=candidate),self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
                 inspect_pairing(spec,candidate)
+
+    def test_pairing_independently_rejects_missing_malformed_and_wrong_paper_profiles(self):
+        import copy
+        for field,wrong in [('binding','hardcover'),('ink_type','color'),('paper_type','cream')]:
+            for value in (None,True,[wrong],wrong):
+                for target in ('interior','cover'):
+                    spec,cover=self.production_pair()
+                    (spec if target=='interior' else cover['kdp'])[field]=value
+                    with self.subTest(field=field,value=value,target=target),self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                        inspect_pairing(spec,cover)
+            spec,cover=self.production_pair();spec.pop(field);cover['kdp'].pop(field)
+            with self.subTest(missing=field),self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                inspect_pairing(spec,cover)
+        spec,cover=self.production_pair();spec['paper_type']=cover['kdp']['paper_type']='cream'
+        # Dimensions and count remain internally consistent with the wrong spine.
+        with self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+            inspect_pairing(spec,cover)
+        spec,cover=self.production_pair();cover['kdp']['bleed_inches']=.1
+        cover['size_inches']=[12+cover['kdp']['spine_width_inches']+.2,9.2]
+        with self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+            inspect_pairing(spec,cover)
+
+    def test_pairing_rejects_small_and_odd_counts_without_padding(self):
+        for count in (2,23,25,827,830):
+            spec,cover=self.production_pair(count)
+            with self.subTest(count=count),self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                inspect_pairing(spec,cover)
+
+    def test_each_paper_pairs_with_a_real_even_page_interior(self):
+        font,base=self.spec()
+        for paper in ('white','cream','groundwood'):
+            spec,cover=self.production_pair(paper=paper)
+            spec={**base,**spec,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25)}
+            with tempfile.TemporaryDirectory() as d:
+                target=Path(d)/'book.pdf'
+                receipt=render_book(spec,[{'lines':[f'Fixture page {i+1}']} for i in range(24)],font,target)
+                self.assertEqual(receipt['page_count'],24)
+                self.assertTrue(inspect_pairing(spec,cover))
+                self.assertTrue(inspect_interior(target,spec))
+                with fitz.open(target) as doc:
+                    self.assertEqual(len(doc),24)
+                    self.assertTrue(all(page.get_text().strip() for page in doc))
 
     def spec(self):
         font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
