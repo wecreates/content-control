@@ -29,7 +29,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -41,7 +41,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),"require('node:fs').writeFileSync('book-started','yes');");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
    "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
-  await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
+  await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-args.json',JSON.stringify(process.argv));require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify(sign(template)));
   const sourcePath=path.join(root,'retained-source.bin');
@@ -71,13 +71,27 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
   const guideStarted=await fs.stat(path.join(root,'guide-started')).then(()=>true,()=>false);
   const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
-  return {status:result.status,blocked,held,cleaned,started,...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
+  const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
+  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
 test('production rejects unverified template before launching any stage',async()=>{
  assert.deepEqual(await exercise({template:{...record(),official_source_verified:false}}),
   {status:'BLOCKED',blocked:1,held:0,cleaned:1,started:false});
+});
+test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
+ for(const [country,trim_inches] of [['US',[6,9]],['JP',[5.83,8.27]]]){
+  const templateScope={...scope,country},spec={...record('kdp').template,trim_inches};
+  const cover={...record('kdp'),country,template:{...record('kdp').template,...kdpCover(spec)}};
+  const interior={...record('kdp'),country,audience:'pod:interior-template',template:spec};
+  const result=await exercise({platform:'kdp',templateScope,template:cover,interior,review:true,captureQaArgs:true});
+  assert.equal(result.status,'QA_PASSED');
+  assert.equal(result.qaArgs.filter(x=>x==='--country').length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--country')+1],country);
+ }
+ const other=await exercise({review:true,captureQaArgs:true});
+ assert.equal(other.qaArgs.includes('--country'),false);
 });
 test('production rejects wrong platform country and product despite a valid signature',async()=>{
  for(const patch of [{country:'CA'},{product:'other'},{template:{...record().template,platform:'zazzle'}}]){

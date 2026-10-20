@@ -108,7 +108,7 @@ def similarity(candidate,reference):
 EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interior_consistency','ai_disclosure')
 
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
-             editorial_envelope=None,approved_editorial_evaluators=None):
+             editorial_envelope=None,approved_editorial_evaluators=None,target_country=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -162,6 +162,9 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                     raise ValueError('INTERIOR_INVALID')
                 from pod_interior_preflight import inspect_interior, inspect_pairing
                 inspect_pairing(spec,m['template'])
+                from pod_kdp_options import require_paperback_options
+                require_paperback_options(spec,target_country)
+                report['target_country']=target_country
                 inspect_interior(scoped_file(root,'interior.pdf'),spec)
                 from pod_cover_preflight import inspect_cover, inspect_spine_text
                 inspect_spine_text(m['template'],text)
@@ -226,11 +229,12 @@ def main():
     p.add_argument('--signed-output')
     p.add_argument('--descriptive-similarity',action='store_true')
     p.add_argument('--editorial-review')
+    p.add_argument('--country',help='Explicit authorized target market for KDP QA; no default')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
         report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
-                        read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator)
+                        read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)
