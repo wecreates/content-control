@@ -109,7 +109,7 @@ EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interi
 
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
              editorial_envelope=None,approved_editorial_evaluators=None,target_country=None,
-             template_evidence=None,target_product=None):
+             template_evidence=None,target_product=None,source_evidence=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -176,6 +176,10 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 report['checks']['template_provenance']=True
                 report['template_source_sha256']=original_templates['inspection']['archive_sha256']
             report['checks']['print_preflight']=bool(preflight)
+            from pod_source_preflight import inspect_original_source,source_evidence_deadline
+            original_source=inspect_original_source(m,image,art,text,source_evidence)
+            report['checks']['original_source']=True
+            report['source_sha256']=original_source['source_sha256']
             if m['platform']=='kdp':
                 report['checks']['editorial']=False
                 if editorial_envelope is None:
@@ -202,14 +206,15 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             # Slow PDF/model work must not extend the rights approval checked earlier.
             verified(rights_envelope,'POD_RIGHTS_KEY','pod:package-rights')
             verified(competitive_envelope,'POD_REVIEW_KEY','pod:competitive-review')
-            report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'])
+            report['evidence_expires_at_ms']=min(rights['expires_at_ms'],comparative['expires_at_ms'],
+                source_evidence_deadline(original_source))
             if m['platform']=='kdp':
                 verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
                 report['evidence_expires_at_ms']=min(report['evidence_expires_at_ms'],editorial['expires_at_ms'],
                     template_evidence_deadline(original_templates))
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
-    required=('text','geometry','resolution','rights','competitive','print_preflight')
+    required=('text','geometry','resolution','rights','competitive','print_preflight','original_source')
     if report.get('platform')=='kdp':
         required+=('editorial','template_provenance')
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
@@ -217,7 +222,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
     return report
 
 def qa_receipt(report, now):
-    """A PASS receipt cannot outlive either approval from which it was derived."""
+    """A PASS receipt cannot outlive any approval from which it was derived."""
     expires=now+900000
     if report.get('binary_pass')==1:
         deadline=report.get('evidence_expires_at_ms')
@@ -239,12 +244,15 @@ def main():
     p.add_argument('--country',help='Explicit authorized target market for KDP QA; no default')
     for name in ('product','cover-template','interior-template','template-source'):
         p.add_argument('--'+name)
+    p.add_argument('--source')
+    p.add_argument('--asset-rights')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
         report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
                         read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country,
-                        {'cover':a.cover_template,'interior':a.interior_template,'source':a.template_source},a.product)
+                        {'cover':a.cover_template,'interior':a.interior_template,'source':a.template_source},a.product,
+                        {'source':a.source,'rights':a.asset_rights})
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

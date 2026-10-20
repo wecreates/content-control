@@ -123,6 +123,108 @@ class RasterBoundsTests(unittest.TestCase):
             self.assertFalse(out.exists())
 
 
+class OriginalSourceTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=Path(self.temp.name);self.source=self.root/'source.png'
+        Image.new('RGBA',(31,19),(30,90,150,128)).save(self.source)
+        self.env=patch.dict(os.environ,{'POD_RIGHTS_KEY':'synthetic-source-rights-key-'*2})
+        self.env.start();self.addCleanup(self.env.stop)
+
+    def case(self,layers=None):
+        import time
+        template={'platform':'redbubble','dpi':300,'size_inches':[1,1],
+            'art_box_px':[30,40,23,21],'background_rgba':[220,210,200,180]}
+        out=self.root/('package-'+str(len(list(self.root.glob('package-*')))))
+        manifest=generate(self.source,template,layers or [],out)
+        now=int(time.time()*1000)
+        record=dict(schema_version=1,issued_at_ms=now-1,expires_at_ms=now+60000,
+            audience='pod:asset-rights',status='PASS',source_sha256=digest(self.source))
+        rights=self.root/'rights.json';save_json(rights,sign(record,'POD_RIGHTS_KEY'))
+        return manifest,out,{'source':self.source,'rights':rights},record
+
+    def inspect(self,manifest,out,paths):
+        from pod_source_preflight import inspect_original_source
+        with Image.open(out/'print.png') as p,Image.open(out/'art-mask.png') as a,Image.open(out/'text-mask.png') as t:
+            return inspect_original_source(manifest,p.convert('RGB'),a.copy(),t.copy(),paths)
+
+    def test_actual_rgb_alpha_and_odd_placement_match_without_source_path_reopen(self):
+        from pod_source_preflight import source_evidence_deadline
+        import pod_source_preflight as preflight
+        for mode in ('RGB','RGBA'):
+            Image.new(mode,(31,19),(30,90,150) if mode=='RGB' else (30,90,150,128)).save(self.source)
+            manifest,out,paths,record=self.case();real_open=preflight.open_raster
+            def changed_path(captured):
+                self.source.write_bytes(b'replaced after capture')
+                return real_open(captured)
+            with patch.object(preflight,'open_raster',side_effect=changed_path):
+                result=self.inspect(manifest,out,paths)
+            self.assertEqual(result['source_size_px'],[31,19])
+            self.assertEqual(result['source_sha256'],manifest['source_sha256'])
+            self.assertEqual(source_evidence_deadline(result),record['expires_at_ms'])
+
+    def test_source_identity_dimensions_placement_and_mask_cannot_be_rebound(self):
+        import copy
+        manifest,out,paths,_=self.case()
+        for change,reason in [({'source_sha256':'0'*64},'SOURCE_HASH_MISMATCH'),
+                ({'source_size_px':[310,190]},'SOURCE_LAYOUT_INVALID'),
+                ({'placed_size_px':[23,15]},'SOURCE_LAYOUT_INVALID'),
+                ({'placed_origin_px':[30,40]},'SOURCE_LAYOUT_INVALID'),
+                ({'effective_native_ppi':9999},'SOURCE_LAYOUT_INVALID')]:
+            altered={**copy.deepcopy(manifest),**change}
+            with self.subTest(change=change),self.assertRaisesRegex(ValueError,'^'+reason+'$'):
+                self.inspect(altered,out,paths)
+        for filename,point,reason in [('art-mask.png',(0,299),'SOURCE_MASK_MISMATCH'),
+                ('print.png',(0,299),'SOURCE_PIXELS_MISMATCH'),
+                ('text-mask.png',tuple(manifest['placed_origin_px']),'SOURCE_PIXELS_MISMATCH')]:
+            original=(out/filename).read_bytes()
+            with Image.open(out/filename) as image:
+                image.putpixel(point,255 if image.mode=='L' else (0,0,0,255));image.save(out/filename)
+            with self.subTest(filename=filename),self.assertRaisesRegex(ValueError,'^'+reason+'$'):
+                self.inspect(manifest,out,paths)
+            (out/filename).write_bytes(original)
+
+    def test_text_outside_art_remains_for_existing_ocr_and_geometry_checks(self):
+        font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        layer=dict(font_path=font,font_sha256=digest(font),font_size_px=12,
+            position_px=[70,70],text='Fixture',rgba=[0,0,0,255])
+        manifest,out,paths,_=self.case([layer])
+        self.assertEqual(self.inspect(manifest,out,paths)['source_sha256'],manifest['source_sha256'])
+
+    def test_missing_malformed_ambiguous_or_expired_original_rights_block(self):
+        from pod_common import canonical
+        manifest,out,paths,record=self.case()
+        for missing in (None,{}, {'source':self.source}):
+            with self.assertRaisesRegex(ValueError,'^SOURCE_EVIDENCE_REQUIRED$'):self.inspect(manifest,out,missing)
+        for change in ({'status':'FAIL'},{'expires_at_ms':0},{'audience':'pod:package-rights'}):
+            save_json(paths['rights'],sign({**record,**change},'POD_RIGHTS_KEY'))
+            with self.assertRaisesRegex(ValueError,'^SOURCE_RIGHTS_INVALID$'):self.inspect(manifest,out,paths)
+        envelope=sign(record,'POD_RIGHTS_KEY');text=canonical(envelope)
+        paths['rights'].write_text(text[:-1]+',"payload":'+json.dumps(envelope['payload'])+'}')
+        with self.assertRaisesRegex(ValueError,'^SOURCE_RIGHTS_INVALID$'):self.inspect(manifest,out,paths)
+        save_json(paths['rights'],sign({**record,'source_sha256':'0'*64},'POD_RIGHTS_KEY'))
+        with self.assertRaisesRegex(ValueError,'^SOURCE_HASH_MISMATCH$'):self.inspect(manifest,out,paths)
+
+    def test_source_bound_and_nonregular_files_precede_decoding(self):
+        import pod_source_preflight as preflight
+        manifest,out,paths,_=self.case();raw=self.source.read_bytes()
+        with patch.object(preflight,'MAX_SOURCE_BYTES',len(raw)-1),patch.object(preflight,'open_raster',side_effect=AssertionError('decoded')):
+            with self.assertRaisesRegex(ValueError,'^SOURCE_BYTES_INVALID$'):self.inspect(manifest,out,paths)
+        with patch.object(preflight,'MAX_SOURCE_BYTES',len(raw)):
+            self.inspect(manifest,out,paths)
+        fifo=self.root/'pipe';os.mkfifo(fifo);link=self.root/'link';link.symlink_to(self.source)
+        for path in (fifo,link):
+            with self.assertRaisesRegex(ValueError,'^SOURCE_BYTES_INVALID$'):self.inspect(manifest,out,{**paths,'source':path})
+
+    def test_captured_original_rights_are_rechecked_at_expiry(self):
+        from pod_source_preflight import source_evidence_deadline
+        manifest,out,paths,record=self.case();evidence=self.inspect(manifest,out,paths)
+        paths['rights'].write_text('replacement is not re-read')
+        self.assertEqual(source_evidence_deadline(evidence),record['expires_at_ms'])
+        with patch('pod_common.time.time',return_value=record['expires_at_ms']/1000):
+            with self.assertRaisesRegex(ValueError,'^SOURCE_RIGHTS_INVALID$'):source_evidence_deadline(evidence)
+
+
 class GenerationSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

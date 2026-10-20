@@ -80,6 +80,18 @@ test('production rejects unverified template before launching any stage',async()
  assert.deepEqual(await exercise({template:{...record(),official_source_verified:false}}),
   {status:'BLOCKED',blocked:1,held:0,cleaned:1,started:false});
 });
+test('all platform QA stages receive original art and original asset rights',async()=>{
+ for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
+  const result=await exercise({platform,template:record(platform),
+   ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
+   review:true,captureQaArgs:true});
+  assert.equal(result.status,'QA_PASSED');
+  for(const flag of ['--source','--asset-rights']){
+   assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
+   assert.equal(result.qaArgs[result.qaArgs.indexOf(flag)+1],'unused');
+  }
+ }
+});
 test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
  for(const [country,trim_inches] of [['US',[6,9]],['JP',[5.83,8.27]]]){
   const templateScope={...scope,country},spec={...record('kdp').template,trim_inches};
