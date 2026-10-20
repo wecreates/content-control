@@ -5,7 +5,7 @@ import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
 import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
-import {validateTemplate,validateInteriorTemplate,validateKdpTemplatePair} from '../integrations/pod/templates.mjs';
+import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '../integrations/pod/templates.mjs';
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
@@ -41,9 +41,15 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    const interior=validateInteriorTemplate(JSON.parse(await fs.readFile(task.interior.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
-   validateKdpTemplatePair(cover,interior);
+   const profile=kdpCalculatorProfile(cover,interior);
+   const sourceHash=verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256;
    await verifyTemplateSource(task.templateSource,
-    verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256,{signal});
+    sourceHash,{signal});
+   await authorizeProduction();
+   // Re-read/hash the retained ZIP inside the bounded child, then check its
+   // members and guide against the authenticated profile before rendering.
+   await python('pod_kdp_template_import.py',['--archive',task.templateSource,
+    '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash],{root,signal,env});
   }
   await authorizeProduction();
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
