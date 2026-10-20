@@ -195,3 +195,31 @@ from the actual authority; no approval is rewritten or fabricated.
 These parser tests use synthetic signatures only. They do not establish live
 source/reviewer authority, rights, production acceptance or deployment. Both
 publication flags remain false and all 24 live acceptance areas remain open.
+
+
+## KDP interior output installation
+
+The interior renderer encodes into a private 0600 temporary file in the output
+parent, flushes and syncs it, and captures at most the existing 16 MiB object
+ceiling plus one byte. Hashing and PDF text/page/geometry verification use that
+same bounded byte capture before the requested output path becomes visible.
+The complete PDF is installed by an atomic no-replace hard link, then its parent
+directory is synced. A concurrent output or dangling final symlink fails with
+OUTPUT_EXISTS instead of being followed or overwritten.
+
+Encoding, file-sync, size and PDF-inspection failures remove the new temporary
+file and leave no requested output. A failed directory sync after installation
+retains the complete PDF without returning a successful receipt; it is not
+removed because another process may already be using it. Temporary-file cleanup
+is attempted on Python exceptions, not guaranteed after SIGKILL/process crashes
+or filesystem failure. Parent directories created for output are retained. The
+supported runtime needs same-filesystem hard links; unsupported filesystems fail
+closed with no replacing-write fallback. This is not a same-user adversarial
+filesystem sandbox or a durable backup/restore guarantee.
+
+Deterministic PDF content, font snapshot verification, existing layout/text
+checks and UNASSESSED editorial/false production/publication receipts remain.
+Tests use fixture manuscripts/fonts only; they establish neither substantive
+editorial quality, rights, independent calibration, live KDP print acceptance nor
+measured capacity. Both publication flags remain false and all 24 live acceptance
+areas remain open.

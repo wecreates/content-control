@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import pod_common as common
 from pod_asset_generator import input_snapshot
 from pod_original_art import create_art
+from pod_book_interior import render_book
 
 
 class OriginalArtOutputTests(unittest.TestCase):
@@ -90,6 +91,107 @@ class OriginalArtOutputTests(unittest.TestCase):
             with Image.open(target) as image:
                 self.assertEqual(image.size, (300, 300))
                 image.verify()
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
+
+
+class BookOutputTests(unittest.TestCase):
+    def setUp(self):
+        self.font = Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+        self.spec = {'platform': 'kdp', 'interior_type': 'text_no_bleed', 'page_count': 1,
+                     'trim_inches': [2, 2], 'margins_inches': dict(inside=.25, outside=.25, top=.25, bottom=.25),
+                     'font_sha256': common.digest(self.font), 'font_size_pt': 10, 'leading_pt': 12}
+        self.pages = [{'lines': ['Fixture text']}]
+
+    def render(self, target):
+        return render_book(self.spec, self.pages, self.font, target)
+
+    def test_collision_after_initial_check_preserves_concurrent_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp)/'interior.pdf'
+            target.write_bytes(b'concurrent-original')
+            with patch.object(Path, 'exists', return_value=False):
+                with self.assertRaisesRegex(ValueError, '^OUTPUT_EXISTS$'):
+                    self.render(target)
+            self.assertEqual(target.read_bytes(), b'concurrent-original')
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
+
+    def test_dangling_symlink_never_creates_its_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target, destination = Path(tmp)/'interior.pdf', Path(tmp)/'other.pdf'
+            target.symlink_to(destination)
+            with self.assertRaises((ValueError, OSError)):
+                self.render(target)
+            self.assertTrue(target.is_symlink())
+            self.assertFalse(destination.exists())
+            self.assertEqual(list(Path(tmp).iterdir()), [target])
+
+    def test_success_is_private_deterministic_verified_and_hash_bound(self):
+        import fitz
+        with tempfile.TemporaryDirectory() as tmp:
+            targets = [Path(tmp)/name for name in ('one.pdf', 'two.pdf')]
+            receipts = [self.render(target) for target in targets]
+            self.assertEqual(receipts[0], receipts[1])
+            for target, receipt in zip(targets, receipts):
+                self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+                self.assertEqual(receipt['interior_sha256'], common.digest(target))
+                self.assertTrue(receipt['technical_checks_passed'])
+                self.assertFalse(receipt['production_ready'])
+                self.assertFalse(receipt['publication_enabled'])
+                self.assertEqual(receipt['editorial_review'], 'UNASSESSED')
+                with fitz.open(target) as book:
+                    self.assertEqual(book[0].get_text().splitlines(), self.pages[0]['lines'])
+            self.assertEqual(set(Path(tmp).iterdir()), set(targets))
+
+    def test_failed_encoder_cleans_partial_output(self):
+        def fail(pdf):
+            stream = pdf._filename
+            if hasattr(stream, 'write'):
+                stream.write(b'partial-fixture')
+            else:
+                Path(stream).write_bytes(b'partial-fixture')
+            raise OSError('encoder fixture')
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch('pod_book_interior.canvas.Canvas.save', autospec=True, side_effect=fail):
+                with self.assertRaisesRegex(OSError, '^encoder fixture$'):
+                    self.render(Path(tmp)/'interior.pdf')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_failed_pdf_inspection_cleans_encoded_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch('fitz.open', side_effect=ValueError('inspection fixture')):
+                with self.assertRaisesRegex(ValueError, '^inspection fixture$'):
+                    self.render(Path(tmp)/'interior.pdf')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_failed_file_sync_does_not_expose_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch('os.fsync', side_effect=OSError('sync fixture')):
+                with self.assertRaisesRegex(OSError, '^sync fixture$'):
+                    self.render(Path(tmp)/'interior.pdf')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_oversized_pdf_fails_before_inspection_or_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch('pod_book_interior.MAX_DIGEST_BYTES', 8), \
+                 patch('fitz.open', side_effect=AssertionError('inspection reached')):
+                with self.assertRaisesRegex(ValueError, '^DIGEST_TOO_LARGE$'):
+                    self.render(Path(tmp)/'interior.pdf')
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_failed_directory_sync_retains_complete_output_without_receipt(self):
+        import fitz
+        real_sync = os.fsync
+        def sync(fd):
+            if stat.S_ISDIR(os.fstat(fd).st_mode):
+                raise OSError('directory fixture')
+            real_sync(fd)
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp)/'interior.pdf'
+            with patch('os.fsync', side_effect=sync):
+                with self.assertRaisesRegex(OSError, '^directory fixture$'):
+                    self.render(target)
+            with fitz.open(target) as book:
+                self.assertEqual(book[0].get_text().splitlines(), self.pages[0]['lines'])
             self.assertEqual(list(Path(tmp).iterdir()), [target])
 
 
@@ -214,3 +316,4 @@ class BinaryInputTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

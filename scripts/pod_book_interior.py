@@ -5,11 +5,13 @@ import argparse
 import sys
 import hashlib
 import io
+import os
+import tempfile
 from pathlib import Path
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from pod_common import open_regular_binary, canonical, digest, read_json, save_json, verified
+from pod_common import open_regular_binary, canonical, MAX_DIGEST_BYTES, read_json, save_json, verified
 
 MAX_FONT_BYTES = 16 * 1024 * 1024
 
@@ -43,40 +45,66 @@ def render_book(spec, pages, font_path, output):
     if target.exists():
         raise ValueError('OUTPUT_EXISTS')
     target.parent.mkdir(parents=True,exist_ok=True)
-    # Do not insert ReportLab's unused, unembedded default Helvetica resource.
-    pdf=canvas.Canvas(str(target),pagesize=(width,height),invariant=1,pageCompression=1,
-                      initialFontName=face,initialFontSize=size,initialLeading=leading)
-    for number,page in enumerate(pages,1):
-        lines=page.get('lines')
-        if not isinstance(lines,list) or not lines or any(not isinstance(line,str) or '\n' in line for line in lines):
-            raise ValueError('PAGE_TEXT_INVALID')
-        x=inside if number%2 else outside
-        y=height-top-size
-        pdf.setFont(face,size)
-        for line in lines:
-            if y+descent < bottom or y+ascent > height-top or pdfmetrics.stringWidth(line,face,size) > width-inside-outside:
-                raise ValueError('TEXT_OVERFLOW')
-            pdf.drawString(x,y,line);y-=leading
-        pdf.showPage()
-    pdf.save()
-    # Re-open the actual output and verify text and every page size.
-    import fitz
-    with fitz.open(target) as document:
-        if len(document)!=len(pages):
-            raise ValueError('PDF_PAGE_COUNT_FAILED')
-        for number,(page,expected) in enumerate(zip(document,pages),1):
-            if abs(page.rect.width-width)>.01 or abs(page.rect.height-height)>.01 or page.get_text().splitlines()!=expected['lines']:
-                raise ValueError('PDF_TEXT_OR_SIZE_FAILED')
-            left,right=(inside,outside) if number%2 else (outside,inside)
-            # Inspect the emitted PDF, not only the layout engine's advance
-            # widths/baselines. PDF coordinates here have a top-left origin.
-            for block in page.get_text('dict')['blocks']:
-                for line in block.get('lines',[]):
-                    for span in line['spans']:
-                        x0,y0,x1,y1=span['bbox']
-                        if x0<left-.01 or x1>width-right+.01 or y0<top-.01 or y1>height-bottom+.01:
-                            raise ValueError('PDF_TEXT_BOUNDS_FAILED')
-    return {'schema_version':1,'interior_sha256':digest(target),'page_count':len(pages),
+    temporary=None
+    try:
+        with tempfile.NamedTemporaryFile(dir=target.parent,prefix='.pod-interior-',
+                                         suffix='.pdf',delete=False) as stream:
+            temporary=Path(stream.name)
+            # Do not insert ReportLab's unused, unembedded default Helvetica resource.
+            pdf=canvas.Canvas(stream,pagesize=(width,height),invariant=1,pageCompression=1,
+                              initialFontName=face,initialFontSize=size,initialLeading=leading)
+            for number,page in enumerate(pages,1):
+                lines=page.get('lines')
+                if not isinstance(lines,list) or not lines or any(not isinstance(line,str) or '\n' in line for line in lines):
+                    raise ValueError('PAGE_TEXT_INVALID')
+                x=inside if number%2 else outside
+                y=height-top-size
+                pdf.setFont(face,size)
+                for line in lines:
+                    if y+descent < bottom or y+ascent > height-top or pdfmetrics.stringWidth(line,face,size) > width-inside-outside:
+                        raise ValueError('TEXT_OVERFLOW')
+                    pdf.drawString(x,y,line);y-=leading
+                pdf.showPage()
+            pdf.save()
+            stream.flush()
+            os.fsync(stream.fileno())
+            stream.seek(0)
+            pdf_bytes=stream.read(MAX_DIGEST_BYTES+1)
+            if len(pdf_bytes)>MAX_DIGEST_BYTES:
+                raise ValueError('DIGEST_TOO_LARGE')
+            interior_sha256=hashlib.sha256(pdf_bytes).hexdigest()
+            # Inspect the same bounded encoded bytes before exposing any output.
+            import fitz
+            with fitz.open(stream=pdf_bytes,filetype='pdf') as document:
+                if len(document)!=len(pages):
+                    raise ValueError('PDF_PAGE_COUNT_FAILED')
+                for number,(page,expected) in enumerate(zip(document,pages),1):
+                    if abs(page.rect.width-width)>.01 or abs(page.rect.height-height)>.01 or page.get_text().splitlines()!=expected['lines']:
+                        raise ValueError('PDF_TEXT_OR_SIZE_FAILED')
+                    left,right=(inside,outside) if number%2 else (outside,inside)
+                    # Inspect the emitted PDF, not only the layout engine's advance
+                    # widths/baselines. PDF coordinates here have a top-left origin.
+                    for block in page.get_text('dict')['blocks']:
+                        for line in block.get('lines',[]):
+                            for span in line['spans']:
+                                x0,y0,x1,y1=span['bbox']
+                                if x0<left-.01 or x1>width-right+.01 or y0<top-.01 or y1>height-bottom+.01:
+                                    raise ValueError('PDF_TEXT_BOUNDS_FAILED')
+        # Atomic no-replace installation of the complete, inspected PDF. A late
+        # file or dangling symlink cannot be followed or overwritten.
+        try:
+            os.link(temporary,target)
+        except FileExistsError:
+            raise ValueError('OUTPUT_EXISTS') from None
+        directory=os.open(target.parent,os.O_RDONLY|os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return {'schema_version':1,'interior_sha256':interior_sha256,'page_count':len(pages),
             'template_sha256':hashlib.sha256(canonical(spec).encode()).hexdigest(),'technical_checks_passed':True,
             'editorial_review':'UNASSESSED','production_ready':False,'publication_enabled':False}
 
@@ -101,3 +129,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
