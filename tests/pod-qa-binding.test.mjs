@@ -1,7 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enforceQA,enforceBrief,REQUIRED_QA} from '../integrations/pod/policy.mjs';
-const checks=Object.fromEntries(REQUIRED_QA.map(k=>[k,true]));
+const checks={...Object.fromEntries(REQUIRED_QA.map(k=>[k,true])),template_provenance:true};
+test('all five platforms reject signed-style PASS receipts without original-source checks',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64);
+ for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
+  for(const original_source of [undefined,false,1,'true',null]){
+   const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
+    checks:{...checks,editorial:true,original_source}};
+   assert.throws(()=>enforceQA(qa,p,t,platform),/QA_BLOCKED/);
+  }
+ }
+});
+test('KDP rejects PASS receipts without independently authenticated original templates',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64);
+ for(const template_provenance of [undefined,false,1,'true',null]){
+  const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
+   checks:{...checks,editorial:true,original_source:true,template_provenance}};
+  assert.throws(()=>enforceQA(qa,p,t,'kdp'),/QA_BLOCKED/);
+ }
+});
 test('KDP requires explicit editorial approval beyond technical and cover QA',()=>{
  const p='a'.repeat(64),t='b'.repeat(64),qa={verdict:'PASS',checks,package_sha256:p,template_sha256:t};
  for(const editorial of [undefined,false,1,'true'])assert.throws(()=>enforceQA({...qa,checks:{...checks,editorial}},p,t,'kdp'),/QA_BLOCKED/);

@@ -16,7 +16,7 @@ export async function verifyFailureReasons(pool,bridge){
  const grant=()=>sign('content-control:pod',upstreamKey,{job_id:id,account_id:account,business_id:business,
   platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const qa=pass=>sign('content-control:pod:qa',qaKey,{verdict:pass?'PASS':'FAIL',...manifest,
-  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight'].map(k=>[k,pass]))});
+  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','template_provenance'].map(k=>[k,pass]))});
  const row=async()=> (await pool.query('SELECT state,reason_code FROM pod_production_queue WHERE id=$1',[id])).rows[0];
  const processing=async()=>pool.query("UPDATE pod_production_queue SET state='processing',reason_code='REVIEW_REQUIRED',lease_until=clock_timestamp()+interval '5 minutes' WHERE id=$1",[id]);
  try{

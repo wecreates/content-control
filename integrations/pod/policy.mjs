@@ -66,12 +66,12 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
    Number.isSafeInteger(grant.price.amount_minor)&&grant.price.amount_minor>=0&&
    typeof grant.price.currency==='string'&&grant.price.currency.length===3&&/^[A-Z]{3}$/.test(grant.price.currency)?grant.price:null};
 }
-export const REQUIRED_QA=['text','geometry','resolution','rights','competitive','print_preflight'];
+export const REQUIRED_QA=['text','geometry','resolution','rights','competitive','print_preflight','original_source'];
 export function enforceQA(qa,packageHash,templateHash,platform) {
  if(typeof packageHash!=='string'||!/^[a-f0-9]{64}$/.test(packageHash)||
   typeof templateHash!=='string'||!/^[a-f0-9]{64}$/.test(templateHash)||
   qa?.verdict!=='PASS'||qa.package_sha256!==packageHash||qa.template_sha256!==templateHash||
   !REQUIRED_QA.every(k=>qa.checks?.[k]===true)||
-  (platform==='kdp'&&qa.checks?.editorial!==true)) throw Error('QA_BLOCKED');
+  (platform==='kdp'&&(qa.checks?.editorial!==true||qa.checks?.template_provenance!==true))) throw Error('QA_BLOCKED');
 }
 
