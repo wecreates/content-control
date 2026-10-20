@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 from pod_common import open_regular_binary, canonical, digest, read_json, save_json, verified, PLATFORMS, scoped_file
 from pod_raster import MAX_RASTER_PIXELS, open_raster
+from pod_output_attempt import output_attempt
 
 MAX_INPUT_BYTES = 16 * 1024 * 1024
 
@@ -43,57 +44,57 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
     source_sha256=hashlib.sha256(source_bytes).hexdigest()
     if expected_source_sha256 is not None and source_sha256 != expected_source_sha256:
         raise ValueError('RIGHTS_BLOCKED')
-    with open_raster(io.BytesIO(source_bytes)) as source:
-        sw, sh = source.size
-        scale = min(bw/sw, bh/sh)
-        if scale > 1:
-            raise ValueError('NATIVE_RESOLUTION_INSUFFICIENT')
-        source.load()
-        source = source.convert('RGBA')
-        root.mkdir(parents=True, exist_ok=False)
-        nw, nh = max(1, round(sw*scale)), max(1, round(sh*scale))
-        source = source.resize((nw,nh), Image.Resampling.LANCZOS)
-        ox, oy = x+(bw-nw)//2, y+(bh-nh)//2
-        canvas = Image.new('RGBA',(w,h),tuple(template.get('background_rgba',[255,255,255,255])))
-        canvas.alpha_composite(source,(ox,oy))
-        art_mask = Image.new('L',(w,h),0)
-        art_mask.paste(source.getchannel('A'),(ox,oy))
-    text_mask = Image.new('L',(w,h),0)
-    expected = []
-    for layer in text_layers:
-        font_bytes = input_snapshot(layer['font_path'])
-        if hashlib.sha256(font_bytes).hexdigest() != layer['font_sha256']:
-            raise ValueError('FONT_HASH_MISMATCH')
-        font = ImageFont.truetype(io.BytesIO(font_bytes), layer['font_size_px'])
-        px, py = layer['position_px']
-        draw = ImageDraw.Draw(canvas)
-        box = draw.textbbox((px,py),layer['text'],font=font)
-        if box[0]<0 or box[1]<0 or box[2]>w or box[3]>h:
-            raise ValueError('TEXT_CLIPPED')
-        draw.text((px,py),layer['text'],font=font,fill=tuple(layer['rgba']))
-        ImageDraw.Draw(text_mask).text((px,py),layer['text'],font=font,fill=255)
-        expected.append({'text':layer['text'],'box_px':list(box),'font_sha256':layer['font_sha256']})
-    canvas.save(root/'print.png',dpi=(dpi,dpi))
-    art_mask.save(root/'art-mask.png')
-    text_mask.save(root/'text-mask.png')
-    files = ['print.png','art-mask.png','text-mask.png']
-    if template['platform']=='kdp':
-        # Optional explicit dependency; failure blocks KDP rather than producing a fake PDF.
-        from reportlab.pdfgen import canvas as pdfcanvas
-        from reportlab.lib.utils import ImageReader
-        pdf = pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(w*72/dpi,h*72/dpi),invariant=1)
-        pdf.drawImage(ImageReader(canvas.convert('RGB')),0,0,width=w*72/dpi,height=h*72/dpi)
-        pdf.showPage()
-        pdf.save()
-        files.append('cover.pdf')
-    manifest={'schema_version':1,'platform':template['platform'],'dpi':dpi,'size_px':[w,h],
-              'source_sha256':source_sha256,'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
-              'effective_native_ppi':min(sw/(nw/dpi),sh/(nh/dpi)),
-              'expected_text':expected,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
-              'template':template,'files':{name:digest(root/name) for name in files},'publication_enabled':False}
-    manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()
-    save_json(root/'manifest.json',manifest)
-    return manifest
+    with output_attempt(root, 'ASSET_OUTPUT_CLEANUP_FAILED'):
+        with open_raster(io.BytesIO(source_bytes)) as source:
+            sw, sh = source.size
+            scale = min(bw/sw, bh/sh)
+            if scale > 1:
+                raise ValueError('NATIVE_RESOLUTION_INSUFFICIENT')
+            source.load()
+            source = source.convert('RGBA')
+            nw, nh = max(1, round(sw*scale)), max(1, round(sh*scale))
+            source = source.resize((nw,nh), Image.Resampling.LANCZOS)
+            ox, oy = x+(bw-nw)//2, y+(bh-nh)//2
+            canvas = Image.new('RGBA',(w,h),tuple(template.get('background_rgba',[255,255,255,255])))
+            canvas.alpha_composite(source,(ox,oy))
+            art_mask = Image.new('L',(w,h),0)
+            art_mask.paste(source.getchannel('A'),(ox,oy))
+        text_mask = Image.new('L',(w,h),0)
+        expected = []
+        for layer in text_layers:
+            font_bytes = input_snapshot(layer['font_path'])
+            if hashlib.sha256(font_bytes).hexdigest() != layer['font_sha256']:
+                raise ValueError('FONT_HASH_MISMATCH')
+            font = ImageFont.truetype(io.BytesIO(font_bytes), layer['font_size_px'])
+            px, py = layer['position_px']
+            draw = ImageDraw.Draw(canvas)
+            box = draw.textbbox((px,py),layer['text'],font=font)
+            if box[0]<0 or box[1]<0 or box[2]>w or box[3]>h:
+                raise ValueError('TEXT_CLIPPED')
+            draw.text((px,py),layer['text'],font=font,fill=tuple(layer['rgba']))
+            ImageDraw.Draw(text_mask).text((px,py),layer['text'],font=font,fill=255)
+            expected.append({'text':layer['text'],'box_px':list(box),'font_sha256':layer['font_sha256']})
+        canvas.save(root/'print.png',dpi=(dpi,dpi))
+        art_mask.save(root/'art-mask.png')
+        text_mask.save(root/'text-mask.png')
+        files = ['print.png','art-mask.png','text-mask.png']
+        if template['platform']=='kdp':
+            # Optional explicit dependency; failure blocks KDP rather than producing a fake PDF.
+            from reportlab.pdfgen import canvas as pdfcanvas
+            from reportlab.lib.utils import ImageReader
+            pdf = pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(w*72/dpi,h*72/dpi),invariant=1)
+            pdf.drawImage(ImageReader(canvas.convert('RGB')),0,0,width=w*72/dpi,height=h*72/dpi)
+            pdf.showPage()
+            pdf.save()
+            files.append('cover.pdf')
+        manifest={'schema_version':1,'platform':template['platform'],'dpi':dpi,'size_px':[w,h],
+                  'source_sha256':source_sha256,'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
+                  'effective_native_ppi':min(sw/(nw/dpi),sh/(nh/dpi)),
+                  'expected_text':expected,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
+                  'template':template,'files':{name:digest(root/name) for name in files},'publication_enabled':False}
+        manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()
+        save_json(root/'manifest.json',manifest)
+        return manifest
 
 def main():
     p=argparse.ArgumentParser()

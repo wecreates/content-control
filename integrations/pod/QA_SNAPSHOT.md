@@ -223,3 +223,30 @@ Tests use fixture manuscripts/fonts only; they establish neither substantive
 editorial quality, rights, independent calibration, live KDP print acceptance nor
 measured capacity. Both publication flags remain false and all 24 live acceptance
 areas remain open.
+
+
+## Direct asset generation failure recovery
+
+The asset generator now uses the same ownership-checked output-attempt guard as
+the review-package producer. A failed font, PNG/mask/cover-PDF encoding, digest,
+manifest write or Python interrupt removes only that newly created attempt, so a
+corrected request can retry the same destination. Successful output and manifest
+hashes remain in place and are not regenerated or approved automatically.
+
+The shared guard holds the new directory descriptor and compares device/inode
+identity before cleanup. Existing directories and symlinks fail before generation;
+concurrent replacement directories/symlinks are preserved. A moved attempt can
+remain for manual recovery. Cleanup denial preserves the original stage exception
+and adds ASSET_OUTPUT_CLEANUP_FAILED for direct generation, or the existing
+REVIEW_OUTPUT_CLEANUP_FAILED for review generation. No recursive cleanup targets
+an unowned pre-existing output. This does not guarantee cleanup after SIGKILL,
+process crashes, default SIGTERM or filesystem failure, does not remove newly
+created parent directories, and is not an adversarial same-user filesystem sandbox
+or atomic package installation/durable backup guarantee.
+
+Tests exercise real PNG/PDF generation, all five platform font corrections,
+late partial-output failures followed by exact hash-bound retries, interrupts,
+existing outputs, concurrent replacements and denied cleanup. Their templates,
+content and rights remain fixtures; this is not actual official-template,
+editorial/independent-review, marketplace or print acceptance. Both publication
+flags remain false and all 24 live acceptance areas remain open.
