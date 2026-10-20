@@ -130,6 +130,21 @@ class PODTests(unittest.TestCase):
         self.assertEqual(result['binary_pass'],0,result)
         self.assertIn('COVER_PIXEL_MISMATCH',result['errors'])
 
+    def test_kdp_qa_rejects_undersized_margins_despite_rebound_receipts(self):
+        from pod_common import save_json
+        for field,value in (('inside',.374999),('outside',.249999),('top',.249999),('bottom',.249999)):
+            def mutate(manifest,root):
+                spec=manifest['interior']['template']
+                spec['margins_inches'][field]=value
+                receipt=manifest['interior']['receipt']
+                receipt['template_sha256']=hashlib.sha256(canonical(spec).encode()).hexdigest()
+                save_json(root/'interior.receipt.json',receipt)
+                manifest['files']['interior.receipt.json']=digest(root/'interior.receipt.json')
+            with self.subTest(field=field):
+                result=self.package_result(mutate,kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('INTERIOR_MARGIN_SPEC_INVALID',result['errors'])
+
     def test_kdp_requires_separate_editorial_review(self):
         result=self.package_result(lambda m,r:None,kdp=True,editorial_present=False)
         self.assertEqual(result['binary_pass'],0,result)

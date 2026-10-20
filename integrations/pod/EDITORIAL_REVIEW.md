@@ -237,3 +237,26 @@ visible text and a full-page clip with a hole. This is a technical content check
 editorial and independent visual approval remain separate requirements.
 The parser's extended clipping output is documented at
 https://pymupdf.readthedocs.io/en/latest/page.html#Page.get_drawings
+
+
+## Independent no-bleed margin floors
+
+Independent package QA now validates the declared interior margins before actual
+PDF text bounds. For the supported paperback/no-bleed path, the gutter minimum
+is 0.375 / 0.5 / 0.625 / 0.75 / 0.875 inch in the five page-count bands above.
+Outside, top and bottom each require at least 0.25 inch. Values must be finite
+primitive numbers, and each opposing pair must leave usable page area. Missing,
+boolean, nonnumeric or undersized values fail INTERIOR_MARGIN_SPEC_INVALID.
+
+The existing actual-PDF inspector then enforces the declared rectangle on every
+page, including mirrored inside/outside margins. A rebound receipt, artifact hash
+or synthetic approval cannot lower the minimum. No margin is automatically
+increased, manuscript reflowed or new approval manufactured. Corrected inputs
+require a new immutable task and current authority for its hash.
+
+Source: [KDP submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950),
+checked October 20, 2026. Low-level renderer/geometry helpers still allow small
+technical fixtures; production package QA requires the full supported pair.
+Regional print-option ceilings, genuine official templates, actual editorial and
+rights review, print quality and observed KDP preview acceptance remain separate.
+Both publication flags remain false.
