@@ -79,6 +79,21 @@ test('task descriptor blocks traversal and absent roles',()=>{
   assert.throws(()=>validateTask({...task,templateScope}),/TASK_TEMPLATE_SCOPE_REQUIRED/);
  }
 });
+test('retained template source can only reference a declared input file',async()=>{
+ for(const templateSource of [null,false,[],['input.json'],'../input.json','absent',42]){
+  assert.throws(()=>validateTask({...task,templateSource}),/TASK_ROLE_INVALID/);
+ }
+ const descriptor={...task,templateSource:'guide.zip',files:{...task.files,'guide.zip':sha}};
+ const store={get:async id=>id==='b'.repeat(64)
+  ?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}
+  :{body:Buffer.from('retained source fixture'),media_type:'application/octet-stream'}};
+ const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+ try{
+  assert.equal(resolved.templateSource,path.join(resolved.assetRoot,'guide.zip'));
+  assert.equal(await fs.readFile(resolved.templateSource,'utf8'),'retained source fixture');
+ }finally{await resolved.cleanup();}
+ await assert.rejects(fs.stat(resolved.assetRoot),{code:'ENOENT'});
+});
 test('generated output names are reserved before any input artifact is fetched',async()=>{
  for(const name of ['package','qa.json','qa-signed.json','PACKAGE','QA.JSON','QA-SIGNED.JSON']){
   const descriptor={...task,files:{...task.files,[name]:sha}};

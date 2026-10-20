@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 import {validateTemplate,validateInteriorTemplate,validateKdpTemplatePair} from '../integrations/pod/templates.mjs';
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
+import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
@@ -35,11 +36,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
-  const cover=validateTemplate(JSON.parse(await fs.readFile(task.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
+  const coverEnvelope=JSON.parse(await fs.readFile(task.template,'utf8'));
+  const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    const interior=validateInteriorTemplate(JSON.parse(await fs.readFile(task.interior.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
    validateKdpTemplatePair(cover,interior);
+   await verifyTemplateSource(task.templateSource,
+    verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256,{signal});
   }
   await authorizeProduction();
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,

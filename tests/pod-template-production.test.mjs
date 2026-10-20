@@ -14,6 +14,7 @@ const sign=value=>{
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
 };
 const scope={product:'fixture-shirt',country:'US'};
+const retainedSource=Buffer.from('retained synthetic cover source, not official evidence');
 const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
  return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],safe_box_px:[75,75,500,500],
@@ -22,12 +23,12 @@ const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
 };
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
- source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
+ source_sha256:crypto.createHash('sha256').update(retainedSource).digest('hex'),observed_at:new Date().toISOString(),
  template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500],
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -40,6 +41,8 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify(sign(template)));
+  const sourcePath=path.join(root,'retained-source.bin');
+  if(templateSource)await fs.writeFile(sourcePath,sourceBytes);
   const interiorPath=path.join(root,'interior.json');
   if(interior)await fs.writeFile(interiorPath,JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
@@ -55,6 +58,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
+    ...(templateSource?{templateSource:sourcePath}:{}),
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused'}}:{}),
     ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
     cleanup:async()=>{cleaned++;}})});
@@ -96,6 +100,25 @@ test('KDP missing interior blocks before generation and valid pair reaches revie
  assert.equal((await exercise({platform:'kdp',template:record('kdp')})).started,false);
  const interior={...record('kdp'),audience:'pod:interior-template'};
  assert.equal((await exercise({platform:'kdp',template:record('kdp'),interior})).status,'REVIEW_REQUIRED');
+});
+test('KDP requires retained source bytes matching authenticated cover provenance before rendering',async()=>{
+ const options={platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true};
+ for(const [patch,reason] of [[{templateSource:false},'TEMPLATE_SOURCE_REQUIRED'],
+  [{sourceBytes:Buffer.from('changed retained source')},'TEMPLATE_SOURCE_HASH_MISMATCH'],
+  [{sourceBytes:Buffer.alloc(0)},'TEMPLATE_SOURCE_INVALID']]){
+  const r=await exercise({...options,...patch});
+  assert.equal(r.reason,reason);assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+  assert.equal(r.qaStarted,false);assert.equal(r.held,0);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+ }
+ const valid=await exercise(options);
+ assert.equal(valid.status,'REVIEW_REQUIRED');assert.equal(valid.started,true);assert.equal(valid.bookStarted,true);
+ assert.equal(valid.completed,0);assert.equal(valid.cleaned,1);
+});
+test('KDP source identity follows the signed envelope rather than an unsigned hash assertion',async()=>{
+ const cover={...record('kdp'),source_sha256:'a'.repeat(64)};
+ const r=await exercise({platform:'kdp',template:cover,interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true});
+ assert.equal(r.reason,'TEMPLATE_SOURCE_HASH_MISMATCH');assert.equal(r.started,false);assert.equal(r.cleaned,1);
+ assert.equal((await exercise({templateSource:false})).status,'REVIEW_REQUIRED');
 });
 test('paperback production enforces every page-dependent gutter boundary',()=>{
  for(const [page_count,inside] of [[24,.375],[150,.375],[151,.5],[300,.5],[301,.625],

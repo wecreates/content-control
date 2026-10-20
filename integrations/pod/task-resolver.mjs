@@ -17,6 +17,7 @@ export function validateTask(task){
  const roles=['source','template','textLayers','assetRights','reference'];
  const has=n=>typeof n==='string'&&Object.hasOwn(task.files,n);
  if(roles.some(role=>!has(task[role])))throw Error('TASK_ROLE_INVALID');
+ if(Object.hasOwn(task,'templateSource')&&!has(task.templateSource))throw Error('TASK_ROLE_INVALID');
  if(Object.hasOwn(task,'interior')&&(!task.interior||typeof task.interior!=='object'||Array.isArray(task.interior)||
   Object.keys(task.interior).length!==interiorRoles.length||
   interiorRoles.some(role=>!Object.hasOwn(task.interior,role)||!has(task.interior[role]))))throw Error('TASK_INTERIOR_INVALID');
@@ -59,6 +60,7 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
      qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
      approvedEvaluators,approvedEditorialEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
     for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(directory,task[role]);
+    if(Object.hasOwn(task,'templateSource'))resolved.templateSource=path.join(directory,task.templateSource);
     if(task.interior)resolved.interior=Object.fromEntries(interiorRoles.map(role=>[role,path.join(directory,task.interior[role])]));
     // New packages await a hash-bound external QA review; no preapproved future bytes.
     return resolved;
