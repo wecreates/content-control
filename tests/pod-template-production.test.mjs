@@ -89,9 +89,15 @@ test('KDP QA receives the authenticated target country independently of guide lo
   assert.equal(result.status,'QA_PASSED');
   assert.equal(result.qaArgs.filter(x=>x==='--country').length,1);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--country')+1],country);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--product')+1],templateScope.product);
+  for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],['--template-source','retained-source.bin']]){
+   assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
+   assert.equal(path.basename(result.qaArgs[result.qaArgs.indexOf(flag)+1]),filename);
+  }
  }
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--country'),false);
+ for(const flag of ['--product','--cover-template','--interior-template','--template-source'])assert.equal(other.qaArgs.includes(flag),false);
 });
 test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
  for(const barcode_mode of [undefined,null,false,[],'own','amazon']){

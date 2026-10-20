@@ -72,11 +72,12 @@ class PODTests(unittest.TestCase):
                     similarity(candidate, reference)
 
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
-                       editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US'):
+                       editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
+                       template_inputs=True,template_ttl=60000):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
-        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48,'POD_EDITORIAL_KEY':'e'*48}):
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ,{'POD_RIGHTS_KEY':'r'*48,'POD_REVIEW_KEY':'v'*48,'POD_EDITORIAL_KEY':'e'*48,'POD_TEMPLATE_KEY':'t'*48}):
             root=Path(tmp)/'package'
             src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
             template=self.template()
@@ -85,7 +86,7 @@ class PODTests(unittest.TestCase):
                 template.update({'platform':'kdp','safe_box_px':[75,75,500,500],'size_inches':[12+24*.002252+.25,9.25],
                     'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
                            'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24,
-                           'reading_direction':'left_to_right','barcode_mode':'amazon_placed'}})
+                           'reading_direction':'left_to_right','locale':'en_US','barcode_mode':'amazon_placed'}})
             m=generate(src,template,[],root)
             if kdp:
                 font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
@@ -110,11 +111,49 @@ class PODTests(unittest.TestCase):
                 editorial=sign({**common,'audience':'pod:editorial-review','interior_sha256':m['files'].get('interior.pdf'),
                     'evaluator_id':'synthetic-editor','verdict':'PASS','checks':{k:True for k in EDITORIAL_CHECKS},
                     **(editorial_patch or {})},'POD_EDITORIAL_KEY')
+            original_templates=None
+            if kdp and template_inputs:
+                from datetime import datetime,timezone
+                common_template={**common,'expires_at_ms':now+template_ttl,'product':'fixture-book','country':'US',
+                    'official_source_verified':True,'source_url':'https://example.invalid/synthetic-template-authority',
+                    'source_sha256':'27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',
+                    'observed_at':datetime.fromtimestamp(now/1000,timezone.utc).isoformat()}
+                cover_path=Path(tmp)/'cover-template.json';interior_path=Path(tmp)/'interior-template.json'
+                save_json(cover_path,sign({**common_template,'audience':'pod:template','template':m['template']},'POD_TEMPLATE_KEY'))
+                save_json(interior_path,sign({**common_template,'audience':'pod:interior-template','template':m['interior']['template']},'POD_TEMPLATE_KEY'))
+                original_templates={'cover':cover_path,'interior':interior_path,
+                    'source':Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'}
             # OCR is tested independently; these tests isolate package geometry and binding.
             with patch('pod_vision_qa.ocr',return_value=''):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
-                    target_country=target_country)
+                    target_country=target_country,template_evidence=original_templates,target_product='fixture-book')
+
+    def test_kdp_qa_requires_original_template_inputs_and_caps_receipt_at_template_expiry(self):
+        import time
+        from pod_vision_qa import qa_receipt
+        with patch('pod_vision_qa.time.time',return_value=time.time()):
+            now=int(time.time()*1000)
+            missing=self.package_result(lambda m,r:None,kdp=True,template_inputs=False)
+            self.assertEqual(missing['binary_pass'],0)
+            self.assertIn('KDP_TEMPLATE_PROVENANCE_REQUIRED',missing['errors'])
+            valid=self.package_result(lambda m,r:None,kdp=True,template_ttl=1000)
+            self.assertEqual(valid['binary_pass'],1,valid)
+            self.assertTrue(valid['checks']['template_provenance'])
+            self.assertEqual(qa_receipt(valid,now)['expires_at_ms'],now+1000)
+
+    def test_kdp_template_expiring_during_comparative_review_cannot_pass(self):
+        import time
+        from pod_common import verified as real_verified
+        clock=[time.time()]
+        def review(*args,**kwargs):
+            value=real_verified(*args,**kwargs)
+            if args[2]=='pod:competitive-review':clock[0]+=2
+            return value
+        with patch('pod_vision_qa.time.time',side_effect=lambda:clock[0]),patch('pod_vision_qa.verified',side_effect=review):
+            result=self.package_result(lambda m,r:None,kdp=True,template_ttl=1000)
+        self.assertEqual(result['binary_pass'],0)
+        self.assertIn('KDP_TEMPLATE_PROVENANCE_INVALID',result['errors'])
 
     def test_kdp_qa_requires_host_target_and_does_not_trust_package_country_or_locale(self):
         def claimed_country(manifest,root):
