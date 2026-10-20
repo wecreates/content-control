@@ -40,7 +40,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
-   const interior=validateInteriorTemplate(JSON.parse(await fs.readFile(task.interior.template,'utf8')),env.POD_TEMPLATE_KEY,scope);
+   const interiorEnvelope=JSON.parse(await fs.readFile(task.interior.template,'utf8'));
+   const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
    const profile=kdpCalculatorProfile(cover,interior);
    const sourceHash=verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256;
    await verifyTemplateSource(task.templateSource,
@@ -50,6 +51,15 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    // members and guide against the authenticated profile before rendering.
    await python('pod_kdp_template_import.py',['--archive',task.templateSource,
     '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash],{root,signal,env});
+   const interiorRecord=verifyEnvelope(interiorEnvelope,env.POD_TEMPLATE_KEY,'pod:interior-template');
+   await verifyTemplateSource(task.interior.source,interiorRecord.source_sha256,{signal});
+   await authorizeProduction();
+   await python('pod_kdp_interior_template_import.py',[
+    '--archive',task.interior.source,
+    '--trim-width',String(interior.trim_inches[0]),
+    '--trim-height',String(interior.trim_inches[1]),
+    '--expected-sha256',interiorRecord.source_sha256,
+    '--source-member',interiorRecord.source_member],{root,signal,env});
   }
   await authorizeProduction();
   await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
@@ -84,6 +94,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(task.assetRoot)args.push('--asset-root',task.assetRoot);
   if(job.brief.platform==='kdp')args.push('--country',scope.country,'--product',scope.product,
    '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource,
+   '--interior-template-source',task.interior.source,
    '--manuscript',task.interior.pages,'--font',task.interior.font,
    '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);

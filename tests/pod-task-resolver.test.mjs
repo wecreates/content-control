@@ -102,8 +102,8 @@ test('generated output names are reserved before any input artifact is fetched',
   assert.equal(reads,1,'invalid descriptors must not restore input artifacts');
  }
 });
-test('interior accepts exactly five declared file roles and rejects unchecked paths',()=>{
- const valid={template:'input.json',pages:'input.json',font:'input.json',fontRights:'input.json',fontLicense:'input.json'};
+test('interior accepts exactly six declared file roles and rejects unchecked paths',()=>{
+ const valid={template:'input.json',pages:'input.json',font:'input.json',fontRights:'input.json',fontLicense:'input.json',source:'input.json'};
  for(const interior of [null,false,'input.json',[],{}, {...valid,font:'../font.ttf'},
   {...valid,extra:'../../outside'},{...valid,output:'package'},{...valid,extra:null}]){
   assert.throws(()=>validateTask({...task,interior}),/TASK_INTERIOR_INVALID/);
@@ -119,13 +119,13 @@ test('artifact identities must be strings rather than values coerced into hashes
 });
 test('valid interior restores only declared inputs while output destinations remain absent',async()=>{
  const descriptor={...task,interior:{template:'interior.json',pages:'pages.json',font:'font.ttf',
-   fontRights:'font-rights.json',fontLicense:'font-license.txt'},
+   fontRights:'font-rights.json',fontLicense:'font-license.txt',source:'interior-source.zip'},
   files:{...task.files,'interior.json':sha,'pages.json':sha,'font.ttf':sha,
-   'font-rights.json':sha,'font-license.txt':sha}};
+   'font-rights.json':sha,'font-license.txt':sha,'interior-source.zip':sha}};
  const store={get:async hash=>hash==='b'.repeat(64)?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}:{body:Buffer.from('fixture'),media_type:'application/octet-stream'}};
  const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:'b'.repeat(64)}});
  try{
-  assert.deepEqual(Object.keys(resolved.interior),['template','pages','font','fontRights','fontLicense']);
+  assert.deepEqual(Object.keys(resolved.interior),['template','pages','font','fontRights','fontLicense','source']);
   for(const [role,filename] of Object.entries(descriptor.interior)){
    assert.equal(resolved.interior[role],path.join(resolved.assetRoot,filename));
    assert.equal(await fs.readFile(resolved.interior[role],'utf8'),'fixture');

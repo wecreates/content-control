@@ -48,6 +48,7 @@ jobs:
       - run: python -m unittest discover -s tests -p test_pod_stage_expiry.py
       - run: python -m unittest discover -s tests -p test_pod_book_bounds.py
       - run: python -m unittest discover -s tests -p test_pod_font_rights.py
+      - run: python -m unittest discover -s tests -p test_pod_kdp_interior_template_import.py
       - run: python -m unittest discover -s tests -p test_pod_raster_bounds.py
       - run: npm run test:pod-python
       - run: node --test tests/pod-production-e2e.mjs

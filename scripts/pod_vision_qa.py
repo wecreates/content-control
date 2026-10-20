@@ -186,6 +186,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 original_templates=inspect_kdp_template_evidence(m,template_evidence,target_product,target_country)
                 report['checks']['template_provenance']=True
                 report['template_source_sha256']=original_templates['inspection']['archive_sha256']
+                report['interior_template_source_sha256']=original_templates[
+                    'interior_inspection']['archive_sha256']
             report['checks']['print_preflight']=bool(preflight)
             from pod_source_preflight import inspect_original_source,source_evidence_deadline
             original_source=inspect_original_source(m,image,art,text,source_evidence)
@@ -258,7 +260,8 @@ def main():
     p.add_argument('--descriptive-similarity',action='store_true')
     p.add_argument('--editorial-review')
     p.add_argument('--country',help='Explicit authorized target market for KDP QA; no default')
-    for name in ('product','cover-template','interior-template','template-source'):
+    for name in ('product','cover-template','interior-template','template-source',
+                 'interior-template-source'):
         p.add_argument('--'+name)
     p.add_argument('--source')
     p.add_argument('--asset-rights')
@@ -273,7 +276,8 @@ def main():
     try:
         report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
                         read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country,
-                        {'cover':a.cover_template,'interior':a.interior_template,'source':a.template_source},a.product,
+                        {'cover':a.cover_template,'interior':a.interior_template,
+                         'source':a.template_source,'interiorSource':a.interior_template_source},a.product,
                         {'source':a.source,'rights':a.asset_rights,'text_layers':a.text_layers,'asset_root':a.asset_root},
                         a.manuscript,a.font,read_json(a.font_rights) if a.font_rights else None,a.font_license)
     except Exception as exc:
