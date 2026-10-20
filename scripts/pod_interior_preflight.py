@@ -102,6 +102,10 @@ def inspect_interior(path, spec):
             for trace in traces:
                 if trace['type'] != 0 or trace['opacity'] != 1:
                     raise ValueError('INTERIOR_TEXT_NOT_VISIBLE')
+                # KDP G201857950 (checked 2026-10-20) requires at least 7pt.
+                # Inspect delivered text, not the template or renderer receipt.
+                if not number(trace.get('size')) or trace['size'] < 7:
+                    raise ValueError('INTERIOR_FONT_SIZE_INVALID')
                 # A ToUnicode map can yield the expected text even when the
                 # font actually draws .notdef. Inspect delivered glyph IDs,
                 # not Unicode values (a real U+FFFD glyph can be intentional).
@@ -121,9 +125,24 @@ def inspect_interior(path, spec):
                 if block['type'] != 0:
                     raise ValueError('INTERIOR_CONTENT_UNSUPPORTED')
                 for line in block.get('lines', []):
+                    # The current renderer emits horizontal text. Other writing
+                    # directions need a separately validated metric contract.
+                    if line.get('wmode') != 0 or line.get('dir') != (1, 0):
+                        raise ValueError('INTERIOR_TEXT_TRANSFORM_UNSUPPORTED')
                     for span in line['spans']:
                         if not within(span['bbox']):
                             raise ValueError('INTERIOR_TEXT_BOUNDS_FAILED')
+                        # A trace's size can remain 12pt after 50% vertical
+                        # compression. TextPage bbox/ascender/descender expose
+                        # that delivered vertical scale for this horizontal
+                        # native-text subset. This is em size, not glyph ink
+                        # height or a readability score. Allow 0.0001pt only for
+                        # coordinate/metric floating-point reconstruction.
+                        a, d = span.get('ascender'), span.get('descender')
+                        if (not number(span.get('size')) or span['size'] < 7 or
+                                not number(a) or not number(d) or a <= d or
+                                (span['bbox'][3]-span['bbox'][1])/(a-d) < 7-.0001):
+                            raise ValueError('INTERIOR_FONT_SIZE_INVALID')
             # The current contract is text-only. Images, drawings, forms and
             # annotations require a separate supported contract and validation.
             # Ordinary drawings omit clipping paths. A clip may remove part of

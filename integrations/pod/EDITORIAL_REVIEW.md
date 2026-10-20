@@ -106,6 +106,31 @@ Low-level renderer/assembly helpers still permit small technical review fixtures
 such fixtures now fail independent KDP QA pairing. No manuscript padding,
 approval fabrication, publication enablement or template import is added.
 
+## Delivered interior font size
+
+Independent PDF QA requires each display-list text run and extracted span to
+meet KDP's seven-point minimum. A declared template font or passing renderer
+receipt cannot stand in for the delivered PDF. Smaller text on later pages or
+beside readable text fails INTERIOR_FONT_SIZE_INVALID. Uniform scaling is
+measured after transformation; normal and transformed seven-point text pass.
+
+For the renderer's horizontal native-text subset, extracted span height divided
+by its relative ascender-minus-descender also checks vertical em scale. This
+catches vertical compression that leaves the trace's font-size field unchanged.
+The reconstructed vertical metric allows 0.0001 point for floating-point error;
+reported trace/span sizes still require at least seven points. This measures
+font em scale, not visible glyph ink height or readability. Nonhorizontal or
+vertical writing requires a separately validated contract and fails
+INTERIOR_TEXT_TRANSFORM_UNSUPPORTED. No text is resized or reapproved here.
+
+Sources, checked October20, 2026: KDP submission specifications above, and
+[PyMuPDF text traces](https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_texttrace)
+and [span metrics](https://pymupdf.readthedocs.io/en/latest/textpage.html#span-dictionary).
+The metrics cannot prove font licensing, appropriate typography, complex-script
+shaping, substantive content or editorial quality. Genuine templates, calibrated
+independent review and actual KDP preview/print acceptance remain required.
+Publication stays disabled.
+
 ## Separate editorial authority
 
 Technical PDF checks and cover comparisons do not approve a manuscript. KDP QA

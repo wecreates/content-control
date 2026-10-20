@@ -288,6 +288,24 @@ class PODTests(unittest.TestCase):
                 self.assertEqual(result['binary_pass'],0,result)
                 self.assertIn('COVER_INTERIOR_MISMATCH',result['errors'])
 
+    def test_kdp_qa_rejects_small_delivered_font_despite_rebound_receipt(self):
+        from pod_common import save_json
+        def change(m,root):
+            spec=m['interior']['template'];target=root/'interior.pdf';target.unlink()
+            receipt=render_book({**spec,'font_size_pt':6},
+                [{'lines':[f'Fixture page {i+1}']} for i in range(24)],
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',target)
+            self.assertTrue(receipt['technical_checks_passed'])
+            # Rebind the synthetic receipt to the declared 10pt specification;
+            # all stored hashes and approvals agree, but the PDF contains 6pt.
+            receipt['template_sha256']=hashlib.sha256(canonical(spec).encode()).hexdigest()
+            m['interior']['receipt']=receipt;save_json(root/'interior.receipt.json',receipt)
+            for filename in ('interior.pdf','interior.receipt.json'):
+                m['files'][filename]=digest(root/filename)
+        result=self.package_result(change,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('INTERIOR_FONT_SIZE_INVALID',result['errors'])
+
     def test_qa_rejects_unsupported_and_mismatched_platforms(self):
         for platform in ('etsy','zazzle'):
             result=self.package_result(lambda m,r:m.update(platform=platform))
