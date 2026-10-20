@@ -133,3 +133,11 @@ canvas, but the source and resized art still decode under existing pixel bounds;
 this is not measured memory/capacity or free-tier throughput acceptance. Synthetic
 rights in tests are fixtures only. Publication remains disabled and live approval,
 rights, independent calibration, print acceptance and all 24 live areas stay open.
+
+
+The backend's shared QA gate also requires `original_source=true` for every
+platform and `template_provenance=true` alongside editorial approval for KDP.
+Signed PASS receipts that omit or weaken those booleans fail at production
+completion and the existing release boundary, even while their signatures and
+expiry remain valid. Positive unit/database fixtures explicitly attest the new
+checks; they remain synthetic and do not provide a live approval.
