@@ -72,7 +72,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   let attestation;
-  try{attestation=await task.reviewPackage(manifest,{signal});}
+  try{attestation=await task.reviewPackage(manifest,{signal,
+   ...(job.brief.platform==='kdp'?{manuscript:task.interior.pages}:{})});}
   catch(error){enabled();throw error;}
   // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
   // and reject late results before reading attestation paths or launching QA.
@@ -82,7 +83,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--source',task.source,'--asset-rights',task.assetRights,'--text-layers',task.textLayers];
   if(task.assetRoot)args.push('--asset-root',task.assetRoot);
   if(job.brief.platform==='kdp')args.push('--country',scope.country,'--product',scope.product,
-   '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource);
+   '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource,
+   '--manuscript',task.interior.pages);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
   for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);
@@ -106,3 +108,4 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
  }finally{if(task?.cleanup)await task.cleanup();}
 }
+

@@ -74,7 +74,7 @@ class PODTests(unittest.TestCase):
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
-                       text_layers=None,ocr_text=''):
+                       text_layers=None,ocr_text='',manuscript_inputs=True):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -96,7 +96,9 @@ class PODTests(unittest.TestCase):
                     'interior_type':'text_no_bleed','trim_inches':[6,9],
                     'page_count':24,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25),
                     'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
-                m=assemble(root,spec,[{'lines':[f'Fixture page {i+1}']} for i in range(24)],font)
+                original_pages=[{'lines':[f'Fixture page {i+1}']} for i in range(24)]
+                manuscript=Path(tmp)/'manuscript.json';save_json(manuscript,original_pages)
+                m=assemble(root,spec,original_pages,font)
             mutate(m,root)
             m['template_sha256']=hashlib.sha256(canonical(m['template']).encode()).hexdigest()
             m.pop('package_sha256')
@@ -111,6 +113,7 @@ class PODTests(unittest.TestCase):
             editorial=None
             if kdp and editorial_present:
                 editorial=sign({**common,'audience':'pod:editorial-review','interior_sha256':m['files'].get('interior.pdf'),
+                    'manuscript_sha256':hashlib.sha256(canonical(original_pages).encode()).hexdigest(),
                     'evaluator_id':'synthetic-editor','verdict':'PASS','checks':{k:True for k in EDITORIAL_CHECKS},
                     **(editorial_patch or {})},'POD_EDITORIAL_KEY')
             original_templates=None
@@ -138,7 +141,33 @@ class PODTests(unittest.TestCase):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
                     target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
-                    source_evidence=source_evidence)
+                    source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None)
+
+    def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
+        missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
+        self.assertEqual(missing['binary_pass'],0)
+        self.assertIn('MANUSCRIPT_REQUIRED',missing['errors'])
+        for sha in (None,'0'*64,'A'*64,['a'*64]):
+            result=self.package_result(lambda m,r:None,kdp=True,editorial_patch={'manuscript_sha256':sha})
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertFalse(result['checks']['manuscript_provenance'])
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        self.assertTrue(valid['checks']['manuscript_provenance'])
+
+    def test_rebound_substituted_interior_text_does_not_match_original_manuscript(self):
+        from pod_common import save_json
+        def substitute(m,root):
+            target=root/'substituted.pdf'
+            receipt=render_book(m['interior']['template'],
+                [{'lines':[f'Substituted page {i+1}']} for i in range(24)],
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',target)
+            target.replace(root/'interior.pdf')
+            m['interior']['receipt']=receipt;save_json(root/'interior.receipt.json',receipt)
+            for name in ('interior.pdf','interior.receipt.json'):m['files'][name]=digest(root/name)
+        result=self.package_result(substitute,kdp=True)
+        self.assertEqual(result['binary_pass'],0,result)
+        self.assertIn('MANUSCRIPT_TEXT_MISMATCH',result['errors'])
 
     def test_kdp_original_title_fonts_and_all_rendered_pixels_pass_independent_preflight(self):
         font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'

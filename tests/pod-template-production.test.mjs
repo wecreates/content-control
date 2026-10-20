@@ -95,6 +95,16 @@ test('all platform QA stages receive original art and original asset rights',asy
   assert.match(path.basename(result.qaArgs[result.qaArgs.indexOf('--asset-root')+1]),/^pod-template-gate-/);
  }
 });
+test('KDP reviewer receives the original task manuscript path and non-book reviewers do not',async()=>{
+ for(const platform of ['kdp','redbubble']){
+  let original;
+  const result=await exercise({platform,template:record(platform),
+   ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
+   review:true,reviewPolicy:async({options})=>{original=options.manuscript;}});
+  assert.equal(result.status,'QA_PASSED');
+  assert.equal(original,platform==='kdp'?'unused':undefined);
+ }
+});
 test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
  for(const [country,trim_inches] of [['US',[6,9]],['JP',[5.83,8.27]]]){
   const templateScope={...scope,country},spec={...record('kdp').template,trim_inches};
@@ -105,6 +115,8 @@ test('KDP QA receives the authenticated target country independently of guide lo
   assert.equal(result.qaArgs.filter(x=>x==='--country').length,1);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--country')+1],country);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--product')+1],templateScope.product);
+  assert.equal(result.qaArgs.filter(x=>x==='--manuscript').length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--manuscript')+1],'unused');
   for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],['--template-source','retained-source.bin']]){
    assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
    assert.equal(path.basename(result.qaArgs[result.qaArgs.indexOf(flag)+1]),filename);
@@ -113,7 +125,7 @@ test('KDP QA receives the authenticated target country independently of guide lo
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--asset-root'),false);
  assert.equal(other.qaArgs.includes('--country'),false);
- for(const flag of ['--product','--cover-template','--interior-template','--template-source'])assert.equal(other.qaArgs.includes(flag),false);
+ for(const flag of ['--product','--cover-template','--interior-template','--template-source','--manuscript'])assert.equal(other.qaArgs.includes(flag),false);
 });
 test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
  for(const barcode_mode of [undefined,null,false,[],'own','amazon']){
@@ -462,3 +474,4 @@ test('KDP cover edge violation blocks before rendering while other platform cont
  assert.equal(r.held,0);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
  assert.equal((await exercise()).status,'REVIEW_REQUIRED');
 });
+

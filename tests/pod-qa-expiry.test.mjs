@@ -18,7 +18,7 @@ async function exercise(stage,verdict,run,expired){
  try{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:issued-1,
    expires_at_ms:issued+1000,verdict,...manifest,
-   checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance'].map(k=>[k,true]))});
+   checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true]))});
   const qa={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
   const writes=[],queries=[];
   const advance=()=>{now=issued+(expired?1000:999);};
@@ -46,3 +46,4 @@ for(const [label,verdict,run] of actions){
  test('unexpired signed QA permits '+label,()=>exercise('connection',verdict,run,false));
  if(verdict==='PASS')test('QA expiry during rights lock wait blocks '+label,()=>exercise('rights',verdict,run,true));
 }
+

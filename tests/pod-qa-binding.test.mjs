@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enforceQA,enforceBrief,REQUIRED_QA} from '../integrations/pod/policy.mjs';
-const checks={...Object.fromEntries(REQUIRED_QA.map(k=>[k,true])),template_provenance:true};
+const checks={...Object.fromEntries(REQUIRED_QA.map(k=>[k,true])),template_provenance:true,manuscript_provenance:true};
 test('all platforms require independently reconstructed original text and font checks',()=>{
  const p='a'.repeat(64),t='b'.repeat(64);
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
@@ -27,6 +27,16 @@ test('KDP rejects PASS receipts without independently authenticated original tem
   const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
    checks:{...checks,editorial:true,original_source:true,template_provenance}};
   assert.throws(()=>enforceQA(qa,p,t,'kdp'),/QA_BLOCKED/);
+ }
+});
+test('KDP rejects receipts missing exact original manuscript provenance without affecting other platforms',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64);
+ for(const manuscript_provenance of [undefined,false,1,'true',null]){
+  const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
+   checks:{...checks,editorial:true,manuscript_provenance}};
+  assert.throws(()=>enforceQA(qa,p,t,'kdp'),/QA_BLOCKED/);
+  for(const platform of ['redbubble','teepublic','zazzle','spreadshirt'])
+   assert.doesNotThrow(()=>enforceQA(qa,p,t,platform));
  }
 });
 test('KDP requires explicit editorial approval beyond technical and cover QA',()=>{
@@ -56,3 +66,4 @@ test('publication permission still requires an explicit valid release package ha
   assert.throws(()=>enforceBrief(grant,job,{publishing:true}),/RELEASE_SCOPE_MISMATCH/);
  }
 });
+

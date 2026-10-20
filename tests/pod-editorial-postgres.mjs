@@ -9,10 +9,10 @@ export async function verifyEditorialGate(pool,bridge){
  const db=new PodDB({pool,bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  const job={id,platform:'kdp',fencing_token:1};
  const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
- const qa=editorial=>{
+ const qa=(editorial,manuscript_provenance=true)=>{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
-   checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance'].map(k=>[k,true])),editorial}});
+   checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true])),editorial,manuscript_provenance}});
   return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
  };
  try{
@@ -28,6 +28,16 @@ export async function verifyEditorialGate(pool,bridge){
   await assert.rejects(db.acceptReview(id,qa()),/QA_BLOCKED/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_failed');
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.production.qa_passed'",[id])).rows[0].n,0);
+  for(const invalid of [undefined,false,1,'true',null]){
+   // Explicit undefined is lost by JSON serialization, testing missing as well.
+   const payload=JSON.parse(qa(true).payload);payload.checks.manuscript_provenance=invalid;
+   const text=JSON.stringify(payload),envelope={payload:text,signature:crypto.createHmac('sha256',key).update(text).digest('hex')};
+   await pool.query("UPDATE pod_production_queue SET state='processing',lease_until=clock_timestamp()+interval '5 minutes' WHERE id=$1",[id]);
+   assert.equal((await db.completeProduction(job,manifest,envelope)).pass,false);
+   await pool.query("UPDATE pod_production_queue SET reason_code='REVIEW_REQUIRED' WHERE id=$1",[id]);
+   await assert.rejects(db.acceptReview(id,envelope),/QA_BLOCKED/);
+   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_failed');
+  }
   assert.equal((await db.acceptReview(id,qa(true))).status,'QA_PASSED');
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_passed');
  }finally{
@@ -37,3 +47,4 @@ export async function verifyEditorialGate(pool,bridge){
   await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
  }
 }
+
