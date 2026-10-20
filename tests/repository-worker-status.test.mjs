@@ -165,7 +165,39 @@ test('outage fails closed without leaking internal errors',async()=>{
   const data=fixture();data.offline=true;
   const result=await reader(data)();
   assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
+  assert.equal(result.evidence_error_code,'UPSTREAM_NETWORK_FAILURE');
   assert.ok(!JSON.stringify(result).includes('private diagnostic'));
+});
+
+test('upstream failures expose only fixed diagnostic codes while preserving readiness gates',async()=>{
+  for(const [expected,fetchImpl] of [
+    ['UPSTREAM_RATE_LIMITED',async()=>({ok:false,status:429})],
+    ['UPSTREAM_RATE_LIMITED',async()=>({ok:false,status:403,headers:new Headers({'x-ratelimit-remaining':'0'})})],
+    ['UPSTREAM_RATE_LIMITED',async()=>({ok:false,status:403,headers:new Headers({'retry-after':'60'})})],
+    ['UPSTREAM_UNAVAILABLE',async()=>({ok:false,status:503})],
+    ['UPSTREAM_REQUEST_REJECTED',async()=>({ok:false,status:403})],
+    ['UPSTREAM_TIMEOUT',async()=>{throw Object.assign(new Error('private timeout URL'),{name:'TimeoutError'})}],
+    ['UPSTREAM_TIMEOUT',async()=>({ok:true,json:async()=>{throw Object.assign(new Error('private body URL'),{name:'AbortError'})}})],
+    ['INVALID_UPSTREAM_JSON',async()=>({ok:true,json:async()=>{throw new SyntaxError('private body token')}})],
+  ]) {
+    const result=await createHostedWorkerStatus({fetchImpl})();
+    assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
+    assert.equal(result.evidence_error_code,expected);
+    assert.equal(result.aggregate_status,'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED');
+    assert.equal(result.production_ready,false);
+    assert.equal(result.publication_enabled,false);
+    assert.equal(result.paid_generation_enabled,false);
+    assert.ok(!JSON.stringify(result).includes('private'));
+  }
+});
+
+test('receipt validation diagnostics preserve independently verified additional operations',async()=>{
+  const data=aggregateFixture();data.report.receipts.at(-1).output_sha256='private invalid hash';
+  const result=await aggregateReader(data)();
+  assert.equal(result.evidence_error_code,'INVALID_RECEIPT');
+  assert.equal(result.verified_operation_count,12);
+  assert.equal(result.aggregate_status,'HOSTED_REQUIRED_OPERATIONS_NOT_VERIFIED');
+  assert.ok(!JSON.stringify(result).includes('private'));
 });
 test('concurrent readers share a cached upstream request',async()=>{
   const data=fixture();let calls=0;
@@ -213,4 +245,5 @@ test('all evidence files use one immutable main snapshot, never mutable raw main
 test('invalid main source snapshot fails closed',async()=>{
   const result=await createHostedWorkerStatus({fetchImpl:async()=>({ok:true,json:async()=>({object:{sha:'main',type:'commit'}})})})();
   assert.equal(result.status,'HOSTED_EVIDENCE_UNAVAILABLE');
+  assert.equal(result.evidence_error_code,'INVALID_SOURCE_SNAPSHOT');
 });
