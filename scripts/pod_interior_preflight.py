@@ -29,8 +29,11 @@ def inspect_font_source(path, font_path, spec):
 
     if font_path is None:
         raise ValueError('INTERIOR_FONT_SOURCE_REQUIRED')
-    with open_regular_binary(font_path) as source_file:
-        source_bytes = source_file.read(MAX_FONT_BYTES + 1)
+    try:
+        with open_regular_binary(font_path) as source_file:
+            source_bytes = source_file.read(MAX_FONT_BYTES + 1)
+    except OSError:
+        raise ValueError('INTERIOR_FONT_SOURCE_INVALID') from None
     if not source_bytes or len(source_bytes) > MAX_FONT_BYTES:
         raise ValueError('INTERIOR_FONT_SOURCE_INVALID')
     if hashlib.sha256(source_bytes).hexdigest() != spec.get('font_sha256'):

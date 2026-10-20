@@ -953,6 +953,9 @@ class BookFontSnapshotTests(unittest.TestCase):
         bad_spec = {**self.spec, 'font_sha256': digest(bad)}
         with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_INVALID$'):
             inspect_font_source(self.output, bad, bad_spec)
+        actual = self.root / 'actual.ttf';self.font.rename(actual);self.font.symlink_to(actual)
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_INVALID$'):
+            inspect_font_source(self.output, self.font, self.spec)
 
 
 class CoverPreflightTests(unittest.TestCase):
