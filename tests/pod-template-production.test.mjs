@@ -19,7 +19,8 @@ const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
  return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],safe_box_px:[75,75,500,500],
   kdp:{binding:'paperback',ink_type:'black',paper_type:spec.paper_type,page_count:spec.page_count,
-   trim_width_inches:spec.trim_inches[0],spine_width_inches:spine,bleed_inches:.125}};
+   trim_width_inches:spec.trim_inches[0],spine_width_inches:spine,bleed_inches:.125,
+   reading_direction:'left_to_right',locale:'en_US'}};
 };
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
@@ -28,7 +29,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -38,6 +39,8 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   await fs.writeFile(path.join(root,'scripts/pod_asset_generator.py'),
    "require('node:fs').writeFileSync('started','yes');require('node:fs').writeFileSync('output/manifest.json',JSON.stringify({files:{},package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
   await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),"require('node:fs').writeFileSync('book-started','yes');");
+  await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
+   "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify(sign(template)));
@@ -49,6 +52,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    platform,destination_platform:platform,mode:'PRELAUNCH'};
   let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,completed=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+  if(guideFailure)env.FIXTURE_GUIDE_FAILURE=guideFailure;
   const controller=new AbortController();
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
    db:{claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
@@ -65,7 +69,9 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
   const bookStarted=await fs.stat(path.join(root,'book-started')).then(()=>true,()=>false);
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
-  return {status:result.status,blocked,held,cleaned,started,...(detailed?{reason:result.reason_code,bookStarted,qaStarted,completed,grantCalls,localChecks,reviewCalls}:{})};
+  const guideStarted=await fs.stat(path.join(root,'guide-started')).then(()=>true,()=>false);
+  const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
+  return {status:result.status,blocked,held,cleaned,started,...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -254,8 +260,41 @@ test('grant expiring during the local database check prevents rendering',async()
  assert.equal(result.started,false);assert.equal(result.status,'BLOCKED');
 });
 test('KDP refreshes authority between artwork and interior stages',async()=>{
- const result=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt:3,detailed:true});
+ const result=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt:4,detailed:true});
  assert.equal(result.started,true);assert.equal(result.bookStarted,false);assert.equal(result.held,0);assert.equal(result.status,'BLOCKED');
+});
+
+test('KDP inspects the guide with its authenticated paired profile before generation',async()=>{
+ const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true});
+ assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.guideStarted,true);assert.equal(r.started,true);
+ assert.deepEqual(r.guideProfile,{binding:'paperback',ink_type:'black',paper_type:'white',
+  reading_direction:'left_to_right',trim_inches:[6,9],page_count:24,locale:'en_US'});
+ assert.equal(r.cleaned,1);assert.equal(r.completed,0);
+});
+test('KDP guide inspection failures block artwork with fixed diagnostics and cleanup',async()=>{
+ for(const [guideFailure,reason] of [['KDP_TEMPLATE_ARCHIVE_INVALID','KDP_TEMPLATE_ARCHIVE_INVALID'],
+  ['KDP_TEMPLATE_GUIDE_INVALID','KDP_TEMPLATE_GUIDE_INVALID'],['KDP_TEMPLATE_HASH_MISMATCH','KDP_TEMPLATE_HASH_MISMATCH'],
+  ['private child details','PRODUCTION_BLOCKED']]){
+  const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},guideFailure,detailed:true});
+  assert.equal(r.guideStarted,true);assert.equal(r.reason,reason);assert.equal(r.started,false);
+  assert.equal(r.bookStarted,false);assert.equal(r.qaStarted,false);assert.equal(r.cleaned,1);assert.equal(r.held,0);
+ }
+});
+test('KDP guide locale and reading direction must be explicit supported signed fields',async()=>{
+ for(const patch of [{locale:undefined},{locale:'ja_JP'},{locale:['en_US']},
+  {reading_direction:undefined},{reading_direction:'right_to_left'},{reading_direction:true}]){
+  const cover=record('kdp');cover.template.kdp={...cover.template.kdp,...patch};
+  const r=await exercise({platform:'kdp',template:cover,interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true});
+  assert.equal(r.reason,'KDP_TEMPLATE_PROFILE_INVALID');assert.equal(r.guideStarted,false);assert.equal(r.started,false);
+  assert.equal(r.cleaned,1);
+ }
+});
+test('KDP renews authority before inspection and again before artwork',async()=>{
+ for(const denyGrantAt of [2,3]){
+  const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt,detailed:true});
+  assert.equal(r.guideStarted,denyGrantAt===3);assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+  assert.equal(r.status,'BLOCKED');assert.equal(r.cleaned,1);
+ }
 });
 test('revocation after rendering prevents persistence and review hold',async()=>{
  const result=await exercise({denyGrantAt:3});

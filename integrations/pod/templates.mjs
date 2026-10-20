@@ -73,3 +73,13 @@ export function validateKdpTemplatePair(cover,interior){
   !equal(cover.size_inches[1],height+.25))throw Error('COVER_INTERIOR_MISMATCH');
 }
 
+export function kdpCalculatorProfile(cover,interior){
+ validateKdpTemplatePair(cover,interior);
+ // The retained guide inspector currently supports this explicit source format.
+ // Its locale is not a claim of marketplace availability or regional rights.
+ if(cover.kdp.reading_direction!=='left_to_right'||cover.kdp.locale!=='en_US')throw Error('KDP_TEMPLATE_PROFILE_INVALID');
+ return {binding:interior.binding,ink_type:interior.ink_type,paper_type:interior.paper_type,
+  reading_direction:cover.kdp.reading_direction,trim_inches:[...interior.trim_inches],
+  page_count:interior.page_count,locale:cover.kdp.locale};
+}
+

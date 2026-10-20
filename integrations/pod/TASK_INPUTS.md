@@ -170,3 +170,37 @@ print acceptance. The signer must still supply current attributable official
 provenance for the actual product, region and profile. The retained reference and
 synthetic signatures used by tests confer no production approval. Both publication
 flags remain false.
+
+
+## KDP archive profile admission
+
+KDP production now also runs pod_kdp_template_import.py before artwork generation.
+Its inline profile is derived from the authenticated paired cover/interior:
+binding, ink, paper, trim and page count come from the interior; reading_direction
+and locale come from signed cover.kdp fields. The supported guide format requires
+explicit left_to_right and en_US values. This guide locale does not authorize a
+country or establish regional rights. Other reading directions/locales need a
+separately verified contract.
+
+The worker retains the source-byte check, renews current authority/lease before
+the inspection child, and renews it again before artwork. The inspector re-reads
+and hashes the bounded original ZIP, checks exact profile-derived member names,
+bounded static PDF/PNG guide content and instructions. A guide for another page
+count, paper or trim blocks even if its retained bytes match the signed hash.
+The child uses the existing deadline, output cap, process-group cancellation and
+fixed diagnostic vocabulary. Failure cannot reach artwork, book assembly or QA.
+
+The CLI accepts exactly one of --profile FILE or --profile-json JSON. The inline
+form is capped at 4096 UTF-8 bytes and rejects duplicate decoded keys and nonfinite
+JSON constants before profile inspection. It has no approval side effect, output
+file write, extraction or URL fetch. Its report remains source_authority_verified
+false and production_template_approved false; success is a necessary technical
+profile check, not a new provenance decision.
+
+KDP descriptors whose signed cover lacks locale/direction or whose retained
+source does not match the job need newly reviewed immutable inputs and a fresh
+grant. Do not modify or renew queued approvals to bypass admission. The example
+archive is still never selected automatically. Download-origin authority,
+interior-source retention, barcode-region mapping, final CMYK handling, calibrated
+independent review and actual preview/print acceptance remain open. Final-cover
+strict geometry is unchanged by the guide's separate whole-point policy.

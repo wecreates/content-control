@@ -193,6 +193,96 @@ class CalculatorArchiveTests(unittest.TestCase):
             self.assertEqual(report['archive_sha256'],self.sha)
             self.assertFalse(report['production_template_approved'])
 
+    def test_inline_profile_cli_binds_retained_guide_to_requested_book(self):
+        import json,subprocess
+        script=str(Path(__file__).resolve().parents[1]/'scripts/pod_kdp_template_import.py')
+        for patch,reason in (({},None),({'page_count':26},'KDP_TEMPLATE_ARCHIVE_INVALID'),
+                             ({'paper_type':'cream'},'KDP_TEMPLATE_ARCHIVE_INVALID'),
+                             ({'trim_inches':[5,8]},'KDP_TEMPLATE_ARCHIVE_INVALID'),
+                             ({'reading_direction':'right_to_left'},'KDP_TEMPLATE_PROFILE_INVALID'),
+                             ({'locale':'ja_JP'},'KDP_TEMPLATE_PROFILE_INVALID')):
+            profile={**self.profile(),**patch}
+            result=subprocess.run([sys.executable,script,'--archive',str(self.archive),
+                                   '--profile-json',json.dumps(profile),'--expected-sha256',self.sha],
+                                  capture_output=True,text=True,timeout=30)
+            report=json.loads(result.stdout)
+            with self.subTest(patch=patch):
+                self.assertEqual(result.returncode,2 if reason else 0,result.stderr)
+                self.assertFalse(report['publication_enabled'])
+                if reason:
+                    self.assertEqual(report['reason_code'],reason)
+                else:
+                    self.assertEqual(report['profile'],profile)
+                    self.assertFalse(report['production_template_approved'])
+
+    def test_inline_profile_parser_rejects_ambiguous_and_oversized_json(self):
+        import json
+        from pod_kdp_template_import import profile_json
+        self.assertEqual(profile_json(json.dumps(self.profile())),self.profile())
+        for text in ('{"page_count":24,"page_count":26}',
+                     '{"locale":"en_US","loca\\u006ce":"ja_JP"}',
+                     '{"trim_inches":[NaN,9]}','{"trim_inches":[Infinity,9]}',
+                     'x'*4097,'"'+'é'*2048+'"','{','\ufeff{}'):
+            with self.subTest(text=text[:80]),self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROFILE_INVALID$'):
+                profile_json(text)
+
+    def test_worker_invokes_real_inspector_before_synthetic_generation(self):
+        # Actual Node coordinator -> actual Python archive inspector. The later
+        # rendering sentinels and signatures are synthetic, never live approval.
+        import json,subprocess
+        repository=Path(__file__).resolve().parents[1]
+        worker=(repository/'scripts/pod_production_worker.mjs').as_uri()
+        code=r'''
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const {produceOnce}=await import(process.argv[1]);
+const root=process.argv[2],archive=process.argv[3],count=Number(process.argv[4]);
+const key='synthetic-profile-bridge-key-'.repeat(2);
+const sign=value=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,
+ expires_at_ms:Date.now()+300000,...value});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
+const spine=count*.002252,scope={product:'fixture-book',country:'US'};
+const record={...scope,official_source_verified:true,source_url:'https://example.org/synthetic-acquisition',
+ source_sha256:'27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',observed_at:new Date().toISOString()};
+const cover={platform:'kdp',dpi:300,size_inches:[12+spine+.25,9.25],safe_box_px:[75,75,500,500],
+ kdp:{binding:'paperback',ink_type:'black',paper_type:'white',page_count:count,
+ trim_width_inches:6,spine_width_inches:spine,bleed_inches:.125,reading_direction:'left_to_right',locale:'en_US'}};
+const interior={platform:'kdp',binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',
+ page_count:count,trim_inches:[6,9],font_size_pt:10,margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25}};
+await fs.writeFile(path.join(root,'cover.json'),JSON.stringify(sign({...record,audience:'pod:template',template:cover})));
+await fs.writeFile(path.join(root,'interior.json'),JSON.stringify(sign({...record,audience:'pod:interior-template',template:interior})));
+const brief={id:'fixture',account_id:'a',business_id:'b',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
+let held=0,cleaned=0;
+const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYTHON:process.argv[5],
+ POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
+ db:{claimProduction:async()=>({id:brief.id,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async()=>{held++;}},
+ resolveGrant:async()=>sign({audience:'content-control:pod',job_id:brief.id,account_id:'a',business_id:'b',platform:'kdp',
+ max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
+ resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
+ source:'unused',textLayers:'unused',assetRights:'unused',reference:'unused',output:path.join(root,'output'),
+ interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused'},cleanup:async()=>{cleaned++;}})});
+const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
+console.log(JSON.stringify({result,started,held,cleaned}));
+'''
+        for count in (24,26):
+            with self.subTest(page_count=count),tempfile.TemporaryDirectory() as d:
+                root=Path(d);scripts=root/'scripts';scripts.mkdir();(root/'output').mkdir()
+                (scripts/'pod_kdp_template_import.py').symlink_to(repository/'scripts/pod_kdp_template_import.py')
+                (scripts/'pod_asset_generator.py').write_text(
+                    "from pathlib import Path\nPath('started').write_text('yes')\n"
+                    "Path('output/manifest.json').write_text('{\"files\":{},\"package_sha256\":\"'+'a'*64+'\"}')\n")
+                (scripts/'pod_book_package.py').write_text('pass\n')
+                result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),str(count),sys.executable],
+                                      capture_output=True,text=True,timeout=30)
+                self.assertEqual(result.returncode,0,result.stderr)
+                report=json.loads(result.stdout)
+                self.assertEqual(report['result']['status'],'REVIEW_REQUIRED' if count==24 else 'BLOCKED')
+                self.assertEqual(report['started'],count==24)
+                self.assertEqual(report['held'],1 if count==24 else 0)
+                self.assertEqual(report['cleaned'],1)
+                if count==26:
+                    self.assertEqual(report['result']['reason_code'],'KDP_TEMPLATE_ARCHIVE_INVALID')
+
 class InteriorEmbeddingTests(unittest.TestCase):
     def test_renderer_references_only_embedded_fonts(self):
         font,spec=BookBoundsTests().spec()

@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import io
+import json
 import math
 import re
 import stat
@@ -120,14 +121,37 @@ def inspect_template_archive(path, profile, expected_sha256):
             'publication_enabled':False}
 
 
+def profile_json(text):
+    # Node supplies a small profile derived from authenticated templates. Keep
+    # the standalone CLI unambiguous and bounded as well; never read a URL.
+    def pairs(values):
+        result={}
+        for key,value in values:
+            if key in result:
+                raise ValueError()
+            result[key]=value
+        return result
+    def reject_constant(value):
+        raise ValueError()
+    try:
+        if not isinstance(text,str) or len(text.encode('utf-8'))>4096:
+            raise ValueError()
+        return json.loads(text,object_pairs_hook=pairs,parse_constant=reject_constant)
+    except Exception:
+        raise ValueError('KDP_TEMPLATE_PROFILE_INVALID') from None
+
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument('--archive',required=True)
-    p.add_argument('--profile',required=True)
+    profiles=p.add_mutually_exclusive_group(required=True)
+    profiles.add_argument('--profile')
+    profiles.add_argument('--profile-json')
     p.add_argument('--expected-sha256',required=True)
     a=p.parse_args()
     try:
-        result=inspect_template_archive(a.archive,read_json(a.profile),a.expected_sha256)
+        profile=read_json(a.profile) if a.profile else profile_json(a.profile_json)
+        result=inspect_template_archive(a.archive,profile,a.expected_sha256)
         print(canonical(result))
         return 0
     except Exception as exc:
