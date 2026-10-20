@@ -108,7 +108,7 @@ def similarity(candidate,reference):
 EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interior_consistency','ai_disclosure')
 
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
-             editorial_envelope=None,approved_editorial_evaluators=None):
+             editorial_envelope=None,approved_editorial_evaluators=None,target_country=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -154,6 +154,9 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 interior=m['interior']
                 spec=interior['template']
                 receipt=interior['receipt']
+                from pod_kdp_options import require_paperback_options
+                require_paperback_options(spec,target_country)
+                report['target_country']=target_country
                 if (read_json(scoped_file(root,'interior.receipt.json'))!=receipt or
                     receipt['interior_sha256']!=m['files']['interior.pdf'] or
                     receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
@@ -226,11 +229,12 @@ def main():
     p.add_argument('--signed-output')
     p.add_argument('--descriptive-similarity',action='store_true')
     p.add_argument('--editorial-review')
+    p.add_argument('--country',help='Explicit authorized target market for KDP QA; no default')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
         report=evaluate(a.package_dir,a.reference,read_json(a.rights),read_json(a.competitive_review),a.approved_evaluator,a.descriptive_similarity,
-                        read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator)
+                        read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

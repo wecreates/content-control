@@ -72,7 +72,7 @@ class PODTests(unittest.TestCase):
                     similarity(candidate, reference)
 
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
-                       editorial_patch=None,editorial_present=True,editorial_evaluators=None):
+                       editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US'):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -112,7 +112,21 @@ class PODTests(unittest.TestCase):
             # OCR is tested independently; these tests isolate package geometry and binding.
             with patch('pod_vision_qa.ocr',return_value=''):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
-                    approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators)
+                    approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
+                    target_country=target_country)
+
+    def test_kdp_qa_requires_host_target_and_does_not_trust_package_country_or_locale(self):
+        def claimed_country(manifest,root):
+            manifest['country']='US';manifest['target_country']='US'
+            manifest['template']['kdp'].update(country='US',locale='en_US')
+        for country in (None,'JP','CA','us',['US'],True):
+            with self.subTest(country=country):
+                result=self.package_result(claimed_country,kdp=True,target_country=country)
+                self.assertEqual(result['binary_pass'],0)
+                self.assertIn('KDP_PRINT_OPTIONS_UNSUPPORTED',result['errors'])
+        result=self.package_result(claimed_country,kdp=True,target_country='US')
+        self.assertEqual(result['binary_pass'],1,result)
+        self.assertEqual(result['target_country'],'US')
 
     def test_kdp_qa_rejects_local_cover_damage_despite_rebound_hashes(self):
         from reportlab.pdfgen import canvas as pdfcanvas

@@ -19,6 +19,68 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 
+class PaperbackOptionsTests(unittest.TestCase):
+    def spec(self,trim=(6,9),paper='white',count=24):
+        return dict(ink_type='black',paper_type=paper,trim_inches=list(trim),page_count=count)
+
+    def test_independent_paper_and_trim_ceiling_families(self):
+        from pod_kdp_options import require_paperback_options
+        for country,trim,limits in [('US',(6,9),(828,776,812)),
+                ('US',(8.25,6),(800,750,784)),('US',(8.27,11.69),(780,730,764)),
+                ('US',(8.5,11),(590,550,578)),('JP',(5.83,8.27),(828,776,812)),
+                ('JP',(8.27,10.12),(780,730,764))]:
+            for paper,limit in zip(('white','cream','groundwood'),limits):
+                for count in (24,limit):
+                    self.assertTrue(require_paperback_options(self.spec(trim,paper,count),country))
+                with self.assertRaisesRegex(ValueError,'^KDP_PRINT_PAGE_LIMIT$'):
+                    require_paperback_options(self.spec(trim,paper,limit+2),country)
+
+    def test_region_selection_never_defaults_or_uses_locale(self):
+        from pod_kdp_options import require_paperback_options
+        for country in (None,'CA','GB','us','en_US',True,[],{'country':'US'}):
+            with self.subTest(country=country),self.assertRaisesRegex(ValueError,'^KDP_PRINT_OPTIONS_UNSUPPORTED$'):
+                require_paperback_options({**self.spec(),'country':'US','locale':'en_US'},country)
+        for country,trim in [('JP',(6,9)),('US',(5.83,8.27)),('US',(6,9.001))]:
+            with self.assertRaisesRegex(ValueError,'^KDP_PRINT_OPTIONS_UNSUPPORTED$'):
+                require_paperback_options(self.spec(trim),country)
+
+    def test_malformed_and_unsupported_options_have_fixed_failures(self):
+        from pod_kdp_options import require_paperback_options
+        patches=[{'ink_type':v} for v in (None,True,[], 'color')]
+        patches += [{'paper_type':v} for v in (None,True,[],{},'ivory')]
+        patches += [{'trim_inches':v} for v in (None,[],[6],[6,9,10],['6',9],
+                    [True,9],[float('nan'),9],[float('inf'),9],[10**1000,9],[-1,9])]
+        for patch_value in patches:
+            with self.subTest(patch=patch_value),self.assertRaisesRegex(ValueError,'^KDP_PRINT_OPTIONS_UNSUPPORTED$'):
+                require_paperback_options({**self.spec(),**patch_value},'US')
+        for count in (None,True,[],{},'24',24.0,23,829,10**1000):
+            with self.subTest(count=count),self.assertRaisesRegex(ValueError,'^KDP_PRINT_PAGE_LIMIT$'):
+                require_paperback_options(self.spec(count=count),'US')
+
+    def test_python_and_node_admission_agree_on_all_reviewed_rows_and_boundaries(self):
+        import json,subprocess
+        from pod_kdp_options import require_paperback_options,US,JP
+        vectors=[]
+        for country,table in [('US',US),('JP',JP)]:
+            for trim,limits in table.items():
+                for paper,limit in zip(('white','cream','groundwood'),limits):
+                    for count in (23,24,limit,limit+2):
+                        vectors.append([self.spec(trim,paper,count),country])
+        vectors.extend([[self.spec(),country] for country in (None,'CA','JP','us')])
+        expected=[]
+        for spec,country in vectors:
+            try:require_paperback_options(spec,country);expected.append('PASS')
+            except ValueError as exc:expected.append(str(exc))
+        module=(Path(__file__).resolve().parents[1]/'integrations/pod/kdp-paperback-options.mjs').as_uri()
+        script=('import fs from "node:fs";import {requireKdpPaperbackOptions} from '+json.dumps(module)+';'
+                'const rows=JSON.parse(fs.readFileSync(0,"utf8"));'
+                'console.log(JSON.stringify(rows.map(([spec,country])=>{try{requireKdpPaperbackOptions(spec,country);return "PASS";}catch(e){return e.message;}})));')
+        result=subprocess.run(['node','--input-type=module','-e',script],input=json.dumps(vectors),
+                              text=True,capture_output=True,timeout=20,check=True)
+        self.assertEqual(json.loads(result.stdout),expected)
+        self.assertEqual(len(vectors),340)
+
+
 class SpineTextTests(unittest.TestCase):
     def fixture(self,count=80,dpi=300):
         import math
