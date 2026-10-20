@@ -207,6 +207,7 @@ profile check, not a new provenance decision.
 KDP descriptors whose signed cover lacks locale/direction or whose retained
 source does not match the job need newly reviewed immutable inputs and a fresh
 grant. Do not modify or renew queued approvals to bypass admission. The example
-archive is still never selected automatically. Download-origin authority, barcode-region mapping, final CMYK handling, calibrated
+archive is still never selected automatically. Download-origin authority, barcode-region
+mapping, final CMYK handling, calibrated
 independent review and actual preview/print acceptance remain open. Final-cover
 strict geometry is unchanged by the guide's separate whole-point policy.
