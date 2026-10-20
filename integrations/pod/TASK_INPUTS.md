@@ -137,3 +137,36 @@ sandbox, an independently retained backup or a physical power-loss test.
 The artwork and receipt remain deterministic for the same specification, with
 rights UNASSESSED and publication false. This change does not establish original
 content clearance, quality, capacity, provider approval or live acceptance.
+
+
+## Retained KDP cover source
+
+KDP production now requires `templateSource`, a declared input filename in the
+hash-bound task descriptor. The resolver restores it through ArtifactStore into
+the same private workspace and removes it with the task. When present on any
+descriptor, this role must reference a declared file; paths, null and coercible
+values are rejected. Other marketplace tasks can omit it.
+
+After authenticating the cover/interior envelopes and checking their pairing,
+the worker opens this retained cover source nonblocking with final-symlink refusal,
+requires a nonempty regular file and hashes at most 16 MiB plus one byte. It compares
+the captured bytes with `source_sha256` from the authenticated cover envelope.
+Missing, invalid, oversized or changed bytes block before any Python stage with
+fixed TEMPLATE_SOURCE_* reasons. Cancellation closes the file and stops execution;
+the existing fresh-grant and lease check still precedes generation.
+
+Existing KDP tasks without this retained source now require a new reviewed,
+hash-bound descriptor and matching current grant. Do not silently update queued
+approvals or substitute the example reference. Custom host resolvers must provide
+the same source path contract. This is identity verification, not a directory
+sandbox or a content snapshot delivered to a renderer. Source bytes are retained
+as task inputs; they are not used as finished cover artwork.
+
+The offline KDP guide inspector remains a separate profile/member validation tool.
+This gate does not run it automatically, verify download origin, compare the
+archive profile to each job, validate interior specification source bytes, create
+a provenance approval, map barcode regions, establish CMYK output or prove preview/
+print acceptance. The signer must still supply current attributable official
+provenance for the actual product, region and profile. The retained reference and
+synthetic signatures used by tests confer no production approval. Both publication
+flags remain false.
