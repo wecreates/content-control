@@ -73,7 +73,7 @@ class PODTests(unittest.TestCase):
 
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
-                       template_inputs=True,template_ttl=60000):
+                       template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -112,6 +112,12 @@ class PODTests(unittest.TestCase):
                     'evaluator_id':'synthetic-editor','verdict':'PASS','checks':{k:True for k in EDITORIAL_CHECKS},
                     **(editorial_patch or {})},'POD_EDITORIAL_KEY')
             original_templates=None
+            source_evidence=None
+            if source_inputs:
+                asset_rights_path=Path(tmp)/'asset-rights.json'
+                save_json(asset_rights_path,sign({**common,'expires_at_ms':now+source_ttl,
+                    'audience':'pod:asset-rights','status':'PASS','source_sha256':digest(src)},'POD_RIGHTS_KEY'))
+                source_evidence={'source':src,'rights':asset_rights_path}
             if kdp and template_inputs:
                 from datetime import datetime,timezone
                 common_template={**common,'expires_at_ms':now+template_ttl,'product':'fixture-book','country':'US',
@@ -127,7 +133,36 @@ class PODTests(unittest.TestCase):
             with patch('pod_vision_qa.ocr',return_value=''):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
-                    target_country=target_country,template_evidence=original_templates,target_product='fixture-book')
+                    target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
+                    source_evidence=source_evidence)
+
+    def test_qa_requires_original_source_and_rejects_plausible_inflated_native_resolution(self):
+        for kdp in (False,True):
+            missing=self.package_result(lambda m,r:None,kdp=kdp,source_inputs=False)
+            self.assertEqual(missing['binary_pass'],0)
+            self.assertIn('SOURCE_EVIDENCE_REQUIRED',missing['errors'])
+            forged=self.package_result(lambda m,r:m.update(source_size_px=[1600,800],effective_native_ppi=1200),kdp=kdp)
+            self.assertEqual(forged['binary_pass'],0)
+            self.assertTrue(forged['checks']['resolution'])
+            self.assertIn('SOURCE_LAYOUT_INVALID',forged['errors'])
+
+    def test_original_source_approval_caps_receipt_and_is_rechecked_after_review(self):
+        import time
+        from pod_common import verified as real_verified
+        clock=[time.time()];expire=[False]
+        def review(*args,**kwargs):
+            value=real_verified(*args,**kwargs)
+            if expire[0] and args[2]=='pod:competitive-review':clock[0]+=2
+            return value
+        with patch('pod_vision_qa.time.time',side_effect=lambda:clock[0]),patch('pod_vision_qa.verified',side_effect=review):
+            valid=self.package_result(lambda m,r:None,source_ttl=1000)
+            self.assertEqual(valid['binary_pass'],1,valid)
+            self.assertTrue(valid['checks']['original_source'])
+            self.assertEqual(qa_receipt(valid,int(clock[0]*1000))['expires_at_ms'],int(clock[0]*1000)+1000)
+            expire[0]=True
+            failed=self.package_result(lambda m,r:None,source_ttl=1000)
+            self.assertEqual(failed['binary_pass'],0)
+            self.assertIn('SOURCE_RIGHTS_INVALID',failed['errors'])
 
     def test_kdp_qa_requires_original_template_inputs_and_caps_receipt_at_template_expiry(self):
         import time
@@ -548,11 +583,16 @@ class PODTests(unittest.TestCase):
             review=sign({**common,'audience':'pod:competitive-review','reference_sha256':digest(src),
                          'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
                          'swapped_order_consistent':True,'weighted_margin':1},'POD_REVIEW_KEY')
+            from pod_common import save_json
+            asset_rights=Path(tmp)/'asset-rights.json'
+            save_json(asset_rights,sign({**common,'audience':'pod:asset-rights','status':'PASS',
+                'source_sha256':digest(src)},'POD_RIGHTS_KEY'))
+            originals={'source':src,'rights':asset_rights}
             with patch('pod_vision_qa.similarity',side_effect=AssertionError('must not download')):
-                result=evaluate(Path(tmp)/'package',src,rights,review,['test-fixture'])
+                result=evaluate(Path(tmp)/'package',src,rights,review,['test-fixture'],source_evidence=originals)
                 self.assertEqual(result['verdict'],'PASS',result)
                 self.assertEqual(result['openclip']['status'],'NOT_REQUESTED')
-                blocked=evaluate(Path(tmp)/'package',src,rights,review,[])
+                blocked=evaluate(Path(tmp)/'package',src,rights,review,[],source_evidence=originals)
                 self.assertEqual(blocked['verdict'],'FAIL')
                 self.assertFalse(blocked['checks']['competitive'])
 

@@ -103,3 +103,33 @@ KDP QA requires the original signed cover and interior template envelopes and th
 QA opens bounded regular files without following final symlinks, rejects malformed UTF-8, duplicate JSON keys and nonfinite numbers in both envelopes and authenticated payloads, and verifies the existing template key, audience, scope, current time and provenance assertions. It compares each signed template exactly with the package template, then independently hashes and inspects the actual retained guide against the signed paired paperback profile. No source URL is fetched. The captured original envelopes are verified again after comparative/editorial work, and a passing QA receipt cannot outlive either template approval.
 
 The retained guide inspector still reports `source_authority_verified=false` and `production_template_approved=false`: technical inspection does not establish download origin or mint approval. Source provenance is asserted by the configured trusted signer. This path authenticates the original interior specification but does not inspect a separately retained official interior source artifact. Synthetic signing keys, product scope, source assertions and reviewers in tests are fixtures only. Actual official-template approval, regional rights, editorial/independent calibration, live acceptance and launch readiness remain open. Both publication flags remain false.
+
+## Original artwork and independently derived layout
+
+QA for all five POD platforms now requires `--source` and `--asset-rights` from
+the original authorized task. The producer records the SHA-256 of its captured
+source in the package. Independent QA captures at most 16 MiB of regular source
+bytes without following a final symlink, authenticates the original asset-rights
+envelope, and requires its source identity and the package identity to match.
+Header validation and decoding use those same captured bytes. Ambiguous signed
+JSON, nonfinite values, invalid UTF-8 and expired original rights fail closed.
+
+QA derives native dimensions, fit, centering, placement and PPI from the actual
+source and declared template. It reconstructs the supported LANCZOS/RGBA layout
+independently in 128-row strips, checks the complete art alpha mask, and compares
+all nontext output pixels with the expected source/background composition.
+Text-mask pixels cannot hide original artwork. Existing OCR, geometry, font/PDF,
+current package rights and independent comparative/editorial reviews remain
+mandatory. Original asset rights are reverified after review work and cap the
+passing receipt's lifetime. Missing original inputs or older packages without
+source identity require fresh generation and QA; no old receipt is upgraded.
+
+This verifies the existing deterministic renderer contract, not artistic merit,
+source ownership or real-world license authority. Text pixels still require the
+separate text/font and review checks; this does not independently render fonts.
+Upscaling or manipulation before the signed source was captured is not detected
+merely by its dimensions. Strip comparison avoids an extra full-size output
+canvas, but the source and resized art still decode under existing pixel bounds;
+this is not measured memory/capacity or free-tier throughput acceptance. Synthetic
+rights in tests are fixtures only. Publication remains disabled and live approval,
+rights, independent calibration, print acceptance and all 24 live areas stay open.

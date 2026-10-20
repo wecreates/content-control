@@ -40,7 +40,8 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
         raise ValueError('ART_BOX_INVALID')
     root = Path(output_dir)
     source_bytes = input_snapshot(source_path)
-    if expected_source_sha256 is not None and hashlib.sha256(source_bytes).hexdigest() != expected_source_sha256:
+    source_sha256=hashlib.sha256(source_bytes).hexdigest()
+    if expected_source_sha256 is not None and source_sha256 != expected_source_sha256:
         raise ValueError('RIGHTS_BLOCKED')
     with open_raster(io.BytesIO(source_bytes)) as source:
         sw, sh = source.size
@@ -86,7 +87,7 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
         pdf.save()
         files.append('cover.pdf')
     manifest={'schema_version':1,'platform':template['platform'],'dpi':dpi,'size_px':[w,h],
-              'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
+              'source_sha256':source_sha256,'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
               'effective_native_ppi':min(sw/(nw/dpi),sh/(nh/dpi)),
               'expected_text':expected,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
               'template':template,'files':{name:digest(root/name) for name in files},'publication_enabled':False}
