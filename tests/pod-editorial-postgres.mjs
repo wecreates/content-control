@@ -32,7 +32,7 @@ export async function verifyEditorialGate(pool,bridge){
    // Explicit undefined is lost by JSON serialization, testing missing as well.
    const payload=JSON.parse(qa(true).payload);payload.checks.manuscript_provenance=invalid;
    const text=JSON.stringify(payload),envelope={payload:text,signature:crypto.createHmac('sha256',key).update(text).digest('hex')};
-   await pool.query("UPDATE pod_production_queue SET state='processing' WHERE id=$1",[id]);
+   await pool.query("UPDATE pod_production_queue SET state='processing',lease_until=clock_timestamp()+interval '5 minutes' WHERE id=$1",[id]);
    assert.equal((await db.completeProduction(job,manifest,envelope)).pass,false);
    await pool.query("UPDATE pod_production_queue SET reason_code='REVIEW_REQUIRED' WHERE id=$1",[id]);
    await assert.rejects(db.acceptReview(id,envelope),/QA_BLOCKED/);
