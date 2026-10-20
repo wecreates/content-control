@@ -1,5 +1,6 @@
 import copy
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -11,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'scripts'))
 import pod_review_package as review
 import pod_output_attempt as attempts
 import pod_asset_generator as assets
+import pod_book_package as books
 from pod_original_art import create_art
 from pod_common import digest
 from PIL import Image
@@ -219,4 +221,93 @@ class AssetRecoveryTests(unittest.TestCase):
         self.assertTrue((self.output/'print.png').is_file())
 
 
+class BookAssemblyRecoveryTests(unittest.TestCase):
+    def setUp(self):
+        ReviewRecoveryTests.setUp(self)
+        self.source=self.root/'source.png';self.package=self.root/'package'
+        create_art(self.spec['original_art'],self.source)
+        assets.generate(self.source,self.spec['cover_template'],[],self.package)
+        self.book_spec={**self.spec['interior']['template'],'font_sha256':digest(self.font)}
+        self.pages=self.spec['interior']['pages']
+        self.original_manifest=(self.package/'manifest.json').read_bytes()
+
+    def run_assembly(self):
+        return books.assemble(self.package,self.book_spec,self.pages,self.font)
+
+    def assert_clean_attempt(self):
+        self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
+    def assert_retry(self):
+        result=self.run_assembly()
+        self.assertEqual(result['files']['interior.pdf'],digest(self.package/'interior.pdf'))
+        self.assertEqual(result['files']['interior.receipt.json'],digest(self.package/'interior.receipt.json'))
+        self.assertEqual(json.loads((self.package/'manifest.json').read_text()),result)
+
+    def test_receipt_link_and_manifest_failures_leave_original_package_retryable(self):
+        original_save=books.save_json
+        def fail_receipt(path,value):
+            original_save(path,value)
+            if Path(path).name=='interior.receipt.json':
+                raise RuntimeError('receipt fixture')
+        with patch.object(books,'save_json',side_effect=fail_receipt):
+            with self.assertRaisesRegex(RuntimeError,'^receipt fixture$'):self.run_assembly()
+        self.assert_clean_attempt();self.assert_retry()
+
+        for stage in ('link','manifest'):
+            with self.subTest(stage=stage):
+                shutil.rmtree(self.package)
+                assets.generate(self.source,self.spec['cover_template'],[],self.package)
+                self.original_manifest=(self.package/'manifest.json').read_bytes()
+                if stage=='link':
+                    original_link=books._link_staged
+                    def fail_link(stage_fd,root_fd,name):
+                        if name=='interior.receipt.json':raise RuntimeError('link fixture')
+                        return original_link(stage_fd,root_fd,name)
+                    target=patch.object(books,'_link_staged',side_effect=fail_link)
+                    reason='link fixture'
+                else:
+                    target=patch.object(books,'_commit_manifest',side_effect=RuntimeError('manifest fixture'))
+                    reason='manifest fixture'
+                with target:
+                    with self.assertRaisesRegex(RuntimeError,'^'+reason+'$'):self.run_assembly()
+                self.assert_clean_attempt();self.assert_retry()
+
+    def test_cleanup_never_deletes_a_concurrent_replacement(self):
+        original_link=books._link_staged
+        def replace_then_fail(stage_fd,root_fd,name):
+            if name=='interior.receipt.json':
+                os.unlink('interior.pdf',dir_fd=root_fd)
+                fd=os.open('interior.pdf',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600,dir_fd=root_fd)
+                try:os.write(fd,b'concurrent')
+                finally:os.close(fd)
+                raise RuntimeError('replacement fixture')
+            return original_link(stage_fd,root_fd,name)
+        with patch.object(books,'_link_staged',side_effect=replace_then_fail):
+            with self.assertRaisesRegex(RuntimeError,'^replacement fixture$'):self.run_assembly()
+        self.assertEqual((self.package/'interior.pdf').read_bytes(),b'concurrent')
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
+    def test_concurrent_manifest_replacement_is_preserved(self):
+        original_commit=books._commit_manifest
+        concurrent=b'{"concurrent":true}\n'
+        def replace_manifest(stage_fd,root_fd,identity,contents):
+            os.unlink('manifest.json',dir_fd=root_fd)
+            fd=os.open('manifest.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600,dir_fd=root_fd)
+            try:os.write(fd,concurrent)
+            finally:os.close(fd)
+            return original_commit(stage_fd,root_fd,identity,contents)
+        with patch.object(books,'_commit_manifest',side_effect=replace_manifest):
+            with self.assertRaisesRegex(ValueError,'^MANIFEST_CHANGED$'):self.run_assembly()
+        self.assertEqual((self.package/'manifest.json').read_bytes(),concurrent)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
+
 if __name__ == '__main__': unittest.main()
+
