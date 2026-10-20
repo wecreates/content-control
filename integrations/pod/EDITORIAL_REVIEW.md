@@ -1,5 +1,6 @@
 # KDP editorial approval contract
 
+| manuscript_sha256 | SHA-256 of canonical original pages JSON independently reviewed by this evaluator |
 ## Paperback baselines before durable production
 
 The stored-production coordinator validates the signed interior template before
@@ -260,3 +261,32 @@ technical fixtures; production package QA requires the full supported pair.
 Regional print-option ceilings, genuine official templates, actual editorial and
 rights review, print quality and observed KDP preview acceptance remain separate.
 Both publication flags remain false.
+
+
+## Original manuscript identity during independent QA
+
+KDP QA requires --manuscript with the original pages JSON from the authorized
+immutable task, not text reconstructed from the produced PDF or its receipt.
+It captures one regular non-symlink input under the existing 4 MiB strict UTF-8
+JSON limit. Duplicate keys, nonfinite numbers, malformed pages/lines and a page
+count different from the signed interior specification fail closed. Every
+actual delivered PDF page must extract to exactly the original line sequence;
+substituted, reordered, added or missing text fails MANUSCRIPT_TEXT_MISMATCH.
+The existing static PDF, visibility, clipping, font and geometry gates remain.
+
+The independent editorial authority must review those original pages and bind
+manuscript_sha256 to SHA-256 of their pod_common.canonical representation, in
+addition to the exact package and interior hashes. QA records that identity and
+requires checks.manuscript_provenance to be boolean true. Database completion,
+review acceptance and release validation require the same KDP-only bit. Existing
+receipts without it must undergo fresh review; never backfill the bit or invent
+a signature. The existing current evaluator, signature and final expiry checks
+still cap the passing receipt. Non-KDP contracts remain unchanged.
+
+Text equality is not original authorship, legal clearance, correct glyph shapes,
+substantive editorial quality, independent reviewer calibration or KDP preview/
+print acceptance. An embedded font subset is not proven to be the licensed source
+font by this check. Synthetic tests cannot approve a manuscript. Both publication
+flags remain false and all 24 live acceptance areas remain open.
+
+

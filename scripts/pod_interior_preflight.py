@@ -62,6 +62,33 @@ def inspect_pairing(spec, cover):
     return True
 
 
+def inspect_manuscript(path, manuscript, spec):
+    """Compare delivered page text to one bounded original JSON capture.
+
+    The caller must bind the returned canonical hash to a current independent
+    editorial attestation. Equality is not originality or editorial approval.
+    """
+    from pod_common import read_json, canonical
+    import hashlib
+    if manuscript is None:
+        raise ValueError('MANUSCRIPT_REQUIRED')
+    pages=read_json(manuscript)
+    if (not isinstance(pages,list) or len(pages)!=spec['page_count'] or
+            not 1<=len(pages)<=1000 or any(
+                not isinstance(page,dict) or not isinstance(page.get('lines'),list) or
+                not page['lines'] or any(type(line) is not str or '\n' in line
+                                        for line in page['lines']) for page in pages)):
+        raise ValueError('MANUSCRIPT_INVALID')
+    manuscript_sha256=hashlib.sha256(canonical(pages).encode()).hexdigest()
+    with fitz.open(path) as book:
+        if len(book)!=len(pages):
+            raise ValueError('MANUSCRIPT_TEXT_MISMATCH')
+        for page,original in zip(book,pages):
+            if page.get_text().splitlines()!=original['lines']:
+                raise ValueError('MANUSCRIPT_TEXT_MISMATCH')
+    return manuscript_sha256
+
+
 def inspect_interior(path, spec):
     def number(value):
         return type(value) in (int, float) and math.isfinite(value)

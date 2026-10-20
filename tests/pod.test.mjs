@@ -47,7 +47,7 @@ test('unregistered adapter blocks without submission',async()=>{
 test('timeout after submission is ambiguous and never retried',async()=>{
  const f=fixture();const template='b'.repeat(64);let calls=0,state;
  const qa=signed({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:f.job.package_sha256,template_sha256:template,
-  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','editorial'].map(k=>[k,true]))});
+  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','editorial'].map(k=>[k,true]))});
  const db={claimPublish:async()=>({...f.job,brief:f.job,manifest:{package_sha256:f.job.package_sha256},qa_envelope:qa}),assertPublishable:async()=>true,finish:async(_j,s)=>{state=s;}};
  await publishOnce({db,env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},
   adapters:{kdp:{authorized:true,submit:async()=>{calls++;throw Error('timeout');}}},
@@ -66,3 +66,4 @@ test('task inputs are bound to the authoritative grant',()=>{
  grant.task_sha256=job.task_sha256;
  assert.equal(enforceBrief(grant,job).task_sha256,job.task_sha256);
 });
+

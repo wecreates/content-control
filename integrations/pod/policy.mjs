@@ -72,6 +72,7 @@ export function enforceQA(qa,packageHash,templateHash,platform) {
   typeof templateHash!=='string'||!/^[a-f0-9]{64}$/.test(templateHash)||
   qa?.verdict!=='PASS'||qa.package_sha256!==packageHash||qa.template_sha256!==templateHash||
   !REQUIRED_QA.every(k=>qa.checks?.[k]===true)||
-  (platform==='kdp'&&(qa.checks?.editorial!==true||qa.checks?.template_provenance!==true))) throw Error('QA_BLOCKED');
+  (platform==='kdp'&&(qa.checks?.editorial!==true||qa.checks?.template_provenance!==true||qa.checks?.manuscript_provenance!==true))) throw Error('QA_BLOCKED');
 }
+
 

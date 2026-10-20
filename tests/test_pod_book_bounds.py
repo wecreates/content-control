@@ -19,6 +19,79 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 
+class ManuscriptProvenanceTests(unittest.TestCase):
+    def setUp(self):
+        from pod_common import save_json
+        tmp=tempfile.TemporaryDirectory();self.addCleanup(tmp.cleanup)
+        self.root=Path(tmp.name);self.pages=[{'lines':['First fixture']},{'lines':['Second fixture']}]
+        self.manuscript=self.root/'pages.json';save_json(self.manuscript,self.pages)
+        self.target=self.root/'interior.pdf'
+        self.font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        self.spec={'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],
+            'page_count':2,'margins_inches':dict(inside=.25,outside=.25,top=.25,bottom=.25),
+            'font_sha256':digest(self.font),'font_size_pt':10,'leading_pt':12}
+        render_book(self.spec,self.pages,self.font,self.target)
+
+    def check(self):
+        from pod_interior_preflight import inspect_manuscript
+        return inspect_manuscript(self.target,self.manuscript,self.spec)
+
+    def test_original_pages_match_delivered_real_pdf_and_return_canonical_hash(self):
+        import hashlib
+        from pod_common import canonical
+        self.assertTrue(inspect_interior(self.target,self.spec))
+        self.assertEqual(self.check(),hashlib.sha256(canonical(self.pages).encode()).hexdigest())
+
+    def test_substituted_reordered_missing_and_extra_text_fail(self):
+        from pod_common import save_json
+        variants=[[{'lines':['Changed fixture']},self.pages[1]],list(reversed(self.pages)),
+            [{'lines':['First fixture','extra']},self.pages[1]],
+            [{'lines':['First']},self.pages[1]]]
+        for pages in variants:
+            with self.subTest(pages=pages):
+                save_json(self.manuscript,pages)
+                with self.assertRaisesRegex(ValueError,'^MANUSCRIPT_TEXT_MISMATCH$'):self.check()
+
+    def test_original_shape_and_page_count_are_validated(self):
+        from pod_common import save_json
+        for pages in (None,{},[],self.pages[:1],self.pages+[self.pages[0]],
+                [{'lines':[]},self.pages[1]],[{},self.pages[1]],
+                [{'lines':['First\nfixture']},self.pages[1]],
+                [{'lines':[True]},self.pages[1]],[[],self.pages[1]]):
+            with self.subTest(pages=pages):
+                save_json(self.manuscript,pages)
+                with self.assertRaisesRegex(ValueError,'^MANUSCRIPT_INVALID$'):self.check()
+
+    def test_missing_manuscript_never_falls_back_to_receipts(self):
+        from pod_interior_preflight import inspect_manuscript
+        with self.assertRaisesRegex(ValueError,'^MANUSCRIPT_REQUIRED$'):
+            inspect_manuscript(self.target,None,self.spec)
+
+    def test_delivered_page_count_is_not_inferred_from_receipt(self):
+        extra=self.root/'extra.pdf'
+        render_book({**self.spec,'page_count':1},self.pages[:1],self.font,extra)
+        extra.replace(self.target)
+        with self.assertRaisesRegex(ValueError,'^MANUSCRIPT_TEXT_MISMATCH$'):self.check()
+
+    def test_original_json_capture_is_bounded_strict_and_does_not_follow_symlinks(self):
+        for text,reason in (('[{"lines":[],"lines":["forged"]}]','JSON_DUPLICATE_KEY'),
+                            ('[NaN]','JSON_NONFINITE'),(' '*(4*1024*1024+1),'JSON_TOO_LARGE')):
+            with self.subTest(reason=reason):
+                self.manuscript.write_text(text)
+                with self.assertRaisesRegex(ValueError,'^'+reason+'$'):self.check()
+        actual=self.root/'actual.json';self.manuscript.rename(actual);self.manuscript.symlink_to(actual)
+        with self.assertRaises(OSError):self.check()
+
+    def test_later_original_path_replacement_cannot_change_captured_identity(self):
+        import hashlib
+        from pod_common import canonical,read_json as real_read,save_json
+        def replace(path):
+            captured=real_read(path);save_json(path,[{'lines':['changed']}]*2)
+            return captured
+        with patch('pod_common.read_json',side_effect=replace):
+            self.assertEqual(self.check(),hashlib.sha256(canonical(self.pages).encode()).hexdigest())
+
+
 class KdpTemplateEvidenceTests(unittest.TestCase):
     archive=Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'
 
@@ -1238,3 +1311,4 @@ class StaticPDFPolicyTests(unittest.TestCase):
 
 if __name__=='__main__':
     unittest.main()
+
