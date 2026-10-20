@@ -1,6 +1,5 @@
 # KDP editorial approval contract
 
-| manuscript_sha256 | SHA-256 of canonical original pages JSON independently reviewed by this evaluator |
 ## Paperback baselines before durable production
 
 The stored-production coordinator validates the signed interior template before
@@ -175,6 +174,7 @@ separately managed `POD_EDITORIAL_KEY` (at least 32 bytes). Payload requirements
 | issued_at_ms, expires_at_ms | Current integer millisecond window, at most 15 minutes |
 | package_sha256 | Exact completed package manifest hash |
 | interior_sha256 | Exact hash of the package's `interior.pdf` |
+| manuscript_sha256 | SHA-256 of canonical original pages JSON independently reviewed by this evaluator |
 | evaluator_id | An explicitly authorized editorial evaluator |
 | verdict | `PASS` only after independent review |
 | checks | Each of the five checks below must be boolean true |
