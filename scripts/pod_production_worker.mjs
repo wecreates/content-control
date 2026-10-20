@@ -108,3 +108,4 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
  }finally{if(task?.cleanup)await task.cleanup();}
 }
+
