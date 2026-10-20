@@ -145,6 +145,33 @@ class PODTests(unittest.TestCase):
                 self.assertEqual(result['binary_pass'],0,result)
                 self.assertIn('INTERIOR_MARGIN_SPEC_INVALID',result['errors'])
 
+
+    def test_kdp_qa_rejects_spine_text_despite_rebound_mask_and_package(self):
+        import math
+        for position in ('spine','back_fold','front_fold','back_safe','front_safe'):
+            def mutate(manifest,root):
+                t=manifest['template'];dpi=t['dpi'];k=t['kdp']
+                with Image.open(root/'text-mask.png') as source:
+                    mask=source.convert('L')
+                # A compliant outer safe box cannot authorize spine/fold text.
+                t['safe_box_px']=[75,75,mask.width-150,mask.height-150]
+                left=(.125+k['trim_width_inches'])*dpi
+                right=left+k['spine_width_inches']*dpi
+                x={'spine':round((left+right)/2),'back_fold':math.floor(left-.0625*dpi),
+                   'front_fold':math.ceil(right+.0625*dpi)-1,
+                   'back_safe':math.floor(left-.0625*dpi)-1,
+                   'front_safe':math.ceil(right+.0625*dpi)}[position]
+                mask.putpixel((x,150),255);mask.save(root/'text-mask.png')
+                manifest['files']['text-mask.png']=digest(root/'text-mask.png')
+            with self.subTest(position=position):
+                result=self.package_result(mutate,kdp=True)
+                if position.endswith('_safe'):
+                    self.assertEqual(result['binary_pass'],1,result)
+                else:
+                    self.assertEqual(result['binary_pass'],0,result)
+                    self.assertIn('COVER_SPINE_TEXT_INVALID',result['errors'])
+                self.assertTrue(result['checks']['geometry'],result)
+
     def test_kdp_requires_separate_editorial_review(self):
         result=self.package_result(lambda m,r:None,kdp=True,editorial_present=False)
         self.assertEqual(result['binary_pass'],0,result)

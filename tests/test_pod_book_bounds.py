@@ -18,6 +18,62 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
+
+class SpineTextTests(unittest.TestCase):
+    def fixture(self,count=80,dpi=300):
+        import math
+        spine=count*.002252;width=1.001
+        template={'platform':'kdp','dpi':dpi,'size_inches':[2*width+spine+.25,1.253],
+                  'kdp':{'page_count':count,'trim_width_inches':width,
+                         'spine_width_inches':spine,'bleed_inches':.125}}
+        mask=Image.new('L',tuple(math.ceil(v*dpi) for v in template['size_inches']),0)
+        left=(.125+width)*dpi;right=left+spine*dpi;gap=.0625*dpi
+        return template,mask,(math.floor(left-gap),math.ceil(left+gap),
+                              math.floor(right-gap),math.ceil(right+gap))
+
+    def test_short_spines_reject_text_but_allow_front_and_back(self):
+        from pod_cover_preflight import inspect_spine_text
+        for count in (24,78):
+            for dpi in (300,600,1200):
+                template,mask,(back,start,end,front)=self.fixture(count,dpi)
+                mask.putpixel((back-1,100),255);mask.putpixel((front,100),255)
+                self.assertTrue(inspect_spine_text(template,mask))
+                for x in (back,round((start+end)/2),front-1):
+                    bad=mask.copy();bad.putpixel((x,100),1)
+                    with self.subTest(count=count,dpi=dpi,x=x),self.assertRaisesRegex(ValueError,'^COVER_SPINE_TEXT_INVALID$'):
+                        inspect_spine_text(template,bad)
+
+    def test_spine_text_requires_inner_clearance_and_fold_variance(self):
+        from pod_cover_preflight import inspect_spine_text
+        for count in (80,82,150):
+            for dpi in (300,600,1200):
+                template,mask,(back,start,end,front)=self.fixture(count,dpi)
+                for x in (back-1,start,end-1,front):
+                    mask.putpixel((x,100),255)
+                self.assertTrue(inspect_spine_text(template,mask))
+                for x in (back,start-1,end,front-1):
+                    bad=mask.copy();bad.putpixel((x,100),1)
+                    with self.subTest(count=count,dpi=dpi,x=x),self.assertRaisesRegex(ValueError,'^COVER_SPINE_TEXT_INVALID$'):
+                        inspect_spine_text(template,bad)
+
+    def test_spine_check_rejects_malformed_geometry_and_mask(self):
+        import copy
+        from pod_cover_preflight import inspect_spine_text
+        template,mask,_=self.fixture()
+        mutations=[lambda t:t.pop('kdp'),lambda t:t.update(platform='redbubble'),
+                   lambda t:t.update(dpi=True),lambda t:t.update(size_inches=[1,1])]
+        mutations += [lambda t,key=key,value=value:t['kdp'].update({key:value})
+                      for key in ('page_count','trim_width_inches','spine_width_inches','bleed_inches')
+                      for value in (None,True,'80',float('nan'),float('inf'),0,-1)]
+        mutations += [lambda t:t['kdp'].update(page_count=79),lambda t:t['kdp'].update(page_count=830)]
+        for mutate in mutations:
+            bad=copy.deepcopy(template);mutate(bad)
+            with self.subTest(template=bad),self.assertRaisesRegex(ValueError,'^COVER_SPINE_SPEC_INVALID$'):
+                inspect_spine_text(bad,mask)
+        for bad in (mask.convert('RGB'),Image.new('L',(mask.width+1,mask.height))):
+            with self.assertRaisesRegex(ValueError,'^COVER_SPINE_SPEC_INVALID$'):
+                inspect_spine_text(template,bad)
+
 class InteriorEmbeddingTests(unittest.TestCase):
     def test_renderer_references_only_embedded_fonts(self):
         font,spec=BookBoundsTests().spec()

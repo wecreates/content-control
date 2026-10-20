@@ -163,7 +163,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 from pod_interior_preflight import inspect_interior, inspect_pairing
                 inspect_pairing(spec,m['template'])
                 inspect_interior(scoped_file(root,'interior.pdf'),spec)
-                from pod_cover_preflight import inspect_cover
+                from pod_cover_preflight import inspect_cover, inspect_spine_text
+                inspect_spine_text(m['template'],text)
                 preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
             report['checks']['print_preflight']=bool(preflight)
             if m['platform']=='kdp':
