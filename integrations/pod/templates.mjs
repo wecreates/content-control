@@ -19,7 +19,8 @@ export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){
  // paper, marketplace or official calculator template, or approve content.
  const count=t?.page_count,trim=t?.trim_inches,m=t?.margins_inches;
  const number=n=>typeof n==='number'&&Number.isFinite(n);
- const minimumInside=count<=150 ? .375 : count<=300 ? .5 : count<=500 ? .625 : count<=700 ? .75 : .875;
+ const minimumInside=Number.isInteger(count)
+  ? (count<=150 ? .375 : count<=300 ? .5 : count<=500 ? .625 : count<=700 ? .75 : .875) : null;
  if(t?.binding!=='paperback'||t.interior_type!=='text_no_bleed'||
   !Number.isInteger(count)||count<24||count>828||
   !Array.isArray(trim)||trim.length!==2||!trim.every(number)||

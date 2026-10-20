@@ -104,7 +104,8 @@ test('paperback production enforces every page-dependent gutter boundary',()=>{
 test('paperback production rejects unsupported or malformed physical specifications',()=>{
  const valid=record('kdp').template;
  for(const patch of [{binding:undefined},{binding:'hardcover'},{interior_type:'image_bleed'},
-  {page_count:23},{page_count:829},{page_count:'24'},{page_count:24.5},
+  {page_count:23},{page_count:829},{page_count:'24'},{page_count:24.5},{page_count:[24]},
+  {page_count:{valueOf:null,toString:null}},
   {trim_inches:[3.99,9]},{trim_inches:[8.501,9]},{trim_inches:[6,5.999]},
   {trim_inches:[6,11.691]},{trim_inches:['6',9]},{trim_inches:[NaN,9]},
   {font_size_pt:6.99},{font_size_pt:'7'},{font_size_pt:Infinity},
