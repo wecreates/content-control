@@ -152,10 +152,11 @@ validated contract.
 Source requirements and parser behavior, checked October20, 2026:
 [KDP submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950)
 and [PyMuPDF font extraction](https://pymupdf.readthedocs.io/en/latest/document.html#Document.extract_font).
-A valid embedded subset does not prove its source font identity, licence,
+A valid embedded subset alone does not prove its source identity, licence,
 commercial-use permission, correct glyph shaping, readability or editorial
-quality. Keep actual source-font rights and independent review separate.
-Publication remains disabled.
+quality. The separate source-identity gate below binds its visible glyphs to the
+authenticated original bytes. Keep actual source-font rights and independent
+review separate. Publication remains disabled.
 
 ## Separate editorial authority
 
@@ -288,8 +289,35 @@ still cap the passing receipt. Non-KDP contracts remain unchanged.
 
 Text equality is not original authorship, legal clearance, correct glyph shapes,
 substantive editorial quality, independent reviewer calibration or KDP preview/
-print acceptance. An embedded font subset is not proven to be the licensed source
-font by this check. Synthetic tests cannot approve a manuscript. Both publication
-flags remain false and all 24 live acceptance areas remain open.
+print acceptance. Source-font identity and licensing remain separate checks.
+Synthetic tests cannot approve a manuscript. Both publication flags remain false
+and all 24 live acceptance areas remain open.
 
 
+
+
+## Original interior font source identity
+
+KDP QA now requires `--font` with the original TTF from the authorized immutable
+task. It reads one regular non-symlink file into a bounded 16 MiB snapshot and
+requires its SHA-256 to equal `font_sha256` in the signed interior template.
+Missing, changed, empty, oversized, non-TrueType or undecodable sources fail
+before identity can pass.
+
+The delivered PDF must contain exactly one referenced TrueType font resource in
+this supported renderer contract. Requiring one resource prevents an unused
+matching font from masking a different active resource because PyMuPDF's text
+trace exposes Unicode and glyph ID but not the PDF resource name. FontTools
+decomposes each actual traced glyph from both programs. Units per em, horizontal
+header metrics, per-glyph advance/side bearing and the complete decomposed outline
+must match the authenticated source for every distinct delivered character/glyph
+pair. QA records the source SHA-256 and requires `checks.source_font` for KDP.
+The production worker passes the task-owned font path; non-KDP contracts are
+unchanged.
+
+This is evidence that the delivered glyph programs and metrics came from the
+specified source bytes. It does not prove a license, commercial-use permission,
+correct complex-script shaping, typography, editorial quality or KDP acceptance.
+Those remain separate current rights/review/platform gates. Multiple resources,
+other font formats or shaping contracts require separate implementation and
+validation rather than inference. Publication remains disabled.

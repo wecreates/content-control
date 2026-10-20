@@ -9,7 +9,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from pod_book_interior import render_book
 import pod_book_interior as book_renderer
 from pod_common import digest
-from pod_interior_preflight import inspect_interior, inspect_pairing
+from pod_interior_preflight import inspect_interior, inspect_pairing, inspect_font_source
 from pod_cover_preflight import inspect_cover
 from PIL import Image, ImageChops, ImageStat
 from reportlab.pdfgen import canvas as pdfcanvas
@@ -924,6 +924,38 @@ class BookFontSnapshotTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '^FONT_HASH_MISMATCH$'):
                 render_book(self.spec, self.pages, self.font, self.output)
         self.assertFalse(self.output.exists())
+
+    def test_embedded_subset_is_bound_to_original_source_glyphs(self):
+        pages = [{'lines': ['Original text é Ω']}]
+        render_book(self.spec, pages, self.font, self.output)
+        self.assertEqual(inspect_font_source(self.output, self.font, self.spec),
+                         self.spec['font_sha256'])
+
+    def test_different_embedded_typeface_cannot_claim_source_identity(self):
+        other = '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf'
+        other_spec = {**self.spec, 'font_sha256': digest(other)}
+        render_book(other_spec, self.pages, other, self.output)
+        # Geometry, extraction and embedding alone accept this valid PDF. The
+        # independent source comparison must still reject the wrong typeface.
+        self.assertTrue(inspect_interior(self.output, self.spec))
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_MISMATCH$'):
+            inspect_font_source(self.output, self.font, self.spec)
+
+    def test_missing_changed_and_unparseable_original_font_fail_closed(self):
+        render_book(self.spec, self.pages, self.font, self.output)
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_REQUIRED$'):
+            inspect_font_source(self.output, None, self.spec)
+        changed = self.root / 'changed.ttf'
+        changed.write_bytes(Path('/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf').read_bytes())
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_HASH_MISMATCH$'):
+            inspect_font_source(self.output, changed, self.spec)
+        bad = self.root / 'bad.ttf';bad.write_bytes(b'not a font')
+        bad_spec = {**self.spec, 'font_sha256': digest(bad)}
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_INVALID$'):
+            inspect_font_source(self.output, bad, bad_spec)
+        actual = self.root / 'actual.ttf';self.font.rename(actual);self.font.symlink_to(actual)
+        with self.assertRaisesRegex(ValueError, '^INTERIOR_FONT_SOURCE_INVALID$'):
+            inspect_font_source(self.output, self.font, self.spec)
 
 
 class CoverPreflightTests(unittest.TestCase):
