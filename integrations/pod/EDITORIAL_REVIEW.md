@@ -50,7 +50,7 @@ KDP_PRINT_OPTIONS_UNSUPPORTED; there is no inferred paper or regional fallback.
 vary with paper and trim; overflow returns KDP_PRINT_PAGE_LIMIT. For example,
 a US 6×9 cream book is capped at776 pages, while a US 8.5×11 cream book is
 capped at550. The general828-page ceiling cannot authorize either overflow.
-No rounding, clipping, substitution or automatic manuscript edits are applied.
+No clipping, substitution or automatic manuscript edits are applied.
 
 This validates declared options, not actual provider configuration, worldwide
 availability, regional rights, cover spine measurements, print proof or platform
@@ -59,6 +59,32 @@ verify cover/interior pairing and selected submission options. Unsupported
 profiles require a separately verified contract before admission. Correcting
 template fields requires a new immutable task and fresh authority for its hash.
 Low-level technical/review helpers remain separate, and publication stays false.
+
+## Matching cover and even manuscript before rendering
+
+The durable production coordinator also requires the independently authenticated
+cover and interior to agree before launching child stages. Cover `kdp` fields
+must declare matching `binding`, `ink_type`, `paper_type` and `page_count`, plus
+`trim_width_inches`, `spine_width_inches` and `bleed_inches`. For supported black
+ink, spine factors in inches per page are white 0.002252, cream 0.0025 and
+groundwood 0.00235. Bleed must be exactly 0.125 inch. Full cover dimensions
+must equal twice trim width plus spine plus 0.25 inch, and trim height plus
+0.25 inch. Derived measurements use a 0.000001-inch comparison tolerance;
+primitive finite numbers are required. Mismatches fail COVER_INTERIOR_MISMATCH.
+
+KDP rounds manuscript count up to an even number. This renderer does not insert
+that extra page, so odd counts fail KDP_PAGE_COUNT_REQUIRES_REVIEW before cover
+generation. Supply an explicitly reviewed even-page manuscript, new immutable
+task and fresh authority for its hash. Neither stored inputs nor approval bytes
+are padded, rewritten or re-signed by this gate. Source: KDP's submission
+specifications above, checked October20, 2026.
+
+These checks compare declared signed specifications. They do not import or
+approve a genuine calculator file, establish paper availability, inspect its
+print marks or authorize spine text. Actual PDF/raster inspection, matching
+official template retention, independent editorial/visual review and observed
+KDP preview/print acceptance remain required. Low-level Python technical fixture
+helpers are unchanged. Both publication flags remain false.
 
 ## Separate editorial authority
 
