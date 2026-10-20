@@ -18,19 +18,76 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
+class InteriorEmbeddingTests(unittest.TestCase):
+    def test_renderer_references_only_embedded_fonts(self):
+        font,spec=BookBoundsTests().spec()
+        with tempfile.TemporaryDirectory() as d:
+            target=Path(d)/'book.pdf';render_book(spec,[{'lines':['Embedded text']}],font,target)
+            with fitz.open(target) as doc:
+                fonts=doc[0].get_fonts(full=True)
+                self.assertTrue(fonts)
+                self.assertTrue(all(doc.extract_font(f[0])[3] for f in fonts))
+            self.assertTrue(inspect_interior(target,spec))
+
+    def test_unembedded_fonts_and_mixed_resources_are_rejected(self):
+        font,spec=BookBoundsTests().spec()
+        pdfmetrics.registerFont(TTFont('EmbeddingFixture',font))
+        for mode in ('builtin','mixed','unused_builtin'):
+            with self.subTest(mode=mode),tempfile.TemporaryDirectory() as d:
+                target=Path(d)/'book.pdf'
+                pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1)
+                if mode!='builtin':
+                    pdf.setFont('EmbeddingFixture',12);pdf.drawString(27,108,'Embedded')
+                    if mode=='mixed':
+                        pdf.setFont('Helvetica',12);pdf.drawString(27,84,'Builtin')
+                else:
+                    pdf.setFont('Helvetica',12);pdf.drawString(27,108,'Builtin')
+                pdf.showPage();pdf.save()
+                with fitz.open(target) as doc:
+                    self.assertTrue(doc[0].get_text().strip())
+                    self.assertTrue(any(not doc.extract_font(f[0])[3] for f in doc[0].get_fonts(full=True)))
+                with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_EMBEDDING_REQUIRED$'):
+                    inspect_interior(target,spec)
+
+
+    def test_unused_font_with_corrupt_program_is_rejected(self):
+        font,spec=BookBoundsTests().spec()
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'source.pdf';target=Path(d)/'changed.pdf'
+            render_book(spec,[{'lines':['Embedded text']}],font,source)
+            with fitz.open(source) as doc:
+                original=next(f[0] for f in doc[0].get_fonts(full=True) if f[1]=='ttf')
+                descriptor=int(doc.xref_get_key(original,'FontDescriptor')[1].split()[0])
+                bad_stream=doc.get_new_xref();doc.update_object(bad_stream,'<< >>')
+                doc.update_stream(bad_stream,b'\x00\x01\x00\x00truncated-program')
+                bad_descriptor=doc.get_new_xref();doc.update_object(bad_descriptor,doc.xref_object(descriptor))
+                doc.xref_set_key(bad_descriptor,'FontFile2',f'{bad_stream} 0 R')
+                bad_font=doc.get_new_xref();doc.update_object(bad_font,doc.xref_object(original))
+                doc.xref_set_key(bad_font,'FontDescriptor',f'{bad_descriptor} 0 R')
+                resources=int(doc.xref_get_key(doc[0].xref,'Resources/Font')[1].split()[0])
+                doc.xref_set_key(resources,'Unused',f'{bad_font} 0 R')
+                doc.save(target)
+            with fitz.open(source) as a,fitz.open(target) as b:
+                self.assertEqual(a[0].get_text(),b[0].get_text())
+                self.assertEqual(a[0].get_pixmap().samples,b[0].get_pixmap().samples)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_EMBEDDING_INVALID$'):
+                inspect_interior(target,spec)
+
+
 class InteriorFontSizeTests(unittest.TestCase):
     def fixture(self, root, sizes, scale=1, mixed=False, rotate=0):
         _,spec=BookBoundsTests().spec()
         spec['page_count']=len(sizes)
         target=root/'font-size.pdf'
-        pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1)
+        font,_=BookBoundsTests().spec();pdfmetrics.registerFont(TTFont('SizeFixture',font))
+        pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1,initialFontName='SizeFixture')
         for size in sizes:
             pdf.saveState();pdf.translate(27,100);pdf.rotate(rotate)
             pdf.scale(*(scale if isinstance(scale,tuple) else (scale,scale)))
-            pdf.setFont('Helvetica',size);pdf.drawString(0,0,'Delivered text')
+            pdf.setFont('SizeFixture',size);pdf.drawString(0,0,'Delivered text')
             pdf.restoreState()
             if mixed:
-                pdf.setFont('Helvetica',12);pdf.drawString(27,75,'Readable text')
+                pdf.setFont('SizeFixture',12);pdf.drawString(27,75,'Readable text')
             pdf.showPage()
         pdf.save()
         return target,spec
@@ -87,7 +144,7 @@ class InteriorGlyphTests(unittest.TestCase):
         spec['page_count'] = len(lines)
         pdfmetrics.registerFont(TTFont('GlyphFixture', font))
         source = root/'source.pdf'
-        pdf = pdfcanvas.Canvas(str(source), pagesize=(144,144), invariant=1)
+        pdf = pdfcanvas.Canvas(str(source), pagesize=(144,144), invariant=1, initialFontName='GlyphFixture')
         for line in lines:
             pdf.setFont('GlyphFixture',12)
             pdf.drawString(27,108,line)
@@ -145,7 +202,8 @@ class InteriorClippingTests(unittest.TestCase):
     def fixture(self, root, mode):
         _, spec = BookBoundsTests().spec()
         target = root/(mode+'.pdf')
-        pdf = pdfcanvas.Canvas(str(target), pagesize=(144,144), invariant=1)
+        font,_=BookBoundsTests().spec();pdfmetrics.registerFont(TTFont('ClipFixture',font))
+        pdf = pdfcanvas.Canvas(str(target), pagesize=(144,144), invariant=1, initialFontName='ClipFixture')
         pdf.saveState()
         if mode in ('partial','hidden','hole'):
             path = pdf.beginPath()
@@ -155,11 +213,11 @@ class InteriorClippingTests(unittest.TestCase):
             else:
                 path.rect(0,0,40 if mode == 'partial' else 10,144)
             pdf.clipPath(path,stroke=0,fill=0,fillMode=0)
-        pdf.setFont('Helvetica',12)
+        pdf.setFont('ClipFixture',12)
         pdf.drawString(27,108,'Clipped text')
         pdf.restoreState()
         if mode == 'hidden':
-            pdf.setFont('Helvetica',12)
+            pdf.setFont('ClipFixture',12)
             pdf.drawString(27,84,'Visible text')
         pdf.showPage();pdf.save()
         return target,spec

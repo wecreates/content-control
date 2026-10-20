@@ -43,7 +43,9 @@ def render_book(spec, pages, font_path, output):
     if target.exists():
         raise ValueError('OUTPUT_EXISTS')
     target.parent.mkdir(parents=True,exist_ok=True)
-    pdf=canvas.Canvas(str(target),pagesize=(width,height),invariant=1,pageCompression=1)
+    # Do not insert ReportLab's unused, unembedded default Helvetica resource.
+    pdf=canvas.Canvas(str(target),pagesize=(width,height),invariant=1,pageCompression=1,
+                      initialFontName=face,initialFontSize=size,initialLeading=leading)
     for number,page in enumerate(pages,1):
         lines=page.get('lines')
         if not isinstance(lines,list) or not lines or any(not isinstance(line,str) or '\n' in line for line in lines):
