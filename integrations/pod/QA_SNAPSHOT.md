@@ -173,3 +173,25 @@ Tests use synthetic signed rights and installed fixture fonts. Matching pixels
 does not establish legal font/asset authority, editorial quality, calibrated
 independent review, CMYK/preview/print acceptance or capacity. Publication flags
 remain false and all 24 live acceptance areas remain open.
+
+
+## Shared Python evidence JSON boundary
+
+All file inputs using pod_common.read_json and all authenticated payloads using
+pod_common.verified reject duplicate decoded object keys at every depth, including
+escaped spellings of the same key. NaN, Infinity and numeric overflow cannot be
+accepted as evidence facts. This parser is also shared by the original-template,
+source and text preflights; their specialized failure reasons remain unchanged.
+
+The signed payload retains the existing 4 MiB bound, now measured as UTF-8 bytes
+rather than characters. Envelope and signature types are checked explicitly; the
+signature must be exactly 64 lowercase hexadecimal characters. HMAC verification
+uses the original payload bytes before semantic parsing, without canonicalizing
+or repairing them. Existing audience, schema, time, rights and review checks
+remain mandatory. Unambiguous Unicode, arrays, finite numbers and valid existing
+receipts preserve their semantics. Ambiguous inputs require corrected evidence
+from the actual authority; no approval is rewritten or fabricated.
+
+These parser tests use synthetic signatures only. They do not establish live
+source/reviewer authority, rights, production acceptance or deployment. Both
+publication flags remain false and all 24 live acceptance areas remain open.
