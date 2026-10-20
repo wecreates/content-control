@@ -154,9 +154,6 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 interior=m['interior']
                 spec=interior['template']
                 receipt=interior['receipt']
-                from pod_kdp_options import require_paperback_options
-                require_paperback_options(spec,target_country)
-                report['target_country']=target_country
                 if (read_json(scoped_file(root,'interior.receipt.json'))!=receipt or
                     receipt['interior_sha256']!=m['files']['interior.pdf'] or
                     receipt['template_sha256']!=hashlib.sha256(canonical(spec).encode()).hexdigest() or
@@ -165,6 +162,9 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                     raise ValueError('INTERIOR_INVALID')
                 from pod_interior_preflight import inspect_interior, inspect_pairing
                 inspect_pairing(spec,m['template'])
+                from pod_kdp_options import require_paperback_options
+                require_paperback_options(spec,target_country)
+                report['target_country']=target_country
                 inspect_interior(scoped_file(root,'interior.pdf'),spec)
                 from pod_cover_preflight import inspect_cover, inspect_spine_text
                 inspect_spine_text(m['template'],text)
