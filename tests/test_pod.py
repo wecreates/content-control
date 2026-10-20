@@ -84,7 +84,8 @@ class PODTests(unittest.TestCase):
             if kdp:
                 template.update({'platform':'kdp','safe_box_px':[75,75,500,500],'size_inches':[12+24*.002252+.25,9.25],
                     'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
-                           'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24}})
+                           'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24,
+                           'reading_direction':'left_to_right','barcode_mode':'amazon_placed'}})
             m=generate(src,template,[],root)
             if kdp:
                 font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
@@ -127,6 +128,24 @@ class PODTests(unittest.TestCase):
         result=self.package_result(claimed_country,kdp=True,target_country='US')
         self.assertEqual(result['binary_pass'],1,result)
         self.assertEqual(result['target_country'],'US')
+
+    def test_kdp_qa_rejects_barcode_overlap_despite_rebound_masks_and_package(self):
+        from pod_common import save_json
+        from pod_cover_regions import barcode_region_px
+        for filename in ('text-mask.png','art-mask.png'):
+            def overlap(manifest,root):
+                import math
+                template=manifest['template'];dpi=template['dpi'];edge=math.ceil(.25*dpi)
+                template['safe_box_px']=[edge,edge,*[math.floor((v-.25)*dpi)-edge for v in template['size_inches']]]
+                _,box=barcode_region_px(manifest['template'])
+                with Image.open(root/filename) as source:mask=source.convert('L')
+                mask.putpixel((box[0],box[1]),1);mask.save(root/filename)
+                manifest['files'][filename]=digest(root/filename)
+            with self.subTest(mask=filename):
+                result=self.package_result(overlap,kdp=True)
+                self.assertEqual(result['binary_pass'],0)
+                self.assertTrue(result['checks']['geometry'])
+                self.assertIn('COVER_BARCODE_CONTENT_INVALID',result['errors'])
 
     def test_kdp_qa_rejects_local_cover_damage_despite_rebound_hashes(self):
         from reportlab.pdfgen import canvas as pdfcanvas

@@ -20,7 +20,7 @@ const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],safe_box_px:[75,75,500,500],
   kdp:{binding:'paperback',ink_type:'black',paper_type:spec.paper_type,page_count:spec.page_count,
    trim_width_inches:spec.trim_inches[0],spine_width_inches:spine,bleed_inches:.125,
-   reading_direction:'left_to_right',locale:'en_US'}};
+   reading_direction:'left_to_right',locale:'en_US',barcode_mode:'amazon_placed'}};
 };
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
@@ -92,6 +92,14 @@ test('KDP QA receives the authenticated target country independently of guide lo
  }
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--country'),false);
+});
+test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
+ for(const barcode_mode of [undefined,null,false,[],'own','amazon']){
+  const cover=record('kdp');cover.template.kdp.barcode_mode=barcode_mode;
+  const result=await exercise({platform:'kdp',template:cover,interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true});
+  assert.equal(result.reason,'KDP_BARCODE_MODE_UNSUPPORTED');assert.equal(result.started,false);
+  assert.equal(result.guideStarted,false);assert.equal(result.bookStarted,false);assert.equal(result.cleaned,1);
+ }
 });
 test('production rejects wrong platform country and product despite a valid signature',async()=>{
  for(const patch of [{country:'CA'},{product:'other'},{template:{...record().template,platform:'zazzle'}}]){
