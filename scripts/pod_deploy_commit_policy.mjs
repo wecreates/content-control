@@ -6,6 +6,9 @@ import {pathToFileURL} from 'node:url';
 export const REPORT_ONLY_PATHS=Object.freeze([
  'state/provenance/npm-sbom.cdx.json',
  'state/provenance/runtime-provenance.json',
+ // Watchdog observation consumed by repository verification/repair routing.
+ // Other watchdog-staged health and completion paths are not allowlisted.
+ 'state/free-production-watchdog.json',
  'POD_COMPLETION_CHECKLIST.md',
  'POD_IMPLEMENTATION_STATUS.md',
  'POD_FREE_DEPLOYMENT.md',

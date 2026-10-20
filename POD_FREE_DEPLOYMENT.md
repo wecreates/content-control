@@ -115,6 +115,15 @@ has not been verified. Test/merge evidence is not deployment evidence while bloc
 commit marker only when every staged change is an exact allowlisted report path.
 The provenance workflow uses it for its two generated JSON reports. POD completion,
 implementation-status and free-deployment documentation are also allowlisted.
+The watchdog workflow also uses the staged policy. Its exact observation path
+state/free-production-watchdog.json can skip a rebuild when it is the only staged
+change (or accompanies other allowlisted reports). Its other staged health,
+completion and operations paths remain outside the allowlist. Any such mixed
+commit retains normal deployment, including state/content-control-health.json.
+Observation-only commits still preserve failure status and repair routing; the
+marker does not skip GitHub CI, approve a candidate or change publication gates.
+The GitHub report can advance while its copy in the running container remains
+old until the next actual deployment. No service setting or broad filter changes.
 Unknown paths, application code, dependencies, templates, runtime health state,
 media and mixed commits retain the normal deployment message. Rename detection
 is disabled during inspection so moving application code into a report path cannot

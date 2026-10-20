@@ -100,7 +100,7 @@ jobs:
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
           git add state/free-production-watchdog.json state/system-completion.json state/operations-snapshot.json state/workflow-control-health.json state/system-wiring-health.json state/deployment-health.json
-          git diff --cached --quiet || git commit -m "Update free production watchdog evidence"
+          git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update free production watchdog evidence')"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort || true
