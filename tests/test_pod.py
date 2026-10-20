@@ -74,7 +74,8 @@ class PODTests(unittest.TestCase):
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
-                       text_layers=None,ocr_text='',manuscript_inputs=True,font_inputs=True):
+                       text_layers=None,ocr_text='',manuscript_inputs=True,font_inputs=True,
+                       font_rights_inputs=True,font_rights_patch=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -113,11 +114,22 @@ class PODTests(unittest.TestCase):
                 'evaluator_id':'test-fixture','winner':'candidate','all_dimensions_noninferior':True,
                 'swapped_order_consistent':True,'weighted_margin':1,**(review_patch or {})},'POD_REVIEW_KEY')
             editorial=None
+            font_rights=None
+            font_license=None
             if kdp and editorial_present:
                 editorial=sign({**common,'audience':'pod:editorial-review','interior_sha256':m['files'].get('interior.pdf'),
                     'manuscript_sha256':hashlib.sha256(canonical(original_pages).encode()).hexdigest(),
                     'evaluator_id':'synthetic-editor','verdict':'PASS','checks':{k:True for k in EDITORIAL_CHECKS},
                     **(editorial_patch or {})},'POD_EDITORIAL_KEY')
+            if kdp and font_rights_inputs:
+                font_license=Path(tmp)/'font-license.txt'
+                font_license.write_bytes(b'synthetic license evidence; not legal approval')
+                font_rights=sign({**common,'audience':'pod:font-rights','status':'PASS',
+                    'font_sha256':spec['font_sha256'],'license_sha256':digest(font_license),
+                    'country':'US','product':'fixture-book','commercial_use':True,
+                    'print_on_demand':True,'font_embedding':True,'revoked':False,
+                    'license_id':'synthetic-license','licensor':'synthetic-authority',
+                    **(font_rights_patch or {})},'POD_RIGHTS_KEY')
             original_templates=None
             source_evidence=None
             if source_inputs:
@@ -144,7 +156,8 @@ class PODTests(unittest.TestCase):
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
                     target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
                     source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None,
-                    interior_font=interior_font if kdp and font_inputs else None)
+                    interior_font=interior_font if kdp and font_inputs else None,
+                    font_rights_envelope=font_rights,font_license=font_license)
 
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
@@ -167,6 +180,22 @@ class PODTests(unittest.TestCase):
         self.assertTrue(valid['checks']['source_font'])
         self.assertEqual(valid['font_sha256'],valid['font_sha256'].lower())
         self.assertEqual(len(valid['font_sha256']),64)
+
+    def test_kdp_current_scoped_font_rights_and_retained_license_are_required(self):
+        missing=self.package_result(lambda m,r:None,kdp=True,font_rights_inputs=False)
+        self.assertEqual(missing['binary_pass'],0,missing)
+        self.assertIn('FONT_RIGHTS_REQUIRED',missing['errors'])
+        for patch in ({'font_sha256':'0'*64},{'license_sha256':'0'*64},{'country':'CA'},
+                      {'product':'other'},{'commercial_use':False},{'print_on_demand':False},
+                      {'font_embedding':False},{'revoked':True},{'license_id':''},{'licensor':' unknown '}):
+            result=self.package_result(lambda m,r:None,kdp=True,font_rights_patch=patch)
+            self.assertEqual(result['binary_pass'],0,result)
+            self.assertIn('FONT_RIGHTS_INVALID',result['errors'])
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        self.assertTrue(valid['checks']['font_rights'])
+        self.assertEqual(valid['font_license_id'],'synthetic-license')
+        self.assertEqual(len(valid['font_license_sha256']),64)
 
     def test_rebound_substituted_interior_text_does_not_match_original_manuscript(self):
         from pod_common import save_json

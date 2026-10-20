@@ -19,10 +19,12 @@ stored input bytes to make a malformed task run.
 The required roles are `source`, `template`, `textLayers`, `assetRights` and
 `reference`; each references a declared input filename. `templateScope` requires
 a nonempty product and uppercase two-letter country. KDP interior tasks additionally
-provide an object named `interior` containing **exactly** `template`, `pages` and
-`font`, each referencing a declared filename. Omit `interior` when it does not
-apply; null, false, arrays, missing roles and extra fields are rejected. Only
-those three validated roles are resolved into local paths.
+provide an object named `interior` containing **exactly** `template`, `pages`,
+`font`, `fontRights` and `fontLicense`, each referencing a declared filename.
+Omit `interior` when it does not apply; null, false, arrays, missing roles and
+extra fields are rejected. Only those five validated roles are resolved into
+local paths. `fontRights` is the current signed grant and `fontLicense` is the
+retained evidence it hashes; see `FONT_RIGHTS.md`.
 
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials

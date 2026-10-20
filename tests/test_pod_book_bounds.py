@@ -599,7 +599,7 @@ const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYT
  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
  resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
  source:'unused',textLayers:'unused',assetRights:'unused',reference:'unused',output:path.join(root,'output'),
- interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused'},cleanup:async()=>{cleaned++;}})});
+ interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused'},cleanup:async()=>{cleaned++;}})});
 const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
 console.log(JSON.stringify({result,started,held,cleaned}));
 '''

@@ -64,7 +64,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
     ...(assetRoot?{assetRoot:root}:{}),
     ...(templateSource?{templateSource:sourcePath}:{}),
-    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused'}}:{}),
+    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused'}}:{}),
     ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
     cleanup:async()=>{cleaned++;}})});
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
@@ -119,6 +119,10 @@ test('KDP QA receives the authenticated target country independently of guide lo
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--manuscript')+1],'unused');
   assert.equal(result.qaArgs.filter(x=>x==='--font').length,1);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--font')+1],'unused');
+  assert.equal(result.qaArgs.filter(x=>x==='--font-rights').length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-rights')+1],'unused');
+  assert.equal(result.qaArgs.filter(x=>x==='--font-license').length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-license')+1],'unused');
   for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],['--template-source','retained-source.bin']]){
    assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
    assert.equal(path.basename(result.qaArgs[result.qaArgs.indexOf(flag)+1]),filename);
@@ -127,7 +131,7 @@ test('KDP QA receives the authenticated target country independently of guide lo
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--asset-root'),false);
  assert.equal(other.qaArgs.includes('--country'),false);
- for(const flag of ['--product','--cover-template','--interior-template','--template-source','--manuscript','--font'])assert.equal(other.qaArgs.includes(flag),false);
+ for(const flag of ['--product','--cover-template','--interior-template','--template-source','--manuscript','--font','--font-rights','--font-license'])assert.equal(other.qaArgs.includes(flag),false);
 });
 test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
  for(const barcode_mode of [undefined,null,false,[],'own','amazon']){
