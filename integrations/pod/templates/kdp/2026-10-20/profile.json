@@ -1,0 +1,12 @@
+{
+  "binding": "paperback",
+  "ink_type": "black",
+  "paper_type": "white",
+  "reading_direction": "left_to_right",
+  "trim_inches": [
+    6,
+    9
+  ],
+  "page_count": 24,
+  "locale": "en_US"
+}
