@@ -19,6 +19,121 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 
 
+class KdpTemplateEvidenceTests(unittest.TestCase):
+    archive=Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'
+
+    def setUp(self):
+        import os
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=Path(self.temp.name);self.key='synthetic-original-template-key-'*2
+        self.env=patch.dict(os.environ,{'POD_TEMPLATE_KEY':self.key});self.env.start();self.addCleanup(self.env.stop)
+
+    def case(self):
+        import time
+        from datetime import datetime,timezone
+        from pod_common import sign,save_json
+        now=int(time.time()*1000);spine=24*.002252
+        interior=dict(platform='kdp',binding='paperback',ink_type='black',paper_type='white',
+            page_count=24,trim_inches=[6,9],margins_inches=dict(inside=.375,outside=.25,top=.25,bottom=.25))
+        cover={'platform':'kdp','dpi':300,'size_inches':[12+spine+.25,9.25],
+            'kdp':dict(binding='paperback',ink_type='black',paper_type='white',page_count=24,
+                trim_width_inches=6,spine_width_inches=spine,bleed_inches=.125,
+                reading_direction='left_to_right',locale='en_US',barcode_mode='amazon_placed')}
+        base=dict(schema_version=1,issued_at_ms=now-1,expires_at_ms=now+60000,
+            product='fixture-book',country='US',official_source_verified=True,
+            source_url='https://example.invalid/synthetic-template-authority',
+            source_sha256='27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',
+            observed_at=datetime.fromtimestamp(now/1000,timezone.utc).isoformat())
+        records={'cover':{**base,'audience':'pod:template','template':cover},
+            'interior':{**base,'audience':'pod:interior-template','template':interior,'expires_at_ms':now+30000}}
+        paths={'cover':self.root/'cover.json','interior':self.root/'interior.json','source':self.archive}
+        for role,record in records.items():save_json(paths[role],sign(record,'POD_TEMPLATE_KEY'))
+        return {'platform':'kdp','template':cover,'interior':{'template':interior}},paths,records
+
+    def test_original_signed_templates_bind_actual_retained_source_without_minting_approval(self):
+        from pod_template_evidence import inspect_kdp_template_evidence,template_evidence_deadline
+        manifest,paths,records=self.case()
+        evidence=inspect_kdp_template_evidence(manifest,paths,'fixture-book','US')
+        self.assertEqual(evidence['inspection']['archive_bytes'],288195)
+        self.assertFalse(evidence['inspection']['production_template_approved'])
+        self.assertFalse(evidence['inspection']['source_authority_verified'])
+        self.assertEqual(template_evidence_deadline(evidence),records['interior']['expires_at_ms'])
+        # Final expiry recheck uses captured envelopes, never replacement paths.
+        paths['cover'].write_text('not an envelope')
+        self.assertEqual(template_evidence_deadline(evidence),records['interior']['expires_at_ms'])
+
+    def test_scope_provenance_signature_and_time_fail_closed(self):
+        from pod_common import sign,save_json
+        from pod_template_evidence import inspect_kdp_template_evidence
+        patches=[{'product':'other'},{'country':'JP'},{'official_source_verified':1},
+            {'source_url':'http://example.invalid'},{'source_url':'https://user:pass@example.invalid'},
+            {'source_sha256':'A'*64},{'observed_at':'2026-02-30T12:00:00Z'},
+            {'observed_at':'2026-10-20T12:00:00'},{'observed_at':'9999-01-01T00:00:00Z'},
+            {'expires_at_ms':0},{'audience':'pod:interior-template'}]
+        for change in patches:
+            manifest,paths,records=self.case();records['cover'].update(change)
+            save_json(paths['cover'],sign(records['cover'],'POD_TEMPLATE_KEY'))
+            with self.subTest(change=change),self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+                inspect_kdp_template_evidence(manifest,paths,'fixture-book','US')
+        manifest,paths,records=self.case();envelope=sign(records['cover'],'POD_TEMPLATE_KEY');envelope['signature']='0'*64
+        save_json(paths['cover'],envelope)
+        with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+            inspect_kdp_template_evidence(manifest,paths,'fixture-book','US')
+
+    def test_producer_template_changes_cannot_replace_original_approval(self):
+        import copy
+        from pod_template_evidence import inspect_kdp_template_evidence
+        for kind in ('cover','interior'):
+            manifest,paths,_=self.case();manifest=copy.deepcopy(manifest)
+            target=manifest['template'] if kind=='cover' else manifest['interior']['template']
+            target['producer_added_claim']=True
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PACKAGE_MISMATCH$'):
+                inspect_kdp_template_evidence(manifest,paths,'fixture-book','US')
+
+    def test_ambiguous_envelopes_and_authenticated_payloads_are_rejected(self):
+        import json,hmac,hashlib
+        from pod_common import canonical,save_json,sign
+        from pod_template_evidence import original_envelope
+        _,paths,records=self.case();record=records['cover'];payload=canonical(record)
+        for value in (payload[:-1]+',"product":"fixture-book"}',
+                payload[:-1]+',"produc\\u0074":"fixture-book"}',
+                payload.replace('"dpi":300','"dpi":300,"d\\u0070i":300'),
+                payload.replace('"dpi":300','"dpi":NaN'),payload.replace('"dpi":300','"dpi":1e400')):
+            save_json(paths['cover'],{'payload':value,'signature':hmac.new(self.key.encode(),value.encode(),hashlib.sha256).hexdigest()})
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+                original_envelope(paths['cover'],'pod:template')
+        envelope=sign(record,'POD_TEMPLATE_KEY');text=canonical(envelope)
+        paths['cover'].write_text(text[:-1]+',"signature":'+json.dumps(envelope['signature'])+'}')
+        with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+            original_envelope(paths['cover'],'pod:template')
+
+    def test_bounded_regular_originals_and_actual_source_identity_are_required(self):
+        import os
+        from pod_template_evidence import inspect_kdp_template_evidence,original_envelope
+        manifest,paths,_=self.case()
+        for invalid in (None,{},{'cover':paths['cover'],'interior':paths['interior']}):
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_REQUIRED$'):
+                inspect_kdp_template_evidence(manifest,invalid,'fixture-book','US')
+        bad=self.root/'wrong-source';bad.write_bytes(b'changed retained bytes')
+        with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_HASH_MISMATCH$'):
+            inspect_kdp_template_evidence(manifest,{**paths,'source':bad},'fixture-book','US')
+        fifo=self.root/'pipe';os.mkfifo(fifo);link=self.root/'link';link.symlink_to(paths['cover'])
+        for path in (fifo,link):
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+                original_envelope(path,'pod:template')
+        for data in (b'\xff',b'x'*(4*1024*1024+1)):
+            paths['cover'].write_bytes(data)
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+                original_envelope(paths['cover'],'pod:template')
+
+    def test_original_template_expiry_is_rechecked_after_inspection(self):
+        from pod_template_evidence import inspect_kdp_template_evidence,template_evidence_deadline
+        manifest,paths,records=self.case();evidence=inspect_kdp_template_evidence(manifest,paths,'fixture-book','US')
+        with patch('pod_template_evidence.time.time',return_value=records['interior']['expires_at_ms']/1000):
+            with self.assertRaisesRegex(ValueError,'^KDP_TEMPLATE_PROVENANCE_INVALID$'):
+                template_evidence_deadline(evidence)
+
+
 class BarcodeRegionTests(unittest.TestCase):
     def template(self,dpi=300,width=6,height=9):
         spine=24*.002252

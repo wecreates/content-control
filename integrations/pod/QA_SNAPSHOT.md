@@ -94,3 +94,12 @@ behavior on POSIX, not live recovery, capacity or independent review. Abrupt
 Node SIGKILL, descendants that escape the process group and adversarial processes
 are outside this guarantee; default Python SIGTERM can still leave partial output
 for manual recovery. No publication or marketplace readiness is granted.
+
+
+## Original template evidence in independent KDP QA
+
+KDP QA requires the original signed cover and interior template envelopes and the retained cover guide bytes. The worker passes these input paths with the authenticated product and country; a standalone invocation must supply `--product`, `--country`, `--cover-template`, `--interior-template` and `--template-source`. Package declarations or an earlier inspection report cannot replace these inputs. Other platform contracts are unchanged.
+
+QA opens bounded regular files without following final symlinks, rejects malformed UTF-8, duplicate JSON keys and nonfinite numbers in both envelopes and authenticated payloads, and verifies the existing template key, audience, scope, current time and provenance assertions. It compares each signed template exactly with the package template, then independently hashes and inspects the actual retained guide against the signed paired paperback profile. No source URL is fetched. The captured original envelopes are verified again after comparative/editorial work, and a passing QA receipt cannot outlive either template approval.
+
+The retained guide inspector still reports `source_authority_verified=false` and `production_template_approved=false`: technical inspection does not establish download origin or mint approval. Source provenance is asserted by the configured trusted signer. This path authenticates the original interior specification but does not inspect a separately retained official interior source artifact. Synthetic signing keys, product scope, source assertions and reviewers in tests are fixtures only. Actual official-template approval, regional rights, editorial/independent calibration, live acceptance and launch readiness remain open. Both publication flags remain false.
