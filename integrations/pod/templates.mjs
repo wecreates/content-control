@@ -47,3 +47,20 @@ export function validateTemplate(envelope,key,scope,now=Date.now()){
  return t;
 }
 
+// Necessary cover/interior agreement before any child stage. KDP G201857950,
+// checked 2026-10-20, rounds manuscript pages up to even. This renderer does not
+// add a blank page: require a newly reviewed even-page task instead of silently
+// changing approved bytes or calculating a spine from an odd manuscript.
+export function validateKdpTemplatePair(cover,interior){
+ if(interior.page_count%2!==0)throw Error('KDP_PAGE_COUNT_REQUIRES_REVIEW');
+ const k=cover?.kdp,number=n=>typeof n==='number'&&Number.isFinite(n);
+ const equal=(a,b)=>number(a)&&Math.abs(a-b)<=1e-6;
+ const factor=interior.paper_type==='white'?.002252:interior.paper_type==='cream'?.0025:.00235;
+ const spine=interior.page_count*factor,[width,height]=interior.trim_inches;
+ if(!k||k.binding!==interior.binding||k.ink_type!==interior.ink_type||
+  k.paper_type!==interior.paper_type||k.page_count!==interior.page_count||
+  !equal(k.trim_width_inches,width)||!equal(k.spine_width_inches,spine)||
+  k.bleed_inches!==.125||!equal(cover.size_inches[0],2*width+spine+.25)||
+  !equal(cover.size_inches[1],height+.25))throw Error('COVER_INTERIOR_MISMATCH');
+}
+

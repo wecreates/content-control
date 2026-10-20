@@ -14,11 +14,17 @@ const sign=value=>{
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
 };
 const scope={product:'fixture-shirt',country:'US'};
+const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
+ const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
+ return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],
+  kdp:{binding:'paperback',ink_type:'black',paper_type:spec.paper_type,page_count:spec.page_count,
+   trim_width_inches:spec.trim_inches[0],spine_width_inches:spine,bleed_inches:.125}};
+};
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
  source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
  template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500],
-  ...(platform==='kdp'?{binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
+  ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
 async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
@@ -292,4 +298,36 @@ for(const action of ['abort','disable'])test(`late review result after ${action}
  }});
  assert.equal(accessed,false);assert.equal(r.reason,'PRODUCTION_STOPPED');
  assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+});
+
+
+test('KDP production rejects paper binding ink and physical cover mismatches before rendering',async()=>{
+ const cover=record('kdp'),interior={...record('kdp'),audience:'pod:interior-template'};
+ for(const patch of [{kdp:undefined},...['binding','ink_type','paper_type','page_count','trim_width_inches','spine_width_inches','bleed_inches'].flatMap(field=>[
+  {kdp:{...cover.template.kdp,[field]:undefined}},
+  {kdp:{...cover.template.kdp,[field]:field==='paper_type'?'cream':field==='binding'?'hardcover':field==='ink_type'?'color':field==='page_count'?26:field==='trim_width_inches'?5:field==='bleed_inches'?.1:.1}},
+  {kdp:{...cover.template.kdp,[field]:[cover.template.kdp[field]]}},
+ ]),{size_inches:[cover.template.size_inches[0]+.001,cover.template.size_inches[1]]},
+ {size_inches:[cover.template.size_inches[0],cover.template.size_inches[1]+.001]}]){
+  const r=await exercise({platform:'kdp',template:{...cover,template:{...cover.template,...patch}},interior,detailed:true});
+  assert.equal(r.status,'BLOCKED');assert.equal(r.reason,'COVER_INTERIOR_MISMATCH');
+  assert.equal(r.started,false);assert.equal(r.bookStarted,false);assert.equal(r.cleaned,1);
+  assert.equal(r.held,0);assert.equal(r.completed,0);
+ }
+});
+test('KDP production requires an explicitly reviewed even manuscript instead of silently rounding',async()=>{
+ const spec={...record('kdp').template,page_count:25};
+ const cover={...record('kdp'),template:{...record('kdp').template,...kdpCover(spec)}};
+ const r=await exercise({platform:'kdp',template:cover,interior:{...record('kdp'),audience:'pod:interior-template',template:spec},detailed:true});
+ assert.equal(r.status,'BLOCKED');assert.equal(r.reason,'KDP_PAGE_COUNT_REQUIRES_REVIEW');
+ assert.equal(r.started,false);assert.equal(r.bookStarted,false);assert.equal(r.cleaned,1);assert.equal(r.held,0);
+});
+test('KDP production accepts matching explicit even-page covers for each supported paper into review only',async()=>{
+ for(const paper_type of ['white','cream','groundwood']){
+  const spec={...record('kdp').template,paper_type,page_count:100};
+  const r=await exercise({platform:'kdp',template:{...record('kdp'),template:{...record('kdp').template,...kdpCover(spec)}},
+   interior:{...record('kdp'),audience:'pod:interior-template',template:spec},detailed:true});
+  assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.started,true);assert.equal(r.bookStarted,true);
+  assert.equal(r.held,1);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+ }
 });
