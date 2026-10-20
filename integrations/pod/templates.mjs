@@ -10,6 +10,11 @@ function provenance(envelope,key,{platform,product,country},audience,now){
   source.protocol!=='https:'||source.username||source.password||
   typeof record.source_sha256!=='string'||!/^[a-f0-9]{64}$/.test(record.source_sha256)||
   !validEvidenceTime(record.observed_at,now))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
+ if(audience==='pod:interior-template'&&(
+  typeof record.source_member!=='string'||record.source_member.length<1||record.source_member.length>512||
+  record.source_member.startsWith('/')||record.source_member.includes('\\')||
+  record.source_member.split('/').some(part=>!part||part==='.'||part==='..')||
+  !record.source_member.toLowerCase().endsWith('.docx')))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
  return t;
 }
 export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){
@@ -83,4 +88,5 @@ export function kdpCalculatorProfile(cover,interior){
   reading_direction:cover.kdp.reading_direction,trim_inches:[...interior.trim_inches],
   page_count:interior.page_count,locale:cover.kdp.locale};
 }
+
 

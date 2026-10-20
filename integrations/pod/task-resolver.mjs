@@ -6,7 +6,7 @@ import {createGrantResolver} from './grant-client.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
 const hash=/^[a-f0-9]{64}$/;
 const outputNames=new Set(['package','qa.json','qa-signed.json']);
-const interiorRoles=['template','pages','font','fontRights','fontLicense'];
+const interiorRoles=['template','pages','font','fontRights','fontLicense','source'];
 export function validateTask(task){
  if(task?.schema_version!==1||!task.files||typeof task.files!=='object'||Array.isArray(task.files))throw Error('TASK_INVALID');
  const entries=Object.entries(task.files);

@@ -15,6 +15,7 @@ const sign=value=>{
 };
 const scope={product:'fixture-shirt',country:'US'};
 const retainedSource=Buffer.from('retained synthetic cover source, not official evidence');
+const interiorMember='English/English/6 x 9 inch (15.24 x 22.86 cm).docx';
 const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
  return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],safe_box_px:[75,75,500,500],
@@ -24,12 +25,13 @@ const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
 };
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
- source_sha256:crypto.createHash('sha256').update(retainedSource).digest('hex'),observed_at:new Date().toISOString(),
+ source_sha256:crypto.createHash('sha256').update(retainedSource).digest('hex'),
+ ...(platform==='kdp'?{source_member:interiorMember}:{}),observed_at:new Date().toISOString(),
  template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500],
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,guideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -41,11 +43,15 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),"require('node:fs').writeFileSync('book-started','yes');");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
    "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
+  await fs.writeFile(path.join(root,'scripts/pod_kdp_interior_template_import.py'),
+   "const fs=require('node:fs');fs.writeFileSync('interior-guide-started','yes');if(process.env.FIXTURE_INTERIOR_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_INTERIOR_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-args.json',JSON.stringify(process.argv));require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify(sign(template)));
   const sourcePath=path.join(root,'retained-source.bin');
   if(templateSource)await fs.writeFile(sourcePath,sourceBytes);
+  const interiorSourcePath=path.join(root,'retained-interior-source.bin');
+  if(interior&&interiorTemplateSource)await fs.writeFile(interiorSourcePath,interiorSourceBytes);
   const interiorPath=path.join(root,'interior.json');
   if(interior)await fs.writeFile(interiorPath,JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
@@ -53,6 +59,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,completed=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
   if(guideFailure)env.FIXTURE_GUIDE_FAILURE=guideFailure;
+  if(interiorGuideFailure)env.FIXTURE_INTERIOR_GUIDE_FAILURE=interiorGuideFailure;
   const controller=new AbortController();
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
    db:{claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
@@ -64,16 +71,17 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
     ...(assetRoot?{assetRoot:root}:{}),
     ...(templateSource?{templateSource:sourcePath}:{}),
-    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused'}}:{}),
+    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',...(interiorTemplateSource?{source:interiorSourcePath}:{})}}:{}),
     ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
     cleanup:async()=>{cleaned++;}})});
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
   const bookStarted=await fs.stat(path.join(root,'book-started')).then(()=>true,()=>false);
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
   const guideStarted=await fs.stat(path.join(root,'guide-started')).then(()=>true,()=>false);
+  const interiorGuideStarted=await fs.stat(path.join(root,'interior-guide-started')).then(()=>true,()=>false);
   const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
   const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
-  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -123,7 +131,8 @@ test('KDP QA receives the authenticated target country independently of guide lo
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-rights')+1],'unused');
   assert.equal(result.qaArgs.filter(x=>x==='--font-license').length,1);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-license')+1],'unused');
-  for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],['--template-source','retained-source.bin']]){
+  for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],
+   ['--template-source','retained-source.bin'],['--interior-template-source','retained-interior-source.bin']]){
    assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
    assert.equal(path.basename(result.qaArgs[result.qaArgs.indexOf(flag)+1]),filename);
   }
@@ -131,7 +140,7 @@ test('KDP QA receives the authenticated target country independently of guide lo
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--asset-root'),false);
  assert.equal(other.qaArgs.includes('--country'),false);
- for(const flag of ['--product','--cover-template','--interior-template','--template-source','--manuscript','--font','--font-rights','--font-license'])assert.equal(other.qaArgs.includes(flag),false);
+ for(const flag of ['--product','--cover-template','--interior-template','--template-source','--interior-template-source','--manuscript','--font','--font-rights','--font-license'])assert.equal(other.qaArgs.includes(flag),false);
 });
 test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
  for(const barcode_mode of [undefined,null,false,[],'own','amazon']){
@@ -181,6 +190,17 @@ test('KDP requires retained source bytes matching authenticated cover provenance
  const valid=await exercise(options);
  assert.equal(valid.status,'REVIEW_REQUIRED');assert.equal(valid.started,true);assert.equal(valid.bookStarted,true);
  assert.equal(valid.completed,0);assert.equal(valid.cleaned,1);
+});
+test('KDP requires retained interior-template bytes before rendering and QA',async()=>{
+ const options={platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true};
+ const missing=await exercise({...options,interiorTemplateSource:false});
+ assert.equal(missing.status,'BLOCKED');assert.equal(missing.started,false);
+ assert.equal(missing.interiorGuideStarted,false);assert.equal(missing.bookStarted,false);
+ const changed=await exercise({...options,interiorSourceBytes:Buffer.from('changed')});
+ assert.equal(changed.status,'BLOCKED');assert.equal(changed.started,false);
+ assert.equal(changed.interiorGuideStarted,false);assert.equal(changed.bookStarted,false);
+ const valid=await exercise(options);
+ assert.equal(valid.interiorGuideStarted,true);assert.equal(valid.bookStarted,true);
 });
 test('KDP source identity follows the signed envelope rather than an unsigned hash assertion',async()=>{
  const cover={...record('kdp'),source_sha256:'a'.repeat(64)};
@@ -322,7 +342,7 @@ test('grant expiring during the local database check prevents rendering',async()
  assert.equal(result.started,false);assert.equal(result.status,'BLOCKED');
 });
 test('KDP refreshes authority between artwork and interior stages',async()=>{
- const result=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt:4,detailed:true});
+ const result=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt:5,detailed:true});
  assert.equal(result.started,true);assert.equal(result.bookStarted,false);assert.equal(result.held,0);assert.equal(result.status,'BLOCKED');
 });
 
@@ -342,6 +362,19 @@ test('KDP guide inspection failures block artwork with fixed diagnostics and cle
   assert.equal(r.bookStarted,false);assert.equal(r.qaStarted,false);assert.equal(r.cleaned,1);assert.equal(r.held,0);
  }
 });
+test('KDP interior-template inspection failures use fixed diagnostics and cleanup',async()=>{
+ for(const [interiorGuideFailure,reason] of [
+  ['KDP_INTERIOR_TEMPLATE_ARCHIVE_INVALID','KDP_INTERIOR_TEMPLATE_ARCHIVE_INVALID'],
+  ['KDP_INTERIOR_TEMPLATE_DOCX_INVALID','KDP_INTERIOR_TEMPLATE_DOCX_INVALID'],
+  ['KDP_INTERIOR_TEMPLATE_LAYOUT_INVALID','KDP_INTERIOR_TEMPLATE_LAYOUT_INVALID'],
+  ['private child details','PRODUCTION_BLOCKED']]){
+  const r=await exercise({platform:'kdp',template:record('kdp'),
+   interior:{...record('kdp'),audience:'pod:interior-template'},interiorGuideFailure,detailed:true});
+  assert.equal(r.guideStarted,true);assert.equal(r.interiorGuideStarted,true);
+  assert.equal(r.reason,reason);assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+  assert.equal(r.cleaned,1);assert.equal(r.held,0);
+ }
+});
 test('KDP guide locale and reading direction must be explicit supported signed fields',async()=>{
  for(const patch of [{locale:undefined},{locale:'ja_JP'},{locale:['en_US']},
   {reading_direction:undefined},{reading_direction:'right_to_left'},{reading_direction:true}]){
@@ -351,10 +384,11 @@ test('KDP guide locale and reading direction must be explicit supported signed f
   assert.equal(r.cleaned,1);
  }
 });
-test('KDP renews authority before inspection and again before artwork',async()=>{
- for(const denyGrantAt of [2,3]){
+test('KDP renews authority before each inspection and again before artwork',async()=>{
+ for(const denyGrantAt of [2,3,4]){
   const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},denyGrantAt,detailed:true});
-  assert.equal(r.guideStarted,denyGrantAt===3);assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+  assert.equal(r.guideStarted,denyGrantAt>=3);assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+  assert.equal(r.interiorGuideStarted,denyGrantAt===4);
   assert.equal(r.status,'BLOCKED');assert.equal(r.cleaned,1);
  }
 });

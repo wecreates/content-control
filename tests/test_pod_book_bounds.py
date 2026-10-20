@@ -117,9 +117,14 @@ class KdpTemplateEvidenceTests(unittest.TestCase):
             source_url='https://example.invalid/synthetic-template-authority',
             source_sha256='27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',
             observed_at=datetime.fromtimestamp(now/1000,timezone.utc).isoformat())
+        from test_pod_kdp_interior_template_import import archive_bytes as interior_archive_bytes, MEMBER
+        interior_source=self.root/'interior-source.zip';interior_source.write_bytes(interior_archive_bytes())
         records={'cover':{**base,'audience':'pod:template','template':cover},
-            'interior':{**base,'audience':'pod:interior-template','template':interior,'expires_at_ms':now+30000}}
-        paths={'cover':self.root/'cover.json','interior':self.root/'interior.json','source':self.archive}
+            'interior':{**base,'audience':'pod:interior-template','template':interior,
+                'source_sha256':digest(interior_source),'source_member':MEMBER,
+                'expires_at_ms':now+30000}}
+        paths={'cover':self.root/'cover.json','interior':self.root/'interior.json',
+            'source':self.archive,'interiorSource':interior_source}
         for role,record in records.items():save_json(paths[role],sign(record,'POD_TEMPLATE_KEY'))
         return {'platform':'kdp','template':cover,'interior':{'template':interior}},paths,records
 
@@ -130,6 +135,8 @@ class KdpTemplateEvidenceTests(unittest.TestCase):
         self.assertEqual(evidence['inspection']['archive_bytes'],288195)
         self.assertFalse(evidence['inspection']['production_template_approved'])
         self.assertFalse(evidence['inspection']['source_authority_verified'])
+        self.assertEqual(evidence['interior_inspection']['trim_inches'],[6.0,9.0])
+        self.assertFalse(evidence['interior_inspection']['production_template_approved'])
         self.assertEqual(template_evidence_deadline(evidence),records['interior']['expires_at_ms'])
         # Final expiry recheck uses captured envelopes, never replacement paths.
         paths['cover'].write_text('not an envelope')
@@ -577,6 +584,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 const {produceOnce}=await import(process.argv[1]);
 const root=process.argv[2],archive=process.argv[3],count=Number(process.argv[4]);
+const interiorArchive=process.argv[6],interiorSha=process.argv[7],interiorMember=process.argv[8];
 const key='synthetic-profile-bridge-key-'.repeat(2);
 const sign=value=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,
  expires_at_ms:Date.now()+300000,...value});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
@@ -589,7 +597,8 @@ const cover={platform:'kdp',dpi:300,size_inches:[12+spine+.25,9.25],safe_box_px:
 const interior={platform:'kdp',binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',
  page_count:count,trim_inches:[6,9],font_size_pt:10,margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25}};
 await fs.writeFile(path.join(root,'cover.json'),JSON.stringify(sign({...record,audience:'pod:template',template:cover})));
-await fs.writeFile(path.join(root,'interior.json'),JSON.stringify(sign({...record,audience:'pod:interior-template',template:interior})));
+await fs.writeFile(path.join(root,'interior.json'),JSON.stringify(sign({...record,audience:'pod:interior-template',
+ source_sha256:interiorSha,source_member:interiorMember,template:interior})));
 const brief={id:'fixture',account_id:'a',business_id:'b',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
 let held=0,cleaned=0;
 const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYTHON:process.argv[5],
@@ -599,19 +608,25 @@ const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYT
  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
  resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
  source:'unused',textLayers:'unused',assetRights:'unused',reference:'unused',output:path.join(root,'output'),
- interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused'},cleanup:async()=>{cleaned++;}})});
+ interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',
+  source:interiorArchive},cleanup:async()=>{cleaned++;}})});
 const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
 console.log(JSON.stringify({result,started,held,cleaned}));
 '''
         for count in (24,26):
             with self.subTest(page_count=count),tempfile.TemporaryDirectory() as d:
                 root=Path(d);scripts=root/'scripts';scripts.mkdir();(root/'output').mkdir()
+                from test_pod_kdp_interior_template_import import archive_bytes as interior_archive_bytes, MEMBER
+                interior_archive=root/'interior-source.zip';interior_archive.write_bytes(interior_archive_bytes())
                 (scripts/'pod_kdp_template_import.py').symlink_to(repository/'scripts/pod_kdp_template_import.py')
+                (scripts/'pod_kdp_interior_template_import.py').symlink_to(
+                    repository/'scripts/pod_kdp_interior_template_import.py')
                 (scripts/'pod_asset_generator.py').write_text(
                     "from pathlib import Path\nPath('started').write_text('yes')\n"
                     "Path('output/manifest.json').write_text('{\"files\":{},\"package_sha256\":\"'+'a'*64+'\"}')\n")
                 (scripts/'pod_book_package.py').write_text('pass\n')
-                result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),str(count),sys.executable],
+                result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),
+                                      str(count),sys.executable,str(interior_archive),digest(interior_archive),MEMBER],
                                       capture_output=True,text=True,timeout=30)
                 self.assertEqual(result.returncode,0,result.stderr)
                 report=json.loads(result.stdout)

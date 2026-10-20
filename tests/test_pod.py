@@ -141,15 +141,21 @@ class PODTests(unittest.TestCase):
                 source_evidence={'source':src,'rights':asset_rights_path,'text_layers':text_layers_path}
             if kdp and template_inputs:
                 from datetime import datetime,timezone
+                from test_pod_kdp_interior_template_import import archive_bytes as interior_archive_bytes, MEMBER
                 common_template={**common,'expires_at_ms':now+template_ttl,'product':'fixture-book','country':'US',
                     'official_source_verified':True,'source_url':'https://example.invalid/synthetic-template-authority',
                     'source_sha256':'27915e7cfe7b7eb14b17044e996a8152440836f26e562130ea85a7b61a9ab6ac',
                     'observed_at':datetime.fromtimestamp(now/1000,timezone.utc).isoformat()}
+                interior_source=Path(tmp)/'interior-template-source.zip'
+                interior_source.write_bytes(interior_archive_bytes())
+                interior_template={**common_template,'source_sha256':digest(interior_source),
+                    'source_member':MEMBER}
                 cover_path=Path(tmp)/'cover-template.json';interior_path=Path(tmp)/'interior-template.json'
                 save_json(cover_path,sign({**common_template,'audience':'pod:template','template':m['template']},'POD_TEMPLATE_KEY'))
-                save_json(interior_path,sign({**common_template,'audience':'pod:interior-template','template':m['interior']['template']},'POD_TEMPLATE_KEY'))
+                save_json(interior_path,sign({**interior_template,'audience':'pod:interior-template','template':m['interior']['template']},'POD_TEMPLATE_KEY'))
                 original_templates={'cover':cover_path,'interior':interior_path,
-                    'source':Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip'}
+                    'source':Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip',
+                    'interiorSource':interior_source}
             # OCR is tested independently; these tests isolate package geometry and binding.
             with patch('pod_vision_qa.ocr',return_value=ocr_text):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,

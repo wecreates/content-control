@@ -20,11 +20,13 @@ The required roles are `source`, `template`, `textLayers`, `assetRights` and
 `reference`; each references a declared input filename. `templateScope` requires
 a nonempty product and uppercase two-letter country. KDP interior tasks additionally
 provide an object named `interior` containing **exactly** `template`, `pages`,
-`font`, `fontRights` and `fontLicense`, each referencing a declared filename.
-Omit `interior` when it does not apply; null, false, arrays, missing roles and
-extra fields are rejected. Only those five validated roles are resolved into
-local paths. `fontRights` is the current signed grant and `fontLicense` is the
-retained evidence it hashes; see `FONT_RIGHTS.md`.
+`font`, `fontRights`, `fontLicense` and `source`, each referencing a declared
+filename. Omit `interior` when it does not apply; null, false, arrays, missing
+roles and extra fields are rejected. Only those six validated roles are resolved
+into local paths. `fontRights` is the current signed grant and `fontLicense` is
+the retained evidence it hashes; see `FONT_RIGHTS.md`. `source` is the retained
+official interior-template archive described in
+[KDP_INTERIOR_TEMPLATE_SOURCE.md](KDP_INTERIOR_TEMPLATE_SOURCE.md).
 
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials
@@ -164,10 +166,12 @@ the same source path contract. This is identity verification, not a directory
 sandbox or a content snapshot delivered to a renderer. Source bytes are retained
 as task inputs; they are not used as finished cover artwork.
 
-The offline KDP guide inspector remains a separate profile/member validation tool.
-This gate does not run it automatically, verify download origin, compare the
-archive profile to each job, validate interior specification source bytes, create
-a provenance approval, map barcode regions, establish CMYK output or prove preview/
+The offline KDP cover-guide and interior-template inspectors remain separate
+profile/member validation tools. Interior source bytes are independently retained
+and inspected as documented in
+[KDP_INTERIOR_TEMPLATE_SOURCE.md](KDP_INTERIOR_TEMPLATE_SOURCE.md). These gates
+do not verify download origin, create a provenance approval, map barcode regions,
+establish CMYK output or prove preview/
 print acceptance. The signer must still supply current attributable official
 provenance for the actual product, region and profile. The retained reference and
 synthetic signatures used by tests confer no production approval. Both publication
@@ -184,8 +188,9 @@ explicit left_to_right and en_US values. This guide locale does not authorize a
 country or establish regional rights. Other reading directions/locales need a
 separately verified contract.
 
-The worker retains the source-byte check, renews current authority/lease before
-the inspection child, and renews it again before artwork. The inspector re-reads
+The worker retains the cover source-byte check, renews current authority/lease
+before the cover inspection child, independently authenticates and inspects the
+interior archive, and renews it again before artwork. The cover inspector re-reads
 and hashes the bounded original ZIP, checks exact profile-derived member names,
 bounded static PDF/PNG guide content and instructions. A guide for another page
 count, paper or trim blocks even if its retained bytes match the signed hash.
@@ -202,7 +207,7 @@ profile check, not a new provenance decision.
 KDP descriptors whose signed cover lacks locale/direction or whose retained
 source does not match the job need newly reviewed immutable inputs and a fresh
 grant. Do not modify or renew queued approvals to bypass admission. The example
-archive is still never selected automatically. Download-origin authority,
-interior-source retention, barcode-region mapping, final CMYK handling, calibrated
+archive is still never selected automatically. Download-origin authority, barcode-region
+mapping, final CMYK handling, calibrated
 independent review and actual preview/print acceptance remain open. Final-cover
 strict geometry is unchanged by the guide's separate whole-point policy.

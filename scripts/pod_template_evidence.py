@@ -7,6 +7,7 @@ from pod_common import canonical,open_regular_binary,verified,MAX_JSON_BYTES,str
 from pod_interior_preflight import inspect_pairing
 from pod_kdp_options import require_paperback_options
 from pod_kdp_template_import import inspect_template_archive
+from pod_kdp_interior_template_import import inspect_interior_template_archive
 
 
 def original_envelope(path,audience):
@@ -49,13 +50,20 @@ def template_evidence_deadline(evidence):
 
 
 def inspect_kdp_template_evidence(manifest,paths,product,country):
-    if (not isinstance(paths,dict) or set(paths)!={'cover','interior','source'} or
+    if (not isinstance(paths,dict) or
+            set(paths)!={'cover','interior','source','interiorSource'} or
             type(product) is not str or not product.strip() or len(product)>128 or
             type(country) is not str or re.fullmatch('[A-Z]{2}',country) is None):
         raise ValueError('KDP_TEMPLATE_PROVENANCE_REQUIRED')
     cover_envelope,cover=original_envelope(paths['cover'],'pod:template')
     interior_envelope,interior=original_envelope(paths['interior'],'pod:interior-template')
     provenance(cover,product,country);provenance(interior,product,country)
+    member=interior.get('source_member')
+    if (type(member) is not str or not 1<=len(member)<=512 or
+            member.startswith(('/', '\\')) or '\\' in member or
+            any(part in ('', '.', '..') for part in member.split('/')) or
+            not member.lower().endswith('.docx')):
+        raise ValueError('KDP_TEMPLATE_PROVENANCE_INVALID')
     try:
         if (manifest.get('platform')!='kdp' or canonical(cover['template'])!=canonical(manifest['template']) or
                 canonical(interior['template'])!=canonical(manifest['interior']['template'])):
@@ -71,10 +79,15 @@ def inspect_kdp_template_evidence(manifest,paths,product,country):
     # and no original source or template is replaced with producer declarations.
     try:
         inspection=inspect_template_archive(paths['source'],profile,cover['source_sha256'])
+        interior_inspection=inspect_interior_template_archive(
+            paths['interiorSource'],i['trim_inches'],interior['source_sha256'],
+            interior['source_member'])
     except ValueError:
         raise
     except Exception:
         raise ValueError('KDP_TEMPLATE_PROVENANCE_INVALID') from None
-    evidence={'cover':cover_envelope,'interior':interior_envelope,'inspection':inspection}
+    evidence={'cover':cover_envelope,'interior':interior_envelope,
+              'inspection':inspection,'interior_inspection':interior_inspection}
     template_evidence_deadline(evidence)
     return evidence
+
