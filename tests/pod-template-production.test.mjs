@@ -95,6 +95,16 @@ test('all platform QA stages receive original art and original asset rights',asy
   assert.match(path.basename(result.qaArgs[result.qaArgs.indexOf('--asset-root')+1]),/^pod-template-gate-/);
  }
 });
+test('KDP reviewer receives the original task manuscript path and non-book reviewers do not',async()=>{
+ for(const platform of ['kdp','redbubble']){
+  let original;
+  const result=await exercise({platform,template:record(platform),
+   ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
+   review:true,reviewPolicy:async({options})=>{original=options.manuscript;}});
+  assert.equal(result.status,'QA_PASSED');
+  assert.equal(original,platform==='kdp'?'unused':undefined);
+ }
+});
 test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
  for(const [country,trim_inches] of [['US',[6,9]],['JP',[5.83,8.27]]]){
   const templateScope={...scope,country},spec={...record('kdp').template,trim_inches};

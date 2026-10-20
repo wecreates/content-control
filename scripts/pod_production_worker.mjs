@@ -72,7 +72,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   let attestation;
-  try{attestation=await task.reviewPackage(manifest,{signal});}
+  try{attestation=await task.reviewPackage(manifest,{signal,
+   ...(job.brief.platform==='kdp'?{manuscript:task.interior.pages}:{})});}
   catch(error){enabled();throw error;}
   // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
   // and reject late results before reading attestation paths or launching QA.

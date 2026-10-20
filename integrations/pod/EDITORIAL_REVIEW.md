@@ -274,6 +274,9 @@ actual delivered PDF page must extract to exactly the original line sequence;
 substituted, reordered, added or missing text fails MANUSCRIPT_TEXT_MISMATCH.
 The existing static PDF, visibility, clipping, font and geometry gates remain.
 
+The host-owned reviewPackage callback receives that original path as
+options.manuscript for KDP (alongside its existing cancellation signal). The
+callback must actually inspect it and the completed PDF; the path is not approval.
 The independent editorial authority must review those original pages and bind
 manuscript_sha256 to SHA-256 of their pod_common.canonical representation, in
 addition to the exact package and interior hashes. QA records that identity and
