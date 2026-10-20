@@ -82,15 +82,17 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             if kdp:
-                template.update({'platform':'kdp','size_inches':[4.35,2.25],
-                    'kdp':{'trim_width_inches':2,'spine_width_inches':.1,'bleed_inches':.125,'page_count':2}})
+                template.update({'platform':'kdp','size_inches':[12+24*.002252+.25,9.25],
+                    'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
+                           'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24}})
             m=generate(src,template,[],root)
             if kdp:
                 font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-                spec={'platform':'kdp','interior_type':'text_no_bleed','trim_inches':[2,2],
-                    'page_count':2,'margins_inches':dict(inside=.25,outside=.25,top=.25,bottom=.25),
+                spec={'platform':'kdp','binding':'paperback','ink_type':'black','paper_type':'white',
+                    'interior_type':'text_no_bleed','trim_inches':[6,9],
+                    'page_count':24,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25),
                     'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
-                m=assemble(root,spec,[{'lines':['First page']},{'lines':['Second page']}],font)
+                m=assemble(root,spec,[{'lines':[f'Fixture page {i+1}']} for i in range(24)],font)
             mutate(m,root)
             m['template_sha256']=hashlib.sha256(canonical(m['template']).encode()).hexdigest()
             m.pop('package_sha256')
@@ -221,10 +223,10 @@ class PODTests(unittest.TestCase):
             def change(m,root):
                 target=root/'replacement.pdf'
                 with fitz.open() as book:
-                    for _ in range(2):
-                        page=book.new_page(width=144,height=144)
+                    for _ in range(24):
+                        page=book.new_page(width=432,height=648)
                         if fault!='blank':
-                            point=(3,36) if fault=='margin' else (27,170) if fault=='offpage' else (27,36)
+                            point=(3,36) if fault=='margin' else (27,700) if fault=='offpage' else (27,36)
                             page.insert_text(point,'Unreviewed layout',fontsize=8,render_mode=3 if fault=='invisible' else 0,
                                              color=(1,1,1) if fault=='white_text' else (0,0,0))
                         if fault=='rotated':page.set_rotation(90)
@@ -248,19 +250,40 @@ class PODTests(unittest.TestCase):
 
     def test_kdp_qa_rechecks_cover_interior_pairing(self):
         from pod_common import save_json
-        for trim in ([2.5,2],[2,2.5]):
+        for trim in ([6.5,9],[6,9.5]):
             def change(m,root):
                 # Re-render a valid, correctly receipted interior with a different
                 # trim. Page count, hashes and independent layout checks still pass.
                 spec=m['interior']['template'];spec['trim_inches']=trim
                 target=root/'interior.pdf';target.unlink()
-                receipt=render_book(spec,[{'lines':['First page']},{'lines':['Second page']}],
+                receipt=render_book(spec,[{'lines':[f'Fixture page {i+1}']} for i in range(24)],
                     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',target)
                 m['interior']['receipt']=receipt
                 save_json(root/'interior.receipt.json',receipt)
                 for filename in ('interior.pdf','interior.receipt.json'):
                     m['files'][filename]=digest(root/filename)
             with self.subTest(trim=trim):
+                result=self.package_result(change,kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('COVER_INTERIOR_MISMATCH',result['errors'])
+
+    def test_kdp_qa_rejects_rebound_paper_profiles_despite_consistent_hashes(self):
+        from pod_common import save_json
+        for fault in ('cover_paper','both_papers','missing_binding'):
+            def change(m,root):
+                spec=m['interior']['template'];cover=m['template']['kdp']
+                if fault=='missing_binding':
+                    spec.pop('binding');cover.pop('binding')
+                else:
+                    cover['paper_type']='cream'
+                    if fault=='both_papers':spec['paper_type']='cream'
+                # The PDF bytes, page count, receipt, package hashes and synthetic
+                # approvals still agree. Only independent profile/spine QA fails.
+                receipt=m['interior']['receipt']
+                receipt['template_sha256']=hashlib.sha256(canonical(spec).encode()).hexdigest()
+                save_json(root/'interior.receipt.json',receipt)
+                m['files']['interior.receipt.json']=digest(root/'interior.receipt.json')
+            with self.subTest(fault=fault):
                 result=self.package_result(change,kdp=True)
                 self.assertEqual(result['binary_pass'],0,result)
                 self.assertIn('COVER_INTERIOR_MISMATCH',result['errors'])

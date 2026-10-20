@@ -86,6 +86,26 @@ official template retention, independent editorial/visual review and observed
 KDP preview/print acceptance remain required. Low-level Python technical fixture
 helpers are unchanged. Both publication flags remain false.
 
+## Independent paperback pairing during QA
+
+The Python QA path independently checks the declared paperback binding, black
+ink and matching white/cream/groundwood paper, even count in 24–828, basic trim
+bounds, exact 0.125-inch bleed, spine factor and full cover dimensions. It reads
+the package specifications and actual PDF bytes, rather than trusting a passing
+assembly receipt or the earlier Node coordinator. Missing or inconsistent
+profiles return COVER_INTERIOR_MISMATCH even when receipt/artifact hashes and
+synthetic approvals have been rebound. Paper factors and tolerance match the
+coordinator's source above, rechecked October20, 2026.
+
+This pair check is a necessary cross-check, not the region-specific trim/page
+ceiling admission table or actual provider configuration. The existing Node
+admission gate still supplies those declared-option limits. Authentic official
+templates, regional availability, safe zones/print marks, calibrated independent
+review and actual preview/print acceptance remain separate requirements.
+Low-level renderer/assembly helpers still permit small technical review fixtures;
+such fixtures now fail independent KDP QA pairing. No manuscript padding,
+approval fabrication, publication enablement or template import is added.
+
 ## Separate editorial authority
 
 Technical PDF checks and cover comparisons do not approve a manuscript. KDP QA

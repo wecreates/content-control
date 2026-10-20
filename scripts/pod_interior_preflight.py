@@ -9,7 +9,13 @@ from pod_pdf_policy import inspect_static_document, inspect_static_page
 
 
 def inspect_pairing(spec, cover):
-    """Check physical cover/interior agreement without trusting assembly receipts."""
+    """Check the supported paperback pair without trusting assembly receipts.
+
+    KDP G201857950, checked 2026-10-20: paper-specific spine factors,
+    0.125-inch bleed and even physical page count. This renderer does not pad
+    odd manuscripts. Regional option limits and genuine template provenance
+    remain separate admission requirements, not facts established by this PDF.
+    """
     def positive(value, zero=False):
         return (type(value) in (int,float) and math.isfinite(value) and
                 (value >= 0 if zero else value > 0))
@@ -17,17 +23,26 @@ def inspect_pairing(spec, cover):
     try:
         kdp=cover['kdp']
         trim=spec['trim_inches'];size=cover['size_inches']
+        paper=spec.get('paper_type')
+        factors={'white':.002252,'cream':.0025,'groundwood':.00235}
         if (spec['platform']!='kdp' or cover['platform']!='kdp' or
+                spec.get('binding')!='paperback' or kdp.get('binding')!='paperback' or
+                spec.get('ink_type')!='black' or kdp.get('ink_type')!='black' or
+                type(paper) is not str or paper not in factors or kdp.get('paper_type')!=paper or
                 type(spec['page_count']) is not int or type(kdp['page_count']) is not int or
-                not 1<=spec['page_count']<=1000 or spec['page_count']!=kdp['page_count'] or
+                not 24<=spec['page_count']<=828 or spec['page_count']%2!=0 or
+                spec['page_count']!=kdp['page_count'] or
+                not isinstance(trim,list) or not isinstance(size,list) or
                 len(trim)!=2 or len(size)!=2 or any(not positive(v) for v in (*trim,*size)) or
+                not 4<=trim[0]<=8.5 or not 6<=trim[1]<=11.69 or
                 not positive(kdp['trim_width_inches']) or
-                not positive(kdp['spine_width_inches'],zero=True) or
-                not positive(kdp['bleed_inches'],zero=True)):
+                not positive(kdp['spine_width_inches']) or
+                not positive(kdp['bleed_inches']) or kdp['bleed_inches']!=.125):
             raise ValueError('COVER_INTERIOR_MISMATCH')
         expected_width=2*trim[0]+kdp['spine_width_inches']+2*kdp['bleed_inches']
         expected_height=trim[1]+2*kdp['bleed_inches']
         if (abs(trim[0]-kdp['trim_width_inches'])>1e-6 or
+                abs(kdp['spine_width_inches']-spec['page_count']*factors[paper])>1e-6 or
                 abs(size[0]-expected_width)>1e-6 or abs(size[1]-expected_height)>1e-6):
             raise ValueError('COVER_INTERIOR_MISMATCH')
     except (KeyError,TypeError,OverflowError):
