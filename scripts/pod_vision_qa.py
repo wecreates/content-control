@@ -110,7 +110,7 @@ EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interi
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
              editorial_envelope=None,approved_editorial_evaluators=None,target_country=None,
              template_evidence=None,target_product=None,source_evidence=None,manuscript=None,
-             interior_font=None):
+             interior_font=None,font_rights_envelope=None,font_license=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -171,6 +171,12 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 report['font_sha256']=inspect_font_source(
                     scoped_file(root,'interior.pdf'),interior_font,spec)
                 report['checks']['source_font']=True
+                from pod_font_rights import inspect_font_rights
+                font_rights=inspect_font_rights(font_rights_envelope,font_license,
+                    report['font_sha256'],target_country,target_product)
+                report['checks']['font_rights']=True
+                report['font_license_sha256']=font_rights['license_sha256']
+                report['font_license_id']=font_rights['license_id']
                 report['manuscript_sha256']=inspect_manuscript(scoped_file(root,'interior.pdf'),manuscript,spec)
                 from pod_cover_preflight import inspect_cover, inspect_spine_text, inspect_barcode_region
                 inspect_spine_text(m['template'],text)
@@ -219,13 +225,14 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 source_evidence_deadline(original_source))
             if m['platform']=='kdp':
                 verified(editorial_envelope,'POD_EDITORIAL_KEY','pod:editorial-review')
+                verified(font_rights_envelope,'POD_RIGHTS_KEY','pod:font-rights')
                 report['evidence_expires_at_ms']=min(report['evidence_expires_at_ms'],editorial['expires_at_ms'],
-                    template_evidence_deadline(original_templates))
+                    template_evidence_deadline(original_templates),font_rights['expires_at_ms'])
     except Exception as exc:
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
     required=('text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance')
     if report.get('platform')=='kdp':
-        required+=('editorial','template_provenance','manuscript_provenance','source_font')
+        required+=('editorial','template_provenance','manuscript_provenance','source_font','font_rights')
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
     report.update({'verdict':'PASS' if ok else 'FAIL','binary_pass':int(ok),'production_ready':ok})
     return report
@@ -259,6 +266,8 @@ def main():
     p.add_argument('--asset-root')
     p.add_argument('--manuscript',help='Original KDP pages JSON bound by the independent editorial attestation')
     p.add_argument('--font',help='Original KDP interior TTF bound by the signed interior template')
+    p.add_argument('--font-rights',help='Current signed rights grant for the original KDP interior font')
+    p.add_argument('--font-license',help='Retained license evidence bound by the current font-rights grant')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
@@ -266,7 +275,7 @@ def main():
                         read_json(a.editorial_review) if a.editorial_review else None,a.approved_editorial_evaluator,a.country,
                         {'cover':a.cover_template,'interior':a.interior_template,'source':a.template_source},a.product,
                         {'source':a.source,'rights':a.asset_rights,'text_layers':a.text_layers,'asset_root':a.asset_root},
-                        a.manuscript,a.font)
+                        a.manuscript,a.font,read_json(a.font_rights) if a.font_rights else None,a.font_license)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)

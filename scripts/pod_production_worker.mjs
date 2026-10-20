@@ -84,7 +84,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(task.assetRoot)args.push('--asset-root',task.assetRoot);
   if(job.brief.platform==='kdp')args.push('--country',scope.country,'--product',scope.product,
    '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource,
-   '--manuscript',task.interior.pages,'--font',task.interior.font);
+   '--manuscript',task.interior.pages,'--font',task.interior.font,
+   '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
   for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);

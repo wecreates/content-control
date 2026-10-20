@@ -321,3 +321,14 @@ correct complex-script shaping, typography, editorial quality or KDP acceptance.
 Those remain separate current rights/review/platform gates. Multiple resources,
 other font formats or shaping contracts require separate implementation and
 validation rather than inference. Publication remains disabled.
+
+
+## Current font-rights and retained-license gate
+
+KDP QA separately requires a current `pod:font-rights` grant and the retained
+license-evidence bytes that it hashes. The grant is bound to the authenticated
+font SHA-256, exact task country/product, commercial use, print-on-demand use,
+font embedding, revocation state, licensor and license ID. See `FONT_RIGHTS.md`
+for the stored-task fields and fail-closed contract. This is attributable current
+technical evidence, not a legal conclusion or live Amazon acceptance. Publication
+remains disabled.
