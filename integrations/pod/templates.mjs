@@ -13,8 +13,26 @@ function provenance(envelope,key,{platform,product,country},audience,now){
 }
 export function validateInteriorTemplate(envelope,key,scope,now=Date.now()){
  if(scope?.platform!=='kdp')throw Error('TEMPLATE_PROVENANCE_REQUIRED');
- // Detailed interior geometry/font/page checks remain in the Python renderer.
- return provenance(envelope,key,scope,'pod:interior-template',now);
+ const t=provenance(envelope,key,scope,'pod:interior-template',now);
+ // Necessary paperback baselines from KDP's G201834180, G202145400 and
+ // G201857950, checked 2026-10-20. These do not validate a particular ink,
+ // paper, marketplace or official calculator template, or approve content.
+ const count=t?.page_count,trim=t?.trim_inches,m=t?.margins_inches;
+ const number=n=>typeof n==='number'&&Number.isFinite(n);
+ const minimumInside=count<=150 ? .375 : count<=300 ? .5 : count<=500 ? .625 : count<=700 ? .75 : .875;
+ if(t?.binding!=='paperback'||t.interior_type!=='text_no_bleed'||
+  !Number.isInteger(count)||count<24||count>828||
+  !Array.isArray(trim)||trim.length!==2||!trim.every(number)||
+  trim[0]<4||trim[0]>8.5||trim[1]<6||trim[1]>11.69||
+  !number(t.font_size_pt)||t.font_size_pt<7||t.font_size_pt>72||
+  !m||typeof m!=='object'||Array.isArray(m)||
+  !['inside','outside','top','bottom'].every(k=>number(m[k]))||
+  m.inside<minimumInside||
+  Math.min(m.outside,m.top,m.bottom)<.25||
+  m.inside+m.outside>=trim[0]||m.top+m.bottom>=trim[1])throw Error('KDP_PAPERBACK_SPEC_INVALID');
+ // Actual PDF geometry, font embedding, text and cover pairing remain checked
+ // by Python. Small technical fixtures are not production templates.
+ return t;
 }
 export function validateTemplate(envelope,key,scope,now=Date.now()){
  const t=provenance(envelope,key,scope,'pod:template',now);

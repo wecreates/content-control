@@ -17,7 +17,9 @@ const scope={product:'fixture-shirt',country:'US'};
 const record=(platform='redbubble')=>({audience:'pod:template',...scope,
  official_source_verified:true,source_url:'https://example.org/fixture-template',
  source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
- template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500]}});
+ template:{platform,dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500],
+  ...(platform==='kdp'?{binding:'paperback',interior_type:'text_no_bleed',page_count:24,
+   trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
 async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
@@ -88,6 +90,45 @@ test('KDP missing interior blocks before generation and valid pair reaches revie
  assert.equal((await exercise({platform:'kdp',template:record('kdp')})).started,false);
  const interior={...record('kdp'),audience:'pod:interior-template'};
  assert.equal((await exercise({platform:'kdp',template:record('kdp'),interior})).status,'REVIEW_REQUIRED');
+});
+test('paperback production enforces every page-dependent gutter boundary',()=>{
+ for(const [page_count,inside] of [[24,.375],[150,.375],[151,.5],[300,.5],[301,.625],
+  [500,.625],[501,.75],[700,.75],[701,.875],[828,.875]]){
+  const template={...record('kdp').template,page_count};
+  const validate=inside=>validateInteriorTemplate(sign({...record('kdp'),audience:'pod:interior-template',
+   template:{...template,margins_inches:{...template.margins_inches,inside}}}),key,{platform:'kdp',...scope});
+  assert.equal(validate(inside).page_count,page_count);
+  assert.throws(()=>validate(inside-.001),/KDP_PAPERBACK_SPEC_INVALID/);
+ }
+});
+test('paperback production rejects unsupported or malformed physical specifications',()=>{
+ const valid=record('kdp').template;
+ for(const patch of [{binding:undefined},{binding:'hardcover'},{interior_type:'image_bleed'},
+  {page_count:23},{page_count:829},{page_count:'24'},{page_count:24.5},
+  {trim_inches:[3.99,9]},{trim_inches:[8.501,9]},{trim_inches:[6,5.999]},
+  {trim_inches:[6,11.691]},{trim_inches:['6',9]},{trim_inches:[NaN,9]},
+  {font_size_pt:6.99},{font_size_pt:'7'},{font_size_pt:Infinity},
+  ...['inside','outside','top','bottom'].map(k=>({margins_inches:{...valid.margins_inches,[k]:.249}})),
+  {margins_inches:null},{margins_inches:{...valid.margins_inches,top:8,bottom:1}}]){
+  assert.throws(()=>validateInteriorTemplate(sign({...record('kdp'),audience:'pod:interior-template',
+   template:{...valid,...patch}}),key,{platform:'kdp',...scope}),/KDP_PAPERBACK_SPEC_INVALID/);
+ }
+});
+test('paperback baseline permits exact size and font minima without claiming print acceptance',()=>{
+ for(const trim_inches of [[4,6],[8.5,11.69]]){
+  const template={...record('kdp').template,trim_inches,font_size_pt:7};
+  assert.deepEqual(validateInteriorTemplate(sign({...record('kdp'),audience:'pod:interior-template',template}),key,
+   {platform:'kdp',...scope}),template);
+ }
+});
+test('undersized gutter or font blocks KDP before cover generation with a fixed reason',async()=>{
+ for(const patch of [{font_size_pt:6},{page_count:301,margins_inches:{inside:.5,outside:.25,top:.25,bottom:.25}}]){
+  const r=await exercise({platform:'kdp',template:record('kdp'),interior:{...record('kdp'),
+   audience:'pod:interior-template',template:{...record('kdp').template,...patch}},detailed:true});
+  assert.equal(r.status,'BLOCKED');assert.equal(r.reason,'KDP_PAPERBACK_SPEC_INVALID');
+  assert.equal(r.started,false);assert.equal(r.bookStarted,false);assert.equal(r.held,0);
+  assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+ }
 });
 test('template provenance rejects credential URLs and future observations',()=>{
  for(const change of [{source_url:'https://user:password@example.org/template'},

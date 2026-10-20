@@ -1,5 +1,43 @@
 # KDP editorial approval contract
 
+## Paperback baselines before durable production
+
+The stored-production coordinator validates the signed interior template before
+starting cover generation. The supported binding must now be explicitly
+`binding: "paperback"`, with `interior_type: "text_no_bleed"`. Missing binding,
+hardcover and bleed interiors fail as KDP_PAPERBACK_SPEC_INVALID. Templates
+requiring correction need a new immutable descriptor and fresh authority for its hash;
+do not edit stored artifacts or infer approval for the changed inputs.
+
+Necessary physical baselines, checked against KDP on October 20, 2026:
+
+| Field | Required baseline |
+| --- | --- |
+| page_count | Integer 24–828 |
+| trim_inches | Numeric width 4–8.5 and height 6–11.69 |
+| font_size_pt | Numeric 7–72; 72 is this renderer's existing upper bound |
+| outside/top/bottom margins | Each at least 0.25 inch |
+| inside margin, pages 24–150 / 151–300 / 301–500 / 501–700 / 701–828 | At least 0.375 / 0.5 / 0.625 / 0.75 / 0.875 inch |
+
+Values must be finite numbers; margins must leave usable page area. These are
+necessary baselines, not the complete requirements for a selected print option.
+Specific ink/paper/trim/marketplace combinations can have stricter page limits
+or unavailable sizes. Obtain and retain the actual matching official calculator
+template and verify those options separately. No such template or print proof
+is imported or approved by these checks. Hardcover needs a separate contract.
+
+Sources: [KDP print options](https://kdp.amazon.com/en_US/help/topic/G201834180),
+[paperback margin chart](https://kdp.amazon.com/en_US/help/topic/G202145400),
+[submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950).
+
+The low-level Python renderer and QA geometry helpers still support small
+technical fixtures. Their success does not satisfy this durable-production gate
+or grant print acceptance. Actual PDF inspection, embedded fonts, exact
+cover/interior pairing and separate editorial/comparative approval remain
+required. Non-KDP products are unaffected. Both publication flags remain false.
+
+## Separate editorial authority
+
 Technical PDF checks and cover comparisons do not approve a manuscript. KDP QA
 requires a separate current editorial envelope for the exact completed package.
 The renderer's `editorial_review: UNASSESSED` receipt remains a technical receipt;
