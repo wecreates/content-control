@@ -403,12 +403,52 @@ class BookBoundsTests(unittest.TestCase):
     def production_pair(self, count=24, paper='white'):
         # Synthetic specifications only; no actual template or rights approval.
         spec={'platform':'kdp','binding':'paperback','ink_type':'black',
-              'paper_type':paper,'trim_inches':[6,9],'page_count':count}
+              'paper_type':paper,'trim_inches':[6,9],'page_count':count,
+              'margins_inches':dict(inside=.875,outside=.25,top=.25,bottom=.25)}
         spine=count*{'white':.002252,'cream':.0025,'groundwood':.00235}[paper]
         cover={'platform':'kdp','size_inches':[12+spine+.25,9.25],
                'kdp':{'binding':'paperback','ink_type':'black','paper_type':paper,
                       'trim_width_inches':6,'spine_width_inches':spine,'bleed_inches':.125,'page_count':count}}
         return spec,cover
+
+    def test_pairing_enforces_each_gutter_band_and_exact_no_bleed_minima(self):
+        for count,minimum in ((24,.375),(150,.375),(152,.5),(300,.5),(302,.625),
+                              (500,.625),(502,.75),(700,.75),(702,.875),(828,.875)):
+            spec,cover=self.production_pair(count)
+            spec['margins_inches']=dict(inside=minimum,outside=.25,top=.25,bottom=.25)
+            with self.subTest(count=count,valid=True):
+                self.assertTrue(inspect_pairing(spec,cover))
+            for field in ('inside','outside','top','bottom'):
+                candidate={**spec,'margins_inches':{**spec['margins_inches']}}
+                candidate['margins_inches'][field]-=.000001
+                with self.subTest(count=count,field=field),self.assertRaisesRegex(
+                        ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+                    inspect_pairing(candidate,cover)
+
+    def test_pairing_rejects_missing_malformed_and_consuming_margins(self):
+        import copy
+        spec,cover=self.production_pair()
+        for value in (None,True,[],{},'0.375'):
+            candidate=copy.deepcopy(spec);candidate['margins_inches']=value
+            with self.subTest(margins=value),self.assertRaisesRegex(ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+                inspect_pairing(candidate,cover)
+        for field in ('inside','outside','top','bottom'):
+            for value in (None,True,'0.5',float('nan'),float('inf'),-1,0):
+                candidate=copy.deepcopy(spec);candidate['margins_inches'][field]=value
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+                    inspect_pairing(candidate,cover)
+            candidate=copy.deepcopy(spec);candidate['margins_inches'].pop(field)
+            with self.subTest(missing=field),self.assertRaisesRegex(ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+                inspect_pairing(candidate,cover)
+        candidate=copy.deepcopy(spec);candidate.pop('margins_inches')
+        with self.assertRaisesRegex(ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+            inspect_pairing(candidate,cover)
+        for margins in (dict(inside=5.75,outside=.25,top=.25,bottom=.25),
+                        dict(inside=5.751,outside=.25,top=.25,bottom=.25),
+                        dict(inside=.375,outside=.25,top=8.75,bottom=.25),
+                        dict(inside=.375,outside=.25,top=8.751,bottom=.25)):
+            with self.subTest(margins=margins),self.assertRaisesRegex(ValueError,'^INTERIOR_MARGIN_SPEC_INVALID$'):
+                inspect_pairing({**spec,'margins_inches':margins},cover)
 
     def test_cover_pairing_dimensions_and_strict_numeric_values(self):
         import copy

@@ -39,6 +39,18 @@ def inspect_pairing(spec, cover):
                 not positive(kdp['spine_width_inches']) or
                 not positive(kdp['bleed_inches']) or kdp['bleed_inches']!=.125):
             raise ValueError('COVER_INTERIOR_MISMATCH')
+        # Independent no-bleed margin admission before inspecting actual PDF
+        # text bounds. KDP G201857950, checked 2026-10-20. A passing receipt
+        # or undersized declared safe rectangle cannot lower these minima.
+        margins=spec.get('margins_inches')
+        minimum=(.375 if spec['page_count']<=150 else .5 if spec['page_count']<=300
+                 else .625 if spec['page_count']<=500 else .75 if spec['page_count']<=700 else .875)
+        if (not isinstance(margins,dict) or
+                any(not positive(margins.get(key)) for key in ('inside','outside','top','bottom')) or
+                margins['inside']<minimum or min(margins[key] for key in ('outside','top','bottom'))<.25 or
+                margins['inside']+margins['outside']>=trim[0] or
+                margins['top']+margins['bottom']>=trim[1]):
+            raise ValueError('INTERIOR_MARGIN_SPEC_INVALID')
         expected_width=2*trim[0]+kdp['spine_width_inches']+2*kdp['bleed_inches']
         expected_height=trim[1]+2*kdp['bleed_inches']
         if (abs(trim[0]-kdp['trim_width_inches'])>1e-6 or
