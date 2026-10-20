@@ -16,7 +16,7 @@ const sign=value=>{
 const scope={product:'fixture-shirt',country:'US'};
 const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
- return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],
+ return {size_inches:[2*spec.trim_inches[0]+spine+.25,spec.trim_inches[1]+.25],safe_box_px:[75,75,500,500],
   kdp:{binding:'paperback',ink_type:'black',paper_type:spec.paper_type,page_count:spec.page_count,
    trim_width_inches:spec.trim_inches[0],spine_width_inches:spine,bleed_inches:.125}};
 };
@@ -330,4 +330,29 @@ test('KDP production accepts matching explicit even-page covers for each support
   assert.equal(r.status,'REVIEW_REQUIRED');assert.equal(r.started,true);assert.equal(r.bookStarted,true);
   assert.equal(r.held,1);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
  }
+});
+
+
+test('KDP cover safe box keeps quarter-inch margins with conservative fractional-pixel rounding',()=>{
+ for(const dpi of [300,600,1200]){
+  const size_inches=[2.001,2.003],edge=Math.ceil(dpi*.25);
+  const right=Math.floor((size_inches[0]-.25)*dpi),bottom=Math.floor((size_inches[1]-.25)*dpi);
+  const safe_box_px=[edge,edge,right-edge,bottom-edge];
+  const validate=box=>validateTemplate(sign({...record('kdp'),template:{...record('kdp').template,
+   dpi,size_inches,safe_box_px:box}}),key,{platform:'kdp',...scope});
+  assert.deepEqual(validate(safe_box_px).safe_box_px,safe_box_px);
+  for(const art_is_critical of [0,'false',[],null])assert.throws(()=>validateTemplate(sign({...record('kdp'),
+   template:{...record('kdp').template,dpi,size_inches,safe_box_px,art_is_critical}}),key,{platform:'kdp',...scope}),/TEMPLATE_SAFE_ZONE_INVALID/);
+  for(const box of [[edge-1,edge,right-edge,bottom-edge],[edge,edge-1,right-edge,bottom-edge],
+   [edge,edge,right-edge+1,bottom-edge],[edge,edge,right-edge,bottom-edge+1]]){
+   assert.throws(()=>validate(box),/TEMPLATE_SAFE_ZONE_INVALID/);
+  }
+ }
+});
+test('KDP cover edge violation blocks before rendering while other platform contracts remain unchanged',async()=>{
+ const cover=record('kdp');cover.template.safe_box_px=[74,75,500,500];
+ const r=await exercise({platform:'kdp',template:cover,interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true});
+ assert.equal(r.reason,'TEMPLATE_SAFE_ZONE_INVALID');assert.equal(r.started,false);assert.equal(r.bookStarted,false);
+ assert.equal(r.held,0);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+ assert.equal((await exercise()).status,'REVIEW_REQUIRED');
 });

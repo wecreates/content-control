@@ -53,10 +53,23 @@ def ocr(image, language='eng'):
 
 def spatial_checks(manifest,image,art_mask,text_mask):
     w,h=image.size
-    safe=np.zeros((h,w),dtype=np.uint8)
     sx,sy,sw,sh=manifest['template']['safe_box_px']
-    if any(not isinstance(v,int) for v in (sx,sy,sw,sh)) or min(sx,sy)<0 or min(sw,sh)<=0 or sx+sw>w or sy+sh>h:
+    if any(type(v) is not int for v in (sx,sy,sw,sh)) or min(sx,sy)<0 or min(sw,sh)<=0 or sx+sw>w or sy+sh>h:
         return False
+    if manifest.get('platform')=='kdp':
+        # Independent of Node admission: KDP G201857950, checked 2026-10-20.
+        # Use physical template bounds, rounding toward the safe interior.
+        template=manifest['template'];dpi=template.get('dpi');inches=template.get('size_inches')
+        if (type(dpi) is not int or not 300<=dpi<=1200 or
+                type(template.get('art_is_critical',True)) is not bool or
+                not isinstance(inches,list) or len(inches)!=2 or
+                any(type(v) not in (int,float) or not math.isfinite(v) or v<=0 for v in inches)):
+            return False
+        edge=math.ceil(.25*dpi)
+        if (sx<edge or sy<edge or sx+sw>math.floor((inches[0]-.25)*dpi) or
+                sy+sh>math.floor((inches[1]-.25)*dpi)):
+            return False
+    safe=np.zeros((h,w),dtype=np.uint8)
     safe[sy:sy+sh,sx:sx+sw]=1
     text=np.asarray(text_mask)>0
     art=np.asarray(art_mask)>0

@@ -44,6 +44,15 @@ export function validateTemplate(envelope,key,scope,now=Date.now()){
  if(w*h>100000000)throw Error('TEMPLATE_TOO_LARGE');
  const b=t.safe_box_px;
  if(!Array.isArray(b)||b.length!==4||b.some(n=>!Number.isInteger(n))||b[0]<0||b[1]<0||b[2]<=0||b[3]<=0||b[0]+b[2]>w||b[1]+b[3]>h)throw Error('TEMPLATE_SAFE_ZONE_INVALID');
+ // KDP G201857950, checked 2026-10-20: critical cover content stays
+ // at least .25 inch from the outside edge. Round toward the safe interior,
+ // using declared physical size rather than the padded ceil-sized raster.
+ if(scope.platform==='kdp'){
+  const edge=Math.ceil(.25*t.dpi);
+  if((t.art_is_critical!==undefined&&typeof t.art_is_critical!=='boolean')||
+   b[0]<edge||b[1]<edge||b[0]+b[2]>Math.floor((t.size_inches[0]-.25)*t.dpi)||
+   b[1]+b[3]>Math.floor((t.size_inches[1]-.25)*t.dpi))throw Error('TEMPLATE_SAFE_ZONE_INVALID');
+ }
  return t;
 }
 
