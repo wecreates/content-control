@@ -18,6 +18,69 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
+class InteriorFontSizeTests(unittest.TestCase):
+    def fixture(self, root, sizes, scale=1, mixed=False, rotate=0):
+        _,spec=BookBoundsTests().spec()
+        spec['page_count']=len(sizes)
+        target=root/'font-size.pdf'
+        pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1)
+        for size in sizes:
+            pdf.saveState();pdf.translate(27,100);pdf.rotate(rotate)
+            pdf.scale(*(scale if isinstance(scale,tuple) else (scale,scale)))
+            pdf.setFont('Helvetica',size);pdf.drawString(0,0,'Delivered text')
+            pdf.restoreState()
+            if mixed:
+                pdf.setFont('Helvetica',12);pdf.drawString(27,75,'Readable text')
+            pdf.showPage()
+        pdf.save()
+        return target,spec
+
+    def test_undersized_delivered_text_rejected_despite_larger_declared_font(self):
+        for size in (1,6,6.99):
+            with self.subTest(size=size),tempfile.TemporaryDirectory() as d:
+                target,spec=self.fixture(Path(d),[size])
+                self.assertEqual(spec['font_size_pt'],12)
+                with fitz.open(target) as doc:
+                    self.assertEqual(doc[0].get_text().strip(),'Delivered text')
+                    self.assertTrue(all(c[1]>0 for t in doc[0].get_texttrace() for c in t['chars']))
+                with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_SIZE_INVALID$'):
+                    inspect_interior(target,spec)
+
+    def test_small_text_is_rejected_on_later_pages_and_beside_valid_text(self):
+        for sizes,mixed in (([12,6],False),([6],True)):
+            with self.subTest(sizes=sizes,mixed=mixed),tempfile.TemporaryDirectory() as d:
+                target,spec=self.fixture(Path(d),sizes,mixed=mixed)
+                with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_SIZE_INVALID$'):
+                    inspect_interior(target,spec)
+
+    def test_transformed_font_is_measured_in_delivered_page_space(self):
+        with tempfile.TemporaryDirectory() as d:
+            target,spec=self.fixture(Path(d),[12],scale=.5)
+            with fitz.open(target) as doc:
+                self.assertAlmostEqual(doc[0].get_texttrace()[0]['size'],6)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_SIZE_INVALID$'):
+                inspect_interior(target,spec)
+
+    def test_vertical_compression_cannot_hide_behind_trace_font_size(self):
+        for scale in ((1,.5),(.5,1)):
+            with self.subTest(scale=scale),tempfile.TemporaryDirectory() as d:
+                target,spec=self.fixture(Path(d),[12],scale=scale)
+                with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_SIZE_INVALID$'):
+                    inspect_interior(target,spec)
+
+    def test_rotated_text_requires_a_separately_supported_contract(self):
+        with tempfile.TemporaryDirectory() as d:
+            target,spec=self.fixture(Path(d),[7],rotate=5)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_TEXT_TRANSFORM_UNSUPPORTED$'):
+                inspect_interior(target,spec)
+
+    def test_exact_minimum_and_larger_delivered_fonts_pass(self):
+        for size,scale in ((7,1),(14,.5),(8,1),(12,1)):
+            with self.subTest(size=size,scale=scale),tempfile.TemporaryDirectory() as d:
+                target,spec=self.fixture(Path(d),[size],scale=scale)
+                self.assertTrue(inspect_interior(target,spec))
+
+
 class InteriorGlyphTests(unittest.TestCase):
     def fixture(self, root, lines, mapped_missing=False):
         font, spec = BookBoundsTests().spec()
