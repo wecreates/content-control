@@ -4,13 +4,35 @@ import sys
 import hashlib
 import os
 import shutil
+import stat
 from pathlib import Path
-from pod_common import canonical, digest, read_json, save_json, scoped_file, verified
+from pod_common import (MAX_JSON_BYTES, canonical, digest, read_json, save_json,
+                        scoped_file, strict_json, verified)
 from pod_book_interior import render_book
 
 
 def _identity(value):
     return value.st_dev, value.st_ino
+
+
+def _snapshot_file(directory_fd, name):
+    fd = os.open(name, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW,
+                 dir_fd=directory_fd)
+    try:
+        value = os.fstat(fd)
+        if not stat.S_ISREG(value.st_mode):
+            raise ValueError('MANIFEST_CHANGED')
+        data = bytearray()
+        while len(data) <= MAX_JSON_BYTES:
+            chunk = os.read(fd, min(1024 * 1024, MAX_JSON_BYTES + 1 - len(data)))
+            if not chunk:
+                break
+            data.extend(chunk)
+        if len(data) > MAX_JSON_BYTES:
+            raise ValueError('JSON_TOO_LARGE')
+        return _identity(value), bytes(data)
+    finally:
+        os.close(fd)
 
 
 def _link_staged(stage_fd, root_fd, name):
@@ -25,7 +47,9 @@ def _link_staged(stage_fd, root_fd, name):
     return expected
 
 
-def _commit_manifest(stage_fd, root_fd):
+def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes):
+    if _snapshot_file(root_fd, 'manifest.json') != (original_identity, original_bytes):
+        raise ValueError('MANIFEST_CHANGED')
     expected = _identity(os.stat('manifest.json', dir_fd=stage_fd,
                                  follow_symlinks=False))
     try:
@@ -77,6 +101,14 @@ def assemble(root, spec, pages, font):
         abs(spec['trim_inches'][1]+2*kdp['bleed_inches']-cover['size_inches'][1]) > 1e-6):
         raise ValueError('COVER_INTERIOR_MISMATCH')
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        original_identity, original_bytes = _snapshot_file(root_fd, 'manifest.json')
+        original_manifest = {**manifest, 'package_sha256': previous}
+        if strict_json(original_bytes.decode('utf-8', errors='strict')) != original_manifest:
+            raise ValueError('MANIFEST_CHANGED')
+    except BaseException:
+        os.close(root_fd)
+        raise
     stage = root/('.pod-book-' + os.urandom(12).hex())
     stage_fd = None
     stage_identity = None
@@ -97,7 +129,7 @@ def assemble(root, spec, pages, font):
         for name in ('interior.pdf', 'interior.receipt.json'):
             installed.append((name, _link_staged(stage_fd, root_fd, name)))
         os.fsync(root_fd)
-        _commit_manifest(stage_fd, root_fd)
+        _commit_manifest(stage_fd, root_fd, original_identity, original_bytes)
         committed = True
         return manifest
     except BaseException as exc:
