@@ -57,9 +57,12 @@ export class ArtifactStore {
   this.db.active();if(typeof sha!=='string'||!/^[a-f0-9]{64}$/.test(sha))throw Error('ARTIFACT_HASH_INVALID');
   // Reject oversized legacy/foreign rows in PostgreSQL before their bodies
   // cross into the low-memory process. Apply the same per-object read/write cap.
-  const row=(await this.db.pool.query('SELECT body,media_type FROM pod_artifacts WHERE sha256=$1 AND octet_length(body) BETWEEN 1 AND $2',[sha,this.maxObjectBytes])).rows[0];
+  const row=(await this.db.pool.query(`SELECT body,media_type FROM pod_artifacts
+   WHERE sha256=$1 AND octet_length(body) BETWEEN 1 AND $2 AND media_type=ANY($3::text[])`,
+   [sha,this.maxObjectBytes,ARTIFACT_MEDIA_TYPES])).rows[0];
   this.db.active();
   if(!row||!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>this.maxObjectBytes||
+   !artifactMediaTypes.has(row.media_type)||
    crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
   return row;
  }

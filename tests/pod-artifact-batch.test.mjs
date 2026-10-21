@@ -33,6 +33,11 @@ test('artifact read rejects an oversized returned body even from an alternate po
  const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:[{body,media_type:'image/png'}]})}},{maxObjectBytes:4});
  await assert.rejects(store.get(hash(body)),/ARTIFACT_UNAVAILABLE/);
 });
+test('artifact read rejects unsupported stored media even from an alternate pool',async()=>{
+ const body=Buffer.from('valid bytes with unapproved metadata');
+ const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:[{body,media_type:'text/html'}]})}});
+ await assert.rejects(store.get(hash(body)),/^Error: ARTIFACT_UNAVAILABLE$/);
+});
 test('artifact read fails closed for absent, empty, nonbinary or corrupt rows',async()=>{
  for(const row of [undefined,{body:Buffer.alloc(0)},{body:'bytes'},{body:null},{body:Buffer.from('wrong')}]){
   const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:row?[row]:[]})}});
