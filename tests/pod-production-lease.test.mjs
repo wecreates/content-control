@@ -8,7 +8,7 @@ const key='synthetic-review-key-'.repeat(3),job={id:'fixture-job',fencing_token:
 const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
 function qa(){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
  expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
- checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true]))});
+ checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
 function fixture(valid){
  const writes=[],queries=[];

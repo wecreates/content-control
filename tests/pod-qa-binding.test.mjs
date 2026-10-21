@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {enforceQA,enforceBrief,REQUIRED_QA} from '../integrations/pod/policy.mjs';
 const checks={...Object.fromEntries(REQUIRED_QA.map(k=>[k,true])),template_provenance:true,
- manuscript_provenance:true,book_details:true};
+ manuscript_provenance:true,source_font:true,font_rights:true,book_details:true};
 test('all platforms require independently reconstructed original text and font checks',()=>{
  const p='a'.repeat(64),t='b'.repeat(64);
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
@@ -45,6 +45,16 @@ test('KDP rejects receipts without exact book-details binding without affecting 
  for(const book_details of [undefined,false,1,'true',null]){
   const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
    checks:{...checks,editorial:true,book_details}};
+  assert.throws(()=>enforceQA(qa,p,t,'kdp'),/QA_BLOCKED/);
+  for(const platform of ['redbubble','teepublic','zazzle','spreadshirt'])
+   assert.doesNotThrow(()=>enforceQA(qa,p,t,platform));
+ }
+});
+test('KDP rejects receipts without original-font and current font-rights checks',()=>{
+ const p='a'.repeat(64),t='b'.repeat(64);
+ for(const field of ['source_font','font_rights'])for(const value of [undefined,false,1,'true',null]){
+  const qa={verdict:'PASS',package_sha256:p,template_sha256:t,
+   checks:{...checks,editorial:true,[field]:value}};
   assert.throws(()=>enforceQA(qa,p,t,'kdp'),/QA_BLOCKED/);
   for(const platform of ['redbubble','teepublic','zazzle','spreadshirt'])
    assert.doesNotThrow(()=>enforceQA(qa,p,t,platform));
