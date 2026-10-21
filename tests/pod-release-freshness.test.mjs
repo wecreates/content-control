@@ -17,7 +17,7 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
  const release={...common,audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,
   platform:brief.platform,max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:manifest.package_sha256,...economicsFixture(brief,now)};
  const qa=sign({...common,expires_at_ms:now+899000,audience:'content-control:pod:qa',verdict:'PASS',...manifest,
-  checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true])),editorial}});
+  list_price:{marketplace:'amazon.com',currency:'USD',amount_minor:2000},checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true])),editorial}});
  const job={id:brief.id,platform:brief.platform,brief,manifest,qa_envelope:qa,idempotency_key:'fixture-idempotency'};
  const events=[];
  // These enabled flags exercise an in-memory fake adapter only; no live env,
@@ -26,7 +26,7 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   upstreamKey:key,qaKey:key,db:{claimPublish:async()=>job,assertPublishable:async()=>true,finish:async(_j,state)=>events.push(state)},
   verifyArtifacts:async()=>manifest,resolveGrant:async()=>sign(release),
   adapters:{[platform]:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
- return {options,events,release,manifest};
+ return {options,events,release,manifest,qa};
 }
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
@@ -106,6 +106,21 @@ test('cancellation and kill switches are rechecked after local database validati
    return true;
   };
   assert.equal((await publishOnce(f.options)).status,'BLOCKED');assert.deepEqual(f.events,['blocked']);
+ }
+});
+
+test('KDP list price must match the signed Money Factory price before any adapter call',async()=>{
+ for(const edit of [
+  q=>delete q.list_price,
+  q=>q.list_price.amount_minor=1999,
+  q=>q.list_price.currency='EUR',
+  q=>q.list_price.marketplace='amazon.co.uk',
+  q=>q.list_price.extra=true,
+  q=>q.list_price.amount_minor=25001]){
+  const f=fixture(Date.now(),'kdp',true),payload=JSON.parse(f.qa.payload);
+  edit(payload);Object.assign(f.qa,sign(payload));
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.deepEqual(f.events,['blocked']);
  }
 });
 
