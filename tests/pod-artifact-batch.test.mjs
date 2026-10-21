@@ -80,7 +80,7 @@ test('KDP template archives accept application/zip and preserve immutable identi
   if(sql.startsWith('INSERT'))writes.push(args);
   return {rows:[]};
  }})};
- const body=Buffer.from('PK\\x03\\x04synthetic bounded KDP template archive');
+ const body=Buffer.concat([Buffer.from([0x50,0x4b,0x03,0x04]),Buffer.from('synthetic bounded KDP template archive')]);
  assert.equal(await new ArtifactStore(db).put(body,'application/zip'),hash(body));
  assert.equal(writes.length,1);assert.equal(writes[0][0],hash(body));
  assert.deepEqual(writes[0][1],body);assert.equal(writes[0][2],'application/zip');
