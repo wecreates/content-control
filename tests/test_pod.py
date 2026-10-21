@@ -76,7 +76,8 @@ class PODTests(unittest.TestCase):
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
                        text_layers=None,ocr_text=None,manuscript_inputs=True,font_inputs=True,
                        font_rights_inputs=True,font_rights_patch=None,book_details_inputs=True,
-                       book_details_patch=None,interior_spec_patch=None,rights_patch=None):
+                       book_details_patch=None,interior_spec_patch=None,rights_patch=None,
+                       regional_rights_evidence_inputs=True):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -138,6 +139,9 @@ class PODTests(unittest.TestCase):
             save_json(root/'manifest.json',m)
             now=int(time.time()*1000)
             common={'schema_version':1,'issued_at_ms':now-1,'expires_at_ms':now+60000,'package_sha256':m['package_sha256']}
+            regional_rights_evidence=Path(tmp)/'regional-rights-evidence.txt'
+            regional_rights_evidence.write_bytes(
+                b'synthetic regional rights evidence; not legal approval')
             regional_rights={
                 'country':'US','territories':['US'],'format':'paperback',
                 'publishing_basis':'copyright_owner',
@@ -146,7 +150,7 @@ class PODTests(unittest.TestCase):
                 'rights_holder_verified':True,'revoked':False,
                 'authority_event_id':'synthetic-regional-rights',
                 'source_evidence_ids':['synthetic-authorship-record'],
-                'evidence_sha256':'c'*64}
+                'evidence_sha256':digest(regional_rights_evidence)}
             rights=sign({**common,'expires_at_ms':now+rights_ttl,
                 'audience':'pod:package-rights','status':'PASS',
                 'permanently_unpublished':False,'regional_rights':regional_rights,
@@ -209,7 +213,9 @@ class PODTests(unittest.TestCase):
                     source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None,
                     interior_font=interior_font if kdp and font_inputs else None,
                     font_rights_envelope=font_rights,font_license=font_license,
-                    book_details=book_details_path)
+                    book_details=book_details_path,
+                    regional_rights_evidence=(regional_rights_evidence if kdp and
+                        regional_rights_evidence_inputs else None))
 
     def test_kdp_cover_and_interior_print_options_must_match(self):
         for patch_value in ({'binding':'hardcover'},{'ink_type':'premium_color'},
@@ -556,45 +562,66 @@ class PODTests(unittest.TestCase):
         from pod_vision_qa import inspect_regional_rights
         details={'publishing_rights':'copyright_owner',
                  'categories':['Nonfiction > Reference']}
-        valid={'country':'US','territories':['US'],'format':'paperback',
-               'publishing_basis':'copyright_owner',
-               'categories':['Nonfiction > Reference'],
-               'commercial_print_on_demand':True,'original_work':True,
-               'rights_holder_verified':True,'revoked':False,
-               'authority_event_id':'synthetic-regional-rights',
-               'source_evidence_ids':['synthetic-authorship-record'],
-               'evidence_sha256':'c'*64}
-        self.assertEqual(inspect_regional_rights(
-            {'regional_rights':valid},details,'US'),valid)
-        invalid=[
-            None,
-            {**valid,'extra':True},
-            {**valid,'country':'CA'},
-            {**valid,'territories':['CA']},
-            {**valid,'format':'hardcover'},
-            {**valid,'publishing_basis':'public_domain'},
-            {**valid,'categories':['Fiction > General']},
-            {**valid,'commercial_print_on_demand':False},
-            {**valid,'original_work':False},
-            {**valid,'rights_holder_verified':False},
-            {**valid,'revoked':True},
-            {**valid,'authority_event_id':''},
-            {**valid,'source_evidence_ids':[]},
-            {**valid,'source_evidence_ids':['duplicate','duplicate']},
-            {**valid,'source_evidence_ids':[1]},
-            {**valid,'evidence_sha256':'C'*64},
-        ]
-        for regional in invalid:
-            with self.subTest(regional=regional):
-                with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_REQUIRED'):
-                    inspect_regional_rights(
-                        {'regional_rights':regional},details,'US')
+        with tempfile.TemporaryDirectory() as tmp:
+            evidence=Path(tmp)/'regional-rights-evidence.txt'
+            evidence.write_bytes(b'synthetic rights evidence; not legal approval')
+            valid={'country':'US','territories':['US'],'format':'paperback',
+                   'publishing_basis':'copyright_owner',
+                   'categories':['Nonfiction > Reference'],
+                   'commercial_print_on_demand':True,'original_work':True,
+                   'rights_holder_verified':True,'revoked':False,
+                   'authority_event_id':'synthetic-regional-rights',
+                   'source_evidence_ids':['synthetic-authorship-record'],
+                   'evidence_sha256':digest(evidence)}
+            self.assertEqual(inspect_regional_rights(
+                {'regional_rights':valid},details,'US',evidence),valid)
+            invalid=[
+                None,
+                {**valid,'extra':True},
+                {**valid,'country':'CA'},
+                {**valid,'territories':['CA']},
+                {**valid,'format':'hardcover'},
+                {**valid,'publishing_basis':'public_domain'},
+                {**valid,'categories':['Fiction > General']},
+                {**valid,'commercial_print_on_demand':False},
+                {**valid,'original_work':False},
+                {**valid,'rights_holder_verified':False},
+                {**valid,'revoked':True},
+                {**valid,'authority_event_id':''},
+                {**valid,'source_evidence_ids':[]},
+                {**valid,'source_evidence_ids':['duplicate','duplicate']},
+                {**valid,'source_evidence_ids':[1]},
+                {**valid,'evidence_sha256':'C'*64},
+            ]
+            for regional in invalid:
+                with self.subTest(regional=regional):
+                    with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_REQUIRED'):
+                        inspect_regional_rights(
+                            {'regional_rights':regional},details,'US',evidence)
+            with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_EVIDENCE_REQUIRED'):
+                inspect_regional_rights({'regional_rights':valid},details,'US',None)
+            tampered=Path(tmp)/'tampered.txt';tampered.write_bytes(b'tampered')
+            with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_EVIDENCE_INVALID'):
+                inspect_regional_rights({'regional_rights':valid},details,'US',tampered)
+            empty=Path(tmp)/'empty.txt';empty.write_bytes(b'')
+            with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_EVIDENCE_INVALID'):
+                inspect_regional_rights({'regional_rights':valid},details,'US',empty)
+            link=Path(tmp)/'evidence-link';link.symlink_to(evidence)
+            with self.assertRaisesRegex(ValueError,'KDP_REGIONAL_RIGHTS_EVIDENCE_INVALID'):
+                inspect_regional_rights({'regional_rights':valid},details,'US',link)
+            expected_package_digest=hashlib.sha256(
+                b'synthetic regional rights evidence; not legal approval').hexdigest()
         valid_package=self.package_result(lambda m,r:None,kdp=True)
         self.assertEqual(valid_package['binary_pass'],1,valid_package)
         self.assertTrue(valid_package['checks']['regional_rights'])
         self.assertEqual(valid_package['regional_rights_event_id'],
                          'synthetic-regional-rights')
-        self.assertEqual(valid_package['regional_rights_evidence_sha256'],'c'*64)
+        self.assertEqual(valid_package['regional_rights_evidence_sha256'],
+                         expected_package_digest)
+        missing_file=self.package_result(lambda m,r:None,kdp=True,
+            regional_rights_evidence_inputs=False)
+        self.assertEqual(missing_file['binary_pass'],0,missing_file)
+        self.assertIn('KDP_REGIONAL_RIGHTS_EVIDENCE_REQUIRED',missing_file['errors'])
         legacy=self.package_result(lambda m,r:None,kdp=True,
             rights_patch={'regional_rights':None})
         self.assertEqual(legacy['binary_pass'],0,legacy)
