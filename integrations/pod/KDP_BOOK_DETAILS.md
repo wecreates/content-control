@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `6` |
+| `schema_version` | Integer `7` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -16,6 +16,7 @@ fresh grant. The file has exactly these fields:
 | `keywords` | Ordered array of at most 7 unique NFC metadata phrases; empty is supported because KDP keywords are optional |
 | `primary_marketplace` | `amazon.com` for the currently supported `en_US` lane |
 | `categories` | Ordered array of 1–3 unique category-path strings |
+| `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
 | `isbn` | `null` or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
 | `imprint` | `null` or metadata text of at most 100 characters |
@@ -54,7 +55,7 @@ comparison. This does not prove ISBN ownership, format uniqueness, agency
 registration, or that title/author/imprint match the agency record; those remain
 live account and rights checks.
 
-The description, keyword, category and cover-finish values are immutable task-owned inputs. The
+The description, keyword, category, primary-audience and cover-finish values are immutable task-owned inputs. The
 validator enforces the current field counts, the 4,000-character description
 ceiling, plain-text hygiene, unique entries, the supported primary marketplace,
 the copyright-owner path, and the supported matte/glossy cover-finish enum. It does not decide whether marketing copy is
@@ -76,6 +77,13 @@ book-details record rather than inferred from the cover file. A valid value prov
 which option the authorized task owns; live KDP readback is still required to prove that
 an operator selected the same option during title setup.
 
+KDP requires an explicit Yes/No answer for sexually explicit images or title. Reading
+age is optional, but this bounded profile accepts only KDP's published age bands. These
+answers are part of the canonical task-owned hash so they cannot be changed at submission
+without a new task and authority grant. The validator does not classify the cover,
+interior, title, audience, or category suitability; independent review and live account
+readback remain required.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -84,10 +92,11 @@ the declaration is truthful, classify AI-assisted work, or prove that the same
 answers were entered into KDP. Generation provenance, independent review and live
 account readback remain separate acceptance evidence.
 
-Sources rechecked October 20, 2026:
+Sources rechecked October 21, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
 - [Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630)
 - [Make Your Book More Discoverable with Keywords](https://kdp.amazon.com/en_US/help/topic/G201298500)
 - [KDP Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)
@@ -99,8 +108,8 @@ Sources rechecked October 20, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 5 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 6 and receive a fresh Money
+Schema versions 1 through 6 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 7 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
