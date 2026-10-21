@@ -26,6 +26,7 @@ import {verifyProductionClock} from './pod-production-clock-postgres.mjs';
 import {verifyMonitoring} from './pod-monitoring-postgres.mjs';
 import {verifyCapacity} from './pod-capacity-postgres.mjs';
 import {verifyConceptBudget} from './pod-concept-budget-postgres.mjs';
+import {verifyKdpWeeklySubmission} from './pod-kdp-weekly-submission-postgres.mjs';
 
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
@@ -64,6 +65,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
   await verifyConceptBudget(pool,bridge);
+  await verifyKdpWeeklySubmission(pool,bridge);
   const store=new ArtifactStore(db,{budgetBytes:100});const content=Buffer.from('durable bytes');
   const hash=await store.put(content,'application/json');assert.deepEqual((await store.get(hash)).body,content);
   assert.equal(await store.put(content,'application/json'),hash);
