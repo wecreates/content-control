@@ -57,7 +57,9 @@ def inspect_book_details(details_path, manifest, manuscript):
                     isinstance(series, dict) and set(series) == {'title', 'display_text'} and
                     metadata_text(series.get('title')) and
                     metadata_text(series.get('display_text')))
-    contributors_valid = (isinstance(contributors, list) and len(contributors) <= 10 and
+    # KDP's ten-contributor total includes the primary author_name, leaving at
+    # most nine additional ordered contributor records in this contract.
+    contributors_valid = (isinstance(contributors, list) and len(contributors) <= 9 and
                           all(isinstance(contributor, dict) and
                               set(contributor) == {'role', 'name'} and
                               metadata_text(contributor.get('role'), 100) and
