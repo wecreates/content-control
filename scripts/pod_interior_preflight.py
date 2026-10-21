@@ -28,7 +28,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'isbn', 'imprint', 'title_page', 'edition',
-                     'series', 'contributors'}
+                     'series', 'contributors', 'ai_generated'}
 
     def clean(value, limit):
         return (type(value) is str and 0 < len(value) <= limit and
@@ -65,6 +65,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     edition = details.get('edition') if isinstance(details, dict) else None
     series = details.get('series') if isinstance(details, dict) else None
     contributors = details.get('contributors') if isinstance(details, dict) else None
+    ai_generated = details.get('ai_generated') if isinstance(details, dict) else None
     edition_valid = (edition is None or
                      isinstance(edition, dict) and set(edition) == {'number', 'display_text'} and
                      type(edition.get('number')) is int and 1 <= edition['number'] <= 9999 and
@@ -90,9 +91,13 @@ def inspect_book_details(details_path, manifest, manuscript):
                               for contributor in contributors) and
                           len({contributor['name'].casefold() for contributor in contributors}) ==
                           len(contributors))
+    ai_generated_valid = (isinstance(ai_generated, dict) and
+                          set(ai_generated) == {'text', 'images', 'translations'} and
+                          all(type(ai_generated[field]) is bool
+                              for field in ('text', 'images', 'translations')))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 3 or
+            details.get('schema_version') != 4 or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
@@ -101,7 +106,8 @@ def inspect_book_details(details_path, manifest, manuscript):
             details.get('isbn') is not None and not valid_isbn(details['isbn']) or
             details.get('imprint') is not None and not metadata_text(details['imprint'], 100) or
             type(details.get('title_page')) is not int or details['title_page'] not in (1, 3) or
-            not edition_valid or not series_valid or not contributors_valid):
+            not edition_valid or not series_valid or not contributors_valid or
+            not ai_generated_valid):
         raise ValueError('KDP_BOOK_DETAILS_INVALID')
     try:
         template = manifest['template']

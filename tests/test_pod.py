@@ -86,10 +86,11 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':3,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':4,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
-                'contributors':[]}
+                'contributors':[],
+                'ai_generated':{'text':False,'images':False,'translations':False}}
             book_details={**render_details,**(book_details_patch or {})}
             layers=list(text_layers or [])
             if kdp:
@@ -207,10 +208,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':3,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':4,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
-                'contributors':[]}
+                'contributors':[],
+                'ai_generated':{'text':False,'images':False,'translations':False}}
             detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
             pages=[{'lines':['Fixture Book','Fixture Author']},{'lines':['Type here']}]
             manuscript=Path(tmp)/'pages.json';save_json(manuscript,pages)
@@ -228,10 +230,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':3,'title':'Same','subtitle':None,
+            details={'schema_version':4,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
-                'contributors':[]}
+                'contributors':[],
+                'ai_generated':{'text':False,'images':False,'translations':False}}
             detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
             manuscript=Path(tmp)/'pages.json';save_json(manuscript,[{'lines':['Same','Same']}])
             manifest={'platform':'kdp','expected_text':[
@@ -247,10 +250,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':3,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
-            'contributors':[]}
+            'contributors':[],
+            'ai_generated':{'text':False,'images':False,'translations':False}}
         invalid=(
             {'title':'n/a'},
             {'title':'!!!'},
@@ -285,14 +289,15 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':3,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':4,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
             'imprint':None,'title_page':1,
             'edition':{'number':2,'display_text':'2nd Edition'},
             'series':{'title':'Fixture Series','number':3,
                       'display_text':'Fixture Series, Volume 3'},
             'contributors':[{'role':'Editor','name':'Fixture Editor'},
-                            {'role':'Illustrator','name':'Fixture Artist'}]}
+                            {'role':'Illustrator','name':'Fixture Artist'}],
+            'ai_generated':{'text':False,'images':False,'translations':False}}
         manifest={'platform':'kdp','expected_text':[
             {'text':'Fixture Book','box_px':[2100,300,2400,350]},
             {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
@@ -336,10 +341,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':3,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
-            'contributors':[]}
+            'contributors':[],
+            'ai_generated':{'text':False,'images':False,'translations':False}}
         manifest={'platform':'kdp','expected_text':[
             {'text':'Fixture Book','box_px':[2100,300,2400,350]},
             {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
@@ -372,6 +378,46 @@ class PODTests(unittest.TestCase):
                     value=next(iter(patch_value.values()))
                     save_json(manuscript,[{'lines':['Fixture Book','Fixture Author']},
                                           {'lines':[value]}])
+                    with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
+                        inspect_book_details(detail_path,manifest,manuscript)
+
+    def test_kdp_book_details_require_ai_generated_disclosure(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+
+        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','isbn':None,
+            'imprint':None,'title_page':1,'edition':None,'series':None,
+            'contributors':[]}
+        manifest={'platform':'kdp','expected_text':[
+            {'text':'Fixture Book','box_px':[2100,300,2400,350]},
+            {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
+            'template':{'platform':'kdp','dpi':300,'size_inches':[12.304048,9.25],
+                'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                       'trim_width_inches':6,'spine_width_inches':.054048,
+                       'bleed_inches':.125}}}
+        pages=[{'lines':['Fixture Book','Fixture Author']}]
+        valid={'text':True,'images':True,'translations':False}
+        invalid=(
+            None,
+            {},
+            {'text':False,'images':False},
+            {'text':False,'images':False,'translations':False,'audio':False},
+            {'text':'false','images':False,'translations':False},
+            {'text':0,'images':False,'translations':False},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            detail_path=Path(tmp)/'details.json'
+            manuscript=Path(tmp)/'pages.json'
+            save_json(manuscript,pages)
+            save_json(detail_path,{**base,'ai_generated':valid})
+            self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
+            save_json(detail_path,{**base,'schema_version':3,'ai_generated':valid})
+            with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
+                inspect_book_details(detail_path,manifest,manuscript)
+            for disclosure in invalid:
+                with self.subTest(disclosure=disclosure):
+                    save_json(detail_path,{**base,'ai_generated':disclosure})
                     with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
                         inspect_book_details(detail_path,manifest,manuscript)
 

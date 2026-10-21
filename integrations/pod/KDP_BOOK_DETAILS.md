@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `3` |
+| `schema_version` | Integer `4` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -18,6 +18,7 @@ fresh grant. The file has exactly these fields:
 | `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text containing that decimal number> }` |
 | `series` | `null` or exactly `{ "title": <metadata text>, "number": <null or integer 1–9999>, "display_text": <metadata text containing the exact title and, when supplied, decimal number> }` |
 | `contributors` | Ordered array of at most 9 additional unique `{ "role": <metadata text>, "name": <metadata text> }` records; together with `author_name`, the total is at most 10 |
+| `ai_generated` | Exactly `{ "text": <boolean>, "images": <boolean>, "translations": <boolean> }`; each boolean declares whether that content category contains AI-generated material under KDP's current definition |
 
 Independent QA requires title, optional subtitle and author as exactly one
 separate front-cover text layer each, at least 0.125 inch inside the front trim.
@@ -47,6 +48,14 @@ comparison. This does not prove ISBN ownership, format uniqueness, agency
 registration, or that title/author/imprint match the agency record; those remain
 live account and rights checks.
 
+KDP requires publishers to disclose AI-generated text, images and translations,
+including AI-generated cover or interior artwork. The three disclosure booleans
+are therefore mandatory and part of the canonical task-owned book-details hash.
+They record the authorized job's declared answers; they do not determine whether
+the declaration is truthful, classify AI-assisted work, or prove that the same
+answers were entered into KDP. Generation provenance, independent review and live
+account readback remain separate acceptance evidence.
+
 Sources rechecked October 20, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
@@ -54,11 +63,12 @@ Sources rechecked October 20, 2026:
 - [Books Titles & Editions](https://kdp.amazon.com/en_US/help/topic/GW7J4WEKBVU25YEC)
 - [Authors & Contributors](https://kdp.amazon.com/en_US/help/topic/G2BWJN2BY98T5PV2)
 - [Create a Book](https://kdp.amazon.com/en_US/help/topic/G202172740)
+- [Content Guidelines: Artificial intelligence content](https://kdp.amazon.com/en_US/help/topic/G200672390)
 - [Paperback and Hardcover Manuscript Templates](https://kdp.amazon.com/en_US/help/topic/G201834230)
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 
-Schema versions 1 and 2 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 3 and receive a fresh Money
+Schema versions 1 through 3 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 4 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
