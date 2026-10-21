@@ -86,8 +86,11 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':4,'title':'Fixture Book','subtitle':None,
-                'author_name':'Fixture Author','language':'en','isbn':None,
+            render_details={'schema_version':5,'title':'Fixture Book','subtitle':None,
+                'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -208,8 +211,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':4,'title':'Fixture Book','subtitle':None,
-                'author_name':'Fixture Author','language':'en','isbn':None,
+            details={'schema_version':5,'title':'Fixture Book','subtitle':None,
+                'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -230,8 +236,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':4,'title':'Same','subtitle':None,
-                'author_name':'Same','language':'en','isbn':None,
+            details={'schema_version':5,'title':'Same','subtitle':None,
+                'author_name':'Same','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -250,8 +259,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
-            'author_name':'Fixture Author','language':'en','isbn':None,
+        base={'schema_version':5,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
             'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -289,8 +301,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':4,'title':'Fixture Book','subtitle':None,
-            'author_name':'Fixture Author','language':'en','isbn':None,
+        details={'schema_version':5,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,
             'edition':{'number':2,'display_text':'2nd Edition'},
             'series':{'title':'Fixture Series','number':3,
@@ -341,8 +356,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
-            'author_name':'Fixture Author','language':'en','isbn':None,
+        base={'schema_version':5,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
             'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -381,12 +399,40 @@ class PODTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
                         inspect_book_details(detail_path,manifest,manuscript)
 
+    def test_kdp_book_details_bind_discovery_metadata(self):
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        invalid=(
+            {'schema_version':4},
+            {'description':None},
+            {'description':'D'*4001},
+            {'description':'Visit https://example.com for details'},
+            {'description':'<b>Promotional copy</b>'},
+            {'keywords':['one']*2},
+            {'keywords':[f'keyword {index}' for index in range(8)]},
+            {'keywords':['<b>keyword</b>']},
+            {'primary_marketplace':'amazon.co.uk'},
+            {'categories':[]},
+            {'categories':['One','Two','Three','Four']},
+            {'categories':['Reference','reference']},
+            {'publishing_rights':'public_domain'},
+        )
+        for patch_value in invalid:
+            with self.subTest(details=patch_value):
+                failed=self.package_result(lambda m,r:None,kdp=True,
+                    book_details_patch=patch_value)
+                self.assertEqual(failed['binary_pass'],0,failed)
+                self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
+
     def test_kdp_book_details_require_ai_generated_disclosure(self):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':4,'title':'Fixture Book','subtitle':None,
-            'author_name':'Fixture Author','language':'en','isbn':None,
+        base={'schema_version':5,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
+                'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'categories':['Nonfiction > Reference'],
+                'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[]}
         manifest={'platform':'kdp','expected_text':[
