@@ -14,7 +14,7 @@ function fixture(previous=[],corrupt=false){
  const db={tx:async fn=>{
   const size=rows.length,events=outbox.length;
   try{return await fn({query:async(sql,args)=>{
-   if(sql.includes('FROM pod_artifacts'))return {rows:args[0].map(sha=>({sha256:sha,body_sha256:corrupt?'0'.repeat(64):sha}))};
+   if(sql.includes('FROM pod_artifacts'))return {rows:args[0].map(sha=>({sha256:sha,media_type:'application/json',body_sha256:corrupt?'0'.repeat(64):sha}))};
    if(sql.startsWith('INSERT INTO pod_financial_events')){
     const [id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id]=args;
     const conflict=rows.some(r=>r.provider===provider&&r.provider_event_id===provider_event_id);
@@ -87,7 +87,7 @@ test('database timestamp mismatch cannot be hidden by millisecond Date decoding'
  for(const occurred_at_matches of [false,null,undefined]){
   const e={...event(),occurred_at:'2026-01-01T00:00:00.123457Z'};
   const db={tx:async fn=>fn({query:async sql=>{
-   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,body_sha256:e.evidence_sha256}]};
+   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
    if(sql.startsWith('INSERT INTO pod_financial_events'))return {rowCount:0};
    if(sql.includes('FROM pod_financial_events'))return {rows:[{...e,id:'original',occurred_at:new Date('2026-01-01T00:00:00.123456Z'),occurred_at_matches}]};
    assert.fail('replay must not write an outbox event');
