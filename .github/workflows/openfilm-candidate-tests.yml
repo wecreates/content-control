@@ -19,4 +19,4 @@ jobs:
         working-directory: integrations/openfilm/runtime-canary/ccsd-audio
         run: |
           for file in *.mjs; do node --check "$file"; done
-          node --test audio-mix-compat.test.mjs verify-output.test.mjs
+          node --test audio-mix-compat.test.mjs verify-output.test.mjs audio-source-contract.test.mjs

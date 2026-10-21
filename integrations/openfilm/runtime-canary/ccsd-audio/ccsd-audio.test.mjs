@@ -23,6 +23,20 @@ export function fixture(){
  return {ccsd,manifest,snapshots:{'a.wav':wav,'b.wav':Buffer.from(wav)},options:{syntheticOnly:true,originalContentConfirmed:true,approvedSceneIds:['a','b']}};
 }
 const map=f=>mapCCSDAudio(f.ccsd,f.manifest,f.snapshots,f.options);
+
+test('silence retains timing; mapper rejects mono, other rates and bit depths',()=>{
+ const silent=fixture();
+ silent.snapshots['a.wav'].fill(0,44);
+ silent.manifest.clips[0].audio_sha256=sha(silent.snapshots['a.wav']);
+ assert.equal(map(silent).sounds[0].to,.25);
+ for(const [offset,value] of [[22,1],[24,16000],[24,48000],[34,24]]){
+  const f=fixture();
+  if(offset===24)f.snapshots['a.wav'].writeUInt32LE(value,offset);
+  else f.snapshots['a.wav'].writeUInt16LE(value,offset);
+  f.manifest.clips[0].audio_sha256=sha(f.snapshots['a.wav']);
+  assert.throws(()=>map(f));
+ }
+});
 test('maps existing manifest bindings, preserves gaps/timeline/defaults and detaches bytes',()=>{
  const f=fixture(),before=JSON.stringify(f.ccsd),r=map(f);
  assert.deepEqual(r.sounds.map(s=>[s.at,s.to]),[[0,.25],[1,.25]]);assert.equal(r.receipt.duration_seconds,2);

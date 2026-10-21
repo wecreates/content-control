@@ -7,6 +7,7 @@ import {render} from '/app/src/render.mjs';
 import {open,filmSound,mixGraph,ffmpeg,kill} from '/app/src/shared.mjs';
 import {normalizeAudioPadding} from './audio-mix-compat.mjs';
 import {runAudioProcess} from './audio-process.mjs';
+import {validateAudioSources} from './audio-source-contract.mjs';
 
 export async function renderCandidate(args,opts){
  assert.equal(args.length,1,'Only full timelines supported');
@@ -29,6 +30,7 @@ export async function renderCandidate(args,opts){
   }
   const clips=await filmSound(opened,0);
   assert.equal(clips.length,declared.length,'Required audio stream missing or invalid');
+  await validateAudioSources(clips,opts.signal);
   await opened.close();opened=null;
   work=mkdtempSync(join(dirname(opts.out),'.audio-candidate-'));
   const video=join(work,'video.mp4'),sound=join(work,'sound.m4a'),final=join(work,'final.mp4');

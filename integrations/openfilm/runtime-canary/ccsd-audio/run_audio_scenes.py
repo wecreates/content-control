@@ -20,9 +20,9 @@ image = json.loads(call(["image","inspect","cyzor-openfilm-synthetic:local"]).st
 assert image["Id"] == "sha256:e2938261a328145e48bc6cb4dffdfa03fb3d2eb4bb68af4a18916ebad522806d"
 receipt = {"image_id":image["Id"],"image_created":image["Created"],"runs":[]}
 receipt["fixture_sha256"] = {name:hashlib.sha256((base/name).read_bytes()).hexdigest()
-                            for name in ["harness.mjs","scene-fixture.mjs","verify-output.mjs","render-candidate.mjs","audio-mix-compat.mjs","audio-process.mjs","ccsd-audio.mjs","storyboard-adapter.mjs","mapped-fixture.mjs"]}
+                            for name in ["harness.mjs","scene-fixture.mjs","verify-output.mjs","render-candidate.mjs","audio-mix-compat.mjs","audio-process.mjs","audio-source-contract.mjs","format-matrix.mjs","ccsd-audio.mjs","storyboard-adapter.mjs","mapped-fixture.mjs"]}
 for mode in sys.argv[1:] or ["success","missing-audio","cancel","mapped","cancel-mix","cancel-mux"]:
-    assert mode in {"success","missing-audio","cancel","mapped","cancel-mix","cancel-mux"}
+    assert mode in {"success","missing-audio","cancel","mapped","cancel-mix","cancel-mux","formats"}
     name = "cyzor-openfilm-" + mode + "-" + uuid.uuid4().hex[:8]
     row = {"mode":mode,"container_name":name}
     create_attempted = False
@@ -33,7 +33,7 @@ for mode in sys.argv[1:] or ["success","missing-audio","cancel","mapped","cancel
                 "--tmpfs","/tmp:rw,nosuid,nodev,size=512m",
                 "--mount",f"type=bind,source={out},target=/out",
                 "--mount",f"type=bind,source={base},target=/fixtures,readonly",
-                "--entrypoint","node",image["Id"],"/fixtures/harness.mjs",mode]
+                "--entrypoint","node",image["Id"],"/fixtures/format-matrix.mjs" if mode == "formats" else "/fixtures/harness.mjs",mode]
         create_attempted = True
         row["container_id"] = call(args).stdout.strip()
         cfg = json.loads(call(["inspect",name]).stdout)[0]

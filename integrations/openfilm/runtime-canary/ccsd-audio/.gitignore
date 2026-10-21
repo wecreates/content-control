@@ -1,3 +1,4 @@
 candidate-output/
+candidate-output-baseline/
 docker-config/
 __pycache__/
