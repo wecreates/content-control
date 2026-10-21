@@ -28,7 +28,8 @@ def inspect_book_details(details_path, manifest, manuscript):
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
-                     'categories', 'primary_audience', 'low_content', 'publishing_rights', 'isbn', 'imprint',
+                     'categories', 'primary_audience', 'low_content', 'publishing_rights',
+                     'isbn_source', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
                      'cover_finish', 'ai_generated'}
 
@@ -128,7 +129,7 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 8 or
+            details.get('schema_version') != 9 or
             details.get('low_content') is not False or
             not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
@@ -141,8 +142,11 @@ def inspect_book_details(details_path, manifest, manuscript):
             details.get('publishing_rights') != 'copyright_owner' or
             details.get('subtitle') is not None and not metadata_text(details['subtitle']) or
             len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
-            details.get('isbn') is not None and not valid_isbn(details['isbn']) or
-            details.get('imprint') is not None and not metadata_text(details['imprint'], 100) or
+            not ((details.get('isbn_source') == 'kdp_free' and
+                  details.get('isbn') is None and details.get('imprint') is None) or
+                 (details.get('isbn_source') == 'owned' and
+                  valid_isbn(details.get('isbn')) and
+                  metadata_text(details.get('imprint'), 100))) or
             type(details.get('title_page')) is not int or details['title_page'] not in (1, 3) or
             not edition_valid or not series_valid or not contributors_valid or
             not ai_generated_valid):
