@@ -86,11 +86,11 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':8,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':9,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'low_content':False,
@@ -223,11 +223,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':8,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':9,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'low_content':False,
@@ -251,11 +251,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':8,'title':'Same','subtitle':None,
+            details={'schema_version':9,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
                 'low_content':False,
@@ -277,11 +277,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':9,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
             'low_content':False,
@@ -322,11 +322,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':8,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':9,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
             'imprint':None,'title_page':1,
             'edition':{'number':2,'display_text':'2nd Edition'},
             'series':{'title':'Fixture Series','number':3,
@@ -380,11 +380,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':9,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
             'low_content':False,
@@ -402,13 +402,24 @@ class PODTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             detail_path=Path(tmp)/'details.json'
             manuscript=Path(tmp)/'pages.json'
-            details={**base,'isbn':valid_isbn,'imprint':'Fixture Press'}
+            save_json(detail_path,base)
+            save_json(manuscript,[{'lines':['Fixture Book','Fixture Author']}])
+            self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
+
+            details={**base,'isbn_source':'owned','isbn':valid_isbn,
+                     'imprint':'Fixture Press'}
             save_json(detail_path,details)
             save_json(manuscript,[{'lines':['Fixture Book','Fixture Author']},
                                   {'lines':[valid_isbn,'Fixture Press']}])
             self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
 
             invalid=(
+                {'isbn_source':'invalid'},
+                {'isbn_source':'owned'},
+                {'isbn':valid_isbn},
+                {'imprint':'Fixture Press'},
+                {'isbn_source':'owned','isbn':valid_isbn},
+                {'isbn_source':'owned','imprint':'Fixture Press'},
                 {'isbn':'not-an-isbn'},
                 {'isbn':'ISBN-13: 978-0-306-40615-8'},
                 {'isbn':'ISBN-13: 123-0-306-40615-6'},
@@ -430,7 +441,7 @@ class PODTests(unittest.TestCase):
         valid=self.package_result(lambda m,r:None,kdp=True)
         self.assertEqual(valid['binary_pass'],1,valid)
         invalid=(
-            {'schema_version':7},
+            {'schema_version':8},
             {'description':None},
             {'description':'D'*4001},
             {'description':'Visit https://example.com for details'},
@@ -515,11 +526,11 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':9,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','isbn':None,
+                'publishing_rights':'copyright_owner','isbn_source':'kdp_free','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
             'low_content':False,

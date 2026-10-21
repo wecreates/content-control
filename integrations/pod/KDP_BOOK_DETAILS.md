@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `8` |
+| `schema_version` | Integer `9` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -19,8 +19,9 @@ fresh grant. The file has exactly these fields:
 | `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
 | `low_content` | Exact boolean `false`; this supported lane requires a substantive book interior and does not admit KDP low-content classification |
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
-| `isbn` | `null` or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
-| `imprint` | `null` or metadata text of at most 100 characters |
+| `isbn_source` | Exact lowercase `kdp_free` or `owned`; this immutable task choice controls the required ISBN/imprint pairing |
+| `isbn` | Exactly `null` for `kdp_free`, or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979 for `owned`; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
+| `imprint` | Exactly `null` for `kdp_free`, or metadata text of at most 100 characters for `owned` |
 | `title_page` | Physical PDF page `1` or `3` |
 | `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text containing that decimal number> }` |
 | `series` | `null` or exactly `{ "title": <metadata text>, "number": <null or integer 1–9999>, "display_text": <metadata text containing the exact title and, when supplied, decimal number> }` |
@@ -51,10 +52,14 @@ and KDP's prohibited sentinel-only values such as `unknown`, `n/a`, `blank`,
 they do not claim to determine trademark permission, contributor truthfulness,
 promotional intent or substantive metadata quality.
 
-A supplied ISBN is syntax- and checksum-validated before exact manuscript
-comparison. This does not prove ISBN ownership, format uniqueness, agency
-registration, or that title/author/imprint match the agency record; those remain
-live account and rights checks.
+`isbn_source: kdp_free` requires both ISBN and imprint to be null because KDP
+assigns the number and displays the imprint as “Independently published.”
+`isbn_source: owned` requires both a checksum-valid ISBN and a nonempty imprint;
+those supplied strings must appear exactly once in the retained front matter.
+This pairing prevents a null ISBN from silently standing for an undecided setup
+choice. It does not prove ISBN ownership, format uniqueness, agency registration,
+or that title/author/imprint match the agency record; those remain live account
+and rights checks.
 
 The description, keyword, category, primary-audience and cover-finish values are immutable task-owned inputs. The
 validator enforces the current field counts, the 4,000-character description
@@ -103,6 +108,8 @@ Sources rechecked October 21, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [What is an ISBN and Imprint?](https://kdp.amazon.com/en_US/help/topic/G201834170)
+- [Get an ISBN](https://kdp.amazon.com/en_US/help/topic/GTJ8LBXL6Z4WV5QX)
 - [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
 - [Low-Content Books](https://kdp.amazon.com/en_US/help/topic/GGE5T76TWKA85DJM)
 - [Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630)
@@ -116,8 +123,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 7 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 8 and receive a fresh Money
+Schema versions 1 through 8 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 9 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
