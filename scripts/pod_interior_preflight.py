@@ -27,8 +27,10 @@ def inspect_book_details(details_path, manifest, manuscript):
         raise ValueError('KDP_BOOK_DETAILS_REQUIRED')
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
-                     'language', 'isbn', 'imprint', 'title_page', 'edition',
-                     'series', 'contributors', 'ai_generated'}
+                     'language', 'description', 'keywords', 'primary_marketplace',
+                     'categories', 'publishing_rights', 'isbn', 'imprint',
+                     'title_page', 'edition', 'series', 'contributors',
+                     'ai_generated'}
 
     def clean(value, limit):
         return (type(value) is str and 0 < len(value) <= limit and
@@ -95,12 +97,28 @@ def inspect_book_details(details_path, manifest, manuscript):
                           set(ai_generated) == {'text', 'images', 'translations'} and
                           all(type(ai_generated[field]) is bool
                               for field in ('text', 'images', 'translations')))
+    description = details.get('description') if isinstance(details, dict) else None
+    keywords = details.get('keywords') if isinstance(details, dict) else None
+    categories = details.get('categories') if isinstance(details, dict) else None
+    description_valid = (metadata_text(description, 4000) and
+                         re.search(r'(?:https?://|www\.|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})',
+                                   description, re.IGNORECASE) is None)
+    keywords_valid = (isinstance(keywords, list) and len(keywords) <= 7 and
+                      all(metadata_text(keyword, 200) and '"' not in keyword
+                          for keyword in keywords) and
+                      len({keyword.casefold() for keyword in keywords}) == len(keywords))
+    categories_valid = (isinstance(categories, list) and 1 <= len(categories) <= 3 and
+                        all(metadata_text(category, 200) for category in categories) and
+                        len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 4 or
+            details.get('schema_version') != 5 or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
+            not description_valid or not keywords_valid or not categories_valid or
+            details.get('primary_marketplace') != 'amazon.com' or
+            details.get('publishing_rights') != 'copyright_owner' or
             details.get('subtitle') is not None and not metadata_text(details['subtitle']) or
             len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
             details.get('isbn') is not None and not valid_isbn(details['isbn']) or
