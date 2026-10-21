@@ -3,9 +3,10 @@ import fs from 'node:fs/promises';
 import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
+import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 const MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
-const TYPES=new Set(['image/png','application/pdf','application/json','font/ttf']);
+const TYPES=new Set(ARTIFACT_MEDIA_TYPES);
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
 function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
