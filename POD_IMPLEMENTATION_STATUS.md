@@ -2381,3 +2381,74 @@ controlled launch readiness. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
 
+
+## Run receipt r155 — KDP new-publication release binding (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+- [Release Date Options](https://kdp.amazon.com/en_US/help/topic/GZUV7SNV728WT4QE)
+- [Schedule a Release](https://kdp.amazon.com/en_US/help/topic/GDTMGBCWHAY35NK4)
+- [Update Your Book Details](https://kdp.amazon.com/en_US/help/topic/G200736410)
+
+KDP instructs first-time publishers to leave Publication Date blank and choose a
+release option. The supported lane creates original, first-publication substantive
+books, so it now binds the blank date and release-now choice instead of leaving
+those operator-visible inputs implicit. Scheduled releases remain unsupported
+because their five-day lock/deadline creates a separate operational risk. This
+does not authorize publication or prove live KDP entry. Etsy remained excluded.
+The failed production-database administration route was not retried because no
+credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #400 exact tested head: `e2844e3da91ace04b2fb11dfd6cdc11277e43513`.
+- Schema v10 requires exact `publication_date: null` and
+  `release_plan: { "mode": "release_now", "date": null }`.
+- Prior-date strings, type-confused blanks, missing/extra release keys, scheduled
+  mode and a date attached to release-now fail closed.
+- Both fields are included in the canonical book-details hash; changing them
+  requires a new descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_bind_new_release_setup`.
+- POD integration gates run `39588988136`, job `119184904393`: success.
+- POD container runtime gates run `39588988065`, job `119184904337`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `e132ad2b9fe587154edff5d7594fd6bbde8b2d50`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #108 exact tested head: `4a298e15f362328a0d17c508d5217780ee560960`.
+- The cross-repository workflow pins Content Control merge
+  `e132ad2b9fe587154edff5d7594fd6bbde8b2d50` and explicitly runs the
+  publication-date/release-plan regression.
+- POD cross-repository review verification run `39589721571`, job
+  `119187353166`: success.
+- Guarded Money Factory merge:
+  `0c3ace5b0f98f3fcf355024f661f7c7601dea521`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `e132ad2b...` and created deployment
+  `dep-dbc9q30473hc73a6l9bg`.
+- Event `evt-dbc9q336v2tc739o154g` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T11:07:56.356552Z`.
+- Event `evt-dbc9q355rp0s73ej9ipg` recorded the deployment ended failed at
+  `2026-10-21T11:07:56.672595Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-consistency gap only. It does not establish live KDP
+readback, actual preview/proof acceptance, production database/recovery, live
+adapter acceptance, economics/reconciliation, end-to-end publication, or
+controlled launch readiness. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
+
