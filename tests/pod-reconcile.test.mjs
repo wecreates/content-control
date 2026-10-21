@@ -13,7 +13,7 @@ function database(value,seen,state='submitted',corrupt=false){
  return {writes,tx:async fn=>fn({query:async(sql,args)=>{
   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:value.job_id,account_id:value.account_id,
    platform:value.platform,state,provider_id:value.provider_id,manifest:{package_sha256:value.package_sha256}}]};
-  if(sql.includes('FROM pod_artifacts'))return {rowCount:1,rows:[{sha256:value.evidence_sha256,body_sha256:corrupt?'0'.repeat(64):value.evidence_sha256}]};
+  if(sql.includes('FROM pod_artifacts'))return {rowCount:1,rows:[{sha256:value.evidence_sha256,media_type:'application/json',body_sha256:corrupt?'0'.repeat(64):value.evidence_sha256}]};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[seen]:[]};
   writes.push({sql,args});return {rowCount:1};
  }})};
