@@ -8,9 +8,9 @@ fresh grant. The file has exactly these fields:
 | Field | Supported value |
 | --- | --- |
 | `schema_version` | Integer `1` |
-| `title` | Trimmed NFC printable string, 1–200 characters |
-| `subtitle` | `null` or the same bounded string |
-| `author_name` | Trimmed NFC printable string, 1–200 characters |
+| `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
+| `subtitle` | `null` or metadata text within the shared 200-character title limit |
+| `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
 | `language` | `en` for the currently supported `en_US`/LTR profile |
 | `isbn` | `null` or a bounded exact display string |
 | `imprint` | `null` or a bounded exact display string |
@@ -29,10 +29,19 @@ or author is inferred, and no metadata is rewritten. A correction therefore
 needs revised source files, a new descriptor hash, current authority, and fresh
 review of the new package.
 
+The title, subtitle and author fields reject HTML tags, punctuation-only values
+and KDP's prohibited sentinel-only values such as `unknown`, `n/a`, `blank`,
+`none`, `null` and `not applicable`. These checks are intentionally lexical:
+they do not claim to determine trademark permission, contributor truthfulness,
+promotional intent or substantive metadata quality.
+
 Sources rechecked October 20, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [Books Titles & Editions](https://kdp.amazon.com/en_US/help/topic/GW7J4WEKBVU25YEC)
+- [Authors & Contributors](https://kdp.amazon.com/en_US/help/topic/G2BWJN2BY98T5PV2)
+- [Create a Book](https://kdp.amazon.com/en_US/help/topic/G202172740)
 - [Paperback and Hardcover Manuscript Templates](https://kdp.amazon.com/en_US/help/topic/G201834230)
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 
