@@ -974,10 +974,11 @@ class BookFontSnapshotTests(unittest.TestCase):
 
 
 class CoverPreflightTests(unittest.TestCase):
-    def write_cover(self, path, image, dpi=300, shift=0):
+    def write_cover(self, path, image, dpi=300, shift=0, cmyk=True):
         width,height=[v*72/dpi for v in image.size]
         pdf=pdfcanvas.Canvas(str(path),pagesize=(width,height),invariant=1)
-        pdf.drawImage(ImageReader(image),shift*72/dpi,0,width=width,height=height)
+        embedded=image.convert('CMYK') if cmyk else image
+        pdf.drawImage(ImageReader(embedded),shift*72/dpi,0,width=width,height=height)
         pdf.showPage();pdf.save()
 
     def test_lossless_cover_passes_at_supported_dpi_and_fractional_point_sizes(self):
@@ -997,6 +998,50 @@ class CoverPreflightTests(unittest.TestCase):
                 path=Path(d)/'cover.pdf';self.write_cover(path,changed)
                 with self.subTest(rgb=rgb),self.assertRaisesRegex(ValueError,'COVER_PIXEL_MISMATCH'):
                     inspect_cover(path,original,300)
+
+    def test_rgb_cover_is_rejected_even_when_rendered_pixels_match(self):
+        image=Image.new('RGB',(600,900),(12,34,56))
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'cover.pdf';self.write_cover(path,image,cmyk=False)
+            with self.assertRaisesRegex(ValueError,'COVER_COLOR_SPACE_INVALID'):
+                inspect_cover(path,image,300)
+
+    def test_extra_paint_and_clipping_are_rejected(self):
+        image=Image.new('RGB',(600,900),(12,34,56))
+        with tempfile.TemporaryDirectory() as d:
+            for kind in ('path','clip'):
+                path=Path(d)/(kind+'.pdf')
+                width,height=[v*72/300 for v in image.size]
+                pdf=pdfcanvas.Canvas(str(path),pagesize=(width,height),invariant=1)
+                if kind=='clip':
+                    clip=pdf.beginPath();clip.rect(0,0,width/2,height)
+                    pdf.clipPath(clip,stroke=0,fill=0)
+                pdf.drawImage(ImageReader(image.convert('CMYK')),0,0,width=width,height=height)
+                if kind=='path':
+                    pdf.rect(0,0,1,1,stroke=0,fill=1)
+                pdf.showPage();pdf.save()
+                with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,'COVER_CONTENT_UNSUPPORTED'):
+                    inspect_cover(path,image,300)
+
+    def test_image_color_modifiers_and_page_groups_are_rejected(self):
+        image=Image.new('RGB',(600,900),(12,34,56))
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'source.pdf';self.write_cover(source,image)
+            for key,value in (('Decode','[1 0 1 0 1 0 1 0]'),
+                              ('Interpolate','true'),
+                              ('Intent','/RelativeColorimetric')):
+                target=Path(d)/(key+'.pdf')
+                with fitz.open(source) as doc:
+                    doc.xref_set_key(doc[0].get_images(full=True)[0][0],key,value)
+                    doc.save(target)
+                with self.subTest(key=key),self.assertRaisesRegex(ValueError,'COVER_COLOR_SPACE_INVALID'):
+                    inspect_cover(target,image,300)
+            target=Path(d)/'group.pdf'
+            with fitz.open(source) as doc:
+                doc.xref_set_key(doc[0].xref,'Group','<< /S /Transparency /CS /DeviceRGB >>')
+                doc.save(target)
+            with self.assertRaisesRegex(ValueError,'COVER_CONTENT_UNSUPPORTED'):
+                inspect_cover(target,image,300)
 
     def test_missing_detail_and_one_pixel_shift_fail(self):
         original=Image.new('RGB',(600,900),'white')

@@ -82,8 +82,14 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
             # Optional explicit dependency; failure blocks KDP rather than producing a fake PDF.
             from reportlab.pdfgen import canvas as pdfcanvas
             from reportlab.lib.utils import ImageReader
+            # KDP's paperback cover guidance calls for CMYK cover images and
+            # recommends omitting profiles. Keep the RGB PNG as the exact
+            # review surface, but embed one deterministic, profile-free CMYK
+            # raster in the delivered PDF. Independent QA compares the
+            # decoded PDF image bytes with this same conversion.
+            cover_image = canvas.convert('RGB').convert('CMYK')
             pdf = pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(w*72/dpi,h*72/dpi),invariant=1)
-            pdf.drawImage(ImageReader(canvas.convert('RGB')),0,0,width=w*72/dpi,height=h*72/dpi)
+            pdf.drawImage(ImageReader(cover_image),0,0,width=w*72/dpi,height=h*72/dpi)
             pdf.showPage()
             pdf.save()
             files.append('cover.pdf')
@@ -92,6 +98,8 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
                   'effective_native_ppi':min(sw/(nw/dpi),sh/(nh/dpi)),
                   'expected_text':expected,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
                   'template':template,'files':{name:digest(root/name) for name in files},'publication_enabled':False}
+        if template['platform']=='kdp':
+            manifest['cover_color_space']='DeviceCMYK'
         manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()
         save_json(root/'manifest.json',manifest)
         return manifest

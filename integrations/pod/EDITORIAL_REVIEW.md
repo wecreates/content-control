@@ -60,6 +60,29 @@ profiles require a separately verified contract before admission. Correcting
 template fields requires a new immutable task and fresh authority for its hash.
 Low-level technical/review helpers remain separate, and publication stays false.
 
+## Delivered cover CMYK contract
+
+The supported KDP paperback generator keeps `print.png` as the exact RGB review
+surface, but `cover.pdf` now contains exactly one full-page, eight-bit
+`DeviceCMYK` raster. The conversion is deterministic and profile-free. The
+manifest declares `cover_color_space: "DeviceCMYK"`; independent QA requires
+that declaration and then inspects the PDF object itself. It rejects RGB,
+grayscale, ICC-based, spot, masked or mixed-space cover images, extra paint
+operations, clipping, transforms that do not fill the page, and any difference
+between the decoded CMYK object and the deterministic conversion of the exact
+reviewed raster. A single changed CMYK channel therefore fails
+`COVER_PIXEL_MISMATCH`; a wrong or profiled space fails
+`COVER_COLOR_SPACE_INVALID`.
+
+This implements KDP's current recommendation that paperback cover images be
+CMYK, while avoiding the embedded profiles that KDP says it removes and that
+can produce unexpected results. It does not simulate KDP's printer conversion,
+measure printed color, approve subjective color, or replace Print Previewer and
+a physical proof. The review PNG remains RGB for deterministic OCR and pixel
+provenance; only the delivered paperback PDF is CMYK. Source checked October 21,
+2026: [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020).
+Publication remains disabled.
+
 ## Matching cover and even manuscript before rendering
 
 The durable production coordinator also requires the independently authenticated

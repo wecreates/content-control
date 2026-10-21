@@ -225,6 +225,7 @@ class PODTests(unittest.TestCase):
         self.assertEqual(result['binary_pass'],1,result)
         self.assertTrue(result['checks']['text_provenance'])
         self.assertTrue(result['checks']['print_preflight'])
+        self.assertEqual(result['cover_color_space'],'DeviceCMYK')
         self.assertEqual(result['text_layers_sha256'],hashlib.sha256(canonical([layer]).encode()).hexdigest())
 
     def test_qa_rejects_unapproved_text_masks_even_with_rebound_artifact_hashes(self):
@@ -334,12 +335,24 @@ class PODTests(unittest.TestCase):
             altered.putpixel((300,300),(0,0,0))
             width,height=[v*72/manifest['dpi'] for v in altered.size]
             pdf=pdfcanvas.Canvas(str(root/'cover.pdf'),pagesize=(width,height),invariant=1)
-            pdf.drawImage(ImageReader(altered),0,0,width=width,height=height)
+            pdf.drawImage(ImageReader(altered.convert('CMYK')),0,0,width=width,height=height)
             pdf.showPage();pdf.save()
             manifest['files']['cover.pdf']=digest(root/'cover.pdf')
         result=self.package_result(damage,kdp=True)
         self.assertEqual(result['binary_pass'],0,result)
         self.assertIn('COVER_PIXEL_MISMATCH',result['errors'])
+
+    def test_kdp_qa_requires_declared_device_cmyk_cover(self):
+        for value in (None,'RGB','devicecmyk',True,[]):
+            def mutate(manifest,root):
+                if value is None:
+                    manifest.pop('cover_color_space',None)
+                else:
+                    manifest['cover_color_space']=value
+            with self.subTest(value=value):
+                result=self.package_result(mutate,kdp=True)
+                self.assertEqual(result['binary_pass'],0,result)
+                self.assertIn('COVER_COLOR_SPACE_INVALID',result['errors'])
 
     def test_kdp_qa_rejects_undersized_margins_despite_rebound_receipts(self):
         from pod_common import save_json
@@ -785,6 +798,8 @@ class PODTests(unittest.TestCase):
                 self.assertEqual(len(pdf),1)
                 self.assertAlmostEqual(pdf[0].rect.width,1.75*72,places=2)
                 self.assertAlmostEqual(pdf[0].rect.height,2*72,places=2)
+                self.assertEqual(pdf[0].get_images(full=True)[0][5],'DeviceCMYK')
+            self.assertEqual(m['cover_color_space'],'DeviceCMYK')
     def test_kdp_wrong_spine_fails(self):
         t=self.template();t.update({'platform':'kdp','kdp':{'trim_width_inches':1,'spine_width_inches':.2,'bleed_inches':.125,'page_count':100}})
         with self.assertRaisesRegex(ValueError,'KDP_TEMPLATE_INVALID'):
