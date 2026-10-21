@@ -27,7 +27,8 @@ def inspect_book_details(details_path, manifest, manuscript):
         raise ValueError('KDP_BOOK_DETAILS_REQUIRED')
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
-                     'language', 'isbn', 'imprint', 'title_page'}
+                     'language', 'isbn', 'imprint', 'title_page', 'edition',
+                     'series', 'contributors'}
 
     def clean(value, limit):
         return (type(value) is str and 0 < len(value) <= limit and
@@ -40,13 +41,35 @@ def inspect_book_details(details_path, manifest, manuscript):
     invalid_singletons = {'unknown', 'n/a', 'na', 'blank', 'none', 'null',
                           'not applicable'}
 
-    def metadata_text(value):
-        return (clean(value, 200) and any(character.isalnum() for character in value) and
+    def metadata_text(value, limit=200):
+        return (clean(value, limit) and any(character.isalnum() for character in value) and
                 value.casefold() not in invalid_singletons and
                 re.search(r'</?[A-Za-z][^>]*>', value) is None)
 
+    edition = details.get('edition') if isinstance(details, dict) else None
+    series = details.get('series') if isinstance(details, dict) else None
+    contributors = details.get('contributors') if isinstance(details, dict) else None
+    edition_valid = (edition is None or
+                     isinstance(edition, dict) and set(edition) == {'number', 'display_text'} and
+                     type(edition.get('number')) is int and 1 <= edition['number'] <= 9999 and
+                     metadata_text(edition.get('display_text')))
+    series_valid = (series is None or
+                    isinstance(series, dict) and set(series) == {'title', 'display_text'} and
+                    metadata_text(series.get('title')) and
+                    metadata_text(series.get('display_text')))
+    # KDP's ten-contributor total includes the primary author_name, leaving at
+    # most nine additional ordered contributor records in this contract.
+    contributors_valid = (isinstance(contributors, list) and len(contributors) <= 9 and
+                          all(isinstance(contributor, dict) and
+                              set(contributor) == {'role', 'name'} and
+                              metadata_text(contributor.get('role'), 100) and
+                              metadata_text(contributor.get('name'))
+                              for contributor in contributors) and
+                          len({contributor['name'].casefold() for contributor in contributors}) ==
+                          len(contributors))
+
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 1 or
+            details.get('schema_version') != 2 or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
@@ -54,7 +77,8 @@ def inspect_book_details(details_path, manifest, manuscript):
             len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
             details.get('isbn') is not None and not clean(details['isbn'], 32) or
             details.get('imprint') is not None and not clean(details['imprint'], 200) or
-            type(details.get('title_page')) is not int or details['title_page'] not in (1, 3)):
+            type(details.get('title_page')) is not int or details['title_page'] not in (1, 3) or
+            not edition_valid or not series_valid or not contributors_valid):
         raise ValueError('KDP_BOOK_DETAILS_INVALID')
     try:
         template = manifest['template']
@@ -100,7 +124,8 @@ def inspect_book_details(details_path, manifest, manuscript):
 
     pages = read_json(manuscript)
     if (not isinstance(pages, list) or details['title_page'] > len(pages) or
-            not isinstance(pages[details['title_page'] - 1], dict)):
+            any(not isinstance(page, dict) or not isinstance(page.get('lines'), list) or
+                any(type(line) is not str for line in page['lines']) for page in pages)):
         raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
     title_lines = [details['title']]
     if details['subtitle'] is not None:
@@ -114,6 +139,15 @@ def inspect_book_details(details_path, manifest, manuscript):
     for field in ('isbn', 'imprint'):
         if details[field] is not None and front_matter.count(details[field]) != 1:
             raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+    bound_front_matter = []
+    if edition is not None:
+        bound_front_matter.append(edition['display_text'])
+    if series is not None:
+        bound_front_matter.append(series['display_text'])
+    bound_front_matter.extend(contributor['name'] for contributor in contributors)
+    if (len(set(bound_front_matter)) != len(bound_front_matter) or
+            any(front_matter.count(value) != 1 for value in bound_front_matter)):
+        raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
     placeholders = {'insert text here', 'insert chapter one text here',
                     'insert acknowledgements text here', 'insert author bio text here',
                     'type text', 'type here', 'placeholder text'}

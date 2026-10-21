@@ -86,9 +86,10 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':1,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':2,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
-                'imprint':None,'title_page':1}
+                'imprint':None,'title_page':1,'edition':None,'series':None,
+                'contributors':[]}
             book_details={**render_details,**(book_details_patch or {})}
             layers=list(text_layers or [])
             if kdp:
@@ -206,9 +207,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':1,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':2,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
-                'imprint':None,'title_page':1}
+                'imprint':None,'title_page':1,'edition':None,'series':None,
+                'contributors':[]}
             detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
             pages=[{'lines':['Fixture Book','Fixture Author']},{'lines':['Type here']}]
             manuscript=Path(tmp)/'pages.json';save_json(manuscript,pages)
@@ -226,9 +228,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':1,'title':'Same','subtitle':None,
+            details={'schema_version':2,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','isbn':None,
-                'imprint':None,'title_page':1}
+                'imprint':None,'title_page':1,'edition':None,'series':None,
+                'contributors':[]}
             detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
             manuscript=Path(tmp)/'pages.json';save_json(manuscript,[{'lines':['Same','Same']}])
             manifest={'platform':'kdp','expected_text':[
@@ -244,9 +247,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':1,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':2,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
-            'imprint':None,'title_page':1}
+            'imprint':None,'title_page':1,'edition':None,'series':None,
+            'contributors':[]}
         invalid=(
             {'title':'n/a'},
             {'title':'!!!'},
@@ -276,6 +280,51 @@ class PODTests(unittest.TestCase):
                                    'bleed_inches':.125}}}
                     with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
                         inspect_book_details(detail_path,manifest,manuscript)
+
+    def test_kdp_book_details_bind_edition_series_and_contributors(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+
+        details={'schema_version':2,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','isbn':None,
+            'imprint':None,'title_page':1,
+            'edition':{'number':2,'display_text':'Second Edition'},
+            'series':{'title':'Fixture Series','display_text':'Fixture Series, Volume 3'},
+            'contributors':[{'role':'Editor','name':'Fixture Editor'},
+                            {'role':'Illustrator','name':'Fixture Artist'}]}
+        manifest={'platform':'kdp','expected_text':[
+            {'text':'Fixture Book','box_px':[2100,300,2400,350]},
+            {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
+            'template':{'platform':'kdp','dpi':300,'size_inches':[12.304048,9.25],
+                'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                       'trim_width_inches':6,'spine_width_inches':.054048,
+                       'bleed_inches':.125}}}
+        pages=[{'lines':['Fixture Book','Fixture Author']},
+               {'lines':['Second Edition','Fixture Series, Volume 3',
+                         'Fixture Editor','Fixture Artist']}]
+        with tempfile.TemporaryDirectory() as tmp:
+            detail_path=Path(tmp)/'details.json'
+            manuscript=Path(tmp)/'pages.json'
+            save_json(detail_path,details);save_json(manuscript,pages)
+            self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
+
+            invalid=(
+                {'edition':{'number':0,'display_text':'Second Edition'}},
+                {'edition':{'number':True,'display_text':'Second Edition'}},
+                {'series':{'title':'Fixture Series'}},
+                {'contributors':[{'role':'Editor','name':'Fixture Editor'}]*2},
+                {'contributors':[{'role':'Editor','name':f'Contributor {i}'} for i in range(10)]},
+            )
+            for patch_value in invalid:
+                with self.subTest(details=patch_value):
+                    save_json(detail_path,{**details,**patch_value})
+                    with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
+                        inspect_book_details(detail_path,manifest,manuscript)
+
+            save_json(detail_path,details)
+            save_json(manuscript,pages[:1])
+            with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_MISMATCH'):
+                inspect_book_details(detail_path,manifest,manuscript)
 
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
