@@ -71,13 +71,13 @@ class PODTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, '^IMAGE_PIXEL_LIMIT$'):
                     similarity(candidate, reference)
 
-    def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, rights_patch=None,
+    def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000,
                        review_patch=None,editorial_patch=None,editorial_present=True,
                        editorial_evaluators=None,target_country='US',
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
                        text_layers=None,ocr_text=None,manuscript_inputs=True,font_inputs=True,
                        font_rights_inputs=True,font_rights_patch=None,book_details_inputs=True,
-                       book_details_patch=None,interior_spec_patch=None):
+                       book_details_patch=None,interior_spec_patch=None,rights_patch=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
