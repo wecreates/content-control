@@ -211,6 +211,23 @@ export class PodDB {
    WHERE q.account_id=$1 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp() AND p.rights_state='PASS'
    AND NOT p.permanently_unpublished ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId])).rows[0];
   if(!j)return null;
+  if(a.platform==='kdp'){
+   // KDP currently counts a title only on its first submission and resets its
+   // per-format weekly allowance every Sunday at 00:00 UTC. This lane supports
+   // paperback only. A retry/update of the same durable job therefore does not
+   // consume another weekly title, while a third distinct job fails closed.
+   const prior=(await c.query(`SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
+    WHERE r.account_id=$1 AND r.job_id=$2 AND (q.provider_id IS NOT NULL OR
+     r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC'))
+    LIMIT 1`,[accountId,j.id])).rows.length>0;
+   if(!prior){
+    const weekly=(await c.query(`SELECT count(DISTINCT r.job_id)::int AS n
+     FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
+     WHERE r.account_id=$1 AND q.platform='kdp'
+     AND r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC')`,[accountId])).rows[0].n;
+    if(weekly>=2)return null;
+   }
+  }
   const r=await c.query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1 RETURNING *",[j.id]);
   // Override the schema's transaction-time default: reservations must not age
   // while the claimant is waiting for the account lock.
