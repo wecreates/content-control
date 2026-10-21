@@ -42,7 +42,10 @@ It validates before signing and caps the grant expiry at the evidence's validity
 Its HTTP endpoint still accepts only job_id, never request-supplied economics.
 Content Control validates again after artifact checks, fresh-grant resolution and
 local database eligibility, immediately before the adapter call. An expired,
-incomplete, differently scoped or below-minimum budget cannot submit.
+incomplete, differently scoped or below-minimum budget cannot submit. KDP also
+requires the task-owned Amazon.com/USD list price copied into signed independent
+QA to match the grant price exactly before economics validation; an omitted,
+malformed or differently priced package cannot reach the adapter.
 
 The two repositories contain the same versioned economics validator and numeric
 test vectors. The MF cross-repository workflow pins Content Control and checks a

@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `12` |
+| `schema_version` | Integer `13` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -15,6 +15,7 @@ fresh grant. The file has exactly these fields:
 | `description` | Plain NFC printable customer-facing text, 1–4,000 characters; HTML, web URLs and email addresses are rejected by this bounded contract |
 | `keywords` | Ordered array of at most 7 unique NFC metadata phrases; empty is supported because KDP keywords are optional |
 | `primary_marketplace` | `amazon.com` for the currently supported `en_US` lane |
+| `list_price` | Exactly `{ "marketplace": "amazon.com", "currency": "USD", "amount_minor": <integer 1–25000> }`; the amount is the task-owned tax-exclusive Amazon.com paperback list price in cents |
 | `categories` | Ordered array of 1–3 unique category-path strings |
 | `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
 | `low_content` | Exact boolean `false`; this supported lane requires a substantive book interior and does not admit KDP low-content classification |
@@ -64,6 +65,16 @@ This pairing prevents a null ISBN from silently standing for an undecided setup
 choice. It does not prove ISBN ownership, format uniqueness, agency registration,
 or that title/author/imprint match the agency record; those remain live account
 and rights checks.
+
+The exact primary-marketplace list price is part of the canonical book-details
+hash and the signed QA receipt. Immediately before any KDP adapter call, Content
+Control requires its marketplace, currency and minor-unit amount to equal Money
+Factory's current verified grant price, and the existing economics gate then
+requires that same price to match the package-scoped receipts and cost evidence.
+The static gate enforces Amazon.com's current positive 250 USD maximum but does
+not guess the variable minimum price, royalty rate, printing cost, tax, currency
+conversion or margin. Those remain current provider/business evidence owned by
+Money Factory, plus live KDP Rights & Pricing readback.
 
 The description, keyword, category, primary-audience and cover-finish values are immutable task-owned inputs. The
 validator enforces the current field counts, the 4,000-character description
@@ -158,8 +169,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 11 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 12 and receive a fresh Money
+Schema versions 1 through 12 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 13 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 

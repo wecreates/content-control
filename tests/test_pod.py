@@ -86,9 +86,10 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':12,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':13,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -227,9 +228,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':12,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':13,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -259,9 +261,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':12,'title':'Same','subtitle':None,
+            details={'schema_version':13,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -289,9 +292,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':13,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -338,9 +342,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':12,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':13,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -400,9 +405,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':13,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
@@ -544,6 +550,38 @@ class PODTests(unittest.TestCase):
                 self.assertEqual(failed['binary_pass'],0,failed)
                 self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
 
+    def test_kdp_book_details_bind_primary_list_price(self):
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        alternate=self.package_result(lambda m,r:None,kdp=True,
+            book_details_patch={'list_price':{
+                'marketplace':'amazon.com','currency':'USD','amount_minor':1999}})
+        self.assertEqual(valid['binary_pass'],1,valid)
+        self.assertEqual(valid['list_price'],
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':2000})
+        self.assertEqual(alternate['binary_pass'],1,alternate)
+        self.assertNotEqual(valid['book_details_sha256'],
+                            alternate['book_details_sha256'])
+        invalid=(
+            None,
+            {},
+            {'marketplace':'amazon.com','currency':'USD'},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':0},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':-1},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':25001},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':20.0},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':True},
+            {'marketplace':'amazon.com','currency':'EUR','amount_minor':2000},
+            {'marketplace':'amazon.co.uk','currency':'USD','amount_minor':2000},
+            {'marketplace':'amazon.com','currency':'USD','amount_minor':2000,
+             'extra':True},
+        )
+        for value in invalid:
+            with self.subTest(list_price=value):
+                failed=self.package_result(lambda m,r:None,kdp=True,
+                    book_details_patch={'list_price':value})
+                self.assertEqual(failed['binary_pass'],0,failed)
+                self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
+
     def test_kdp_book_details_bind_primary_audience(self):
         general=self.package_result(lambda m,r:None,kdp=True)
         explicit=self.package_result(lambda m,r:None,kdp=True,
@@ -598,9 +636,10 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':13,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
+                'list_price':{'marketplace':'amazon.com','currency':'USD','amount_minor':2000},
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner',
                 'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,

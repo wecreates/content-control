@@ -182,6 +182,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 report['font_license_id']=font_rights['license_id']
                 report['manuscript_sha256']=inspect_manuscript(scoped_file(root,'interior.pdf'),manuscript,spec)
                 report['book_details_sha256']=inspect_book_details(book_details,m,manuscript)
+                report['list_price']=read_json(book_details)['list_price']
                 report['checks']['book_details']=True
                 from pod_cover_preflight import inspect_cover, inspect_spine_text, inspect_barcode_region
                 inspect_spine_text(m['template'],text)
