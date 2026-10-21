@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `11` |
+| `schema_version` | Integer `12` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -19,6 +19,7 @@ fresh grant. The file has exactly these fields:
 | `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
 | `low_content` | Exact boolean `false`; this supported lane requires a substantive book interior and does not admit KDP low-content classification |
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
+| `distribution_rights` | Exactly `{ "scope": "individual", "territories": ["US"] }`; the bounded lane selects only the United States and does not accept a worldwide-rights assertion |
 | `publication_date` | Exact `null`; the supported original-book lane intentionally leaves KDP’s previously-published date blank |
 | `release_plan` | Exactly `{ "mode": "release_now", "date": null }`; scheduled print releases remain unsupported and the choice does not authorize publication |
 | `expanded_distribution` | Exact boolean `false`; the bounded lane does not enroll a paperback in non-Amazon distribution without separate current territorial-rights, ISBN-eligibility, and economics evidence |
@@ -106,6 +107,15 @@ operator submits the book. Scheduled releases are deliberately unsupported becau
 they create a five-day file/detail lock and deadline risk. These fields are package
 metadata only: they do not bypass either publication flag or explicit launch approval.
 
+KDP requires a worldwide or individual-territory rights choice during print title
+setup. Because verified worldwide territorial evidence is absent, this bounded
+lane does not accept the worldwide option: `distribution_rights` must select the
+individual United States territory only. The exact object is part of the
+canonical book-details hash. It records the authorized task's intended UI
+selection and limits its scope; it is not legal clearance, does not prove U.S.
+rights, and does not replace the current concept-rights gate or live KDP readback.
+Other countries and worldwide scope require a later evidence-backed contract.
+
 Expanded Distribution is optional and may expose a paperback through bookstores,
 libraries, academic institutions, and other retailers outside Amazon. It has separate
 US/UK territorial-rights requirements, ISBN and format eligibility, a 40% royalty
@@ -148,8 +158,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 10 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 11 and receive a fresh Money
+Schema versions 1 through 11 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 12 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 

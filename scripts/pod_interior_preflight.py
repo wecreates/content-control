@@ -29,7 +29,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
                      'categories', 'primary_audience', 'low_content', 'publishing_rights',
-                     'publication_date', 'release_plan', 'expanded_distribution',
+                     'distribution_rights', 'publication_date', 'release_plan', 'expanded_distribution',
                      'isbn_source', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
                      'cover_finish', 'ai_generated'}
@@ -130,7 +130,7 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 11 or
+            details.get('schema_version') != 12 or
             details.get('low_content') is not False or
             not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
@@ -141,6 +141,7 @@ def inspect_book_details(details_path, manifest, manuscript):
             not description_valid or not keywords_valid or not categories_valid or
             details.get('primary_marketplace') != 'amazon.com' or
             details.get('publishing_rights') != 'copyright_owner' or
+            details.get('distribution_rights') != {'scope': 'individual', 'territories': ['US']} or
             details.get('publication_date') is not None or
             details.get('release_plan') != {'mode': 'release_now', 'date': None} or
             details.get('expanded_distribution') is not False or

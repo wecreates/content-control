@@ -86,11 +86,12 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':11,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':12,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -226,11 +227,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':11,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':12,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -257,11 +259,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':11,'title':'Same','subtitle':None,
+            details={'schema_version':12,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -286,11 +289,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':11,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -334,11 +338,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':11,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':12,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -395,11 +400,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':11,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
@@ -459,7 +465,7 @@ class PODTests(unittest.TestCase):
         valid=self.package_result(lambda m,r:None,kdp=True)
         self.assertEqual(valid['binary_pass'],1,valid)
         invalid=(
-            {'schema_version':10},
+            {'schema_version':11},
             {'description':None},
             {'description':'D'*4001},
             {'description':'Visit https://example.com for details'},
@@ -506,6 +512,25 @@ class PODTests(unittest.TestCase):
             with self.subTest(details=patch_value):
                 failed=self.package_result(lambda m,r:None,kdp=True,
                     book_details_patch=patch_value)
+                self.assertEqual(failed['binary_pass'],0,failed)
+                self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
+
+    def test_kdp_book_details_bind_individual_us_distribution_rights(self):
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        invalid=(
+            None,
+            'US',
+            {'scope':'worldwide','territories':['US']},
+            {'scope':'individual','territories':[]},
+            {'scope':'individual','territories':['CA']},
+            {'scope':'individual','territories':['US','CA']},
+            {'scope':'individual','territories':['US'],'extra':True},
+        )
+        for value in invalid:
+            with self.subTest(distribution_rights=value):
+                failed=self.package_result(lambda m,r:None,kdp=True,
+                    book_details_patch={'distribution_rights':value})
                 self.assertEqual(failed['binary_pass'],0,failed)
                 self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
 
@@ -573,11 +598,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':11,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':12,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
-                'publishing_rights':'copyright_owner','publication_date':None,
+                'publishing_rights':'copyright_owner',
+                'distribution_rights':{'scope':'individual','territories':['US']},'publication_date':None,
                 'release_plan':{'mode':'release_now','date':None},
                 'expanded_distribution':False,
                 'isbn_source':'kdp_free','isbn':None,
