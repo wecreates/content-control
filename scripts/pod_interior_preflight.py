@@ -28,7 +28,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
-                     'categories', 'primary_audience', 'low_content', 'publishing_rights',
+                     'list_price', 'categories', 'primary_audience', 'low_content', 'publishing_rights',
                      'distribution_rights', 'publication_date', 'release_plan', 'expanded_distribution',
                      'isbn_source', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
@@ -128,9 +128,16 @@ def inspect_book_details(details_path, manifest, manuscript):
     categories_valid = (isinstance(categories, list) and 1 <= len(categories) <= 3 and
                         all(metadata_text(category, 200) for category in categories) and
                         len({category.casefold() for category in categories}) == len(categories))
+    list_price = details.get('list_price') if isinstance(details, dict) else None
+    list_price_valid = (isinstance(list_price, dict) and
+                        set(list_price) == {'marketplace', 'currency', 'amount_minor'} and
+                        list_price.get('marketplace') == 'amazon.com' and
+                        list_price.get('currency') == 'USD' and
+                        type(list_price.get('amount_minor')) is int and
+                        0 < list_price['amount_minor'] <= 25000)
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 12 or
+            details.get('schema_version') != 13 or
             details.get('low_content') is not False or
             not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
@@ -140,6 +147,7 @@ def inspect_book_details(details_path, manifest, manuscript):
             details.get('language') != 'en' or
             not description_valid or not keywords_valid or not categories_valid or
             details.get('primary_marketplace') != 'amazon.com' or
+            not list_price_valid or
             details.get('publishing_rights') != 'copyright_owner' or
             details.get('distribution_rights') != {'scope': 'individual', 'territories': ['US']} or
             details.get('publication_date') is not None or
