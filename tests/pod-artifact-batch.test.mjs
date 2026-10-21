@@ -60,6 +60,19 @@ test('artifact bytes are snapshotted before database waits',async()=>{
  assert.deepEqual(inserted[1],original);assert.equal(inserted[2],'application/json');
 });
 
+test('regional-rights evidence accepts text/plain and rejects unapproved media before storage',async()=>{
+ const writes=[];
+ const db={tx:fn=>fn({query:async(sql,args)=>{
+  if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('INSERT'))writes.push(args);
+  return {rows:[]};
+ }})};
+ const body=Buffer.from('synthetic rights evidence; not legal approval');
+ assert.equal(await new ArtifactStore(db).put(body,'text/plain'),hash(body));
+ assert.equal(writes.length,1);assert.equal(writes[0][2],'text/plain');
+ await assert.rejects(new ArtifactStore({tx(){assert.fail('database reached');}}).put(body,'text/html'),/ARTIFACT_INVALID/);
+});
+
 test('deployment budget accepts only bounded positive decimal byte strings',()=>{
  assert.equal(artifactBudgetBytes({}),134217728);
  for(const bytes of ['1','64','134217728'])assert.equal(artifactBudgetBytes({POD_ARTIFACT_BUDGET_BYTES:bytes}),Number(bytes));
