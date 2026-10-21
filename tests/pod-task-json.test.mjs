@@ -5,17 +5,17 @@ import fs from 'node:fs/promises';
 import {createStoredTaskResolvers} from '../integrations/pod/task-resolver.mjs';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 
-const sha='a'.repeat(64),other='c'.repeat(64);
+const sha='a'.repeat(64),other='c'.repeat(64),image='d'.repeat(64);
 const descriptor={schema_version:1,templateScope:{product:'fixture-shirt',country:'US'},
- files:{'input.json':sha},source:'input.json',template:'input.json',textLayers:'input.json',
- assetRights:'input.json',reference:'input.json'};
+ files:{'input.png':image,'input.json':sha},source:'input.png',template:'input.json',textLayers:'input.json',
+ assetRights:'input.json',reference:'input.png'};
 const json=JSON.stringify(descriptor);
 function fixture(body){
  body=Buffer.isBuffer(body)?body:Buffer.from(body);
  const hash=crypto.createHash('sha256').update(body).digest('hex'),reads=[];
  const resolver=createStoredTaskResolvers({}, {env:{},store:{get:async id=>{
   reads.push(id);return id===hash?{body,media_type:'application/json'}:
-   {body:Buffer.from('fixture input'),media_type:'application/octet-stream'};
+   {body:Buffer.from('fixture input'),media_type:id===image?'image/png':'application/json'};
  }}});
  return {hash,reads,resolve:()=>resolver.resolveTask({brief:{task_sha256:hash}}),resolver};
 }
@@ -57,7 +57,7 @@ test('valid Unicode and escaped JSON restore exact input bytes with caller-owned
  try{
   assert.deepEqual(task.templateScope,{product:'Café 雪',country:'US'});
   assert.equal(await fs.readFile(task.source,'utf8'),'fixture input');
-  assert.deepEqual(f.reads,[f.hash,sha]);
+  assert.deepEqual(f.reads,[f.hash,image,sha]);
  }finally{await task.cleanup();}
  await assert.rejects(fs.stat(task.assetRoot),{code:'ENOENT'});
 });
