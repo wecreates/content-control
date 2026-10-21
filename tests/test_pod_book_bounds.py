@@ -603,7 +603,8 @@ const brief={id:'fixture',account_id:'a',business_id:'b',platform:'kdp',destinat
 let held=0,cleaned=0;
 const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYTHON:process.argv[5],
  POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
- db:{claimProduction:async()=>({id:brief.id,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async()=>{held++;}},
+ db:{claimProduction:async()=>({id:brief.id,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async()=>{held++;},
+  tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
  resolveGrant:async()=>sign({audience:'content-control:pod',job_id:brief.id,account_id:'a',business_id:'b',platform:'kdp',
  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
  resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
@@ -622,8 +623,11 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                 (scripts/'pod_kdp_interior_template_import.py').symlink_to(
                     repository/'scripts/pod_kdp_interior_template_import.py')
                 (scripts/'pod_asset_generator.py').write_text(
-                    "from pathlib import Path\nPath('started').write_text('yes')\n"
-                    "Path('output/manifest.json').write_text('{\"files\":{},\"package_sha256\":\"'+'a'*64+'\"}')\n")
+                    "from pathlib import Path\nimport hashlib,json\nPath('started').write_text('yes')\n"
+                    "names=['print.png','art-mask.png','text-mask.png','cover.pdf','interior.pdf','interior.receipt.json']\n"
+                    "files={}\n"
+                    "for name in names:\n data=name.encode();Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
+                    "Path('output/manifest.json').write_text(json.dumps({'files':files,'package_sha256':'a'*64}))\n")
                 (scripts/'pod_book_package.py').write_text('pass\n')
                 result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),
                                       str(count),sys.executable,str(interior_archive),digest(interior_archive),MEMBER],

@@ -161,18 +161,29 @@ test('package reads preserve exact bytes, order and media types',()=>fixture(asy
  assert.deepEqual(result.map(x=>x.body),Object.values(files));
  assert.deepEqual(result.map(x=>x.mediaType),['image/png','application/pdf','application/json']);
 }));
+test('package reads reject empty, unknown and platform-incomplete manifests before persistence',()=>fixture(async root=>{
+ await assert.rejects(readPackageArtifacts(root,{}),/ARTIFACT_BATCH_INVALID/);
+ await fs.writeFile(path.join(root,'unknown.pdf'),'unexpected package member');
+ await assert.rejects(readPackageArtifacts(root,{'unknown.pdf':hash('unexpected package member')}),/ARTIFACT_PACKAGE_INVALID/);
+ for(const name of ['print.png','art-mask.png','text-mask.png'])await fs.writeFile(path.join(root,name),name);
+ const base=Object.fromEntries(['print.png','art-mask.png','text-mask.png'].map(name=>[name,hash(name)]));
+ await assert.rejects(readPackageArtifacts(root,{'print.png':base['print.png']},{platform:'redbubble'}),/ARTIFACT_PACKAGE_INVALID/);
+ await assert.rejects(readPackageArtifacts(root,base,{platform:'kdp'}),/ARTIFACT_PACKAGE_INVALID/);
+ await assert.rejects(readPackageArtifacts(root,base,{platform:'etsy'}),/ARTIFACT_PACKAGE_INVALID/);
+ assert.equal((await readPackageArtifacts(root,base,{platform:'redbubble'})).length,3);
+}));
 test('package file corruption and escaped symlinks fail before persistence',()=>fixture(async root=>{
  await fs.mkdir(path.join(root,'package'));await fs.writeFile(path.join(root,'outside'),'secret fixture');
- await fs.symlink(path.join(root,'outside'),path.join(root,'package','escape'));
- await assert.rejects(readPackageArtifacts(path.join(root,'package'),{escape:hash('secret fixture')}),/ARTIFACT_PATH_INVALID/);
- await fs.writeFile(path.join(root,'package','wrong.png'),'wrong');
- await assert.rejects(readPackageArtifacts(path.join(root,'package'),{'wrong.png':hash('expected')}),/ARTIFACT_HASH_MISMATCH/);
+ await fs.symlink(path.join(root,'outside'),path.join(root,'package','print.png'));
+ await assert.rejects(readPackageArtifacts(path.join(root,'package'),{'print.png':hash('secret fixture')}),/ARTIFACT_PATH_INVALID/);
+ await fs.writeFile(path.join(root,'package','art-mask.png'),'wrong');
+ await assert.rejects(readPackageArtifacts(path.join(root,'package'),{'art-mask.png':hash('expected')}),/ARTIFACT_HASH_MISMATCH/);
 }));
 test('file and aggregate limits are applied before unbounded reads',()=>fixture(async root=>{
- const handle=await fs.open(path.join(root,'large.png'),'w');await handle.truncate(16777217);await handle.close();
- await assert.rejects(readPackageArtifacts(root,{'large.png':'a'.repeat(64)}),/ARTIFACT_INVALID/);
- await fs.writeFile(path.join(root,'a.png'),'123456');await fs.writeFile(path.join(root,'b.png'),'654321');
- await assert.rejects(readPackageArtifacts(root,{'a.png':hash('123456'),'b.png':hash('654321')},{maxBatchBytes:10}),/ARTIFACT_BATCH_TOO_LARGE/);
- await fs.mkdir(path.join(root,'folder'));
- await assert.rejects(readPackageArtifacts(root,{folder:'a'.repeat(64)}),/ARTIFACT_INVALID/);
+ const handle=await fs.open(path.join(root,'print.png'),'w');await handle.truncate(16777217);await handle.close();
+ await assert.rejects(readPackageArtifacts(root,{'print.png':'a'.repeat(64)}),/ARTIFACT_INVALID/);
+ await fs.writeFile(path.join(root,'print.png'),'123456');await fs.writeFile(path.join(root,'art-mask.png'),'654321');
+ await assert.rejects(readPackageArtifacts(root,{'print.png':hash('123456'),'art-mask.png':hash('654321')},{maxBatchBytes:10}),/ARTIFACT_BATCH_TOO_LARGE/);
+ await fs.mkdir(path.join(root,'text-mask.png'));
+ await assert.rejects(readPackageArtifacts(root,{'text-mask.png':'a'.repeat(64)}),/ARTIFACT_INVALID/);
 }));

@@ -39,8 +39,9 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   // Synthetic stages expose whether the coordinator launched production. They
   // are not template approval, Python quality tests or marketplace evidence.
   await fs.writeFile(path.join(root,'scripts/pod_asset_generator.py'),
-   "require('node:fs').writeFileSync('started','yes');require('node:fs').writeFileSync('output/manifest.json',JSON.stringify({files:{},package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
-  await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),"require('node:fs').writeFileSync('book-started','yes');");
+   "const fs=require('node:fs'),c=require('node:crypto'),names=['print.png','art-mask.png','text-mask.png'];fs.writeFileSync('started','yes');for(const n of names)fs.writeFileSync('output/'+n,n);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(n).digest('hex')]));fs.writeFileSync('output/manifest.json',JSON.stringify({files,package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
+  await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),
+   "const fs=require('node:fs'),c=require('node:crypto');fs.writeFileSync('book-started','yes');const names=['cover.pdf','interior.pdf','interior.receipt.json'];for(const n of names)fs.writeFileSync('output/'+n,n);const manifest=JSON.parse(fs.readFileSync('output/manifest.json'));for(const n of names)manifest.files[n]=c.createHash('sha256').update(n).digest('hex');fs.writeFileSync('output/manifest.json',JSON.stringify(manifest));");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
    "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_interior_template_import.py'),
@@ -64,7 +65,8 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
    db:{claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
     completeProduction:async()=>{completed++;return {pass:true};},
-    assertProducible:async()=>{localChecks++;await localPolicy?.({env,controller,originalNow});}},
+    assertProducible:async()=>{localChecks++;await localPolicy?.({env,controller,originalNow});},
+    tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>{grantCalls++;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
