@@ -446,7 +446,7 @@ class PODTests(unittest.TestCase):
         self.assertEqual(matte['binary_pass'],1,matte)
         self.assertEqual(glossy['binary_pass'],1,glossy)
         self.assertNotEqual(matte['book_details_sha256'],glossy['book_details_sha256'])
-        for value in (None,'Matte','satin',True):
+        for value in (None,'Matte','satin',True,[],{}):
             with self.subTest(cover_finish=value):
                 failed=self.package_result(lambda m,r:None,kdp=True,
                     book_details_patch={'cover_finish':value})
