@@ -3345,3 +3345,87 @@ remain unverified. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted. This run did not claim a continuously
 running self-hosted worker.
+
+## Run receipt r167 — bind generated package manifests to platform media contracts (2026-10-21 UTC)
+
+### Scope
+
+This run closed a generated-package ingestion gap. The production worker
+previously accepted an empty, partial, extra or unknown output manifest and
+inferred media types from filename extensions, including a fallback to
+`image/png`. Generated packages now use an exact platform contract:
+`print.png`, `art-mask.png` and `text-mask.png` for the supported
+merchandise platforms, with `cover.pdf`, `interior.pdf` and
+`interior.receipt.json` additionally required for KDP. Empty, incomplete,
+extra, unknown-platform and unsupported-platform packages fail closed before
+artifact storage. Media types come from the exact filename contract rather than
+an extension fallback. Etsy remained excluded. The failed production-database
+administration route was not retried because no credible access-path change was
+observed.
+
+### Content Control implementation and hosted verification
+
+- PR #425 initial head
+  `a8124efe8495d94620dc01786d714a8a5f28564a` was not accepted: integration
+  run `39688770606`, job `119529417892`, exposed one stale synthetic KDP
+  fixture after the Node suite had passed. The fixture was corrected to emit
+  the exact KDP package; the failed run is not counted as acceptance evidence.
+- PR #425 exact tested head:
+  `5eb2955aa83c439a858106ed1cc26979e119d5e6`.
+- Focused local Node verification passed 79 tests with zero failures/skips.
+  The complete local `test_pod_book_bounds.py` suite passed 93 tests with zero
+  failures/skips. `node --check` and `git diff --check` passed.
+- A broader local production-E2E command could not start because the clean
+  worktree did not have the `pg` dependency installed; it was not counted as
+  evidence. The hosted integration and container jobs exercised the required
+  dependency environment instead.
+- POD integration gates run `39689123998`, job `119530610386`: success.
+- POD container runtime gates run `39689124039`, job `119531020618`:
+  success, including Python QA/rendering, Node/PostgreSQL tests, real
+  print/review generation and startup with production/publication disabled.
+- Guarded Content Control merge:
+  `33104098301dc639dd0a8b32c2d7cd62939abf63`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #121 exact tested head:
+  `418d51fd3df85f233649443918faa3d08df76973`.
+- The cross-repository workflow pins Content Control merge
+  `33104098301dc639dd0a8b32c2d7cd62939abf63` while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `39690026627`, job
+  `119533628199`: success.
+- Guarded Money Factory merge:
+  `07b170bb43142812fe6613ab7c209a2a9fd02613`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `33104098301dc639dd0a8b32c2d7cd62939abf63` and created deployment
+  `dep-dbck5qtg1s2s73855cd0`.
+- Event `evt-dbck5qv40dgc7390qerg` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T22:55:39.771741Z`;
+  deploy-ended event `evt-dbck5r4tuius73c6glhg` followed at
+  `2026-10-21T22:55:40.096776Z` with failed status.
+- No build or hosted rollout of r167 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one generated-package manifest and media-confusion gap only.
+Passing synthetic, PostgreSQL and container tests are not live acceptance.
+Restricted production database/schema verification, durable
+retention/recovery drills, deployed hybrid dependencies, mounted current Money
+Factory authority and real grants/revocation, authorized accounts and market
+sources, current regional rights and official-template evidence, substantive
+KDP editorial/preview acceptance, independent QA/remediation outcomes,
+permitted live adapters for KDP, Redbubble, TeePublic, Zazzle and Spreadshirt,
+actual economics and financial reconciliation, owner-phone operations,
+monitoring/recovery drills, measured capacity, real end-to-end acceptance and
+controlled launch readiness remain unverified. All 24 acceptance areas remain
+OPEN. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run did not claim a continuously
+running self-hosted worker.
