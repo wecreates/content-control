@@ -15,7 +15,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
  router.get('/status',(_req,res)=>res.json({...status?.(),publication_enabled:false,publication_requested:env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true',adapters_verified:false}));
  router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
- router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf'],limit:'16mb'}),async(req,res)=>{
+ router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf','text/plain'],limit:'16mb'}),async(req,res)=>{
   try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
   catch{res.status(409).json({error:'ARTIFACT_STORAGE_BLOCKED'});}
  });
