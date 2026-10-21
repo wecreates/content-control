@@ -30,6 +30,9 @@ interior-template archive described in
 [KDP_INTERIOR_TEMPLATE_SOURCE.md](KDP_INTERIOR_TEMPLATE_SOURCE.md).
 `bookDetails` binds the title setup, while `regionalRightsEvidence` is the
 retained regular file whose bytes must hash to the signed regional-rights digest.
+Upload retained regional-rights evidence through the authenticated artifact route
+as `text/plain`; the same 16 MiB object ceiling, immutable SHA-256 identity and
+deployment storage budget apply.
 
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials
