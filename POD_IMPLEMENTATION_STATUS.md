@@ -3076,3 +3076,97 @@ end-to-end acceptance and controlled launch readiness remain unverified. All 24
 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted. This run did not claim a continuously running self-hosted worker.
+
+## Run receipt r164 — recover current artifact media contracts (2026-10-21 UTC)
+
+### Scope
+
+This run repaired a durability regression created by the accepted KDP/right-input
+media expansion. Authenticated artifact storage accepted `text/plain` for retained
+regional-rights and font-license evidence and `application/zip` for retained KDP
+template archives, but both encrypted recovery implementations still allowed only
+the older PNG/PDF/JSON/TTF set. A legitimate current artifact table containing
+either new media type therefore blocked artifact-only export and full ten-table
+state export. Both recovery paths now consume the same exact exported media
+contract as authenticated storage, preserve those types without relabeling, and
+continue to reject unknown legacy/foreign types. This improves acceptance area 2
+recovery correctness without claiming a live backup or restoration drill. Etsy
+remained excluded. The failed production-database administration route was not
+retried because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #419 exact tested head:
+  `10fbf178fd693a72e8d1abe9cc75457b1d5c51ef`.
+- The hosted final tree
+  `0ffc8e79298a777e359a7a4ea6e4c2e9b0c053f1` exactly matched the locally
+  tested tree.
+- ArtifactStore exports one immutable six-type contract: `image/png`,
+  `application/pdf`, `application/json`, `font/ttf`, `text/plain` and
+  `application/zip`. Artifact-only and full-state archive validation now use
+  that contract.
+- New regressions export, offline-verify and restore every current type, including
+  rights/font-license text and retained KDP ZIPs, and reject `text/html`.
+- Focused local artifact/state recovery tests: 79 passed, zero failed/skipped.
+  An attempted aggregate local command was not evidence because this fresh clone
+  had not installed the `pg` package; the hosted suites installed locked
+  dependencies and ran the complete PostgreSQL coverage.
+- POD integration gates run `39663522121`, job `119442428646`: success.
+- POD container runtime gates run `39663522224`, job `119442429122`:
+  success, including the production Docker image, Python QA/rendering,
+  Node/PostgreSQL recovery tests, real print/review workflow and startup with
+  publication disabled.
+- Guarded Content Control merge:
+  `379fcd306a9f624e9a089e07463715a774186a43`.
+
+### Money Factory dependent pin and hosted verification
+
+- The intervening Money Factory head
+  `398f963e2e9538c0dbbb5623253ee1888badeeea` changed only
+  `FREE_MONITOR_EVENTS.json` and `FREE_MONITOR_STATE.json`; it was preserved
+  as PR #117's exact base.
+- PR #117 exact tested head:
+  `71649b9c432b79684bdec251523785c383dc272c`.
+- The cross-repository workflow pins Content Control merge
+  `379fcd306a9f624e9a089e07463715a774186a43` and exercises the current
+  state-archive contract alongside KDP metadata, original manuscript/font
+  rights, retained official-template sources, CMYK cover, editorial-bound QA,
+  complete Node tests and complete Python tests.
+- POD cross-repository review verification run `39664608458`, job
+  `119446200851`: success.
+- Guarded Money Factory merge:
+  `a906818256eacbb64787fd3c3e36f095b90abeb7`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `379fcd306a9f624e9a089e07463715a774186a43` and created deployment
+  `dep-dbchd64s728c7392ge6g` at `2026-10-21T19:46:32.753777Z`.
+- Event `evt-dbchd6dc968c73d30ovg` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T19:46:33.984077Z`;
+  deploy-ended event `evt-dbchd6ma6ers73aakg2g` followed at
+  `2026-10-21T19:46:34.411757Z`. The deployment finished
+  `build_failed` at `2026-10-21T19:46:34.379005Z`.
+- No hosted rollout of r164 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access, or network widening
+  was attempted.
+
+### Acceptance truth
+
+Current artifact formats can now pass both implemented encrypted recovery paths,
+but synthetic and hosted disposable tests are not a retained production snapshot
+or authorized restoration drill. Restricted production database/schema
+verification, independent durable retention, actual restore/RTO/RPO evidence,
+source-database expiry resolution, deployed hybrid dependencies, live Money
+Factory authority and grants/revocation, authorized accounts and market sources,
+current rights and official-template provenance, substantive KDP
+editorial/preview acceptance, calibrated independent QA/remediation, permitted
+live adapters for KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual
+economics/financial reconciliation, owner-phone operations, monitoring drills,
+measured capacity, end-to-end acceptance and controlled launch readiness remain
+unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run did not claim a continuously
+running self-hosted worker.
