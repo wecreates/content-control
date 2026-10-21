@@ -49,6 +49,19 @@ def inspect_book_details(details_path, manifest, manuscript):
     def contains_number(value, number):
         return re.search(rf'(?<!\d){number}(?!\d)', value) is not None
 
+    def valid_isbn(value):
+        if not clean(value, 32):
+            return False
+        match = re.fullmatch(
+            r'(?:ISBN(?:-13)?:? +)?(?P<number>[0-9]+(?:[- ][0-9]+)*)', value)
+        if match is None:
+            return False
+        digits = ''.join(character for character in match['number']
+                         if character in '0123456789')
+        return (len(digits) == 13 and digits.startswith(('978', '979')) and
+                sum((1 if index % 2 == 0 else 3) * int(character)
+                    for index, character in enumerate(digits)) % 10 == 0)
+
     edition = details.get('edition') if isinstance(details, dict) else None
     series = details.get('series') if isinstance(details, dict) else None
     contributors = details.get('contributors') if isinstance(details, dict) else None
@@ -85,8 +98,8 @@ def inspect_book_details(details_path, manifest, manuscript):
             details.get('language') != 'en' or
             details.get('subtitle') is not None and not metadata_text(details['subtitle']) or
             len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
-            details.get('isbn') is not None and not clean(details['isbn'], 32) or
-            details.get('imprint') is not None and not clean(details['imprint'], 200) or
+            details.get('isbn') is not None and not valid_isbn(details['isbn']) or
+            details.get('imprint') is not None and not metadata_text(details['imprint'], 100) or
             type(details.get('title_page')) is not int or details['title_page'] not in (1, 3) or
             not edition_valid or not series_valid or not contributors_valid):
         raise ValueError('KDP_BOOK_DETAILS_INVALID')
