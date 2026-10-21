@@ -17,7 +17,7 @@ fresh grant. The file has exactly these fields:
 | `title_page` | Physical PDF page `1` or `3` |
 | `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text> }` |
 | `series` | `null` or exactly `{ "title": <metadata text>, "display_text": <metadata text> }` |
-| `contributors` | Ordered array of at most 10 unique `{ "role": <metadata text>, "name": <metadata text> }` records |
+| `contributors` | Ordered array of at most 9 additional unique `{ "role": <metadata text>, "name": <metadata text> }` records; together with `author_name`, the total is at most 10 |
 
 Independent QA requires title, optional subtitle and author as exactly one
 separate front-cover text layer each, at least 0.125 inch inside the front trim.
