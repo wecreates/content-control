@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `9` |
+| `schema_version` | Integer `10` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -19,6 +19,8 @@ fresh grant. The file has exactly these fields:
 | `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
 | `low_content` | Exact boolean `false`; this supported lane requires a substantive book interior and does not admit KDP low-content classification |
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
+| `publication_date` | Exact `null`; the supported original-book lane intentionally leaves KDP’s previously-published date blank |
+| `release_plan` | Exactly `{ "mode": "release_now", "date": null }`; scheduled print releases remain unsupported and the choice does not authorize publication |
 | `isbn_source` | Exact lowercase `kdp_free` or `owned`; this immutable task choice controls the required ISBN/imprint pairing |
 | `isbn` | Exactly `null` for `kdp_free`, or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979 for `owned`; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
 | `imprint` | Exactly `null` for `kdp_free`, or metadata text of at most 100 characters for `owned` |
@@ -96,6 +98,13 @@ so `low_content` must be exactly `false` and is part of the canonical task-owned
 The validator does not infer this classification from repetitive page layout; substantive
 editorial review and live KDP readback remain separate requirements.
 
+The supported lane is a first publication, so `publication_date` must be null rather
+than an invented prior date. Its release plan is fixed to `release_now` with no date;
+that means availability only after KDP review if and when a separately authorized
+operator submits the book. Scheduled releases are deliberately unsupported because
+they create a five-day file/detail lock and deadline risk. These fields are package
+metadata only: they do not bypass either publication flag or explicit launch approval.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -108,6 +117,9 @@ Sources rechecked October 21, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+- [Release Date Options](https://kdp.amazon.com/en_US/help/topic/GZUV7SNV728WT4QE)
+- [Schedule a Release](https://kdp.amazon.com/en_US/help/topic/GDTMGBCWHAY35NK4)
 - [What is an ISBN and Imprint?](https://kdp.amazon.com/en_US/help/topic/G201834170)
 - [Get an ISBN](https://kdp.amazon.com/en_US/help/topic/GTJ8LBXL6Z4WV5QX)
 - [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
@@ -123,8 +135,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 8 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 9 and receive a fresh Money
+Schema versions 1 through 9 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 10 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
