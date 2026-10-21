@@ -80,7 +80,7 @@ test('authenticated KDP template archive upload accepts and preserves applicatio
  const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  try{
-  const body=Buffer.from('PK\\x03\\x04synthetic bounded KDP template archive');
+  const body=Buffer.concat([Buffer.from([0x50,0x4b,0x03,0x04]),Buffer.from('synthetic bounded KDP template archive')]);
   const response=await fetch(`http://127.0.0.1:${server.address().port}/artifacts`,{method:'POST',
    headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/zip'},body});
   assert.equal(response.status,201);assert.deepEqual(await response.json(),{
