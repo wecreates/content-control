@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {exportStateArchive,verifyStateArchive,restoreStateArchive} from '../integrations/pod/state-archive.mjs';
+import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {stateArchiveCLI} from '../scripts/pod_state_archive.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
@@ -12,11 +13,12 @@ import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
 
 const key=Buffer.alloc(32,31),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false',POD_PRODUCTION_ENABLED:'false',POD_OUTBOX_ENABLED:'false'};
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
+const artifactRecord=(body,mediaType)=>JSON.stringify({sha256:digest(body),body:'\\x'+Buffer.from(body).toString('hex'),media_type:mediaType});
 async function fixture(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-state-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
  const directory=path.join(root,'snapshot'),queries=[];
  const versions=await Promise.all(['001','002','003','004','005'].map(async n=>({version:n+'_pod.sql',sha256:digest(await fs.readFile(new URL('../migrations/'+n+'_pod.sql',import.meta.url)))})));
- const data={pod_artifacts:[JSON.stringify({sha256:digest('fixture'),body:'\\x'+Buffer.from('fixture').toString('hex'),media_type:'application/json'})],
+ const data={pod_artifacts:[artifactRecord('fixture','application/json')],
   pod_financial_events:['{"id":"fixture","amount_minor":9007199254740993}']};
  let table,cursor=0;
  const client={release(){},query:async(sql,args)=>{
@@ -84,6 +86,15 @@ test('state archive is offline verifiable, encrypted and scoped to the ten POD t
  assert.match(raw.toString(),/9007199254740993/);
  if(process.platform!=='win32')assert.equal((await fs.stat(path.join(f.directory,'catalog.pod'))).mode&0o777,0o600);
 });
+test('state recovery preserves every current artifact media type',async t=>{
+ const f=await fixture(t),bodies=ARTIFACT_MEDIA_TYPES.map((mediaType,index)=>`state-${index}-${mediaType}`);
+ f.data.pod_artifacts=bodies.map((body,index)=>artifactRecord(body,ARTIFACT_MEDIA_TYPES[index]));
+ const exported=await exportStateArchive(f.db,{...f,key,env});
+ const verified=await verifyStateArchive({...f,key});
+ assert.equal(exported.records,ARTIFACT_MEDIA_TYPES.length+1);
+ assert.equal(verified.records,ARTIFACT_MEDIA_TYPES.length+1);
+ assert.equal(verified.artifact_bytes,bodies.reduce((total,body)=>total+Buffer.byteLength(body),0));
+});
 test('wrong key, tampered row, missing row, and aborted verification fail closed',async t=>{
  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
  await assert.rejects(verifyStateArchive({...f,key:Buffer.alloc(32,8)}),/ARCHIVE_AUTH_FAILED/);
@@ -108,11 +119,12 @@ test('catalog cannot introduce tables, duplicate indexes or mismatching migratio
  }
 });
 test('invalid source or exhausted artifact budget cannot create a complete catalog',async t=>{
- for(const failure of ['checksum','oversized','artifact']){
+ for(const failure of ['checksum','oversized','artifact','media-type']){
   const f=await fixture(t);
   if(failure==='checksum')f.versions[0].sha256='0'.repeat(64);
   if(failure==='oversized')f.data.pod_financial_events=[null];
   if(failure==='artifact')f.data.pod_artifacts[0]=f.data.pod_artifacts[0].replace('66697874757265','00697874757265');
+  if(failure==='media-type')f.data.pod_artifacts[0]=f.data.pod_artifacts[0].replace('application/json','text/html');
   await assert.rejects(exportStateArchive(f.db,{...f,key,env}));
   await assert.rejects(fs.stat(path.join(f.directory,'catalog.pod')),{code:'ENOENT'});
   assert.equal(f.queries.at(-1),'ROLLBACK');

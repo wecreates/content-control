@@ -4,11 +4,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
-import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
+import {ARTIFACT_MEDIA_TYPES,ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
+
+test('artifact media contract is exact and includes recoverable KDP inputs',()=>{
+ assert.deepEqual(ARTIFACT_MEDIA_TYPES,[
+  'image/png','application/pdf','application/json','font/ttf','text/plain','application/zip',
+ ]);
+});
 
 test('artifact reads require an actual hash string before database access',async()=>{
  const store=new ArtifactStore({active(){},pool:{query(){assert.fail('database reached');}}});

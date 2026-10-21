@@ -7,13 +7,17 @@ import crypto from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
+import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
 import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
 function database(values=[]){
- const rows=new Map(values.map(body=>[sha(body),{body,media_type:'application/json'}]));let queries=[],index=0;
+ const rows=new Map(values.map(value=>{
+  const body=Buffer.isBuffer(value)?value:value.body;
+  return [sha(body),{body,media_type:Buffer.isBuffer(value)?'application/json':value.mediaType}];
+ }));let queries=[],index=0;
  const query=async(sql,args=[])=>{
   queries.push(sql);
   if(sql.startsWith('DECLARE')){index=0;return {rows:[]};}
@@ -52,6 +56,22 @@ test('encrypted export and restore preserve exact bytes with idempotent retries'
  const target=database();assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,2);
  assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,0);
  assert.deepEqual(target.rows,source.rows);
+});
+test('artifact recovery preserves every current upload media type',async t=>{
+ const directory=await workspace(t),values=ARTIFACT_MEDIA_TYPES.map((mediaType,index)=>({
+  body:Buffer.from(`recoverable-${index}-${mediaType}`),mediaType,
+ }));
+ const source=database(values),exported=await exportArtifactLibrary(source,{directory,key});
+ assert.equal(exported.objects,ARTIFACT_MEDIA_TYPES.length);
+ assert.equal((await verifyArtifactLibrary({directory,key})).objects,ARTIFACT_MEDIA_TYPES.length);
+ const target=database();
+ assert.equal((await restoreArtifactLibrary(target,{directory,key,env})).inserted,ARTIFACT_MEDIA_TYPES.length);
+ assert.deepEqual(target.rows,source.rows);
+});
+test('artifact recovery rejects media types outside the upload contract',async t=>{
+ const directory=await workspace(t),source=database([{body:Buffer.from('unsupported'),mediaType:'text/html'}]);
+ await assert.rejects(exportArtifactLibrary(source,{directory,key}),/ARCHIVE_ARTIFACT_INVALID/);
+ await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),{code:'ENOENT'});
 });
 test('corrupt late artifact rolls back earlier inserts',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('one'),Buffer.from('two')]);await exportArtifactLibrary(source,{directory,key});

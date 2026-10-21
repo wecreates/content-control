@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
+import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 // Dependency order is fixed in code, never taken from an archive or request.
 const TABLES=Object.freeze({
@@ -13,6 +14,7 @@ const TABLES=Object.freeze({
 });
 const NAMES=Object.keys(TABLES),MIGRATIONS=['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'];
 const MAX_ROW=40*1024*1024,MAX_TOTAL=320*1024*1024,MAX_ROWS=10000,MAX_CATALOG=4*1024*1024;
+const ARTIFACT_TYPES=new Set(ARTIFACT_MEDIA_TYPES);
 const hash=body=>crypto.createHash('sha256').update(body).digest('hex');
 const recordFile=index=>String(index).padStart(5,'0')+'.pod';
 const aad=(id,item)=>`pod:state:v1:${id}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
@@ -48,7 +50,7 @@ function inspectRecord(body,table,columns){
  if(!row||Array.isArray(row)||JSON.stringify(Object.keys(row))!==JSON.stringify(columns.map(c=>c.name)))throw Error('STATE_ARCHIVE_RECORD_INVALID');
  if(table!=='pod_artifacts')return 0;
  if(typeof row.body!=='string'||!/^\\x(?:[a-f0-9]{2})+$/.test(row.body)||row.body.length>2+2*16777216||
-  !['image/png','application/pdf','application/json','font/ttf'].includes(row.media_type))throw Error('STATE_ARCHIVE_ARTIFACT_INVALID');
+  !ARTIFACT_TYPES.has(row.media_type))throw Error('STATE_ARCHIVE_ARTIFACT_INVALID');
  const binary=Buffer.from(row.body.slice(2),'hex');
  if(hash(binary)!==row.sha256)throw Error('STATE_ARCHIVE_ARTIFACT_INVALID');
  return binary.length;
