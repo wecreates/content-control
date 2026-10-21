@@ -1,5 +1,9 @@
 import crypto from 'node:crypto';
 export const MAX_PACKAGE_BYTES=64*1024*1024;
+export const ARTIFACT_MEDIA_TYPES=Object.freeze([
+ 'image/png','application/pdf','application/json','font/ttf','text/plain','application/zip',
+]);
+const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
 
 // Bounded PostgreSQL backend for the initial free-tier lane. Large libraries must
 // use an independently verified durable object-store implementation of this contract.
@@ -17,7 +21,7 @@ export class ArtifactStore {
   const unique=new Map(),hashes=[];let total=0;
   for(const artifact of artifacts){
    const {body,mediaType}=artifact||{};
-   if(!Buffer.isBuffer(body)||!body.length||body.length>this.maxObjectBytes||!['image/png','application/pdf','application/json','font/ttf','text/plain','application/zip'].includes(mediaType))throw Error('ARTIFACT_INVALID');
+   if(!Buffer.isBuffer(body)||!body.length||body.length>this.maxObjectBytes||!artifactMediaTypes.has(mediaType))throw Error('ARTIFACT_INVALID');
    total+=body.length;if(total>this.maxBatchBytes)throw Error('ARTIFACT_BATCH_TOO_LARGE');
    // Callers retain ownership of their mutable buffers. Hash and persist one
    // private snapshot so a lock/connection wait cannot separate identity/bytes.
