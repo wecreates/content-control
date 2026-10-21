@@ -2990,3 +2990,89 @@ live adapter acceptance, financial reconciliation, end-to-end publication and
 controlled launch readiness remain unverified. All 24 acceptance areas remain
 OPEN. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
+## Run receipt r163 — bind stored task artifacts to consuming media contracts (2026-10-21 UTC)
+
+### Scope
+
+This run closed a stored-task input-integrity gap. Authenticated artifact upload
+already preserved a caller-supplied media type, but the task resolver did not
+require that stored metadata to match the role consuming the bytes. A mislabeled
+image, JSON evidence, font, rights record, or retained KDP template archive could
+therefore be restored under an incompatible task role. The resolver now binds
+each supported role to an exact media contract before any bytes are written to
+its disposable workspace, rejects incompatible descriptor aliases, and removes
+partial workspace state on mismatch. This is a trust-boundary repair across
+stored task intake, KDP inputs and security; it does not establish provenance,
+rights, editorial acceptance, or a live platform result. Etsy remained
+excluded. The failed production-database administration route was not retried
+because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #417 initial head `daa6d338adaf56e4365ef433940e1546873fb360`
+  exposed two stale test assertions in run `39655832830`, job
+  `119415701299`: duplicate-key fixtures still searched for the previous JSON
+  source filename after the fixture became media-correct. That failed head is
+  not acceptance evidence and was not merged.
+- PR #417 corrected exact tested head:
+  `80f8996ed08ad15c2a54e81920aa8f44ba4de0d5`.
+- Stored task roles now require their exact declared media type: PNG sources and
+  references, JSON templates/text layers/rights and KDP metadata, TTF fonts,
+  plain-text font licences/regional-rights evidence, and ZIP retained KDP
+  template sources. Incompatible aliases or restored metadata fail with the
+  sanitized fixed reason `TASK_MEDIA_TYPE_INVALID`.
+- Regression coverage verifies media-correct fixtures, JSON/PNG/ZIP mismatches,
+  incompatible aliases and cleanup after rejection.
+- Corrected POD integration gates run `39656093426`, job
+  `119416628412`: success.
+- Corrected POD container runtime gates run `39656093532`, job
+  `119417177976`: success, including the production Docker image, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review workflow and startup
+  with publication disabled.
+- Guarded Content Control merge:
+  `13ad85b1cd104ef57eba2492f5f8a0e2a756f415`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #116 exact tested head:
+  `10db3f5718099be46360cc011016fb3ba7ab40ea`.
+- The cross-repository workflow pins Content Control merge
+  `13ad85b1cd104ef57eba2492f5f8a0e2a756f415` and exercises KDP metadata,
+  original manuscript/font rights, retained official-template sources, CMYK
+  cover, editorial-bound QA, complete Node tests and complete Python tests.
+- POD cross-repository review verification run `39657183090`, job
+  `119420444747`: success.
+- Guarded Money Factory merge:
+  `6b2a36f7e88c3547ab8a4e2fd57073b91e9122ef`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `13ad85b1cd104ef57eba2492f5f8a0e2a756f415` and created deployment
+  `dep-dbcgmbavcj2c738ni9ug` at `2026-10-21T18:57:49.928371Z`.
+- Event `evt-dbcgmbv2jbls73fvoq0g` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T18:57:51.228868Z`;
+  deploy-ended event `evt-dbcgmc6a6ers73a9tolg` followed at
+  `2026-10-21T18:57:52.306686Z`. The deployment finished
+  `build_failed` at `2026-10-21T18:57:52.263293Z`.
+- No hosted rollout of r163 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access, or network widening
+  was attempted.
+
+### Acceptance truth
+
+This closes a stored-input media-confusion gap only. Passing synthetic and
+container tests are not live acceptance. Restricted production database/schema
+verification, durable retention/recovery drills, deployed hybrid dependencies,
+mounted current Money Factory authority and real grants/revocation, authorized
+accounts and market sources, current regional-rights and official-template
+evidence, substantive KDP editorial/preview acceptance, independent QA and
+remediation outcomes, permitted live adapters for KDP, Redbubble, TeePublic,
+Zazzle and Spreadshirt, actual economics and financial reconciliation,
+owner-phone operations, monitoring/recovery drills, measured capacity, real
+end-to-end acceptance and controlled launch readiness remain unverified. All 24
+acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
+attempted. This run did not claim a continuously running self-hosted worker.
