@@ -28,7 +28,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
-                     'categories', 'publishing_rights', 'isbn', 'imprint',
+                     'categories', 'primary_audience', 'publishing_rights', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
                      'cover_finish', 'ai_generated'}
 
@@ -68,6 +68,22 @@ def inspect_book_details(details_path, manifest, manuscript):
     series = details.get('series') if isinstance(details, dict) else None
     contributors = details.get('contributors') if isinstance(details, dict) else None
     ai_generated = details.get('ai_generated') if isinstance(details, dict) else None
+    primary_audience = details.get('primary_audience') if isinstance(details, dict) else None
+    reading_age = (primary_audience.get('reading_age')
+                   if isinstance(primary_audience, dict) else None)
+    reading_age_valid = (
+        reading_age is None or
+        isinstance(reading_age, dict) and
+        set(reading_age) == {'minimum', 'maximum'} and
+        type(reading_age.get('minimum')) is int and
+        type(reading_age.get('maximum')) is int and
+        (reading_age['minimum'], reading_age['maximum']) in
+        {(0, 2), (3, 5), (6, 8), (9, 12), (13, 17)})
+    primary_audience_valid = (
+        isinstance(primary_audience, dict) and
+        set(primary_audience) == {'sexually_explicit', 'reading_age'} and
+        type(primary_audience.get('sexually_explicit')) is bool and
+        reading_age_valid)
     edition_valid = (edition is None or
                      isinstance(edition, dict) and set(edition) == {'number', 'display_text'} and
                      type(edition.get('number')) is int and 1 <= edition['number'] <= 9999 and
@@ -112,7 +128,8 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 6 or
+            details.get('schema_version') != 7 or
+            not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
             details['cover_finish'] not in {'matte', 'glossy'} or
             not metadata_text(details.get('title')) or
