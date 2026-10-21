@@ -1,0 +1,22 @@
+name: OpenFilm candidate contracts
+on:
+  pull_request:
+    paths:
+      - 'integrations/openfilm/runtime-canary/ccsd-audio/**'
+      - '.github/workflows/openfilm-candidate-tests.yml'
+permissions:
+  contents: read
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Check candidate syntax and dependency-free contracts
+        working-directory: integrations/openfilm/runtime-canary/ccsd-audio
+        run: |
+          for file in *.mjs; do node --check "$file"; done
+          node --test audio-mix-compat.test.mjs verify-output.test.mjs
