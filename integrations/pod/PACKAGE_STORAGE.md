@@ -6,6 +6,15 @@ must identify a nonempty regular file inside the output directory. Fixed-size
 reads and a final length/hash check reject changed, truncated or oversized files.
 The worker refreshes upstream and local production authority after reading.
 
+The production boundary also binds output names to exact media metadata. Every
+platform package must contain exactly `print.png`, `art-mask.png` and
+`text-mask.png`; KDP additionally requires `cover.pdf`, `interior.pdf` and
+`interior.receipt.json`. Empty, incomplete, extra or unknown output sets fail
+before artifact persistence. Media types come from this fixed contract, never a
+filename-extension fallback, so an arbitrary file cannot be relabeled as PNG,
+PDF or JSON. This validates package structure and storage metadata only; the
+independent QA stages remain responsible for decoding and substantive review.
+
 `ArtifactStore.putMany([{body, mediaType}, ...])` uses one transaction and the same
 advisory lock as single-file `put`. It deduplicates hashes, computes the combined
 size of missing blobs and checks the total store budget before inserts. An insert
