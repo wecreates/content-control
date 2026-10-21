@@ -21,6 +21,7 @@ Stdout and stderr share one byte limit; stderr is counted and discarded.
 | --- | --- |
 | Grant/signature/permission/expiry | Obtain current scoped upstream evidence; respect revocation and readiness limits |
 | Template provenance/scope | Correct the authorized product/country/template input with actual evidence |
+| Task media type | Re-upload the exact role input with its required bounded media type and issue a newly reviewed hash-bound descriptor |
 | Native resolution/font/text layout | Supply corrected original input and re-run the full independent QA gate |
 | Python timeout/output/spawn | Repair the execution dependency or bounded input; retain failure status |
 | Artifact budget/storage expiry | Restore verified capacity/lifetime through the approved infrastructure path |

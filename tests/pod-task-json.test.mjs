@@ -5,17 +5,17 @@ import fs from 'node:fs/promises';
 import {createStoredTaskResolvers} from '../integrations/pod/task-resolver.mjs';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 
-const sha='a'.repeat(64),other='c'.repeat(64);
+const sha='a'.repeat(64),other='c'.repeat(64),image='d'.repeat(64);
 const descriptor={schema_version:1,templateScope:{product:'fixture-shirt',country:'US'},
- files:{'input.json':sha},source:'input.json',template:'input.json',textLayers:'input.json',
- assetRights:'input.json',reference:'input.json'};
+ files:{'input.png':image,'input.json':sha},source:'input.png',template:'input.json',textLayers:'input.json',
+ assetRights:'input.json',reference:'input.png'};
 const json=JSON.stringify(descriptor);
 function fixture(body){
  body=Buffer.isBuffer(body)?body:Buffer.from(body);
  const hash=crypto.createHash('sha256').update(body).digest('hex'),reads=[];
  const resolver=createStoredTaskResolvers({}, {env:{},store:{get:async id=>{
   reads.push(id);return id===hash?{body,media_type:'application/json'}:
-   {body:Buffer.from('fixture input'),media_type:'application/octet-stream'};
+   {body:Buffer.from('fixture input'),media_type:id===image?'image/png':'application/json'};
  }}});
  return {hash,reads,resolve:()=>resolver.resolveTask({brief:{task_sha256:hash}}),resolver};
 }
@@ -26,11 +26,11 @@ async function blocked(body){
 }
 
 test('duplicate task roles and escaped equivalent keys fail in either order',async()=>{
- for(const pair of ['"source":"absent","source":"input.json"',
-  '"source":"input.json","source":"absent"',
-  '"source":"input.json","source":"input.json"',
-  '"source":"absent","sour\\u0063e":"input.json"']){
-  await blocked(json.replace('"source":"input.json"',pair));
+ for(const pair of ['"source":"absent","source":"input.png"',
+  '"source":"input.png","source":"absent"',
+  '"source":"input.png","source":"input.png"',
+  '"source":"absent","sour\\u0063e":"input.png"']){
+  await blocked(json.replace('"source":"input.png"',pair));
  }
 });
 test('duplicate nested artifact identities and template scope cannot choose the last value',async()=>{
@@ -57,12 +57,12 @@ test('valid Unicode and escaped JSON restore exact input bytes with caller-owned
  try{
   assert.deepEqual(task.templateScope,{product:'Café 雪',country:'US'});
   assert.equal(await fs.readFile(task.source,'utf8'),'fixture input');
-  assert.deepEqual(f.reads,[f.hash,sha]);
+  assert.deepEqual(f.reads,[f.hash,image,sha]);
  }finally{await task.cleanup();}
  await assert.rejects(fs.stat(task.assetRoot),{code:'ENOENT'});
 });
 test('production records TASK_INVALID and stops before authorization or Python on ambiguous descriptors',async()=>{
- const f=fixture(json.replace('"source":"input.json"','"source":"other","source":"input.json"'));
+ const f=fixture(json.replace('"source":"input.png"','"source":"other","source":"input.png"'));
  const key='synthetic-task-key-'.repeat(3),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',
   destination_platform:'redbubble',mode:'PRELAUNCH',task_sha256:f.hash};
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,

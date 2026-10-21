@@ -6,8 +6,14 @@ import crypto from 'node:crypto';
 import os from 'node:os';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 import {validateTask,createStoredTaskResolvers} from '../integrations/pod/task-resolver.mjs';
-const sha='a'.repeat(64);
-const task={schema_version:1,templateScope:{product:'fixture-shirt',country:'US'},files:{'input.json':sha},source:'input.json',template:'input.json',textLayers:'input.json',assetRights:'input.json',reference:'input.json'};
+const hashes={image:'a'.repeat(64),descriptor:'b'.repeat(64),json:'c'.repeat(64),zip:'d'.repeat(64),font:'e'.repeat(64),text:'f'.repeat(64)};
+const sha=hashes.image;
+const task={schema_version:1,templateScope:{product:'fixture-shirt',country:'US'},
+ files:{'source.png':hashes.image,'input.json':hashes.json},source:'source.png',template:'input.json',
+ textLayers:'input.json',assetRights:'input.json',reference:'source.png'};
+const mediaType=id=>id===hashes.image?'image/png':id===hashes.zip?'application/zip':
+ id===hashes.font?'font/ttf':id===hashes.text?'text/plain':'application/json';
+const artifact=(id,body='fixture')=>({body:Buffer.from(body),media_type:mediaType(id)});
 
 test('cancelled task restoration performs no descriptor read',async()=>{
  const controller=new AbortController();controller.abort(Error('private cancellation detail'));
@@ -29,7 +35,7 @@ test('cancellation during descriptor lookup prevents restoring input artifacts',
 test('cancellation during input restoration stops later reads and removes partial workspace',async()=>{
  const controller=new AbortController(),originalTmpdir=os.tmpdir;
  const parent=await fs.mkdtemp(path.join(os.tmpdir(),'pod-cancel-test-'));
- const descriptor={...task,files:{'input.json':sha,'second.json':sha,'third.json':sha}};
+ const descriptor={...task,files:{...task.files,'second.json':hashes.image,'third.json':hashes.image}};
  let reads=0;
  os.tmpdir=()=>parent;
  try{
@@ -37,7 +43,7 @@ test('cancellation during input restoration stops later reads and removes partia
    reads++;
    if(reads===1)return {media_type:'application/json',body:Buffer.from(JSON.stringify(descriptor))};
    if(reads===3)controller.abort();
-   return {media_type:'application/json',body:Buffer.from('fixture')};
+   return artifact(reads===2?hashes.image:hashes.json);
   }}});
   await assert.rejects(resolver.resolveTask({brief:{task_sha256:sha}},{signal:controller.signal}).then(async t=>{await t.cleanup();return t;}),/PRODUCTION_STOPPED/);
   assert.equal(reads,3);assert.deepEqual(await fs.readdir(parent),[]);
@@ -63,9 +69,9 @@ test('production stops after a delayed claim or grant before beginning task rest
 
 test('cancellation after the final file write cannot return a live workspace',async()=>{
  const controller=new AbortController(),originalWrite=fs.writeFile;let written;
- const resolver=createStoredTaskResolvers({}, {store:{get:async id=>id==='b'.repeat(64)
+ const resolver=createStoredTaskResolvers({}, {store:{get:async id=>id===hashes.descriptor
   ?{media_type:'application/json',body:Buffer.from(JSON.stringify(task))}
-  :{media_type:'application/json',body:Buffer.from('fixture')}}});
+  :artifact(id)}});
  fs.writeFile=async(...args)=>{await originalWrite(...args);written=args[0];controller.abort();};
  try{
   await assert.rejects(resolver.resolveTask({brief:{task_sha256:'b'.repeat(64)}},{signal:controller.signal}).then(async t=>{await t.cleanup();return t;}),/PRODUCTION_STOPPED/);
@@ -83,16 +89,37 @@ test('retained template source can only reference a declared input file',async()
  for(const templateSource of [null,false,[],['input.json'],'../input.json','absent',42]){
   assert.throws(()=>validateTask({...task,templateSource}),/TASK_ROLE_INVALID/);
  }
- const descriptor={...task,templateSource:'guide.zip',files:{...task.files,'guide.zip':sha}};
- const store={get:async id=>id==='b'.repeat(64)
+ const descriptor={...task,templateSource:'guide.zip',files:{...task.files,'guide.zip':hashes.zip}};
+ const store={get:async id=>id===hashes.descriptor
   ?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}
-  :{body:Buffer.from('retained source fixture'),media_type:'application/octet-stream'}};
- const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+  :artifact(id,'retained source fixture')};
+ const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:hashes.descriptor}});
  try{
   assert.equal(resolved.templateSource,path.join(resolved.assetRoot,'guide.zip'));
   assert.equal(await fs.readFile(resolved.templateSource,'utf8'),'retained source fixture');
  }finally{await resolved.cleanup();}
  await assert.rejects(fs.stat(resolved.assetRoot),{code:'ENOENT'});
+});
+
+test('role media types are bound before bytes enter the workspace',async()=>{
+ const descriptor={...task,templateSource:'guide.zip',files:{...task.files,'guide.zip':hashes.zip}};
+ for(const [target,actual] of [['source.png','application/json'],['input.json','image/png'],['guide.zip','text/plain']]){
+  const parent=await fs.mkdtemp(path.join(os.tmpdir(),'pod-media-test-')),originalTmpdir=os.tmpdir;os.tmpdir=()=>parent;
+  const store={get:async id=>id===hashes.descriptor
+   ?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}
+   :{...artifact(id),media_type:id===descriptor.files[target]?actual:mediaType(id)}};
+  try{
+   await assert.rejects(createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:hashes.descriptor}}),/TASK_MEDIA_TYPE_INVALID/);
+   assert.deepEqual(await fs.readdir(parent),[],'mismatched media must clean the partial workspace');
+  }finally{os.tmpdir=originalTmpdir;await fs.rm(parent,{recursive:true,force:true});}
+ }
+});
+
+test('one filename cannot alias roles with incompatible media contracts',()=>{
+ assert.throws(()=>validateTask({...task,source:'input.json'}),/TASK_MEDIA_TYPE_INVALID/);
+ const interior={template:'input.json',pages:'input.json',font:'input.json',fontRights:'input.json',
+  fontLicense:'input.json',source:'input.json',bookDetails:'input.json',regionalRightsEvidence:'input.json'};
+ assert.throws(()=>validateTask({...task,interior}),/TASK_MEDIA_TYPE_INVALID/);
 });
 test('generated output names are reserved before any input artifact is fetched',async()=>{
  for(const name of ['package','qa.json','qa-signed.json','PACKAGE','QA.JSON','QA-SIGNED.JSON']){
@@ -103,12 +130,14 @@ test('generated output names are reserved before any input artifact is fetched',
  }
 });
 test('interior accepts exactly eight declared file roles and rejects unchecked paths',()=>{
- const valid={template:'input.json',pages:'input.json',font:'input.json',fontRights:'input.json',fontLicense:'input.json',source:'input.json',bookDetails:'input.json',regionalRightsEvidence:'input.json'};
+ const valid={template:'input.json',pages:'input.json',font:'font.ttf',fontRights:'input.json',
+  fontLicense:'evidence.txt',source:'guide.zip',bookDetails:'input.json',regionalRightsEvidence:'evidence.txt'};
+ const scoped={...task,files:{...task.files,'font.ttf':hashes.font,'evidence.txt':hashes.text,'guide.zip':hashes.zip}};
  for(const interior of [null,false,'input.json',[],{}, {...valid,font:'../font.ttf'},
   {...valid,extra:'../../outside'},{...valid,output:'package'},{...valid,extra:null}]){
-  assert.throws(()=>validateTask({...task,interior}),/TASK_INTERIOR_INVALID/);
+  assert.throws(()=>validateTask({...scoped,interior}),/TASK_INTERIOR_INVALID/);
  }
- assert.equal(validateTask({...task,interior:valid}).interior,valid);
+ assert.equal(validateTask({...scoped,interior:valid}).interior,valid);
 });
 test('artifact identities must be strings rather than values coerced into hashes',async()=>{
  for(const value of [[sha],{toString:()=>sha},null,42]){
@@ -121,11 +150,11 @@ test('valid interior restores only declared inputs while output destinations rem
  const descriptor={...task,interior:{template:'interior.json',pages:'pages.json',font:'font.ttf',
    fontRights:'font-rights.json',fontLicense:'font-license.txt',source:'interior-source.zip',
    bookDetails:'book-details.json',regionalRightsEvidence:'regional-rights-evidence.txt'},
-  files:{...task.files,'interior.json':sha,'pages.json':sha,'font.ttf':sha,
-   'font-rights.json':sha,'font-license.txt':sha,'interior-source.zip':sha,
-   'book-details.json':sha,'regional-rights-evidence.txt':sha}};
- const store={get:async hash=>hash==='b'.repeat(64)?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}:{body:Buffer.from('fixture'),media_type:'application/octet-stream'}};
- const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+  files:{...task.files,'interior.json':hashes.json,'pages.json':hashes.json,'font.ttf':hashes.font,
+   'font-rights.json':hashes.json,'font-license.txt':hashes.text,'interior-source.zip':hashes.zip,
+   'book-details.json':hashes.json,'regional-rights-evidence.txt':hashes.text}};
+ const store={get:async id=>id===hashes.descriptor?{body:Buffer.from(JSON.stringify(descriptor)),media_type:'application/json'}:artifact(id)};
+ const resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:hashes.descriptor}});
  try{
   assert.deepEqual(Object.keys(resolved.interior),['template','pages','font','fontRights','fontLicense','source','bookDetails','regionalRightsEvidence']);
   for(const [role,filename] of Object.entries(descriptor.interior)){
@@ -152,16 +181,16 @@ test('production blocks colliding inputs before Python and records only a fixed 
 });
 test('resolver restores stored bytes into isolated disposable workspace',async()=>{
  const descriptor=Buffer.from(JSON.stringify({...task,approvedEditorialEvaluators:['descriptor-cannot-authorize']}));
- const store={get:async hash=>hash==='b'.repeat(64)?{body:descriptor,media_type:'application/json'}:{body:Buffer.from('payload'),media_type:'application/json'}};
+ const store={get:async id=>id===hashes.descriptor?{body:descriptor,media_type:'application/json'}:artifact(id,'payload')};
  const resolver=createStoredTaskResolvers({}, {store});
- const resolved=await resolver.resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+ const resolved=await resolver.resolveTask({brief:{task_sha256:hashes.descriptor}});
  assert.equal(await fs.readFile(resolved.source,'utf8'),'payload');
  assert.equal(resolved.reviewPackage,undefined);
  assert.deepEqual(resolved.approvedEditorialEvaluators,[]);
  assert.deepEqual(resolved.templateScope,task.templateScope);
  await resolved.cleanup();await assert.rejects(fs.stat(resolved.assetRoot),{code:'ENOENT'});
  const authorized=createStoredTaskResolvers({}, {store,approvedEditorialEvaluators:['host-fixture']});
- const approved=await authorized.resolveTask({brief:{task_sha256:'b'.repeat(64)}});
+ const approved=await authorized.resolveTask({brief:{task_sha256:hashes.descriptor}});
  try{assert.deepEqual(approved.approvedEditorialEvaluators,['host-fixture']);}finally{await approved.cleanup();}
 });
 
