@@ -96,7 +96,13 @@ def assemble(root, spec, pages, font):
     if manifest['platform'] != 'kdp' or spec['platform'] != 'kdp':
         raise ValueError('PLATFORM_BLOCKED')
     kdp = cover['kdp']
-    if (spec['page_count'] != kdp['page_count'] or
+    # The cover and interior templates are independently authenticated.
+    # Bind their product-defining print choices before rendering: paper and ink
+    # determine spine geometry, while binding determines the cover construction.
+    if (spec.get('binding') != kdp.get('binding') or
+        spec.get('ink_type') != kdp.get('ink_type') or
+        spec.get('paper_type') != kdp.get('paper_type') or
+        spec['page_count'] != kdp['page_count'] or
         abs(spec['trim_inches'][0]-kdp['trim_width_inches']) > 1e-6 or
         abs(spec['trim_inches'][1]+2*kdp['bleed_inches']-cover['size_inches'][1]) > 1e-6):
         raise ValueError('COVER_INTERIOR_MISMATCH')

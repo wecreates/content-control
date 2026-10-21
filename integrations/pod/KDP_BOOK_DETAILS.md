@@ -62,6 +62,14 @@ copyright is actually owned, or whether the same selections were entered in KDP.
 Those require independent review, current rights evidence and live account
 readback.
 
+The signed cover and interior templates are separate authorities, so package
+assembly also requires their binding, ink type and paper type to match exactly
+before rendering the interior. Page count and trim geometry remain bound as
+before. This prevents an individually valid cream-paper, color, or hardcover
+interior specification from being paired with a cover generated for a different
+print product. It does not prove that the same options were selected in KDP or
+that a physical proof is acceptable.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -83,9 +91,10 @@ Sources rechecked October 20, 2026:
 - [Content Guidelines: Artificial intelligence content](https://kdp.amazon.com/en_US/help/topic/G200672390)
 - [Paperback and Hardcover Manuscript Templates](https://kdp.amazon.com/en_US/help/topic/G201834230)
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
+- [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
 Schema versions 1 through 4 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 4 and receive a fresh Money
+upgrade. An existing task must be regenerated as version 5 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 

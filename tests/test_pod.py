@@ -76,7 +76,7 @@ class PODTests(unittest.TestCase):
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
                        text_layers=None,ocr_text=None,manuscript_inputs=True,font_inputs=True,
                        font_rights_inputs=True,font_rights_patch=None,book_details_inputs=True,
-                       book_details_patch=None):
+                       book_details_patch=None,interior_spec_patch=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -116,6 +116,7 @@ class PODTests(unittest.TestCase):
                     'interior_type':'text_no_bleed','trim_inches':[6,9],
                     'page_count':24,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25),
                     'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
+                spec.update(interior_spec_patch or {})
                 original_pages=[{'lines':[render_details['title'],render_details['author_name']]}]+[
                     {'lines':[f'Fixture page {i+1}']} for i in range(1,24)]
                 manuscript=Path(tmp)/'manuscript.json';save_json(manuscript,original_pages)
@@ -189,6 +190,14 @@ class PODTests(unittest.TestCase):
                     interior_font=interior_font if kdp and font_inputs else None,
                     font_rights_envelope=font_rights,font_license=font_license,
                     book_details=book_details_path)
+
+    def test_kdp_cover_and_interior_print_options_must_match(self):
+        for patch_value in ({'binding':'hardcover'},{'ink_type':'premium_color'},
+                            {'paper_type':'cream'}):
+            with self.subTest(interior=patch_value):
+                with self.assertRaisesRegex(ValueError,'COVER_INTERIOR_MISMATCH'):
+                    self.package_result(lambda m,r:None,kdp=True,
+                        interior_spec_patch=patch_value)
 
     def test_kdp_requires_book_details_matching_front_cover_and_title_page(self):
         missing=self.package_result(lambda m,r:None,kdp=True,book_details_inputs=False)
