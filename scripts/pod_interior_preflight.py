@@ -46,17 +46,27 @@ def inspect_book_details(details_path, manifest, manuscript):
                 value.casefold() not in invalid_singletons and
                 re.search(r'</?[A-Za-z][^>]*>', value) is None)
 
+    def contains_number(value, number):
+        return re.search(rf'(?<!\d){number}(?!\d)', value) is not None
+
     edition = details.get('edition') if isinstance(details, dict) else None
     series = details.get('series') if isinstance(details, dict) else None
     contributors = details.get('contributors') if isinstance(details, dict) else None
     edition_valid = (edition is None or
                      isinstance(edition, dict) and set(edition) == {'number', 'display_text'} and
                      type(edition.get('number')) is int and 1 <= edition['number'] <= 9999 and
-                     metadata_text(edition.get('display_text')))
+                     metadata_text(edition.get('display_text')) and
+                     contains_number(edition['display_text'], edition['number']))
     series_valid = (series is None or
-                    isinstance(series, dict) and set(series) == {'title', 'display_text'} and
+                    isinstance(series, dict) and
+                    set(series) == {'title', 'number', 'display_text'} and
                     metadata_text(series.get('title')) and
-                    metadata_text(series.get('display_text')))
+                    (series.get('number') is None or
+                     type(series.get('number')) is int and 1 <= series['number'] <= 9999) and
+                    metadata_text(series.get('display_text')) and
+                    series['title'] in series['display_text'] and
+                    (series['number'] is None or
+                     contains_number(series['display_text'], series['number'])))
     # KDP's ten-contributor total includes the primary author_name, leaving at
     # most nine additional ordered contributor records in this contract.
     contributors_valid = (isinstance(contributors, list) and len(contributors) <= 9 and
@@ -69,7 +79,7 @@ def inspect_book_details(details_path, manifest, manuscript):
                           len(contributors))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 2 or
+            details.get('schema_version') != 3 or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
