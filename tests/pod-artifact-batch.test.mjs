@@ -73,6 +73,19 @@ test('regional-rights evidence accepts text/plain and rejects unapproved media b
  await assert.rejects(new ArtifactStore({tx(){assert.fail('database reached');}}).put(body,'text/html'),/ARTIFACT_INVALID/);
 });
 
+test('KDP template archives accept application/zip and preserve immutable identity metadata',async()=>{
+ const writes=[];
+ const db={tx:fn=>fn({query:async(sql,args)=>{
+  if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('INSERT'))writes.push(args);
+  return {rows:[]};
+ }})};
+ const body=Buffer.from('PK\\x03\\x04synthetic bounded KDP template archive');
+ assert.equal(await new ArtifactStore(db).put(body,'application/zip'),hash(body));
+ assert.equal(writes.length,1);assert.equal(writes[0][0],hash(body));
+ assert.deepEqual(writes[0][1],body);assert.equal(writes[0][2],'application/zip');
+});
+
 test('deployment budget accepts only bounded positive decimal byte strings',()=>{
  assert.equal(artifactBudgetBytes({}),134217728);
  for(const bytes of ['1','64','134217728'])assert.equal(artifactBudgetBytes({POD_ARTIFACT_BUDGET_BYTES:bytes}),Number(bytes));
