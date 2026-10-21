@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `5` |
+| `schema_version` | Integer `6` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -23,6 +23,7 @@ fresh grant. The file has exactly these fields:
 | `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text containing that decimal number> }` |
 | `series` | `null` or exactly `{ "title": <metadata text>, "number": <null or integer 1–9999>, "display_text": <metadata text containing the exact title and, when supplied, decimal number> }` |
 | `contributors` | Ordered array of at most 9 additional unique `{ "role": <metadata text>, "name": <metadata text> }` records; together with `author_name`, the total is at most 10 |
+| `cover_finish` | Exact lowercase `matte` or `glossy`; the selected KDP paperback cover-finish option is immutable task-owned metadata |
 | `ai_generated` | Exactly `{ "text": <boolean>, "images": <boolean>, "translations": <boolean> }`; each boolean declares whether that content category contains AI-generated material under KDP's current definition |
 
 Independent QA requires title, optional subtitle and author as exactly one
@@ -53,10 +54,10 @@ comparison. This does not prove ISBN ownership, format uniqueness, agency
 registration, or that title/author/imprint match the agency record; those remain
 live account and rights checks.
 
-The description, keyword and category values are immutable task-owned inputs. The
+The description, keyword, category and cover-finish values are immutable task-owned inputs. The
 validator enforces the current field counts, the 4,000-character description
 ceiling, plain-text hygiene, unique entries, the supported primary marketplace
-and the copyright-owner path. It does not decide whether marketing copy is
+the copyright-owner path, and the supported matte/glossy cover-finish enum. It does not decide whether marketing copy is
 effective, whether keywords or categories are substantively relevant, whether
 copyright is actually owned, or whether the same selections were entered in KDP.
 Those require independent review, current rights evidence and live account
@@ -69,6 +70,11 @@ before. This prevents an individually valid cream-paper, color, or hardcover
 interior specification from being paired with a cover generated for a different
 print product. It does not prove that the same options were selected in KDP or
 that a physical proof is acceptable.
+
+Cover finish does not change the generated PDF geometry, so it is bound in the canonical
+book-details record rather than inferred from the cover file. A valid value proves only
+which option the authorized task owns; live KDP readback is still required to prove that
+an operator selected the same option during title setup.
 
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
@@ -93,8 +99,8 @@ Sources rechecked October 20, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 4 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 5 and receive a fresh Money
+Schema versions 1 through 5 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 6 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
