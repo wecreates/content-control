@@ -26,6 +26,11 @@ new batch insert. Existing evidence is never overwritten or deleted automaticall
 an operator must investigate through the recovery process. These checks do not
 claim to validate the actual media format, rights or design quality.
 
+Reads apply the same exact media allowlist in PostgreSQL before transferring a
+blob and recheck it in the application. A legacy or foreign row with a valid
+hash but unsupported media metadata is unavailable to tasks and the authenticated
+artifact endpoint; it must be investigated rather than relabeled on read.
+
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.
 If present it must be a positive decimal integer string of at most 134217728;
