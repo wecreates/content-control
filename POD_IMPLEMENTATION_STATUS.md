@@ -2452,3 +2452,75 @@ controlled launch readiness. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
 
+
+## Run receipt r156 — KDP Expanded Distribution opt-out (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Expanded Distribution](https://kdp.amazon.com/en_US/help/topic/GQTT4W3T5AYK7L45)
+- [Paperback and Hardcover Distribution Rights](https://kdp.amazon.com/en_US/help/topic/G201834280)
+- [Paperback Royalty](https://kdp.amazon.com/en_US/help/topic/G201834330)
+- [Print Book Pricing Page](https://kdp.amazon.com/en_US/help/topic/G8BKPU9AGVZSF9QF)
+
+Expanded Distribution is optional and can expose eligible paperbacks through
+bookstores, libraries, academic institutions and other retailers outside Amazon.
+It has separate US/UK territorial-rights requirements and a 40% royalty basis
+before printing cost. Metadata changes can take up to eight weeks to propagate.
+Because current regional-rights, ISBN eligibility, live price/cost/royalty and
+KDP readback evidence are absent, the supported bounded lane now requires an
+explicit opt-out rather than silently enrolling. This does not select standard
+Amazon sales territories or claim any rights. Etsy remained excluded. The failed
+production-database administration route was not retried because no credible
+access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #402 exact tested head: `6a03a12439f6a3d107682c0f76acd7360cff0897`.
+- Schema v11 requires exact `expanded_distribution: false`; true, null,
+  type-confused values and omission fail closed.
+- The value is included in the canonical book-details hash; changing it requires
+  a new descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_require_expanded_distribution_opt_out`.
+- POD integration gates run `39596605906`, job `119210360582`: success.
+- POD container runtime gates run `39596605601`, job `119210358744`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `42d2ba06890b999969f70c15b8cdf95db260aafd`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #109 exact tested head: `dacfb7099a5ad83838f90a53e992fc79191e3f61`.
+- The cross-repository workflow pins Content Control merge
+  `42d2ba06890b999969f70c15b8cdf95db260aafd` and explicitly runs the
+  Expanded Distribution opt-out regression.
+- POD cross-repository review verification run `39597441829`, job
+  `119213161662`: success.
+- Guarded Money Factory merge:
+  `3393008af61b096cc1329b490f5127aba9476c8e`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `42d2ba0...` and created deployment
+  `dep-dbcan0m8bjmc73dd6mig`.
+- Event `evt-dbcan0hocimc73b1kocg` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T12:09:38.328605Z`.
+- Event `evt-dbcan0j6v2tc739oqk40` recorded the deployment ended failed at
+  `2026-10-21T12:09:38.708784Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-consistency and distribution-scope safeguard only. It does
+not establish regional rights, ISBN distribution eligibility, live KDP
+price/cost/royalty readback, actual preview/proof acceptance, production
+database/recovery, live adapter acceptance, financial reconciliation,
+end-to-end publication, or controlled launch readiness. All 24 acceptance areas
+remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
+attempted.
