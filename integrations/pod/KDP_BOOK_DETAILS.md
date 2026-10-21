@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `7` |
+| `schema_version` | Integer `8` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -17,6 +17,7 @@ fresh grant. The file has exactly these fields:
 | `primary_marketplace` | `amazon.com` for the currently supported `en_US` lane |
 | `categories` | Ordered array of 1–3 unique category-path strings |
 | `primary_audience` | Exactly `{ "sexually_explicit": <boolean>, "reading_age": <null or { "minimum": <integer>, "maximum": <integer> }> }`; a non-null age range must be one official band: 0–2, 3–5, 6–8, 9–12, or 13–17 |
+| `low_content` | Exact boolean `false`; this supported lane requires a substantive book interior and does not admit KDP low-content classification |
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
 | `isbn` | `null` or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
 | `imprint` | `null` or metadata text of at most 100 characters |
@@ -84,6 +85,12 @@ without a new task and authority grant. The validator does not classify the cove
 interior, title, audience, or category suitability; independent review and live account
 readback remain required.
 
+KDP treats low-content books differently for ISBN, series, release-date and expanded-
+distribution eligibility. The current production contract is for substantive text books,
+so `low_content` must be exactly `false` and is part of the canonical task-owned hash.
+The validator does not infer this classification from repetitive page layout; substantive
+editorial review and live KDP readback remain separate requirements.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -97,6 +104,7 @@ Sources rechecked October 21, 2026:
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
 - [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
+- [Low-Content Books](https://kdp.amazon.com/en_US/help/topic/GGE5T76TWKA85DJM)
 - [Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630)
 - [Make Your Book More Discoverable with Keywords](https://kdp.amazon.com/en_US/help/topic/G201298500)
 - [KDP Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)
@@ -108,8 +116,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 6 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 7 and receive a fresh Money
+Schema versions 1 through 7 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 8 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 

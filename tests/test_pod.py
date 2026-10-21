@@ -86,13 +86,14 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':7,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':8,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
+                'low_content':False,
                 'primary_audience':{'sexually_explicit':False,'reading_age':None},
                 'cover_finish':'matte',
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -222,13 +223,14 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':7,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':8,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
+                'low_content':False,
                 'primary_audience':{'sexually_explicit':False,'reading_age':None},
                 'cover_finish':'matte',
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -249,13 +251,14 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':7,'title':'Same','subtitle':None,
+            details={'schema_version':8,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[],
+                'low_content':False,
                 'primary_audience':{'sexually_explicit':False,'reading_age':None},
                 'cover_finish':'matte',
                 'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -274,13 +277,14 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':7,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
+            'low_content':False,
             'primary_audience':{'sexually_explicit':False,'reading_age':None},
             'cover_finish':'matte',
             'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -318,7 +322,7 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':7,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':8,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
@@ -329,6 +333,7 @@ class PODTests(unittest.TestCase):
                       'display_text':'Fixture Series, Volume 3'},
             'contributors':[{'role':'Editor','name':'Fixture Editor'},
                             {'role':'Illustrator','name':'Fixture Artist'}],
+            'low_content':False,
             'primary_audience':{'sexually_explicit':False,'reading_age':None},
             'cover_finish':'matte',
             'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -375,13 +380,14 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':7,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
+            'low_content':False,
             'primary_audience':{'sexually_explicit':False,'reading_age':None},
             'cover_finish':'matte',
             'ai_generated':{'text':False,'images':False,'translations':False}}
@@ -424,7 +430,7 @@ class PODTests(unittest.TestCase):
         valid=self.package_result(lambda m,r:None,kdp=True)
         self.assertEqual(valid['binary_pass'],1,valid)
         invalid=(
-            {'schema_version':6},
+            {'schema_version':7},
             {'description':None},
             {'description':'D'*4001},
             {'description':'Visit https://example.com for details'},
@@ -442,6 +448,16 @@ class PODTests(unittest.TestCase):
             with self.subTest(details=patch_value):
                 failed=self.package_result(lambda m,r:None,kdp=True,
                     book_details_patch=patch_value)
+                self.assertEqual(failed['binary_pass'],0,failed)
+                self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
+
+    def test_kdp_book_details_require_substantive_book_lane(self):
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        for value in (True,None,0,1,'false',{},[]):
+            with self.subTest(low_content=value):
+                failed=self.package_result(lambda m,r:None,kdp=True,
+                    book_details_patch={'low_content':value})
                 self.assertEqual(failed['binary_pass'],0,failed)
                 self.assertIn('KDP_BOOK_DETAILS_INVALID',failed['errors'])
 
@@ -499,13 +515,14 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':7,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':8,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','description':'A practical fixture description.',
                 'keywords':['fixture guide'],'primary_marketplace':'amazon.com',
                 'categories':['Nonfiction > Reference'],
                 'publishing_rights':'copyright_owner','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[],
+            'low_content':False,
             'primary_audience':{'sexually_explicit':False,'reading_age':None},
             'cover_finish':'matte'}
         manifest={'platform':'kdp','expected_text':[
