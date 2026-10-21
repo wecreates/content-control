@@ -56,7 +56,7 @@ live account and rights checks.
 
 The description, keyword, category and cover-finish values are immutable task-owned inputs. The
 validator enforces the current field counts, the 4,000-character description
-ceiling, plain-text hygiene, unique entries, the supported primary marketplace
+ceiling, plain-text hygiene, unique entries, the supported primary marketplace,
 the copyright-owner path, and the supported matte/glossy cover-finish enum. It does not decide whether marketing copy is
 effective, whether keywords or categories are substantively relevant, whether
 copyright is actually owned, or whether the same selections were entered in KDP.
