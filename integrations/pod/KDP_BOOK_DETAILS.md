@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `10` |
+| `schema_version` | Integer `11` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -21,6 +21,7 @@ fresh grant. The file has exactly these fields:
 | `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
 | `publication_date` | Exact `null`; the supported original-book lane intentionally leaves KDP’s previously-published date blank |
 | `release_plan` | Exactly `{ "mode": "release_now", "date": null }`; scheduled print releases remain unsupported and the choice does not authorize publication |
+| `expanded_distribution` | Exact boolean `false`; the bounded lane does not enroll a paperback in non-Amazon distribution without separate current territorial-rights, ISBN-eligibility, and economics evidence |
 | `isbn_source` | Exact lowercase `kdp_free` or `owned`; this immutable task choice controls the required ISBN/imprint pairing |
 | `isbn` | Exactly `null` for `kdp_free`, or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979 for `owned`; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
 | `imprint` | Exactly `null` for `kdp_free`, or metadata text of at most 100 characters for `owned` |
@@ -105,6 +106,15 @@ operator submits the book. Scheduled releases are deliberately unsupported becau
 they create a five-day file/detail lock and deadline risk. These fields are package
 metadata only: they do not bypass either publication flag or explicit launch approval.
 
+Expanded Distribution is optional and may expose a paperback through bookstores,
+libraries, academic institutions, and other retailers outside Amazon. It has separate
+US/UK territorial-rights requirements, ISBN and format eligibility, a 40% royalty
+basis before printing costs, and changes can take up to eight weeks to propagate.
+This bounded contract therefore requires `expanded_distribution: false`. Enabling it
+requires a future schema, immutable task authorization, verified regional rights,
+current live pricing and royalty evidence, and live KDP readback. The false value does
+not decide standard Amazon marketplace territories and does not prove any rights.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -122,6 +132,9 @@ Sources rechecked October 21, 2026:
 - [Schedule a Release](https://kdp.amazon.com/en_US/help/topic/GDTMGBCWHAY35NK4)
 - [What is an ISBN and Imprint?](https://kdp.amazon.com/en_US/help/topic/G201834170)
 - [Get an ISBN](https://kdp.amazon.com/en_US/help/topic/GTJ8LBXL6Z4WV5QX)
+- [Expanded Distribution](https://kdp.amazon.com/en_US/help/topic/GQTT4W3T5AYK7L45)
+- [Paperback and Hardcover Distribution Rights](https://kdp.amazon.com/en_US/help/topic/G201834280)
+- [Paperback Royalty](https://kdp.amazon.com/en_US/help/topic/G201834330)
 - [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
 - [Low-Content Books](https://kdp.amazon.com/en_US/help/topic/GGE5T76TWKA85DJM)
 - [Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630)
@@ -135,8 +148,8 @@ Sources rechecked October 21, 2026:
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 - [Print Options](https://kdp.amazon.com/en_US/help/topic/G201834180)
 
-Schema versions 1 through 9 are deliberately not accepted after this fail-closed
-upgrade. An existing task must be regenerated as version 10 and receive a fresh Money
+Schema versions 1 through 10 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 11 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
