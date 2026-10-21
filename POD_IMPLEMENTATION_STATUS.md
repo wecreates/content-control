@@ -2671,3 +2671,86 @@ adapter acceptance, financial reconciliation, end-to-end publication, or
 controlled launch readiness. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
+
+## Run receipt r159 — scoped KDP regional-rights enforcement (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Paperback and Hardcover Distribution Rights](https://kdp.amazon.com/en_US/help/topic/G201834280)
+- [Intellectual Property Rights Frequently Asked Questions](https://kdp.amazon.com/en_US/help/topic/G200672400)
+- [Content Guidelines](https://kdp.amazon.com/en_US/help/topic/G200672390)
+- [Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)
+
+KDP requires accurate territory and rights declarations and may request
+documentation. The supported lane remains deliberately bounded to a United
+States paperback. This run added a fail-closed signed-evidence contract; it did
+not create legal rights, validate a real source document, or prove that KDP
+would accept one. Etsy remained excluded. The failed production-database
+administration route was not retried because no credible access-path change was
+observed.
+
+### Content Control implementation and hosted verification
+
+- Superseded PR #408 exposed two defects before merge: a stale PostgreSQL QA
+  fixture and a missing Python pattern-matcher import. Its runs
+  `39623242388` and `39623242870` failed and were not treated as evidence.
+- PR #409 exact tested head:
+  `c5dbc5a5e0853032baadc59458e19cb3eefa108f`.
+- Current signed `pod:package-rights` evidence now requires an exact
+  `regional_rights` record for country/territory `US`, paperback format,
+  the selected publishing basis and categories, commercial POD authority,
+  original-work and verified-rights-holder assertions, non-revocation, retained
+  authority/source identities, and a lowercase SHA-256 evidence digest.
+- Independent QA copies the validated event identity, source identities,
+  territory, categories, and evidence digest into its signed receipt. The
+  publication policy rejects legacy KDP QA without the dedicated
+  `regional_rights` check before any adapter call.
+- Missing, expired, revoked, differently scoped, malformed, duplicate-source,
+  extra-key, and legacy records fail closed.
+- Focused regression:
+  `PODTests.test_kdp_requires_current_scoped_regional_rights_evidence`.
+- POD integration gates run `39624458233`, job `119306094234`: success.
+- POD container runtime gates run `39624458198`, job `119306091935`:
+  success, including production-image Python/Node/PostgreSQL tests, real
+  print/review workflow, and startup with publication disabled.
+- Guarded Content Control merge:
+  `56e5ca3d7acb4a4b8d3267e0b8038ddeded6a17b`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #112 exact tested head:
+  `20238b830296cb3a58c35920093761f05f3e662d`.
+- The cross-repository workflow pins Content Control merge
+  `56e5ca3d7acb4a4b8d3267e0b8038ddeded6a17b` and explicitly runs the
+  regional-rights regression plus the publisher QA-binding tests.
+- POD cross-repository review verification run `39625543458`, job
+  `119309670618`: success.
+- Guarded Money Factory merge:
+  `0f562c050eed9317347e417de6a7d63a7fb95640`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, and one instance.
+- Through `2026-10-21T15:31:33Z`, Render exposed neither a deployment nor a
+  `commit_ignored` event for Content Control merge `56e5ca3d...`.
+- The latest exposed deployment remained r158
+  `dep-dbcccsgu01pc73d5l0t0`, which ended `build_failed` after event
+  `evt-dbcccspocimc73b39sn0` recorded `pipeline_minutes_exhausted`.
+- No build or hosted rollout of r159 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access, or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes a code-level regional-rights enforcement gap only. Synthetic signed
+fixtures are not legal clearance or live acceptance. Genuine owner-authorized
+regional-rights evidence, any documentation KDP requests, live KDP readback,
+preview/proof acceptance, production database/recovery, live adapter acceptance,
+financial reconciliation, end-to-end publication, and controlled launch
+readiness remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
+
