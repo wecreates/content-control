@@ -2306,3 +2306,78 @@ launch readiness. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
 
+
+## Run receipt r154 — KDP ISBN-source binding (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [What is an ISBN and Imprint?](https://kdp.amazon.com/en_US/help/topic/G201834170)
+- [Get an ISBN](https://kdp.amazon.com/en_US/help/topic/GTJ8LBXL6Z4WV5QX)
+- [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+
+Substantive KDP paperbacks require an ISBN. KDP offers either a free KDP-only
+ISBN, whose imprint is assigned as “Independently published,” or an owner-supplied
+ISBN whose title, author and imprint must match the ISBN agency record. The task
+package previously allowed null ISBN/imprint without owning that choice and also
+allowed incomplete owner-supplied pairings. This run bound the choice without
+claiming ISBN ownership, agency registration or live KDP readback. Etsy remained
+excluded. The failed production-database administration route was not retried
+because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #398 exact tested head: `5fb9287892227536f68429988f2b50544c97aea5`.
+- Schema v9 requires exact `isbn_source` value `kdp_free` or `owned`.
+- `kdp_free` requires null ISBN and imprint; `owned` requires both a
+  checksum-valid 978/979 ISBN and nonempty imprint. Missing, mixed and
+  unsupported pairings fail closed.
+- The choice and paired values are included in the canonical book-details hash;
+  changing them requires a new descriptor and fresh Money Factory authority.
+- The strengthened
+  `PODTests.test_kdp_book_details_validate_isbn_and_imprint` regression proves
+  both valid paths and invalid pairings, while existing front-matter matching
+  retains exact owner-supplied ISBN/imprint checks.
+- POD integration gates run `39582328399`, job `119162676750`: success.
+- POD container runtime gates run `39582328524`, job `119162676556`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `b683b560a66ad81e902e5b99f0ad98ab3db66898`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #107 exact tested head: `9c139b668fa5e2edb70e84585048ebbb6c1c3e81`.
+- The cross-repository workflow pins Content Control merge
+  `b683b560a66ad81e902e5b99f0ad98ab3db66898` and runs the strengthened
+  ISBN/imprint regression.
+- POD cross-repository review verification run `39583049335`, job
+  `119165089580`: success.
+- Concurrent main commit `605dfc0b4a53c2d59e8a4f4b68f68ebcfc6ca3c5`
+  changed only free-monitor event/state data; it was inspected and preserved.
+- Guarded Money Factory merge:
+  `b7eae39bdd4841c7438914cb4753fc33b948d700`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `b683b560...` and created deployment
+  `dep-dbc90ih5efls73bh15jg`.
+- Event `evt-dbc90il5rp0s73eil2v0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T10:13:30.864471Z`.
+- Event `evt-dbc90iuk7voc739vad1g` recorded the deployment ended failed at
+  `2026-10-21T10:13:31.418974Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-consistency gap only. It does not establish ISBN ownership,
+live KDP readback, physical-proof acceptance, production database/recovery, live
+adapter acceptance, economics/reconciliation, end-to-end publication, or
+controlled launch readiness. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
+
