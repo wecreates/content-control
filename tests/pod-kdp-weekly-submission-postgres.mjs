@@ -12,7 +12,7 @@ export async function verifyKdpWeeklySubmission(pool,bridge){
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'kdp','ACTIVE',10)",[account]);
   for(const [index,job] of jobs.entries())await pool.query(`INSERT INTO pod_production_queue
    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,created_at)
-   VALUES($1,$2,$3,'kdp',$4,'{}','{}',$5,'qa_passed',clock_timestamp()+($4::double precision*interval '1 millisecond'))`,
+   VALUES($1,$2,$3,'kdp',$4::integer,'{}','{}',$5,'qa_passed',clock_timestamp()+($4::integer*interval '1 millisecond'))`,
    [job,concept,account,index+1,crypto.randomUUID()]);
 
   const first=await db.claimPublish(account,45);
