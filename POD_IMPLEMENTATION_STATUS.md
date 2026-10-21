@@ -2168,3 +2168,72 @@ live adapter publication, or controlled-launch evidence. All 24 acceptance areas
 remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
 
+## Run receipt r152 — KDP primary-audience task binding (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+- [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
+- [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+
+KDP requires a Yes/No answer for sexually explicit images or title, while reading
+age is optional and KDP publishes five age bands. The task package previously did
+not own either answer, leaving an operator-visible submission choice outside the
+authorized descriptor. This run bound the answers without claiming that code can
+classify content or prove what was entered in a live KDP account. Etsy remained
+excluded. The failed production-database administration route was not retried
+because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #394 exact tested head: `f89605aa22622505e82188e13c48241f4d9a1aac`.
+- Schema v7 requires exact `primary_audience` keys:
+  `sexually_explicit` as a boolean and `reading_age` as null or one of
+  0–2, 3–5, 6–8, 9–12, or 13–17. Legacy schema v6, missing/extra keys,
+  type-confused booleans, empty age objects and cross-band ranges fail closed.
+- Both values are included in the canonical book-details hash; changing them
+  requires a new task descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_bind_primary_audience` proves all five
+  supported age bands, canonical hash separation and invalid-value rejection.
+- POD integration gates run `39567809056`, job `119114245104`: success.
+- POD container runtime gates run `39567808873`, job `119114244331`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `cb4ac8c98140c80bfddda3616b3ce87a0824c08e`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #105 exact tested head: `678374ea68c10a17dd2fbc261079d8611f793359`.
+- The cross-repository workflow pins Content Control merge
+  `cb4ac8c98140c80bfddda3616b3ce87a0824c08e` and explicitly runs the
+  primary-audience regression.
+- POD cross-repository review verification run `39568504775`, job
+  `119116562937`: success.
+- Guarded Money Factory merge:
+  `b360cf4c743519756b1af018af818a6a8f8a084a`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `cb4ac8c...` and created deployment
+  `dep-dbc7bbm8bjmc73d91rcg`.
+- Event `evt-dbc7bbgbfp9s73b3f6qg` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T08:19:58.711208Z`.
+- Event `evt-dbc7bbhocimc73av02a0` recorded the deployment ended failed at
+  `2026-10-21T08:19:58.962051Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-consistency gap only. It does not establish substantive
+audience/category correctness, independent editorial or rights approval, live KDP
+readback, physical-proof acceptance, production database/recovery, live adapter
+acceptance, economics/reconciliation, end-to-end publication, or launch readiness.
+All 24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+
