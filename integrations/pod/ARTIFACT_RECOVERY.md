@@ -44,6 +44,12 @@ checks supplement the migrated table's size constraint and do not repair or
 discard corrupt history. The ordinary read-only snapshot, budget lock, rollback
 and immutable conflict rules still apply.
 
+The archive accepts exactly the same media contract as authenticated artifact
+storage: `image/png`, `application/pdf`, `application/json`, `font/ttf`,
+`text/plain` and `application/zip`. This includes retained regional-rights
+and font-license text plus retained KDP template archives. Any legacy/foreign
+media type blocks export or verification; recovery never relabels stored bytes.
+
 Retain the completed archive on an owner-authorized independent durable medium.
 An archive left only on Render's ephemeral disk or in the expiring source database
 is not independent recovery. This feature neither selects a retention destination
