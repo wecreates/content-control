@@ -38,7 +38,9 @@ and temporary PostgreSQL; it confers no collection rights or production acceptan
 Every referenced proof must exist and its stored bytes must hash to its claimed
 SHA-256. The intake transaction recomputes digests in PostgreSQL before recording
 or acknowledging either new evidence or a replay; blob bodies are not downloaded
-to Node for this check. Missing evidence retains the lane-specific rejection;
+to Node for this check. The exact shared artifact-media allowlist is rechecked;
+unsupported legacy/foreign metadata returns EVIDENCE_ARTIFACT_MEDIA_INVALID and
+its blob is not hashed. Missing evidence retains the lane-specific rejection;
 mismatched bytes return EVIDENCE_ARTIFACT_CORRUPT. The transaction does not update
 queue state, ledger, inbox or outbox on rejection. Existing evidence is preserved
 for recovery investigation. Integrity establishes byte identity only, not source
