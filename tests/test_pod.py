@@ -240,6 +240,43 @@ class PODTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_MISMATCH'):
                 inspect_book_details(detail_path,manifest,manuscript)
 
+    def test_kdp_book_details_reject_prohibited_metadata(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+
+        base={'schema_version':1,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','isbn':None,
+            'imprint':None,'title_page':1}
+        invalid=(
+            {'title':'n/a'},
+            {'title':'!!!'},
+            {'title':'<b>Fixture Book</b>'},
+            {'author_name':'Fixture <i>Author</i>'},
+            {'title':'T'*100,'subtitle':'S'*101},
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            detail_path=Path(tmp)/'details.json'
+            manuscript=Path(tmp)/'pages.json'
+            for patch_value in invalid:
+                with self.subTest(details=patch_value):
+                    details={**base,**patch_value}
+                    fields=[details['title']]
+                    if details['subtitle'] is not None:
+                        fields.append(details['subtitle'])
+                    fields.append(details['author_name'])
+                    save_json(detail_path,details)
+                    save_json(manuscript,[{'lines':fields}])
+                    manifest={'platform':'kdp','expected_text':[
+                        {'text':text,'box_px':[2100,300+i*100,2600,350+i*100]}
+                        for i,text in enumerate(fields)],
+                        'template':{'platform':'kdp','dpi':300,
+                            'size_inches':[12.304048,9.25],
+                            'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                                   'trim_width_inches':6,'spine_width_inches':.054048,
+                                   'bleed_inches':.125}}}
+                    with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
+                        inspect_book_details(detail_path,manifest,manuscript)
+
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
         self.assertEqual(missing['binary_pass'],0)
