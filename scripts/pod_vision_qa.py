@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import math
+import re
 import subprocess
 import sys
 import tempfile
