@@ -2734,11 +2734,17 @@ observed.
 
 - The authorized service remained unsuspended on its existing free plan, main
   branch, commit-triggered auto-deploy, and one instance.
-- Through `2026-10-21T15:31:33Z`, Render exposed neither a deployment nor a
-  `commit_ignored` event for Content Control merge `56e5ca3d...`.
-- The latest exposed deployment remained r158
-  `dep-dbcccsgu01pc73d5l0t0`, which ended `build_failed` after event
-  `evt-dbcccspocimc73b39sn0` recorded `pipeline_minutes_exhausted`.
+- Render later exposed deployment `dep-dbcdt715efls73bnk70g` for Content
+  Control merge `56e5ca3d7acb4a4b8d3267e0b8038ddeded6a17b`. It was created at
+  `2026-10-21T15:47:40.197748Z` and ended `build_failed` at
+  `2026-10-21T15:47:42.906375Z`.
+- Event `evt-dbcdt7i0cl3c739nvqc0` at
+  `2026-10-21T15:47:42.334516Z` records the exact reason:
+  `pipeline_minutes_exhausted`. Deploy-ended event
+  `evt-dbcdt7l5rp0s73en60h0` followed at `2026-10-21T15:47:42.923372Z`.
+- Receipt-only merge `e894285faa1dcb48332344fc3f194e3004b74a1c` was correctly ignored
+  by Render in event `evt-dbcdq5dg1s2s738oqpqg` at
+  `2026-10-21T15:41:09.207938Z`.
 - No build or hosted rollout of r159 was verified. No manual retry, paid
   capacity, plan/cache change, replacement service, secret access, or network
   widening was attempted.
@@ -2754,3 +2760,76 @@ readiness remain unverified. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
 
+
+
+## Run receipt r160 — retained regional-rights evidence bytes (2026-10-21 UTC)
+
+### Scope
+
+This run closed the next code-level integrity gap in the bounded United States
+paperback lane. The signed regional-rights record can no longer pass by naming a
+well-formed digest alone: the hash-addressed production task must carry the
+retained evidence file and independent QA must read its bytes from a regular
+non-symlink file, enforce the 16 MiB ceiling, and recompute the exact SHA-256.
+This proves byte-to-receipt binding only; it does not authenticate a real legal
+document or establish that KDP will accept it. Etsy remained excluded. The
+failed production-database administration route was not retried because no
+credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #411 exact tested head:
+  `d08a243554b2a292dc05a4146fed08a6e6a90adf`.
+- KDP stored tasks now require exactly eight interior roles, including
+  `regionalRightsEvidence`; the resolver restores it only from a declared
+  hash-addressed input into the isolated workspace.
+- The production worker passes that resolved file to QA. QA rejects missing,
+  tampered, empty, oversized, non-regular, and symlinked evidence and accepts
+  only bytes whose recomputed SHA-256 matches the exact signed
+  `regional_rights.evidence_sha256`.
+- Regression coverage extends
+  `PODTests.test_kdp_requires_current_scoped_regional_rights_evidence` and the
+  stored-task resolver tests. Synthetic fixture bytes are explicitly not legal
+  approval.
+- POD integration gates run `39634351805`, job `119340712364`: success.
+- POD container runtime gates run `39634351774`, job `119340711726`: success,
+  including production-image Python/Node/PostgreSQL tests, real print/review
+  workflow, and startup with publication disabled.
+- Guarded Content Control merge:
+  `312a2014ffac0bd33e0dddf44fec7bdd91ad5e14`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #113 exact tested head:
+  `9037ca5ae16a987da99c21b61a2f93c6753cc94f`.
+- The cross-repository workflow pins Content Control merge
+  `312a2014ffac0bd33e0dddf44fec7bdd91ad5e14` and exercises the focused
+  regional-rights regression plus the publisher QA-binding tests.
+- POD cross-repository review verification run `39635531418`, job
+  `119344826099`: success.
+- Guarded Money Factory merge:
+  `3e5f9e1935c69d1d49bb2644de7ab9228a42f257`.
+
+### Authorized Render verification
+
+- At `2026-10-21T16:35:41Z`, the authorized service remained unsuspended on its
+  existing free plan, main branch, commit-triggered auto-deploy, and one
+  instance.
+- Render exposed no deployment or event yet for Content Control merge
+  `312a2014ffac0bd33e0dddf44fec7bdd91ad5e14`. The latest exposed attempt
+  remained r159 deployment `dep-dbcdt715efls73bnk70g`, which failed because
+  event `evt-dbcdt7i0cl3c739nvqc0` recorded `pipeline_minutes_exhausted`.
+- No hosted rollout of r160 was claimed. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access, or network widening
+  was attempted.
+
+### Acceptance truth
+
+This closes a code-level byte-binding gap only. Synthetic signed fixtures are
+not regional-rights clearance or live acceptance. Genuine owner-authorized
+rights evidence, document authenticity/legal sufficiency, any documentation KDP
+requests, live KDP readback, preview/proof acceptance, production
+database/recovery, live adapter acceptance, financial reconciliation,
+end-to-end publication, and controlled launch readiness remain unverified. All
+24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
