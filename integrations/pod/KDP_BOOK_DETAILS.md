@@ -7,11 +7,16 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `4` |
+| `schema_version` | Integer `5` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
 | `language` | `en` for the currently supported `en_US`/LTR profile |
+| `description` | Plain NFC printable customer-facing text, 1–4,000 characters; HTML, web URLs and email addresses are rejected by this bounded contract |
+| `keywords` | Ordered array of at most 7 unique NFC metadata phrases; empty is supported because KDP keywords are optional |
+| `primary_marketplace` | `amazon.com` for the currently supported `en_US` lane |
+| `categories` | Ordered array of 1–3 unique category-path strings |
+| `publishing_rights` | `copyright_owner`; public-domain publishing needs a separate unsupported evidence path |
 | `isbn` | `null` or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
 | `imprint` | `null` or metadata text of at most 100 characters |
 | `title_page` | Physical PDF page `1` or `3` |
@@ -48,6 +53,15 @@ comparison. This does not prove ISBN ownership, format uniqueness, agency
 registration, or that title/author/imprint match the agency record; those remain
 live account and rights checks.
 
+The description, keyword and category values are immutable task-owned inputs. The
+validator enforces the current field counts, the 4,000-character description
+ceiling, plain-text hygiene, unique entries, the supported primary marketplace
+and the copyright-owner path. It does not decide whether marketing copy is
+effective, whether keywords or categories are substantively relevant, whether
+copyright is actually owned, or whether the same selections were entered in KDP.
+Those require independent review, current rights evidence and live account
+readback.
+
 KDP requires publishers to disclose AI-generated text, images and translations,
 including AI-generated cover or interior artwork. The three disclosure booleans
 are therefore mandatory and part of the canonical task-owned book-details hash.
@@ -60,6 +74,9 @@ Sources rechecked October 20, 2026:
 
 - [Fix Paperback and Hardcover Formatting Issues](https://kdp.amazon.com/en_US/help/topic/G201834260)
 - [Metadata Guidelines for Books](https://kdp.amazon.com/en_US/help/topic/G201097560)
+- [Write a Book Description](https://kdp.amazon.com/en_US/help/topic/G201189630)
+- [Make Your Book More Discoverable with Keywords](https://kdp.amazon.com/en_US/help/topic/G201298500)
+- [KDP Categories](https://kdp.amazon.com/en_US/help/topic/G200652170)
 - [Books Titles & Editions](https://kdp.amazon.com/en_US/help/topic/GW7J4WEKBVU25YEC)
 - [Authors & Contributors](https://kdp.amazon.com/en_US/help/topic/G2BWJN2BY98T5PV2)
 - [Create a Book](https://kdp.amazon.com/en_US/help/topic/G202172740)
@@ -67,7 +84,7 @@ Sources rechecked October 20, 2026:
 - [Paperback and Hardcover Manuscript Templates](https://kdp.amazon.com/en_US/help/topic/G201834230)
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 
-Schema versions 1 through 3 are deliberately not accepted after this fail-closed
+Schema versions 1 through 4 are deliberately not accepted after this fail-closed
 upgrade. An existing task must be regenerated as version 4 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
