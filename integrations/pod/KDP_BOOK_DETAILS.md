@@ -12,8 +12,8 @@ fresh grant. The file has exactly these fields:
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
 | `language` | `en` for the currently supported `en_US`/LTR profile |
-| `isbn` | `null` or a bounded exact display string |
-| `imprint` | `null` or a bounded exact display string |
+| `isbn` | `null` or an exact display string containing a checksum-valid 13-digit ISBN beginning with 978 or 979; optional uppercase `ISBN`/`ISBN-13` label and spaces/hyphens are supported |
+| `imprint` | `null` or metadata text of at most 100 characters |
 | `title_page` | Physical PDF page `1` or `3` |
 | `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text containing that decimal number> }` |
 | `series` | `null` or exactly `{ "title": <metadata text>, "number": <null or integer 1–9999>, "display_text": <metadata text containing the exact title and, when supplied, decimal number> }` |
@@ -36,11 +36,16 @@ or author is inferred, and no metadata is rewritten. A correction therefore
 needs revised source files, a new descriptor hash, current authority, and fresh
 review of the new package.
 
-The title, subtitle, author, edition, series and contributor fields reject HTML tags, punctuation-only values
+The title, subtitle, author, imprint, edition, series and contributor fields reject HTML tags, punctuation-only values
 and KDP's prohibited sentinel-only values such as `unknown`, `n/a`, `blank`,
 `none`, `null` and `not applicable`. These checks are intentionally lexical:
 they do not claim to determine trademark permission, contributor truthfulness,
 promotional intent or substantive metadata quality.
+
+A supplied ISBN is syntax- and checksum-validated before exact manuscript
+comparison. This does not prove ISBN ownership, format uniqueness, agency
+registration, or that title/author/imprint match the agency record; those remain
+live account and rights checks.
 
 Sources rechecked October 20, 2026:
 
