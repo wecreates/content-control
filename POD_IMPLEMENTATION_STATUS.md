@@ -2592,3 +2592,82 @@ financial reconciliation, end-to-end publication, or controlled launch
 readiness. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted.
+
+## Run receipt r158 — KDP list-price/economics binding (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Paperback Royalty](https://kdp.amazon.com/en_US/help/topic/G201834330)
+- [Print Book Pricing Page](https://kdp.amazon.com/en_US/help/topic/G8BKPU9AGVZSF9QF)
+- [Paperback Printing Cost](https://kdp.amazon.com/en_US/help/topic/G201834340)
+
+For Amazon.com paperbacks, the current official maximum list price is 250 USD.
+The minimum varies with current printing cost and the applicable 50% or 60%
+royalty rate. The package therefore binds an exact intended price but does not
+guess a minimum, royalty, printing cost, tax, foreign exchange, margin, revenue,
+or platform acceptance. Etsy remained excluded. The failed production-database
+administration route was not retried because no credible access-path change was
+observed.
+
+### Content Control implementation and hosted verification
+
+- PR #406 exact tested head:
+  `9a8bb56cd9be270946242df4aab9906a13130e53`.
+- Schema v13 requires exact
+  `list_price: { "marketplace": "amazon.com", "currency": "USD",
+  "amount_minor": <integer 1-25000> }`.
+- Independent QA copies the validated price into its signed receipt. Immediately
+  before any KDP adapter call, Content Control requires exact equality with the
+  current verified Money Factory grant price; the existing package-scoped
+  economics gate then revalidates the same price, receipts, costs, minima, and
+  evidence lifetime.
+- Missing, malformed, extra-key, non-USD, non-Amazon.com, zero, negative,
+  over-maximum and QA-to-grant price mismatch forms fail closed.
+- Focused regressions:
+  `PODTests.test_kdp_book_details_bind_primary_list_price` and
+  `KDP list price must match the signed Money Factory price before any adapter
+  call`.
+- POD integration gates run `39612589204`, job `119265065136`: success.
+- POD container runtime gates run `39612589135`, job `119265067072`:
+  success, including in-image Python/Node/PostgreSQL tests, real print/review
+  workflow, and startup with publication disabled.
+- Guarded Content Control merge:
+  `b274b6a094b07756cb47a857c32e57d055105d80`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #111 exact tested head:
+  `aef6716916f97d61658e4356031740f4da68a3d6`.
+- The cross-repository workflow pins Content Control merge
+  `b274b6a094b07756cb47a857c32e57d055105d80` and explicitly runs the new
+  list-price regression plus the publication-path economics tests.
+- POD cross-repository review verification run `39613666139`, job
+  `119268855923`: success.
+- Guarded Money Factory merge:
+  `49f1634eedf8e2cc90cf2a2ed39a9ff6f3b6eba8`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, and one instance.
+- Render detected Content Control merge `b274b6a...` and created deployment
+  `dep-dbcccsgu01pc73d5l0t0`.
+- Event `evt-dbcccspocimc73b39sn0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T14:04:35.140944Z`.
+- Event `evt-dbcccsuk7voc73a2ct7g` recorded the deployment ended failed at
+  `2026-10-21T14:04:35.613147Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-to-release price-integrity gap only. It does not establish
+a real KDP price, current live printing-cost or royalty readback, regional-rights
+evidence, actual preview/proof acceptance, production database/recovery, live
+adapter acceptance, financial reconciliation, end-to-end publication, or
+controlled launch readiness. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
