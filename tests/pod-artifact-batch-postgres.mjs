@@ -70,5 +70,11 @@ export async function verifyArtifactBatch(pool,db){
  await assert.rejects(new ArtifactStore(db).putMany([pending,corrupted]),/ARTIFACT_CONFLICT/);
  assert.equal(await count([pending]),0);
  assert.deepEqual((await pool.query('SELECT body FROM pod_artifacts WHERE sha256=$1',[sha(corrupted)])).rows[0].body,wrongBody.body);
+ // Invalid legacy media metadata is filtered before the blob crosses into
+ // the application, even when its immutable hash and size are otherwise valid.
+ const unsupported=item();
+ await pool.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha(unsupported),unsupported.body,'text/html']);
+ await assert.rejects(new ArtifactStore(readDB).get(sha(unsupported)),/ARTIFACT_UNAVAILABLE/);
+ assert.deepEqual(readBytes,[0,64,0]);
  // These small immutable fixtures remain only in disposable CI PostgreSQL.
 }
