@@ -2524,3 +2524,71 @@ end-to-end publication, or controlled launch readiness. All 24 acceptance areas
 remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted.
+
+## Run receipt r157 — bounded KDP territory selection (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Paperback and Hardcover Distribution Rights](https://kdp.amazon.com/en_US/help/topic/G201834280)
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+- [Troubleshoot search results: Review selected territories](https://kdp.amazon.com/en_US/help/topic/GFJUYYXPBB4QA2WJ)
+
+KDP requires a worldwide or individual-territory rights choice for print titles.
+Verified worldwide territorial evidence is absent, so the bounded supported lane
+now rejects worldwide scope and binds an exact individual United States
+selection. This limits task intent but does not prove U.S. rights or live KDP
+entry. Etsy remained excluded. The failed production-database administration
+route was not retried because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #404 exact tested head: `23e8e071f3002ac944b0ad3129a056b7acdb96d8`.
+- Schema v12 requires exact
+  `distribution_rights: { "scope": "individual", "territories": ["US"] }`.
+  Worldwide, empty, non-US, multi-territory, missing and extra-key forms fail
+  closed.
+- The selection is included in the canonical book-details hash; changing it
+  requires a new descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_bind_individual_us_distribution_rights`.
+- POD integration gates run `39605417187`, job `119240235628`: success.
+- POD container runtime gates run `39605417323`, job `119240237739`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `db1eb6debd302ebde2a425db66c089f6538cfe7b`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #110 exact tested head: `432c7ed665c7c41f8349f202958f17ac13d99db5`.
+- The cross-repository workflow pins Content Control merge
+  `db1eb6debd302ebde2a425db66c089f6538cfe7b` and explicitly runs the
+  individual-US territory regression.
+- POD cross-repository review verification run `39606509275`, job
+  `119243958710`: success.
+- Guarded Money Factory merge:
+  `0d9329690d3058d803863b92ce4ca5f932030d5a`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `db1eb6d...` and created deployment
+  `dep-dbcbm167bikc73ftalog`.
+- Event `evt-dbcbm11ocimc73b2i5r0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T13:15:48.644426Z`.
+- Event `evt-dbcbm19kqasc7384tpig` recorded the deployment ended failed at
+  `2026-10-21T13:15:49.030245Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes an implicit-territory package gap only. It does not establish
+regional-rights evidence, live KDP readback, price/cost/royalty readback,
+preview/proof acceptance, production database/recovery, live adapter acceptance,
+financial reconciliation, end-to-end publication, or controlled launch
+readiness. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
