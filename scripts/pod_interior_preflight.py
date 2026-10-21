@@ -28,7 +28,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     details = read_json(details_path)
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
-                     'categories', 'primary_audience', 'publishing_rights', 'isbn', 'imprint',
+                     'categories', 'primary_audience', 'low_content', 'publishing_rights', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
                      'cover_finish', 'ai_generated'}
 
@@ -128,7 +128,8 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 7 or
+            details.get('schema_version') != 8 or
+            details.get('low_content') is not False or
             not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
             details['cover_finish'] not in {'matte', 'glossy'} or
