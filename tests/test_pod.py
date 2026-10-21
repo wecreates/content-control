@@ -74,8 +74,9 @@ class PODTests(unittest.TestCase):
     def package_result(self, mutate, kdp=False, dpi=300, rights_ttl=60000, review_patch=None,
                        editorial_patch=None,editorial_present=True,editorial_evaluators=None,target_country='US',
                        template_inputs=True,template_ttl=60000,source_inputs=True,source_ttl=60000,
-                       text_layers=None,ocr_text='',manuscript_inputs=True,font_inputs=True,
-                       font_rights_inputs=True,font_rights_patch=None):
+                       text_layers=None,ocr_text=None,manuscript_inputs=True,font_inputs=True,
+                       font_rights_inputs=True,font_rights_patch=None,book_details_inputs=True,
+                       book_details_patch=None):
         """Synthetic signed evidence isolates technical QA; it is not approval."""
         import time
         from pod_common import save_json
@@ -84,23 +85,37 @@ class PODTests(unittest.TestCase):
             src=Path(tmp)/'source.png';Image.new('RGB',(800,400),'white').save(src)
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
+            font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+            render_details={'schema_version':1,'title':'Fixture Book','subtitle':None,
+                'author_name':'Fixture Author','language':'en','isbn':None,
+                'imprint':None,'title_page':1}
+            book_details={**render_details,**(book_details_patch or {})}
+            layers=list(text_layers or [])
             if kdp:
-                template.update({'platform':'kdp','safe_box_px':[75,75,500,500],'size_inches':[12+24*.002252+.25,9.25],
+                template.update({'platform':'kdp','safe_box_px':[1950,75,1500,2500],
+                    'art_box_px':[2100,800,800,400],'size_inches':[12+24*.002252+.25,9.25],
                     'kdp':{'binding':'paperback','ink_type':'black','paper_type':'white',
                            'trim_width_inches':6,'spine_width_inches':24*.002252,'bleed_inches':.125,'page_count':24,
                            'reading_direction':'left_to_right','locale':'en_US','barcode_mode':'amazon_placed'}})
-            layers=text_layers or []
+                for text,position in ((render_details['title'],[2100,300]),
+                                      (render_details['author_name'],[2100,450])):
+                    if not any(layer.get('text')==text for layer in layers):
+                        layers.append(dict(font_path=font,font_sha256=digest(font),font_size_px=32,
+                            position_px=position,text=text,rgba=[0,0,0,255]))
             m=generate(src,template,layers,root)
             interior_font=None
+            book_details_path=None
             if kdp:
-                font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
                 interior_font=font
                 spec={'platform':'kdp','binding':'paperback','ink_type':'black','paper_type':'white',
                     'interior_type':'text_no_bleed','trim_inches':[6,9],
                     'page_count':24,'margins_inches':dict(inside=.375,outside=.25,top=.25,bottom=.25),
                     'font_sha256':digest(font),'font_size_pt':10,'leading_pt':12}
-                original_pages=[{'lines':[f'Fixture page {i+1}']} for i in range(24)]
+                original_pages=[{'lines':[render_details['title'],render_details['author_name']]}]+[
+                    {'lines':[f'Fixture page {i+1}']} for i in range(1,24)]
                 manuscript=Path(tmp)/'manuscript.json';save_json(manuscript,original_pages)
+                if book_details_inputs:
+                    book_details_path=Path(tmp)/'book-details.json';save_json(book_details_path,book_details)
                 m=assemble(root,spec,original_pages,font)
             mutate(m,root)
             m['template_sha256']=hashlib.sha256(canonical(m['template']).encode()).hexdigest()
@@ -156,14 +171,56 @@ class PODTests(unittest.TestCase):
                 original_templates={'cover':cover_path,'interior':interior_path,
                     'source':Path(__file__).resolve().parents[1]/'integrations/pod/templates/kdp/2026-10-20/paperback-6x9-24-bw-white-en_US.zip',
                     'interiorSource':interior_source}
-            # OCR is tested independently; these tests isolate package geometry and binding.
-            with patch('pod_vision_qa.ocr',return_value=ocr_text):
+            # OCR is tested independently; return each exact generated layer,
+            # followed by the full-art reading, to isolate package bindings.
+            readings=[layer['text'] for layer in m['expected_text']]
+            intended='\n'.join(readings)
+            values=iter([*readings, intended if ocr_text is None else ocr_text])
+            with patch('pod_vision_qa.ocr',side_effect=lambda *args,**kwargs:next(values)):
                 return evaluate(root,src,rights,review,['test-fixture'],editorial_envelope=editorial,
                     approved_editorial_evaluators=['synthetic-editor'] if editorial_evaluators is None else editorial_evaluators,
                     target_country=target_country,template_evidence=original_templates,target_product='fixture-book',
                     source_evidence=source_evidence,manuscript=manuscript if kdp and manuscript_inputs else None,
                     interior_font=interior_font if kdp and font_inputs else None,
-                    font_rights_envelope=font_rights,font_license=font_license)
+                    font_rights_envelope=font_rights,font_license=font_license,
+                    book_details=book_details_path)
+
+    def test_kdp_requires_book_details_matching_front_cover_and_title_page(self):
+        missing=self.package_result(lambda m,r:None,kdp=True,book_details_inputs=False)
+        self.assertEqual(missing['binary_pass'],0,missing)
+        self.assertIn('KDP_BOOK_DETAILS_REQUIRED',missing['errors'])
+        valid=self.package_result(lambda m,r:None,kdp=True)
+        self.assertEqual(valid['binary_pass'],1,valid)
+        self.assertTrue(valid['checks']['book_details'])
+        self.assertEqual(len(valid['book_details_sha256']),64)
+        for patch_value in ({'title':'Other Title'},{'author_name':'Other Author'},
+                            {'language':'fr'},{'title_page':3}):
+            with self.subTest(details=patch_value):
+                failed=self.package_result(lambda m,r:None,kdp=True,
+                    book_details_patch=patch_value)
+                self.assertEqual(failed['binary_pass'],0,failed)
+                self.assertTrue(any(code in failed['errors'] for code in
+                    ('KDP_BOOK_DETAILS_INVALID','KDP_BOOK_DETAILS_MISMATCH')))
+
+    def test_kdp_book_details_reject_template_placeholder(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+        with tempfile.TemporaryDirectory() as tmp:
+            details={'schema_version':1,'title':'Fixture Book','subtitle':None,
+                'author_name':'Fixture Author','language':'en','isbn':None,
+                'imprint':None,'title_page':1}
+            detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
+            pages=[{'lines':['Fixture Book','Fixture Author']},{'lines':['Type here']}]
+            manuscript=Path(tmp)/'pages.json';save_json(manuscript,pages)
+            manifest={'platform':'kdp','expected_text':[
+                {'text':'Fixture Book','box_px':[2100,300,2400,350]},
+                {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
+                'template':{'platform':'kdp','dpi':300,'size_inches':[12.304048,9.25],
+                    'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                           'trim_width_inches':6,'spine_width_inches':.054048,
+                           'bleed_inches':.125}}}
+            with self.assertRaisesRegex(ValueError,'KDP_TEMPLATE_PLACEHOLDER'):
+                inspect_book_details(detail_path,manifest,manuscript)
 
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
@@ -220,13 +277,18 @@ class PODTests(unittest.TestCase):
     def test_kdp_original_title_fonts_and_all_rendered_pixels_pass_independent_preflight(self):
         font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         layer=dict(font_path=font,font_sha256=digest(font),font_size_px=32,
-            position_px=[100,100],text='Title',rgba=[0,0,0,255])
-        result=self.package_result(lambda m,r:None,kdp=True,text_layers=[layer],ocr_text='Title')
+            position_px=[2300,600],text='Title',rgba=[0,0,0,255])
+        result=self.package_result(lambda m,r:None,kdp=True,text_layers=[layer])
         self.assertEqual(result['binary_pass'],1,result)
         self.assertTrue(result['checks']['text_provenance'])
         self.assertTrue(result['checks']['print_preflight'])
         self.assertEqual(result['cover_color_space'],'DeviceCMYK')
-        self.assertEqual(result['text_layers_sha256'],hashlib.sha256(canonical([layer]).encode()).hexdigest())
+        approved=[layer]
+        for text,position in (('Fixture Book',[2100,300]),('Fixture Author',[2100,450])):
+            approved.append(dict(font_path=font,font_sha256=digest(font),font_size_px=32,
+                position_px=position,text=text,rgba=[0,0,0,255]))
+        self.assertEqual(result['text_layers_sha256'],
+            hashlib.sha256(canonical(approved).encode()).hexdigest())
 
     def test_qa_rejects_unapproved_text_masks_even_with_rebound_artifact_hashes(self):
         def hidden(manifest,root):
@@ -246,7 +308,10 @@ class PODTests(unittest.TestCase):
             missing=self.package_result(lambda m,r:None,kdp=kdp,source_inputs=False)
             self.assertEqual(missing['binary_pass'],0)
             self.assertIn('SOURCE_EVIDENCE_REQUIRED',missing['errors'])
-            forged=self.package_result(lambda m,r:m.update(source_size_px=[1600,800],effective_native_ppi=1200),kdp=kdp)
+            def inflate(m,r):
+                m.update(source_size_px=[1600,800],effective_native_ppi=min(
+                    1600*m['dpi']/m['placed_size_px'][0],800*m['dpi']/m['placed_size_px'][1]))
+            forged=self.package_result(inflate,kdp=kdp)
             self.assertEqual(forged['binary_pass'],0)
             self.assertTrue(forged['checks']['resolution'])
             self.assertIn('SOURCE_LAYOUT_INVALID',forged['errors'])

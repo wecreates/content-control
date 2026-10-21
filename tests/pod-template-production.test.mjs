@@ -31,7 +31,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -71,7 +71,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:'unused',textLayers:'unused',assetRights:'unused',
     ...(assetRoot?{assetRoot:root}:{}),
     ...(templateSource?{templateSource:sourcePath}:{}),
-    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',...(interiorTemplateSource?{source:interiorSourcePath}:{})}}:{}),
+    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',...(bookDetails?{bookDetails:'unused'}:{}),...(interiorTemplateSource?{source:interiorSourcePath}:{})}}:{}),
     ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
     cleanup:async()=>{cleaned++;}})});
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
@@ -103,14 +103,15 @@ test('all platform QA stages receive original art and original asset rights',asy
   assert.match(path.basename(result.qaArgs[result.qaArgs.indexOf('--asset-root')+1]),/^pod-template-gate-/);
  }
 });
-test('KDP reviewer receives the original task manuscript path and non-book reviewers do not',async()=>{
+test('KDP reviewer receives original manuscript and book-details paths while non-book reviewers do not',async()=>{
  for(const platform of ['kdp','redbubble']){
-  let original;
+  let original,bookDetails;
   const result=await exercise({platform,template:record(platform),
    ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
-   review:true,reviewPolicy:async({options})=>{original=options.manuscript;}});
+   review:true,reviewPolicy:async({options})=>{original=options.manuscript;bookDetails=options.bookDetails;}});
   assert.equal(result.status,'QA_PASSED');
   assert.equal(original,platform==='kdp'?'unused':undefined);
+  assert.equal(bookDetails,platform==='kdp'?'unused':undefined);
  }
 });
 test('KDP QA receives the authenticated target country independently of guide locale',async()=>{
@@ -131,6 +132,8 @@ test('KDP QA receives the authenticated target country independently of guide lo
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-rights')+1],'unused');
   assert.equal(result.qaArgs.filter(x=>x==='--font-license').length,1);
   assert.equal(result.qaArgs[result.qaArgs.indexOf('--font-license')+1],'unused');
+  assert.equal(result.qaArgs.filter(x=>x==='--book-details').length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf('--book-details')+1],'unused');
   for(const [flag,filename] of [['--cover-template','template.json'],['--interior-template','interior.json'],
    ['--template-source','retained-source.bin'],['--interior-template-source','retained-interior-source.bin']]){
    assert.equal(result.qaArgs.filter(x=>x===flag).length,1);
@@ -140,7 +143,7 @@ test('KDP QA receives the authenticated target country independently of guide lo
  const other=await exercise({review:true,captureQaArgs:true});
  assert.equal(other.qaArgs.includes('--asset-root'),false);
  assert.equal(other.qaArgs.includes('--country'),false);
- for(const flag of ['--product','--cover-template','--interior-template','--template-source','--interior-template-source','--manuscript','--font','--font-rights','--font-license'])assert.equal(other.qaArgs.includes(flag),false);
+ for(const flag of ['--product','--cover-template','--interior-template','--template-source','--interior-template-source','--manuscript','--font','--font-rights','--font-license','--book-details'])assert.equal(other.qaArgs.includes(flag),false);
 });
 test('KDP requires an explicit Amazon-placed barcode choice before guide inspection',async()=>{
  for(const barcode_mode of [undefined,null,false,[],'own','amazon']){
@@ -177,6 +180,14 @@ test('KDP missing interior blocks before generation and valid pair reaches revie
  assert.equal((await exercise({platform:'kdp',template:record('kdp')})).started,false);
  const interior={...record('kdp'),audience:'pod:interior-template'};
  assert.equal((await exercise({platform:'kdp',template:record('kdp'),interior})).status,'REVIEW_REQUIRED');
+});
+test('KDP missing book details blocks before source inspection or generation',async()=>{
+ const result=await exercise({platform:'kdp',template:record('kdp'),
+  interior:{...record('kdp'),audience:'pod:interior-template'},bookDetails:false,detailed:true});
+ assert.equal(result.reason,'KDP_BOOK_DETAILS_REQUIRED');
+ assert.equal(result.started,false);assert.equal(result.guideStarted,false);
+ assert.equal(result.interiorGuideStarted,false);assert.equal(result.bookStarted,false);
+ assert.equal(result.qaStarted,false);assert.equal(result.cleaned,1);
 });
 test('KDP requires retained source bytes matching authenticated cover provenance before rendering',async()=>{
  const options={platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},detailed:true};

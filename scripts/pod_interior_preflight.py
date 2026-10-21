@@ -7,9 +7,105 @@ import math
 import hashlib
 import io
 import fitz
+import unicodedata
 from pod_pdf_policy import inspect_static_document, inspect_static_page
 
 MAX_FONT_BYTES = 16 * 1024 * 1024
+
+
+def inspect_book_details(details_path, manifest, manuscript):
+    """Bind the supported KDP files to one immutable book-details record.
+
+    This verifies byte-bound task data against the produced cover and original
+    manuscript. It does not prove that the same values were entered in KDP;
+    account-side readback remains a separate live acceptance requirement.
+    """
+    from pod_common import read_json, canonical
+
+    if details_path is None:
+        raise ValueError('KDP_BOOK_DETAILS_REQUIRED')
+    details = read_json(details_path)
+    required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
+                     'language', 'isbn', 'imprint', 'title_page'}
+
+    def clean(value, limit):
+        return (type(value) is str and 0 < len(value) <= limit and
+                value == value.strip() and '\n' not in value and '\r' not in value and
+                value == unicodedata.normalize('NFC', value) and value.isprintable())
+
+    if (not isinstance(details, dict) or set(details) != required_keys or
+            details.get('schema_version') != 1 or
+            not clean(details.get('title'), 200) or
+            not clean(details.get('author_name'), 200) or
+            details.get('language') != 'en' or
+            details.get('subtitle') is not None and not clean(details['subtitle'], 200) or
+            details.get('isbn') is not None and not clean(details['isbn'], 32) or
+            details.get('imprint') is not None and not clean(details['imprint'], 200) or
+            type(details.get('title_page')) is not int or details['title_page'] not in (1, 3)):
+        raise ValueError('KDP_BOOK_DETAILS_INVALID')
+    try:
+        template = manifest['template']
+        kdp = template['kdp']
+        if (manifest['platform'] != 'kdp' or template['platform'] != 'kdp' or
+                kdp.get('locale') != 'en_US' or kdp.get('reading_direction') != 'left_to_right'):
+            raise ValueError('KDP_BOOK_DETAILS_INVALID')
+        layers = manifest['expected_text']
+        if not isinstance(layers, list):
+            raise ValueError('KDP_BOOK_DETAILS_INVALID')
+        dpi = template['dpi']; trim = kdp['trim_width_inches']
+        spine = kdp['spine_width_inches']; bleed = kdp['bleed_inches']
+        width, height = template['size_inches']
+        if (type(dpi) is not int or not 300 <= dpi <= 1200 or
+                any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0
+                    for value in (trim, spine, bleed, width, height))):
+            raise ValueError('KDP_BOOK_DETAILS_INVALID')
+        # The supported LTR cover places the front to the right of the back and
+        # spine. Metadata must be explicit front-cover text, at least 0.125 in
+        # inside the trim as required by KDP, rather than incidental back copy.
+        front = ((bleed + trim + spine + .125) * dpi, (bleed + .125) * dpi,
+                 (width - bleed - .125) * dpi, (height - bleed - .125) * dpi)
+        cover_fields = [details['title'], details['author_name']]
+        if details['subtitle'] is not None:
+            cover_fields.insert(1, details['subtitle'])
+        for value in cover_fields:
+            matches = [layer for layer in layers if isinstance(layer, dict) and layer.get('text') == value]
+            if len(matches) != 1:
+                raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+            box = matches[0].get('box_px')
+            if (not isinstance(box, list) or len(box) != 4 or
+                    any(type(point) not in (int, float) or not math.isfinite(point) for point in box) or
+                    box[0] < front[0] or box[1] < front[1] or
+                    box[2] > front[2] or box[3] > front[3] or
+                    box[0] >= box[2] or box[1] >= box[3]):
+                raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+    except (KeyError, TypeError, OverflowError):
+        raise ValueError('KDP_BOOK_DETAILS_INVALID') from None
+
+    pages = read_json(manuscript)
+    if (not isinstance(pages, list) or details['title_page'] > len(pages) or
+            not isinstance(pages[details['title_page'] - 1], dict)):
+        raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+    title_lines = [details['title']]
+    if details['subtitle'] is not None:
+        title_lines.append(details['subtitle'])
+    title_lines.append(details['author_name'])
+    if pages[details['title_page'] - 1].get('lines') != title_lines:
+        raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+
+    front_matter = [line for page in pages[:8] if isinstance(page, dict)
+                    for line in page.get('lines', []) if type(line) is str]
+    for field in ('isbn', 'imprint'):
+        if details[field] is not None and front_matter.count(details[field]) != 1:
+            raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
+    placeholders = {'insert text here', 'insert chapter one text here',
+                    'insert acknowledgements text here', 'insert author bio text here',
+                    'type text', 'type here', 'placeholder text'}
+    actual_text = [layer.get('text') for layer in manifest['expected_text']
+                   if isinstance(layer, dict)] + [line for page in pages
+                   if isinstance(page, dict) for line in page.get('lines', [])]
+    if any(type(value) is str and value.strip().casefold() in placeholders for value in actual_text):
+        raise ValueError('KDP_TEMPLATE_PLACEHOLDER')
+    return hashlib.sha256(canonical(details).encode()).hexdigest()
 
 
 def inspect_font_source(path, font_path, spec):
