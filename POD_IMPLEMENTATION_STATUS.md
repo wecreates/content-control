@@ -2812,14 +2812,20 @@ credible access-path change was observed.
 
 ### Authorized Render verification
 
-- At `2026-10-21T16:35:41Z`, the authorized service remained unsuspended on its
-  existing free plan, main branch, commit-triggered auto-deploy, and one
-  instance.
-- Render exposed no deployment or event yet for Content Control merge
-  `312a2014ffac0bd33e0dddf44fec7bdd91ad5e14`. The latest exposed attempt
-  remained r159 deployment `dep-dbcdt715efls73bnk70g`, which failed because
-  event `evt-dbcdt7i0cl3c739nvqc0` recorded `pipeline_minutes_exhausted`.
-- No hosted rollout of r160 was claimed. No manual retry, paid capacity,
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, and one instance.
+- Render detected Content Control merge
+  `312a2014ffac0bd33e0dddf44fec7bdd91ad5e14` and created deployment
+  `dep-dbceldm1egvs739s64b0` at `2026-10-21T16:39:18.125917Z`.
+- Event `evt-dbceldp5gs1s73bi93u0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T16:39:19.151517Z`;
+  deploy-ended event `evt-dbceldtgtokc73c3mcr0` followed at
+  `2026-10-21T16:39:19.995268Z`. The deployment finished
+  `build_failed` at `2026-10-21T16:39:19.963983Z`.
+- Receipt-only merge `eedf18b0e6cbc636dc986f7c9a286a22a7867bc8` was
+  correctly ignored in event `evt-dbceno8u01pc73bm8veg` at
+  `2026-10-21T16:44:17.066526Z`.
+- No hosted rollout of r160 was verified. No manual retry, paid capacity,
   plan/cache change, replacement service, secret access, or network widening
   was attempted.
 
@@ -2833,3 +2839,77 @@ database/recovery, live adapter acceptance, financial reconciliation,
 end-to-end publication, and controlled launch readiness remain unverified. All
 24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+
+## Run receipt r161 — authenticated regional-rights evidence upload (2026-10-21 UTC)
+
+### Scope
+
+This run repaired the clean upload-to-task path for retained regional-rights
+evidence. The production task introduced in r160 requires a hash-addressed
+evidence artifact, but the authenticated artifact route and immutable store did
+not accept the fixture's `text/plain` media type. The route now accepts bounded
+plain-text evidence, preserves the exact bytes and media type, and returns the
+SHA-256 identity consumed by the stored task. This is transport and integrity
+support only; it does not validate the truth, provenance, legal sufficiency, or
+KDP acceptability of any uploaded document. Etsy remained excluded. The failed
+production-database administration route was not retried because no credible
+access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #413 exact tested head:
+  `7f976baa7ac57df2ec1c5db4731b1b95d18da9ad`.
+- `ArtifactStore` and the authenticated `POST /artifacts` route accept
+  `text/plain` in addition to the existing bounded media allowlist; the
+  existing 16 MiB object ceiling, immutable SHA-256 identity, deployment storage
+  budget, authentication, and fail-closed rejection remain in force.
+- Unit coverage verifies exact byte/media preservation and rejects unapproved
+  `text/html` before any database access. The real HTTP regression sends
+  `text/plain; charset=utf-8`, verifies status 201 and the exact SHA-256, and
+  confirms stored bytes and normalized media type.
+- POD integration gates run `39638398984`, job `119355174228`: success.
+- POD container runtime gates run `39638398930`, job `119355174151`:
+  success, including production-image tests and startup with publication
+  disabled.
+- Guarded Content Control merge:
+  `3398af1414eeed7873992393ae2b43d6e7c7875d`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #114 exact tested head:
+  `60c822163fa38d5b63b0ef3da5f5d4d8bfbef6b0`.
+- The cross-repository workflow pins Content Control merge
+  `3398af1414eeed7873992393ae2b43d6e7c7875d` and exercises the regional-rights
+  regression, publisher QA binding, and complete Node/Python integration suites.
+- POD cross-repository review verification run `39639473547`, job
+  `119358912225`: success.
+- Guarded Money Factory merge:
+  `d7cd558e29fe67a85d1d019f757e7d2a07059f1e`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, and one instance.
+- Render detected Content Control merge
+  `3398af1414eeed7873992393ae2b43d6e7c7875d` and created deployment
+  `dep-dbcetsvlk1mc73fuu750` at `2026-10-21T16:57:23.786570Z`.
+- Event `evt-dbcett5e754c73bfqoug` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T16:57:24.670231Z`;
+  deploy-ended event `evt-dbcettbhk1ds739sh65g` followed at
+  `2026-10-21T16:57:25.245463Z`. The deployment finished
+  `build_failed` at `2026-10-21T16:57:25.193192Z`.
+- No hosted rollout of r161 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access, or network widening
+  was attempted.
+
+### Acceptance truth
+
+This closes an upload-media compatibility gap only. Synthetic fixtures are not
+regional-rights clearance or live acceptance. Genuine owner-authorized rights
+evidence, document authenticity/legal sufficiency, any documentation KDP
+requests, live KDP readback, preview/proof acceptance, production
+database/recovery, live adapter acceptance, financial reconciliation,
+end-to-end publication, and controlled launch readiness remain unverified. All
+24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
+attempted.
