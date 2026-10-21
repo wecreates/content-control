@@ -20,13 +20,16 @@ The required roles are `source`, `template`, `textLayers`, `assetRights` and
 `reference`; each references a declared input filename. `templateScope` requires
 a nonempty product and uppercase two-letter country. KDP interior tasks additionally
 provide an object named `interior` containing **exactly** `template`, `pages`,
-`font`, `fontRights`, `fontLicense` and `source`, each referencing a declared
-filename. Omit `interior` when it does not apply; null, false, arrays, missing
-roles and extra fields are rejected. Only those six validated roles are resolved
-into local paths. `fontRights` is the current signed grant and `fontLicense` is
-the retained evidence it hashes; see `FONT_RIGHTS.md`. `source` is the retained
-official interior-template archive described in
+`font`, `fontRights`, `fontLicense`, `source`, `bookDetails` and
+`regionalRightsEvidence`, each referencing a declared filename. Omit `interior`
+when it does not apply; null, false, arrays, missing roles and extra fields are
+rejected. Only those eight validated roles are resolved into local paths.
+`fontRights` is the current signed grant and `fontLicense` is the retained
+evidence it hashes; see `FONT_RIGHTS.md`. `source` is the retained official
+interior-template archive described in
 [KDP_INTERIOR_TEMPLATE_SOURCE.md](KDP_INTERIOR_TEMPLATE_SOURCE.md).
+`bookDetails` binds the title setup, while `regionalRightsEvidence` is the
+retained regular file whose bytes must hash to the signed regional-rights digest.
 
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials

@@ -98,7 +98,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--interior-template-source',task.interior.source,
    '--manuscript',task.interior.pages,'--font',task.interior.font,
    '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense,
-   '--book-details',task.interior.bookDetails);
+   '--book-details',task.interior.bookDetails,
+   '--regional-rights-evidence',task.interior.regionalRightsEvidence);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
   for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);
