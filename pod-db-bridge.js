@@ -207,9 +207,13 @@ export class PodDB {
   if(busy.rows.length)return null;
   const count=(await c.query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId])).rows[0].n;
   if(count>=a.daily_cap)return null;
+  // Bind the account lock to its configured marketplace before consuming quota
+  // or moving a job into publishing. A later release check is not early enough:
+  // a mismatched queued row must remain untouched and must not reserve capacity.
   const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
-   WHERE q.account_id=$1 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp() AND p.rights_state='PASS'
-   AND NOT p.permanently_unpublished ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId])).rows[0];
+   WHERE q.account_id=$1 AND q.platform=$2 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp()
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+   ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId,a.platform])).rows[0];
   if(!j)return null;
   if(a.platform==='kdp'){
    // KDP currently counts a title only on its first submission and resets its
