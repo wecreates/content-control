@@ -26,6 +26,12 @@ throughput or free-host memory benchmark. Financial bigint values, JSON numbers,
 timestamps and fencing tokens are passed as original PostgreSQL JSON text rather
 than reserialized through JavaScript numbers.
 
+Artifact rows use the same exact media allowlist as authenticated storage and the
+artifact-only archive: `image/png`, `application/pdf`, `application/json`,
+`font/ttf`, `text/plain` and `application/zip`. Rights/font-license text and
+retained KDP template archives therefore survive both recovery paths without
+relabeling. Any other legacy/foreign media type blocks the snapshot.
+
 ## Manual operation
 
 Use an existing authorized restricted POD connection and separately retained
