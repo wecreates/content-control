@@ -30,7 +30,7 @@ def inspect_book_details(details_path, manifest, manuscript):
                      'language', 'description', 'keywords', 'primary_marketplace',
                      'categories', 'publishing_rights', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
-                     'ai_generated'}
+                     'cover_finish', 'ai_generated'}
 
     def clean(value, limit):
         return (type(value) is str and 0 < len(value) <= limit and
@@ -112,7 +112,8 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 5 or
+            details.get('schema_version') != 6 or
+            details.get('cover_finish') not in {'matte', 'glossy'} or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
