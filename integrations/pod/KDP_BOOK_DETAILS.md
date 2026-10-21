@@ -7,7 +7,7 @@ fresh grant. The file has exactly these fields:
 
 | Field | Supported value |
 | --- | --- |
-| `schema_version` | Integer `2` |
+| `schema_version` | Integer `3` |
 | `title` | Trimmed NFC printable metadata text; title plus subtitle is at most 200 characters |
 | `subtitle` | `null` or metadata text within the shared 200-character title limit |
 | `author_name` | Trimmed NFC printable metadata text, 1–200 characters |
@@ -15,8 +15,8 @@ fresh grant. The file has exactly these fields:
 | `isbn` | `null` or a bounded exact display string |
 | `imprint` | `null` or a bounded exact display string |
 | `title_page` | Physical PDF page `1` or `3` |
-| `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text> }` |
-| `series` | `null` or exactly `{ "title": <metadata text>, "display_text": <metadata text> }` |
+| `edition` | `null` or exactly `{ "number": <integer 1–9999>, "display_text": <metadata text containing that decimal number> }` |
+| `series` | `null` or exactly `{ "title": <metadata text>, "number": <null or integer 1–9999>, "display_text": <metadata text containing the exact title and, when supplied, decimal number> }` |
 | `contributors` | Ordered array of at most 9 additional unique `{ "role": <metadata text>, "name": <metadata text> }` records; together with `author_name`, the total is at most 10 |
 
 Independent QA requires title, optional subtitle and author as exactly one
@@ -52,8 +52,8 @@ Sources rechecked October 20, 2026:
 - [Paperback and Hardcover Manuscript Templates](https://kdp.amazon.com/en_US/help/topic/G201834230)
 - [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020)
 
-Schema version 1 is deliberately not accepted after this fail-closed upgrade.
-An existing task must be regenerated as version 2 and receive a fresh Money
+Schema versions 1 and 2 are deliberately not accepted after this fail-closed
+upgrade. An existing task must be regenerated as version 3 and receive a fresh Money
 Factory grant; the validator never silently assumes that omitted metadata is
 empty.
 
