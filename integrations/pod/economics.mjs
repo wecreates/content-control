@@ -2,6 +2,17 @@
 // enter the financial ledger here; this is a signed per-unit release budget.
 const id=value=>typeof value==='string'&&value.trim().length>0&&value.length<=256;
 const minor=value=>Number.isSafeInteger(value)&&value>=0;
+export function enforceKdpListPrice(qa,price,platform){
+ if(platform!=='kdp')return;
+ const bound=qa?.list_price;
+ if(!bound||Array.isArray(bound)||Object.keys(bound).length!==3||
+  !Object.hasOwn(bound,'marketplace')||!Object.hasOwn(bound,'currency')||!Object.hasOwn(bound,'amount_minor')||
+  bound.marketplace!=='amazon.com'||bound.currency!=='USD'||!minor(bound.amount_minor)||
+  bound.amount_minor===0||bound.amount_minor>25000||
+  !price||price.verified!==true||!id(price.evidence_id)||!minor(price.amount_minor)||
+  price.amount_minor===0||price.currency!==bound.currency||price.amount_minor!==bound.amount_minor)
+  throw Error('KDP_LIST_PRICE_MISMATCH');
+}
 export function enforceReleaseEconomics({price,economics:e},job,now=Date.now()){
  if(!e||e.schema_version!==1||e.verified!==true||e.all_variable_costs_included!==true||
   !id(e.evidence_event_id)||!Array.isArray(e.source_evidence_ids)||e.source_evidence_ids.length<1||
