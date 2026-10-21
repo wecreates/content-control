@@ -332,6 +332,49 @@ class PODTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_MISMATCH'):
                 inspect_book_details(detail_path,manifest,manuscript)
 
+    def test_kdp_book_details_validate_isbn_and_imprint(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+
+        base={'schema_version':3,'title':'Fixture Book','subtitle':None,
+            'author_name':'Fixture Author','language':'en','isbn':None,
+            'imprint':None,'title_page':1,'edition':None,'series':None,
+            'contributors':[]}
+        manifest={'platform':'kdp','expected_text':[
+            {'text':'Fixture Book','box_px':[2100,300,2400,350]},
+            {'text':'Fixture Author','box_px':[2100,450,2400,500]}],
+            'template':{'platform':'kdp','dpi':300,'size_inches':[12.304048,9.25],
+                'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                       'trim_width_inches':6,'spine_width_inches':.054048,
+                       'bleed_inches':.125}}}
+        valid_isbn='ISBN-13: 978-0-306-40615-7'
+        with tempfile.TemporaryDirectory() as tmp:
+            detail_path=Path(tmp)/'details.json'
+            manuscript=Path(tmp)/'pages.json'
+            details={**base,'isbn':valid_isbn,'imprint':'Fixture Press'}
+            save_json(detail_path,details)
+            save_json(manuscript,[{'lines':['Fixture Book','Fixture Author']},
+                                  {'lines':[valid_isbn,'Fixture Press']}])
+            self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
+
+            invalid=(
+                {'isbn':'not-an-isbn'},
+                {'isbn':'ISBN-13: 978-0-306-40615-8'},
+                {'isbn':'ISBN-13: 123-0-306-40615-6'},
+                {'imprint':'unknown'},
+                {'imprint':'!!!'},
+                {'imprint':'<b>Fixture Press</b>'},
+                {'imprint':'P'*101},
+            )
+            for patch_value in invalid:
+                with self.subTest(details=patch_value):
+                    save_json(detail_path,{**base,**patch_value})
+                    value=next(iter(patch_value.values()))
+                    save_json(manuscript,[{'lines':['Fixture Book','Fixture Author']},
+                                          {'lines':[value]}])
+                    with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_INVALID'):
+                        inspect_book_details(detail_path,manifest,manuscript)
+
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
         self.assertEqual(missing['binary_pass'],0)
