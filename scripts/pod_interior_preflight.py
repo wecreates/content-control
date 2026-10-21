@@ -7,6 +7,7 @@ import math
 import hashlib
 import io
 import fitz
+import re
 import unicodedata
 from pod_pdf_policy import inspect_static_document, inspect_static_page
 
@@ -33,12 +34,24 @@ def inspect_book_details(details_path, manifest, manuscript):
                 value == value.strip() and '\n' not in value and '\r' not in value and
                 value == unicodedata.normalize('NFC', value) and value.isprintable())
 
+    # KDP treats these as customer-facing metadata rather than arbitrary cover
+    # copy. Reject values the current title/author guidance explicitly does not
+    # accept, before comparing them with the immutable cover and manuscript.
+    invalid_singletons = {'unknown', 'n/a', 'na', 'blank', 'none', 'null',
+                          'not applicable'}
+
+    def metadata_text(value):
+        return (clean(value, 200) and any(character.isalnum() for character in value) and
+                value.casefold() not in invalid_singletons and
+                re.search(r'</?[A-Za-z][^>]*>', value) is None)
+
     if (not isinstance(details, dict) or set(details) != required_keys or
             details.get('schema_version') != 1 or
-            not clean(details.get('title'), 200) or
-            not clean(details.get('author_name'), 200) or
+            not metadata_text(details.get('title')) or
+            not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
-            details.get('subtitle') is not None and not clean(details['subtitle'], 200) or
+            details.get('subtitle') is not None and not metadata_text(details['subtitle']) or
+            len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
             details.get('isbn') is not None and not clean(details['isbn'], 32) or
             details.get('imprint') is not None and not clean(details['imprint'], 200) or
             type(details.get('title_page')) is not int or details['title_page'] not in (1, 3)):
