@@ -2105,3 +2105,66 @@ Outcome: **technical package-boundary safeguard merged; live acceptance remains 
 - Exact template agreement is necessary but does not establish that the selected options are available or correctly entered in the authorized KDP account, that cover finish is read back, or that the resulting physical book is acceptable. Those remain live account, current-template and proof-review evidence.
 
 All 24 live acceptance areas remain **OPEN** under `POD_COMPLETION_CHECKLIST.md`. Code and CI do not satisfy live acceptance. No credible changed production-database administration path was observed, so the unchanged failed connector/browser route was not retried. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`; Etsy remains excluded. Evidence is from bounded available local and hosted execution, not a continuously running self-hosted worker. This report-only receipt uses [skip render].
+
+## Run receipt r151 — KDP cover-finish task binding (2026-10-21 UTC)
+
+### Scope and decision
+
+The highest-priority unblocked package-integrity gap was KDP cover finish. Official
+KDP print setup requires a matte or glossy selection, but the immutable task package
+did not previously own that choice. This run added a fail-closed schema v6 contract
+for the selection. It did not claim that the same value was entered in a live KDP
+account. Etsy remained excluded. No database administration was retried because no
+credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #392 exact tested head: `e36734ce2f2795bd0539f35145150bd68a2d1e70`.
+- The book-details schema now requires exact lowercase `cover_finish` value
+  `matte` or `glossy`; non-string, unsupported, omitted/extra, and legacy
+  schema-v5 records fail closed.
+- The canonical book-details hash now distinguishes matte from glossy, so a change
+  requires a new task descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_bind_cover_finish` proves both supported
+  selections pass, their canonical hashes differ, and invalid/unhashable values
+  are rejected.
+- POD integration gates run `39556085942`, job `119076059162`: success.
+- POD container runtime gates run `39556085914`, job `119076059165`: success,
+  including production-image Python/Node/PostgreSQL tests and startup with
+  publication disabled.
+- Guarded merge commit: `56a3859a62c423408d08a1700191c7efc8179bb0`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #104 exact tested head: `f5be9adce0ff9eb32b7b74a81f6a5b635e5df132`.
+- Cross-repository workflow pins Content Control merge
+  `56a3859a62c423408d08a1700191c7efc8179bb0` and explicitly runs the new
+  cover-finish regression.
+- POD cross-repository review verification run `39556684285`, job
+  `119077973921`: success.
+- Guarded Money Factory merge commit:
+  `11d3adc5aa05f26d90883804264840cf562db9cc`.
+
+### Authorized Render verification
+
+- Authorized service `content-control-render-worker`
+  (`srv-darsdb8u01pc73dn4i2g`) remains an unsuspended one-instance free Docker
+  service on `main` with commit-triggered auto-deploy.
+- Render detected Content Control merge `56a3859a...` and created deploy
+  `dep-dbc5rk3m8hqs73bfq0eg`.
+- Event `evt-dbc5rke1cdec73e8nifg` recorded `pipeline_minutes_exhausted` at
+  `2026-10-21T06:38:09.264557Z`; event
+  `evt-dbc5rk8bfp9s73b2e34g` recorded the deploy ended failed at
+  `2026-10-21T06:38:09.566720Z`.
+- Therefore hosted rollout of this merge is not verified. No paid capacity,
+  manual retry, or infrastructure widening was attempted.
+
+### Acceptance truth
+
+This closes a code-and-hosted-CI consistency gap only. It is not live KDP readback,
+physical-proof acceptance, live database durability/recovery, live reconciliation,
+live adapter publication, or controlled-launch evidence. All 24 acceptance areas
+remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+
