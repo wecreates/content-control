@@ -3256,3 +3256,92 @@ remain unverified. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted. This run did not claim a continuously
 running self-hosted worker.
+
+## Run receipt r166 — reject unsupported stored evidence media (2026-10-21 UTC)
+
+### Scope
+
+This run closed a stored-evidence integrity gap. Market, financial and provider
+listing intake verified referenced SHA-256 bytes directly in PostgreSQL, but
+those paths bypassed the artifact read contract and could accept a legacy or
+foreign row with unsupported stored media metadata. The shared verifier now
+checks the exact six-type artifact media allowlist for every referenced proof.
+Unsupported blobs remain visible only as metadata so they can return the fixed
+`EVIDENCE_ARTIFACT_MEDIA_INVALID` reason; PostgreSQL does not hash them and no
+blob body crosses into the application. Missing proof and supported-media byte
+corruption retain their existing distinct fail-closed reasons. This establishes
+technical media-contract consistency only, not source truth, rights, financial
+authenticity or provider acceptance. Etsy remained excluded. The failed
+production-database administration route was not retried because no credible
+access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #423 exact tested head:
+  `4748269765cd0b2cffe9d643bb1a327845415aff`.
+- All 11 remote changed blobs exactly matched the locally tested files.
+- The shared evidence query conditionally hashes a body only when its stored
+  media type belongs to `ARTIFACT_MEDIA_TYPES`, then rechecks metadata in the
+  application for alternate pool implementations.
+- Disposable-PostgreSQL coverage inserts valid bytes under unsupported
+  `text/html` metadata and proves market, financial and listing intake all
+  reject without queue, inbox, event, ledger or market mutations.
+- The broad focused local suite passed 171 tests with zero failures/skips; its
+  direct evidence/release subset passed 76 tests with zero failures/skips.
+- `git diff --check` passed.
+- POD integration gates run `39685689346`, job `119519038181`: success.
+- POD container runtime gates run `39685689344`, job `119519037868`:
+  success.
+- Guarded Content Control merge:
+  `10353132631d3ac89abc348d7a04992194230520`.
+
+### Money Factory dependent pin and hosted verification
+
+- Initial PR #119 head `4428b9a678c076ecfbaf4b30a069a9558f17f326`
+  passed run `39686386494`, job `119521399093`, but was not merged after
+  main advanced with unrelated monitor commit
+  `ed1768125d9c44fe5e77448fe775a8dfd0b1484c`.
+- The branch was moved with an exact-head lease to that current main and the
+  pin was reapplied, preserving the monitor change. The superseded PR closed
+  without merge.
+- Replacement PR #120 exact tested head:
+  `babbcdafa71da0057ff919e023f03686ce2387c9`.
+- POD cross-repository review verification run `39687118980`, job
+  `119523891603`: success.
+- The workflow pins Content Control merge
+  `10353132631d3ac89abc348d7a04992194230520` and retains both false
+  publication flags.
+- Guarded Money Factory merge:
+  `a1b6a13f5e25722dee4a267ad558069eb75b76f7`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `10353132631d3ac89abc348d7a04992194230520` and created deployment
+  `dep-dbcjnitg1s2s7384l0gg`.
+- Event `evt-dbcjnj5k3hvs739m6i7g` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T22:25:16.124495Z`;
+  deploy-started event `evt-dbcjnj4tuius73c65tp0` and deploy-ended event
+  `evt-dbcjnj6j5dgc739m3slg` recorded the same failed attempt.
+- No build or hosted rollout of r166 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one stored-evidence media-confusion gap only. Passing synthetic,
+PostgreSQL and container tests are not live acceptance. Restricted production
+database/schema verification, durable retention/recovery drills, deployed
+hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, independent QA/remediation outcomes, permitted live adapters for
+KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics and
+financial reconciliation, owner-phone operations, monitoring/recovery drills,
+measured capacity, real end-to-end acceptance and controlled launch readiness
+remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run did not claim a continuously
+running self-hosted worker.
