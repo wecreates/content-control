@@ -222,6 +222,24 @@ class PODTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'KDP_TEMPLATE_PLACEHOLDER'):
                 inspect_book_details(detail_path,manifest,manuscript)
 
+    def test_kdp_book_details_require_distinct_cover_fields(self):
+        from pod_common import save_json
+        from pod_interior_preflight import inspect_book_details
+        with tempfile.TemporaryDirectory() as tmp:
+            details={'schema_version':1,'title':'Same','subtitle':None,
+                'author_name':'Same','language':'en','isbn':None,
+                'imprint':None,'title_page':1}
+            detail_path=Path(tmp)/'details.json';save_json(detail_path,details)
+            manuscript=Path(tmp)/'pages.json';save_json(manuscript,[{'lines':['Same','Same']}])
+            manifest={'platform':'kdp','expected_text':[
+                {'text':'Same','box_px':[2100,300,2400,350]}],
+                'template':{'platform':'kdp','dpi':300,'size_inches':[12.304048,9.25],
+                    'kdp':{'locale':'en_US','reading_direction':'left_to_right',
+                           'trim_width_inches':6,'spine_width_inches':.054048,
+                           'bleed_inches':.125}}}
+            with self.assertRaisesRegex(ValueError,'KDP_BOOK_DETAILS_MISMATCH'):
+                inspect_book_details(detail_path,manifest,manuscript)
+
     def test_kdp_original_manuscript_is_required_and_editorial_hash_must_match(self):
         missing=self.package_result(lambda m,r:None,kdp=True,manuscript_inputs=False)
         self.assertEqual(missing['binary_pass'],0)

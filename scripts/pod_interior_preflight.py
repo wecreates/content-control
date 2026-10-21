@@ -54,11 +54,13 @@ def inspect_book_details(details_path, manifest, manuscript):
             raise ValueError('KDP_BOOK_DETAILS_INVALID')
         dpi = template['dpi']; trim = kdp['trim_width_inches']
         spine = kdp['spine_width_inches']; bleed = kdp['bleed_inches']
-        width, height = template['size_inches']
+        inches = template['size_inches']
         if (type(dpi) is not int or not 300 <= dpi <= 1200 or
+                not isinstance(inches, list) or len(inches) != 2 or
                 any(type(value) not in (int, float) or not math.isfinite(value) or value <= 0
-                    for value in (trim, spine, bleed, width, height))):
+                    for value in (trim, spine, bleed, *inches))):
             raise ValueError('KDP_BOOK_DETAILS_INVALID')
+        width, height = inches
         # The supported LTR cover places the front to the right of the back and
         # spine. Metadata must be explicit front-cover text, at least 0.125 in
         # inside the trim as required by KDP, rather than incidental back copy.
@@ -67,6 +69,8 @@ def inspect_book_details(details_path, manifest, manuscript):
         cover_fields = [details['title'], details['author_name']]
         if details['subtitle'] is not None:
             cover_fields.insert(1, details['subtitle'])
+        if len(set(cover_fields)) != len(cover_fields):
+            raise ValueError('KDP_BOOK_DETAILS_MISMATCH')
         for value in cover_fields:
             matches = [layer for layer in layers if isinstance(layer, dict) and layer.get('text') == value]
             if len(matches) != 1:
