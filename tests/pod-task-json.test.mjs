@@ -26,11 +26,11 @@ async function blocked(body){
 }
 
 test('duplicate task roles and escaped equivalent keys fail in either order',async()=>{
- for(const pair of ['"source":"absent","source":"input.json"',
-  '"source":"input.json","source":"absent"',
-  '"source":"input.json","source":"input.json"',
-  '"source":"absent","sour\\u0063e":"input.json"']){
-  await blocked(json.replace('"source":"input.json"',pair));
+ for(const pair of ['"source":"absent","source":"input.png"',
+  '"source":"input.png","source":"absent"',
+  '"source":"input.png","source":"input.png"',
+  '"source":"absent","sour\\u0063e":"input.png"']){
+  await blocked(json.replace('"source":"input.png"',pair));
  }
 });
 test('duplicate nested artifact identities and template scope cannot choose the last value',async()=>{
@@ -62,7 +62,7 @@ test('valid Unicode and escaped JSON restore exact input bytes with caller-owned
  await assert.rejects(fs.stat(task.assetRoot),{code:'ENOENT'});
 });
 test('production records TASK_INVALID and stops before authorization or Python on ambiguous descriptors',async()=>{
- const f=fixture(json.replace('"source":"input.json"','"source":"other","source":"input.json"'));
+ const f=fixture(json.replace('"source":"input.png"','"source":"other","source":"input.png"'));
  const key='synthetic-task-key-'.repeat(3),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',
   destination_platform:'redbubble',mode:'PRELAUNCH',task_sha256:f.hash};
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,
