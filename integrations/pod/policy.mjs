@@ -74,7 +74,8 @@ export function enforceQA(qa,packageHash,templateHash,platform) {
   !REQUIRED_QA.every(k=>qa.checks?.[k]===true)||
   (platform==='kdp'&&(qa.checks?.editorial!==true||qa.checks?.template_provenance!==true||
    qa.checks?.manuscript_provenance!==true||qa.checks?.source_font!==true||
-   qa.checks?.font_rights!==true||qa.checks?.book_details!==true))) throw Error('QA_BLOCKED');
+   qa.checks?.font_rights!==true||qa.checks?.book_details!==true||
+   qa.checks?.regional_rights!==true))) throw Error('QA_BLOCKED');
 }
 
 
