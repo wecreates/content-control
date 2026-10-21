@@ -113,7 +113,8 @@ def inspect_book_details(details_path, manifest, manuscript):
 
     if (not isinstance(details, dict) or set(details) != required_keys or
             details.get('schema_version') != 6 or
-            details.get('cover_finish') not in {'matte', 'glossy'} or
+            type(details.get('cover_finish')) is not str or
+            details['cover_finish'] not in {'matte', 'glossy'} or
             not metadata_text(details.get('title')) or
             not metadata_text(details.get('author_name')) or
             details.get('language') != 'en' or
