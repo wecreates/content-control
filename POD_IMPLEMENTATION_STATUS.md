@@ -2913,3 +2913,80 @@ end-to-end publication, and controlled launch readiness remain unverified. All
 24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted.
+
+
+## Run receipt r162 — authenticated KDP template archive upload (2026-10-21 UTC)
+
+### Scope
+
+This run repaired the clean upload-to-task path for both retained official KDP
+template archives. Stored KDP tasks require separate hash-addressed
+`templateSource` and `interior.source` ZIP inputs, but the authenticated
+artifact route and immutable store did not accept `application/zip`. The route
+now accepts bounded ZIP uploads and preserves their exact bytes, media type and
+SHA-256 identity. The downstream bounded KDP import stages still independently
+rehash and inspect each retained archive before rendering; accepting the media
+type does not trust a filename, claimed profile, template provenance, or KDP
+acceptance. Etsy remained excluded. The failed production-database
+administration route was not retried because no credible access-path change was
+observed.
+
+### Content Control implementation and hosted verification
+
+- PR #415 exact tested head:
+  `3e21e04c2d589766827bd5fb34509e2adb86497c`.
+- `ArtifactStore` and authenticated `POST /artifacts` accept
+  `application/zip` under the existing 16 MiB object ceiling, immutable
+  SHA-256 identity, deployment storage budget, authentication and fail-closed
+  rejection policy.
+- Store and real-HTTP regressions use exact ZIP signature bytes, verify the
+  returned digest, and confirm exact byte/media preservation.
+- Task-input documentation requires both retained archives to be uploaded as
+  `application/zip` and notes the independent importer validation.
+- POD integration gates run `39649405510`, job `119393909237`: success.
+- POD container runtime gates run `39649405581`, job `119393917680`:
+  success, including production Docker image, Python QA/rendering,
+  Node/PostgreSQL tests, real print/review workflow, and startup with
+  publication disabled.
+- Guarded Content Control merge:
+  `2ca1b87202625d58e1d05c89209187c345b36255`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #115 exact tested head:
+  `dd26fb358d0fd7389aae766b9f24aa144e0d1092`.
+- The cross-repository workflow pins Content Control merge
+  `2ca1b87202625d58e1d05c89209187c345b36255` and exercises the KDP metadata,
+  manuscript/font-rights, retained-template, CMYK cover, editorial, Node and
+  Python verification suites.
+- POD cross-repository review verification run `39650616263`, job
+  `119397654088`: success.
+- Guarded Money Factory merge:
+  `a620fd38cfb84dff24bd3be3c3aded2fbbbeca50`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `2ca1b87202625d58e1d05c89209187c345b36255` and created deployment
+  `dep-dbcg0ug473hc73c7gr3g` at `2026-10-21T18:12:10.179835Z`.
+- Event `evt-dbcg0uibeu7c73fdlic0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T18:12:10.586162Z`;
+  deploy-ended event `evt-dbcg0uvmfmcs739ojmv0` followed at
+  `2026-10-21T18:12:11.071327Z`. The deployment finished
+  `build_failed` at `2026-10-21T18:12:11.026056Z`.
+- No build or hosted rollout of r162 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access, or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes an upload-media compatibility gap only. Synthetic archives and
+passing code tests are not official-template provenance, a real KDP preview or
+proof, live platform readback, or launch acceptance. Genuine owner-authorized
+rights evidence, live preview/proof acceptance, production database/recovery,
+live adapter acceptance, financial reconciliation, end-to-end publication and
+controlled launch readiness remain unverified. All 24 acceptance areas remain
+OPEN. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
