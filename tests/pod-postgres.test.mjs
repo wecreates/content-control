@@ -77,7 +77,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const claimed=claims.find(Boolean),manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
-   checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true]))});
+   checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
   const qa={payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
   await verifyProductionRecovery(pool,bridge);

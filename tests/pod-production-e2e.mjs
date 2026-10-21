@@ -59,7 +59,7 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const saved=await db.reviewPackage(id);assert.equal(saved.reason_code,'REVIEW_REQUIRED');
   const summary=await metrics(db);assert.equal(summary.incident_count,'0');assert.ok(summary.queues.some(q=>q.state==='review_required')); 
   for(const sha of Object.values(saved.manifest.files))assert.equal(hash((await store.get(sha)).body),sha);
-  const qa=sign({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:saved.manifest.package_sha256,template_sha256:saved.manifest.template_sha256,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true]))});
+  const qa=sign({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:saved.manifest.package_sha256,template_sha256:saved.manifest.template_sha256,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
   await assert.rejects(db.acceptReview(id,sign({...JSON.parse(qa.payload),package_sha256:'0'.repeat(64)})),/QA_BLOCKED/);
   assert.equal((await db.acceptReview(id,qa)).publication_enabled,false);
   await assert.rejects(db.acceptReview(id,qa),/REVIEW_NOT_PENDING/);

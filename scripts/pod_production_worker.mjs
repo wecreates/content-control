@@ -40,6 +40,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
+   if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
    const interiorEnvelope=JSON.parse(await fs.readFile(task.interior.template,'utf8'));
    const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
    const profile=kdpCalculatorProfile(cover,interior);
@@ -83,7 +84,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   }
   let attestation;
   try{attestation=await task.reviewPackage(manifest,{signal,
-   ...(job.brief.platform==='kdp'?{manuscript:task.interior.pages}:{})});}
+   ...(job.brief.platform==='kdp'?{manuscript:task.interior.pages,bookDetails:task.interior.bookDetails}:{})});}
   catch(error){enabled();throw error;}
   // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
   // and reject late results before reading attestation paths or launching QA.
@@ -96,7 +97,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource,
    '--interior-template-source',task.interior.source,
    '--manuscript',task.interior.pages,'--font',task.interior.font,
-   '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense);
+   '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense,
+   '--book-details',task.interior.bookDetails);
   for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
   for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);

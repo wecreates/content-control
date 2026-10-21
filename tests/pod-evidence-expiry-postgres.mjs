@@ -28,7 +28,7 @@ export async function verifyEvidenceExpiry(pool,bridge,proof){
     source_sha256:proof,collection_authorized:true}:kind==='finance'?{verified:true,authority_event_id:event,provider_event_id:event,provider:'fixture',job_id:job,
      amount_minor:10,kind:'royalty',currency:'USD',occurred_at:new Date(issued-1000).toISOString(),evidence_sha256:proof}:kind==='listing'?
     {status:'LIVE',provider_verified:true,job_id:job,account_id:account,platform:'redbubble',provider_id:event,provider_event_id:event,package_sha256:proof,evidence_sha256:proof}:
-    {verdict:kind==='complete-fail'?'FAIL':'PASS',...manifest,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance'].map(k=>[k,true]))};
+    {verdict:kind==='complete-fail'?'FAIL':'PASS',...manifest,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))};
    const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:'+audience,issued_at_ms:issued-1,expires_at_ms:issued+1000,...claims});
    const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
    const db=new PodDB({pool:{connect:async()=>{
