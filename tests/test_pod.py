@@ -313,7 +313,7 @@ class PODTests(unittest.TestCase):
                 {'edition':{'number':True,'display_text':'Second Edition'}},
                 {'series':{'title':'Fixture Series'}},
                 {'contributors':[{'role':'Editor','name':'Fixture Editor'}]*2},
-                {'contributors':[{'role':'Editor','name':f'Contributor {i}'} for i in range(11)]},
+                {'contributors':[{'role':'Editor','name':f'Contributor {i}'} for i in range(10)]},
             )
             for patch_value in invalid:
                 with self.subTest(details=patch_value):
