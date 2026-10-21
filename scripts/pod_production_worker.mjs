@@ -74,7 +74,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const manifest=JSON.parse(await fs.readFile(path.join(task.output,'manifest.json'),'utf8'));
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
-  const artifacts=await readPackageArtifacts(task.output,manifest.files);
+  const artifacts=await readPackageArtifacts(task.output,manifest.files,{platform:job.brief.platform});
   await authorizeProduction();
   await store.putMany(artifacts);
   await authorizeProduction();
