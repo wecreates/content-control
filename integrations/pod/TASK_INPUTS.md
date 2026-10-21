@@ -38,6 +38,18 @@ Upload both retained KDP template archives (`templateSource` and
 the bounded KDP import stages independently rehash and inspect the retained ZIP
 members and profile before rendering.
 
+The resolver also binds stored media metadata to every consuming role before
+those bytes can enter the workspace. Base `source` and `reference` roles require
+`image/png`; base `template`, `textLayers` and `assetRights` require
+`application/json`. KDP `interior.template`, `pages`, `fontRights` and
+`bookDetails` require `application/json`; `font` requires `font/ttf`;
+`fontLicense` and `regionalRightsEvidence` require `text/plain`; both template
+source roles require `application/zip`. A single filename cannot alias roles
+with conflicting media contracts. Mismatches fail as `TASK_MEDIA_TYPE_INVALID`
+and the disposable workspace is removed. This metadata gate supplements, and
+does not replace, independent byte hashing, parsing, archive inspection, rights
+validation or QA.
+
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials
 remain excluded from operational reasons. Existing bounded remediation and
