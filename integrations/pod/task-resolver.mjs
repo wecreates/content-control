@@ -7,6 +7,23 @@ import {parseSignedJSON} from './signed-json.mjs';
 const hash=/^[a-f0-9]{64}$/;
 const outputNames=new Set(['package','qa.json','qa-signed.json']);
 const interiorRoles=['template','pages','font','fontRights','fontLicense','source','bookDetails','regionalRightsEvidence'];
+const roleMediaTypes={source:'image/png',template:'application/json',textLayers:'application/json',
+ assetRights:'application/json',reference:'image/png'};
+const interiorMediaTypes={template:'application/json',pages:'application/json',font:'font/ttf',
+ fontRights:'application/json',fontLicense:'text/plain',source:'application/zip',
+ bookDetails:'application/json',regionalRightsEvidence:'text/plain'};
+function requiredMediaTypes(task){
+ const expected=new Map();
+ const bind=(name,mediaType)=>{
+  const prior=expected.get(name);
+  if(prior&&prior!==mediaType)throw Error('TASK_MEDIA_TYPE_INVALID');
+  expected.set(name,mediaType);
+ };
+ for(const [role,mediaType] of Object.entries(roleMediaTypes))bind(task[role],mediaType);
+ if(Object.hasOwn(task,'templateSource'))bind(task.templateSource,'application/zip');
+ if(task.interior)for(const role of interiorRoles)bind(task.interior[role],interiorMediaTypes[role]);
+ return expected;
+}
 export function validateTask(task){
  if(task?.schema_version!==1||!task.files||typeof task.files!=='object'||Array.isArray(task.files))throw Error('TASK_INVALID');
  const entries=Object.entries(task.files);
@@ -21,6 +38,7 @@ export function validateTask(task){
  if(Object.hasOwn(task,'interior')&&(!task.interior||typeof task.interior!=='object'||Array.isArray(task.interior)||
   Object.keys(task.interior).length!==interiorRoles.length||
   interiorRoles.some(role=>!Object.hasOwn(task.interior,role)||!has(task.interior[role]))))throw Error('TASK_INTERIOR_INVALID');
+ requiredMediaTypes(task);
  return task;
 }
 export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env,fetchImpl=fetch}={}){
@@ -45,13 +63,17 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
    try{parsed=parseSignedJSON(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(descriptor.body));}
    catch{throw Error('TASK_INVALID');}
    const task=validateTask(parsed);
+   const mediaTypes=requiredMediaTypes(task);
    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'cyzor-pod-'));
    const cleanup=()=>fs.rm(directory,{recursive:true,force:true});
    try{
     active();
     let total=0;
     for(const [name,sha] of Object.entries(task.files)){
-     const artifact=await store.get(sha);active();total+=artifact.body.length;
+     const artifact=await store.get(sha);active();
+     const expected=mediaTypes.get(name);
+     if(expected&&artifact.media_type!==expected)throw Error('TASK_MEDIA_TYPE_INVALID');
+     total+=artifact.body.length;
      if(total>64*1024*1024)throw Error('TASK_BUDGET_EXCEEDED');
      await fs.writeFile(path.join(directory,name),artifact.body,{flag:'wx',mode:0o600});
      active();
