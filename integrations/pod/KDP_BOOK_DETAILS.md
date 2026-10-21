@@ -127,6 +127,20 @@ selection and limits its scope; it is not legal clearance, does not prove U.S.
 rights, and does not replace the current concept-rights gate or live KDP readback.
 Other countries and worldwide scope require a later evidence-backed contract.
 
+A KDP package also requires current signed `pod:package-rights` evidence with
+an exact `regional_rights` object. It binds the United States territory,
+paperback format, `copyright_owner` publishing basis, the exact selected
+categories, commercial print-on-demand permission, original-work and verified-
+rights-holder assertions, non-revocation, a stable authority event, one or more
+retained source-evidence identities, and the retained evidence SHA-256.
+Independent QA copies these identities and scopes into its signed receipt, and
+the publication policy rejects legacy KDP QA without the dedicated
+`regional_rights` check. Missing, expired, revoked, differently scoped,
+duplicate-evidence, malformed, or extra-key records fail closed. This contract
+does not create or validate the underlying legal document: live acceptance still
+requires genuine owner-authorized evidence and, if KDP requests it, the actual
+documentation KDP accepts. A copyright page alone is not treated as proof.
+
 Expanded Distribution is optional and may expose a paperback through bookstores,
 libraries, academic institutions, and other retailers outside Amazon. It has separate
 US/UK territorial-rights requirements, ISBN and format eligibility, a 40% royalty
@@ -155,6 +169,7 @@ Sources rechecked October 21, 2026:
 - [Get an ISBN](https://kdp.amazon.com/en_US/help/topic/GTJ8LBXL6Z4WV5QX)
 - [Expanded Distribution](https://kdp.amazon.com/en_US/help/topic/GQTT4W3T5AYK7L45)
 - [Paperback and Hardcover Distribution Rights](https://kdp.amazon.com/en_US/help/topic/G201834280)
+- [Intellectual Property Rights Frequently Asked Questions](https://kdp.amazon.com/en_US/help/topic/G200672400)
 - [Paperback Royalty](https://kdp.amazon.com/en_US/help/topic/G201834330)
 - [Primary Audience and Reading Age](https://kdp.amazon.com/en_US/help/topic/G201506310)
 - [Low-Content Books](https://kdp.amazon.com/en_US/help/topic/GGE5T76TWKA85DJM)
