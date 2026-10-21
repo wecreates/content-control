@@ -2237,3 +2237,72 @@ acceptance, economics/reconciliation, end-to-end publication, or launch readines
 All 24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
 
+
+## Run receipt r153 — KDP substantive-book classification binding (2026-10-21 UTC)
+
+### Scope and official basis
+
+Fresh official KDP guidance was rechecked on 2026-10-21:
+
+- [Low-Content Books](https://kdp.amazon.com/en_US/help/topic/GGE5T76TWKA85DJM)
+- [Title Setup: Book Details, Content, & Pricing](https://kdp.amazon.com/en_US/help/topic/G73MVSZ5P69VVCN6)
+- [ISBN and Imprint](https://kdp.amazon.com/en_US/help/topic/G200736410)
+
+KDP exposes a Low-content checkbox during print-book setup. Its selection affects
+ISBN eligibility and other book capabilities, and an incorrect selection can cause
+rejection. The supported CYZOR lane produces a substantive text interior, but the
+task package previously did not bind the corresponding answer. This run makes that
+operator-visible answer explicit without claiming that code can classify arbitrary
+content or prove what was entered in a live KDP account. Etsy remained excluded.
+The failed production-database administration route was not retried because no
+credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #396 exact tested head: `4122af52d94e551d1f92f5acb0b1bc59629d6ef3`.
+- Schema v8 requires exact boolean `low_content: false`; `true`, missing/null,
+  numeric, string, object and array values fail closed.
+- The value is included in the canonical book-details hash, so changing it
+  requires a new task descriptor and fresh Money Factory authority.
+- Focused regression:
+  `PODTests.test_kdp_book_details_require_substantive_book_lane` proves the
+  accepted value and type-confused/unsupported-value rejection.
+- POD integration gates run `39575022623`, job `119138294899`: success.
+- POD container runtime gates run `39575022709`, job `119138295242`: success,
+  including in-image Python/Node/PostgreSQL tests, real print/review workflow,
+  and startup with publication disabled.
+- Guarded Content Control merge:
+  `adbcd0966e17a9fdc8efb9a8fbd832dbfa167869`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #106 exact tested head: `2e5507d666153c4375d6e651cf55a36cd48f6479`.
+- The cross-repository workflow pins Content Control merge
+  `adbcd0966e17a9fdc8efb9a8fbd832dbfa167869` and explicitly runs the
+  substantive-book classification regression.
+- POD cross-repository review verification run `39575830107`, job
+  `119140993137`: success.
+- Guarded Money Factory merge:
+  `d4fa54f6b16416b5c2404cf8fb4aeadb12728869`.
+
+### Authorized Render verification
+
+- Render detected Content Control merge `adbcd096...` and created deployment
+  `dep-dbc8650473hc73a4jcvg`.
+- Event `evt-dbc865295das73d6rpp0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T09:17:08.615142Z`.
+- Event `evt-dbc865ek7voc739ulafg` recorded the deployment ended failed at
+  `2026-10-21T09:17:09.641360Z`.
+- No build or hosted rollout of this revision was verified. No manual retry,
+  paid capacity, plan/cache change, replacement service, secret access, or
+  network widening was attempted.
+
+### Acceptance truth
+
+This closes a package-consistency gap only. It does not establish live KDP
+readback, physical-proof acceptance, production database/recovery, live adapter
+acceptance, economics/reconciliation, end-to-end publication, or controlled
+launch readiness. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted.
+
