@@ -12,7 +12,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image
-from pod_common import canonical, digest, read_json, save_json, scoped_file, verified, sign, PLATFORMS
+from pod_common import (PLATFORMS, canonical, digest, open_regular_binary, read_json,
+                        save_json, scoped_file, sign, verified)
 from pod_raster import open_raster
 from pod_qa_snapshot import capture_qa_inputs
 
@@ -108,8 +109,11 @@ def similarity(candidate,reference):
 
 EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interior_consistency','ai_disclosure')
 
-def inspect_regional_rights(rights, details, target_country):
-    """Require current, retained evidence for the exact KDP territory and category scope."""
+MAX_REGIONAL_RIGHTS_EVIDENCE_BYTES = 16 * 1024 * 1024
+
+
+def inspect_regional_rights(rights, details, target_country, evidence_path):
+    """Require exact scoped rights and independently hash their retained evidence bytes."""
     regional = rights.get('regional_rights') if isinstance(rights, dict) else None
     expected_keys = {'country', 'territories', 'format', 'publishing_basis',
                      'categories', 'commercial_print_on_demand', 'original_work',
@@ -137,13 +141,24 @@ def inspect_regional_rights(rights, details, target_country):
             len(set(regional['source_evidence_ids'])) != len(regional['source_evidence_ids']) or
             re.fullmatch(r'[a-f0-9]{64}', regional.get('evidence_sha256', '')) is None):
         raise ValueError('KDP_REGIONAL_RIGHTS_REQUIRED')
+    if evidence_path is None:
+        raise ValueError('KDP_REGIONAL_RIGHTS_EVIDENCE_REQUIRED')
+    try:
+        with open_regular_binary(evidence_path) as source:
+            evidence = source.read(MAX_REGIONAL_RIGHTS_EVIDENCE_BYTES + 1)
+    except (OSError, ValueError):
+        raise ValueError('KDP_REGIONAL_RIGHTS_EVIDENCE_INVALID') from None
+    if (not evidence or len(evidence) > MAX_REGIONAL_RIGHTS_EVIDENCE_BYTES or
+            hashlib.sha256(evidence).hexdigest() != regional['evidence_sha256']):
+        raise ValueError('KDP_REGIONAL_RIGHTS_EVIDENCE_INVALID')
     return regional
 
 
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
              editorial_envelope=None,approved_editorial_evaluators=None,target_country=None,
              template_evidence=None,target_product=None,source_evidence=None,manuscript=None,
-             interior_font=None,font_rights_envelope=None,font_license=None,book_details=None):
+             interior_font=None,font_rights_envelope=None,font_license=None,book_details=None,
+             regional_rights_evidence=None):
     root=Path(root)
     report={'schema_version':1,'engine':'cyzor-pod-qa-v1','verdict':'FAIL','binary_pass':0,
             'production_ready':False,'publication_enabled':False,'checks':{},'errors':[]}
@@ -218,7 +233,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 details=read_json(book_details)
                 report['list_price']=details['list_price']
                 report['checks']['book_details']=True
-                regional_rights=inspect_regional_rights(rights,details,target_country)
+                regional_rights=inspect_regional_rights(rights,details,target_country,
+                                                        regional_rights_evidence)
                 report['checks']['regional_rights']=True
                 report['regional_rights_event_id']=regional_rights['authority_event_id']
                 report['regional_rights_evidence_sha256']=regional_rights['evidence_sha256']
@@ -320,6 +336,7 @@ def main():
     p.add_argument('--font-rights',help='Current signed rights grant for the original KDP interior font')
     p.add_argument('--font-license',help='Retained license evidence bound by the current font-rights grant')
     p.add_argument('--book-details',help='Task-owned KDP title-setup details matched to cover and manuscript')
+    p.add_argument('--regional-rights-evidence',help='Retained evidence bytes named by regional_rights.evidence_sha256')
     p.add_argument('--approved-editorial-evaluator',action='append',default=[])
     a=p.parse_args()
     try:
@@ -329,7 +346,7 @@ def main():
                          'source':a.template_source,'interiorSource':a.interior_template_source},a.product,
                         {'source':a.source,'rights':a.asset_rights,'text_layers':a.text_layers,'asset_root':a.asset_root},
                         a.manuscript,a.font,read_json(a.font_rights) if a.font_rights else None,a.font_license,
-                        a.book_details)
+                        a.book_details,a.regional_rights_evidence)
     except Exception as exc:
         report={'schema_version':1,'verdict':'FAIL','binary_pass':0,'production_ready':False,'publication_enabled':False,'errors':[type(exc).__name__]}
     save_json(a.output,report)
