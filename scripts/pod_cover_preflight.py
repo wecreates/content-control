@@ -1,11 +1,10 @@
 """Verify the delivered KDP cover against the exact reviewed print raster.
 
-This is a technical check for the lossless raster-cover pipeline, not an
-editorial approval or proof of platform acceptance.
+The supported KDP pipeline embeds one profile-free DeviceCMYK raster. This is
+a technical check, not an editorial approval or proof of platform acceptance.
 """
 import math
 import fitz
-from PIL import Image, ImageChops
 from pod_pdf_policy import inspect_static_document, inspect_static_page
 
 
@@ -32,16 +31,60 @@ def inspect_cover(path, image, dpi):
                 for actual, desired in zip(box, expected))):
             raise ValueError('COVER_PAGE_BOX_INVALID')
         if (page.get_links() or next(page.annots(), None) is not None or
-                next(page.widgets(), None) is not None or cover.embfile_count()):
+                next(page.widgets(), None) is not None or cover.embfile_count() or
+                any(cover.xref_get_key(page.xref,key)[0]!='null'
+                    for key in ('Group','Metadata','PieceInfo','Dur','UserUnit')) or
+                cover.xref_get_key(page.xref,'Trans') not in
+                    (('null','null'),('dict','<<>>'))):
             raise ValueError('COVER_CONTENT_UNSUPPORTED')
-        pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72),
-                              colorspace=fitz.csRGB, alpha=False, annots=False)
-        if (pix.width, pix.height) != image.size:
-            raise ValueError('COVER_RASTER_SIZE_MISMATCH')
-        raster = Image.frombytes('RGB', image.size, pix.samples)
-        # An average error threshold can hide a missing glyph or local defect
-        # on a large cover. The supported generator embeds lossless RGB pixels.
-        if ImageChops.difference(raster, image).getbbox() is not None:
+        # The generator supports exactly one full-page raster and no text,
+        # paths, clipping or other paint operations. A render-only comparison
+        # would pass an RGB file after an implicit conversion and cannot prove
+        # the submitted PDF actually uses the required single CMYK space.
+        images=page.get_images(full=True)
+        info=page.get_image_info(xrefs=True)
+        paint=page.get_bboxlog()
+        if (len(images)!=1 or len(info)!=1 or page.get_texttrace() or
+                page.get_drawings() or len(page.get_contents())!=1 or
+                len(paint)!=1 or paint[0][0]!='fill-image'):
+            raise ValueError('COVER_CONTENT_UNSUPPORTED')
+        entry=images[0]; details=info[0];xref=entry[0]
+        if (entry[2:6]!=(image.width,image.height,8,'DeviceCMYK') or
+                details.get('xref')!=xref or details.get('width')!=image.width or
+                details.get('height')!=image.height or details.get('bpc')!=8 or
+                details.get('colorspace')!=4 or details.get('cs-name')!='DeviceCMYK' or
+                details.get('has-mask') is not False or
+                cover.xref_get_key(xref,'ColorSpace')!=('name','/DeviceCMYK') or
+                any(cover.xref_get_key(xref,key)[0]!='null'
+                    for key in ('SMask','Mask','Alternates','Metadata','Decode',
+                                'DecodeParms','Interpolate','Intent','OC','OPI',
+                                'SMaskInData'))):
+            raise ValueError('COVER_COLOR_SPACE_INVALID')
+        # Decode the image object instead of accepting a color-managed
+        # renderer's approximation. This detects a one-channel change while
+        # binding the PDF directly to the reviewed RGB raster via the
+        # generator's deterministic Pillow CMYK conversion.
+        if cover.xref_stream(xref)!=image.convert('CMYK').tobytes():
+            raise ValueError('COVER_PIXEL_MISMATCH')
+        # ReportLab emits a tiny deterministic content stream. Constraining the
+        # operators prevents an otherwise invisible clipping path or transform
+        # from altering the delivered page while the image object stays exact.
+        tokens=cover.xref_stream(page.get_contents()[0]).split()
+        name=('/'+entry[7]).encode()
+        if (len(tokens)!=25 or tokens[:15]!=[
+                b'1',b'0',b'0',b'1',b'0',b'0',b'cm',b'BT',b'/F1',b'12',b'Tf',b'14.4',b'TL',b'ET',b'q'] or
+                tokens[21]!=b'cm' or
+                tokens[22:]!=[name,b'Do',b'Q']):
+            raise ValueError('COVER_CONTENT_UNSUPPORTED')
+        try:
+            matrix=tuple(float(value) for value in tokens[15:21])
+        except ValueError:
+            raise ValueError('COVER_CONTENT_UNSUPPORTED') from None
+        desired=(expected[2],0,0,expected[3],0,0)
+        if (any(not math.isfinite(actual) or abs(actual-wanted)>0.01
+                for actual,wanted in zip(matrix,desired)) or
+                any(not math.isfinite(actual) or abs(actual-wanted)>0.01
+                    for actual,wanted in zip(paint[0][1],expected))):
             raise ValueError('COVER_PIXEL_MISMATCH')
     return True
 

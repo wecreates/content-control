@@ -60,6 +60,29 @@ profiles require a separately verified contract before admission. Correcting
 template fields requires a new immutable task and fresh authority for its hash.
 Low-level technical/review helpers remain separate, and publication stays false.
 
+## Delivered cover CMYK contract
+
+The supported KDP paperback generator keeps `print.png` as the exact RGB review
+surface, but `cover.pdf` now contains exactly one full-page, eight-bit
+`DeviceCMYK` raster. The conversion is deterministic and profile-free. The
+manifest declares `cover_color_space: "DeviceCMYK"`; independent QA requires
+that declaration and then inspects the PDF object itself. It rejects RGB,
+grayscale, ICC-based, spot, masked or mixed-space cover images, extra paint
+operations, clipping, transforms that do not fill the page, and any difference
+between the decoded CMYK object and the deterministic conversion of the exact
+reviewed raster. A single changed CMYK channel therefore fails
+`COVER_PIXEL_MISMATCH`; a wrong or profiled space fails
+`COVER_COLOR_SPACE_INVALID`.
+
+This implements KDP's current recommendation that paperback cover images be
+CMYK, while avoiding the embedded profiles that KDP says it removes and that
+can produce unexpected results. It does not simulate KDP's printer conversion,
+measure printed color, approve subjective color, or replace Print Previewer and
+a physical proof. The review PNG remains RGB for deterministic OCR and pixel
+provenance; only the delivered paperback PDF is CMYK. Source checked October 21,
+2026: [Create a Paperback Cover](https://kdp.amazon.com/en_US/help/topic/G201953020).
+Publication remains disabled.
+
 ## Matching cover and even manuscript before rendering
 
 The durable production coordinator also requires the independently authenticated
@@ -152,11 +175,10 @@ validated contract.
 Source requirements and parser behavior, checked October20, 2026:
 [KDP submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950)
 and [PyMuPDF font extraction](https://pymupdf.readthedocs.io/en/latest/document.html#Document.extract_font).
-A valid embedded subset alone does not prove its source identity, licence,
+A valid embedded subset does not prove its source font identity, licence,
 commercial-use permission, correct glyph shaping, readability or editorial
-quality. The separate source-identity gate below binds its visible glyphs to the
-authenticated original bytes. Keep actual source-font rights and independent
-review separate. Publication remains disabled.
+quality. Keep actual source-font rights and independent review separate.
+Publication remains disabled.
 
 ## Separate editorial authority
 
@@ -175,7 +197,6 @@ separately managed `POD_EDITORIAL_KEY` (at least 32 bytes). Payload requirements
 | issued_at_ms, expires_at_ms | Current integer millisecond window, at most 15 minutes |
 | package_sha256 | Exact completed package manifest hash |
 | interior_sha256 | Exact hash of the package's `interior.pdf` |
-| manuscript_sha256 | SHA-256 of canonical original pages JSON independently reviewed by this evaluator |
 | evaluator_id | An explicitly authorized editorial evaluator |
 | verdict | `PASS` only after independent review |
 | checks | Each of the five checks below must be boolean true |
@@ -239,96 +260,3 @@ visible text and a full-page clip with a hole. This is a technical content check
 editorial and independent visual approval remain separate requirements.
 The parser's extended clipping output is documented at
 https://pymupdf.readthedocs.io/en/latest/page.html#Page.get_drawings
-
-
-## Independent no-bleed margin floors
-
-Independent package QA now validates the declared interior margins before actual
-PDF text bounds. For the supported paperback/no-bleed path, the gutter minimum
-is 0.375 / 0.5 / 0.625 / 0.75 / 0.875 inch in the five page-count bands above.
-Outside, top and bottom each require at least 0.25 inch. Values must be finite
-primitive numbers, and each opposing pair must leave usable page area. Missing,
-boolean, nonnumeric or undersized values fail INTERIOR_MARGIN_SPEC_INVALID.
-
-The existing actual-PDF inspector then enforces the declared rectangle on every
-page, including mirrored inside/outside margins. A rebound receipt, artifact hash
-or synthetic approval cannot lower the minimum. No margin is automatically
-increased, manuscript reflowed or new approval manufactured. Corrected inputs
-require a new immutable task and current authority for its hash.
-
-Source: [KDP submission specifications](https://kdp.amazon.com/en_US/help/topic/G201857950),
-checked October 20, 2026. Low-level renderer/geometry helpers still allow small
-technical fixtures; production package QA requires the full supported pair.
-Regional print-option ceilings, genuine official templates, actual editorial and
-rights review, print quality and observed KDP preview acceptance remain separate.
-Both publication flags remain false.
-
-
-## Original manuscript identity during independent QA
-
-KDP QA requires --manuscript with the original pages JSON from the authorized
-immutable task, not text reconstructed from the produced PDF or its receipt.
-It captures one regular non-symlink input under the existing 4 MiB strict UTF-8
-JSON limit. Duplicate keys, nonfinite numbers, malformed pages/lines and a page
-count different from the signed interior specification fail closed. Every
-actual delivered PDF page must extract to exactly the original line sequence;
-substituted, reordered, added or missing text fails MANUSCRIPT_TEXT_MISMATCH.
-The existing static PDF, visibility, clipping, font and geometry gates remain.
-
-The host-owned reviewPackage callback receives that original path as
-options.manuscript for KDP (alongside its existing cancellation signal). The
-callback must actually inspect it and the completed PDF; the path is not approval.
-The independent editorial authority must review those original pages and bind
-manuscript_sha256 to SHA-256 of their pod_common.canonical representation, in
-addition to the exact package and interior hashes. QA records that identity and
-requires checks.manuscript_provenance to be boolean true. Database completion,
-review acceptance and release validation require the same KDP-only bit. Existing
-receipts without it must undergo fresh review; never backfill the bit or invent
-a signature. The existing current evaluator, signature and final expiry checks
-still cap the passing receipt. Non-KDP contracts remain unchanged.
-
-Text equality is not original authorship, legal clearance, correct glyph shapes,
-substantive editorial quality, independent reviewer calibration or KDP preview/
-print acceptance. Source-font identity and licensing remain separate checks.
-Synthetic tests cannot approve a manuscript. Both publication flags remain false
-and all 24 live acceptance areas remain open.
-
-
-
-
-## Original interior font source identity
-
-KDP QA now requires `--font` with the original TTF from the authorized immutable
-task. It reads one regular non-symlink file into a bounded 16 MiB snapshot and
-requires its SHA-256 to equal `font_sha256` in the signed interior template.
-Missing, changed, empty, oversized, non-TrueType or undecodable sources fail
-before identity can pass.
-
-The delivered PDF must contain exactly one referenced TrueType font resource in
-this supported renderer contract. Requiring one resource prevents an unused
-matching font from masking a different active resource because PyMuPDF's text
-trace exposes Unicode and glyph ID but not the PDF resource name. FontTools
-decomposes each actual traced glyph from both programs. Units per em, horizontal
-header metrics, per-glyph advance/side bearing and the complete decomposed outline
-must match the authenticated source for every distinct delivered character/glyph
-pair. QA records the source SHA-256 and requires `checks.source_font` for KDP.
-The production worker passes the task-owned font path; non-KDP contracts are
-unchanged.
-
-This is evidence that the delivered glyph programs and metrics came from the
-specified source bytes. It does not prove a license, commercial-use permission,
-correct complex-script shaping, typography, editorial quality or KDP acceptance.
-Those remain separate current rights/review/platform gates. Multiple resources,
-other font formats or shaping contracts require separate implementation and
-validation rather than inference. Publication remains disabled.
-
-
-## Current font-rights and retained-license gate
-
-KDP QA separately requires a current `pod:font-rights` grant and the retained
-license-evidence bytes that it hashes. The grant is bound to the authenticated
-font SHA-256, exact task country/product, commercial use, print-on-demand use,
-font embedding, revocation state, licensor and license ID. See `FONT_RIGHTS.md`
-for the stored-task fields and fail-closed contract. This is attributable current
-technical evidence, not a legal conclusion or live Amazon acceptance. Publication
-remains disabled.

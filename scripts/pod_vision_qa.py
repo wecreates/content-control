@@ -153,6 +153,8 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
             report['checks']['rights']=rights.get('status')=='PASS' and rights.get('package_sha256')==actual and rights.get('permanently_unpublished') is False
             preflight=True
             if m['platform']=='kdp':
+                if m.get('cover_color_space')!='DeviceCMYK':
+                    raise ValueError('COVER_COLOR_SPACE_INVALID')
                 interior=m['interior']
                 spec=interior['template']
                 receipt=interior['receipt']
@@ -182,6 +184,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 inspect_spine_text(m['template'],text)
                 inspect_barcode_region(m['template'],art,text)
                 preflight=inspect_cover(scoped_file(root,'cover.pdf'),image,m['dpi'])
+                report['cover_color_space']='DeviceCMYK'
                 from pod_template_evidence import inspect_kdp_template_evidence,template_evidence_deadline
                 original_templates=inspect_kdp_template_evidence(m,template_evidence,target_product,target_country)
                 report['checks']['template_provenance']=True
