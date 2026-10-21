@@ -86,7 +86,7 @@ class PODTests(unittest.TestCase):
             template=self.template()
             template.update(dpi=dpi,size_inches=[600/dpi,600/dpi])
             font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-            render_details={'schema_version':2,'title':'Fixture Book','subtitle':None,
+            render_details={'schema_version':3,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[]}
@@ -207,7 +207,7 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':2,'title':'Fixture Book','subtitle':None,
+            details={'schema_version':3,'title':'Fixture Book','subtitle':None,
                 'author_name':'Fixture Author','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[]}
@@ -228,7 +228,7 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
         with tempfile.TemporaryDirectory() as tmp:
-            details={'schema_version':2,'title':'Same','subtitle':None,
+            details={'schema_version':3,'title':'Same','subtitle':None,
                 'author_name':'Same','language':'en','isbn':None,
                 'imprint':None,'title_page':1,'edition':None,'series':None,
                 'contributors':[]}
@@ -247,7 +247,7 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        base={'schema_version':2,'title':'Fixture Book','subtitle':None,
+        base={'schema_version':3,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
             'imprint':None,'title_page':1,'edition':None,'series':None,
             'contributors':[]}
@@ -285,11 +285,12 @@ class PODTests(unittest.TestCase):
         from pod_common import save_json
         from pod_interior_preflight import inspect_book_details
 
-        details={'schema_version':2,'title':'Fixture Book','subtitle':None,
+        details={'schema_version':3,'title':'Fixture Book','subtitle':None,
             'author_name':'Fixture Author','language':'en','isbn':None,
             'imprint':None,'title_page':1,
-            'edition':{'number':2,'display_text':'Second Edition'},
-            'series':{'title':'Fixture Series','display_text':'Fixture Series, Volume 3'},
+            'edition':{'number':2,'display_text':'2nd Edition'},
+            'series':{'title':'Fixture Series','number':3,
+                      'display_text':'Fixture Series, Volume 3'},
             'contributors':[{'role':'Editor','name':'Fixture Editor'},
                             {'role':'Illustrator','name':'Fixture Artist'}]}
         manifest={'platform':'kdp','expected_text':[
@@ -300,7 +301,7 @@ class PODTests(unittest.TestCase):
                        'trim_width_inches':6,'spine_width_inches':.054048,
                        'bleed_inches':.125}}}
         pages=[{'lines':['Fixture Book','Fixture Author']},
-               {'lines':['Second Edition','Fixture Series, Volume 3',
+               {'lines':['2nd Edition','Fixture Series, Volume 3',
                          'Fixture Editor','Fixture Artist']}]
         with tempfile.TemporaryDirectory() as tmp:
             detail_path=Path(tmp)/'details.json'
@@ -309,9 +310,14 @@ class PODTests(unittest.TestCase):
             self.assertEqual(len(inspect_book_details(detail_path,manifest,manuscript)),64)
 
             invalid=(
-                {'edition':{'number':0,'display_text':'Second Edition'}},
-                {'edition':{'number':True,'display_text':'Second Edition'}},
+                {'edition':{'number':0,'display_text':'0th Edition'}},
+                {'edition':{'number':True,'display_text':'1st Edition'}},
+                {'edition':{'number':2,'display_text':'1st Edition'}},
                 {'series':{'title':'Fixture Series'}},
+                {'series':{'title':'Other Series','number':3,
+                           'display_text':'Fixture Series, Volume 3'}},
+                {'series':{'title':'Fixture Series','number':4,
+                           'display_text':'Fixture Series, Volume 3'}},
                 {'contributors':[{'role':'Editor','name':'Fixture Editor'}]*2},
                 {'contributors':[{'role':'Editor','name':f'Contributor {i}'} for i in range(10)]},
             )
