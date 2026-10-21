@@ -33,6 +33,10 @@ retained regular file whose bytes must hash to the signed regional-rights digest
 Upload retained regional-rights evidence through the authenticated artifact route
 as `text/plain`; the same 16 MiB object ceiling, immutable SHA-256 identity and
 deployment storage budget apply.
+Upload both retained KDP template archives (`templateSource` and
+`interior.source`) as `application/zip`. Storage does not trust the media label:
+the bounded KDP import stages independently rehash and inspect the retained ZIP
+members and profile before rendering.
 
 Validation failures use fixed diagnostic codes such as `TASK_FILES_INVALID`
 and `TASK_INTERIOR_INVALID`; arbitrary child output, paths and credentials

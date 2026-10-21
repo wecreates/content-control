@@ -71,6 +71,24 @@ test('authenticated regional-rights evidence upload accepts and preserves text/p
   assert.deepEqual(inserts[0][1],Buffer.from(body));
  }finally{await new Promise(r=>server.close(r));}
 });
+test('authenticated KDP template archive upload accepts and preserves application/zip',async()=>{
+ const inserts=[],db={tx:fn=>fn({query:async(sql,args)=>{
+  if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('INSERT'))inserts.push(args);
+  return {rows:[]};
+ }})};
+ const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const body=Buffer.concat([Buffer.from([0x50,0x4b,0x03,0x04]),Buffer.from('synthetic bounded KDP template archive')]);
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/artifacts`,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/zip'},body});
+  assert.equal(response.status,201);assert.deepEqual(await response.json(),{
+   sha256:crypto.createHash('sha256').update(body).digest('hex')});
+  assert.equal(inserts.length,1);assert.equal(inserts[0][2],'application/zip');
+  assert.deepEqual(inserts[0][1],body);
+ }finally{await new Promise(r=>server.close(r));}
+});
 const sign=p=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+30000,...p});return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
 test('unset operational key cannot be authenticated with Bearer undefined',()=>assert.equal(operationalAuth()( {headers:{authorization:'Bearer undefined'}}),false));
 test('operational key requires exact bearer match',()=>{const auth=operationalAuth(key);assert.equal(auth({headers:{authorization:`Bearer ${key}`}}),true);assert.equal(auth({headers:{authorization:`Bearer ${key}x`}}),false);});
