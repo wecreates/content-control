@@ -101,7 +101,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     keywords = details.get('keywords') if isinstance(details, dict) else None
     categories = details.get('categories') if isinstance(details, dict) else None
     description_valid = (metadata_text(description, 4000) and
-                         re.search(r'(?:https?://|www\\.|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,})',
+                         re.search(r'(?:https?://|www\.|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,})',
                                    description, re.IGNORECASE) is None)
     keywords_valid = (isinstance(keywords, list) and len(keywords) <= 7 and
                       all(metadata_text(keyword, 200) and '"' not in keyword
