@@ -107,6 +107,38 @@ def similarity(candidate,reference):
 
 EDITORIAL_CHECKS=('editorial','originality','content_completeness','cover_interior_consistency','ai_disclosure')
 
+def inspect_regional_rights(rights, details, target_country):
+    """Require current, retained evidence for the exact KDP territory and category scope."""
+    regional = rights.get('regional_rights') if isinstance(rights, dict) else None
+    expected_keys = {'country', 'territories', 'format', 'publishing_basis',
+                     'categories', 'commercial_print_on_demand', 'original_work',
+                     'rights_holder_verified', 'revoked', 'authority_event_id',
+                     'source_evidence_ids', 'evidence_sha256'}
+
+    def evidence_id(value):
+        return (type(value) is str and 0 < len(value) <= 256 and
+                value == value.strip() and '\n' not in value and '\r' not in value)
+
+    if (not isinstance(regional, dict) or set(regional) != expected_keys or
+            target_country != 'US' or regional.get('country') != target_country or
+            regional.get('territories') != ['US'] or
+            regional.get('format') != 'paperback' or
+            regional.get('publishing_basis') != details.get('publishing_rights') or
+            regional.get('categories') != details.get('categories') or
+            regional.get('commercial_print_on_demand') is not True or
+            regional.get('original_work') is not True or
+            regional.get('rights_holder_verified') is not True or
+            regional.get('revoked') is not False or
+            not evidence_id(regional.get('authority_event_id')) or
+            not isinstance(regional.get('source_evidence_ids'), list) or
+            not 1 <= len(regional['source_evidence_ids']) <= 32 or
+            not all(evidence_id(value) for value in regional['source_evidence_ids']) or
+            len(set(regional['source_evidence_ids'])) != len(regional['source_evidence_ids']) or
+            re.fullmatch(r'[a-f0-9]{64}', regional.get('evidence_sha256', '')) is None):
+        raise ValueError('KDP_REGIONAL_RIGHTS_REQUIRED')
+    return regional
+
+
 def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evaluators,descriptive_similarity=False,
              editorial_envelope=None,approved_editorial_evaluators=None,target_country=None,
              template_evidence=None,target_product=None,source_evidence=None,manuscript=None,
@@ -182,8 +214,16 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
                 report['font_license_id']=font_rights['license_id']
                 report['manuscript_sha256']=inspect_manuscript(scoped_file(root,'interior.pdf'),manuscript,spec)
                 report['book_details_sha256']=inspect_book_details(book_details,m,manuscript)
-                report['list_price']=read_json(book_details)['list_price']
+                details=read_json(book_details)
+                report['list_price']=details['list_price']
                 report['checks']['book_details']=True
+                regional_rights=inspect_regional_rights(rights,details,target_country)
+                report['checks']['regional_rights']=True
+                report['regional_rights_event_id']=regional_rights['authority_event_id']
+                report['regional_rights_evidence_sha256']=regional_rights['evidence_sha256']
+                report['regional_rights_source_evidence_ids']=regional_rights['source_evidence_ids']
+                report['regional_rights_territories']=regional_rights['territories']
+                report['regional_rights_categories']=regional_rights['categories']
                 from pod_cover_preflight import inspect_cover, inspect_spine_text, inspect_barcode_region
                 inspect_spine_text(m['template'],text)
                 inspect_barcode_region(m['template'],art,text)
@@ -241,7 +281,7 @@ def evaluate(root,reference,rights_envelope,competitive_envelope,approved_evalua
         report['errors'].append(str(exc) if isinstance(exc,ValueError) else type(exc).__name__)
     required=('text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance')
     if report.get('platform')=='kdp':
-        required+=('editorial','template_provenance','manuscript_provenance','source_font','font_rights','book_details')
+        required+=('editorial','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights')
     ok=not report['errors'] and all(report['checks'].get(k) is True for k in required)
     report.update({'verdict':'PASS' if ok else 'FAIL','binary_pass':int(ok),'production_ready':ok})
     return report
