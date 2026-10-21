@@ -29,6 +29,7 @@ def inspect_book_details(details_path, manifest, manuscript):
     required_keys = {'schema_version', 'title', 'subtitle', 'author_name',
                      'language', 'description', 'keywords', 'primary_marketplace',
                      'categories', 'primary_audience', 'low_content', 'publishing_rights',
+                     'publication_date', 'release_plan',
                      'isbn_source', 'isbn', 'imprint',
                      'title_page', 'edition', 'series', 'contributors',
                      'cover_finish', 'ai_generated'}
@@ -129,7 +130,7 @@ def inspect_book_details(details_path, manifest, manuscript):
                         len({category.casefold() for category in categories}) == len(categories))
 
     if (not isinstance(details, dict) or set(details) != required_keys or
-            details.get('schema_version') != 9 or
+            details.get('schema_version') != 10 or
             details.get('low_content') is not False or
             not primary_audience_valid or
             type(details.get('cover_finish')) is not str or
@@ -140,6 +141,8 @@ def inspect_book_details(details_path, manifest, manuscript):
             not description_valid or not keywords_valid or not categories_valid or
             details.get('primary_marketplace') != 'amazon.com' or
             details.get('publishing_rights') != 'copyright_owner' or
+            details.get('publication_date') is not None or
+            details.get('release_plan') != {'mode': 'release_now', 'date': None} or
             details.get('subtitle') is not None and not metadata_text(details['subtitle']) or
             len(details.get('title', '')) + len(details.get('subtitle') or '') > 200 or
             not ((details.get('isbn_source') == 'kdp_free' and
