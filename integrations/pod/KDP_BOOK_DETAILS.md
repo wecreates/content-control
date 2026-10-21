@@ -132,12 +132,15 @@ an exact `regional_rights` object. It binds the United States territory,
 paperback format, `copyright_owner` publishing basis, the exact selected
 categories, commercial print-on-demand permission, original-work and verified-
 rights-holder assertions, non-revocation, a stable authority event, one or more
-retained source-evidence identities, and the retained evidence SHA-256.
-Independent QA copies these identities and scopes into its signed receipt, and
+retained source-evidence identities, and the retained evidence SHA-256. The task
+must also carry those retained evidence bytes as a hash-addressed regular file;
+independent QA reads the bounded file without following symlinks and recomputes
+the SHA-256 before accepting the signed digest. Independent QA then copies the
+identities and scopes into its signed receipt, and
 the publication policy rejects legacy KDP QA without the dedicated
 `regional_rights` check. Missing, expired, revoked, differently scoped,
 duplicate-evidence, malformed, or extra-key records fail closed. This contract
-does not create or validate the underlying legal document: live acceptance still
+does not establish the document's authenticity or legal sufficiency: live acceptance still
 requires genuine owner-authorized evidence and, if KDP requests it, the actual
 documentation KDP accepts. A copyright page alone is not treated as proof.
 
