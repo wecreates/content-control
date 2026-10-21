@@ -3170,3 +3170,89 @@ unverified. All 24 acceptance areas remain OPEN.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted. This run did not claim a continuously
 running self-hosted worker.
+
+## Run receipt r165 — reject unsupported stored artifact media on read (2026-10-21 UTC)
+
+### Scope
+
+This run closed a read-side storage and security integrity gap. Artifact writes,
+recovery and stored-task role resolution enforced the shared six-type POD media
+allowlist, but `ArtifactStore.get` previously accepted a legacy or foreign row
+whose bytes, SHA-256 and size were valid even when its stored `media_type` was
+unsupported. The read path now filters exact approved media types in PostgreSQL
+before transferring a blob and independently rechecks the metadata in the
+application for alternate pool implementations. Unsupported metadata fails
+closed as `ARTIFACT_UNAVAILABLE`; it is not relabeled on read. This does not
+establish provenance, rights, editorial acceptance or a live platform result.
+Etsy remained excluded. The failed production-database administration route was
+not retried because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- PR #421 exact tested head:
+  `065f6aa421c93ebb1abff6040a510f777ce04968`.
+- The exact remote tree
+  `04f450f2736d47fd51462dfeb1f7f69468cefb5a` matched the locally tested
+  four-file repair.
+- PostgreSQL artifact reads require `media_type=ANY($3::text[])` using the
+  shared immutable allowlist before blob transfer, then recheck the returned
+  metadata in-process.
+- Unit and disposable-PostgreSQL regressions prove that a valid hash and body
+  stored as `text/html` remain unavailable and that the database filter
+  returns zero blob bytes.
+- Focused local Node verification passed 95 tests with 0 failures or skips.
+  A separate broader local command reached one environment-only failure because
+  the clean worktree had no `express` dependency installed; it was not counted
+  as acceptance evidence.
+- `git diff --check` passed.
+- POD integration gates run `39677559877`, job `119491263545`: success.
+- POD container runtime gates run `39677559869`, job `119491263736`:
+  success.
+- Guarded Content Control merge:
+  `06e1267b1992c015ac068d8f26ac606b78da67ed`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #118 exact tested head:
+  `ef7535a5640e3015339584f1c2775e04c4e40e24`.
+- The cross-repository workflow pins Content Control merge
+  `06e1267b1992c015ac068d8f26ac606b78da67ed` while keeping
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `39678592977`, job
+  `119494838642`: success.
+- Guarded Money Factory merge:
+  `d4be5ef3b7a7da71b82e2555bc3801d24877decd`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `06e1267b1992c015ac068d8f26ac606b78da67ed` and started deployment
+  `dep-dbciqu4s728c73akcecg`.
+- Deploy-started event `evt-dbciqu3657ic73ag1ceg` occurred at
+  `2026-10-21T21:24:08.835971Z`.
+- Event `evt-dbciqu740dgc738vmvs0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-21T21:24:08.947314Z`;
+  deploy-ended event `evt-dbciquekvk2s73dvt5r0` followed at
+  `2026-10-21T21:24:09.239895Z` with failed status.
+- No build or hosted rollout of r165 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes a stored-media read-confusion gap only. Passing synthetic,
+PostgreSQL and container tests are not live acceptance. Restricted production
+database/schema verification, durable retention/recovery drills, deployed
+hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, independent QA/remediation outcomes, permitted live adapters for
+KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics and
+financial reconciliation, owner-phone operations, monitoring/recovery drills,
+measured capacity, real end-to-end acceptance and controlled launch readiness
+remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run did not claim a continuously
+running self-hosted worker.
