@@ -9,6 +9,8 @@ import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
+const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
+const pdf=Buffer.from('%PDF-1.4\n%%EOF\n');
 
 test('artifact media contract is exact and includes recoverable KDP inputs',()=>{
  assert.deepEqual(ARTIFACT_MEDIA_TYPES,[
@@ -155,7 +157,7 @@ test('existing corrupt bytes or media conflicts reject the whole batch before in
  }
 });
 test('package reads preserve exact bytes, order and media types',()=>fixture(async root=>{
- const files={'print.png':Buffer.from('png fixture'),'cover.pdf':Buffer.from('pdf fixture'),'interior.receipt.json':Buffer.from('{}')};
+ const files={'print.png':png,'cover.pdf':pdf,'interior.receipt.json':Buffer.from('{}')};
  for(const [name,body] of Object.entries(files))await fs.writeFile(path.join(root,name),body);
  const result=await readPackageArtifacts(root,Object.fromEntries(Object.entries(files).map(([name,body])=>[name,hash(body)])));
  assert.deepEqual(result.map(x=>x.body),Object.values(files));
@@ -165,12 +167,29 @@ test('package reads reject empty, unknown and platform-incomplete manifests befo
  await assert.rejects(readPackageArtifacts(root,{}),/ARTIFACT_BATCH_INVALID/);
  await fs.writeFile(path.join(root,'unknown.pdf'),'unexpected package member');
  await assert.rejects(readPackageArtifacts(root,{'unknown.pdf':hash('unexpected package member')}),/ARTIFACT_PACKAGE_INVALID/);
- for(const name of ['print.png','art-mask.png','text-mask.png'])await fs.writeFile(path.join(root,name),name);
- const base=Object.fromEntries(['print.png','art-mask.png','text-mask.png'].map(name=>[name,hash(name)]));
+ for(const name of ['print.png','art-mask.png','text-mask.png'])await fs.writeFile(path.join(root,name),png);
+ const base=Object.fromEntries(['print.png','art-mask.png','text-mask.png'].map(name=>[name,hash(png)]));
  await assert.rejects(readPackageArtifacts(root,{'print.png':base['print.png']},{platform:'redbubble'}),/ARTIFACT_PACKAGE_INVALID/);
  await assert.rejects(readPackageArtifacts(root,base,{platform:'kdp'}),/ARTIFACT_PACKAGE_INVALID/);
  await assert.rejects(readPackageArtifacts(root,base,{platform:'etsy'}),/ARTIFACT_PACKAGE_INVALID/);
  assert.equal((await readPackageArtifacts(root,base,{platform:'redbubble'})).length,3);
+}));
+test('package reads reject media-confused bytes even when names and hashes match',()=>fixture(async root=>{
+ const bodies={
+  'print.png':png,'art-mask.png':png,'text-mask.png':png,
+  'cover.pdf':pdf,'interior.pdf':pdf,'interior.receipt.json':Buffer.from('{}'),
+ };
+ const write=async()=>{for(const [name,body] of Object.entries(bodies))await fs.writeFile(path.join(root,name),body);};
+ const files=()=>Object.fromEntries(Object.entries(bodies).map(([name,body])=>[name,hash(body)]));
+ await write();
+ bodies['print.png']=Buffer.from('<script>not a png</script>');await write();
+ await assert.rejects(readPackageArtifacts(root,files(),{platform:'kdp'}),/^Error: ARTIFACT_INVALID$/);
+ bodies['print.png']=png;bodies['cover.pdf']=Buffer.from('<html>not a pdf</html>');await write();
+ await assert.rejects(readPackageArtifacts(root,files(),{platform:'kdp'}),/^Error: ARTIFACT_INVALID$/);
+ bodies['cover.pdf']=pdf;bodies['interior.receipt.json']=Buffer.from('[]');await write();
+ await assert.rejects(readPackageArtifacts(root,files(),{platform:'kdp'}),/^Error: ARTIFACT_INVALID$/);
+ bodies['interior.receipt.json']=Buffer.from([0xff,0xfe,0xfd]);await write();
+ await assert.rejects(readPackageArtifacts(root,files(),{platform:'kdp'}),/^Error: ARTIFACT_INVALID$/);
 }));
 test('package file corruption and escaped symlinks fail before persistence',()=>fixture(async root=>{
  await fs.mkdir(path.join(root,'package'));await fs.writeFile(path.join(root,'outside'),'secret fixture');
@@ -182,8 +201,8 @@ test('package file corruption and escaped symlinks fail before persistence',()=>
 test('file and aggregate limits are applied before unbounded reads',()=>fixture(async root=>{
  const handle=await fs.open(path.join(root,'print.png'),'w');await handle.truncate(16777217);await handle.close();
  await assert.rejects(readPackageArtifacts(root,{'print.png':'a'.repeat(64)}),/ARTIFACT_INVALID/);
- await fs.writeFile(path.join(root,'print.png'),'123456');await fs.writeFile(path.join(root,'art-mask.png'),'654321');
- await assert.rejects(readPackageArtifacts(root,{'print.png':hash('123456'),'art-mask.png':hash('654321')},{maxBatchBytes:10}),/ARTIFACT_BATCH_TOO_LARGE/);
+ await fs.writeFile(path.join(root,'print.png'),png);await fs.writeFile(path.join(root,'art-mask.png'),png);
+ await assert.rejects(readPackageArtifacts(root,{'print.png':hash(png),'art-mask.png':hash(png)},{maxBatchBytes:png.length*2-1}),/ARTIFACT_BATCH_TOO_LARGE/);
  await fs.mkdir(path.join(root,'text-mask.png'));
  await assert.rejects(readPackageArtifacts(root,{'text-mask.png':'a'.repeat(64)}),/ARTIFACT_INVALID/);
 }));
