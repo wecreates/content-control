@@ -104,6 +104,22 @@ def assert_artifact_format(name, body):
     except (UnicodeError, ValueError, RecursionError):
         raise ValueError('ARTIFACT_INVALID') from None
 
+def write_private_file(path, body):
+    """Create one review file exclusively without granting group/other access."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, 'O_NOFOLLOW'):
+        flags |= os.O_NOFOLLOW
+    descriptor = os.open(path, flags, 0o600)
+    try:
+        remaining = memoryview(body)
+        while remaining:
+            written = os.write(descriptor, remaining)
+            if written <= 0:
+                raise OSError('private review file write made no progress')
+            remaining = remaining[written:]
+    finally:
+        os.close(descriptor)
+
 def export_package(base_url, job_id, output, key, fetch=None):
     url = urllib.parse.urlsplit(base_url)
     if url.scheme != 'https' or not url.hostname or url.username or url.password or url.query or url.fragment:
@@ -152,10 +168,10 @@ def export_package(base_url, job_id, output, key, fetch=None):
             if len(body) > 16 * 1024 * 1024 or total > 64 * 1024 * 1024 or hashlib.sha256(body).hexdigest() != sha:
                 raise ValueError('ARTIFACT_INVALID')
             assert_artifact_format(name, body)
-            with (root / name).open('xb') as target:
-                target.write(body)
-        with (root / 'manifest.json').open('x', encoding='utf-8') as target:
-            json.dump(manifest, target, ensure_ascii=False, allow_nan=False)
+            write_private_file(root / name, body)
+        encoded_manifest = json.dumps(
+            manifest, ensure_ascii=False, allow_nan=False).encode('utf-8')
+        write_private_file(root / 'manifest.json', encoded_manifest)
     except BaseException:
         shutil.rmtree(root)
         raise
