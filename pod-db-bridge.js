@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './integrations/pod/artifacts.mjs';
+import {PACKAGE_MEDIA_TYPES} from './integrations/pod/package-artifacts.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
@@ -219,7 +220,9 @@ export class PodDB {
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
    !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
-  if(!Object.values(row.manifest.files).includes(sha)||crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
+  const members=Object.entries(row.manifest.files).filter(([,digest])=>digest===sha);
+  if(!members.length||members.some(([name])=>PACKAGE_MEDIA_TYPES[name]!==row.media_type)||
+   crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
   return {body:row.body,media_type:row.media_type};
  }
  async completeProduction(job,manifest,qaEnvelope){

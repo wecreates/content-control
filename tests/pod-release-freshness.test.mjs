@@ -262,6 +262,15 @@ test('stored review artifacts require the exact held job and manifest membership
  await assert.rejects(db.reviewArtifact('other-job',sha),/ARTIFACT_UNAVAILABLE/);
  await assert.rejects(db.reviewArtifact(row.id,'b'.repeat(64)),/ARTIFACT_UNAVAILABLE/);
  assert.deepEqual(await db.reviewArtifact(row.id,sha),{body,media_type:'image/png'});
+ row.media_type='application/pdf';
+ await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+ row.media_type='image/png';
+ row.platform='kdp';row.manifest=storedManifest('kdp');row.manifest.files['cover.pdf']=sha;
+ row.manifest_sha256=storedIdentity(row.manifest);row.media_type='application/pdf';
+ assert.deepEqual(await db.reviewArtifact(row.id,sha),{body,media_type:'application/pdf'});
+ row.manifest.files['print.png']=sha;row.manifest_sha256=storedIdentity(row.manifest);
+ await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+ row.platform='redbubble';row.manifest=manifest;row.manifest_sha256=storedIdentity(manifest);row.media_type='image/png';
  row.state='qa_passed';row.reason_code=null;
  await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
 });

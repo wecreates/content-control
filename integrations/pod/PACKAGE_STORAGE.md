@@ -50,6 +50,13 @@ Reads apply the same exact media allowlist in PostgreSQL before transferring a
 blob and recheck it in the application. A legacy or foreign row with a valid
 hash but unsupported media metadata is unavailable to tasks and the authenticated
 artifact endpoint; it must be investigated rather than relabeled on read.
+Review-package downloads additionally bind the stored media type back to every
+manifest filename that references the requested digest. PNG roles require
+`image/png`, KDP PDF roles require `application/pdf`, and the KDP receipt requires
+`application/json`. A digest reused across roles with incompatible media contracts
+is unavailable rather than interpreted according to whichever filename a client
+chose. This retrieval check preserves the production media contract for legacy or
+foreign rows; it does not replace full decoding or independent QA.
 
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.

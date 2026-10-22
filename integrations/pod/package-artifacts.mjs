@@ -6,7 +6,7 @@ import {MAX_PACKAGE_BYTES} from './artifacts.mjs';
 import {PLATFORMS} from './policy.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
 
-const PACKAGE_MEDIA_TYPES=Object.freeze({
+export const PACKAGE_MEDIA_TYPES=Object.freeze({
  'print.png':'image/png','art-mask.png':'image/png','text-mask.png':'image/png',
  'cover.pdf':'application/pdf','interior.pdf':'application/pdf',
  'interior.receipt.json':'application/json',
