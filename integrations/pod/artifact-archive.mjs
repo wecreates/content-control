@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
+import {seal,unseal,parseArchiveJSON,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
@@ -18,7 +18,7 @@ async function readCatalog({directory,key,budgetBytes,signal}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
  if(!(await fs.lstat(directory)).isDirectory())throw Error('ARCHIVE_DIRECTORY_INVALID');
  const encrypted=await readBounded(path.join(directory,'catalog.pod'),MAX_CATALOG+36,signal);
- const catalog=JSON.parse(unseal(encrypted,key,'pod:artifact-catalog:v1'));
+ const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:artifact-catalog:v1'),'ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
   typeof catalog.created_at!=='string'||!Number.isFinite(Date.parse(catalog.created_at)))throw Error('ARCHIVE_CATALOG_INVALID');
  const seen=new Set();let bytes=0;

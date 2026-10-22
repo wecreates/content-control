@@ -97,6 +97,8 @@ hashes. It reads one object at a time. The JSON receipt contains only scope,
 object/byte counts, archive creation/verification times and archive_sha256 (the
 hash of the authenticated encrypted catalog). No plaintext content, archive key or
 database credentials are printed. It does not alter the archive or destination.
+Catalog JSON is decoded as strict UTF-8 and rejects duplicate decoded keys at
+every nesting level before any referenced object or database is accessed.
 
 Root directory symlinks and symlinked catalog/artifact files are rejected. File
 opens are nonblocking, followed by regular-file checks, so a FIFO substituted for

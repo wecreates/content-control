@@ -9,6 +9,7 @@ import {promisify} from 'node:util';
 import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
+import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
 import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
@@ -86,6 +87,15 @@ test('wrong key, truncated catalog and symlinked catalog cannot restore',async t
  await fs.writeFile(catalog,original.subarray(0,20));await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_SIZE_INVALID/);
  await fs.rename(catalog,catalog+'.invalid');await fs.symlink(catalog+'.invalid',catalog);
  await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}));assert.equal(target.rows.size,0);
+});
+test('artifact catalog rejects escaped duplicate decoded keys',async t=>{
+ const directory=await workspace(t);await exportArtifactLibrary(database(),{directory,key});
+ const file=path.join(directory,'catalog.pod');
+ const body=unseal(await fs.readFile(file),key,'pod:artifact-catalog:v1').toString('utf8');
+ const ambiguous=body.replace('"scope":"artifacts_only"','"scope":"foreign","sc\\u006fpe":"artifacts_only"');
+ assert.notEqual(ambiguous,body);
+ await fs.writeFile(file,seal(Buffer.from(ambiguous),key,'pod:artifact-catalog:v1'));
+ await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
 });
 test('export never overwrites a directory and incomplete export has no catalog',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('one')]);

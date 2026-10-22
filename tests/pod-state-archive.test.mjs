@@ -118,6 +118,30 @@ test('catalog cannot introduce tables, duplicate indexes or mismatching migratio
   await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
  }
 });
+test('state catalog rejects escaped duplicate decoded keys',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const file=path.join(f.directory,'catalog.pod');
+ const body=unseal(await fs.readFile(file),key,'pod:state-catalog:v1').toString('utf8');
+ const ambiguous=body.replace('"scope":"pod_tables_only"','"scope":"foreign","sc\\u006fpe":"pod_tables_only"');
+ assert.notEqual(ambiguous,body);
+ await fs.writeFile(file,seal(Buffer.from(ambiguous),key,'pod:state-catalog:v1'));
+ await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
+});
+test('state records reject escaped duplicate decoded keys',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const catalogFile=path.join(f.directory,'catalog.pod');
+ const catalog=JSON.parse(unseal(await fs.readFile(catalogFile),key,'pod:state-catalog:v1'));
+ const item=catalog.items.find(candidate=>candidate.table==='pod_financial_events');
+ const aad=current=>`pod:state:v1:${catalog.snapshot_id}:${current.table}:${current.index}:${current.sha256}:${current.bytes}`;
+ const recordFile=path.join(f.directory,String(item.index).padStart(5,'0')+'.pod');
+ const body=unseal(await fs.readFile(recordFile),key,aad(item)).toString('utf8');
+ const ambiguous=Buffer.from(body.replace('"amount_minor":','"amount_minor":"invalid","amount\\u005fminor":'));
+ assert.notEqual(ambiguous.toString(),body);
+ item.bytes=ambiguous.length;item.sha256=digest(ambiguous);
+ await fs.writeFile(recordFile,seal(ambiguous,key,aad(item)));
+ await fs.writeFile(catalogFile,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:state-catalog:v1'));
+ await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_RECORD_INVALID/);
+});
 test('invalid source or exhausted artifact budget cannot create a complete catalog',async t=>{
  for(const failure of ['checksum','oversized','artifact','media-type']){
   const f=await fixture(t);

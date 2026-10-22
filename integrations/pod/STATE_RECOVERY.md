@@ -17,6 +17,8 @@ prevent archive-controlled SQL identifiers. Reads reject symlinks and nonregular
 files, authenticate each record and check hashes. Catalogs bind migration
 checksums and ordered column definitions. A schema change requires an explicit
 supported-format update; migration history is checked, not overwritten.
+Catalog and row JSON use strict UTF-8 parsing and reject duplicate decoded keys
+at every nesting level before any schema decision or database access.
 
 The bounded backend permits at most 10,000 rows, 40 MiB serialized JSON per row,
 320 MiB serialized JSON in total and 4 MiB for the catalog. Artifact bytes remain
