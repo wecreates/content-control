@@ -1,7 +1,9 @@
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
+import stat
 import tempfile
 import unittest
 import contextlib
@@ -65,6 +67,21 @@ class ExportTests(unittest.TestCase):
             self.assertEqual(routes, ['/jobs/job/package'] + ['/jobs/job/artifacts/' + digest] * 3)
             with self.assertRaises(FileExistsError):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
+
+    def test_exported_review_files_are_private_with_permissive_umask(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            previous = os.umask(0)
+            try:
+                module.export_package(
+                    'https://example.com/api/print', 'job', root, 'k'*32,
+                    self.fixture())
+            finally:
+                os.umask(previous)
+            self.assertEqual(stat.S_IMODE(root.stat().st_mode), 0o700)
+            for path in root.iterdir():
+                with self.subTest(path=path.name):
+                    self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
     def test_bad_bytes_remove_partial_directory(self):
         good = self.fixture()

@@ -78,6 +78,15 @@ or misconfigured server therefore cannot populate the review directory with
 hash-correct malformed bytes. Failure removes the whole partial directory. These
 checks are not full decoding or substantive independent product review.
 
+The exporter creates the new review directory with mode `0700` and creates every
+artifact plus `manifest.json` exclusively with mode `0600`. File creation also
+refuses a final symlink where the host exposes that flag. A permissive reviewer
+process umask therefore cannot make recovered proprietary artwork, manuscripts or
+receipts readable by group/other users. This is local discretionary-access
+hardening, not encryption, a defense against the same account/root, durable
+backup evidence or proof of independent approval. A regression runs the exporter
+under umask `000` and verifies the exact directory/file permission boundary.
+
 
 ## Review generation failure recovery
 
