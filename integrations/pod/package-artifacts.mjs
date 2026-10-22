@@ -15,6 +15,55 @@ const KDP_FILES=Object.freeze([...BASE_FILES,'cover.pdf','interior.pdf','interio
 const PNG_SIGNATURE=Buffer.from('89504e470d0a1a0a','hex');
 const MAX_MANIFEST_BYTES=1024*1024;
 
+function canonical(value){
+ return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+  value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
+  JSON.stringify(value);
+}
+
+function topLevelMembers(payload){
+ let position=0;
+ const whitespace=()=>{while(/\s/.test(payload[position]||''))position++;};
+ const stringEnd=start=>{
+  if(payload[start]!=='"')throw Error('MANIFEST_INVALID');
+  for(let index=start+1;index<payload.length;index++){
+   if(payload[index]==='\\'){index++;continue;}
+   if(payload[index]==='"')return index+1;
+  }
+  throw Error('MANIFEST_INVALID');
+ };
+ whitespace();if(payload[position++]!=='{')throw Error('MANIFEST_INVALID');
+ whitespace();
+ const members=new Map();
+ if(payload[position]==='}'){position++;whitespace();if(position!==payload.length)throw Error('MANIFEST_INVALID');return members;}
+ while(position<payload.length){
+  const start=position,keyEnd=stringEnd(position),key=JSON.parse(payload.slice(position,keyEnd));
+  if(members.has(key))throw Error('MANIFEST_INVALID');
+  position=keyEnd;whitespace();if(payload[position++]!==':')throw Error('MANIFEST_INVALID');
+  whitespace();const valueStart=position;let depth=0;
+  while(position<payload.length){
+   const char=payload[position];
+   if(char==='"'){position=stringEnd(position);continue;}
+   if(char==='{'||char==='['){depth++;position++;continue;}
+   if(char===']'){if(depth<1)throw Error('MANIFEST_INVALID');depth--;position++;continue;}
+   if(char==='}'){
+    if(depth===0)break;
+    depth--;position++;continue;
+   }
+   if(char===','&&depth===0)break;
+   position++;
+  }
+  let valueEnd=position;while(valueEnd>valueStart&&/\s/.test(payload[valueEnd-1]))valueEnd--;
+  if(valueEnd===valueStart)throw Error('MANIFEST_INVALID');
+  members.set(key,{start,valueStart,valueEnd,end:valueEnd});
+  whitespace();
+  if(payload[position]===','){position++;whitespace();continue;}
+  if(payload[position]==='}'){position++;whitespace();if(position!==payload.length)throw Error('MANIFEST_INVALID');return members;}
+  throw Error('MANIFEST_INVALID');
+ }
+ throw Error('MANIFEST_INVALID');
+}
+
 function assertJSONBounds(value,state={nodes:0},depth=0){
  if(depth>64||++state.nodes>10000)throw Error('MANIFEST_INVALID');
  if(typeof value==='number'&&(!Number.isFinite(value)||(Number.isInteger(value)&&!Number.isSafeInteger(value))))throw Error('MANIFEST_INVALID');
@@ -42,7 +91,7 @@ async function readRegularFile(file,maxBytes,reason){
  }finally{await handle.close();}
 }
 
-export async function readPackageManifest(directory,{platform,maxBytes=MAX_MANIFEST_BYTES}={}){
+export async function readPackageManifest(directory,{platform,template,maxBytes=MAX_MANIFEST_BYTES}={}){
  if(!PLATFORMS.includes(platform)||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>MAX_MANIFEST_BYTES)throw Error('MANIFEST_INVALID');
  let base,candidate,file,body;
  try{
@@ -56,17 +105,15 @@ export async function readPackageManifest(directory,{platform,maxBytes=MAX_MANIF
  assertJSONBounds(manifest);
  const hash=manifest.package_sha256;
  if(manifest.schema_version!==1||manifest.platform!==platform||manifest.publication_enabled!==false||
+  !manifest.template||typeof manifest.template!=='object'||Array.isArray(manifest.template)||
   !/^[a-f0-9]{64}$/.test(hash||'')||!/^[a-f0-9]{64}$/.test(manifest.template_sha256||''))throw Error('MANIFEST_INVALID');
  const payload=text.endsWith('\n')?text.slice(0,-1):text;
- const key='"package_sha256":';
- if(payload.split(key).length!==2)throw Error('MANIFEST_INVALID');
- const field=`${key}"${hash}"`,start=payload.indexOf(field),end=start+field.length;
- if(start<0)throw Error('MANIFEST_INVALID');
- let unsigned;
- if(payload[start-1]===',')unsigned=payload.slice(0,start-1)+payload.slice(end);
- else if(payload[end]===',')unsigned=payload.slice(0,start)+payload.slice(end+1);
- else if(payload[start-1]==='{'&&payload[end]==='}')unsigned=payload.slice(0,start)+payload.slice(end);
- else throw Error('MANIFEST_INVALID');
+ const members=topLevelMembers(payload),packageMember=members.get('package_sha256'),templateMember=members.get('template');
+ if(!packageMember||!templateMember)throw Error('MANIFEST_INVALID');
+ const templateBytes=payload.slice(templateMember.valueStart,templateMember.valueEnd);
+ if(crypto.createHash('sha256').update(templateBytes).digest('hex')!==manifest.template_sha256)throw Error('MANIFEST_TEMPLATE_HASH_MISMATCH');
+ if(template!==undefined&&canonical(manifest.template)!==canonical(template))throw Error('MANIFEST_TEMPLATE_MISMATCH');
+ const unsigned=`{${[...members.entries()].filter(([key])=>key!=='package_sha256').map(([,member])=>payload.slice(member.start,member.end)).join(',')}}`;
  if(crypto.createHash('sha256').update(unsigned).digest('hex')!==hash)throw Error('MANIFEST_HASH_MISMATCH');
  return manifest;
 }

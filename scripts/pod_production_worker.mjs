@@ -70,7 +70,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
-  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform});
+  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover});
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
   const artifacts=await readPackageArtifacts(task.output,manifest.files,{platform:job.brief.platform});

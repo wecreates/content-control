@@ -15,8 +15,9 @@ const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]
  value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
  JSON.stringify(value);
 const manifest=(patch={})=>{
- const value={schema_version:1,platform:'redbubble',publication_enabled:false,
-  template_sha256:'b'.repeat(64),files:{'art-mask.png':hash(png),'print.png':hash(png),'text-mask.png':hash(png)},...patch};
+ const template={platform:'redbubble',dpi:300,size_inches:[2,2]};
+ const value={schema_version:1,platform:'redbubble',publication_enabled:false,template,
+  template_sha256:hash(canonical(template)),files:{'art-mask.png':hash(png),'print.png':hash(png),'text-mask.png':hash(png)},...patch};
  value.package_sha256=hash(canonical(value));return value;
 };
 
@@ -156,6 +157,17 @@ test('package manifest snapshot verifies exact package identity and disabled sco
   const changed={...expected,...patch};await fs.writeFile(path.join(root,'manifest.json'),canonical(changed));
   await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_(?:HASH_MISMATCH|INVALID)/);
  }
+}));
+test('package manifest binds its embedded template and the authorized production template',()=>fixture(async root=>{
+ const expected=manifest();
+ const wrongHash={...expected,template_sha256:'b'.repeat(64)};
+ delete wrongHash.package_sha256;
+ wrongHash.package_sha256=hash(canonical(wrongHash));
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(wrongHash));
+ await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_TEMPLATE_HASH_MISMATCH/);
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(expected));
+ assert.deepEqual(await readPackageManifest(root,{platform:'redbubble',template:expected.template}),expected);
+ await assert.rejects(readPackageManifest(root,{platform:'redbubble',template:{...expected.template,dpi:600}}),/MANIFEST_TEMPLATE_MISMATCH/);
 }));
 test('package manifest snapshot is bounded and rejects nonfiles',()=>fixture(async root=>{
  const expected=manifest();await fs.writeFile(path.join(root,'outside.json'),canonical(expected));
