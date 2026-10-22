@@ -3511,6 +3511,100 @@ mandatory; no publication was attempted. This run used only its actually
 available bounded tools and did not claim a continuously running self-hosted
 worker.
 
+## Run receipt r171 — bind generated packages to authenticated source art (2026-10-22 UTC)
+
+### Scope
+
+This run closed the next generated-package admission gap. The production
+worker previously accepted a hash-consistent package manifest without a
+`source_sha256`; the parent process therefore relied on child behavior and
+could store and hold a package that was not bound to the authenticated source
+artwork. The worker now verifies the signed asset-rights envelope, the exact
+source bytes and their digest before invoking generation, then requires the
+returned manifest to carry the same source digest before storage or review
+hold. Reads are bounded, final symlinks are refused, JSON and UTF-8 are strict,
+and fixed redacted failure reasons distinguish missing, invalid and mismatched
+source evidence. This does not establish artwork quality, marketplace rights
+or live acceptance. Etsy remained excluded. The failed production-database
+administration route was not retried because no credible access-path change
+was observed.
+
+### Content Control implementation and hosted verification
+
+- Pre-fix reproduction printed `PRE_FIX_ACCEPTED_MISSING_SOURCE_IDENTITY` for
+  a package whose outer hash was valid but whose manifest omitted source
+  identity.
+- PR #434 exact tested head:
+  `b6798012689ebd6313c755a9a0806268c04f1dcb`.
+- All nine remote changed blobs exactly matched the locally tested files.
+- The broad dependency-free local Node run passed 632 tests with zero failures
+  and two expected database-only skips. The focused source, artifact, worker
+  and QA-process run passed 90 tests with zero failures/skips. The complete
+  local `test_pod_book_bounds.py` suite passed 93 tests with zero
+  failures/skips. Locally unavailable dependency-backed suites were not
+  counted as passing. `node --check` and `git diff --check` passed.
+- POD integration gates run `39711808336`, job `119604630207`: success.
+- POD container runtime gates run `39711808307`, job `119604630318`:
+  success, including image build, nonroot dependency installation, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review generation and startup
+  with production/publication disabled.
+- Guarded Content Control merge:
+  `1a5ef2bec2f44b724b789e8f99b200f9e500827f`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #125 first exact head
+  `ba026ac4b88eaf31bbdda5642f63dfc6690a508e` pinned the verified Content
+  Control merge while retaining `PUBLICATION_ENABLED=false` and
+  `POD_PUBLICATION_ENABLED=false`.
+- Cross-repository run `39713069298`, job `119608702410`, passed every
+  completed step but was cancelled by the workflow's existing 10-minute job
+  limit during the long KDP editorial-bound suite. No test failure was
+  reported.
+- The same PR increased only that job limit to 20 minutes. The final exact
+  head was `4e8df38cd1edac6233223e0c4621e7b953dc9766`; its workflow blob
+  `759a2f27889f0fd7cd80ffb0ef09adf46f184863` exactly matched the local file.
+- POD cross-repository review verification run `39714081210`, job
+  `119611932250`: success, including all previously interrupted and remaining
+  Node/Python suites.
+- Guarded Money Factory merge:
+  `d6b931e93b04a73ecb8ea7be8e48f973ce388ddc`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, main branch and
+  commit-triggered deployment path.
+- Render detected Content Control merge
+  `1a5ef2bec2f44b724b789e8f99b200f9e500827f` and created deployment
+  `dep-dbcnh1uk1f9s73arts90`.
+- Deploy-started event `evt-dbcnh1uj5dgc739om3d0` recorded the exact merge at
+  `2026-10-22T02:44:23.918054Z`; event `evt-dbcnh1sdthfc73dhdt2g`
+  recorded `pipeline_minutes_exhausted` at
+  `2026-10-22T02:44:23.975533Z`; deploy-ended event
+  `evt-dbcnh2740dgc73931u9g` recorded failed status at
+  `2026-10-22T02:44:24.270010Z`.
+- No build or hosted rollout of r171 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one generated-package source-integrity gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production database/schema verification, durable retention/recovery drills,
+deployed hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, calibrated independent QA/remediation outcomes, permitted live
+adapters for KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics
+and financial reconciliation, owner-phone operations, monitoring/recovery
+drills, measured capacity, real end-to-end acceptance and controlled launch
+readiness remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r169 — bind package identity before durable storage (2026-10-22 UTC)
 
 ### Scope
