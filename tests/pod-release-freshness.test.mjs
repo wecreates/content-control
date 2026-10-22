@@ -218,6 +218,17 @@ test('stored review package rejects a queue and manifest marketplace mismatch',a
  row.manifest=storedManifest();row.manifest_sha256=storedIdentity(row.manifest);
  assert.equal((await db.reviewPackage(row.id)).platform,'redbubble');
 });
+test('stored review package requires an exact review hold state',async()=>{
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
+ row.manifest_sha256=storedIdentity(row.manifest);
+ const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ for(const [state,reason] of [['qa_passed',null],['submitted',null],['qa_failed','QA_FAILED'],['qa_failed',null]]){
+  row.state=state;row.reason_code=reason;
+  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
+ }
+ row.state='qa_failed';row.reason_code='REVIEW_REQUIRED';
+ assert.equal((await db.reviewPackage(row.id)).reason_code,'REVIEW_REQUIRED');
+});
 test('stored review package rejects invalid manifest acceptance claims and identity',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
  row.manifest_sha256=storedIdentity(row.manifest);

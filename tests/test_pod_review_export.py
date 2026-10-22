@@ -18,10 +18,11 @@ spec = importlib.util.spec_from_file_location('export', Path(__file__).resolve()
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
-def stored_record(manifest, platform=None):
+def stored_record(manifest, platform=None, state='qa_failed', reason='REVIEW_REQUIRED'):
     identity = hashlib.sha256(json.dumps(
         manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     return json.dumps({'id': 'job', 'platform': platform or manifest['platform'],
+                       'state': state, 'reason_code': reason,
                        'manifest': manifest, 'manifest_sha256': identity}).encode()
 
 class ExportTests(unittest.TestCase):
@@ -66,6 +67,21 @@ class ExportTests(unittest.TestCase):
                     lambda route, limit: calls.append(route) or json.dumps(record).encode())
             self.assertEqual(calls, ['/jobs/job/package'])
             self.assertFalse(root.exists())
+
+    def test_package_outside_exact_review_hold_is_rejected_before_artifact_fetch(self):
+        good = self.fixture()
+        for state, reason in (('qa_passed', None), ('submitted', None),
+                              ('qa_failed', 'QA_FAILED'), ('qa_failed', None)):
+            record = json.loads(good('/jobs/job/package', 262144))
+            record['state'], record['reason_code'] = state, reason
+            calls = []
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp) / 'review'
+                with self.assertRaisesRegex(ValueError, 'REVIEW_STATE_INVALID'):
+                    module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                        lambda route, limit: calls.append(route) or json.dumps(record).encode())
+                self.assertEqual(calls, ['/jobs/job/package'])
+                self.assertFalse(root.exists())
 
     def test_traversal_rejected_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:

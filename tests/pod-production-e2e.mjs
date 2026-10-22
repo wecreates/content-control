@@ -63,7 +63,8 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   await assert.rejects(db.acceptReview(id,sign({...JSON.parse(qa.payload),package_sha256:'0'.repeat(64)})),/QA_BLOCKED/);
   assert.equal((await db.acceptReview(id,qa)).publication_enabled,false);
   await assert.rejects(db.acceptReview(id,qa),/REVIEW_NOT_PENDING/);
-  assert.equal((await db.reviewPackage(id)).state,'qa_passed');
+  await assert.rejects(db.reviewPackage(id),/PACKAGE_UNAVAILABLE/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_passed');
   // Real stored inputs and signed grants must not bypass provenance or scope.
   for(const [index,change] of [{official_source_verified:false},{country:'CA'}].entries()){
    const badTemplate=await store.put(Buffer.from(JSON.stringify(sign({...templateRecord,...change}))),'application/json');

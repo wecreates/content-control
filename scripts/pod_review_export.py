@@ -68,6 +68,8 @@ def export_package(base_url, job_id, output, key, fetch=None):
                         raise ValueError('RESPONSE_TOO_LARGE')
             return body
     record = strict_json(fetch('/jobs/' + job_id + '/package', 262144).decode('utf-8', errors='strict'))
+    if record.get('state') != 'qa_failed' or record.get('reason_code') != 'REVIEW_REQUIRED':
+        raise ValueError('REVIEW_STATE_INVALID')
     manifest = record.get('manifest')
     if (record.get('id') != job_id or record.get('platform') not in PLATFORMS or
             not isinstance(manifest, dict) or manifest.get('platform') != record.get('platform') or

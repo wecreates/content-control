@@ -12,7 +12,7 @@ const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]
 const record=bytes=>{
  const manifest={schema_version:1,publication_enabled:false,platform:'redbubble',files:Object.fromEntries(['art-mask.png','print.png','text-mask.png'].map(name=>[name,sha(bytes)]))};
  manifest.package_sha256=sha(Buffer.from(canonical(manifest)));
- return {id:'fixture-job',platform:'redbubble',state:'qa_failed',manifest,manifest_sha256:sha(Buffer.from(canonical(manifest)))};
+ return {id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:sha(Buffer.from(canonical(manifest)))};
 };
 function harness(fetcher,timers={setTimeout,clearTimeout}){
  class Element{
@@ -143,6 +143,15 @@ test('preview rejects a stored queue and manifest marketplace mismatch before ar
  await h.context.openPreview('fixture-job');
  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
  assert.equal(h.get('notice').textContent,'Print preview is unavailable.');
+});
+test('preview rejects packages outside the exact review hold before artifact fetch',async()=>{
+ for(const [state,reason] of [['qa_passed',null],['submitted',null],['qa_failed','QA_FAILED'],['qa_failed',null]]){
+  const data=record(png);data.state=state;data.reason_code=reason;
+  const h=harness(url=>url.includes('/package')?response(data):new Response(png));
+  await h.context.openPreview('fixture-job');
+  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
+  assert.equal(h.get('notice').textContent,'Print preview is unavailable.');
+ }
 });
 test('preview rejects a mismatched canonical package identity before artifact fetch',async()=>{
  const data=record(png);data.manifest.package_sha256='c'.repeat(64);
