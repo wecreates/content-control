@@ -298,6 +298,18 @@ test('package reads reject media-confused bytes even when names and hashes match
  bodies['interior.receipt.json']=Buffer.from([0xff,0xfe,0xfd]);await write();
  await assert.rejects(readPackageArtifacts(root,files(),{platform:'kdp'}),/^Error: ARTIFACT_INVALID$/);
 }));
+test('package reads reject ambiguous JSON artifact bytes before persistence',()=>fixture(async root=>{
+ for(const body of [
+  Buffer.from('{"status":"FAIL","statu\\u0073":"PASS"}'),
+  Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"status":"PASS"}')]),
+  Buffer.from('{"count":9007199254740993}'),
+ ]){
+  await fs.writeFile(path.join(root,'interior.receipt.json'),body);
+  await assert.rejects(
+   readPackageArtifacts(root,{'interior.receipt.json':hash(body)}),
+   /^Error: ARTIFACT_INVALID$/);
+ }
+}));
 test('package file corruption and escaped symlinks fail before persistence',()=>fixture(async root=>{
  await fs.mkdir(path.join(root,'package'));await fs.writeFile(path.join(root,'outside'),'secret fixture');
  await fs.symlink(path.join(root,'outside'),path.join(root,'package','print.png'));

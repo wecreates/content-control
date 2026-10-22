@@ -149,8 +149,8 @@ export async function readPackageManifest(directory,{platform,template,interiorT
   let receiptBody,receiptText,storedReceipt;
   try{
    receiptBody=await readRegularFile(path.resolve(base,'interior.receipt.json'),maxBytes,'MANIFEST_INTERIOR_MISMATCH');
-   receiptText=new TextDecoder('utf-8',{fatal:true}).decode(receiptBody);
-   storedReceipt=JSON.parse(receiptText);
+   receiptText=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(receiptBody);
+   storedReceipt=parseSignedJSON(receiptText);
    assertJSONBounds(storedReceipt);
   }catch(error){if(error.message==='MANIFEST_INTERIOR_MISMATCH')throw error;throw Error('MANIFEST_INTERIOR_MISMATCH');}
   const receiptPayload=receiptText.endsWith('\n')?receiptText.slice(0,-1):receiptText;
@@ -179,8 +179,12 @@ function assertPackageFormat(name,body){
   return;
  }
  try{
-  const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));
+  // JSON package members can be persisted independently of the manifest
+  // reader. Reject ambiguous bytes here as well so no caller can store a
+  // duplicate-key, BOM-prefixed or numerically lossy receipt by hash alone.
+  const value=parseSignedJSON(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(body));
   if(!value||typeof value!=='object'||Array.isArray(value))throw Error();
+  assertJSONBounds(value);
  }catch{throw Error('ARTIFACT_INVALID');}
 }
 
