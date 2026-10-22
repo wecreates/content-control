@@ -160,6 +160,26 @@ test('package manifest snapshot verifies exact package identity and disabled sco
   await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_(?:HASH_MISMATCH|INVALID)/);
  }
 }));
+test('package manifest rejects duplicate decoded keys at every depth before identity acceptance',()=>fixture(async root=>{
+ const expected=manifest(),parts=[
+  ['platform',JSON.stringify(expected.platform)],
+  ['schema_version',JSON.stringify(expected.schema_version)],
+  ['publication_enabled',JSON.stringify(expected.publication_enabled)],
+  ['template',canonical(expected.template)],
+  ['template_sha256',JSON.stringify(expected.template_sha256)],
+  ['source_sha256',JSON.stringify(expected.source_sha256)],
+  ['text_layers_sha256',JSON.stringify(expected.text_layers_sha256)],
+  ['expected_text',canonical(expected.expected_text)],
+  ['files',canonical(expected.files)],
+ ];
+ const duplicatedTemplate='{"dpi":300,"dpi":300,"platform":"redbubble","size_inches":[2,2]}';
+ parts[3][1]=duplicatedTemplate;
+ parts[4][1]=JSON.stringify(hash(duplicatedTemplate));
+ const duplicateUnsigned=`{${parts.map(([key,value])=>`${JSON.stringify(key)}:${value}`).join(',')}}`;
+ const duplicate=`{${parts.map(([key,value])=>`${JSON.stringify(key)}:${value}`).join(',')},"package_sha256":${JSON.stringify(hash(duplicateUnsigned))}}`;
+ await fs.writeFile(path.join(root,'manifest.json'),duplicate);
+ await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/^Error: MANIFEST_INVALID$/);
+}));
 test('package manifest binds its embedded template and the authorized production template',()=>fixture(async root=>{
  const expected=manifest();
  const wrongHash={...expected,template_sha256:'b'.repeat(64)};

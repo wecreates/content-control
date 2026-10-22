@@ -19,6 +19,13 @@ bytes inherit trusted PNG/PDF/JSON metadata. These are bounded media-envelope
 checks, not complete parser safety or design approval; the independent QA stages
 remain responsible for full decoding and substantive review.
 
+The parent rejects malformed UTF-8 and duplicate decoded keys at every depth of
+`manifest.json` before artifact storage or review hold. Repeated nested fields
+cannot be interpreted differently by the parent, Python QA, or a reviewer. The
+package and embedded-template digests continue to bind the exact producer bytes,
+including Python's lossless distinction between integer and floating-point JSON
+spellings; independent QA later requires the producer's canonical semantic form.
+
 `ArtifactStore.putMany([{body, mediaType}, ...])` uses one transaction and the same
 advisory lock as single-file `put`. It deduplicates hashes, computes the combined
 size of missing blobs and checks the total store budget before inserts. An insert

@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {MAX_PACKAGE_BYTES} from './artifacts.mjs';
 import {PLATFORMS} from './policy.mjs';
+import {parseSignedJSON} from './signed-json.mjs';
 
 const PACKAGE_MEDIA_TYPES=Object.freeze({
  'print.png':'image/png','art-mask.png':'image/png','text-mask.png':'image/png',
@@ -100,7 +101,7 @@ export async function readPackageManifest(directory,{platform,template,interiorT
   body=await readRegularFile(candidate,maxBytes,'MANIFEST_INVALID');
  }catch(error){if(error.message==='MANIFEST_INVALID')throw error;throw Error('MANIFEST_INVALID');}
  let text,manifest;
- try{text=new TextDecoder('utf-8',{fatal:true}).decode(body);manifest=JSON.parse(text);}catch{throw Error('MANIFEST_INVALID');}
+ try{text=new TextDecoder('utf-8',{fatal:true}).decode(body);manifest=parseSignedJSON(text);}catch{throw Error('MANIFEST_INVALID');}
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest))throw Error('MANIFEST_INVALID');
  assertJSONBounds(manifest);
  const hash=manifest.package_sha256;
