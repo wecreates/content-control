@@ -70,6 +70,71 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r183 verified receipt: strict dashboard response JSON
+
+Fresh reconstruction read Content Control
+148c270d5481bd291a5573caa45261d4558f8540 and Money Factory
+8581b16346e38101ae410f19047471098f6cd3c9, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped this POD work. The
+failed database-administration path had no credible access change, so it was
+not retried.
+
+[CC PR 458](https://github.com/wecreates/content-control/pull/458) merged tested
+head d6442dbcb8e9c0322693a2db7439143271dbeccb as
+e45072884f2191676834044eb108a9fb3617290f after an unchanged-base and clean-
+mergeability check. Authenticated dashboard package and activity responses now
+pass strict UTF-8, leading-BOM, duplicate decoded-key and finite-number
+validation before identity or acceptance fields are used. Invalid responses
+are redacted and cannot reach artifact fetch or preview rendering. The escaped
+duplicate package identity regression fetched the artifact and reached the
+render path against the prior implementation.
+
+The focused dashboard suite passed 20/20 locally. The full POD suite passed 670
+tests with nine expected environment-gated skips and zero failures, with syntax
+and whitespace checks clean. [PR integration run
+39803746508](https://github.com/wecreates/content-control/actions/runs/39803746508),
+job 119911328260, and [production-container run
+39803746600](https://github.com/wecreates/content-control/actions/runs/39803746600),
+job 119911327721, both passed on the exact PR head. The container gate built the
+production image and passed its non-root runtime/dependency probe as well as the
+Python QA/rendering, Node/PostgreSQL, real print/review and
+publication-disabled checks.
+
+Dependent [MF PR 137](https://github.com/wecreates/Money-factory/pull/137)
+pinned verification to CC e45072884f2191676834044eb108a9fb3617290f and retained
+the selected dashboard regression plus explicit
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`. Tested head
+b207f6de31498c4d58e8e4584f0d8a5b065bfa99 merged as
+201213f8bcd8d0c3b710f90cce557b7193f4d06e after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39805015974](https://github.com/wecreates/Money-factory/actions/runs/39805015974),
+job 119915787790, passed every selected Content Control and Money Factory bridge
+step.
+
+Render automatically attempted the runtime merge as deploy
+dep-dbd2majncjis73bg00fg. Start event evt-dbd2mauj5dgc73a1jm8g at
+2026-10-22T15:26:35.183798Z bound `newCommit` to
+e45072884f2191676834044eb108a9fb3617290f; event
+evt-dbd2mastuius73chl1t0 reported `pipeline_minutes_exhausted` at
+15:26:35.276763Z, and evt-dbd2map12hec73b5okp0 recorded the failed deploy at
+15:26:35.901022Z. No application build ran, so the hosted runtime remains
+unverified. No manual retry, paid workaround, replacement service, credential
+access, widened network or unchanged database-administration retry occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic
+read-only dashboard boundary only; tests and merged code are not proof of live
+acceptance. Production restricted database/schema/migrations, retained recovery
+evidence, deployed hybrid dependencies, mounted Money Factory authority/current
+grants and revocation, real accounts/sources/rights/templates/reviewers,
+authorized five-platform adapters, actual economics/reconciliation, owner-phone
+acceptance, monitoring/recovery drills, measured capacity and a real authorized
+end-to-end launch remain unverified. Both publication flags remain false; Etsy
+remains excluded. No approval, clearance, revenue, publication or continuously
+running self-hosted worker is claimed. This report-only receipt uses
+`[skip render]`; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r182 verified receipt: strict authenticated request JSON
 
 Fresh reconstruction read Content Control
