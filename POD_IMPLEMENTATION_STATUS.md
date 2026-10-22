@@ -3077,6 +3077,87 @@ acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted. This run did not claim a continuously running self-hosted worker.
 
+## Run receipt r172 — bind KDP interior package admission (2026-10-22 UTC)
+
+### Scope and reproduced gap
+
+This run closed a KDP package-admission integrity gap before durable artifact
+storage and review hold. The worker authenticated the parent interior template,
+but package admission did not bind `manifest.interior` or the retained
+`interior.receipt.json` semantics to it. A package with a valid outer hash could
+therefore substitute a different interior template. The pre-fix regression
+reproduced that acceptance as `PRE_FIX_ACCEPTED_KDP_INTERIOR_SUBSTITUTION`.
+Admission now requires the exact authenticated interior template, exact bounded
+canonical receipt bytes and hashes, matching interior PDF/template identities,
+and fail-closed receipt semantics: technical checks passed, editorial review
+unassessed, production readiness false and publication disabled. Etsy remained
+excluded. The failed production-database administration path was not retried
+because no credible access-path change was observed.
+
+### Content Control implementation and verification
+
+- PR #436 exact tested head:
+  `710a7efe56826a7dded0f20df1c29f7a5c4887c1`.
+- Local focused Node package/worker/QA coverage passed 89/89; the actual
+  Node/Python KDP inspector bridge passed 93/93. The dependency-free POD Node
+  suite passed 634 tests with two expected database-only skips. Six PostgreSQL
+  files could not run locally because this checkout lacked the `pg` dependency;
+  the hosted integration/container gates supplied their declared dependencies.
+- POD integration gates run `39720185646`, job `119631613591`: success.
+- POD container runtime gates run `39720185470`, job `119631613177`: success,
+  including the production Docker image, Python QA/rendering,
+  Node/PostgreSQL tests, real print/review workflow and startup with publication
+  disabled.
+- Guarded Content Control merge:
+  `ac5901211dee3f4df3a47f2d1a4676319a58bb6c`.
+
+### Money Factory dependent pin and verification
+
+- PR #126 exact tested head:
+  `add0043ca241f544a73aad7182663aa7ba75463b`.
+- The authoritative cross-repository workflow pins Content Control merge
+  `ac5901211dee3f4df3a47f2d1a4676319a58bb6c`; its 20-minute timeout and
+  `PUBLICATION_ENABLED=false` / `POD_PUBLICATION_ENABLED=false` remained
+  unchanged.
+- POD cross-repository review verification run `39720951888`, job
+  `119633997994`: success.
+- Guarded Money Factory merge:
+  `ee6de1c67fea996838fe8c0ee74f80b60a00875d`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `ac5901211dee3f4df3a47f2d1a4676319a58bb6c` and started deployment
+  `dep-dbcopajbc2fs738mf0q0`; event `evt-dbcopav40dgc7393rt80` recorded the
+  start at `2026-10-22T04:10:19.054077Z`.
+- Event `evt-dbcopauj5dgc739pfdg0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-22T04:10:19.182795Z`; deploy-ended
+  event `evt-dbcopap12hec73atkdhg` recorded failed status at
+  `2026-10-22T04:10:19.480088Z`.
+- No hosted rollout of r172 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access or network widening was
+  attempted.
+
+### Acceptance truth
+
+This closes one package-integrity gap only. Passing code, CI and production
+image tests are not official-template provenance, a real KDP preview/proof,
+live platform readback or launch acceptance. Restricted production
+database/schema verification, durable retention/recovery drills, deployed
+hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, independent QA/remediation outcomes, permitted live adapters for
+KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics and
+financial reconciliation, owner-phone operations, monitoring/recovery drills,
+measured capacity, real end-to-end acceptance and controlled launch readiness
+remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run did not claim a continuously
+running self-hosted worker.
+
 ## Run receipt r164 — recover current artifact media contracts (2026-10-21 UTC)
 
 ### Scope
