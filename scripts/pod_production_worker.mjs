@@ -8,6 +8,7 @@ import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '..
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
 import {verifyProductionSourceEvidence} from '../integrations/pod/source-evidence.mjs';
+import {parseSignedJSON} from '../integrations/pod/signed-json.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
@@ -117,7 +118,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const qa=await readSignedJSONFile(task.qaSignedOutput,{signal});
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
-  if(qaProcessFailed&&JSON.parse(qa.payload).verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
+  if(qaProcessFailed){
+   let verdict;
+   try{verdict=parseSignedJSON(qa.payload)?.verdict;}catch{}
+   if(verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
+  }
   await authorizeProduction();
   const result=await db.completeProduction(job,manifest,qa);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
