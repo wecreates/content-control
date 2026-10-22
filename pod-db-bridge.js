@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {assertBridge,enforceBrief,verifyEnvelope,enforceQA} from './integrations/pod/policy.mjs';
+import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 async function conceptBudgetDay(client){
@@ -163,8 +163,9 @@ export class PodDB {
   });
  }
  async reviewPackage(jobId){this.active();
-  const row=(await this.pool.query("SELECT id,state,reason_code,manifest FROM pod_production_queue WHERE id=$1",[jobId])).rows[0];
-  if(!row?.manifest)throw Error('PACKAGE_UNAVAILABLE');return row;
+  const row=(await this.pool.query("SELECT id,platform,state,reason_code,manifest FROM pod_production_queue WHERE id=$1",[jobId])).rows[0];
+  if(!row?.manifest||!PLATFORMS.includes(row.platform)||row.manifest.platform!==row.platform)throw Error('PACKAGE_UNAVAILABLE');
+  return row;
  }
  async completeProduction(job,manifest,qaEnvelope){
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');

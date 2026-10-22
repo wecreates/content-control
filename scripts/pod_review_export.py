@@ -16,6 +16,7 @@ import urllib.request
 from pod_common import strict_json
 
 HASH = re.compile(r'^[a-f0-9]{64}$')
+PLATFORMS = ('kdp','redbubble','teepublic','zazzle','spreadshirt')
 REQUEST_TIMEOUT_SECONDS = 20
 
 
@@ -66,7 +67,9 @@ def export_package(base_url, job_id, output, key, fetch=None):
             return body
     record = strict_json(fetch('/jobs/' + job_id + '/package', 262144).decode('utf-8', errors='strict'))
     manifest = record.get('manifest')
-    if record.get('id') != job_id or not isinstance(manifest, dict) or manifest.get('schema_version') != 1 or manifest.get('publication_enabled') is not False:
+    if (record.get('id') != job_id or record.get('platform') not in PLATFORMS or
+            not isinstance(manifest, dict) or manifest.get('platform') != record.get('platform') or
+            manifest.get('schema_version') != 1 or manifest.get('publication_enabled') is not False):
         raise ValueError('MANIFEST_INVALID')
     files = manifest.get('files')
     if not isinstance(files, dict) or not 1 <= len(files) <= 64:
