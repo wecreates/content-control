@@ -3429,3 +3429,84 @@ controlled launch readiness remain unverified. All 24 acceptance areas remain
 OPEN. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; no publication was attempted. This run did not claim a continuously
 running self-hosted worker.
+
+## Run receipt r168 — reject media-confused generated package bytes (2026-10-22 UTC)
+
+### Scope
+
+This run closed the next generated-package storage boundary gap. A complete
+Redbubble package containing matching manifest hashes and the exact three
+required names was reproduced with HTML/script bytes in every `.png` file;
+the prior reader accepted all three and labeled them `image/png`. Package
+ingestion now requires bounded media-envelope evidence before persistence:
+PNG members have the PNG signature, first IHDR and terminal IEND; PDF members
+have a supported header and terminal EOF marker; and receipts decode as strict
+UTF-8 JSON objects. Hash matches can no longer relabel HTML, malformed binary
+data, JSON arrays/primitives or invalid UTF-8 as trusted package media. These
+checks do not replace complete decoding or independent product QA. Etsy remained
+excluded. The failed production-database administration route was not retried
+because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- Pre-fix reproduction accepted three HTML/script bodies as `image/png` under
+  a complete Redbubble manifest.
+- PR #427 exact tested head:
+  `73decaeb2a70c33589142f44662137606fa4520e`.
+- All six remote changed blobs exactly matched the locally tested files.
+- The affected local Node suite passed 80 tests with zero failures/skips. The
+  complete local `test_pod_book_bounds.py` suite passed 93 tests with zero
+  failures/skips. `node --check` and `git diff --check` passed.
+- POD integration gates run `39698383281`, job `119561276151`: success.
+- POD container runtime gates run `39698383273`, job `119561276385`:
+  success, including Python QA/rendering, Node/PostgreSQL tests, real
+  print/review generation and startup with production/publication disabled.
+- Guarded Content Control merge:
+  `1aaddb44fe1e32d3db873e00dc68cd5a1b43bf42`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #122 exact tested head:
+  `a6177c92e96f640c8937878be9ecd458f20ca791`.
+- The cross-repository workflow pins Content Control merge
+  `1aaddb44fe1e32d3db873e00dc68cd5a1b43bf42` while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `39699107787`, job
+  `119563690299`: success.
+- Guarded Money Factory merge:
+  `7829604be2c3ae731b36bb079d579a711c0906ba`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, main branch and
+  commit-triggered deployment path.
+- Render detected Content Control merge
+  `1aaddb44fe1e32d3db873e00dc68cd5a1b43bf42` and created deployment
+  `dep-dbcld9ou01pc73bff2qg`.
+- Deploy-started event `evt-dbcld9uj5dgc739nakkg` occurred at
+  `2026-10-22T00:19:51.420414Z`.
+- Event `evt-dbcld9ukvk2s73e1suu0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-22T00:19:51.440573Z`;
+  deploy-ended event `evt-dbcld9ukvk2s73e1suvg` followed at
+  `2026-10-22T00:19:51.737509Z` with failed status.
+- No build or hosted rollout of r168 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one generated-package media-confusion gap only. Passing synthetic,
+PostgreSQL and container tests are not live acceptance. Restricted production
+database/schema verification, durable retention/recovery drills, deployed
+hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, calibrated independent QA/remediation outcomes, permitted live
+adapters for KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics
+and financial reconciliation, owner-phone operations, monitoring/recovery
+drills, measured capacity, real end-to-end acceptance and controlled launch
+readiness remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
