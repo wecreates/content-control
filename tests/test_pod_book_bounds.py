@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 22074)
-Total output lines: 1434
-
 import sys
 import tempfile
 import unittest
@@ -626,7 +623,119 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                 from test_pod_kdp_interior_template_import import archive_bytes as interior_archive_bytes, MEMBER
                 interior_archive=root/'interior-source.zip';interior_archive.write_bytes(interior_archive_bytes())
                 (scripts/'pod_kdp_template_import.py').symlink_to(repository/'scripts/pod_kdp_template_import.py')
-                (scripts/'pod_kdp_interior_template_import…2074 tokens truncated…age()
+                (scripts/'pod_kdp_interior_template_import.py').symlink_to(
+                    repository/'scripts/pod_kdp_interior_template_import.py')
+                (scripts/'pod_asset_generator.py').write_text(
+                    "from pathlib import Path\nimport hashlib,json,base64,sys\nPath('started').write_text('yes')\n"
+                    "names=['print.png','art-mask.png','text-mask.png','cover.pdf','interior.pdf','interior.receipt.json']\n"
+                    "png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=')\n"
+                    "pdf=base64.b64decode('JVBERi0xLjQKJSVFT0YK');receipt=base64.b64decode('e30=')\n"
+                    "bodies={name:(png if name.endswith('.png') else receipt if name.endswith('.json') else pdf) for name in names}\n"
+                    "files={}\n"
+                    "for name,data in bodies.items():\n Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
+                    "canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'))\n"
+                    "envelope=json.loads(Path(sys.argv[sys.argv.index('--template')+1]).read_text())\n"
+                    "template=json.loads(envelope['payload'])['template']\n"
+                    "source=Path(sys.argv[sys.argv.index('--source')+1]).read_bytes()\n"
+                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template':template,'source_sha256':hashlib.sha256(source).hexdigest(),'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),'files':files}\n"
+                    "m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()\n"
+                    "Path('output/manifest.json').write_text(canonical(m)+'\\n')\n")
+                (scripts/'pod_book_package.py').write_text(
+                    "from pathlib import Path\nimport hashlib,json,sys\n"
+                    "canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'))\n"
+                    "envelope=json.loads(Path(sys.argv[sys.argv.index('--template')+1]).read_text())\n"
+                    "interior=json.loads(envelope['payload'])['template']\n"
+                    "manifest=json.loads(Path('output/manifest.json').read_text())\n"
+                    "pdf=Path('output/interior.pdf').read_bytes()\n"
+                    "receipt={'schema_version':1,'interior_sha256':hashlib.sha256(pdf).hexdigest(),'page_count':interior['page_count'],'template_sha256':hashlib.sha256(canonical(interior).encode()).hexdigest(),'technical_checks_passed':True,'editorial_review':'UNASSESSED','production_ready':False,'publication_enabled':False}\n"
+                    "receipt_bytes=(canonical(receipt)+'\\n').encode();Path('output/interior.receipt.json').write_bytes(receipt_bytes)\n"
+                    "manifest['interior']={'template':interior,'receipt':receipt}\n"
+                    "manifest['files']['interior.receipt.json']=hashlib.sha256(receipt_bytes).hexdigest()\n"
+                    "manifest.pop('package_sha256',None);manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()\n"
+                    "Path('output/manifest.json').write_text(canonical(manifest)+'\\n')\n")
+                result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),
+                                      str(count),sys.executable,str(interior_archive),digest(interior_archive),MEMBER],
+                                      capture_output=True,text=True,timeout=30)
+                self.assertEqual(result.returncode,0,result.stderr)
+                report=json.loads(result.stdout)
+                self.assertEqual(report['result']['status'],'REVIEW_REQUIRED' if count==24 else 'BLOCKED')
+                self.assertEqual(report['started'],count==24)
+                self.assertEqual(report['held'],1 if count==24 else 0)
+                self.assertEqual(report['cleaned'],1)
+                if count==26:
+                    self.assertEqual(report['result']['reason_code'],'KDP_TEMPLATE_ARCHIVE_INVALID')
+
+class InteriorEmbeddingTests(unittest.TestCase):
+    def test_renderer_references_only_embedded_fonts(self):
+        font,spec=BookBoundsTests().spec()
+        with tempfile.TemporaryDirectory() as d:
+            target=Path(d)/'book.pdf';render_book(spec,[{'lines':['Embedded text']}],font,target)
+            with fitz.open(target) as doc:
+                fonts=doc[0].get_fonts(full=True)
+                self.assertTrue(fonts)
+                self.assertTrue(all(doc.extract_font(f[0])[3] for f in fonts))
+            self.assertTrue(inspect_interior(target,spec))
+
+    def test_unembedded_fonts_and_mixed_resources_are_rejected(self):
+        font,spec=BookBoundsTests().spec()
+        pdfmetrics.registerFont(TTFont('EmbeddingFixture',font))
+        for mode in ('builtin','mixed','unused_builtin'):
+            with self.subTest(mode=mode),tempfile.TemporaryDirectory() as d:
+                target=Path(d)/'book.pdf'
+                pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1)
+                if mode!='builtin':
+                    pdf.setFont('EmbeddingFixture',12);pdf.drawString(27,108,'Embedded')
+                    if mode=='mixed':
+                        pdf.setFont('Helvetica',12);pdf.drawString(27,84,'Builtin')
+                else:
+                    pdf.setFont('Helvetica',12);pdf.drawString(27,108,'Builtin')
+                pdf.showPage();pdf.save()
+                with fitz.open(target) as doc:
+                    self.assertTrue(doc[0].get_text().strip())
+                    self.assertTrue(any(not doc.extract_font(f[0])[3] for f in doc[0].get_fonts(full=True)))
+                with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_EMBEDDING_REQUIRED$'):
+                    inspect_interior(target,spec)
+
+
+    def test_unused_font_with_corrupt_program_is_rejected(self):
+        font,spec=BookBoundsTests().spec()
+        with tempfile.TemporaryDirectory() as d:
+            source=Path(d)/'source.pdf';target=Path(d)/'changed.pdf'
+            render_book(spec,[{'lines':['Embedded text']}],font,source)
+            with fitz.open(source) as doc:
+                original=next(f[0] for f in doc[0].get_fonts(full=True) if f[1]=='ttf')
+                descriptor=int(doc.xref_get_key(original,'FontDescriptor')[1].split()[0])
+                bad_stream=doc.get_new_xref();doc.update_object(bad_stream,'<< >>')
+                doc.update_stream(bad_stream,b'\x00\x01\x00\x00truncated-program')
+                bad_descriptor=doc.get_new_xref();doc.update_object(bad_descriptor,doc.xref_object(descriptor))
+                doc.xref_set_key(bad_descriptor,'FontFile2',f'{bad_stream} 0 R')
+                bad_font=doc.get_new_xref();doc.update_object(bad_font,doc.xref_object(original))
+                doc.xref_set_key(bad_font,'FontDescriptor',f'{bad_descriptor} 0 R')
+                resources=int(doc.xref_get_key(doc[0].xref,'Resources/Font')[1].split()[0])
+                doc.xref_set_key(resources,'Unused',f'{bad_font} 0 R')
+                doc.save(target)
+            with fitz.open(source) as a,fitz.open(target) as b:
+                self.assertEqual(a[0].get_text(),b[0].get_text())
+                self.assertEqual(a[0].get_pixmap().samples,b[0].get_pixmap().samples)
+            with self.assertRaisesRegex(ValueError,'^INTERIOR_FONT_EMBEDDING_INVALID$'):
+                inspect_interior(target,spec)
+
+
+class InteriorFontSizeTests(unittest.TestCase):
+    def fixture(self, root, sizes, scale=1, mixed=False, rotate=0):
+        _,spec=BookBoundsTests().spec()
+        spec['page_count']=len(sizes)
+        target=root/'font-size.pdf'
+        font,_=BookBoundsTests().spec();pdfmetrics.registerFont(TTFont('SizeFixture',font))
+        pdf=pdfcanvas.Canvas(str(target),pagesize=(144,144),invariant=1,initialFontName='SizeFixture')
+        for size in sizes:
+            pdf.saveState();pdf.translate(27,100);pdf.rotate(rotate)
+            pdf.scale(*(scale if isinstance(scale,tuple) else (scale,scale)))
+            pdf.setFont('SizeFixture',size);pdf.drawString(0,0,'Delivered text')
+            pdf.restoreState()
+            if mixed:
+                pdf.setFont('SizeFixture',12);pdf.drawString(27,75,'Readable text')
+            pdf.showPage()
         pdf.save()
         return target,spec
 
