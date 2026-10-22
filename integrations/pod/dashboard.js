@@ -150,7 +150,8 @@ async function openPreview(id){
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('Print preview is unavailable.');
   const record=await json('/jobs/'+encodeURIComponent(id)+'/package',context),manifest=record.manifest;
   const hash=manifest?.files?.['print.png'];
-  if(record.id!==id||!['kdp','redbubble','teepublic','zazzle','spreadshirt'].includes(record.platform)||
+  if(record.id!==id||record.state!=='qa_failed'||record.reason_code!=='REVIEW_REQUIRED'||
+   !['kdp','redbubble','teepublic','zazzle','spreadshirt'].includes(record.platform)||
    manifest?.platform!==record.platform||manifest.schema_version!==1||manifest.publication_enabled!==false||
    !exactPackageFiles(manifest,record.platform)||!/^[a-f0-9]{64}$/.test(hash)||
    !/^[a-f0-9]{64}$/.test(manifest.package_sha256)||!/^[a-f0-9]{64}$/.test(record.manifest_sha256)||
