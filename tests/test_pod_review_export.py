@@ -21,9 +21,10 @@ spec.loader.exec_module(module)
 class ExportTests(unittest.TestCase):
     def fixture(self, name='art.png'):
         body = b'fixture bytes'
-        manifest = {'schema_version': 1, 'publication_enabled': False, 'files': {name: hashlib.sha256(body).hexdigest()}}
+        manifest = {'schema_version': 1, 'publication_enabled': False, 'platform': 'redbubble',
+                    'files': {name: hashlib.sha256(body).hexdigest()}}
         manifest['package_sha256'] = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-        record = json.dumps({'id': 'job', 'manifest': manifest}).encode()
+        record = json.dumps({'id': 'job', 'platform': 'redbubble', 'manifest': manifest}).encode()
         return lambda route, limit: record if route.endswith('/package') else body
 
     def test_restore_without_approval(self):
@@ -66,15 +67,30 @@ class ExportTests(unittest.TestCase):
                     lambda route, limit: ambiguous.encode() if route.endswith('/package') else good(route, limit))
             self.assertFalse(root.exists())
 
+    def test_queue_and_manifest_marketplaces_must_match_before_writing(self):
+        good = self.fixture()
+        record = json.loads(good('/jobs/job/package', 262144))
+        record['manifest']['platform'] = 'etsy'
+        unsigned = {k: v for k, v in record['manifest'].items() if k != 'package_sha256'}
+        record['manifest']['package_sha256'] = hashlib.sha256(
+            json.dumps(unsigned, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            with self.assertRaisesRegex(ValueError, 'MANIFEST_INVALID'):
+                module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                    lambda route, limit: json.dumps(record).encode() if route.endswith('/package') else good(route, limit))
+            self.assertFalse(root.exists())
+
 
 class ExportDeadlineTests(unittest.TestCase):
     @contextlib.contextmanager
     def server(self, slow):
         first,second=b'first fixture',b'second fixture'*32
         sha1,sha2=[hashlib.sha256(b).hexdigest() for b in (first,second)]
-        manifest={'schema_version':1,'publication_enabled':False,'files':{'first.bin':sha1,'second.bin':sha2}}
+        manifest={'schema_version':1,'publication_enabled':False,'platform':'redbubble',
+                  'files':{'first.bin':sha1,'second.bin':sha2}}
         manifest['package_sha256']=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-        record=json.dumps({'id':'job','manifest':manifest}).encode()
+        record=json.dumps({'id':'job','platform':'redbubble','manifest':manifest}).encode()
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self,*args): pass
             def do_GET(self):

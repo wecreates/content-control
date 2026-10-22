@@ -199,6 +199,14 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
 });
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
+test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+  manifest:{schema_version:1,platform:'etsy',publication_enabled:false}};
+ const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
+ row.manifest.platform='redbubble';
+ assert.equal((await db.reviewPackage(row.id)).platform,'redbubble');
+});
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});
  for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),['listing'],42,{}])

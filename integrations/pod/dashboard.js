@@ -131,7 +131,8 @@ async function openPreview(id){
   if(!/^[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('Print preview is unavailable.');
   const record=await json('/jobs/'+encodeURIComponent(id)+'/package',context),manifest=record.manifest;
   const hash=manifest?.files?.['print.png'];
-  if(record.id!==id||manifest?.schema_version!==1||manifest.publication_enabled!==false||
+  if(record.id!==id||!['kdp','redbubble','teepublic','zazzle','spreadshirt'].includes(record.platform)||
+   manifest?.platform!==record.platform||manifest.schema_version!==1||manifest.publication_enabled!==false||
    !/^[a-f0-9]{64}$/.test(hash)||!/^[a-f0-9]{64}$/.test(manifest.package_sha256))throw Error('Print preview is unavailable.');
   const bytes=await read('/artifacts/'+hash,context,16777216);
   const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
