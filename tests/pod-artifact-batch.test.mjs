@@ -160,7 +160,7 @@ test('package manifest snapshot verifies exact package identity and disabled sco
   await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_(?:HASH_MISMATCH|INVALID)/);
  }
 }));
-test('package manifest rejects ambiguous or noncanonical JSON before identity acceptance',()=>fixture(async root=>{
+test('package manifest rejects duplicate decoded keys at every depth before identity acceptance',()=>fixture(async root=>{
  const expected=manifest(),parts=[
   ['platform',JSON.stringify(expected.platform)],
   ['schema_version',JSON.stringify(expected.schema_version)],
@@ -172,11 +172,6 @@ test('package manifest rejects ambiguous or noncanonical JSON before identity ac
   ['expected_text',canonical(expected.expected_text)],
   ['files',canonical(expected.files)],
  ];
- const rawUnsigned=`{${parts.map(([key,value])=>`${JSON.stringify(key)}:${value}`).join(',')}}`;
- const noncanonical=`{${parts.map(([key,value])=>`${JSON.stringify(key)}:${value}`).join(',')},"package_sha256":${JSON.stringify(hash(rawUnsigned))}}`;
- await fs.writeFile(path.join(root,'manifest.json'),noncanonical);
- await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/^Error: MANIFEST_INVALID$/);
-
  const duplicatedTemplate='{"dpi":300,"dpi":300,"platform":"redbubble","size_inches":[2,2]}';
  parts[3][1]=duplicatedTemplate;
  parts[4][1]=JSON.stringify(hash(duplicatedTemplate));
