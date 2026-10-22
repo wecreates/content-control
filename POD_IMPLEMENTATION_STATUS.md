@@ -70,6 +70,84 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r187 verified receipt: immutable stored-manifest identity
+
+Fresh reconstruction read Content Control
+f3acc425bf63fe45390edbb9c524a0ebb5814405 and Money Factory
+c7b784e315b9b1be28d17e18791dc585155bc4f9, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped this POD work. The
+failed database-administration path had no credible access change, so it was
+not retried.
+
+[CC PR 466](https://github.com/wecreates/content-control/pull/466) merged exact
+tested head 7928de8a4cc4487641c39e19f6f73f6dd1e14f97 as
+c75a04f7c7bf93095df198b072d85cbb94ecd7d7 after an unchanged-base and clean-
+mergeability check. Production now records a separate canonical SHA-256 of the
+complete persisted review manifest in the append-only POD event written with
+the queue transition. The database review boundary requires the current queue
+manifest to match that identity. The authenticated dashboard and offline review
+exporter independently perform the same verification before fetching artifact
+bytes. Legacy rows without the evidence fail closed. The producer's original
+`package_sha256` remains an opaque delivery identity: PostgreSQL JSONB can
+normalize numeric spellings such as `300.0` to `300`, so reconstructing the
+producer's byte-level hash from parsed stored JSON is not sound.
+
+Regression-first verification reproduced the missing identity check: the prior
+focused implementation passed 43 of 45 Node assertions and failed both new
+database/dashboard mutations. An initial repair that recomputed the producer
+hash passed local tests but [production-container run
+39834836866](https://github.com/wecreates/content-control/actions/runs/39834836866),
+job 120020294928, exposed the JSONB numeric-normalization incompatibility in
+the real print/durable-review stage; that head was not merged. After replacing
+it with the separate stored-manifest identity, focused Node passed 45/45,
+review exporter passed 17/17 and the full local POD suite passed 675 tests with
+nine expected environment-gated skips and zero failures. Syntax and whitespace
+checks were clean. A broader local Python discovery passed 234 tests and had two
+environment import errors because the local runner lacked OpenCV; no complete
+Python pass was claimed from that runner. [Final integration run
+39836116744](https://github.com/wecreates/content-control/actions/runs/39836116744),
+job 120024795512, and [production-container run
+39836116735](https://github.com/wecreates/content-control/actions/runs/39836116735),
+job 120024795936, both passed on the exact merged head. The container gate
+built the production image and passed dependency/non-root, full Python,
+Node/PostgreSQL, real print/durable-review and publication-disabled startup
+stages.
+
+Dependent [MF PR 141](https://github.com/wecreates/Money-factory/pull/141)
+pinned cross-repository verification to CC
+c75a04f7c7bf93095df198b072d85cbb94ecd7d7 while retaining explicit
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`. Tested head
+e59b0e7fbfe8cbdfd697db802f75b9fb29bde809 merged as
+943ab97268b472632eadf81649e3d937b8e735c9 after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39837245135](https://github.com/wecreates/Money-factory/actions/runs/39837245135),
+job 120028665093, passed all selected Content Control and Money Factory bridge,
+review, recovery, rights, KDP and adapter-contract stages.
+
+Render automatically attempted CC c75a04f7c7bf93095df198b072d85cbb94ecd7d7
+as deploy dep-dbd5t8p42hec73agd8gg. Deploy-start event
+evt-dbd5t94e167s73df4igg bound the new commit at
+2026-10-22T19:06:12.227200Z. Event evt-dbd5t97i822c73f2j08g reported
+`pipeline_minutes_exhausted` at 19:06:12.285822Z, and
+evt-dbd5t97i822c73f2j0fg recorded the failed deploy at 19:06:12.882091Z. No
+application build ran, so the hosted runtime remains unverified. No manual
+retry, paid workaround, replacement service, credential access, widened network
+or unchanged database-administration retry occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic stored-
+manifest integrity boundary only; merged code and hosted CI are not live
+acceptance. Production restricted database/schema/migrations, retained recovery
+evidence, deployed hybrid dependencies, mounted Money Factory authority/current
+grants and revocation, real accounts/sources/rights/templates/reviewers,
+authorized five-platform adapters, actual economics/reconciliation, owner-phone
+acceptance, monitoring/recovery drills, measured capacity and a real authorized
+end-to-end launch remain unverified. Both publication flags remain false; Etsy
+remains excluded. No approval, clearance, revenue, publication or continuously
+running self-hosted worker is claimed. This report-only receipt uses
+`[skip render]`; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r186 verified receipt: exact stored artifact sets
 
 Fresh reconstruction read Content Control
