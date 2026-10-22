@@ -1,9 +1,9 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createPodPool,PodDB} from '../pod-db-bridge.js';
 import {preflight} from './pod_preflight.mjs';
 import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
+import {readBridgeFile} from '../integrations/pod/bridge-file.mjs';
 
 export async function archiveCLI(args,env=process.env){
  if(args.length!==2||!['export','restore','verify'].includes(args[0])||!path.isAbsolute(args[1])||
@@ -14,7 +14,7 @@ export async function archiveCLI(args,env=process.env){
  try{
   if(args[0]==='verify')return await verifyArtifactLibrary({directory:args[1],key:Buffer.from(env.POD_ARCHIVE_KEY,'hex'),signal:controller.signal});
   pool=await createPodPool(env);
-  const db=args[0]==='export'?{pool}:new PodDB({pool,bridge:JSON.parse(await fs.readFile(env.POD_BRIDGE_PATH,'utf8')),
+  const db=args[0]==='export'?{pool}:new PodDB({pool,bridge:await readBridgeFile(env.POD_BRIDGE_PATH,{signal:controller.signal}),
    upstreamKey:env.POD_UPSTREAM_KEY,qaKey:env.POD_QA_KEY,expiresAt:env.POD_STORAGE_EXPIRES_AT});
   return await (args[0]==='export'?exportArtifactLibrary:restoreArtifactLibrary)(db,
    {directory:args[1],key:Buffer.from(env.POD_ARCHIVE_KEY,'hex'),env,signal:controller.signal});

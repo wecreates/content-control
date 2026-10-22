@@ -1,13 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {preflight} from '../scripts/pod_preflight.mjs';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 import {requirePodRuntime} from '../integrations/pod/runtime-gate.mjs';
+import {MAX_BRIDGE_BYTES,readBridgeFile} from '../integrations/pod/bridge-file.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const env={POD_DATABASE_URL:'postgresql://secret:secret@example.invalid/db',POD_BRIDGE_PATH:'bridge',
  POD_UPSTREAM_KEY:'a'.repeat(32),POD_QA_KEY:'b'.repeat(32),INTERNAL_OPERATIONS_KEY:'c'.repeat(32),
  POD_STORAGE_EXPIRES_AT:'2030-01-01',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+async function bridgeWorkspace(t){
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-bridge-'));
+ t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ return root;
+}
 function fixture(overrides={}){
  const queries=[],releases=[];let released=false,ended=false;
  const client={async query(sql,args){queries.push(sql);
@@ -74,6 +83,34 @@ test('invalid artifact budget blocks preflight without exposing its value',async
 test('missing configuration blocks without attempting a database connection',async()=>{
  const r=await preflight({env:{},readFile:async()=>{throw Error('missing');},connect:()=>{assert.fail('must not connect');}});
  assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code==='DEDICATED_DATABASE_CONFIGURED').status,'BLOCKED');
+});
+test('production preflight accepts a bounded regular bridge contract',async t=>{
+ const root=await bridgeWorkspace(t),filename=path.join(root,'bridge.json');
+ await fs.writeFile(filename,JSON.stringify(bridge));
+ const r=await preflight({env:{...env,POD_DATABASE_URL:'',POD_BRIDGE_PATH:filename},connect:()=>assert.fail('must not connect')});
+ assert.deepEqual(r.checks.find(c=>c.code==='BRIDGE_CONTRACT'),{code:'BRIDGE_CONTRACT',status:'PASS'});
+ assert.equal(r.status,'BLOCKED');
+});
+test('production preflight rejects a final bridge symlink',async t=>{
+ const root=await bridgeWorkspace(t),target=path.join(root,'target.json'),filename=path.join(root,'bridge.json');
+ await fs.writeFile(target,JSON.stringify(bridge));await fs.symlink(target,filename);
+ const r=await preflight({env:{...env,POD_DATABASE_URL:'',POD_BRIDGE_PATH:filename},connect:()=>assert.fail('must not connect')});
+ assert.deepEqual(r.checks.find(c=>c.code==='BRIDGE_CONTRACT'),{code:'BRIDGE_CONTRACT',status:'BLOCKED'});
+});
+test('production preflight rejects escaped duplicate bridge keys',async t=>{
+ const root=await bridgeWorkspace(t),filename=path.join(root,'bridge.json');
+ const ambiguous=`{"producer":"invalid","prod\\u0075cer":"CYZOR Money Factory","consumer":"Content Control","contract":{"fail_closed_rules":${JSON.stringify(BRIDGE_RULES)}}}`;
+ await fs.writeFile(filename,ambiguous);
+ const r=await preflight({env:{...env,POD_DATABASE_URL:'',POD_BRIDGE_PATH:filename},connect:()=>assert.fail('must not connect')});
+ assert.deepEqual(r.checks.find(c=>c.code==='BRIDGE_CONTRACT'),{code:'BRIDGE_CONTRACT',status:'BLOCKED'});
+});
+test('bridge reader enforces its exact byte ceiling',async t=>{
+ const root=await bridgeWorkspace(t),filename=path.join(root,'bridge.json');
+ const body=JSON.stringify(bridge);
+ await fs.writeFile(filename,body.padEnd(MAX_BRIDGE_BYTES,' '));
+ assert.deepEqual(await readBridgeFile(filename),bridge);
+ await fs.appendFile(filename,' ');
+ await assert.rejects(readBridgeFile(filename),/BRIDGE_CONTRACT_INVALID/);
 });
 for(const [name,overrides,code] of [['privileged role',{role:{elevated_membership:true}},'RESTRICTED_RUNTIME_ROLE'],['TLS absent',{tls:false},'DATABASE_TLS'],['vault access',{vault:true},'SOCIAL_VAULT_ISOLATED'],['modified migration',{hash:'bad'},'SCHEMA_CHECKSUMS']]){
  test(name+' fails closed',async()=>{const f=fixture(overrides),r=await preflight(f.options);assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code===code).status,'BLOCKED');assert.ok(f.closed());});
