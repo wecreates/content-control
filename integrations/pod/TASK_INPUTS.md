@@ -87,6 +87,15 @@ revocation-contract testing, not live authority deployment or real approval.
 
 ## Local JSON evidence files
 
+The Node production coordinator applies the same fail-closed boundary to signed
+cover templates, KDP interior templates and the signed QA result. It reads one
+nonempty regular-file snapshot, at most 2 MiB, without following a final symlink
+or waiting on a named pipe. Strict UTF-8 and the shared duplicate-key validator
+run before signature, provenance or verdict handling. A changing, malformed,
+oversized, linked or non-file input is rejected as `ENVELOPE_INVALID`; the
+coordinator never launches a later production stage from an ambiguous template
+or completes a job from an ambiguous QA envelope.
+
 The shared Python JSON reader opens inputs nonblocking, rejects a final symlink,
 and verifies the opened descriptor is a regular file before reading. Named pipes,
 devices and directories are not supported evidence inputs. This prevents a FIFO

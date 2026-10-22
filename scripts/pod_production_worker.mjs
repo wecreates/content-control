@@ -2,8 +2,8 @@ import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {readPackageArtifacts,readPackageManifest} from '../integrations/pod/package-artifacts.mjs';
-import fs from 'node:fs/promises';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
+import {readSignedJSONFile} from '../integrations/pod/signed-file.mjs';
 import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '../integrations/pod/templates.mjs';
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
@@ -38,13 +38,13 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
-  const coverEnvelope=JSON.parse(await fs.readFile(task.template,'utf8'));
+  const coverEnvelope=await readSignedJSONFile(task.template,{signal});
   const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
   let interiorTemplate;
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
-   const interiorEnvelope=JSON.parse(await fs.readFile(task.interior.template,'utf8'));
+   const interiorEnvelope=await readSignedJSONFile(task.interior.template,{signal});
    const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
    interiorTemplate=interior;
    const profile=kdpCalculatorProfile(cover,interior);
@@ -114,7 +114,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(error.message!=='PYTHON_STAGE_FAILED')throw error;
    qaProcessFailed=true;
   }
-  const qa=JSON.parse(await fs.readFile(task.qaSignedOutput,'utf8'));
+  const qa=await readSignedJSONFile(task.qaSignedOutput,{signal});
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
   if(qaProcessFailed&&JSON.parse(qa.payload).verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');

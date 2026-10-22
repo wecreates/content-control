@@ -13,6 +13,10 @@ const sign=value=>{
  const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
 };
+const duplicateOuterKey=value=>{
+ const envelope=sign(value),payload=JSON.stringify(envelope.payload);
+ return `{"payload":${payload},"pay\\u006coad":${payload},"signature":${JSON.stringify(envelope.signature)}}`;
+};
 const scope={product:'fixture-shirt',country:'US'};
 const retainedSource=Buffer.from('retained synthetic cover source, not official evidence');
 const assetSource=Buffer.from('synthetic task artwork identity');
@@ -34,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -51,7 +55,11 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    "const fs=require('node:fs');fs.writeFileSync('interior-guide-started','yes');if(process.env.FIXTURE_INTERIOR_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_INTERIOR_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"require('node:fs').writeFileSync('qa-started','yes');require('node:fs').writeFileSync('qa-args.json',JSON.stringify(process.argv));require('node:fs').writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
   const templatePath=path.join(root,'template.json');
-  await fs.writeFile(templatePath,JSON.stringify(sign(template)));
+  if(templateLink){
+   const target=path.join(root,'template-target.json');
+   await fs.writeFile(target,templateText??JSON.stringify(sign(template)));
+   await fs.symlink(target,templatePath);
+  }else await fs.writeFile(templatePath,templateText??JSON.stringify(sign(template)));
   const assetSourcePath=path.join(root,'asset-source.png'),assetRightsPath=path.join(root,'asset-rights.json');
   await fs.writeFile(assetSourcePath,assetSource);
   await fs.writeFile(path.join(root,'unused'),'[]');
@@ -61,7 +69,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   const interiorSourcePath=path.join(root,'retained-interior-source.bin');
   if(interior&&interiorTemplateSource)await fs.writeFile(interiorSourcePath,interiorSourceBytes);
   const interiorPath=path.join(root,'interior.json');
-  if(interior)await fs.writeFile(interiorPath,JSON.stringify(sign(interior)));
+  if(interior)await fs.writeFile(interiorPath,interiorText??JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
    platform,destination_platform:platform,mode:'PRELAUNCH'};
   let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,completed=0;
@@ -97,6 +105,19 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
 test('production rejects unverified template before launching any stage',async()=>{
  assert.deepEqual(await exercise({template:{...record(),official_source_verified:false}}),
   {status:'BLOCKED',blocked:1,held:0,cleaned:1,started:false});
+});
+test('production rejects ambiguous or linked signed templates before launching a stage',async()=>{
+ for(const options of [
+  {templateText:duplicateOuterKey(record())},
+  {templateLink:true},
+  {platform:'kdp',template:record('kdp'),interior:{...record('kdp'),audience:'pod:interior-template'},
+   interiorText:duplicateOuterKey({...record('kdp'),audience:'pod:interior-template'})},
+ ]){
+  const result=await exercise({...options,detailed:true});
+  assert.equal(result.status,'BLOCKED');assert.equal(result.reason,'ENVELOPE_INVALID');
+  assert.equal(result.started,false);assert.equal(result.bookStarted,false);
+  assert.equal(result.qaStarted,false);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
+ }
 });
 test('all platform QA stages receive original art and original asset rights',async()=>{
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
