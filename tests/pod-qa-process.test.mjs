@@ -7,7 +7,8 @@ import crypto from 'node:crypto';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
 
-for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} output cannot produce QA_PASSED`,async()=>{
+for(const [verdict,duplicate] of [['PASS',false],['FAIL',false],['FAIL',true]])test(
+ `nonzero QA process with ${duplicate?'ambiguous ':''}${verdict} output cannot produce QA_PASSED`,async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-qa-exit-'));
  try{
   await fs.mkdir(path.join(root,'scripts'));await fs.mkdir(path.join(root,'output'));
@@ -17,8 +18,11 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
   // not graphics quality or signature acceptance (the real DB verifies those).
   await fs.writeFile(path.join(root,'scripts','pod_asset_generator.py'),
    `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(templateValue)},m={schema_version:1,platform:'redbubble',publication_enabled:false,files,template,source_sha256:${JSON.stringify(sourceSha256)},text_layers_sha256:c.createHash('sha256').update('[]').digest('hex'),expected_text:[],template_sha256:c.createHash('sha256').update(canon(template)).digest('hex')};m.package_sha256=c.createHash('sha256').update(canon(m)).digest('hex');fs.writeFileSync('output/manifest.json',canon(m));`);
+  const qaBody=duplicate
+   ? `{"payload":"{\\"verdict\\":\\"${verdict}\\"}","pay\\u006coad":"{\\"verdict\\":\\"${verdict}\\"}"}`
+   : JSON.stringify({payload:JSON.stringify({verdict})});
   await fs.writeFile(path.join(root,'scripts','pod_vision_qa.py'),
-   `require('node:fs').writeFileSync('qa.json',JSON.stringify({payload:JSON.stringify({verdict:${JSON.stringify(verdict)}})}));process.exit(2);`);
+   `require('node:fs').writeFileSync('qa.json',${JSON.stringify(qaBody)});process.exit(2);`);
   const key='k'.repeat(48),brief={id:'job',account_id:'account',business_id:'business',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
   const templateScope={product:'fixture-shirt',country:'US'};
   const templatePayload=JSON.stringify({schema_version:1,audience:'pod:template',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
@@ -42,16 +46,17 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa.json'),
     reviewPackage:async()=>({rights:'unused',competitive:'unused'}),cleanup:async()=>{cleaned++;}})};
   const result=await produceOnce(options);
-  assert.equal(result.status,verdict==='PASS'?'BLOCKED':'QA_FAILED');
-  assert.equal(completed,verdict==='PASS'?0:1);assert.equal(blocked,verdict==='PASS'?1:0);assert.equal(cleaned,1);
+  const expectedCode=duplicate?'ENVELOPE_INVALID':verdict==='PASS'?'QA_PROCESS_RESULT_CONFLICT':'QA_FAILED';
+  assert.equal(result.status,expectedCode==='QA_FAILED'?'QA_FAILED':'BLOCKED');
+  assert.equal(completed,expectedCode==='QA_FAILED'?1:0);assert.equal(blocked,expectedCode==='QA_FAILED'?0:1);assert.equal(cleaned,1);
   let observed,timer;const failure=new Promise(resolve=>observed=resolve);
   const runtime=startProductionRuntime({db:options.db,env:options.env,
    production:{root,resolveTask:options.resolveTask,resolveGrant:options.resolveGrant},onError:observed});
   try{
    const report=await Promise.race([failure,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('health event missing')),5000);})]);
-   assert.equal(report.code,verdict==='PASS'?'QA_PROCESS_RESULT_CONFLICT':'QA_FAILED');
+   assert.equal(report.code,expectedCode);
    assert.equal(runtime.health().consecutive_failures,1);
-   assert.equal(runtime.health().last_result,verdict==='PASS'?'BLOCKED':'QA_FAILED');
+   assert.equal(runtime.health().last_result,expectedCode==='QA_FAILED'?'QA_FAILED':'BLOCKED');
   }finally{clearTimeout(timer);await runtime.stop();}
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
