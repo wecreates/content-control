@@ -35,6 +35,12 @@ spellings—fail to the generic `PRODUCTION_BLOCKED` route instead of selecting 
 different repair path. Stderr and arbitrary child text remain redacted. This is
 deterministic failure routing, not evidence that remediation succeeded.
 
+When the QA process exits nonzero, the worker also reads its signed payload with
+that strict parser before accepting a `FAIL` diagnostic. Ambiguous inner verdict
+keys are treated as `QA_PROCESS_RESULT_CONFLICT` and never reach the completion
+transaction, even if an ordinary parser would select the later `FAIL` value.
+The database still independently authenticates every unambiguous envelope.
+
 ## Review export response deadlines
 
 The default HTTPS transport in `scripts/pod_review_export.py` enforces a
