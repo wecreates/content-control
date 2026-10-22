@@ -1,10 +1,10 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createPodPool,PodDB} from '../pod-db-bridge.js';
 import {preflight} from './pod_preflight.mjs';
 import {exportStateArchive,verifyStateArchive,restoreStateArchive} from '../integrations/pod/state-archive.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
+import {readBridgeFile} from '../integrations/pod/bridge-file.mjs';
 
 export async function stateArchiveCLI(args,env=process.env){
  if(args.length!==2||!['export','verify','restore'].includes(args[0])||!path.isAbsolute(args[1])||
@@ -18,7 +18,7 @@ export async function stateArchiveCLI(args,env=process.env){
   const options={directory:args[1],key:Buffer.from(env.POD_ARCHIVE_KEY,'hex'),signal:controller.signal,env,budgetBytes};
   if(args[0]==='verify')return await verifyStateArchive(options);
   pool=await createPodPool(env);
-  const db=args[0]==='export'?{pool}:new PodDB({pool,bridge:JSON.parse(await fs.readFile(env.POD_BRIDGE_PATH,'utf8')),
+  const db=args[0]==='export'?{pool}:new PodDB({pool,bridge:await readBridgeFile(env.POD_BRIDGE_PATH,{signal:controller.signal}),
    upstreamKey:env.POD_UPSTREAM_KEY,qaKey:env.POD_QA_KEY,expiresAt:env.POD_STORAGE_EXPIRES_AT});
   return await (args[0]==='export'?exportStateArchive:restoreStateArchive)(db,options);
  }finally{clearTimeout(timer);if(pool)await pool.end();}

@@ -1,5 +1,5 @@
-import fs from 'node:fs/promises';
 import {createPodPool,PodDB} from '../../pod-db-bridge.js';
+import {readBridgeFile} from './bridge-file.mjs';
 import {createPodRouter} from './router.mjs';
 import {operationalAuth} from './auth.mjs';
 import {requirePodRuntime} from './runtime-gate.mjs';
@@ -12,7 +12,7 @@ export async function initializePodService({env=process.env,authorize,production
  const state={status:'DISABLED',publication_enabled:false};
  if(env.POD_SERVICE_ENABLED==='true'){
   try{
-   const bridge=JSON.parse(await fs.readFile(env.POD_BRIDGE_PATH,'utf8'));
+   const bridge=await readBridgeFile(env.POD_BRIDGE_PATH);
    pool=await createPodPool(env);
    await requirePodRuntime({pool,env});
    db=new PodDB({pool,bridge,upstreamKey:env.POD_UPSTREAM_KEY,qaKey:env.POD_QA_KEY,expiresAt:env.POD_STORAGE_EXPIRES_AT});
