@@ -19,6 +19,14 @@ bytes inherit trusted PNG/PDF/JSON metadata. These are bounded media-envelope
 checks, not complete parser safety or design approval; the independent QA stages
 remain responsible for full decoding and substantive review.
 
+The parent accepts `manifest.json` only as canonical UTF-8 JSON, optionally with
+one final newline. Duplicate decoded keys at any depth, alternate member order,
+extra whitespace, nonfinite numbers and unsafe integers fail before artifact
+storage or review hold. The package digest is SHA-256 of the canonical manifest
+with `package_sha256` removed; the embedded template digest uses the same
+canonical encoding. This matches the Python producer and independent QA so one
+semantic package cannot acquire different identities at successive boundaries.
+
 `ArtifactStore.putMany([{body, mediaType}, ...])` uses one transaction and the same
 advisory lock as single-file `put`. It deduplicates hashes, computes the combined
 size of missing blobs and checks the total store budget before inserts. An insert
