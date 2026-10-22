@@ -4,11 +4,15 @@ import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const SHA256=/^[a-f0-9]{64}$/;
+const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
+const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 function assertStoredManifest(manifest,platform,state={nodes:0},depth=0){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
   manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||''))throw Error('PACKAGE_UNAVAILABLE');
  const files=manifest.files;
  if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length<1||Object.keys(files).length>64)throw Error('PACKAGE_UNAVAILABLE');
+ const expected=platform==='kdp'?KDP_REVIEW_FILES:BASE_REVIEW_FILES;
+ if(JSON.stringify(Object.keys(files).sort())!==JSON.stringify(expected))throw Error('PACKAGE_UNAVAILABLE');
  for(const [name,hash] of Object.entries(files))if(!REVIEW_FILE.test(name)||name==='manifest.json'||typeof hash!=='string'||!SHA256.test(hash))throw Error('PACKAGE_UNAVAILABLE');
  const inspect=(value,level)=>{
   if(level>64||++state.nodes>10000)throw Error('PACKAGE_UNAVAILABLE');
