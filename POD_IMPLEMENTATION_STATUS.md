@@ -3077,6 +3077,67 @@ acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted. This run did not claim a continuously running self-hosted worker.
 
+## Run receipt r176 — harden Money Factory bridge file loading (2026-10-22 UTC)
+
+### Scope and repaired boundary
+
+This run closed the remaining ordinary-file boundary around the native Money
+Factory bridge contract. Service startup, deployment preflight, the publisher
+CLI and both restore CLIs previously used symlink-following, unbounded
+`fs.readFile` with ordinary `JSON.parse`. They now share one 64-KiB reader
+that opens nonblocking without following a final symlink, requires a nonempty
+regular file, captures its exact size, decodes strict UTF-8, rejects recursively
+duplicated decoded keys and validates every required fail-closed bridge rule.
+The exact regressions cover a valid regular file, a final symlink, an escaped
+duplicate authority key and the 64-KiB/+1 boundary. Etsy remained excluded. The
+unchanged failed database-administration path was not retried.
+
+### Verification and guarded merges
+
+- The focused local suite passed 114/114 preflight, policy, state-archive and
+  artifact-archive tests, with syntax and whitespace checks passing. A wider
+  local glob executed 644 passing tests but could not load six PostgreSQL test
+  files because this worktree did not have the optional `pg` dependency; two
+  unrelated tests skipped. Hosted locked gates supplied that missing coverage.
+- Content Control PR #444 exact head
+  `50a95a9a9349dc4b9a02fa26438fec2ec8ad67e9` passed integration run
+  `39742111187`, job `119701599074`, and container run `39742111185`,
+  job `119701598993`.
+- Guarded Content Control squash merge:
+  `bb6815f5445606d43fcba337f8abd703704cb17e`.
+- Money Factory PR #130 exact head
+  `21146e7d0566498448ec4d7995ab73784bef33f5` pinned that merge, added the
+  bridge preflight regression to the selected dependent suite, preserved the
+  20-minute timeout and both publication flags false, and passed
+  cross-repository run `39742936854`, job `119704364744`.
+- Guarded Money Factory squash merge:
+  `56a26249e0fc7e606eae8d63979daf7a834754e3`.
+
+### Authorized Render verification
+
+The authorized service remained unsuspended on the existing free plan, main
+branch, commit-triggered Docker runtime and one instance. Render detected
+`bb6815f5445606d43fcba337f8abd703704cb17e`: deploy
+`dep-dbcrukvavr4c73cvd2q0` started in event
+`evt-dbcrukv42ijs73bfhilg` at 2026-10-22T07:46:27.789189Z. Event
+`evt-dbcrukukvk2s73e65tfg` recorded `pipeline_minutes_exhausted` at
+07:46:27.865114Z, and event `evt-dbcrul742ijs73bfhiog` recorded failed
+deployment at 07:46:28.204100Z. No hosted rollout, retry, plan/cache change,
+replacement service, spending, secret access or network widening occurred.
+
+### Acceptance truth
+
+This repair is code, CI and image evidence only. It does not establish production
+database isolation, durable live recovery, a deployed current image, mounted live
+Money Factory authority, real accounts/grants/sources/rights/templates, KDP
+editorial/preview acceptance, independent QA/remediation outcomes, permitted
+live adapters for KDP/Redbubble/TeePublic/Zazzle/Spreadshirt, actual economics or
+financial reconciliation, owner-phone operations, monitoring drills, measured
+capacity, real end-to-end acceptance or controlled launch readiness. All 24
+acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted
+and no continuously running self-hosted worker is claimed.
+
 ## Run receipt r175 — bound signed production files (2026-10-22 UTC)
 
 ### Scope and repaired boundary
