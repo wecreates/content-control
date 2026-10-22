@@ -55,8 +55,11 @@ manifest filename that references the requested digest. PNG roles require
 `image/png`, KDP PDF roles require `application/pdf`, and the KDP receipt requires
 `application/json`. A digest reused across roles with incompatible media contracts
 is unavailable rather than interpreted according to whichever filename a client
-chose. This retrieval check preserves the production media contract for legacy or
-foreign rows; it does not replace full decoding or independent QA.
+chose. The retrieved bytes must also pass the same bounded PNG signature/chunk,
+PDF header/EOF, or strict JSON-object envelope check used before production
+storage. A legacy or foreign row cannot become downloadable merely because its
+hash and role-correct media metadata agree. These retrieval checks preserve the
+production media contract; they do not replace full decoding or independent QA.
 
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.

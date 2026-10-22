@@ -19,6 +19,13 @@ const storedManifest=(platform='redbubble')=>{
  return {...value,package_sha256:crypto.createHash('sha256').update(canonical(value)).digest('hex')};
 };
 const storedIdentity=manifest=>crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
+const validPng=()=>{
+ const body=Buffer.alloc(45);
+ Buffer.from('89504e470d0a1a0a','hex').copy(body);
+ body.writeUInt32BE(13,8);body.write('IHDR',12,'ascii');
+ body.writeUInt32BE(0,33);body.write('IEND',37,'ascii');
+ return body;
+};
 function fixture(now=Date.now(),platform='redbubble',editorial){
  const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),release_checks_passed:true};
  const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',platform,
@@ -254,7 +261,7 @@ test('stored review package rejects invalid manifest acceptance claims and ident
  assert.equal((await db.reviewPackage(row.id)).manifest.package_sha256,row.manifest.package_sha256);
 });
 test('stored review artifacts require the exact held job and manifest membership',async()=>{
- const body=Buffer.from('scoped review bytes'),sha=crypto.createHash('sha256').update(body).digest('hex');
+ const body=validPng(),sha=crypto.createHash('sha256').update(body).digest('hex');
  const manifest=storedManifest();for(const name of Object.keys(manifest.files))manifest.files[name]=sha;
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest,manifest_sha256:storedIdentity(manifest),body,media_type:'image/png'};
@@ -265,14 +272,27 @@ test('stored review artifacts require the exact held job and manifest membership
  row.media_type='application/pdf';
  await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
  row.media_type='image/png';
+ const malformed=Buffer.from('not a png'),malformedSha=crypto.createHash('sha256').update(malformed).digest('hex');
+ row.body=malformed;for(const name of Object.keys(manifest.files))manifest.files[name]=malformedSha;
+ row.manifest_sha256=storedIdentity(manifest);
+ await assert.rejects(db.reviewArtifact(row.id,malformedSha),/ARTIFACT_UNAVAILABLE/);
  row.platform='kdp';row.manifest=storedManifest('kdp');row.manifest.files['cover.pdf']=sha;
+ const pdf=Buffer.from('%PDF-1.7\n%%EOF'),pdfSha=crypto.createHash('sha256').update(pdf).digest('hex');
+ row.manifest.files['cover.pdf']=pdfSha;row.body=pdf;
  row.manifest_sha256=storedIdentity(row.manifest);row.media_type='application/pdf';
- assert.deepEqual(await db.reviewArtifact(row.id,sha),{body,media_type:'application/pdf'});
- row.manifest.files['print.png']=sha;row.manifest_sha256=storedIdentity(row.manifest);
- await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+ assert.deepEqual(await db.reviewArtifact(row.id,pdfSha),{body:pdf,media_type:'application/pdf'});
+ row.manifest.files['print.png']=pdfSha;row.manifest_sha256=storedIdentity(row.manifest);
+ await assert.rejects(db.reviewArtifact(row.id,pdfSha),/ARTIFACT_UNAVAILABLE/);
+ row.manifest=storedManifest('kdp');const receipt=Buffer.from('{}'),receiptSha=crypto.createHash('sha256').update(receipt).digest('hex');
+ row.manifest.files['interior.receipt.json']=receiptSha;row.manifest_sha256=storedIdentity(row.manifest);
+ row.body=receipt;row.media_type='application/json';
+ assert.deepEqual(await db.reviewArtifact(row.id,receiptSha),{body:receipt,media_type:'application/json'});
+ const malformedReceipt=Buffer.from('{"a":1,"a":2}'),malformedReceiptSha=crypto.createHash('sha256').update(malformedReceipt).digest('hex');
+ row.manifest.files['interior.receipt.json']=malformedReceiptSha;row.manifest_sha256=storedIdentity(row.manifest);row.body=malformedReceipt;
+ await assert.rejects(db.reviewArtifact(row.id,malformedReceiptSha),/ARTIFACT_UNAVAILABLE/);
  row.platform='redbubble';row.manifest=manifest;row.manifest_sha256=storedIdentity(manifest);row.media_type='image/png';
  row.state='qa_passed';row.reason_code=null;
- await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+ await assert.rejects(db.reviewArtifact(row.id,malformedSha),/ARTIFACT_UNAVAILABLE/);
 });
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});

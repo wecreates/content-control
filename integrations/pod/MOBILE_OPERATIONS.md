@@ -6,6 +6,12 @@ GET /api/print/jobs accepts one allowlisted state, default review_required, and 
 
 Print previews fetch the existing package record and its print.png artifact, with redirects disabled and response limits of 256 KiB/16 MiB. Artifact downloads are job-scoped and the server rechecks the exact `qa_failed` / `REVIEW_REQUIRED` hold, stored-manifest identity, manifest membership and filename-bound media type in the same database read that retrieves the bytes. A bearer key plus an unscoped content hash is insufficient, and an allowlisted but wrong media type cannot inherit a manifest filename's role. SHA-256 must match the package manifest before any image is displayed. PNG headers must declare no more than 25 million pixels before browser decoding. Other content and larger artwork require the existing independent review export tooling. Blob URLs are revoked when the view changes or session clears; stale async responses cannot restore cleared data. The content policy permits local blob images only, not external image hosts.
 
+The server also revalidates each downloaded member's bounded media envelope before
+returning bytes: PNG signature/chunks, PDF header/EOF, or strict JSON object as
+appropriate for the manifest filename. This prevents a legacy or foreign row
+with matching hash and media metadata from bypassing the production storage
+contract. It is not full decoding or substantive review.
+
 The hash check proves that displayed bytes match the stored manifest entry. It does not approve the manifest, establish current rights, attest superiority, replace KDP interior PDF review, or prove that a stale QA receipt is still valid. Publication remains disabled. The dashboard preserves the independent signed-review and controlled release paths.
 
 Automated coverage includes request authentication, filter allowlisting, PostgreSQL limits and field redaction, text-node rendering, corrupted bytes, oversized responses/images, cancellation and session cleanup. A deployed phone-browser acceptance test and real owner authentication remain required; DOM simulations and HTTP tests do not establish those live criteria.
