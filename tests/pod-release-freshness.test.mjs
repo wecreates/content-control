@@ -253,6 +253,18 @@ test('stored review package rejects invalid manifest acceptance claims and ident
  row.platform='redbubble';
  assert.equal((await db.reviewPackage(row.id)).manifest.package_sha256,row.manifest.package_sha256);
 });
+test('stored review artifacts require the exact held job and manifest membership',async()=>{
+ const body=Buffer.from('scoped review bytes'),sha=crypto.createHash('sha256').update(body).digest('hex');
+ const manifest=storedManifest();for(const name of Object.keys(manifest.files))manifest.files[name]=sha;
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+  manifest,manifest_sha256:storedIdentity(manifest),body,media_type:'image/png'};
+ const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.reviewArtifact('other-job',sha),/ARTIFACT_UNAVAILABLE/);
+ await assert.rejects(db.reviewArtifact(row.id,'b'.repeat(64)),/ARTIFACT_UNAVAILABLE/);
+ assert.deepEqual(await db.reviewArtifact(row.id,sha),{body,media_type:'image/png'});
+ row.state='qa_passed';row.reason_code=null;
+ await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+});
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});
  for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),['listing'],42,{}])

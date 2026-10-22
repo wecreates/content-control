@@ -98,6 +98,22 @@ test('unset operational key cannot be authenticated with Bearer undefined',()=>a
 test('operational key requires exact bearer match',()=>{const auth=operationalAuth(key);assert.equal(auth({headers:{authorization:`Bearer ${key}`}}),true);assert.equal(auth({headers:{authorization:`Bearer ${key}x`}}),false);});
 test('artifact rejects oversize before database access',async()=>{const store=new ArtifactStore({}, {maxObjectBytes:1});await assert.rejects(store.put(Buffer.from('xx'),'image/png'),/ARTIFACT_INVALID/);});
 test('artifact reads detect stored byte corruption',async()=>{const db={active(){},pool:{query:async()=>({rows:[{body:Buffer.from('wrong')}]})}};await assert.rejects(new ArtifactStore(db).get('a'.repeat(64)),/ARTIFACT_UNAVAILABLE/);});
+test('review artifact download requires an exact job-scoped hold',async()=>{
+ const body=Buffer.from('scoped artifact'),sha=crypto.createHash('sha256').update(body).digest('hex'),calls=[];
+ const db={reviewArtifact:async(id,digest)=>{calls.push({id,digest});return {body,media_type:'image/png'};}};
+ const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const base=`http://127.0.0.1:${server.address().port}`,
+  headers={Authorization:`Bearer ${key}`};
+  const unscoped=await fetch(base+'/artifacts/'+sha,{headers});
+  assert.equal(unscoped.status,404);assert.deepEqual(await unscoped.json(),{error:'ARTIFACT_UNAVAILABLE'});
+  assert.equal(calls.length,0);
+  const scoped=await fetch(base+'/jobs/fixture-job/artifacts/'+sha,{headers});
+  assert.equal(scoped.status,200);assert.equal(scoped.headers.get('content-type'),'image/png');
+  assert.deepEqual(Buffer.from(await scoped.arrayBuffer()),body);
+  assert.deepEqual(calls,[{id:'fixture-job',digest:sha}]);
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('financial events cannot fabricate unsigned verified income',async()=>{await assert.rejects(recordFinancialEvent({}, {payload:'{}',signature:'0'.repeat(64)},key),/SIGNATURE_INVALID/);});
 test('refund sign cannot inflate net recorded income',async()=>{await assert.rejects(recordFinancialEvent({},sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'a',provider_event_id:'e',provider:'p',job_id:'j',amount_minor:10,kind:'refund',currency:'USD',occurred_at:new Date().toISOString(),evidence_sha256:'a'.repeat(64)}),key),/FINANCIAL_SIGN_INVALID/);});
 test('templates reject unsupported platforms despite trusted signature',()=>assert.throws(()=>validateTemplate(sign({audience:'pod:template',template:{platform:'etsy'}}),key,{platform:'etsy'}),/TEMPLATE_PROVENANCE_REQUIRED/));

@@ -94,7 +94,7 @@ def export_package(base_url, job_id, output, key, fetch=None):
     try:
         total = 0
         for name, sha in files.items():
-            body = fetch('/artifacts/' + sha, 16 * 1024 * 1024)
+            body = fetch('/jobs/' + job_id + '/artifacts/' + sha, 16 * 1024 * 1024)
             total += len(body)
             if len(body) > 16 * 1024 * 1024 or total > 64 * 1024 * 1024 or hashlib.sha256(body).hexdigest() != sha:
                 raise ValueError('ARTIFACT_INVALID')

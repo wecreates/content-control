@@ -39,11 +39,16 @@ class ExportTests(unittest.TestCase):
         return lambda route, limit: record if route.endswith('/package') else body
 
     def test_restore_without_approval(self):
+        routes = []
+        fixture = self.fixture()
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'review'
-            result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
+            result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                lambda route, limit: routes.append(route) or fixture(route, limit))
             self.assertEqual(result['status'], 'REVIEW_REQUIRED')
             self.assertEqual((root/'print.png').read_bytes(), b'fixture bytes')
+            digest = hashlib.sha256(b'fixture bytes').hexdigest()
+            self.assertEqual(routes, ['/jobs/job/package'] + ['/jobs/job/artifacts/' + digest] * 3)
             with self.assertRaises(FileExistsError):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
 
