@@ -70,6 +70,68 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r180 verified receipt: unambiguous stage failure routing
+
+Fresh reconstruction read Content Control 75d3368a52adb9eae885f481a9d878d9597213f0
+and Money Factory dffa26497de14d24744d57c2e619bc44f8f9adf4, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped POD work. The failed
+database-administration path had no credible access change, so it was not
+retried.
+
+[CC PR 452](https://github.com/wecreates/content-control/pull/452) merged tested
+head 0418cdbba58dd891410d8ed5aa46019a175b467c as
+bc14163bb0e858cfbc248f6184c543596b23b09c after an unchanged-base and clean-
+mergeability check. Failed Python-stage stdout now uses the existing strict JSON
+parser before choosing a fixed remediation reason. Duplicate decoded `status`
+or `reason_code` keys, including escaped spellings, fall back to
+`PRODUCTION_BLOCKED` instead of selecting an attacker-controlled allowed repair
+route. Stderr and arbitrary child text remain redacted. The exact duplicate-
+status regression returned `TEXT_CLIPPED` against the prior implementation.
+
+The affected remediation, stage-supervision, lease and production suites passed
+91/91 locally, with syntax and whitespace checks clean. [PR integration run
+39778084831](https://github.com/wecreates/content-control/actions/runs/39778084831),
+job 119822040920, and [production-container run
+39778084911](https://github.com/wecreates/content-control/actions/runs/39778084911),
+job 119822041098, both passed on the exact PR head. The container gate built the
+production image and passed offline dependencies, Python QA/rendering,
+Node/PostgreSQL, durable review and publication-disabled startup checks.
+
+Dependent [MF PR 134](https://github.com/wecreates/Money-factory/pull/134)
+pinned verification to CC bc14163bb0e858cfbc248f6184c543596b23b09c while
+retaining the selected Python-stage regression and explicit
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`. Tested head
+8934b4b035fcf2ea0f3bac55dd52f169b847efb1 merged as
+90db8a19b2c5524866f6cc843a594af18c088d9d after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39779268065](https://github.com/wecreates/Money-factory/actions/runs/39779268065),
+job 119826017220, passed every selected Content Control and Money Factory bridge
+step.
+
+Render automatically attempted the runtime merge as deploy
+dep-dbd04gc9v7es73c1ot70. Start event evt-dbd04gdk3hvs739uve20 at
+2026-10-22T12:32:01.655156Z bound `newCommit` to
+bc14163bb0e858cfbc248f6184c543596b23b09c; event
+evt-dbd04gctuius73cf1ipg reported `pipeline_minutes_exhausted` at
+12:32:01.690914Z, and evt-dbd04gkdthfc73dnln90 recorded the failed deploy at
+12:32:02.082117Z. No manual retry, paid workaround, replacement service,
+credential access, widened network or unchanged database-administration retry
+occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic
+remediation-routing gap only; tests and merged code are not proof of a live
+repair. Production restricted database/schema/migrations, retained recovery
+evidence, deployed hybrid dependencies, mounted Money Factory authority/current
+grants and revocation, real accounts/sources/rights/templates/reviewers,
+authorized five-platform adapters, actual economics/reconciliation, owner-phone
+acceptance, monitoring/recovery drills, measured capacity and a real authorized
+end-to-end launch remain unverified. Both publication flags remain false; Etsy
+remains excluded. No approval, clearance, revenue, publication or continuously
+running self-hosted worker is claimed. This report-only receipt uses
+`[skip render]`; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r179 verified receipt: unambiguous persisted package JSON
 
 Fresh reconstruction read Content Control 1381c8f51a47da49f92128270bf4367087933063 and Money Factory eb880cb69c43a01027b113e21f72e6fc68a5cf60, the current acceptance/status/deployment documents, open PRs, workflow results and the authorized existing Render service. The Money Factory delta after r178 was an unrelated free-monitor cadence tick; no open PR overlapped POD work. The failed database-administration path had no credible access change, so it was not retried.
