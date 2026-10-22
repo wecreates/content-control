@@ -623,15 +623,17 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                 (scripts/'pod_kdp_interior_template_import.py').symlink_to(
                     repository/'scripts/pod_kdp_interior_template_import.py')
                 (scripts/'pod_asset_generator.py').write_text(
-                    "from pathlib import Path\nimport hashlib,json,base64\nPath('started').write_text('yes')\n"
+                    "from pathlib import Path\nimport hashlib,json,base64,sys\nPath('started').write_text('yes')\n"
                     "names=['print.png','art-mask.png','text-mask.png','cover.pdf','interior.pdf','interior.receipt.json']\n"
                     "png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=')\n"
                     "pdf=base64.b64decode('JVBERi0xLjQKJSVFT0YK');receipt=base64.b64decode('e30=')\n"
                     "bodies={name:(png if name.endswith('.png') else receipt if name.endswith('.json') else pdf) for name in names}\n"
                     "files={}\n"
                     "for name,data in bodies.items():\n Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
-                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template_sha256':'b'*64,'files':files}\n"
                     "canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'))\n"
+                    "envelope=json.loads(Path(sys.argv[sys.argv.index('--template')+1]).read_text())\n"
+                    "template=json.loads(envelope['payload'])['template']\n"
+                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template':template,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),'files':files}\n"
                     "m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()\n"
                     "Path('output/manifest.json').write_text(canonical(m)+'\\n')\n")
                 (scripts/'pod_book_package.py').write_text('pass\n')
