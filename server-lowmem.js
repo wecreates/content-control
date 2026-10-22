@@ -121,6 +121,7 @@ function acceptance(){
     c?.status==="PASS" &&
     c?.publication_enabled===false &&
     c?.candidate_sha256===expected &&
+    captionHash &&
     c?.caption_sha256===captionHash &&
     fs.existsSync(captionsPath)
   );
