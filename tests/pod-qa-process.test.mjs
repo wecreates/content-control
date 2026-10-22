@@ -14,7 +14,7 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
   // Node executes synthetic stage fixtures; this tests coordinator control flow,
   // not graphics quality or signature acceptance (the real DB verifies those).
   await fs.writeFile(path.join(root,'scripts','pod_asset_generator.py'),
-   "const fs=require('node:fs'),c=require('node:crypto'),names=['print.png','art-mask.png','text-mask.png'];for(const n of names)fs.writeFileSync('output/'+n,n);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(n).digest('hex')]));fs.writeFileSync('output/manifest.json',JSON.stringify({files,package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
+   "const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'];for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')]));fs.writeFileSync('output/manifest.json',JSON.stringify({files,package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
   await fs.writeFile(path.join(root,'scripts','pod_vision_qa.py'),
    `require('node:fs').writeFileSync('qa.json',JSON.stringify({payload:JSON.stringify({verdict:${JSON.stringify(verdict)}})}));process.exit(2);`);
   const key='k'.repeat(48),brief={id:'job',account_id:'account',business_id:'business',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};

@@ -623,10 +623,13 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                 (scripts/'pod_kdp_interior_template_import.py').symlink_to(
                     repository/'scripts/pod_kdp_interior_template_import.py')
                 (scripts/'pod_asset_generator.py').write_text(
-                    "from pathlib import Path\nimport hashlib,json\nPath('started').write_text('yes')\n"
+                    "from pathlib import Path\nimport hashlib,json,base64\nPath('started').write_text('yes')\n"
                     "names=['print.png','art-mask.png','text-mask.png','cover.pdf','interior.pdf','interior.receipt.json']\n"
+                    "png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=')\n"
+                    "pdf=base64.b64decode('JVBERi0xLjQKJSVFT0YK');receipt=base64.b64decode('e30=')\n"
+                    "bodies={name:(png if name.endswith('.png') else receipt if name.endswith('.json') else pdf) for name in names}\n"
                     "files={}\n"
-                    "for name in names:\n data=name.encode();Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
+                    "for name,data in bodies.items():\n Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
                     "Path('output/manifest.json').write_text(json.dumps({'files':files,'package_sha256':'a'*64}))\n")
                 (scripts/'pod_book_package.py').write_text('pass\n')
                 result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),

@@ -11,9 +11,13 @@ platform package must contain exactly `print.png`, `art-mask.png` and
 `text-mask.png`; KDP additionally requires `cover.pdf`, `interior.pdf` and
 `interior.receipt.json`. Empty, incomplete, extra or unknown output sets fail
 before artifact persistence. Media types come from this fixed contract, never a
-filename-extension fallback, so an arbitrary file cannot be relabeled as PNG,
-PDF or JSON. This validates package structure and storage metadata only; the
-independent QA stages remain responsible for decoding and substantive review.
+filename-extension fallback. Before persistence, PNG members must have the PNG
+signature, first IHDR chunk and terminal IEND chunk; PDFs must have a supported
+PDF header and terminal EOF marker; and receipts must decode as strict UTF-8 JSON
+objects. Matching hashes do not let HTML, a primitive/array receipt or malformed
+bytes inherit trusted PNG/PDF/JSON metadata. These are bounded media-envelope
+checks, not complete parser safety or design approval; the independent QA stages
+remain responsible for full decoding and substantive review.
 
 `ArtifactStore.putMany([{body, mediaType}, ...])` uses one transaction and the same
 advisory lock as single-file `put`. It deduplicates hashes, computes the combined
