@@ -11,17 +11,18 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-qa-exit-'));
  try{
   await fs.mkdir(path.join(root,'scripts'));await fs.mkdir(path.join(root,'output'));
+  const templateValue={platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500]};
   // Node executes synthetic stage fixtures; this tests coordinator control flow,
   // not graphics quality or signature acceptance (the real DB verifies those).
   await fs.writeFile(path.join(root,'scripts','pod_asset_generator.py'),
-   "const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),m={schema_version:1,platform:'redbubble',publication_enabled:false,files,template_sha256:'b'.repeat(64)};m.package_sha256=c.createHash('sha256').update(canon(m)).digest('hex');fs.writeFileSync('output/manifest.json',canon(m));");
+   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(templateValue)},m={schema_version:1,platform:'redbubble',publication_enabled:false,files,template,template_sha256:c.createHash('sha256').update(canon(template)).digest('hex')};m.package_sha256=c.createHash('sha256').update(canon(m)).digest('hex');fs.writeFileSync('output/manifest.json',canon(m));`);
   await fs.writeFile(path.join(root,'scripts','pod_vision_qa.py'),
    `require('node:fs').writeFileSync('qa.json',JSON.stringify({payload:JSON.stringify({verdict:${JSON.stringify(verdict)}})}));process.exit(2);`);
   const key='k'.repeat(48),brief={id:'job',account_id:'account',business_id:'business',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
   const templateScope={product:'fixture-shirt',country:'US'};
   const templatePayload=JSON.stringify({schema_version:1,audience:'pod:template',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
    ...templateScope,official_source_verified:true,source_url:'https://example.org/fixture',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),
-   template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[50,50,500,500]}});
+   template:templateValue});
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify({payload:templatePayload,signature:crypto.createHmac('sha256',key).update(templatePayload).digest('hex')}));
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
