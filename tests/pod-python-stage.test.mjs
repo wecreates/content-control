@@ -88,6 +88,8 @@ test('structured stage failures expose only a fixed reason code',async()=>{
   [JSON.stringify({status:'BLOCKED',reason_code:'NATIVE_RESOLUTION_INSUFFICIENT',private:'secret'}),'NATIVE_RESOLUTION_INSUFFICIENT'],
   [JSON.stringify({status:'BLOCKED',reason_code:'postgres://private:secret@host/db'}),'PRODUCTION_BLOCKED'],
   [JSON.stringify({status:'GENERATED',reason_code:'TEXT_CLIPPED'}),'PRODUCTION_BLOCKED'],
+  ['{"status":"GENERATED","statu\\u0073":"BLOCKED","reason_code":"TEXT_CLIPPED"}','PRODUCTION_BLOCKED'],
+  ['{"status":"BLOCKED","reason_code":"PRODUCTION_BLOCKED","reason\\u005fcode":"NATIVE_RESOLUTION_INSUFFICIENT"}','PRODUCTION_BLOCKED'],
   ['not JSON: secret','PRODUCTION_BLOCKED'],
   ['null','PRODUCTION_BLOCKED'],
   [JSON.stringify({status:'BLOCKED',reason_code:{secret:true}}),'PRODUCTION_BLOCKED']
