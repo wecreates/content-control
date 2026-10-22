@@ -70,6 +70,72 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r182 verified receipt: strict authenticated request JSON
+
+Fresh reconstruction read Content Control
+56d0e277702f81930276c3285e5c6f3ec3584da7 and Money Factory
+8c08b471f7901f598a7963d9bf1e8623fbd03dd2, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped this POD work. The
+failed database-administration path had no credible access change, so it was
+not retried.
+
+[CC PR 456](https://github.com/wecreates/content-control/pull/456) merged tested
+head d66a2ec08287eaa029a6f7bafdc1f93f31ae98b7 as
+1e3f17f216f93615ace5ec33a57e82b34c5ccd6c after an unchanged-base and clean-
+mergeability check. Authenticated POD JSON request bytes now pass strict UTF-8,
+duplicate decoded-key, finite-number, exact-integer and leading-BOM validation
+before route logic or a database method. Verifier failures map to the fixed
+`POD_REQUEST_INVALID` response. The escaped duplicate outer `payload` regression
+reached the database proxy and returned 409 against the prior implementation.
+
+The focused request, error and envelope suites passed 25/25 locally. The full
+POD suite passed 669 tests with nine expected environment-gated skips and zero
+failures, with syntax and whitespace checks clean. [PR integration run
+39793822958](https://github.com/wecreates/content-control/actions/runs/39793822958),
+job 119876183312, and [production-container run
+39793822747](https://github.com/wecreates/content-control/actions/runs/39793822747),
+job 119876111378, both passed on the exact PR head. The container gate built the
+production image and passed its non-root dependency probe as well as the Python
+QA/rendering, Node/PostgreSQL, real print/review and publication-disabled checks.
+
+Dependent [MF PR 136](https://github.com/wecreates/Money-factory/pull/136)
+pinned verification to CC 1e3f17f216f93615ace5ec33a57e82b34c5ccd6c,
+added the request operations and sanitized error regressions to the selected
+contract set, and retained explicit `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false`. Tested head
+13de7366ac78f2b21787a6bbb853012379834633 merged as
+8581b16346e38101ae410f19047471098f6cd3c9 after a fresh exact-head/base and
+mergeability check.
+[Cross-repository run
+39796093765](https://github.com/wecreates/Money-factory/actions/runs/39796093765),
+job 119883602210, passed every selected Content Control and Money Factory bridge
+step. The job and all of its steps were complete/success before merge; GitHub's
+run-level aggregate still showed `in_progress` during the known status backlog.
+
+Render automatically attempted the runtime merge as deploy
+dep-dbd1r03bc2fs7391ff70. Start event evt-dbd1r04tuius73cgodqg at
+2026-10-22T14:28:16.999412Z bound `newCommit` to
+1e3f17f216f93615ace5ec33a57e82b34c5ccd6c; event
+evt-dbd1r0ctuius73cgods0 reported `pipeline_minutes_exhausted` at
+14:28:17.036943Z, and evt-dbd1r0ctuius73cgoe1g recorded the failed deploy at
+14:28:17.578792Z. No manual retry, paid workaround, replacement service,
+credential access, widened network or unchanged database-administration retry
+occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic request
+boundary only; tests and merged code are not proof of live acceptance.
+Production restricted database/schema/migrations, retained recovery evidence,
+deployed hybrid dependencies, mounted Money Factory authority/current grants
+and revocation, real accounts/sources/rights/templates/reviewers, authorized
+five-platform adapters, actual economics/reconciliation, owner-phone
+acceptance, monitoring/recovery drills, measured capacity and a real authorized
+end-to-end launch remain unverified. Both publication flags remain false; Etsy
+remains excluded. No approval, clearance, revenue, publication or continuously
+running self-hosted worker is claimed. This report-only receipt uses
+`[skip render]`; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r181 verified receipt: unambiguous QA failure payload
 
 Fresh reconstruction read Content Control
