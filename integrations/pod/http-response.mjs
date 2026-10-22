@@ -1,5 +1,7 @@
 // Retain admission until the underlying fetch settles, even after its caller
 // aborts. A broken/custom transport must not accumulate unlimited header waits.
+import {parseSignedJSON} from './signed-json.mjs';
+
 const pendingRequests=new WeakMap();
 const MAX_PENDING_REQUESTS=32;
 function cancelBody(response){
@@ -74,7 +76,7 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,si
   assertBridgeRequest(signal,deadline);
   // Decode once so UTF-8 split across network chunks is preserved. Reject
   // malformed byte sequences instead of silently substituting characters.
-  const result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks)));
+  const result=parseSignedJSON(new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.concat(chunks)));
   assertBridgeRequest(signal,deadline);
   return result;
  }finally{

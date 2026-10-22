@@ -29,6 +29,10 @@ headers/body and closing it; slow-drip bytes cannot renew the budget. Elapsed
 monotonic time is checked before returning bytes, so a late completion cannot
 be accepted merely because an alarm callback was delayed.
 
+The bounded package-record body is decoded as strict UTF-8 and rejects duplicate
+decoded object keys at every nesting level before a manifest or output directory
+is accepted. Escaped spellings cannot override the requested job identity.
+
 This synchronous CLI requires a POSIX main thread with an unused real-time
 interval timer. Unsupported contexts fail before opening the network connection;
 an existing alarm is never replaced. The previous signal handler is restored

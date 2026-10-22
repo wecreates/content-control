@@ -53,6 +53,17 @@ test('malformed JSON, invalid UTF-8 and absent body cannot acknowledge an event'
   assert.deepEqual(db.updated,[]);assert.equal(response.body?.locked||false,false);
  }
 });
+test('escaped duplicate acknowledgement keys cannot mark an event delivered',async()=>{
+ const db=dbFixture();
+ const response='{"accepted_event_id":"wrong","accepted_event\\u005fid":"event"}';
+ await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(response)}));
+ assert.deepEqual(db.updated,[]);
+});
+test('a leading UTF-8 BOM cannot acknowledge an event',async()=>{
+ const db=dbFixture(),body=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"accepted_event_id":"event"}')]);
+ await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(body)}));
+ assert.deepEqual(db.updated,[]);
+});
 test('exact-limit UTF-8 JSON split across every byte preserves the original text',async()=>{
  const input=Buffer.from(JSON.stringify({text:'café 日本語 😀'}));
  const body=new ReadableStream({start(c){for(const byte of input)c.enqueue(Uint8Array.of(byte));c.close();}});
@@ -90,6 +101,12 @@ test('bounded grant transport still checks signature, scope, revocation and life
  }
  const payload=JSON.stringify(base),resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify({payload,signature:'0'.repeat(64)}))});
  await assert.rejects(resolve({id:brief.id,brief}),/SIGNATURE_INVALID/);
+});
+test('escaped duplicate outer grant keys cannot select a signed payload',async()=>{
+ const grant=scopedGrant();
+ const response=`{"payload":"invalid","payl\\u006fad":${JSON.stringify(grant.envelope.payload)},"signature":${JSON.stringify(grant.envelope.signature)}}`;
+ const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(response)});
+ await assert.rejects(resolve({id:'job',brief:grant.brief}));
 });
 
 async function bounded(promise){
