@@ -53,7 +53,11 @@ drill or authorization to enable production or publication.
 
 The dashboard preserves successful metrics even if the separate job-list request
 is blocked. Its requests remain authenticated, same-origin, bounded and read-only;
-session clearing and stale-response handling remain in effect.
+session clearing and stale-response handling remain in effect. Before identity,
+acceptance or activity fields are used, the original response bytes must be strict
+UTF-8 JSON without a leading byte-order mark, duplicate decoded keys or nonfinite
+numeric overflow. Invalid responses are redacted and cannot reach artifact fetch
+or preview rendering.
 
 ## Manual diagnostics when startup is blocked
 
