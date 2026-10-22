@@ -52,11 +52,22 @@ async function read(route,context,limit){
 const responseDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
 const basePackageFiles=['art-mask.png','print.png','text-mask.png'];
 const kdpPackageFiles=[...basePackageFiles,'cover.pdf','interior.pdf','interior.receipt.json'].sort();
+function canonical(value){
+ if(typeof value==='number'&&(!Number.isFinite(value)||(Number.isInteger(value)&&!Number.isSafeInteger(value))))throw Error('Print preview is unavailable.');
+ return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+  value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
+  JSON.stringify(value);
+}
 function exactPackageFiles(manifest,platform){
  const files=manifest?.files,expected=platform==='kdp'?kdpPackageFiles:basePackageFiles;
  return files&&typeof files==='object'&&!Array.isArray(files)&&
   JSON.stringify(Object.keys(files).sort())===JSON.stringify(expected)&&
   Object.values(files).every(hash=>typeof hash==='string'&&/^[a-f0-9]{64}$/.test(hash));
+}
+async function exactPackageIdentity(manifest,manifestSha256,context){
+ const bytes=new TextEncoder().encode(canonical(manifest));
+ const digest=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
+ return digest===manifestSha256;
 }
 function parseResponseJSON(text){
  const value=JSON.parse(text),stack=[];
@@ -142,7 +153,8 @@ async function openPreview(id){
   if(record.id!==id||!['kdp','redbubble','teepublic','zazzle','spreadshirt'].includes(record.platform)||
    manifest?.platform!==record.platform||manifest.schema_version!==1||manifest.publication_enabled!==false||
    !exactPackageFiles(manifest,record.platform)||!/^[a-f0-9]{64}$/.test(hash)||
-   !/^[a-f0-9]{64}$/.test(manifest.package_sha256))throw Error('Print preview is unavailable.');
+   !/^[a-f0-9]{64}$/.test(manifest.package_sha256)||!/^[a-f0-9]{64}$/.test(record.manifest_sha256)||
+   !(await exactPackageIdentity(manifest,record.manifest_sha256,context)))throw Error('Print preview is unavailable.');
   const bytes=await read('/artifacts/'+hash,context,16777216);
   const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
   if(actual!==hash)throw Error('HASH_MISMATCH');

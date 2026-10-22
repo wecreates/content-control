@@ -6,9 +6,15 @@ const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const SHA256=/^[a-f0-9]{64}$/;
 const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
-function assertStoredManifest(manifest,platform,state={nodes:0},depth=0){
+function canonical(value){
+ return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+  value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
+  JSON.stringify(value);
+}
+function assertStoredManifest(manifest,platform,manifestSha256,state={nodes:0},depth=0){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
-  manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||''))throw Error('PACKAGE_UNAVAILABLE');
+  manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||'')||
+  !SHA256.test(manifestSha256||''))throw Error('PACKAGE_UNAVAILABLE');
  const files=manifest.files;
  if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length<1||Object.keys(files).length>64)throw Error('PACKAGE_UNAVAILABLE');
  const expected=platform==='kdp'?KDP_REVIEW_FILES:BASE_REVIEW_FILES;
@@ -21,6 +27,7 @@ function assertStoredManifest(manifest,platform,state={nodes:0},depth=0){
   else if(value&&typeof value==='object'){const keys=Object.keys(value);if(keys.length>10000)throw Error('PACKAGE_UNAVAILABLE');for(const key of keys)inspect(value[key],level+1);}
  };
  inspect(manifest,depth);
+ if(crypto.createHash('sha256').update(canonical(manifest)).digest('hex')!==manifestSha256)throw Error('PACKAGE_UNAVAILABLE');
 }
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
@@ -166,7 +173,8 @@ export class PodDB {
   await lockProductionLease(c,job);
   const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[manifest,job.id,job.fencing_token]);
   if(!r.rows.length)throw Error('LEASE_LOST');
-  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',{package_sha256:manifest.package_sha256,publication_enabled:false}]);
+  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',
+   {package_sha256:manifest.package_sha256,manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),publication_enabled:false}]);
  });}
  async acceptReview(jobId,qaEnvelope){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
@@ -183,9 +191,12 @@ export class PodDB {
   });
  }
  async reviewPackage(jobId){this.active();
-  const row=(await this.pool.query("SELECT id,platform,state,reason_code,manifest FROM pod_production_queue WHERE id=$1",[jobId])).rows[0];
+  const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id AND e.payload ? 'manifest_sha256'
+    ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
+   FROM pod_production_queue q WHERE q.id=$1`,[jobId])).rows[0];
   if(!row?.manifest||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
-  assertStoredManifest(row.manifest,row.platform);
+  assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   return row;
  }
  async completeProduction(job,manifest,qaEnvelope){
@@ -211,7 +222,8 @@ export class PodDB {
    if(!r.rows.length)throw Error('LEASE_LOST');
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
     [crypto.randomUUID(),job.id,pass?'pod.production.qa_passed':'pod.production.qa_failed',
-     {package_sha256:manifest.package_sha256,fencing_token:job.fencing_token,publication_enabled:false}]);
+     {package_sha256:manifest.package_sha256,manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),
+      fencing_token:job.fencing_token,publication_enabled:false}]);
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {pass};
   });

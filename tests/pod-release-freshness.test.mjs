@@ -18,6 +18,7 @@ const storedManifest=(platform='redbubble')=>{
  const value={schema_version:1,platform,publication_enabled:false,files};
  return {...value,package_sha256:crypto.createHash('sha256').update(canonical(value)).digest('hex')};
 };
+const storedIdentity=manifest=>crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
 function fixture(now=Date.now(),platform='redbubble',editorial){
  const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),release_checks_passed:true};
  const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',platform,
@@ -211,30 +212,33 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest:storedManifest('etsy')};
+ row.manifest_sha256=storedIdentity(row.manifest);
  const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
- row.manifest=storedManifest();
+ row.manifest=storedManifest();row.manifest_sha256=storedIdentity(row.manifest);
  assert.equal((await db.reviewPackage(row.id)).platform,'redbubble');
 });
 test('stored review package rejects invalid manifest acceptance claims and identity',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
+ row.manifest_sha256=storedIdentity(row.manifest);
  const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
  for(const mutate of [
   manifest=>manifest.schema_version=2,
   manifest=>manifest.publication_enabled=true,
   manifest=>manifest.package_sha256='invalid',
+  manifest=>manifest.package_sha256='c'.repeat(64),
   manifest=>manifest.files={'print.png':'invalid'},
   manifest=>delete manifest.files['art-mask.png'],
   manifest=>manifest.files['debug.txt']='a'.repeat(64),
  ]){
-  row.manifest=storedManifest();mutate(row.manifest);
+  row.manifest=storedManifest();row.manifest_sha256=storedIdentity(row.manifest);mutate(row.manifest);
   await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
  }
- row.platform='kdp';row.manifest=storedManifest('kdp');delete row.manifest.files['cover.pdf'];
+ row.platform='kdp';row.manifest=storedManifest('kdp');row.manifest_sha256=storedIdentity(row.manifest);delete row.manifest.files['cover.pdf'];
  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
- row.manifest=storedManifest('kdp');
+ row.manifest=storedManifest('kdp');row.manifest_sha256=storedIdentity(row.manifest);
  assert.equal((await db.reviewPackage(row.id)).platform,'kdp');
- row.manifest=storedManifest();
+ row.manifest=storedManifest();row.manifest_sha256=storedIdentity(row.manifest);
  row.platform='redbubble';
  assert.equal((await db.reviewPackage(row.id)).manifest.package_sha256,row.manifest.package_sha256);
 });

@@ -81,10 +81,12 @@ def export_package(base_url, job_id, output, key, fetch=None):
         if not re.fullmatch(r'[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}', name) or name in ('manifest.json',) or not isinstance(sha, str) or not HASH.fullmatch(sha):
             raise ValueError('FILE_INVALID')
     expected = manifest.get('package_sha256')
-    unsigned = {k: v for k, v in manifest.items() if k != 'package_sha256'}
-    canonical = json.dumps(unsigned, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()
-    if not isinstance(expected, str) or hashlib.sha256(canonical).hexdigest() != expected:
-        raise ValueError('MANIFEST_HASH_MISMATCH')
+    stored_identity = record.get('manifest_sha256')
+    canonical = json.dumps(manifest, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False).encode()
+    if (not isinstance(expected, str) or not HASH.fullmatch(expected) or
+            not isinstance(stored_identity, str) or not HASH.fullmatch(stored_identity) or
+            hashlib.sha256(canonical).hexdigest() != stored_identity):
+        raise ValueError('MANIFEST_IDENTITY_MISMATCH')
     root = Path(output)
     root.mkdir(mode=0o700, parents=False, exist_ok=False)
     try:
