@@ -70,6 +70,14 @@ and publication restrictions remain unchanged. Local HTTP fixtures exercise
 slow headers, slow-drip manifests/artifacts and a valid restore; they establish
 neither live recovery nor independent approval.
 
+The exporter also validates each downloaded member independently of the server:
+PNG roles require the bounded signature/IHDR/IEND envelope, PDF roles require a
+supported header and terminal EOF marker, and the KDP receipt must be a strict
+UTF-8 JSON object within the shared depth/node and exact-integer bounds. A stale
+or misconfigured server therefore cannot populate the review directory with
+hash-correct malformed bytes. Failure removes the whole partial directory. These
+checks are not full decoding or substantive independent product review.
+
 
 ## Review generation failure recovery
 

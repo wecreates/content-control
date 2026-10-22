@@ -19,6 +19,13 @@ HASH = re.compile(r'^[a-f0-9]{64}$')
 PLATFORMS = ('kdp','redbubble','teepublic','zazzle','spreadshirt')
 BASE_FILES = frozenset(('art-mask.png','print.png','text-mask.png'))
 KDP_FILES = frozenset((*BASE_FILES,'cover.pdf','interior.pdf','interior.receipt.json'))
+PACKAGE_MEDIA_TYPES = {
+    'art-mask.png': 'image/png', 'print.png': 'image/png',
+    'text-mask.png': 'image/png', 'cover.pdf': 'application/pdf',
+    'interior.pdf': 'application/pdf',
+    'interior.receipt.json': 'application/json',
+}
+PNG_SIGNATURE = bytes.fromhex('89504e470d0a1a0a')
 REQUEST_TIMEOUT_SECONDS = 20
 
 
@@ -50,6 +57,52 @@ def request_deadline():
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise ValueError('REDIRECT_BLOCKED')
+
+def assert_json_bounds(value, state=None, depth=0):
+    state = {'nodes': 0} if state is None else state
+    state['nodes'] += 1
+    if depth > 64 or state['nodes'] > 10000:
+        raise ValueError('ARTIFACT_INVALID')
+    if ((type(value) is int and not -(2**53 - 1) <= value <= 2**53 - 1) or
+            (type(value) is float and value.is_integer() and
+             not -(2**53 - 1) <= value <= 2**53 - 1)):
+        raise ValueError('ARTIFACT_INVALID')
+    if isinstance(value, list):
+        if len(value) > 10000:
+            raise ValueError('ARTIFACT_INVALID')
+        for item in value:
+            assert_json_bounds(item, state, depth + 1)
+    elif isinstance(value, dict):
+        if len(value) > 10000:
+            raise ValueError('ARTIFACT_INVALID')
+        for item in value.values():
+            assert_json_bounds(item, state, depth + 1)
+
+def assert_artifact_format(name, body):
+    media_type = PACKAGE_MEDIA_TYPES.get(name)
+    if media_type == 'image/png':
+        end = len(body) - 12
+        if (len(body) < 45 or body[:8] != PNG_SIGNATURE or
+                int.from_bytes(body[8:12], 'big') != 13 or body[12:16] != b'IHDR' or
+                end < 33 or int.from_bytes(body[end:end + 4], 'big') != 0 or
+                body[end + 4:end + 8] != b'IEND'):
+            raise ValueError('ARTIFACT_INVALID')
+        return
+    if media_type == 'application/pdf':
+        trimmed = body.rstrip(b'\x00\x09\x0a\x0c\x0d\x20')
+        if (re.fullmatch(rb'%PDF-(?:1\.[0-7]|2\.0)', body[:8]) is None or
+                not trimmed.endswith(b'%%EOF')):
+            raise ValueError('ARTIFACT_INVALID')
+        return
+    if media_type != 'application/json':
+        raise ValueError('ARTIFACT_INVALID')
+    try:
+        value = strict_json(body.decode('utf-8', errors='strict'))
+        if not isinstance(value, dict):
+            raise ValueError('ARTIFACT_INVALID')
+        assert_json_bounds(value)
+    except (UnicodeError, ValueError, RecursionError):
+        raise ValueError('ARTIFACT_INVALID') from None
 
 def export_package(base_url, job_id, output, key, fetch=None):
     url = urllib.parse.urlsplit(base_url)
@@ -98,6 +151,7 @@ def export_package(base_url, job_id, output, key, fetch=None):
             total += len(body)
             if len(body) > 16 * 1024 * 1024 or total > 64 * 1024 * 1024 or hashlib.sha256(body).hexdigest() != sha:
                 raise ValueError('ARTIFACT_INVALID')
+            assert_artifact_format(name, body)
             with (root / name).open('xb') as target:
                 target.write(body)
         with (root / 'manifest.json').open('x', encoding='utf-8') as target:

@@ -25,7 +25,7 @@ Acceptance still requires a real Money Factory inbox deployment, matching secret
 
 ## Retrieve exact review packages
 
-Run `python scripts/pod_review_export.py --base-url https://YOUR-HOST/api/print --job-id JOB --output NEW-DIRECTORY` in the reviewer environment with INTERNAL_OPERATIONS_KEY configured securely. The downloader verifies the manifest package hash and every artifact, limits total bytes, rejects redirects and unsafe filenames, refuses existing output directories, and removes its own partial output on failure. It returns REVIEW_REQUIRED, never QA approval. Run the existing pod_vision_qa.py against this directory with independently sourced reference, rights and comparative review inputs; submit the resulting signed QA envelope through the existing review endpoint only after those checks pass.
+Run `python scripts/pod_review_export.py --base-url https://YOUR-HOST/api/print --job-id JOB --output NEW-DIRECTORY` in the reviewer environment with INTERNAL_OPERATIONS_KEY configured securely. The downloader verifies the manifest package hash and every artifact, independently rechecks the filename-bound PNG/PDF/strict-JSON media envelope, limits total bytes, rejects redirects and unsafe filenames, refuses existing output directories, and removes its own partial output on failure. It returns REVIEW_REQUIRED, never QA approval. Run the existing pod_vision_qa.py against this directory with independently sourced reference, rights and comparative review inputs; submit the resulting signed QA envelope through the existing review endpoint only after those checks pass.
 
 ## Exact retry pagination
 
