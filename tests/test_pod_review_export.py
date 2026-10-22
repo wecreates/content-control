@@ -18,6 +18,20 @@ spec = importlib.util.spec_from_file_location('export', Path(__file__).resolve()
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
+def png_bytes(marker=0, padding=0):
+    body = bytearray(45 + padding)
+    body[:8] = bytes.fromhex('89504e470d0a1a0a')
+    body[8:12] = (13).to_bytes(4, 'big')
+    body[12:16] = b'IHDR'
+    body[16] = marker
+    end = len(body) - 12
+    body[end:end + 4] = (0).to_bytes(4, 'big')
+    body[end + 4:end + 8] = b'IEND'
+    return bytes(body)
+
+PDF_BYTES = b'%PDF-1.7\n%%EOF'
+JSON_BYTES = b'{}'
+
 def stored_record(manifest, platform=None, state='qa_failed', reason='REVIEW_REQUIRED'):
     identity = hashlib.sha256(json.dumps(
         manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
@@ -27,7 +41,7 @@ def stored_record(manifest, platform=None, state='qa_failed', reason='REVIEW_REQ
 
 class ExportTests(unittest.TestCase):
     def fixture(self, name='print.png'):
-        body = b'fixture bytes'
+        body = png_bytes()
         files = {item: hashlib.sha256(body).hexdigest()
                  for item in ('art-mask.png','print.png','text-mask.png')}
         if name != 'print.png':
@@ -46,8 +60,8 @@ class ExportTests(unittest.TestCase):
             result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
                 lambda route, limit: routes.append(route) or fixture(route, limit))
             self.assertEqual(result['status'], 'REVIEW_REQUIRED')
-            self.assertEqual((root/'print.png').read_bytes(), b'fixture bytes')
-            digest = hashlib.sha256(b'fixture bytes').hexdigest()
+            self.assertEqual((root/'print.png').read_bytes(), png_bytes())
+            digest = hashlib.sha256(png_bytes()).hexdigest()
             self.assertEqual(routes, ['/jobs/job/package'] + ['/jobs/job/artifacts/' + digest] * 3)
             with self.assertRaises(FileExistsError):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
@@ -59,6 +73,22 @@ class ExportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'ARTIFACT_INVALID'):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, lambda route, limit: good(route, limit) if route.endswith('/package') else b'corrupt')
             self.assertFalse(root.exists())
+
+    def test_hash_correct_malformed_media_remove_partial_directory(self):
+        for bad in (b'not a png', b'\x89PNG\r\n\x1a\nmissing chunks'):
+            sha = hashlib.sha256(bad).hexdigest()
+            manifest = {'schema_version': 1, 'publication_enabled': False,
+                        'platform': 'redbubble',
+                        'files': {name: sha for name in ('art-mask.png','print.png','text-mask.png')}}
+            manifest['package_sha256'] = hashlib.sha256(json.dumps(
+                manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            record = stored_record(manifest)
+            with self.subTest(bad=bad), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp) / 'review'
+                with self.assertRaisesRegex(ValueError, 'ARTIFACT_INVALID'):
+                    module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                        lambda route, limit: record if route.endswith('/package') else bad)
+                self.assertFalse(root.exists())
 
     def test_mismatched_stored_manifest_identity_is_rejected_before_artifact_fetch(self):
         good = self.fixture()
@@ -143,10 +173,11 @@ class ExportTests(unittest.TestCase):
                 self.assertFalse(root.exists())
 
     def test_exact_kdp_artifact_set_is_restored_without_approval(self):
-        body = b'fixture bytes'
-        sha = hashlib.sha256(body).hexdigest()
-        files = {name: sha for name in ('art-mask.png','print.png','text-mask.png',
-                                        'cover.pdf','interior.pdf','interior.receipt.json')}
+        bodies = {'art-mask.png': png_bytes(1), 'print.png': png_bytes(2),
+                  'text-mask.png': png_bytes(3), 'cover.pdf': PDF_BYTES,
+                  'interior.pdf': PDF_BYTES, 'interior.receipt.json': JSON_BYTES}
+        files = {name: hashlib.sha256(body).hexdigest() for name, body in bodies.items()}
+        by_hash = {files[name]: body for name, body in bodies.items()}
         manifest = {'schema_version': 1, 'publication_enabled': False,
                     'platform': 'kdp', 'files': files}
         manifest['package_sha256'] = hashlib.sha256(json.dumps(
@@ -155,15 +186,40 @@ class ExportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'review'
             result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
-                lambda route, limit: record if route.endswith('/package') else body)
+                lambda route, limit: record if route.endswith('/package') else by_hash[route.rsplit('/', 1)[-1]])
             self.assertEqual(result['status'], 'REVIEW_REQUIRED')
             self.assertEqual(set(path.name for path in root.iterdir()), {*files, 'manifest.json'})
+            for name, body in bodies.items():
+                self.assertEqual((root/name).read_bytes(), body)
+
+    def test_hash_correct_malformed_kdp_pdf_and_json_are_rejected(self):
+        base = {'art-mask.png': png_bytes(1), 'print.png': png_bytes(2),
+                'text-mask.png': png_bytes(3), 'cover.pdf': PDF_BYTES,
+                'interior.pdf': PDF_BYTES, 'interior.receipt.json': JSON_BYTES}
+        for name, bad in (('cover.pdf', b'%PDF-1.8\n%%EOF'),
+                          ('interior.receipt.json', b'{"a":1,"a":2}'),
+                          ('interior.receipt.json', b'[1]'),
+                          ('interior.receipt.json', b'{"unsafe":9007199254740992.0}')):
+            bodies = {**base, name: bad}
+            files = {item: hashlib.sha256(body).hexdigest() for item, body in bodies.items()}
+            by_hash = {files[item]: body for item, body in bodies.items()}
+            manifest = {'schema_version': 1, 'publication_enabled': False,
+                        'platform': 'kdp', 'files': files}
+            manifest['package_sha256'] = hashlib.sha256(json.dumps(
+                manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            record = stored_record(manifest)
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp) / 'review'
+                with self.assertRaisesRegex(ValueError, 'ARTIFACT_INVALID'):
+                    module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                        lambda route, limit: record if route.endswith('/package') else by_hash[route.rsplit('/', 1)[-1]])
+                self.assertFalse(root.exists())
 
 
 class ExportDeadlineTests(unittest.TestCase):
     @contextlib.contextmanager
     def server(self, slow):
-        first,second,third=b'first fixture',b'second fixture'*32,b'third fixture'
+        first,second,third=png_bytes(1),png_bytes(2,96),png_bytes(3)
         sha1,sha2,sha3=[hashlib.sha256(b).hexdigest() for b in (first,second,third)]
         manifest={'schema_version':1,'publication_enabled':False,'platform':'redbubble',
                   'files':{'art-mask.png':sha1,'print.png':sha2,'text-mask.png':sha3}}
@@ -222,9 +278,9 @@ class ExportDeadlineTests(unittest.TestCase):
             result=module.export_package('https://example.invalid/api/print','job',root,'k'*32)
             self.assertEqual(result['status'],'REVIEW_REQUIRED')
             self.assertFalse(result['publication_enabled'])
-            self.assertEqual((root/'art-mask.png').read_bytes(),b'first fixture')
-            self.assertEqual((root/'print.png').read_bytes(),b'second fixture'*32)
-            self.assertEqual((root/'text-mask.png').read_bytes(),b'third fixture')
+            self.assertEqual((root/'art-mask.png').read_bytes(),png_bytes(1))
+            self.assertEqual((root/'print.png').read_bytes(),png_bytes(2,96))
+            self.assertEqual((root/'text-mask.png').read_bytes(),png_bytes(3))
 
     def test_existing_alarm_is_not_replaced_and_network_is_not_opened(self):
         handler=signal.getsignal(signal.SIGALRM)
