@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './integrations/pod/artifacts.mjs';
-import {PACKAGE_MEDIA_TYPES} from './integrations/pod/package-artifacts.mjs';
+import {assertPackageFormat,PACKAGE_MEDIA_TYPES} from './integrations/pod/package-artifacts.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
@@ -223,6 +223,8 @@ export class PodDB {
   const members=Object.entries(row.manifest.files).filter(([,digest])=>digest===sha);
   if(!members.length||members.some(([name])=>PACKAGE_MEDIA_TYPES[name]!==row.media_type)||
    crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
+  try{for(const [name] of members)assertPackageFormat(name,row.body);}
+  catch{throw Error('ARTIFACT_UNAVAILABLE');}
   return {body:row.body,media_type:row.media_type};
  }
  async completeProduction(job,manifest,qaEnvelope){

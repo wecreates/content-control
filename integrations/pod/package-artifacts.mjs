@@ -160,7 +160,7 @@ export async function readPackageManifest(directory,{platform,template,interiorT
  return manifest;
 }
 
-function assertPackageFormat(name,body){
+export function assertPackageFormat(name,body){
  const mediaType=PACKAGE_MEDIA_TYPES[name];
  if(mediaType==='image/png'){
   const end=body.length-12;
