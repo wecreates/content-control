@@ -8,6 +8,9 @@ import {recordMarketObservation} from './market.mjs';
 import {reconcilePublication} from './reconcile.mjs';
 import {podRequestError} from './request-errors.mjs';
 import {productionActivity} from './capacity.mjs';
+import {parseSignedJSON} from './signed-json.mjs';
+const requestDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
+function verifyRequestJSON(_req,_res,body){parseSignedJSON(requestDecoder.decode(body));}
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
@@ -30,7 +33,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   try{res.json({jobs:await db.listOperationsJobs(req.query.state||'review_required'),limit:50,publication_enabled:false});}
   catch{res.status(409).json({error:'JOB_LIST_UNAVAILABLE'});}
  });
- router.use(express.json({limit:'256kb',strict:true}));
+ router.use(express.json({limit:'256kb',strict:true,verify:verifyRequestJSON}));
  router.post('/jobs/:id/retry',async(req,res)=>{
   try{await db.requeueRepair(req.params.id,req.body);res.json({status:'QUEUED',publication_enabled:false});}catch{res.status(409).json({error:'RETRY_BLOCKED'});}
  });
