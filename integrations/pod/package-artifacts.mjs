@@ -91,7 +91,7 @@ async function readRegularFile(file,maxBytes,reason){
  }finally{await handle.close();}
 }
 
-export async function readPackageManifest(directory,{platform,template,maxBytes=MAX_MANIFEST_BYTES}={}){
+export async function readPackageManifest(directory,{platform,template,sourceSha256,maxBytes=MAX_MANIFEST_BYTES}={}){
  if(!PLATFORMS.includes(platform)||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>MAX_MANIFEST_BYTES)throw Error('MANIFEST_INVALID');
  let base,candidate,file,body;
  try{
@@ -106,13 +106,15 @@ export async function readPackageManifest(directory,{platform,template,maxBytes=
  const hash=manifest.package_sha256;
  if(manifest.schema_version!==1||manifest.platform!==platform||manifest.publication_enabled!==false||
   !manifest.template||typeof manifest.template!=='object'||Array.isArray(manifest.template)||
-  !/^[a-f0-9]{64}$/.test(hash||'')||!/^[a-f0-9]{64}$/.test(manifest.template_sha256||''))throw Error('MANIFEST_INVALID');
+  !/^[a-f0-9]{64}$/.test(hash||'')||!/^[a-f0-9]{64}$/.test(manifest.template_sha256||'')||
+  !/^[a-f0-9]{64}$/.test(manifest.source_sha256||''))throw Error('MANIFEST_INVALID');
  const payload=text.endsWith('\n')?text.slice(0,-1):text;
  const members=topLevelMembers(payload),packageMember=members.get('package_sha256'),templateMember=members.get('template');
  if(!packageMember||!templateMember)throw Error('MANIFEST_INVALID');
  const templateBytes=payload.slice(templateMember.valueStart,templateMember.valueEnd);
  if(crypto.createHash('sha256').update(templateBytes).digest('hex')!==manifest.template_sha256)throw Error('MANIFEST_TEMPLATE_HASH_MISMATCH');
  if(template!==undefined&&canonical(manifest.template)!==canonical(template))throw Error('MANIFEST_TEMPLATE_MISMATCH');
+ if(sourceSha256!==undefined&&manifest.source_sha256!==sourceSha256)throw Error('MANIFEST_SOURCE_MISMATCH');
  const unsigned=`{${[...members.entries()].filter(([key])=>key!=='package_sha256').map(([,member])=>payload.slice(member.start,member.end)).join(',')}}`;
  if(crypto.createHash('sha256').update(unsigned).digest('hex')!==hash)throw Error('MANIFEST_HASH_MISMATCH');
  return manifest;
