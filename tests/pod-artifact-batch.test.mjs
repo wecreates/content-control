@@ -5,12 +5,20 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import {ARTIFACT_MEDIA_TYPES,ArtifactStore} from '../integrations/pod/artifacts.mjs';
-import {readPackageArtifacts} from '../integrations/pod/package-artifacts.mjs';
+import {readPackageArtifacts,readPackageManifest} from '../integrations/pod/package-artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
 const pdf=Buffer.from('%PDF-1.4\n%%EOF\n');
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
+ JSON.stringify(value);
+const manifest=(patch={})=>{
+ const value={schema_version:1,platform:'redbubble',publication_enabled:false,
+  template_sha256:'b'.repeat(64),files:{'art-mask.png':hash(png),'print.png':hash(png),'text-mask.png':hash(png)},...patch};
+ value.package_sha256=hash(canonical(value));return value;
+};
 
 test('artifact media contract is exact and includes recoverable KDP inputs',()=>{
  assert.deepEqual(ARTIFACT_MEDIA_TYPES,[
@@ -135,6 +143,28 @@ async function fixture(fn){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-artifact-read-'));
  try{await fn(root);}finally{await fs.rm(root,{recursive:true,force:true});}
 }
+test('package manifest snapshot verifies exact package identity and disabled scope',()=>fixture(async root=>{
+ const expected=manifest();await fs.writeFile(path.join(root,'manifest.json'),canonical(expected)+'\n');
+ assert.deepEqual(await readPackageManifest(root,{platform:'redbubble'}),expected);
+ for(const patch of [
+  {package_sha256:'a'.repeat(64)},
+  {platform:'zazzle'},
+  {publication_enabled:true},
+  {schema_version:2},
+  {template_sha256:'invalid'},
+ ]){
+  const changed={...expected,...patch};await fs.writeFile(path.join(root,'manifest.json'),canonical(changed));
+  await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_(?:HASH_MISMATCH|INVALID)/);
+ }
+}));
+test('package manifest snapshot is bounded and rejects nonfiles',()=>fixture(async root=>{
+ const expected=manifest();await fs.writeFile(path.join(root,'outside.json'),canonical(expected));
+ await fs.symlink(path.join(root,'outside.json'),path.join(root,'manifest.json'));
+ await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_INVALID/);
+ await fs.unlink(path.join(root,'manifest.json'));
+ await fs.writeFile(path.join(root,'manifest.json'),'x'.repeat(65));
+ await assert.rejects(readPackageManifest(root,{platform:'redbubble',maxBytes:64}),/MANIFEST_INVALID/);
+}));
 test('same-batch media conflicts fail before database access',async()=>{
  const a=entry('same bytes');
  const store=new ArtifactStore({tx(){assert.fail('must not open a transaction');}});
