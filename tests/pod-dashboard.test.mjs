@@ -104,6 +104,21 @@ test('preview verifies stored hash and clears credential and blob on page exit',
  h.events.pagehide();assert.equal(h.get('key').value,'');assert.equal(h.get('preview').hidden,true);
  assert.deepEqual(h.revoked,['blob:fixture-1']);assert.equal(h.get('print-preview').src,undefined);
 });
+test('ambiguous or invalid package JSON never reaches artifact fetch or preview rendering',async()=>{
+ const valid=record(png),manifest=JSON.stringify(valid.manifest);
+ const encoded=JSON.stringify(valid),bodies=[
+  `{"id":"different-job","i\\u0064":"fixture-job","state":"qa_failed","manifest":${manifest}}`,
+  '\ufeff'+encoded,
+  '{"ignored":1e400,'+encoded.slice(1),
+  Buffer.concat([Buffer.from('{"ignored":"'),Buffer.from([0xc3,0x28]),Buffer.from('",'+encoded.slice(1))])
+ ];
+ for(const body of bodies){
+  const h=harness(url=>url.includes('/package')?new Response(body):new Response(png));
+  await h.context.openPreview('fixture-job');
+  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
+  assert.equal(h.get('notice').textContent,'Unable to verify this preview or response.');
+ }
+});
 test('corrupt bytes, excessive decoded dimensions and invalid identities never render',async()=>{
  for(const kind of ['hash','dimensions','identity']){
   const bytes=Buffer.from(png);if(kind==='dimensions'){bytes.writeUInt32BE(10000,16);bytes.writeUInt32BE(10000,20);}

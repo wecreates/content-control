@@ -47,7 +47,38 @@ async function read(route,context,limit){
   else if(response?.body&&!response.body.locked)cancelBody(response.body);
  }
 }
-const json=async(route,context)=>JSON.parse(new TextDecoder().decode(await read(route,context,262144)));
+// Match the signed/runtime JSON boundary: authenticated dashboard responses must
+// be unambiguous before any identity or acceptance field is used.
+const responseDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
+function parseResponseJSON(text){
+ const value=JSON.parse(text),stack=[];
+ for(let i=0;i<text.length;){
+  const ch=text[i];
+  if(ch==='"'){
+   const start=i++;
+   while(text[i]!=='"'){if(text[i]==='\\')i++;i++;}
+   i++;
+   const object=stack.at(-1);
+   if(object?.expectKey){
+    const key=JSON.parse(text.slice(start,i));
+    if(object.keys.has(key))throw new SyntaxError('DASHBOARD_JSON_DUPLICATE_KEY');
+    object.keys.add(key);object.expectKey=false;
+   }
+  }else if(ch==='{'){stack.push({keys:new Set(),expectKey:true});i++;}
+  else if(ch==='['){stack.push(null);i++;}
+  else if(ch==='}'||ch===']'){stack.pop();i++;}
+  else if(ch===','){const object=stack.at(-1);if(object)object.expectKey=true;i++;}
+  else if(ch===':'||/\s/.test(ch)){i++;}
+  else{
+   const start=i++;
+   while(i<text.length&&!/[\s,}\]]/.test(text[i]))i++;
+   if((ch==='-'||(ch>='0'&&ch<='9'))&&!Number.isFinite(Number(text.slice(start,i))))
+    throw new SyntaxError('DASHBOARD_JSON_NONFINITE');
+  }
+ }
+ return value;
+}
+const json=async(route,context)=>parseResponseJSON(responseDecoder.decode(await read(route,context,262144)));
 function failure(error,context){if(context.version===generation&&(!context.signal.aborted||context.signal.reason?.message===timeoutMessage))element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
  [timeoutMessage,'Authentication failed.','Enter your operations key.','POD data is unavailable.','Response exceeds the preview limit.','Print preview is unavailable.'].includes(error.message)?error.message:'Unable to verify this preview or response.';}
 function listJobs(rows){
