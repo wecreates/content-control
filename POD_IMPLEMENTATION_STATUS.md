@@ -70,6 +70,74 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r181 verified receipt: unambiguous QA failure payload
+
+Fresh reconstruction read Content Control
+1a6df07cddc4377293fc53e390636241e9ab2743 and Money Factory
+90db8a19b2c5524866f6cc843a594af18c088d9d, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped this POD work. The
+failed database-administration path had no credible access change, so it was
+not retried.
+
+[CC PR 454](https://github.com/wecreates/content-control/pull/454) merged tested
+head 70e3d116e3c5bb0d2bd11d0b82a30cfa92842339 as
+bb499b914b74dc017c1976eb2f7ac366f47cfc16 after an unchanged-base and clean-
+mergeability check. A nonzero QA process may preserve a signed `FAIL` receipt
+for diagnosis, but the worker previously re-read the inner signed payload with
+ordinary JSON parsing before the database authenticated it. The worker now
+uses the existing strict duplicate-key parser and maps an ambiguous inner
+verdict to `QA_PROCESS_RESULT_CONFLICT` before the completion transaction. The
+exact escaped duplicate `verdict` regression selected the later `FAIL` and
+reached the completion callback against the prior implementation.
+
+The affected envelope, QA process/expiry, failure-reason, lease, release and
+production suites passed 118/118 locally, with syntax and whitespace checks
+clean. [PR integration run
+39784227085](https://github.com/wecreates/content-control/actions/runs/39784227085),
+job 119843013539, and [production-container run
+39784226865](https://github.com/wecreates/content-control/actions/runs/39784226865),
+job 119843012842, both passed on the exact PR head. The container gate built the
+production image and passed its non-root runtime/dependency probe as well as
+the Python QA/rendering, Node/PostgreSQL, recovery and publication-disabled
+checks.
+
+Dependent [MF PR 135](https://github.com/wecreates/Money-factory/pull/135)
+pinned verification to CC bb499b914b74dc017c1976eb2f7ac366f47cfc16,
+added the real-subprocess `pod-qa-process` regression to the selected contract
+set, and retained explicit `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false`. Tested head
+40bd910eb65487e2e9242ba88a96e5e8d3464aef merged as
+8c08b471f7901f598a7963d9bf1e8623fbd03dd2 after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39785346074](https://github.com/wecreates/Money-factory/actions/runs/39785346074),
+job 119846943854, passed every selected Content Control and Money Factory bridge
+step.
+
+Render automatically attempted the runtime merge as deploy
+dep-dbd0ohvavr4c73d5jmhg. Start event evt-dbd0ohv42ijs73bjj5c0 at
+2026-10-22T13:14:47.724620Z bound `newCommit` to
+bb499b914b74dc017c1976eb2f7ac366f47cfc16; event
+evt-dbd0ohp12hec73b3pi1g reported `pipeline_minutes_exhausted` at
+13:14:47.720564Z, and evt-dbd0oi4dthfc73do8fug recorded the failed deploy at
+13:14:48.029404Z. No manual retry, paid workaround, replacement service,
+credential access, widened network or unchanged database-administration retry
+occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic
+QA-failure routing gap only; tests and merged code are not proof of live QA or
+remediation. Production restricted database/schema/migrations, retained
+recovery evidence, deployed hybrid dependencies, mounted Money Factory
+authority/current grants and revocation, real accounts/sources/rights/templates/
+reviewers, authorized five-platform adapters, actual economics/reconciliation,
+owner-phone acceptance, monitoring/recovery drills, measured capacity and a
+real authorized end-to-end launch remain unverified. Both publication flags
+remain false; Etsy remains excluded. No approval, clearance, revenue,
+publication or continuously running self-hosted worker is claimed. This report-
+only receipt uses `[skip render]`; the runtime repair itself did not skip CI or
+deployment.
+
+
 ### 2026-10-22 — r180 verified receipt: unambiguous stage failure routing
 
 Fresh reconstruction read Content Control 75d3368a52adb9eae885f481a9d878d9597213f0
