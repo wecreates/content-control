@@ -2,7 +2,15 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {constants} from 'node:fs';
+import {parseSignedJSON} from './signed-json.mjs';
 const MAGIC=Buffer.from('CYZPOD1\n');
+export function parseArchiveJSON(body,reason='ARCHIVE_INVALID'){
+ try{
+  if(!Buffer.isBuffer(body)||!body.length)throw Error(reason);
+  const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(body);
+  return parseSignedJSON(text);
+ }catch{throw Error(reason);}
+}
 export function seal(body,key,aad){
  const iv=crypto.randomBytes(12),cipher=crypto.createCipheriv('aes-256-gcm',key,iv);
  cipher.setAAD(Buffer.from(aad));const data=Buffer.concat([cipher.update(body),cipher.final()]);

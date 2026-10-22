@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {seal,unseal,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
+import {seal,unseal,parseArchiveJSON,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
@@ -45,8 +45,7 @@ async function schema(client){
  return {versions,columns};
 }
 function inspectRecord(body,table,columns){
- const text=body.toString('utf8');if(!Buffer.from(text).equals(body))throw Error('STATE_ARCHIVE_RECORD_INVALID');
- let row;try{row=JSON.parse(text);}catch{throw Error('STATE_ARCHIVE_RECORD_INVALID');}
+ const row=parseArchiveJSON(body,'STATE_ARCHIVE_RECORD_INVALID');
  if(!row||Array.isArray(row)||JSON.stringify(Object.keys(row))!==JSON.stringify(columns.map(c=>c.name)))throw Error('STATE_ARCHIVE_RECORD_INVALID');
  if(table!=='pod_artifacts')return 0;
  if(typeof row.body!=='string'||!/^\\x(?:[a-f0-9]{2})+$/.test(row.body)||row.body.length>2+2*16777216||
@@ -59,7 +58,7 @@ async function catalogFor(options){
  const {directory,key,signal}=options;config(directory,key);signal?.throwIfAborted();
  if(!(await fs.lstat(directory)).isDirectory())throw Error('ARCHIVE_DIRECTORY_INVALID');
  const encrypted=await readBounded(path.join(directory,'catalog.pod'),MAX_CATALOG+36,signal);
- const catalog=JSON.parse(unseal(encrypted,key,'pod:state-catalog:v1'));
+ const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:state-catalog:v1'),'STATE_ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='pod_tables_only'||
   !/^[a-f0-9-]{36}$/.test(catalog.snapshot_id||'')||!Number.isFinite(Date.parse(catalog.created_at))||
   JSON.stringify(catalog.tables)!==JSON.stringify(NAMES)||
