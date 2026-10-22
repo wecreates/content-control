@@ -12,6 +12,31 @@ const PACKAGE_MEDIA_TYPES=Object.freeze({
 });
 const BASE_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_FILES=Object.freeze([...BASE_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
+const PNG_SIGNATURE=Buffer.from('89504e470d0a1a0a','hex');
+
+function assertPackageFormat(name,body){
+ const mediaType=PACKAGE_MEDIA_TYPES[name];
+ if(mediaType==='image/png'){
+  const end=body.length-12;
+  if(body.length<45||!body.subarray(0,8).equals(PNG_SIGNATURE)||
+   body.readUInt32BE(8)!==13||body.subarray(12,16).toString('ascii')!=='IHDR'||
+   end<33||body.readUInt32BE(end)!==0||body.subarray(end+4,end+8).toString('ascii')!=='IEND'){
+   throw Error('ARTIFACT_INVALID');
+  }
+  return;
+ }
+ if(mediaType==='application/pdf'){
+  let end=body.length;
+  while(end&&[0,9,10,12,13,32].includes(body[end-1]))end--;
+  if(!/^%PDF-(?:1\.[0-7]|2\.0)$/.test(body.subarray(0,8).toString('ascii'))||
+   end<5||body.subarray(end-5,end).toString('ascii')!=='%%EOF')throw Error('ARTIFACT_INVALID');
+  return;
+ }
+ try{
+  const value=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(body));
+  if(!value||typeof value!=='object'||Array.isArray(value))throw Error();
+ }catch{throw Error('ARTIFACT_INVALID');}
+}
 
 export async function readPackageArtifacts(directory,files,{maxObjectBytes=16777216,maxBatchBytes=MAX_PACKAGE_BYTES,platform}={}){
  if(!Number.isSafeInteger(maxObjectBytes)||maxObjectBytes<1||maxObjectBytes>16777216||
@@ -42,6 +67,7 @@ export async function readPackageArtifacts(directory,files,{maxObjectBytes=16777
     if(!bytesRead)throw Error('ARTIFACT_HASH_MISMATCH');offset+=bytesRead;
    }
    if((await handle.read(Buffer.alloc(1),0,1,offset)).bytesRead||crypto.createHash('sha256').update(body).digest('hex')!==sha)throw Error('ARTIFACT_HASH_MISMATCH');
+   assertPackageFormat(name,body);
    artifacts.push({body,mediaType:PACKAGE_MEDIA_TYPES[name]});
   }finally{await handle.close();}
  }
