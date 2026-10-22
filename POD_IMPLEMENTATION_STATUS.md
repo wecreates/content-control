@@ -3077,6 +3077,94 @@ acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted. This run did not claim a continuously running self-hosted worker.
 
+## Run receipt r173 — bind package text to signed production layers (2026-10-22 UTC)
+
+### Scope and reproduced gap
+
+This run closed a generated-package text-identity gap before durable artifact
+storage, independent review and completion. The parent worker authenticated the
+source artwork and rights envelope, while the Python child authenticated the
+text-layer file, but the parent did not snapshot that file or bind the returned
+manifest to its signed identity. A changed text-layer file or substituted
+manifest text identity could therefore cross the parent/child trust boundary.
+The pre-fix regression reproduced that acceptance as
+`PRE_FIX_ACCEPTED_TEXT_LAYER_SUBSTITUTION`. The parent now snapshots bounded
+regular text-layer bytes, rejects ambiguous JSON, verifies their canonical
+digest against the signed rights envelope, and requires the package manifest
+to carry the same digest plus exact rendered text/font identities before any
+artifact storage or review hold. Etsy remained excluded. The failed
+production-database administration path was not retried because no credible
+access-path change was observed.
+
+### Content Control implementation and verification
+
+- PR #438 exact tested head:
+  `ca32901322b60fc3399b89ca71c65ca1ab71a982`.
+- The remote changed tree `3e840f7835ad3a78b83c412fe5653a1eafc8e346`
+  exactly matched the locally tested ten-file tree.
+- Focused source/package/worker/QA coverage passed 95/95 Node tests; the actual
+  Node/Python KDP inspector bridge passed 93/93 Python tests. The broad
+  dependency-free POD Node suite passed 637 tests with two expected skips.
+  Broader local Python discovery passed 230 tests and had only two unrelated
+  import errors because local OpenCV was unavailable; the hosted gates installed
+  the locked OpenCV dependency and passed their declared Python coverage.
+  Syntax checks and `git diff --check` passed.
+- POD integration gates run `39723927267`, job `119643427315`: success.
+- POD container runtime gates run `39723927376`, job `119643428078`:
+  success, including the production Docker image, Python QA/rendering,
+  Node/PostgreSQL tests, real print/review workflow and startup with publication
+  and production disabled.
+- Guarded Content Control merge:
+  `9456f8fa2add878139d5e3aa558ac5f135034d24`.
+
+### Money Factory dependent pin and verification
+
+- PR #127 exact tested head:
+  `036bcbbbaa12279b4e9607ed261aa34b3e844007`.
+- The authoritative cross-repository workflow pins Content Control merge
+  `9456f8fa2add878139d5e3aa558ac5f135034d24`; its 20-minute timeout and
+  `PUBLICATION_ENABLED=false` / `POD_PUBLICATION_ENABLED=false` remained
+  unchanged.
+- POD cross-repository review verification run `39724653197`, job
+  `119645692864`: success.
+- Guarded Money Factory merge:
+  `b910c8d09dd66f45e08e0d6d14e8c63e93a010ae`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `9456f8fa2add878139d5e3aa558ac5f135034d24` and started deployment
+  `dep-dbcpbutg1s2s738aa5tg`; event `evt-dbcpbuv40dgc73947uqg` recorded
+  the start at `2026-10-22T04:50:03.381135Z`.
+- Event `evt-dbcpbutk3hvs739prkp0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-22T04:50:03.416108Z`;
+  deploy-ended event `evt-dbcpbup12hec73atvvig` recorded failed status at
+  `2026-10-22T04:50:03.711089Z`.
+- No hosted rollout of r173 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access or network widening was
+  attempted.
+
+### Acceptance truth
+
+This closes one parent/child package-integrity gap only. Passing code, CI and
+production-image tests are not official-template provenance, a real KDP
+preview/proof, live platform readback or launch acceptance. Restricted
+production database/schema verification, durable retention/recovery drills,
+deployed hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, independent QA/remediation outcomes, permitted live adapters for
+KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics and
+financial reconciliation, owner-phone operations, monitoring/recovery drills,
+measured capacity, real end-to-end acceptance and controlled launch readiness
+remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r172 — bind KDP interior package admission (2026-10-22 UTC)
 
 ### Scope and reproduced gap
