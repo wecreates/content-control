@@ -70,6 +70,21 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r179 verified receipt: unambiguous persisted package JSON
+
+Fresh reconstruction read Content Control 1381c8f51a47da49f92128270bf4367087933063 and Money Factory eb880cb69c43a01027b113e21f72e6fc68a5cf60, the current acceptance/status/deployment documents, open PRs, workflow results and the authorized existing Render service. The Money Factory delta after r178 was an unrelated free-monitor cadence tick; no open PR overlapped POD work. The failed database-administration path had no credible access change, so it was not retried.
+
+[CC PR 450](https://github.com/wecreates/content-control/pull/450) merged tested head fcd82c73e03cb3e37f85a9e8daa445489ad62757 as 48b31154e040c8e1ad0aa4d25996739f32c78f52 after an unchanged-base and clean-mergeability check. Hash-matching JSON package members, currently the KDP interior technical receipt, now require strict UTF-8 and reject a leading BOM, duplicate decoded keys at any depth, nonfinite numbers and integers outside JavaScript's exact range before persistence. The KDP manifest reader applies the same boundary before comparing the stored and authenticated embedded receipts. The exact duplicate-key artifact regression failed against the prior implementation.
+
+All 122 affected artifact, production, template, lease, container-smoke and KDP package tests passed locally, with syntax and whitespace checks clean. [PR integration run 39767424379](https://github.com/wecreates/content-control/actions/runs/39767424379), job 119786225620, passed the complete disposable PostgreSQL/Python gate with zero failed steps. [Production-container run 39767424434](https://github.com/wecreates/content-control/actions/runs/39767424434), job 119786225555, passed the exact PR head, including the image build, offline dependency check, Python QA/rendering, Node/PostgreSQL suite, real print/recovery workflow and publication-disabled startup.
+
+Dependent [MF PR 133](https://github.com/wecreates/Money-factory/pull/133) preserved the concurrent monitor tick, pinned verification to CC 48b31154e040c8e1ad0aa4d25996739f32c78f52 and added the complete package-artifact suite. Tested head 2f6d7f0f288dab6999d274c27d7d3b46908444a5 merged as dffa26497de14d24744d57c2e619bc44f8f9adf4 after an exact-head/base and mergeability check. [Cross-repository run 39768422339](https://github.com/wecreates/Money-factory/actions/runs/39768422339), job 119789579198, passed with both publication flags explicitly false.
+
+Render automatically attempted the runtime merge as deploy dep-dbcutcuk1f9s73b3m4c0. Start event evt-dbcutctk3hvs739tru9g at 2026-10-22T11:08:35.477688Z bound newCommit to 48b31154e040c8e1ad0aa4d25996739f32c78f52; evt-dbcutcstuius73cdtmug reported pipeline_minutes_exhausted at 11:08:35.502451Z, and evt-dbcutcuj5dgc739tsnd0 reported the failed deploy at 11:08:35.85831Z. No manual retry, paid workaround, replacement service, credential access, widened network or unchanged database-administration retry occurred.
+
+All 24 live acceptance areas remain OPEN. Production restricted database/schema/migrations, retained recovery evidence, deployed hybrid dependencies, mounted Money Factory authority/current grants and revocation, real accounts/sources/rights/templates/reviewers, authorized five-platform adapters, actual economics/reconciliation, owner-phone acceptance, monitoring/recovery drills, measured capacity and a real authorized end-to-end launch remain unverified. PUBLICATION_ENABLED and POD_PUBLICATION_ENABLED remain false; Etsy remains excluded. No approval, clearance, revenue, publication or continuously running self-hosted worker is claimed. This report-only receipt uses [skip render]; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r178 verified receipt: unambiguous bounded HTTP JSON
 
 Fresh reconstruction read Content Control 5f7f77c3d517231dd15ff6217fdd306864b6f13d and Money Factory 8f5df2d54c19232f9a9cf30489afa10f691d4dc2, current acceptance/status/deployment documents, open PRs, workflow results and the authorized existing Render service. No open PR overlapped POD work. The failed database-administration path had no credible access change, so it was not retried.
