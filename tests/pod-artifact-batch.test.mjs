@@ -176,6 +176,29 @@ test('package manifest binds its source identity to authenticated task evidence'
  assert.deepEqual(await readPackageManifest(root,{platform:'redbubble',sourceSha256:expected.source_sha256}),expected);
  await assert.rejects(readPackageManifest(root,{platform:'redbubble',sourceSha256:'b'.repeat(64)}),/MANIFEST_SOURCE_MISMATCH/);
 }));
+test('KDP package manifest binds the authenticated interior template and exact receipt bytes',()=>fixture(async root=>{
+ const cover={platform:'kdp',dpi:300,size_inches:[12,9]},interiorTemplate={platform:'kdp',page_count:24,trim_inches:[6,9]};
+ const interiorPdf=Buffer.from('%PDF-1.4\n%%EOF\n');
+ const receipt={schema_version:1,interior_sha256:hash(interiorPdf),page_count:24,
+  template_sha256:hash(canonical(interiorTemplate)),technical_checks_passed:true,
+  editorial_review:'UNASSESSED',production_ready:false,publication_enabled:false};
+ const receiptBody=Buffer.from(canonical(receipt)+'\n');
+ const value={schema_version:1,platform:'kdp',publication_enabled:false,template:cover,
+  template_sha256:hash(canonical(cover)),source_sha256:hash('synthetic source'),
+  interior:{template:interiorTemplate,receipt},files:{'interior.pdf':hash(interiorPdf),'interior.receipt.json':hash(receiptBody)}};
+ value.package_sha256=hash(canonical(value));
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(value));
+ await fs.writeFile(path.join(root,'interior.receipt.json'),receiptBody);
+ assert.deepEqual(await readPackageManifest(root,{platform:'kdp',template:cover,interiorTemplate,sourceSha256:value.source_sha256}),value);
+ await assert.rejects(readPackageManifest(root,{platform:'kdp',template:cover,interiorTemplate:{...interiorTemplate,page_count:48},sourceSha256:value.source_sha256}),/MANIFEST_INTERIOR_MISMATCH/);
+ const failedReceipt={...receipt,technical_checks_passed:false},failedBody=Buffer.from(canonical(failedReceipt)+'\n');
+ const failed={...value,interior:{template:interiorTemplate,receipt:failedReceipt},
+  files:{...value.files,'interior.receipt.json':hash(failedBody)}};
+ delete failed.package_sha256;failed.package_sha256=hash(canonical(failed));
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(failed));
+ await fs.writeFile(path.join(root,'interior.receipt.json'),failedBody);
+ await assert.rejects(readPackageManifest(root,{platform:'kdp',template:cover,interiorTemplate,sourceSha256:value.source_sha256}),/MANIFEST_INTERIOR_MISMATCH/);
+}));
 test('package manifest snapshot is bounded and rejects nonfiles',()=>fixture(async root=>{
  const expected=manifest();await fs.writeFile(path.join(root,'outside.json'),canonical(expected));
  await fs.symlink(path.join(root,'outside.json'),path.join(root,'manifest.json'));

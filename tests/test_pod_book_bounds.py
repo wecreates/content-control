@@ -640,7 +640,19 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                     "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template':template,'source_sha256':hashlib.sha256(source).hexdigest(),'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),'files':files}\n"
                     "m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()\n"
                     "Path('output/manifest.json').write_text(canonical(m)+'\\n')\n")
-                (scripts/'pod_book_package.py').write_text('pass\n')
+                (scripts/'pod_book_package.py').write_text(
+                    "from pathlib import Path\nimport hashlib,json,sys\n"
+                    "canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'))\n"
+                    "envelope=json.loads(Path(sys.argv[sys.argv.index('--template')+1]).read_text())\n"
+                    "interior=json.loads(envelope['payload'])['template']\n"
+                    "manifest=json.loads(Path('output/manifest.json').read_text())\n"
+                    "pdf=Path('output/interior.pdf').read_bytes()\n"
+                    "receipt={'schema_version':1,'interior_sha256':hashlib.sha256(pdf).hexdigest(),'page_count':interior['page_count'],'template_sha256':hashlib.sha256(canonical(interior).encode()).hexdigest(),'technical_checks_passed':True,'editorial_review':'UNASSESSED','production_ready':False,'publication_enabled':False}\n"
+                    "receipt_bytes=(canonical(receipt)+'\\n').encode();Path('output/interior.receipt.json').write_bytes(receipt_bytes)\n"
+                    "manifest['interior']={'template':interior,'receipt':receipt}\n"
+                    "manifest['files']['interior.receipt.json']=hashlib.sha256(receipt_bytes).hexdigest()\n"
+                    "manifest.pop('package_sha256',None);manifest['package_sha256']=hashlib.sha256(canonical(manifest).encode()).hexdigest()\n"
+                    "Path('output/manifest.json').write_text(canonical(manifest)+'\\n')\n")
                 result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),
                                       str(count),sys.executable,str(interior_archive),digest(interior_archive),MEMBER],
                                       capture_output=True,text=True,timeout=30)

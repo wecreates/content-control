@@ -91,7 +91,7 @@ async function readRegularFile(file,maxBytes,reason){
  }finally{await handle.close();}
 }
 
-export async function readPackageManifest(directory,{platform,template,sourceSha256,maxBytes=MAX_MANIFEST_BYTES}={}){
+export async function readPackageManifest(directory,{platform,template,interiorTemplate,sourceSha256,maxBytes=MAX_MANIFEST_BYTES}={}){
  if(!PLATFORMS.includes(platform)||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>MAX_MANIFEST_BYTES)throw Error('MANIFEST_INVALID');
  let base,candidate,file,body;
  try{
@@ -117,6 +117,32 @@ export async function readPackageManifest(directory,{platform,template,sourceSha
  if(sourceSha256!==undefined&&manifest.source_sha256!==sourceSha256)throw Error('MANIFEST_SOURCE_MISMATCH');
  const unsigned=`{${[...members.entries()].filter(([key])=>key!=='package_sha256').map(([,member])=>payload.slice(member.start,member.end)).join(',')}}`;
  if(crypto.createHash('sha256').update(unsigned).digest('hex')!==hash)throw Error('MANIFEST_HASH_MISMATCH');
+ if(platform==='kdp'){
+  const interior=manifest.interior,receipt=interior?.receipt,files=manifest.files;
+  if(!interiorTemplate||typeof interiorTemplate!=='object'||Array.isArray(interiorTemplate)||
+   !interior||typeof interior!=='object'||Array.isArray(interior)||
+   JSON.stringify(Object.keys(interior).sort())!==JSON.stringify(['receipt','template'])||
+   !receipt||typeof receipt!=='object'||Array.isArray(receipt)||
+   !files||typeof files!=='object'||Array.isArray(files)||
+   !/^[a-f0-9]{64}$/.test(files['interior.pdf']||'')||
+   !/^[a-f0-9]{64}$/.test(files['interior.receipt.json']||''))throw Error('MANIFEST_INTERIOR_MISMATCH');
+  if(canonical(interior.template)!==canonical(interiorTemplate)||
+   receipt.template_sha256!==crypto.createHash('sha256').update(canonical(interiorTemplate)).digest('hex')||
+   receipt.interior_sha256!==files['interior.pdf']||receipt.schema_version!==1||
+   receipt.page_count!==interiorTemplate.page_count||receipt.technical_checks_passed!==true||
+   receipt.editorial_review!=='UNASSESSED'||receipt.production_ready!==false||
+   receipt.publication_enabled!==false)throw Error('MANIFEST_INTERIOR_MISMATCH');
+  let receiptBody,receiptText,storedReceipt;
+  try{
+   receiptBody=await readRegularFile(path.resolve(base,'interior.receipt.json'),maxBytes,'MANIFEST_INTERIOR_MISMATCH');
+   receiptText=new TextDecoder('utf-8',{fatal:true}).decode(receiptBody);
+   storedReceipt=JSON.parse(receiptText);
+   assertJSONBounds(storedReceipt);
+  }catch(error){if(error.message==='MANIFEST_INTERIOR_MISMATCH')throw error;throw Error('MANIFEST_INTERIOR_MISMATCH');}
+  const receiptPayload=receiptText.endsWith('\n')?receiptText.slice(0,-1):receiptText;
+  if(receiptPayload!==canonical(storedReceipt)||canonical(storedReceipt)!==canonical(receipt)||
+   crypto.createHash('sha256').update(receiptBody).digest('hex')!==files['interior.receipt.json'])throw Error('MANIFEST_INTERIOR_MISMATCH');
+ }
  return manifest;
 }
 
