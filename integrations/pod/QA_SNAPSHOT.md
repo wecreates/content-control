@@ -14,6 +14,14 @@ after its size check. Invalid identities, escaped paths, oversized data and hash
 mismatches fail closed before inspection. Temporary copies are removed on success
 or failure. Nested filenames are unsupported by this generated-package contract.
 
+JSON package members, currently the KDP interior technical receipt, are decoded
+as strict UTF-8 before persistence. A leading BOM, duplicate decoded key at any
+depth, nonfinite number or integer outside JavaScript's exact range fails as an
+invalid artifact even when the supplied content hash matches. The KDP manifest
+reader applies the same rules before comparing the stored receipt with its
+authenticated embedded receipt. This prevents a custom caller from persisting an
+ambiguous receipt by invoking the artifact reader without first reading a manifest.
+
 This adds bounded temporary disk usage; it does not provide durable storage or
 replace independent review. Current signed package rights, competitive review,
 KDP editorial evidence and expiry checks still apply. No approval is manufactured,
