@@ -18,6 +18,10 @@ test('authenticated parser failures return sanitized JSON before any database op
  try{
   const cases=[
    ['/jobs','application/json','{"private-marker":',{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json','{"payload":"first","pay\\u006coad":"second"}',{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json','{"value":1e400}',{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json',Buffer.concat([Buffer.from('{"value":"'),Buffer.from([0xc3,0x28]),Buffer.from('"}')]),{},400,'POD_REQUEST_INVALID'],
+   ['/jobs','application/json',Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{}')]),{},400,'POD_REQUEST_INVALID'],
    ['/jobs','application/json','true',{},400,'POD_REQUEST_INVALID'],
    ['/jobs','application/json','x'.repeat(262145),{},413,'POD_REQUEST_TOO_LARGE'],
    ['/artifacts','image/png',Buffer.alloc(16777217),{},413,'POD_REQUEST_TOO_LARGE'],

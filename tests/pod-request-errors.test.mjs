@@ -8,6 +8,7 @@ test('parser errors expose only fixed status and code, never body or stack',()=>
   ['encoding.unsupported',415,'POD_REQUEST_ENCODING_UNSUPPORTED'],
   ['charset.unsupported',415,'POD_REQUEST_ENCODING_UNSUPPORTED'],
   ['entity.parse.failed',400,'POD_REQUEST_INVALID'],
+  ['entity.verify.failed',400,'POD_REQUEST_INVALID'],
   ['request.aborted',400,'POD_REQUEST_INVALID'],
   ['request.size.invalid',400,'POD_REQUEST_INVALID'],
   ['constructor',500,'POD_REQUEST_FAILED'],
