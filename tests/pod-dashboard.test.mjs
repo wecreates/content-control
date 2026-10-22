@@ -6,7 +6,14 @@ import crypto from 'node:crypto';
 const source=await fs.readFile(new URL('../integrations/pod/dashboard.js',import.meta.url),'utf8');
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-const record=bytes=>({id:'fixture-job',platform:'redbubble',state:'qa_failed',manifest:{schema_version:1,publication_enabled:false,platform:'redbubble',package_sha256:'b'.repeat(64),files:Object.fromEntries(['art-mask.png','print.png','text-mask.png'].map(name=>[name,sha(bytes)]))}});
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(name=>`${JSON.stringify(name)}:${canonical(value[name])}`).join(',')}}`:
+ JSON.stringify(value);
+const record=bytes=>{
+ const manifest={schema_version:1,publication_enabled:false,platform:'redbubble',files:Object.fromEntries(['art-mask.png','print.png','text-mask.png'].map(name=>[name,sha(bytes)]))};
+ manifest.package_sha256=sha(Buffer.from(canonical(manifest)));
+ return {id:'fixture-job',platform:'redbubble',state:'qa_failed',manifest,manifest_sha256:sha(Buffer.from(canonical(manifest)))};
+};
 function harness(fetcher,timers={setTimeout,clearTimeout}){
  class Element{
   constructor(){this.value='';this.textContent='';this.hidden=false;this.listeners={};this.children=[];}
@@ -19,7 +26,7 @@ function harness(fetcher,timers={setTimeout,clearTimeout}){
  const nodes=new Map(),urls=[],revoked=[],requests=[],events={};
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
  const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:{addEventListener:(k,v)=>events[k]=v},
-  AbortController,TextDecoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
+  AbortController,TextDecoder,TextEncoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
   setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,performance:timers.performance||performance,
   URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:fixture-'+urls.length;},revokeObjectURL:url=>revoked.push(url)},
   fetch:async(url,options)=>{requests.push({url,options});return fetcher(url,options);}});
@@ -132,6 +139,13 @@ test('corrupt bytes, excessive decoded dimensions and invalid identities never r
 });
 test('preview rejects a stored queue and manifest marketplace mismatch before artifact fetch',async()=>{
  const data=record(png);data.manifest.platform='etsy';
+ const h=harness(url=>url.includes('/package')?response(data):new Response(png));
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
+ assert.equal(h.get('notice').textContent,'Print preview is unavailable.');
+});
+test('preview rejects a mismatched canonical package identity before artifact fetch',async()=>{
+ const data=record(png);data.manifest.package_sha256='c'.repeat(64);
  const h=harness(url=>url.includes('/package')?response(data):new Response(png));
  await h.context.openPreview('fixture-job');
  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);

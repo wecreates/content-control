@@ -18,6 +18,12 @@ spec = importlib.util.spec_from_file_location('export', Path(__file__).resolve()
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
+def stored_record(manifest, platform=None):
+    identity = hashlib.sha256(json.dumps(
+        manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    return json.dumps({'id': 'job', 'platform': platform or manifest['platform'],
+                       'manifest': manifest, 'manifest_sha256': identity}).encode()
+
 class ExportTests(unittest.TestCase):
     def fixture(self, name='print.png'):
         body = b'fixture bytes'
@@ -28,7 +34,7 @@ class ExportTests(unittest.TestCase):
         manifest = {'schema_version': 1, 'publication_enabled': False,
                     'platform': 'redbubble', 'files': files}
         manifest['package_sha256'] = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-        record = json.dumps({'id': 'job', 'platform': 'redbubble', 'manifest': manifest}).encode()
+        record = stored_record(manifest)
         return lambda route, limit: record if route.endswith('/package') else body
 
     def test_restore_without_approval(self):
@@ -46,6 +52,19 @@ class ExportTests(unittest.TestCase):
             root = Path(tmp) / 'review'
             with self.assertRaisesRegex(ValueError, 'ARTIFACT_INVALID'):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, lambda route, limit: good(route, limit) if route.endswith('/package') else b'corrupt')
+            self.assertFalse(root.exists())
+
+    def test_mismatched_stored_manifest_identity_is_rejected_before_artifact_fetch(self):
+        good = self.fixture()
+        record = json.loads(good('/jobs/job/package', 262144))
+        record['manifest']['package_sha256'] = 'c' * 64
+        calls = []
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            with self.assertRaisesRegex(ValueError, 'MANIFEST_IDENTITY_MISMATCH'):
+                module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                    lambda route, limit: calls.append(route) or json.dumps(record).encode())
+            self.assertEqual(calls, ['/jobs/job/package'])
             self.assertFalse(root.exists())
 
     def test_traversal_rejected_before_writing(self):
@@ -94,7 +113,7 @@ class ExportTests(unittest.TestCase):
                         'platform': 'redbubble', 'files': files}
             manifest['package_sha256'] = hashlib.sha256(json.dumps(
                 manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-            record = json.dumps({'id': 'job', 'platform': 'redbubble', 'manifest': manifest}).encode()
+            record = stored_record(manifest)
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp) / 'review'
                 with self.assertRaisesRegex(ValueError, 'FILES_INVALID'):
@@ -111,7 +130,7 @@ class ExportTests(unittest.TestCase):
                     'platform': 'kdp', 'files': files}
         manifest['package_sha256'] = hashlib.sha256(json.dumps(
             manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-        record = json.dumps({'id': 'job', 'platform': 'kdp', 'manifest': manifest}).encode()
+        record = stored_record(manifest)
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'review'
             result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
@@ -128,7 +147,7 @@ class ExportDeadlineTests(unittest.TestCase):
         manifest={'schema_version':1,'publication_enabled':False,'platform':'redbubble',
                   'files':{'art-mask.png':sha1,'print.png':sha2,'text-mask.png':sha3}}
         manifest['package_sha256']=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-        record=json.dumps({'id':'job','platform':'redbubble','manifest':manifest}).encode()
+        record=stored_record(manifest)
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self,*args): pass
             def do_GET(self):
