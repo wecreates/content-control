@@ -3077,6 +3077,93 @@ acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
 `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
 attempted. This run did not claim a continuously running self-hosted worker.
 
+## Run receipt r174 — reject ambiguous package manifests (2026-10-22 UTC)
+
+### Scope and reproduced gap
+
+This run closed one package-admission ambiguity before durable artifact storage
+and review hold. The parent manifest reader rejected repeated top-level keys but
+used ordinary `JSON.parse` for nested objects, so a package could repeat a nested
+template/member key and rely on decoder last-value behavior. The exact pre-fix
+regression reproduced this as
+`PRE_FIX_ACCEPTED_NESTED_DUPLICATE_MANIFEST`. The parent now applies the existing
+strict recursive JSON parser before interpreting any package, template, file or
+text identity; duplicate decoded keys at every depth fail as
+`MANIFEST_INVALID`. Exact producer-byte hashing remains intact, including
+Python JSON's integer/float distinction. Etsy remained excluded. The failed
+production-database administration path was not retried because no credible
+access-path change was observed.
+
+### Failure learning and corrected verification
+
+- The first candidate exact head `3679bdbee49632630028376219b33be651752fa4`
+  also required JavaScript reserialization equality. Hosted integration run
+  `39729467945` and container run `39729468112` correctly exposed that this
+  rejected legitimate Python-produced floating-point spelling such as `450.0`
+  in the real stored-task E2E. That candidate was not merged.
+- Corrected PR #440 exact head:
+  `3bf99a0b7c127f37246421d09089463d86824fcb`.
+- Focused package/worker/source/QA tests passed 96/96 locally; syntax and
+  whitespace checks passed. The corrected hosted integration gate run
+  `39730371519`, job `119663784013`, passed, including the locked dependencies,
+  full POD Node suite, Python suites, PostgreSQL E2E and control checks.
+- Corrected container gate run `39730371543`, job `119663783961`, passed,
+  including the exact production image, Python QA/rendering, Node/PostgreSQL
+  tests, real print/review workflow and startup with publication and production
+  disabled.
+- Guarded Content Control merge:
+  `da68eb139715ef3241566676c156ced860f289f6`.
+
+### Money Factory dependent pin and verification
+
+- Money Factory main advanced concurrently with unrelated monitor state at
+  `14b042da841bbec4e45352c0a2d29b91d90ac778`. The existing PR #128 branch was
+  updated with an exact force-with-lease onto that head, then only the one-line
+  POD pin was reapplied; no duplicate PR was created.
+- PR #128 exact tested head:
+  `3f727ccfab75d0429e096809c3115d762fe6bf67`.
+- The authoritative cross-repository workflow pins Content Control merge
+  `da68eb139715ef3241566676c156ced860f289f6`; its 20-minute timeout and
+  `PUBLICATION_ENABLED=false` / `POD_PUBLICATION_ENABLED=false` remained
+  unchanged.
+- Cross-repository run `39731163570`, job `119666290647`, passed.
+- Guarded Money Factory merge:
+  `4f461877e26b186579783b1c03a9910f26b28177`.
+
+### Authorized Render verification
+
+- The authorized service remained unsuspended on its existing free plan, main
+  branch, commit-triggered auto-deploy, Docker runtime and one instance.
+- Render detected Content Control merge
+  `da68eb139715ef3241566676c156ced860f289f6` and started deployment
+  `dep-dbcqbrbncjis73b52dmg`; event `evt-dbcqbrf40dgc7394sdfg` recorded the
+  start at `2026-10-22T05:58:05.821754Z`.
+- Event `evt-dbcqbrdk3hvs739qfa20` recorded
+  `pipeline_minutes_exhausted` at `2026-10-22T05:58:05.921187Z`;
+  deploy-ended event `evt-dbcqbrkdthfc73dj59c0` recorded failed status at
+  `2026-10-22T05:58:06.231437Z`.
+- No hosted rollout of r174 was verified. No manual retry, paid capacity,
+  plan/cache change, replacement service, secret access or network widening was
+  attempted.
+
+### Acceptance truth
+
+This closes one parent package-parsing ambiguity only. Passing code, CI and
+production-image tests are not official-template provenance, a real KDP
+preview/proof, live platform readback or launch acceptance. Restricted production
+database/schema verification, durable retention/recovery drills, deployed hybrid
+dependencies, mounted current Money Factory authority and real grants/revocation,
+authorized accounts and market sources, current regional rights and
+official-template evidence, substantive KDP editorial/preview acceptance,
+independent QA/remediation outcomes, permitted live adapters for KDP, Redbubble,
+TeePublic, Zazzle and Spreadshirt, actual economics and financial reconciliation,
+owner-phone operations, monitoring/recovery drills, measured capacity, real
+end-to-end acceptance and controlled launch readiness remain unverified. All 24
+acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+This run used only its actually available bounded tools and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r173 — bind package text to signed production layers (2026-10-22 UTC)
 
 ### Scope and reproduced gap
