@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 const source=await fs.readFile(new URL('../integrations/pod/dashboard.js',import.meta.url),'utf8');
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-const record=bytes=>({id:'fixture-job',platform:'redbubble',state:'qa_failed',manifest:{schema_version:1,publication_enabled:false,platform:'redbubble',package_sha256:'b'.repeat(64),files:{'print.png':sha(bytes)}}});
+const record=bytes=>({id:'fixture-job',platform:'redbubble',state:'qa_failed',manifest:{schema_version:1,publication_enabled:false,platform:'redbubble',package_sha256:'b'.repeat(64),files:Object.fromEntries(['art-mask.png','print.png','text-mask.png'].map(name=>[name,sha(bytes)]))}});
 function harness(fetcher,timers={setTimeout,clearTimeout}){
  class Element{
   constructor(){this.value='';this.textContent='';this.hidden=false;this.listeners={};this.children=[];}
@@ -136,6 +136,19 @@ test('preview rejects a stored queue and manifest marketplace mismatch before ar
  await h.context.openPreview('fixture-job');
  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
  assert.equal(h.get('notice').textContent,'Print preview is unavailable.');
+});
+test('preview rejects incomplete or extra marketplace artifact sets before artifact fetch',async()=>{
+ for(const prepare of [
+  ()=>{const data=record(png);delete data.manifest.files['art-mask.png'];return data;},
+  ()=>{const data=record(png);data.manifest.files['debug.txt']='a'.repeat(64);return data;},
+  ()=>{const data=record(png);data.platform=data.manifest.platform='kdp';return data;},
+ ]){
+  const data=prepare();
+  const h=harness(url=>url.includes('/package')?response(data):new Response(png));
+  await h.context.openPreview('fixture-job');
+  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(h.get('preview').hidden,true);
+  assert.equal(h.get('notice').textContent,'Print preview is unavailable.');
+ }
 });
 test('clearing session during fetch prevents stale bytes or errors from restoring preview',async()=>{
  let release;const pending=new Promise(resolve=>release=resolve);

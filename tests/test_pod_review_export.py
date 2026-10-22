@@ -19,10 +19,14 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class ExportTests(unittest.TestCase):
-    def fixture(self, name='art.png'):
+    def fixture(self, name='print.png'):
         body = b'fixture bytes'
-        manifest = {'schema_version': 1, 'publication_enabled': False, 'platform': 'redbubble',
-                    'files': {name: hashlib.sha256(body).hexdigest()}}
+        files = {item: hashlib.sha256(body).hexdigest()
+                 for item in ('art-mask.png','print.png','text-mask.png')}
+        if name != 'print.png':
+            files[name] = files.pop('print.png')
+        manifest = {'schema_version': 1, 'publication_enabled': False,
+                    'platform': 'redbubble', 'files': files}
         manifest['package_sha256'] = hashlib.sha256(json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
         record = json.dumps({'id': 'job', 'platform': 'redbubble', 'manifest': manifest}).encode()
         return lambda route, limit: record if route.endswith('/package') else body
@@ -32,7 +36,7 @@ class ExportTests(unittest.TestCase):
             root = Path(tmp) / 'review'
             result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
             self.assertEqual(result['status'], 'REVIEW_REQUIRED')
-            self.assertEqual((root/'art.png').read_bytes(), b'fixture bytes')
+            self.assertEqual((root/'print.png').read_bytes(), b'fixture bytes')
             with self.assertRaises(FileExistsError):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture())
 
@@ -47,7 +51,7 @@ class ExportTests(unittest.TestCase):
     def test_traversal_rejected_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp) / 'review'
-            with self.assertRaisesRegex(ValueError, 'FILE_INVALID'):
+            with self.assertRaisesRegex(ValueError, 'FILES_INVALID'):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, self.fixture('../escape'))
             self.assertFalse(root.exists())
 
@@ -81,21 +85,55 @@ class ExportTests(unittest.TestCase):
                     lambda route, limit: json.dumps(record).encode() if route.endswith('/package') else good(route, limit))
             self.assertFalse(root.exists())
 
+    def test_incomplete_or_extra_marketplace_artifact_sets_are_rejected(self):
+        body = b'fixture bytes'
+        sha = hashlib.sha256(body).hexdigest()
+        for files in ({'print.png': sha},
+                      {'art-mask.png': sha, 'print.png': sha, 'text-mask.png': sha, 'debug.txt': sha}):
+            manifest = {'schema_version': 1, 'publication_enabled': False,
+                        'platform': 'redbubble', 'files': files}
+            manifest['package_sha256'] = hashlib.sha256(json.dumps(
+                manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            record = json.dumps({'id': 'job', 'platform': 'redbubble', 'manifest': manifest}).encode()
+            with tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp) / 'review'
+                with self.assertRaisesRegex(ValueError, 'FILES_INVALID'):
+                    module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                        lambda route, limit: record if route.endswith('/package') else body)
+                self.assertFalse(root.exists())
+
+    def test_exact_kdp_artifact_set_is_restored_without_approval(self):
+        body = b'fixture bytes'
+        sha = hashlib.sha256(body).hexdigest()
+        files = {name: sha for name in ('art-mask.png','print.png','text-mask.png',
+                                        'cover.pdf','interior.pdf','interior.receipt.json')}
+        manifest = {'schema_version': 1, 'publication_enabled': False,
+                    'platform': 'kdp', 'files': files}
+        manifest['package_sha256'] = hashlib.sha256(json.dumps(
+            manifest, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        record = json.dumps({'id': 'job', 'platform': 'kdp', 'manifest': manifest}).encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            result = module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                lambda route, limit: record if route.endswith('/package') else body)
+            self.assertEqual(result['status'], 'REVIEW_REQUIRED')
+            self.assertEqual(set(path.name for path in root.iterdir()), {*files, 'manifest.json'})
+
 
 class ExportDeadlineTests(unittest.TestCase):
     @contextlib.contextmanager
     def server(self, slow):
-        first,second=b'first fixture',b'second fixture'*32
-        sha1,sha2=[hashlib.sha256(b).hexdigest() for b in (first,second)]
+        first,second,third=b'first fixture',b'second fixture'*32,b'third fixture'
+        sha1,sha2,sha3=[hashlib.sha256(b).hexdigest() for b in (first,second,third)]
         manifest={'schema_version':1,'publication_enabled':False,'platform':'redbubble',
-                  'files':{'first.bin':sha1,'second.bin':sha2}}
+                  'files':{'art-mask.png':sha1,'print.png':sha2,'text-mask.png':sha3}}
         manifest['package_sha256']=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         record=json.dumps({'id':'job','platform':'redbubble','manifest':manifest}).encode()
         class Handler(http.server.BaseHTTPRequestHandler):
             def log_message(self,*args): pass
             def do_GET(self):
                 package=self.path.endswith('/package')
-                body=record if package else first if self.path.endswith(sha1) else second
+                body=record if package else first if self.path.endswith(sha1) else second if self.path.endswith(sha2) else third
                 if package and slow=='headers': time.sleep(.4)
                 try:
                     self.send_response(200);self.send_header('Content-Length',str(len(body)));self.end_headers()
@@ -144,8 +182,9 @@ class ExportDeadlineTests(unittest.TestCase):
             result=module.export_package('https://example.invalid/api/print','job',root,'k'*32)
             self.assertEqual(result['status'],'REVIEW_REQUIRED')
             self.assertFalse(result['publication_enabled'])
-            self.assertEqual((root/'first.bin').read_bytes(),b'first fixture')
-            self.assertEqual((root/'second.bin').read_bytes(),b'second fixture'*32)
+            self.assertEqual((root/'art-mask.png').read_bytes(),b'first fixture')
+            self.assertEqual((root/'print.png').read_bytes(),b'second fixture'*32)
+            self.assertEqual((root/'text-mask.png').read_bytes(),b'third fixture')
 
     def test_existing_alarm_is_not_replaced_and_network_is_not_opened(self):
         handler=signal.getsignal(signal.SIGALRM)

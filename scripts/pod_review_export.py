@@ -17,6 +17,8 @@ from pod_common import strict_json
 
 HASH = re.compile(r'^[a-f0-9]{64}$')
 PLATFORMS = ('kdp','redbubble','teepublic','zazzle','spreadshirt')
+BASE_FILES = frozenset(('art-mask.png','print.png','text-mask.png'))
+KDP_FILES = frozenset((*BASE_FILES,'cover.pdf','interior.pdf','interior.receipt.json'))
 REQUEST_TIMEOUT_SECONDS = 20
 
 
@@ -72,7 +74,8 @@ def export_package(base_url, job_id, output, key, fetch=None):
             manifest.get('schema_version') != 1 or manifest.get('publication_enabled') is not False):
         raise ValueError('MANIFEST_INVALID')
     files = manifest.get('files')
-    if not isinstance(files, dict) or not 1 <= len(files) <= 64:
+    expected_files = KDP_FILES if record.get('platform') == 'kdp' else BASE_FILES
+    if not isinstance(files, dict) or set(files) != expected_files:
         raise ValueError('FILES_INVALID')
     for name, sha in files.items():
         if not re.fullmatch(r'[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}', name) or name in ('manifest.json',) or not isinstance(sha, str) or not HASH.fullmatch(sha):

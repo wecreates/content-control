@@ -50,6 +50,14 @@ async function read(route,context,limit){
 // Match the signed/runtime JSON boundary: authenticated dashboard responses must
 // be unambiguous before any identity or acceptance field is used.
 const responseDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
+const basePackageFiles=['art-mask.png','print.png','text-mask.png'];
+const kdpPackageFiles=[...basePackageFiles,'cover.pdf','interior.pdf','interior.receipt.json'].sort();
+function exactPackageFiles(manifest,platform){
+ const files=manifest?.files,expected=platform==='kdp'?kdpPackageFiles:basePackageFiles;
+ return files&&typeof files==='object'&&!Array.isArray(files)&&
+  JSON.stringify(Object.keys(files).sort())===JSON.stringify(expected)&&
+  Object.values(files).every(hash=>typeof hash==='string'&&/^[a-f0-9]{64}$/.test(hash));
+}
 function parseResponseJSON(text){
  const value=JSON.parse(text),stack=[];
  for(let i=0;i<text.length;){
@@ -133,7 +141,8 @@ async function openPreview(id){
   const hash=manifest?.files?.['print.png'];
   if(record.id!==id||!['kdp','redbubble','teepublic','zazzle','spreadshirt'].includes(record.platform)||
    manifest?.platform!==record.platform||manifest.schema_version!==1||manifest.publication_enabled!==false||
-   !/^[a-f0-9]{64}$/.test(hash)||!/^[a-f0-9]{64}$/.test(manifest.package_sha256))throw Error('Print preview is unavailable.');
+   !exactPackageFiles(manifest,record.platform)||!/^[a-f0-9]{64}$/.test(hash)||
+   !/^[a-f0-9]{64}$/.test(manifest.package_sha256))throw Error('Print preview is unavailable.');
   const bytes=await read('/artifacts/'+hash,context,16777216);
   const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
   if(actual!==hash)throw Error('HASH_MISMATCH');

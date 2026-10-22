@@ -13,7 +13,9 @@ const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]
  value&&typeof value==='object'?`{${Object.keys(value).sort().map(name=>`${JSON.stringify(name)}:${canonical(value[name])}`).join(',')}}`:
  JSON.stringify(value);
 const storedManifest=(platform='redbubble')=>{
- const value={schema_version:1,platform,publication_enabled:false,files:{'print.png':'a'.repeat(64)}};
+ const names=['art-mask.png','print.png','text-mask.png',...(platform==='kdp'?['cover.pdf','interior.pdf','interior.receipt.json']:[])];
+ const files=Object.fromEntries(names.map(name=>[name,'a'.repeat(64)]));
+ const value={schema_version:1,platform,publication_enabled:false,files};
  return {...value,package_sha256:crypto.createHash('sha256').update(canonical(value)).digest('hex')};
 };
 function fixture(now=Date.now(),platform='redbubble',editorial){
@@ -222,11 +224,18 @@ test('stored review package rejects invalid manifest acceptance claims and ident
   manifest=>manifest.publication_enabled=true,
   manifest=>manifest.package_sha256='invalid',
   manifest=>manifest.files={'print.png':'invalid'},
+  manifest=>delete manifest.files['art-mask.png'],
+  manifest=>manifest.files['debug.txt']='a'.repeat(64),
  ]){
   row.manifest=storedManifest();mutate(row.manifest);
   await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
  }
+ row.platform='kdp';row.manifest=storedManifest('kdp');delete row.manifest.files['cover.pdf'];
+ await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
+ row.manifest=storedManifest('kdp');
+ assert.equal((await db.reviewPackage(row.id)).platform,'kdp');
  row.manifest=storedManifest();
+ row.platform='redbubble';
  assert.equal((await db.reviewPackage(row.id)).manifest.package_sha256,row.manifest.package_sha256);
 });
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
