@@ -106,7 +106,7 @@ test('preview verifies stored hash and clears credential and blob on page exit',
  const h=harness(url=>url.includes('/package')?response(record(png)):new Response(png));
  await h.context.openPreview('fixture-job');
  assert.equal(h.urls.length,1);assert.equal(h.get('preview').hidden,false);
- assert.deepEqual(h.requests.map(r=>r.url),['/api/print/jobs/fixture-job/package','/api/print/artifacts/'+sha(png)]);
+ assert.deepEqual(h.requests.map(r=>r.url),['/api/print/jobs/fixture-job/package','/api/print/jobs/fixture-job/artifacts/'+sha(png)]);
  assert.deepEqual(Buffer.from(await h.urls[0].arrayBuffer()),png);
  h.events.pagehide();assert.equal(h.get('key').value,'');assert.equal(h.get('preview').hidden,true);
  assert.deepEqual(h.revoked,['blob:fixture-1']);assert.equal(h.get('print-preview').src,undefined);

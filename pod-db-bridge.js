@@ -1,9 +1,12 @@
 import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
+import {ARTIFACT_MEDIA_TYPES} from './integrations/pod/artifacts.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
+const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
+const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
 const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 function canonical(value){
@@ -199,6 +202,25 @@ export class PodDB {
   if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   return row;
+ }
+ async reviewArtifact(jobId,sha){this.active();
+  if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId)||typeof sha!=='string'||!SHA256.test(sha))throw Error('ARTIFACT_UNAVAILABLE');
+  // Resolve the hold, manifest and bytes in one database snapshot. A bearer
+  // key and a known content hash alone must not expose unrelated stored data.
+  const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id AND e.payload ? 'manifest_sha256'
+    ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
+   a.body,a.media_type
+   FROM pod_production_queue q JOIN pod_artifacts a ON a.sha256=$2
+   WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
+   AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
+   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES])).rows[0];
+  this.active();
+  if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
+   !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
+  assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
+  if(!Object.values(row.manifest.files).includes(sha)||crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
+  return {body:row.body,media_type:row.media_type};
  }
  async completeProduction(job,manifest,qaEnvelope){
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');

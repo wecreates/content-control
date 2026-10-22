@@ -22,8 +22,9 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
   catch{res.status(409).json({error:'ARTIFACT_STORAGE_BLOCKED'});}
  });
- router.get('/artifacts/:sha',async(req,res)=>{
-  try{const item=await new ArtifactStore(db).get(req.params.sha);res.set('X-Content-Type-Options','nosniff');res.type(item.media_type).send(item.body);}
+ router.get('/artifacts/:sha',(_req,res)=>res.status(404).json({error:'ARTIFACT_UNAVAILABLE'}));
+ router.get('/jobs/:id/artifacts/:sha',async(req,res)=>{
+  try{const item=await db.reviewArtifact(req.params.id,req.params.sha);res.set('X-Content-Type-Options','nosniff');res.type(item.media_type).send(item.body);}
   catch{res.status(404).json({error:'ARTIFACT_UNAVAILABLE'});}
  });
  router.get('/jobs/:id/package',async(req,res)=>{

@@ -156,7 +156,7 @@ async function openPreview(id){
    !exactPackageFiles(manifest,record.platform)||!/^[a-f0-9]{64}$/.test(hash)||
    !/^[a-f0-9]{64}$/.test(manifest.package_sha256)||!/^[a-f0-9]{64}$/.test(record.manifest_sha256)||
    !(await exactPackageIdentity(manifest,record.manifest_sha256,context)))throw Error('Print preview is unavailable.');
-  const bytes=await read('/artifacts/'+hash,context,16777216);
+  const bytes=await read('/jobs/'+encodeURIComponent(id)+'/artifacts/'+hash,context,16777216);
   const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
   if(actual!==hash)throw Error('HASH_MISMATCH');
   // Reject non-PNG and decompression-sized previews before the browser image decoder.
