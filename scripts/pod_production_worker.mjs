@@ -39,11 +39,13 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const scope={...task.templateScope,platform:job.brief.platform};
   const coverEnvelope=JSON.parse(await fs.readFile(task.template,'utf8'));
   const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
+  let interiorTemplate;
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
    const interiorEnvelope=JSON.parse(await fs.readFile(task.interior.template,'utf8'));
    const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
+   interiorTemplate=interior;
    const profile=kdpCalculatorProfile(cover,interior);
    const sourceHash=verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256;
    await verifyTemplateSource(task.templateSource,
@@ -72,7 +74,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
-  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover,sourceSha256});
+  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256});
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
   const artifacts=await readPackageArtifacts(task.output,manifest.files,{platform:job.brief.platform});
