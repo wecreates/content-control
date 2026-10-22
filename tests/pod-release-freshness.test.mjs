@@ -9,6 +9,13 @@ import {economicsFixture} from './pod-economics-fixture.mjs';
 
 const key='synthetic-release-freshness-key-'.repeat(2);
 const sign=p=>{const payload=JSON.stringify(p);return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(name=>`${JSON.stringify(name)}:${canonical(value[name])}`).join(',')}}`:
+ JSON.stringify(value);
+const storedManifest=(platform='redbubble')=>{
+ const value={schema_version:1,platform,publication_enabled:false,files:{'print.png':'a'.repeat(64)}};
+ return {...value,package_sha256:crypto.createHash('sha256').update(canonical(value)).digest('hex')};
+};
 function fixture(now=Date.now(),platform='redbubble',editorial){
  const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),release_checks_passed:true};
  const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',platform,
@@ -201,11 +208,26 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
-  manifest:{schema_version:1,platform:'etsy',publication_enabled:false}};
+  manifest:storedManifest('etsy')};
  const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
- row.manifest.platform='redbubble';
+ row.manifest=storedManifest();
  assert.equal((await db.reviewPackage(row.id)).platform,'redbubble');
+});
+test('stored review package rejects invalid manifest acceptance claims and identity',async()=>{
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
+ const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ for(const mutate of [
+  manifest=>manifest.schema_version=2,
+  manifest=>manifest.publication_enabled=true,
+  manifest=>manifest.package_sha256='invalid',
+  manifest=>manifest.files={'print.png':'invalid'},
+ ]){
+  row.manifest=storedManifest();mutate(row.manifest);
+  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
+ }
+ row.manifest=storedManifest();
+ assert.equal((await db.reviewPackage(row.id)).manifest.package_sha256,row.manifest.package_sha256);
 });
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});

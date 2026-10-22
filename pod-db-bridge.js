@@ -2,6 +2,22 @@ import crypto from 'node:crypto';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
+const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
+const SHA256=/^[a-f0-9]{64}$/;
+function assertStoredManifest(manifest,platform,state={nodes:0},depth=0){
+ if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
+  manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||''))throw Error('PACKAGE_UNAVAILABLE');
+ const files=manifest.files;
+ if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length<1||Object.keys(files).length>64)throw Error('PACKAGE_UNAVAILABLE');
+ for(const [name,hash] of Object.entries(files))if(!REVIEW_FILE.test(name)||name==='manifest.json'||typeof hash!=='string'||!SHA256.test(hash))throw Error('PACKAGE_UNAVAILABLE');
+ const inspect=(value,level)=>{
+  if(level>64||++state.nodes>10000)throw Error('PACKAGE_UNAVAILABLE');
+  if(typeof value==='number'&&(!Number.isFinite(value)||(Number.isInteger(value)&&!Number.isSafeInteger(value))))throw Error('PACKAGE_UNAVAILABLE');
+  if(Array.isArray(value)){if(value.length>10000)throw Error('PACKAGE_UNAVAILABLE');for(const item of value)inspect(item,level+1);}
+  else if(value&&typeof value==='object'){const keys=Object.keys(value);if(keys.length>10000)throw Error('PACKAGE_UNAVAILABLE');for(const key of keys)inspect(value[key],level+1);}
+ };
+ inspect(manifest,depth);
+}
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
  if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
@@ -164,7 +180,8 @@ export class PodDB {
  }
  async reviewPackage(jobId){this.active();
   const row=(await this.pool.query("SELECT id,platform,state,reason_code,manifest FROM pod_production_queue WHERE id=$1",[jobId])).rows[0];
-  if(!row?.manifest||!PLATFORMS.includes(row.platform)||row.manifest.platform!==row.platform)throw Error('PACKAGE_UNAVAILABLE');
+  if(!row?.manifest||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
+  assertStoredManifest(row.manifest,row.platform);
   return row;
  }
  async completeProduction(job,manifest,qaEnvelope){
