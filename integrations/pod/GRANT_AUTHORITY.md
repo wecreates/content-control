@@ -46,6 +46,11 @@ strings and trailing line terminators cannot enter hex decoding. The HMAC still
 authenticates the original payload before semantic JSON parsing; payloads are
 never normalized or reserialized to make a signature match.
 
+The bounded HTTPS response parser also requires strict UTF-8 and rejects
+duplicate decoded keys before choosing the outer payload/signature pair. An
+escaped spelling cannot override an earlier response member even when the final
+pair would otherwise contain a valid signature.
+
 After authentication, duplicate decoded object member names and numbers that
 overflow to infinity are rejected at every nesting level. Escaped spellings of
 the same key count as duplicates, including identical repeated values. Separate

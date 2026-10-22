@@ -7,11 +7,13 @@ import unittest
 import contextlib
 import http.server
 import signal
+import sys
 import threading
 import time
 import urllib.request
 from unittest.mock import patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 spec = importlib.util.spec_from_file_location('export', Path(__file__).resolve().parents[1] / 'scripts/pod_review_export.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -51,6 +53,18 @@ class ExportTests(unittest.TestCase):
     def test_insecure_endpoint_rejected_before_request(self):
         with self.assertRaisesRegex(ValueError, 'ENDPOINT_INVALID'):
             module.export_package('http://example.com', 'job', 'unused', 'k'*32, lambda *_: self.fail('request'))
+
+    def test_duplicate_decoded_record_keys_are_rejected_before_writing(self):
+        good = self.fixture()
+        record = good('/jobs/job/package', 262144).decode()
+        ambiguous = record.replace('"id": "job"', '"id": "other", "\\u0069d": "job"')
+        self.assertNotEqual(ambiguous, record)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            with self.assertRaises(ValueError):
+                module.export_package('https://example.com/api/print', 'job', root, 'k'*32,
+                    lambda route, limit: ambiguous.encode() if route.endswith('/package') else good(route, limit))
+            self.assertFalse(root.exists())
 
 
 class ExportDeadlineTests(unittest.TestCase):

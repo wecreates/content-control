@@ -13,6 +13,7 @@ import threading
 import time
 import urllib.parse
 import urllib.request
+from pod_common import strict_json
 
 HASH = re.compile(r'^[a-f0-9]{64}$')
 REQUEST_TIMEOUT_SECONDS = 20
@@ -63,7 +64,7 @@ def export_package(base_url, job_id, output, key, fetch=None):
                     if len(body) > limit:
                         raise ValueError('RESPONSE_TOO_LARGE')
             return body
-    record = json.loads(fetch('/jobs/' + job_id + '/package', 262144))
+    record = strict_json(fetch('/jobs/' + job_id + '/package', 262144).decode('utf-8', errors='strict'))
     manifest = record.get('manifest')
     if record.get('id') != job_id or not isinstance(manifest, dict) or manifest.get('schema_version') != 1 or manifest.get('publication_enabled') is not False:
         raise ValueError('MANIFEST_INVALID')

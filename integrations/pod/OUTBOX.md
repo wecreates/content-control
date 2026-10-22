@@ -52,9 +52,12 @@ Streamed bytes are counted even if Content-Length is absent or understated.
 Cleanup failures do not replace stable delivery/authority errors.
 
 JSON uses strict UTF-8 decoding after bounded byte collection, preserving
-characters split across chunks and rejecting malformed sequences. Only the
-existing exact event acknowledgement marks an event delivered; grants still
-require signature, audience, scope, permission and lifetime verification.
+characters split across chunks and rejecting malformed sequences, duplicate
+decoded keys at every nesting level and numeric overflow. An escaped duplicate
+acknowledgement ID cannot select the matching event ID, and a duplicate outer
+grant member cannot select a signed payload. Only the existing exact event
+acknowledgement marks an event delivered; grants still require signature,
+audience, scope, permission and lifetime verification.
 Request deadlines and redirect rejection remain unchanged. Failed events stay
 pending for the existing retry/backoff loop. Stream-fixture tests are not a live
 authority/inbox acceptance or a measured production capacity claim.
