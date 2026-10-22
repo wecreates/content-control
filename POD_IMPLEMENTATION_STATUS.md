@@ -70,6 +70,86 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r185 verified receipt: stored manifest review boundary
+
+Fresh reconstruction read Content Control
+72e08fd8d23e5c8b16bb845829819e3bf90fc940 and Money Factory
+9051897d7ed40f84965412868b6b0ebbf8e9c86c, the current
+acceptance/status/deployment documents, open PRs, workflow results and the
+authorized existing Render service. No open PR overlapped this POD work. The
+failed database-administration path had no credible access change, so it was
+not retried.
+
+[CC PR 462](https://github.com/wecreates/content-control/pull/462) merged final
+tested head 31cc3e6a9b04b5e53e7cbcf64b072a8cacac8e24 as
+5512ddc9f6f89c413450a61d07aa43f765a05809 after an unchanged-base and clean-
+mergeability check. The authenticated database review boundary now rejects
+stored manifests unless they retain schema version 1, a false publication
+claim, the queued supported marketplace, bounded artifact names and SHA-256
+syntax, finite safe numeric values and bounded JSON depth/node counts. Invalid
+stored records return only the existing unavailable result and cannot be
+presented to direct or mobile API consumers as review packages.
+
+Regression-first verification reproduced the prior defect: the database bridge
+returned schema version 2, `publication_enabled: true`, malformed package/file
+identities and marketplace-mismatched records. The initial focused run therefore
+failed one of 22 tests. The first PR head additionally attempted to recompute a
+canonical byte hash from PostgreSQL JSONB. Hosted durable-review E2E correctly
+rejected that approach because JSONB preserves numeric values but not their
+lexical spelling, such as `2.0` versus `2`. Initial integration run
+39818107826, job 119961822830, and container run 39818107927, job 119961823624,
+therefore failed before merge. The branch was amended to preserve the already-
+verified stored package hash while enforcing its syntax and all other safe
+structural invariants.
+
+The final focused suite passed 22/22 tests; the full local POD suite passed 673
+tests with nine expected environment-gated skips and zero failures. The
+independent review-export suite passed 14/14, with syntax and whitespace checks
+clean. [Final integration run
+39819219114](https://github.com/wecreates/content-control/actions/runs/39819219114),
+job 119965733921, and [production-container run
+39819219106](https://github.com/wecreates/content-control/actions/runs/39819219106),
+job 119965733300, both passed on the exact final PR head. The container gate
+built the production image and passed its non-root runtime/dependency probe,
+Python QA/rendering, Node/PostgreSQL, real print/durable-review and
+publication-disabled startup checks.
+
+Dependent [MF PR 139](https://github.com/wecreates/Money-factory/pull/139)
+pinned verification to CC 5512ddc9f6f89c413450a61d07aa43f765a05809 and
+retained the database review, dashboard and offline review-export coverage plus
+explicit `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+Tested head e72e8f6f7131fda090cae2afb2b3f4c7a37b46f6 merged as
+e6be9c8a9d0d92cb249710e6348b4cc6d78550c1 after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39820277522](https://github.com/wecreates/Money-factory/actions/runs/39820277522),
+job 119969427192, passed every selected Content Control and Money Factory bridge
+step. The GitHub connector's first-page workflow lookup did not surface this
+new run; its exact run and job records were verified directly rather than
+treating the missing connector result as success.
+
+Render automatically attempted the runtime merge as deploy
+dep-dbd46k3ncjis73ect5kg. Event evt-dbd46kcm834c73cvkjqg bound `newCommit` to
+5512ddc9f6f89c413450a61d07aa43f765a05809 and reported
+`pipeline_minutes_exhausted` at 2026-10-22T17:09:37.734906Z; deploy-start event
+evt-dbd46ke2invc73fe0du0 followed at 17:09:37.739312Z, and
+evt-dbd46ksm834c73cvkk70 recorded the failed deploy at 17:09:39.269500Z. No
+application build ran, so the hosted runtime remains unverified. No manual
+retry, paid workaround, replacement service, credential access, widened network
+or unchanged database-administration retry occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one stored-package API
+inspection boundary only; tests and merged code are not proof of live
+acceptance. Production restricted database/schema/migrations, retained recovery
+evidence, deployed hybrid dependencies, mounted Money Factory authority/current
+grants and revocation, real accounts/sources/rights/templates/reviewers,
+authorized five-platform adapters, actual economics/reconciliation, owner-phone
+acceptance, monitoring/recovery drills, measured capacity and a real authorized
+end-to-end launch remain unverified. Both publication flags remain false; Etsy
+remains excluded. No approval, clearance, revenue, publication or continuously
+running self-hosted worker is claimed. This report-only receipt uses
+`[skip render]`; the runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r184 verified receipt: stored package marketplace binding
 
 Fresh reconstruction read Content Control
