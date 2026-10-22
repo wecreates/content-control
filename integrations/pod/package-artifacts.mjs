@@ -13,6 +13,63 @@ const PACKAGE_MEDIA_TYPES=Object.freeze({
 const BASE_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_FILES=Object.freeze([...BASE_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 const PNG_SIGNATURE=Buffer.from('89504e470d0a1a0a','hex');
+const MAX_MANIFEST_BYTES=1024*1024;
+
+function assertJSONBounds(value,state={nodes:0},depth=0){
+ if(depth>64||++state.nodes>10000)throw Error('MANIFEST_INVALID');
+ if(typeof value==='number'&&(!Number.isFinite(value)||(Number.isInteger(value)&&!Number.isSafeInteger(value))))throw Error('MANIFEST_INVALID');
+ if(Array.isArray(value)){
+  if(value.length>10000)throw Error('MANIFEST_INVALID');
+  for(const item of value)assertJSONBounds(item,state,depth+1);
+ }else if(value&&typeof value==='object'){
+  const keys=Object.keys(value);if(keys.length>10000)throw Error('MANIFEST_INVALID');
+  for(const key of keys)assertJSONBounds(value[key],state,depth+1);
+ }
+}
+
+async function readRegularFile(file,maxBytes,reason){
+ const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+ try{
+  const info=await handle.stat();
+  if(!info.isFile()||!Number.isSafeInteger(info.size)||info.size<1||info.size>maxBytes)throw Error(reason);
+  const body=Buffer.alloc(info.size);let offset=0;
+  while(offset<body.length){
+   const {bytesRead}=await handle.read(body,offset,body.length-offset,offset);
+   if(!bytesRead)throw Error(reason);offset+=bytesRead;
+  }
+  if((await handle.read(Buffer.alloc(1),0,1,offset)).bytesRead)throw Error(reason);
+  return body;
+ }finally{await handle.close();}
+}
+
+export async function readPackageManifest(directory,{platform,maxBytes=MAX_MANIFEST_BYTES}={}){
+ if(!PLATFORMS.includes(platform)||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>MAX_MANIFEST_BYTES)throw Error('MANIFEST_INVALID');
+ let base,candidate,file,body;
+ try{
+  base=await fs.realpath(directory);candidate=path.resolve(base,'manifest.json');file=await fs.realpath(candidate);
+  if(!file.startsWith(base+path.sep))throw Error('MANIFEST_INVALID');
+  body=await readRegularFile(candidate,maxBytes,'MANIFEST_INVALID');
+ }catch(error){if(error.message==='MANIFEST_INVALID')throw error;throw Error('MANIFEST_INVALID');}
+ let text,manifest;
+ try{text=new TextDecoder('utf-8',{fatal:true}).decode(body);manifest=JSON.parse(text);}catch{throw Error('MANIFEST_INVALID');}
+ if(!manifest||typeof manifest!=='object'||Array.isArray(manifest))throw Error('MANIFEST_INVALID');
+ assertJSONBounds(manifest);
+ const hash=manifest.package_sha256;
+ if(manifest.schema_version!==1||manifest.platform!==platform||manifest.publication_enabled!==false||
+  !/^[a-f0-9]{64}$/.test(hash||'')||!/^[a-f0-9]{64}$/.test(manifest.template_sha256||''))throw Error('MANIFEST_INVALID');
+ const payload=text.endsWith('\n')?text.slice(0,-1):text;
+ const key='"package_sha256":';
+ if(payload.split(key).length!==2)throw Error('MANIFEST_INVALID');
+ const field=`${key}"${hash}"`,start=payload.indexOf(field),end=start+field.length;
+ if(start<0)throw Error('MANIFEST_INVALID');
+ let unsigned;
+ if(payload[start-1]===',')unsigned=payload.slice(0,start-1)+payload.slice(end);
+ else if(payload[end]===',')unsigned=payload.slice(0,start)+payload.slice(end+1);
+ else if(payload[start-1]==='{'&&payload[end]==='}')unsigned=payload.slice(0,start)+payload.slice(end);
+ else throw Error('MANIFEST_INVALID');
+ if(crypto.createHash('sha256').update(unsigned).digest('hex')!==hash)throw Error('MANIFEST_HASH_MISMATCH');
+ return manifest;
+}
 
 function assertPackageFormat(name,body){
  const mediaType=PACKAGE_MEDIA_TYPES[name];

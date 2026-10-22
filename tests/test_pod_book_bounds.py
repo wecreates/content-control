@@ -630,7 +630,10 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                     "bodies={name:(png if name.endswith('.png') else receipt if name.endswith('.json') else pdf) for name in names}\n"
                     "files={}\n"
                     "for name,data in bodies.items():\n Path('output',name).write_bytes(data);files[name]=hashlib.sha256(data).hexdigest()\n"
-                    "Path('output/manifest.json').write_text(json.dumps({'files':files,'package_sha256':'a'*64}))\n")
+                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template_sha256':'b'*64,'files':files}\n"
+                    "canonical=lambda value:json.dumps(value,sort_keys=True,separators=(',',':'))\n"
+                    "m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()\n"
+                    "Path('output/manifest.json').write_text(canonical(m)+'\\n')\n")
                 (scripts/'pod_book_package.py').write_text('pass\n')
                 result=subprocess.run(['node','--input-type=module','-e',code,worker,str(root),str(self.archive),
                                       str(count),sys.executable,str(interior_archive),digest(interior_archive),MEMBER],
