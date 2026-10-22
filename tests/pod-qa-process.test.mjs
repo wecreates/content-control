@@ -16,7 +16,7 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
   // Node executes synthetic stage fixtures; this tests coordinator control flow,
   // not graphics quality or signature acceptance (the real DB verifies those).
   await fs.writeFile(path.join(root,'scripts','pod_asset_generator.py'),
-   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(templateValue)},m={schema_version:1,platform:'redbubble',publication_enabled:false,files,template,source_sha256:${JSON.stringify(sourceSha256)},template_sha256:c.createHash('sha256').update(canon(template)).digest('hex')};m.package_sha256=c.createHash('sha256').update(canon(m)).digest('hex');fs.writeFileSync('output/manifest.json',canon(m));`);
+   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(templateValue)},m={schema_version:1,platform:'redbubble',publication_enabled:false,files,template,source_sha256:${JSON.stringify(sourceSha256)},text_layers_sha256:c.createHash('sha256').update('[]').digest('hex'),expected_text:[],template_sha256:c.createHash('sha256').update(canon(template)).digest('hex')};m.package_sha256=c.createHash('sha256').update(canon(m)).digest('hex');fs.writeFileSync('output/manifest.json',canon(m));`);
   await fs.writeFile(path.join(root,'scripts','pod_vision_qa.py'),
    `require('node:fs').writeFileSync('qa.json',JSON.stringify({payload:JSON.stringify({verdict:${JSON.stringify(verdict)}})}));process.exit(2);`);
   const key='k'.repeat(48),brief={id:'job',account_id:'account',business_id:'business',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
@@ -26,9 +26,10 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
    template:templateValue});
   const templatePath=path.join(root,'template.json');
   await fs.writeFile(templatePath,JSON.stringify({payload:templatePayload,signature:crypto.createHmac('sha256',key).update(templatePayload).digest('hex')}));
-  const sourcePath=path.join(root,'source.png'),rightsPath=path.join(root,'rights.json');
+  const sourcePath=path.join(root,'source.png'),rightsPath=path.join(root,'rights.json'),layersPath=path.join(root,'layers.json');
   await fs.writeFile(sourcePath,sourceBytes);
-  const rightsPayload=JSON.stringify({schema_version:1,audience:'pod:asset-rights',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,status:'PASS',source_sha256:sourceSha256});
+  await fs.writeFile(layersPath,'[]');
+  const rightsPayload=JSON.stringify({schema_version:1,audience:'pod:asset-rights',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,status:'PASS',source_sha256:sourceSha256,text_layers_sha256:crypto.createHash('sha256').update('[]').digest('hex')});
   await fs.writeFile(rightsPath,JSON.stringify({payload:rightsPayload,signature:crypto.createHmac('sha256',key).update(rightsPayload).digest('hex')}));
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
    job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
@@ -37,7 +38,7 @@ for(const verdict of ['PASS','FAIL'])test(`nonzero QA process with ${verdict} ou
    db:{recover:async()=>{},assertProducible:async()=>true,claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
-   resolveTask:async()=>({rights_verified:true,templateScope,source:sourcePath,template:templatePath,textLayers:'unused',assetRights:rightsPath,
+   resolveTask:async()=>({rights_verified:true,templateScope,source:sourcePath,template:templatePath,textLayers:layersPath,assetRights:rightsPath,
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa.json'),
     reviewPackage:async()=>({rights:'unused',competitive:'unused'}),cleanup:async()=>{cleaned++;}})};
   const result=await produceOnce(options);

@@ -7,7 +7,7 @@ import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '../integrations/pod/templates.mjs';
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
-import {verifySourceEvidence} from '../integrations/pod/source-evidence.mjs';
+import {verifyProductionSourceEvidence} from '../integrations/pod/source-evidence.mjs';
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
@@ -33,7 +33,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   task=await resolveTask(job,{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
-  const sourceSha256=await verifySourceEvidence(task.source,task.assetRights,env.POD_RIGHTS_KEY,{signal});
+  const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
+   task.source,task.assetRights,task.textLayers,env.POD_RIGHTS_KEY,{signal});
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
@@ -74,7 +75,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
-  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256});
+  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256,textLayers});
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
   const artifacts=await readPackageArtifacts(task.output,manifest.files,{platform:job.brief.platform});

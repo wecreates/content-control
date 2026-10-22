@@ -601,7 +601,9 @@ await fs.writeFile(path.join(root,'interior.json'),JSON.stringify(sign({...recor
  source_sha256:interiorSha,source_member:interiorMember,template:interior})));
 const assetSource=Buffer.from('synthetic calculator fixture artwork'),assetSha=crypto.createHash('sha256').update(assetSource).digest('hex');
 await fs.writeFile(path.join(root,'asset-source.png'),assetSource);
-await fs.writeFile(path.join(root,'asset-rights.json'),JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:assetSha})));
+await fs.writeFile(path.join(root,'unused'),'[]');
+await fs.writeFile(path.join(root,'asset-rights.json'),JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:assetSha,
+ text_layers_sha256:crypto.createHash('sha256').update('[]').digest('hex')})));
 const brief={id:'fixture',account_id:'a',business_id:'b',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
 let held=0,cleaned=0;
 const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYTHON:process.argv[5],
@@ -611,7 +613,7 @@ const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYT
  resolveGrant:async()=>sign({audience:'content-control:pod',job_id:brief.id,account_id:'a',business_id:'b',platform:'kdp',
  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
  resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
- source:path.join(root,'asset-source.png'),textLayers:'unused',assetRights:path.join(root,'asset-rights.json'),reference:'unused',output:path.join(root,'output'),
+ source:path.join(root,'asset-source.png'),textLayers:path.join(root,'unused'),assetRights:path.join(root,'asset-rights.json'),reference:'unused',output:path.join(root,'output'),
  interior:{template:path.join(root,'interior.json'),pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',
   source:interiorArchive,bookDetails:'unused'},cleanup:async()=>{cleaned++;}})});
 const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
@@ -637,7 +639,7 @@ console.log(JSON.stringify({result,started,held,cleaned}));
                     "envelope=json.loads(Path(sys.argv[sys.argv.index('--template')+1]).read_text())\n"
                     "template=json.loads(envelope['payload'])['template']\n"
                     "source=Path(sys.argv[sys.argv.index('--source')+1]).read_bytes()\n"
-                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template':template,'source_sha256':hashlib.sha256(source).hexdigest(),'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),'files':files}\n"
+                    "m={'schema_version':1,'platform':'kdp','publication_enabled':False,'template':template,'source_sha256':hashlib.sha256(source).hexdigest(),'text_layers_sha256':hashlib.sha256(b'[]').hexdigest(),'expected_text':[],'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),'files':files}\n"
                     "m['package_sha256']=hashlib.sha256(canonical(m).encode()).hexdigest()\n"
                     "Path('output/manifest.json').write_text(canonical(m)+'\\n')\n")
                 (scripts/'pod_book_package.py').write_text(
