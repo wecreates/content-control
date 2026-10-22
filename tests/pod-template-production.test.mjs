@@ -31,7 +31,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -39,9 +39,9 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   // Synthetic stages expose whether the coordinator launched production. They
   // are not template approval, Python quality tests or marketplace evidence.
   await fs.writeFile(path.join(root,'scripts/pod_asset_generator.py'),
-   "const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'];fs.writeFileSync('started','yes');for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')]));fs.writeFileSync('output/manifest.json',JSON.stringify({files,package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)}));");
+   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);fs.writeFileSync('started','yes');for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),m={schema_version:1,platform:${JSON.stringify(platform)},publication_enabled:false,files,template_sha256:'b'.repeat(64)};m.package_sha256=${invalidManifestHash?"'a'.repeat(64)":"c.createHash('sha256').update(canon(m)).digest('hex')"};fs.writeFileSync('output/manifest.json',canon(m));`);
   await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),
-   "const fs=require('node:fs'),c=require('node:crypto'),bodies={'cover.pdf':Buffer.from('JVBERi0xLjQKJSVFT0YK','base64'),'interior.pdf':Buffer.from('JVBERi0xLjQKJSVFT0YK','base64'),'interior.receipt.json':Buffer.from('e30=','base64')};fs.writeFileSync('book-started','yes');for(const [n,b] of Object.entries(bodies))fs.writeFileSync('output/'+n,b);const manifest=JSON.parse(fs.readFileSync('output/manifest.json'));for(const [n,b] of Object.entries(bodies))manifest.files[n]=c.createHash('sha256').update(b).digest('hex');fs.writeFileSync('output/manifest.json',JSON.stringify(manifest));");
+   "const fs=require('node:fs'),c=require('node:crypto'),canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v),bodies={'cover.pdf':Buffer.from('JVBERi0xLjQKJSVFT0YK','base64'),'interior.pdf':Buffer.from('JVBERi0xLjQKJSVFT0YK','base64'),'interior.receipt.json':Buffer.from('e30=','base64')};fs.writeFileSync('book-started','yes');for(const [n,b] of Object.entries(bodies))fs.writeFileSync('output/'+n,b);const manifest=JSON.parse(fs.readFileSync('output/manifest.json'));delete manifest.package_sha256;for(const [n,b] of Object.entries(bodies))manifest.files[n]=c.createHash('sha256').update(b).digest('hex');manifest.package_sha256=c.createHash('sha256').update(canon(manifest)).digest('hex');fs.writeFileSync('output/manifest.json',canon(manifest));");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
    "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_interior_template_import.py'),
@@ -165,6 +165,11 @@ test('production rejects missing scope instead of accepting matching undefined v
 });
 test('production accepts current scope-bound official template only into review hold',async()=>{
  assert.deepEqual(await exercise(),{status:'REVIEW_REQUIRED',blocked:0,held:1,cleaned:1,started:true});
+});
+test('production rejects a hash-unbound package before durable artifact storage or review hold',async()=>{
+ const result=await exercise({invalidManifestHash:true,detailed:true});
+ assert.equal(result.status,'BLOCKED');assert.equal(result.reason,'MANIFEST_HASH_MISMATCH');
+ assert.equal(result.held,0);assert.equal(result.completed,0);assert.equal(result.reviewCalls,0);
 });
 test('KDP interior provenance is checked before cover generation',async()=>{
  const cover=record('kdp');
