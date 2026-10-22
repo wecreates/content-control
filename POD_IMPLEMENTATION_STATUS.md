@@ -70,6 +70,77 @@ This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
 
+### 2026-10-22 — r188 verified receipt: exact review-hold access
+
+Fresh reconstruction read Content Control
+2d25daecffc24a268cc9c2c62ebd8129e765dcdd and the then-current Money Factory
+main, the current acceptance/status/deployment documents, open PRs, workflow
+results and the authorized existing Render service. No open PR overlapped this
+POD work. The failed database-administration path had no credible access change,
+so it was not retried.
+
+[CC PR 468](https://github.com/wecreates/content-control/pull/468) merged exact
+tested head 3e3553fd2214675ccc4348f887db57b4a54f130d as
+9a622d9515e79722dbe65a5add051d433d48b69b after an unchanged-base and clean-
+mergeability check. Stored package retrieval, authenticated dashboard preview
+and offline review export now require the exact durable `qa_failed` /
+`REVIEW_REQUIRED` hold before any artifact fetch or filesystem write. Packages
+that are already QA-passed, submitted, ordinarily QA-failed or missing the hold
+reason fail closed. The production end-to-end test independently verifies the
+durable `qa_passed` transition after acceptance and verifies that the review
+endpoint has closed.
+
+Regression-first verification reproduced the boundary gap: the prior code
+passed 45/47 focused Node checks and 17/18 exporter checks, failing the new
+state assertions. The repaired focused suites passed 47/47 and 18/18; the full
+local POD Node suite passed 677 tests with nine expected environment-gated skips
+and zero failures. The initial hosted head exposed one stale post-acceptance test
+expectation and was not merged. After correcting that assertion without weakening
+the implementation, [integration run
+39840393441](https://github.com/wecreates/content-control/actions/runs/39840393441),
+job 120039574892, and [production-container run
+39840393626](https://github.com/wecreates/content-control/actions/runs/39840393626),
+job 120039561435, both passed on the replacement exact head. The container gate
+built the production image and passed dependency/non-root, full Python,
+Node/PostgreSQL, real print/durable-review and publication-disabled startup
+stages.
+
+Dependent [MF PR 142](https://github.com/wecreates/Money-factory/pull/142)
+pinned cross-repository verification to CC
+9a622d9515e79722dbe65a5add051d433d48b69b while retaining explicit
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`. To preserve
+concurrent work, its branch was rebuilt on then-current Money Factory main
+644d29b8efac5490784e807ad8a5aa5e5e1e60ef before testing. Exact tested head
+6fea1fd12b950d1f810f81b95647a2c96adb1598 merged as
+0db0ff38f9de77ceac63f4cd2e7c41c06281b18a after a fresh exact-head/base and
+mergeability check. [Cross-repository run
+39841549611](https://github.com/wecreates/Money-factory/actions/runs/39841549611),
+job 120043586601, passed all selected Content Control and Money Factory bridge,
+review, recovery, rights, KDP and adapter-contract stages.
+
+Render automatically attempted CC 9a622d9515e79722dbe65a5add051d433d48b69b
+as deploy dep-dbd6avmk1f9s738otsag. Deploy-start event
+evt-dbd6avtjqhnc73cqnjq0 bound the exact merge at
+2026-10-22T19:35:27.606313Z. Event evt-dbd6avsm834c73d1vvfg reported
+`pipeline_minutes_exhausted` at 19:35:27.739095Z, and event
+evt-dbd6b00mk0ic739uhdr0 recorded the failed deploy at
+19:35:28.987797Z. No application build ran, so the hosted runtime remains
+unverified. No manual retry, paid workaround, replacement service, credential
+access, widened network or unchanged database-administration retry occurred.
+
+All 24 live acceptance areas remain OPEN. This closes one deterministic review-
+hold access boundary only; merged code and hosted CI are not live acceptance.
+Production restricted database/schema/migrations, retained recovery evidence,
+deployed hybrid dependencies, mounted Money Factory authority/current grants
+and revocation, real accounts/sources/rights/templates/reviewers, authorized
+five-platform adapters, actual economics/reconciliation, owner-phone acceptance,
+monitoring/recovery drills, measured capacity and a real authorized end-to-end
+launch remain unverified. Both publication flags remain false; Etsy remains
+excluded. No approval, clearance, revenue, publication or continuously running
+self-hosted worker is claimed. This report-only receipt uses `[skip render]`; the
+runtime repair itself did not skip CI or deployment.
+
+
 ### 2026-10-22 — r187 verified receipt: immutable stored-manifest identity
 
 Fresh reconstruction read Content Control
