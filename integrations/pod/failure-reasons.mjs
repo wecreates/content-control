@@ -1,3 +1,5 @@
+import {parseSignedJSON} from './signed-json.mjs';
+
 // Fixed diagnostic vocabulary only. Never persist messages, stdout, stderr,
 // paths, URLs or envelope contents supplied by a child process or dependency.
 const reasons=new Set([
@@ -54,7 +56,7 @@ export function productionFailure(error){
 }
 export function stageFailureReason(stdout){
  try{
-  const result=JSON.parse(stdout);
+  const result=parseSignedJSON(stdout);
   return result?.status==='BLOCKED'?productionReason(result.reason_code):'PRODUCTION_BLOCKED';
  }catch{return 'PRODUCTION_BLOCKED';}
 }

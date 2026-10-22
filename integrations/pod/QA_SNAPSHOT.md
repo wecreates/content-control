@@ -28,6 +28,13 @@ KDP editorial evidence and expiry checks still apply. No approval is manufacture
 publication remains disabled, and tests with synthetic signatures do not prove
 live independent QA, print acceptance or measured production capacity.
 
+Failed Python stages may expose only a fixed remediation reason from their
+already bounded stdout. That diagnostic object now uses the same strict JSON
+parser as authenticated envelopes, so duplicate decoded keys—including escaped
+spellings—fail to the generic `PRODUCTION_BLOCKED` route instead of selecting a
+different repair path. Stderr and arbitrary child text remain redacted. This is
+deterministic failure routing, not evidence that remediation succeeded.
+
 ## Review export response deadlines
 
 The default HTTPS transport in `scripts/pod_review_export.py` enforces a
