@@ -21,7 +21,8 @@ def input_snapshot(path):
         raise ValueError('INPUT_BYTES_INVALID')
     return data
 
-def generate(source_path, template, text_layers, output_dir, *, expected_source_sha256=None):
+def generate(source_path, template, text_layers, output_dir, *, expected_source_sha256=None,
+             expected_text_layers_sha256=None):
     if template.get('platform') not in PLATFORMS:
         raise ValueError('PLATFORM_BLOCKED')
     dpi = template.get('dpi', 300)
@@ -96,7 +97,9 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
         manifest={'schema_version':1,'platform':template['platform'],'dpi':dpi,'size_px':[w,h],
                   'source_sha256':source_sha256,'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
                   'effective_native_ppi':min(sw/(nw/dpi),sh/(nh/dpi)),
-                  'expected_text':expected,'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
+                  'expected_text':expected,
+                  'text_layers_sha256':expected_text_layers_sha256 or hashlib.sha256(canonical(text_layers).encode()).hexdigest(),
+                  'template_sha256':hashlib.sha256(canonical(template).encode()).hexdigest(),
                   'template':template,'files':{name:digest(root/name) for name in files},'publication_enabled':False}
         if template['platform']=='kdp':
             manifest['cover_color_space']='DeviceCMYK'
@@ -116,11 +119,13 @@ def main():
         rights=verified(rights_envelope,'POD_RIGHTS_KEY','pod:asset-rights')
         template=verified(template_envelope,'POD_TEMPLATE_KEY','pod:template')['template']
         layers=read_json(a.text_layers)
-        if rights.get('status')!='PASS' or not isinstance(rights.get('source_sha256'), str) or rights.get('text_layers_sha256')!=hashlib.sha256(canonical(layers).encode()).hexdigest():
+        text_layers_sha256=hashlib.sha256(canonical(layers).encode()).hexdigest()
+        if rights.get('status')!='PASS' or not isinstance(rights.get('source_sha256'), str) or rights.get('text_layers_sha256')!=text_layers_sha256:
             raise ValueError('RIGHTS_BLOCKED')
         if a.asset_root:
             layers=[{**layer,'font_path':str(scoped_file(a.asset_root,layer['font_path']))} for layer in layers]
-        result=generate(a.source,template,layers,a.output_dir,expected_source_sha256=rights['source_sha256'])
+        result=generate(a.source,template,layers,a.output_dir,expected_source_sha256=rights['source_sha256'],
+                        expected_text_layers_sha256=text_layers_sha256)
         # Rendering and hashing can outlive an initially valid grant. Recheck
         # the exact original evidence, never a replacement from its file path.
         verified(rights_envelope,'POD_RIGHTS_KEY','pod:asset-rights')

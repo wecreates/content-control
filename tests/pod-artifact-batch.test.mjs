@@ -17,7 +17,7 @@ const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]
 const manifest=(patch={})=>{
  const template={platform:'redbubble',dpi:300,size_inches:[2,2]};
  const value={schema_version:1,platform:'redbubble',publication_enabled:false,template,
-  template_sha256:hash(canonical(template)),source_sha256:hash('synthetic source'),
+  template_sha256:hash(canonical(template)),source_sha256:hash('synthetic source'),text_layers_sha256:hash('[]'),expected_text:[],
   files:{'art-mask.png':hash(png),'print.png':hash(png),'text-mask.png':hash(png)},...patch};
  value.package_sha256=hash(canonical(value));return value;
 };
@@ -176,6 +176,21 @@ test('package manifest binds its source identity to authenticated task evidence'
  assert.deepEqual(await readPackageManifest(root,{platform:'redbubble',sourceSha256:expected.source_sha256}),expected);
  await assert.rejects(readPackageManifest(root,{platform:'redbubble',sourceSha256:'b'.repeat(64)}),/MANIFEST_SOURCE_MISMATCH/);
 }));
+test('package manifest binds authenticated text layers and rendered text identity',()=>fixture(async root=>{
+ const layers=[{text:'Authorized',font_sha256:'a'.repeat(64)}];
+ const expected=manifest({text_layers_sha256:hash(canonical(layers)),expected_text:[{text:'Authorized',font_sha256:'a'.repeat(64),box_px:[1,2,3,4]}]});
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(expected));
+ assert.deepEqual(await readPackageManifest(root,{platform:'redbubble',textLayers:layers}),expected);
+ for(const patch of [
+  {text_layers_sha256:hash(canonical([{...layers[0],text:'Substituted'}]))},
+  {expected_text:[{...expected.expected_text[0],text:'Substituted'}]},
+  {expected_text:[{...expected.expected_text[0],font_sha256:'b'.repeat(64)}]},
+ ]){
+  const changed={...expected,...patch};delete changed.package_sha256;changed.package_sha256=hash(canonical(changed));
+  await fs.writeFile(path.join(root,'manifest.json'),canonical(changed));
+  await assert.rejects(readPackageManifest(root,{platform:'redbubble',textLayers:layers}),/MANIFEST_TEXT_LAYERS_MISMATCH/);
+ }
+}));
 test('KDP package manifest binds the authenticated interior template and exact receipt bytes',()=>fixture(async root=>{
  const cover={platform:'kdp',dpi:300,size_inches:[12,9]},interiorTemplate={platform:'kdp',page_count:24,trim_inches:[6,9]};
  const interiorPdf=Buffer.from('%PDF-1.4\n%%EOF\n');
@@ -184,7 +199,7 @@ test('KDP package manifest binds the authenticated interior template and exact r
   editorial_review:'UNASSESSED',production_ready:false,publication_enabled:false};
  const receiptBody=Buffer.from(canonical(receipt)+'\n');
  const value={schema_version:1,platform:'kdp',publication_enabled:false,template:cover,
-  template_sha256:hash(canonical(cover)),source_sha256:hash('synthetic source'),
+  template_sha256:hash(canonical(cover)),source_sha256:hash('synthetic source'),text_layers_sha256:hash('[]'),expected_text:[],
   interior:{template:interiorTemplate,receipt},files:{'interior.pdf':hash(interiorPdf),'interior.receipt.json':hash(receiptBody)}};
  value.package_sha256=hash(canonical(value));
  await fs.writeFile(path.join(root,'manifest.json'),canonical(value));

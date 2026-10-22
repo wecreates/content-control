@@ -17,6 +17,7 @@ const scope={product:'fixture-shirt',country:'US'};
 const retainedSource=Buffer.from('retained synthetic cover source, not official evidence');
 const assetSource=Buffer.from('synthetic task artwork identity');
 const assetSourceSha256=crypto.createHash('sha256').update(assetSource).digest('hex');
+const emptyTextLayersSha256=crypto.createHash('sha256').update('[]').digest('hex');
 const interiorMember='English/English/6 x 9 inch (15.24 x 22.86 cm).docx';
 const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
@@ -33,7 +34,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateScope=scope,platform='redbubble',interior,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -41,7 +42,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   // Synthetic stages expose whether the coordinator launched production. They
   // are not template approval, Python quality tests or marketplace evidence.
   await fs.writeFile(path.join(root,'scripts/pod_asset_generator.py'),
-   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);fs.writeFileSync('started','yes');for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(wrongManifestTemplate?{...template.template,dpi:600}:template.template)},m={schema_version:1,platform:${JSON.stringify(platform)},publication_enabled:false,files,template,source_sha256:${JSON.stringify(wrongManifestSource?'b'.repeat(64):assetSourceSha256)},template_sha256:${invalidTemplateHash?"'b'.repeat(64)":"c.createHash('sha256').update(canon(template)).digest('hex')"}};m.package_sha256=${invalidManifestHash?"'a'.repeat(64)":"c.createHash('sha256').update(canon(m)).digest('hex')"};fs.writeFileSync('output/manifest.json',canon(m));`);
+   `const fs=require('node:fs'),c=require('node:crypto'),body=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64'),names=['print.png','art-mask.png','text-mask.png'],canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v);fs.writeFileSync('started','yes');for(const n of names)fs.writeFileSync('output/'+n,body);const files=Object.fromEntries(names.map(n=>[n,c.createHash('sha256').update(body).digest('hex')])),template=${JSON.stringify(wrongManifestTemplate?{...template.template,dpi:600}:template.template)},m={schema_version:1,platform:${JSON.stringify(platform)},publication_enabled:false,files,template,source_sha256:${JSON.stringify(wrongManifestSource?'b'.repeat(64):assetSourceSha256)},text_layers_sha256:${JSON.stringify(wrongManifestTextLayers?'b'.repeat(64):emptyTextLayersSha256)},expected_text:[],template_sha256:${invalidTemplateHash?"'b'.repeat(64)":"c.createHash('sha256').update(canon(template)).digest('hex')"}};m.package_sha256=${invalidManifestHash?"'a'.repeat(64)":"c.createHash('sha256').update(canon(m)).digest('hex')"};fs.writeFileSync('output/manifest.json',canon(m));`);
   await fs.writeFile(path.join(root,'scripts/pod_book_package.py'),
    `const fs=require('node:fs'),c=require('node:crypto'),canon=v=>Array.isArray(v)?'['+v.map(canon).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canon(v[k])).join(',')+'}':JSON.stringify(v),interiorTemplate=${JSON.stringify(wrongManifestInterior?{...(interior?.template||{}),page_count:48}:interior?.template||{})},pdf=Buffer.from('JVBERi0xLjQKJSVFT0YK','base64'),receipt={schema_version:1,interior_sha256:c.createHash('sha256').update(pdf).digest('hex'),page_count:interiorTemplate.page_count,template_sha256:c.createHash('sha256').update(canon(interiorTemplate)).digest('hex'),technical_checks_passed:true,editorial_review:'UNASSESSED',production_ready:false,publication_enabled:false},receiptBody=Buffer.from(canon(receipt)+'\\n'),bodies={'cover.pdf':pdf,'interior.pdf':pdf,'interior.receipt.json':receiptBody};fs.writeFileSync('book-started','yes');for(const [n,b] of Object.entries(bodies))fs.writeFileSync('output/'+n,b);const manifest=JSON.parse(fs.readFileSync('output/manifest.json'));delete manifest.package_sha256;manifest.interior={template:interiorTemplate,receipt};for(const [n,b] of Object.entries(bodies))manifest.files[n]=c.createHash('sha256').update(b).digest('hex');manifest.package_sha256=c.createHash('sha256').update(canon(manifest)).digest('hex');fs.writeFileSync('output/manifest.json',canon(manifest));`);
   await fs.writeFile(path.join(root,'scripts/pod_kdp_template_import.py'),
@@ -53,7 +54,8 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
   await fs.writeFile(templatePath,JSON.stringify(sign(template)));
   const assetSourcePath=path.join(root,'asset-source.png'),assetRightsPath=path.join(root,'asset-rights.json');
   await fs.writeFile(assetSourcePath,assetSource);
-  await fs.writeFile(assetRightsPath,JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:assetSourceSha256,...rightsPatch})));
+  await fs.writeFile(path.join(root,'unused'),'[]');
+  await fs.writeFile(assetRightsPath,JSON.stringify(sign({audience:'pod:asset-rights',status:'PASS',source_sha256:assetSourceSha256,text_layers_sha256:emptyTextLayersSha256,...rightsPatch})));
   const sourcePath=path.join(root,'retained-source.bin');
   if(templateSource)await fs.writeFile(sourcePath,sourceBytes);
   const interiorSourcePath=path.join(root,'retained-interior-source.bin');
@@ -75,7 +77,7 @@ async function exercise({template=record(),templateScope=scope,platform='redbubb
    resolveGrant:async()=>{grantCalls++;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
-   resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:assetSourcePath,textLayers:'unused',assetRights:assetRightsPath,
+   resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:assetSourcePath,textLayers:path.join(root,'unused'),assetRights:assetRightsPath,
     ...(assetRoot?{assetRoot:root}:{}),
     ...(templateSource?{templateSource:sourcePath}:{}),
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',...(bookDetails?{bookDetails:'unused'}:{}),...(interiorTemplateSource?{source:interiorSourcePath}:{})}}:{}),
@@ -187,6 +189,14 @@ test('production rejects template hash or authority mismatches before durable st
 test('production rejects source rights or package source mismatches before durable storage or review hold',async()=>{
  for(const [options,reason,started] of [[{rightsPatch:{source_sha256:'b'.repeat(64)}},'SOURCE_HASH_MISMATCH',false],
   [{wrongManifestSource:true},'MANIFEST_SOURCE_MISMATCH',true]]){
+  const result=await exercise({...options,detailed:true});
+  assert.equal(result.status,'BLOCKED');assert.equal(result.reason,reason);assert.equal(result.started,started);
+  assert.equal(result.held,0);assert.equal(result.completed,0);assert.equal(result.reviewCalls,0);
+ }
+});
+test('production rejects task or manifest text-layer substitutions before durable storage or review hold',async()=>{
+ for(const [options,reason,started] of [[{rightsPatch:{text_layers_sha256:'b'.repeat(64)}},'TEXT_LAYERS_HASH_MISMATCH',false],
+  [{wrongManifestTextLayers:true},'MANIFEST_TEXT_LAYERS_MISMATCH',true]]){
   const result=await exercise({...options,detailed:true});
   assert.equal(result.status,'BLOCKED');assert.equal(result.reason,reason);assert.equal(result.started,started);
   assert.equal(result.held,0);assert.equal(result.completed,0);assert.equal(result.reviewCalls,0);
