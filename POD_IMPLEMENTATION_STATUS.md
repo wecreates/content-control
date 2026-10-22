@@ -3596,3 +3596,89 @@ readiness remain unverified. All 24 acceptance areas remain OPEN.
 mandatory; no publication was attempted. This run used only its actually
 available bounded tools and did not claim a continuously running self-hosted
 worker.
+
+## Run receipt r170 — bind generated packages to authenticated templates (2026-10-22 UTC)
+
+### Scope
+
+This run closed the next generated-package admission gap. The production
+worker previously required a syntactically valid `template_sha256`, but did not
+verify it against the embedded manifest template or bind that embedded template
+to the authenticated, scope-checked template approved before generation. A
+synthetic manifest with an unrelated 64-character template hash and a correctly
+recomputed outer package hash was reproduced as admissible. The worker now
+extracts unambiguous top-level manifest members, verifies the template digest
+over the exact embedded bytes, and compares its parsed value with the authorized
+template before any artifact storage or review hold. Fixed redacted reasons
+distinguish digest and authority mismatches. This does not establish official
+template provenance, product quality or live marketplace acceptance. Etsy
+remained excluded. The failed production-database administration route was not
+retried because no credible access-path change was observed.
+
+### Content Control implementation and hosted verification
+
+- Pre-fix reproduction printed `PRE_FIX_ACCEPTED_TEMPLATE_HASH_MISMATCH` for a
+  manifest whose outer package hash was valid but whose template digest was
+  unrelated.
+- PR #431 exact tested head:
+  `edc45aefc224036f14815aa12ad2410106f4357f`.
+- All seven remote changed blobs exactly matched the locally tested files.
+- The broad dependency-free local Node run passed 627 tests with zero
+  failures/skips. The focused artifact, worker and QA-process run passed 85
+  tests with zero failures/skips. The complete local
+  `test_pod_book_bounds.py` suite passed 93 tests with zero failures/skips.
+  Locally unavailable dependency-backed suites were not counted as passing.
+  `node --check` and `git diff --check` passed.
+- POD integration gates run `39707460286`, job `119590747166`: success.
+- POD container runtime gates run `39707460442`, job `119590747820`:
+  success, including Python QA/rendering, Node/PostgreSQL tests, real
+  print/review generation and startup with production/publication disabled.
+- Guarded Content Control merge:
+  `b3eb9d1aacf7d20ec5738bcf33a5263d99d963f3`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #124 exact tested head:
+  `a6539db94a5c3a7d4b98442aa1139829e1983c63`.
+- The cross-repository workflow pins Content Control merge
+  `b3eb9d1aacf7d20ec5738bcf33a5263d99d963f3` while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `39708187688`, job
+  `119593050031`: success.
+- Guarded Money Factory merge:
+  `5a79a8b0a988981ed3d30f1e1633c3ee6c601c04`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, main branch and
+  commit-triggered deployment path.
+- Render detected Content Control merge
+  `b3eb9d1aacf7d20ec5738bcf33a5263d99d963f3` and created deployment
+  `dep-dbcmoajm8hqs73agcsn0`.
+- Deploy-started event `evt-dbcmoan42ijs73bc6mn0` recorded the exact merge at
+  `2026-10-22T01:51:38.465187Z`; event `evt-dbcmoakdthfc73dgvc9g`
+  recorded `pipeline_minutes_exhausted` at
+  `2026-10-22T01:51:38.643784Z`; deploy-ended event
+  `evt-dbcmoan42ijs73bc6mq0` recorded failed status at
+  `2026-10-22T01:51:38.971407Z`.
+- No build or hosted rollout of r170 was verified. No manual retry, paid
+  capacity, plan/cache change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one generated-package template-integrity gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production database/schema verification, durable retention/recovery drills,
+deployed hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, calibrated independent QA/remediation outcomes, permitted live
+adapters for KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics
+and financial reconciliation, owner-phone operations, monitoring/recovery
+drills, measured capacity, real end-to-end acceptance and controlled launch
+readiness remain unverified. All 24 acceptance areas remain OPEN.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
