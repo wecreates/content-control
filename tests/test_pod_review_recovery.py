@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import sys
 import tempfile
 import unittest
@@ -62,6 +63,20 @@ class ReviewRecoveryTests(unittest.TestCase):
                 if expected_hash is None: expected_hash = result['package_sha256']
                 self.assertEqual(result['package_sha256'], expected_hash)
                 shutil.rmtree(self.output)
+
+    def test_review_package_tree_is_private_with_permissive_umask(self):
+        previous = os.umask(0)
+        try:
+            self.run_review()
+        finally:
+            os.umask(previous)
+        for path in (self.output, *(item for item in self.output.rglob('*')
+                                    if item.is_dir())):
+            with self.subTest(directory=path.relative_to(self.output)):
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o700)
+        for path in (item for item in self.output.rglob('*') if item.is_file()):
+            with self.subTest(file=path.relative_to(self.output)):
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
     def test_invalid_worker_font_layer_can_be_corrected_at_same_destination(self):
         bad = copy.deepcopy(self.spec); bad['text_layers']=[{'font_path':'untrusted'}]

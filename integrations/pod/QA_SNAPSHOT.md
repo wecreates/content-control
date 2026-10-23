@@ -106,6 +106,13 @@ partial source, cover, interior, manifest or result. Existing output paths still
 fail before generation. Successful packages and REVIEW_REQUIRED receipts remain
 in place; neither production nor publication is enabled.
 
+New review attempts and their nested asset-package directories use mode `0700`.
+Every generated PNG/PDF/JSON artifact is retained with mode `0600`, including
+atomic JSON replacements, independent of a permissive process umask. The private
+directories prevent group/other traversal while third-party encoders are writing;
+their completed outputs are then restricted explicitly. This is discretionary-
+access hardening, not encryption or protection from the same account/root.
+
 Cleanup checks the opened attempt directory's device/inode against the current
 path before removal. Holding the directory descriptor prevents inode reuse during
 the attempt. A detected replacement directory or symlink is preserved; a moved
@@ -115,10 +122,11 @@ provide atomic publication, a same-user adversarial filesystem sandbox, or clean
 after process crashes, SIGKILL or default SIGTERM termination. Parent directories
 created for the output path are not removed.
 
-Seven regression tests cover five late stage failures followed by genuine
-reproducible rendering, corrected worker-font input, KeyboardInterrupt, existing
-output/symlink protection, concurrent replacements and denied cleanup. Fixtures
-are synthetic and supply no official-template, rights, editorial or live evidence.
+Eight regression tests cover the exact private tree under umask `000`, five late
+stage failures followed by genuine reproducible rendering, corrected worker-font
+input, KeyboardInterrupt, existing output/symlink protection, concurrent
+replacements and denied cleanup. Fixtures are synthetic and supply no official-
+template, rights, editorial or live evidence.
 
 
 ## Review CLI cancellation

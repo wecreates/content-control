@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import io
 import math
+import os
 import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -78,6 +79,8 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
         canvas.save(root/'print.png',dpi=(dpi,dpi))
         art_mask.save(root/'art-mask.png')
         text_mask.save(root/'text-mask.png')
+        for name in ('print.png','art-mask.png','text-mask.png'):
+            os.chmod(root/name, 0o600, follow_symlinks=False)
         files = ['print.png','art-mask.png','text-mask.png']
         if template['platform']=='kdp':
             # Optional explicit dependency; failure blocks KDP rather than producing a fake PDF.
@@ -93,6 +96,7 @@ def generate(source_path, template, text_layers, output_dir, *, expected_source_
             pdf.drawImage(ImageReader(cover_image),0,0,width=w*72/dpi,height=h*72/dpi)
             pdf.showPage()
             pdf.save()
+            os.chmod(root/'cover.pdf', 0o600, follow_symlinks=False)
             files.append('cover.pdf')
         manifest={'schema_version':1,'platform':template['platform'],'dpi':dpi,'size_px':[w,h],
                   'source_sha256':source_sha256,'source_size_px':[sw,sh],'placed_size_px':[nw,nh], 'placed_origin_px':[ox,oy],
