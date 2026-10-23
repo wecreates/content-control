@@ -115,11 +115,19 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
    const task=validateTask(parsed);
    const mediaTypes=requiredMediaTypes(task);
    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'cyzor-pod-'));
-   let workspace,owned;
-   try{workspace=await fs.open(directory,directoryFlags);owned=await workspace.stat();}catch(error){
+   let workspace,owned,workspaceRoot;
+   try{
+    workspace=await fs.open(directory,directoryFlags);owned=await workspace.stat();
+    workspaceRoot=`/proc/self/fd/${workspace.fd}`;
+    const alias=await fs.stat(workspaceRoot);
+    if(!alias.isDirectory()||identity(alias)!==identity(owned))throw Error('TASK_WORKSPACE_INVALID');
+   }catch{
     try{await workspace?.close();}catch{}
-    try{await fs.rmdir(directory);}catch{}
-    throw error;
+    if(owned)try{
+     const current=await fs.lstat(directory);
+     if(identity(current)===identity(owned))await fs.rmdir(directory);
+    }catch{}
+    throw Error('TASK_WORKSPACE_INVALID');
    }
    const cleanup=createWorkspaceCleanup(directory,workspace,owned);
    try{
@@ -131,15 +139,16 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
      if(expected&&artifact.media_type!==expected)throw Error('TASK_MEDIA_TYPE_INVALID');
      total+=artifact.body.length;
      if(total>64*1024*1024)throw Error('TASK_BUDGET_EXCEEDED');
-     await fs.writeFile(path.join(directory,name),artifact.body,{flag:'wx',mode:0o600});
+     await fs.writeFile(path.join(workspaceRoot,name),artifact.body,{flag:'wx',mode:0o600});
      active();
     }
-    const resolved={rights_verified:true,assetRoot:directory,output:path.join(directory,'package'),
-     qaOutput:path.join(directory,'qa.json'),qaSignedOutput:path.join(directory,'qa-signed.json'),
+    const resolved={rights_verified:true,assetRoot:workspaceRoot,output:path.join(workspaceRoot,'package'),
+     qaOutput:path.join(workspaceRoot,'qa.json'),qaSignedOutput:path.join(workspaceRoot,'qa-signed.json'),
+     stageWorkspace:Object.freeze({fd:workspace.fd,root:workspaceRoot}),
      approvedEvaluators,approvedEditorialEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
-    for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(directory,task[role]);
-    if(Object.hasOwn(task,'templateSource'))resolved.templateSource=path.join(directory,task.templateSource);
-    if(task.interior)resolved.interior=Object.fromEntries(interiorRoles.map(role=>[role,path.join(directory,task.interior[role])]));
+    for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(workspaceRoot,task[role]);
+    if(Object.hasOwn(task,'templateSource'))resolved.templateSource=path.join(workspaceRoot,task.templateSource);
+    if(task.interior)resolved.interior=Object.fromEntries(interiorRoles.map(role=>[role,path.join(workspaceRoot,task.interior[role])]));
     // New packages await a hash-bound external QA review; no preapproved future bytes.
     return resolved;
    }catch(e){await cleanup();throw e;}

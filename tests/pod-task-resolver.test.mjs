@@ -78,17 +78,47 @@ test('cancellation after the final file write cannot return a live workspace',as
   assert.ok(written);await assert.rejects(fs.stat(path.dirname(written)),{code:'ENOENT'});
  }finally{fs.writeFile=originalWrite;}
 });
+test('restoration and returned paths stay bound to the opened workspace during a path swap',async()=>{
+ const parent=await fs.mkdtemp(path.join(os.tmpdir(),'pod-workspace-swap-')),originalTmpdir=os.tmpdir;
+ const originalWrite=fs.writeFile;let moved,replacement,swapped=false,resolved;
+ os.tmpdir=()=>parent;
+ const store={get:async id=>id===hashes.descriptor
+  ?{media_type:'application/json',body:Buffer.from(JSON.stringify(task))}
+  :artifact(id,'descriptor-bound fixture')};
+ fs.writeFile=async(target,...args)=>{
+  if(!swapped){
+   swapped=true;
+   const [name]=await fs.readdir(parent),root=path.join(parent,name);
+   moved=root+'-opened';replacement=root;
+   await fs.rename(root,moved);await fs.mkdir(replacement,{mode:0o700});
+  }
+  return originalWrite(target,...args);
+ };
+ try{
+  resolved=await createStoredTaskResolvers({}, {store}).resolveTask({brief:{task_sha256:hashes.descriptor}});
+  assert.match(resolved.assetRoot,/^\/proc\/self\/fd\/\d+$/);
+  assert.deepEqual(resolved.stageWorkspace,{fd:Number(resolved.assetRoot.split('/').at(-1)),root:resolved.assetRoot});
+  assert.equal(await fs.readFile(resolved.source,'utf8'),'descriptor-bound fixture');
+  assert.deepEqual(await fs.readdir(replacement),[],'replacement path must receive no restored bytes');
+  assert.equal(await fs.readFile(path.join(moved,'source.png'),'utf8'),'descriptor-bound fixture');
+ }finally{
+  fs.writeFile=originalWrite;os.tmpdir=originalTmpdir;
+  try{await resolved?.cleanup();}catch{}
+  await fs.rm(parent,{recursive:true,force:true});
+ }
+});
 test('cleanup never recursively removes a nonempty replacement workspace',async()=>{
  const parent=await fs.mkdtemp(path.join(os.tmpdir(),'pod-cleanup-race-')),originalTmpdir=os.tmpdir;
  const resolver=createStoredTaskResolvers({}, {store:{get:async id=>id===hashes.descriptor
   ?{media_type:'application/json',body:Buffer.from(JSON.stringify(task))}
   :artifact(id)}});
  os.tmpdir=()=>parent;
- let resolved, raced=false;
+ let resolved,raced=false,replacementPath;
  const originalRm=fs.rm,originalRmdir=fs.rmdir;
  const replace=async target=>{
-  if(raced||target!==resolved?.assetRoot)return;
+  if(raced||!String(target).startsWith(parent+path.sep))return;
   raced=true;
+  replacementPath=target;
   await fs.rename(target,`${target}-moved`);
   await fs.mkdir(target);
   await fs.writeFile(path.join(target,'replacement-marker'),'preserve me');
@@ -99,7 +129,7 @@ test('cleanup never recursively removes a nonempty replacement workspace',async(
   resolved=await resolver.resolveTask({brief:{task_sha256:hashes.descriptor}});
   await resolved.cleanup();
   assert.equal(raced,true,'the regression must replace the workspace at its final removal boundary');
-  assert.equal(await fs.readFile(path.join(resolved.assetRoot,'replacement-marker'),'utf8'),'preserve me');
+  assert.equal(await fs.readFile(path.join(replacementPath,'replacement-marker'),'utf8'),'preserve me');
  }finally{
   fs.rm=originalRm;fs.rmdir=originalRmdir;os.tmpdir=originalTmpdir;
   await originalRm(parent,{recursive:true,force:true});
