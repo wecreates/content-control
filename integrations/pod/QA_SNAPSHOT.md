@@ -329,6 +329,12 @@ cover replacement is preserved for investigation. A regression reproduces the
 previous false success at the commit boundary. This narrows a late mutation window;
 it does not make the package an atomic multi-file object.
 
+That final verification also covers the newly linked interior PDF and technical
+receipt, not only the original cover members. If either generated file is replaced
+or modified in place after its digest is recorded, assembly fails before manifest
+commit and removes only the exact linked interior inodes. A regression mutates the
+hard-linked PDF at that boundary and confirms the original cover manifest remains.
+
 
 ## Direct asset generation failure recovery
 
