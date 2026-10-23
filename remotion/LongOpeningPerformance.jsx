@@ -24,7 +24,7 @@ export const LongOpeningPerformance=({ccsd,time})=>{
    <g transform={`translate(640 460) scale(${1+.045*p.heroProgress}) translate(-640 -460)`}>
     <Dave x={570} y={435} s={1.35} lean={-4-10*p.heroProgress} rightHandTarget={{x:(715-570)/1.35,y:(350-95*p.heroProgress+24-435)/1.35}} leftHandTarget={{x:-62,y:20}} leftFootTarget={{x:-68,y:150}} rightFootTarget={{x:72,y:150}} mood="smile" label="" gazeX={4} gazeY={-3} mouthOpen={speechMouthActivity('dave',time,cue)}/>
     <PropIcon id="card" x={715} y={350-95*p.heroProgress} s={.9} rotation={-18}/>
-    <path transform={`translate(0 ${72-95*p.heroProgress})`} d="M774 240 l15 -20 M790 262 l26 -2 M767 212 l-2 -23" stroke="#111" strokeWidth="4"/>
+    <path transform={`translate(0 ${72-95*p.heroProgress})`} d="M774 240 l15 -20 M790 262 l26 -2" stroke="#111" strokeWidth="4"/>
    </g>
   </g>:<g data-causal-motion="dangerous-reaction">
    <Dave x={430+65*p.reactionProgress} y={435} s={1.2} lean={-3+12*p.reactionProgress} rightHandTarget={{x:60+65*p.reactionProgress,y:-15-80*p.reactionProgress}} leftHandTarget={{x:-45-65*p.reactionProgress,y:50-100*p.reactionProgress}} mood="smile" label="" gazeX={3} browLift={4*p.reactionProgress} mouthOpen={speechMouthActivity('dave',time,cue)}/>

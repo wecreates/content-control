@@ -132,3 +132,16 @@ test('opening stages show hand impact, retained dent, hero and reaction framing'
  assert.doesNotMatch(render(9,doc),/data-opening-shot=/);
 });
 
+
+test('hero lift and card highlight leave a clear gap beneath the headline',async()=>{
+ const {createRequire}=await import('node:module');
+ let sharp;try{sharp=createRequire(import.meta.url)('sharp');}catch(error){if(error.code==='MODULE_NOT_FOUND')return;throw error;}
+ for(const time of [4.7,4.8,4.9,5,5.02]){
+  let svg=render(time).match(/<svg[\s\S]*<\/svg>/)[0].replace('width="100%" height="100%"','width="1280" height="720"');
+  const {data,info}=await sharp(Buffer.from(svg)).removeAlpha().raw().toBuffer({resolveWithObject:true});
+  for(let y=157;y<167;y++)for(let x=0;x<1280;x++){
+   const index=(y*1280+x)*info.channels;
+   assert.ok(data[index]>240&&data[index+1]>240&&data[index+2]>240,`Hero art touches headline gap at ${time}s (${x},${y})`);
+  }
+ }
+});
