@@ -2,7 +2,7 @@ name: Long retained caption diagnostic
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
-    paths: ['.github/workflows/long-caption-diagnostic.yml']
+    paths: ['.github/workflows/long-caption-diagnostic.yml', 'scripts/v2_transcription_repair.py', 'tests/test_v2_transcription_repair.py']
 permissions:
   contents: read
   actions: read
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 0413f767ce00d41c9f4063301833db479bebbedf
+          ref: ${{ github.sha }}
       - name: Verify exact retained artifact identity
         env:
           GH_TOKEN: ${{ github.token }}
@@ -76,4 +76,32 @@ jobs:
           summary['dialogue_window_violations']=violations[:30]
           summary['violation_count']=len(violations)
           print(json.dumps(summary))
+          PY
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Install bounded CPU ASR dependencies
+        run: |
+          command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+          python -m pip install --disable-pip-version-check numpy -r requirements-transcription.txt
+      - name: Test strict caption and repair guards
+        run: python -m unittest tests.test_v2_transcription_repair tests.test_v2_captions -v
+      - name: Reobserve actual retained audio and rebuild captions
+        run: |
+          mkdir -p repair-output
+          echo '2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021  projects/long/credit-card-dlc/ccsd.json' | sha256sum -c -
+          python scripts/v2_transcription_repair.py --ccsd projects/long/credit-card-dlc/ccsd.json --transcription retained/transcription.json --assembly retained/assembly.json --audio retained/voice.wav --out repair-output/transcription-repaired.json
+          python scripts/v2_captions.py --ccsd projects/long/credit-card-dlc/ccsd.json --transcription repair-output/transcription-repaired.json --audio retained/voice.wav --out repair-output/captions.json
+          node scripts/verify_caption_frames.mjs --ccsd projects/long/credit-card-dlc/ccsd.json --captions repair-output/captions.json --out repair-output/caption-frames.json
+      - name: Emit bounded repair outcome
+        if: always()
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          for name in ['captions.json','caption-frames.json']:
+              p=pathlib.Path('repair-output')/name
+              if p.is_file():
+                  d=json.loads(p.read_text())
+                  print(json.dumps({'file':name,'status':d.get('status'),'reason':d.get('reason'),'cue_count':len(d.get('cues',[])),'publication_enabled':False,'production_approved':False}))
           PY
