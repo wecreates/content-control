@@ -61,11 +61,34 @@ jobs:
           assert all(c['speed']==1.0 for c in r['manifest']['clips']), 'Retiming required; do not rush speech'
           assert r['production_approved'] is False and r['publication_enabled'] is False
           PYCODE
+      - name: Observe actual speech windows and align spoken captions
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements-transcription.txt
+          python - <<'PYCODE'
+          import json
+          from pathlib import Path
+          root=Path('state/boss-fight-free-voice')
+          r=json.load(open(root/'timed-voice.json')); c=r['timeline']
+          if c['scenes'][-1]['end']<r['audio']['duration']:
+              c['scenes'].append({'id':'silent-tail','start':c['scenes'][-1]['end'],'end':r['audio']['duration'],'audio':{'dialogue':[]}})
+          (root/'speech-ccsd.json').write_text(json.dumps(c))
+          (root/'assembly.json').write_text(json.dumps(r['audio']))
+          PYCODE
+          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model small.en
+          python scripts/v2_captions.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --transcription state/boss-fight-free-voice/transcription.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/captions.json
+          node scripts/verify_caption_frames.mjs --ccsd state/boss-fight-free-voice/speech-ccsd.json --captions state/boss-fight-free-voice/captions.json --out state/boss-fight-free-voice/caption-frames.json
+          python - <<'PYCODE'
+          import json
+          c=json.load(open('projects/shorts/credit-score-boss-fight/ccsd.json'))
+          c['caption_track']=json.load(open('state/boss-fight-free-voice/captions.json'))
+          assert c['caption_track']['status']=='PASS'
+          json.dump(c,open('state/boss-fight-free-voice/render-ccsd.json','w'))
+          PYCODE
       - name: Render retimed Short candidate for full review
         run: |
           npm ci
           mkdir -p state/boss-fight-free-voice/render
-          PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("projects/shorts/credit-score-boss-fight/ccsd.json"))},separators=(",",":")))')
+          PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/boss-fight-free-voice/render-ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx BossFightShort state/boss-fight-free-voice/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
           ffmpeg -nostdin -y -i state/boss-fight-free-voice/render/silent.mp4 -i state/boss-fight-free-voice/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/boss-fight-free-voice/render/candidate.mp4
           ffmpeg -nostdin -v error -i state/boss-fight-free-voice/render/candidate.mp4 -f null -

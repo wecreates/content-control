@@ -3,6 +3,7 @@ import {AbsoluteFill,useCurrentFrame,interpolate,spring} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {PropIcon} from "./PropSystem";
 import {nonverbalTextAtTime,nonverbalTextLines} from "./NonverbalText.mjs";
+import {captionAtTime} from "./ObservedCaptions.mjs";
 import {bossFightBeats} from "./BossFightTimeline.mjs";
 const K="#111111",W="#F6F1E7",R="#EF3E36",Y="#F4C542",T="#16A7B5";
 const beats=[
@@ -38,6 +39,7 @@ export const BossFightShortComposition=({ccsd})=>{
  const subBeat=Math.floor((t-b.start)/.75),kineticX=Math.sin(frame*.31+beatIndex)*7+((subBeat%2)*2-1)*3,kineticY=Math.cos(frame*.27+beatIndex*.7)*5,kineticScale=1+Math.sin(frame*.24+beatIndex)*.018;
  const baseCamX=b.id==="critical-hit"?lerp(0,-42,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*7:0,camX=baseCamX+dir*lerp(-22,22,ease(p))+kineticX,camY=(b.id==="respawn"?lerp(45,0,ease(p)):0)+lerp(10,-10,ease(p))+kineticY,camRot=(b.id==="critical-hit"?lerp(0,-2,ease(p)):0)+Math.sin(frame*.19)*.45,microScale=(.965+.09*ease(p))*kineticScale;
  const scene=ccsd?.scenes?.find(scene=>scene.id===b.id);
+ const spokenCaption=captionAtTime(ccsd?.caption_track,t),captionLines=spokenCaption?nonverbalTextLines(spokenCaption.text,28):[];
  const nonverbalText=nonverbalTextAtTime(scene,t,b);
  const textLines=nonverbalText?nonverbalTextLines(nonverbalText.text):[];
  let content=null;
@@ -58,6 +60,6 @@ export const BossFightShortComposition=({ccsd})=>{
  else if(b.id==="victory"){content=<><HealthBar y={145} fill={lerp(.18,0,p)} label="FICO BOSS" accent={R}/><Dave x={360+Math.sin(frame*.4)*12} y={820+Math.sin(frame*.29)*8} s={1.4} mood="smile" arm={48+Math.sin(frame*.36)*12} leg={18}/><BurstText text="BOSS DEFEATED" y={320} size={56}/>{Array.from({length:20}).map((_,i)=><circle key={i} cx={65+(i*67+frame*12)%610} cy={390+((i*97+frame*13)%470)} r={7+(i%3)*2} fill={i%2?Y:T}/>)}</>;}
  else if(b.id==="i-beat-it"){const z=1+ease(p)*.24;content=<><g transform={`translate(${lerp(320,395,ease(p))} 760) scale(${z}) translate(-360 -760)`}><Dave x={360} y={805} s={1.55} mood="smile" arm={34+Math.sin(frame*.2)*18}/></g><BurstText text="I BEAT IT." y={255} size={68}/></>;}
  else {const bar=clamp(p*1.55),shock=clamp((p-.28)*2.2);content=<><HealthBar y={130} fill={bar} label="NEXT STATEMENT" accent={R} shake={Math.sin(frame*2.8)*7*shock}/><Dave x={360} y={835} s={1.28+shock*.12} mood={shock>.25?"shock":"smile"} lean={-12*shock} arm={40*shock}/><BurstText text={shock>.25?"...OH.":"BOSS RESPAWNS"} y={300} size={shock>.25?72:48} opacity={Math.max(.35,shock)}/><ImpactLines y={710} r={180} opacity={shock}/></>;}
- return <AbsoluteFill style={{background:W,overflow:"hidden"}}><svg width="720" height="1280" viewBox="0 0 720 1280"><rect width="720" height="1280" fill={W}/><PaperTexture frame={frame}/><ActionDust frame={frame} intensity={b.scale==="close"?.55:1}/><g transform={`translate(${camX} ${camY}) rotate(${camRot} 360 640) scale(${camScale*microScale})`}><Ground/>{content}</g>{nonverbalText?<g data-character-id={nonverbalText.character_id} data-event-type="nonverbal_text"><rect x="50" y="70" width="620" height={50+textLines.length*44} rx="18" fill={W} stroke={K} strokeWidth="5"/><text x="360" y="115" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="32" fill={K} xmlSpace="preserve">{textLines.map((line,index)=><tspan key={index} x="360" dy={index?44:0}>{line}</tspan>)}</text></g>:null}</svg></AbsoluteFill>;
+ return <AbsoluteFill style={{background:W,overflow:"hidden"}}><svg width="720" height="1280" viewBox="0 0 720 1280"><rect width="720" height="1280" fill={W}/><PaperTexture frame={frame}/><ActionDust frame={frame} intensity={b.scale==="close"?.55:1}/><g transform={`translate(${camX} ${camY}) rotate(${camRot} 360 640) scale(${camScale*microScale})`}><Ground/>{content}</g>{nonverbalText?<g data-character-id={nonverbalText.character_id} data-event-type="nonverbal_text"><rect x="50" y="70" width="620" height={50+textLines.length*44} rx="18" fill={W} stroke={K} strokeWidth="5"/><text x="360" y="115" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="32" fill={K} xmlSpace="preserve">{textLines.map((line,index)=><tspan key={index} x="360" dy={index?44:0}>{line}</tspan>)}</text></g>:null}{spokenCaption?<g data-caption-speaker={spokenCaption.speaker}><rect x="40" y="1080" width="640" height={36+captionLines.length*46} rx="16" fill={K}/><text x="360" y="1126" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="38" fill={W} xmlSpace="preserve">{captionLines.map((line,index)=><tspan key={index} x="360" dy={index?46:0}>{line}</tspan>)}</text></g>:null}</svg></AbsoluteFill>;
 };
 

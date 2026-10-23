@@ -68,3 +68,10 @@ test('retimed source moves visual beats and exact Goblin text together', async (
     const invalid=structuredClone(source);change(invalid);assert.throws(()=>bossFightBeats(invalid,defaults));
   }
 });
+
+ test('spoken captions use the observed-time renderer lookup and preserve Goblin overlay',()=>{
+ const renderer=readFileSync(new URL('../remotion/BossFightShortComposition.jsx',import.meta.url),'utf8');
+ assert.ok(renderer.includes('captionAtTime(ccsd?.caption_track,t)'));
+ assert.ok(renderer.includes('data-caption-speaker={spokenCaption.speaker}'));
+ assert.ok(renderer.includes('nonverbalTextAtTime(scene,t,b)'));
+ });
