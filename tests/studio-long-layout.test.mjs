@@ -29,10 +29,10 @@ test('all scenes generate finite SVG and original actions with fitting labels',(
  }
 });
 test('narrator does not animate character mouths',()=>{
- const doc=structuredClone(ccsd);doc.caption_track={status:'PASS',publication_enabled:false,cues:[{start:1,end:2,text:'A narrator line',speaker:'narrator'}]};
- assert.doesNotMatch(render(1.5,doc),/data-speaking-mouth="true"/);
+ const doc=structuredClone(ccsd);doc.caption_track={status:'PASS',publication_enabled:false,cues:[{start:5.5,end:6.5,text:'A narrator line',speaker:'narrator'}]};
+ assert.doesNotMatch(render(5.7,doc),/data-speaking-mouth="true"/);
  doc.caption_track.cues[0].speaker='dave';
- assert.equal((render(1.5,doc).match(/data-speaking-mouth="true"/g)||[]).length,1);
+ assert.equal((render(5.7,doc).match(/data-speaking-mouth="true"/g)||[]).length,1);
 });
 test('comparison cards fit their own boxes and action doors distinguish terms',()=>{
  const comparison=ccsd.scenes.find(scene=>scene.visual.action==='scoreboard');
@@ -102,4 +102,16 @@ test('opening card including rotated stroke clears headline throughout slam',()=
    assert.ok(actualY>200&&actualY<500,`Card outside headline/table safe region: ${actualY}`);
   }
  }
+});
+
+test('opening stages show hand impact, retained dent, hero and reaction framing',()=>{
+ const doc=structuredClone(ccsd);
+ doc.caption_track={status:'PASS',publication_enabled:false,cues:[{start:1.66,end:1.96,word:'dented',text:'card just dented',speaker:'narrator',scene_id:'scene-000'},{start:2.18,end:2.5,word:'table',text:'dented the table',speaker:'narrator',scene_id:'scene-000'}]};
+ assert.match(render(.4,doc),/data-opening-shot="impact-closeup"/);
+ assert.match(render(1.7,doc),/data-causal-motion="hand-card-impact"/);
+ assert.match(render(2.3,doc),/data-impact-response="table-deformation"/);
+ assert.match(render(3,doc),/data-opening-shot="hero-low-angle"/);
+ assert.match(render(5.7,doc),/data-opening-shot="reaction-medium"/);
+ assert.match(render(5.7,doc),/FINANCIALLY/);
+ assert.doesNotMatch(render(9,doc),/data-opening-shot=/);
 });

@@ -3,6 +3,7 @@ import {AbsoluteFill,useCurrentFrame,useVideoConfig} from 'remotion';
 import {Dave,PointsMonk} from './CharacterSystem';
 import {PropIcon} from './PropSystem';
 import {captionAtTime} from './ObservedCaptions.mjs';
+import {LongOpeningPerformance} from './LongOpeningPerformance';
 import {speechMouthActivity} from './V2FacePerformance.mjs';
 
 // Same character assets and observed audio timeline as the vertical studio.
@@ -36,6 +37,7 @@ export const StudioLongComposition=({ccsd})=>{
  const frame=useCurrentFrame(),{fps}=useVideoConfig(),time=frame/fps;
  const scenes=ccsd?.scenes||[],scene=scenes.find(s=>time>=s.start&&time<s.end);
  if(!scene)return <AbsoluteFill style={{background:'white'}}/>;
+ if(/^scene-00[0-4]$/.test(scene.id)&&scene.visual?.action==='card_slam')return <AbsoluteFill style={{background:'white'}}><svg viewBox="0 0 1280 720" width="100%" height="100%"><rect width="1280" height="720" fill="white"/><LongOpeningPerformance ccsd={ccsd} time={time}/></svg></AbsoluteFill>;
  const v=scene.visual||{},action=v.action||'card_slam';
  const timing=longActionTiming(scenes,scenes.indexOf(scene),time),p=timing.progress,beat=ease((time-timing.start)/.65);
  const elapsed=time-timing.start;

@@ -1,73 +1,76 @@
-name: Long retained candidate review export
+name: Long opening performance preview
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
-    paths: ['.github/workflows/long-caption-diagnostic.yml']
+    paths: ['.github/workflows/long-caption-diagnostic.yml', 'remotion/LongOpening*', 'remotion/StudioLongComposition.jsx', 'tests/long-opening-motion.test.mjs', 'tests/studio-long-layout.test.mjs']
 permissions:
   contents: read
   actions: read
 jobs:
-  export:
+  preview:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Test completion status and process safeguards
-        run: python -m unittest tests.test_v2_execution tests.test_v2_execution_processes -v
-      - name: Verify successful retained candidate source
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - run: npm ci
+      - run: node --test tests/studio-long-layout.test.mjs tests/long-opening-motion.test.mjs
+      - name: Verify retained review source
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           python - <<'PY'
           import json,os,subprocess
-          def api(path):
-              return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
-          run=api('actions/runs/40001068907')
-          assert run['head_sha']=='bdf98a124a5d127550307c7c36074fd739f78bbf' and run['conclusion']=='success'
-          artifact=api('actions/artifacts/12523021493')
-          assert artifact['workflow_run']['id']==40001068907 and not artifact['expired']
-          assert artifact['name']=='production-state-long'
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
+          run=api('actions/runs/40003210434')
+          assert run['head_sha']=='8af9738a6523f2efe623b7249d556cdfe94f3a6a' and run['conclusion']=='success'
+          for aid,name in [(12522178951,'long-review-video'),(12522912674,'long-review-evidence')]:
+              a=api('actions/artifacts/'+str(aid))
+              assert a['workflow_run']['id']==40003210434 and a['name']==name and not a['expired']
           PY
       - uses: actions/download-artifact@v4
         with:
-          artifact-ids: '12523021493'
-          run-id: '40001068907'
+          artifact-ids: '12522178951,12522912674'
+          run-id: '40003210434'
           github-token: ${{ github.token }}
           path: retained
           merge-multiple: true
-      - name: Verify candidate and prepare separate review evidence
+      - name: Bind preview to unchanged actual audio and captions
         run: |
+          mkdir -p hook-preview
           python - <<'PY'
-          import hashlib,json,pathlib,shutil
-          from scripts.v2_execution import mark_review_candidate
-          root=pathlib.Path('retained'); out=pathlib.Path('review-evidence');out.mkdir()
-          video=root/'candidate.mp4'
-          digest=hashlib.sha256(video.read_bytes()).hexdigest()
-          assert digest=='873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc'
-          state=json.loads((root/'execution.json').read_text())
-          assert state['status']=='REVIEW_CANDIDATE' and state['candidate_sha256']==digest
-          qa=json.loads((root/'media-qa.json').read_text())
-          assert qa['status']=='PASS' and qa['candidate_sha256']==digest and all(v is True for v in qa['checks'].values())
-          for name in ['execution.json','media-qa.json','captions.json','caption-frames.json','memory.json','review-package.json','transcription-repaired.json','assembly.json']:
-              shutil.copyfile(root/name,out/name)
-          mark_review_candidate(state,video)
-          (out/'review-execution.json').write_text(json.dumps(state,indent=2)+'\n')
-          shutil.copyfile('projects/long/credit-card-dlc/ccsd.json',out/'ccsd.json')
-          (out/'identity.json').write_text(json.dumps({'candidate_sha256':digest,'bytes':video.stat().st_size,'source_run':40001068907,'source_artifact':12523021493,'creative_review':'PENDING','audio_listening_review':'PENDING','publication_enabled':False},indent=2)+'\n')
-          print(json.dumps({'candidate_sha256':digest,'candidate_bytes':video.stat().st_size,'technical_qa':'PASS','creative_review':'PENDING'}))
+          import hashlib,json,pathlib
+          p=pathlib.Path('retained')
+          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+          assert sha(p/'candidate.mp4')=='873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc'
+          assert sha(p/'captions.json')=='380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02'
+          c=json.loads((p/'ccsd.json').read_text())
+          assert sha(p/'ccsd.json')==sha(pathlib.Path('projects/long/credit-card-dlc/ccsd.json'))
+          c['caption_track']=json.loads((p/'captions.json').read_text())
+          pathlib.Path('hook-preview/props.json').write_text(json.dumps({'ccsd':c}))
+          PY
+      - name: Render only the first 191 frames
+        run: node_modules/.bin/remotion render remotion/studio-animatic-index.jsx StudioLong hook-preview/silent.mp4 --props=hook-preview/props.json --frames=0-190 --concurrency=2 --pixel-format=yuv420p --color-space=bt709
+      - name: Attach original audio prefix and verify complete preview decode
+        run: |
+          FFMPEG=node_modules/@remotion/compositor-linux-x64-gnu/ffmpeg
+          "$FFMPEG" -v error -i hook-preview/silent.mp4 -i retained/candidate.mp4 -map 0:v:0 -map 1:a:0 -c copy -shortest hook-preview/opening.mp4
+          "$FFMPEG" -v error -i hook-preview/opening.mp4 -f null -
+          python - <<'PY'
+          import hashlib,json,pathlib
+          p=pathlib.Path('hook-preview')
+          receipt={'status':'PREVIEW_PENDING_CREATIVE_REVIEW','publication_enabled':False,'production_approved':False,'source_candidate_sha256':'873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc','source_captions_sha256':'380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02','preview_sha256':hashlib.sha256((p/'opening.mp4').read_bytes()).hexdigest(),'frames':[0,190],'audio':'unchanged original encoded audio prefix','full_av_decode':'PASS'}
+          (p/'preview-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print(json.dumps(receipt))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: long-review-video
-          path: retained/candidate.mp4
-          compression-level: 0
-          retention-days: 14
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: long-review-evidence
-          path: review-evidence/
+          name: long-opening-review
+          path: |
+            hook-preview/opening.mp4
+            hook-preview/preview-receipt.json
           retention-days: 14
           if-no-files-found: error
