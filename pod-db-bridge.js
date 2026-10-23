@@ -10,6 +10,19 @@ const SHA256=/^[a-f0-9]{64}$/;
 const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
 const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
+const RELEASE_REASONS=Object.freeze({ambiguous:'SUBMISSION_UNCERTAIN',blocked:'RELEASE_BLOCKED'});
+function exactObject(value,keys){
+ return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype&&
+  JSON.stringify(Object.keys(value).sort())===JSON.stringify(keys);
+}
+function assertSettlement(state,receipt,reason){
+ if(state==='submitted'){
+  if(!exactObject(receipt,['id'])||typeof receipt.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256)throw Error('RECEIPT_INVALID');
+  if(reason!==null)throw Error('SETTLEMENT_INVALID');
+  return;
+ }
+ if(!exactObject(receipt,[])||reason!==RELEASE_REASONS[state])throw Error('SETTLEMENT_INVALID');
+}
 function canonical(value){
  return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
   value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
@@ -323,13 +336,18 @@ export class PodDB {
  });}
  async finish(job,state,receipt={},reason=null){
   if(!['blocked','ambiguous','submitted'].includes(state))throw Error('INVALID_FINISH');
-  if(state==='submitted'&&(typeof receipt?.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256))throw Error('RECEIPT_INVALID');
+  // Settlement is a narrow durable boundary, not a generic adapter log sink.
+  // Persist only the opaque provider ID or the exact fixed failure outcome;
+  // reject extra fields and arbitrary reason text before database access.
+  assertSettlement(state,receipt,reason);
+  const providerId=state==='submitted'?receipt.id:null;
+  const eventPayload=state==='submitted'?{id:receipt.id}:{};
   return this.tx(async c=>{
    await lockPublishingLease(c,job);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp() RETURNING id`,[state,receipt.id||null,reason,job.id,job.fencing_token]);
+    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp() RETURNING id`,[state,providerId,reason,job.id,job.fencing_token]);
    if(!r.rows.length)throw Error('LEASE_LOST');
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.'+state,receipt]);
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.'+state,eventPayload]);
   });
  }
  async recover(){return this.tx(async c=>{
