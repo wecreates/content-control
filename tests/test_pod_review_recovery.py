@@ -357,6 +357,46 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')),[])
 
+    def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
+        moved = self.root/'moved-package'
+        original_commit = books._commit_manifest
+        def commit_then_replace(*args, **kwargs):
+            result = original_commit(*args, **kwargs)
+            self.package.rename(moved)
+            self.package.mkdir()
+            (self.package/'concurrent').write_bytes(b'keep')
+            return result
+        with patch.object(books,'_commit_manifest',side_effect=commit_then_replace):
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        completed = json.loads((moved/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],digest(moved/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(moved/'interior.receipt.json'))
+        self.assertEqual(list(moved.glob('.pod-book-*')),[])
+
+    def test_book_package_swap_during_acquisition_never_starts_render(self):
+        moved = self.root/'moved-acquisition-package'
+        original_fstat = books.os.fstat
+        swapped = False
+        def swap_after_fstat(fd):
+            nonlocal swapped
+            value = original_fstat(fd)
+            if not swapped and stat.S_ISDIR(value.st_mode):
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                (self.package/'concurrent').write_bytes(b'keep')
+            return value
+        with patch.object(books.os,'fstat',side_effect=swap_after_fstat), \
+             patch.object(books,'render_book') as render:
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+
 
 if __name__ == '__main__': unittest.main()
 

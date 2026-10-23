@@ -108,6 +108,12 @@ def assemble(root, spec, pages, font):
         raise ValueError('COVER_INTERIOR_MISMATCH')
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
+        root_identity = _identity(os.fstat(root_fd))
+        try:
+            if _identity(root.lstat()) != root_identity:
+                raise RuntimeError('PACKAGE_REPLACED')
+        except FileNotFoundError:
+            raise RuntimeError('PACKAGE_REPLACED') from None
         original_identity, original_bytes = _snapshot_file(root_fd, 'manifest.json')
         original_manifest = {**manifest, 'package_sha256': previous}
         if strict_json(original_bytes.decode('utf-8', errors='strict')) != original_manifest:
@@ -115,7 +121,8 @@ def assemble(root, spec, pages, font):
     except BaseException:
         os.close(root_fd)
         raise
-    stage = root/('.pod-book-' + os.urandom(12).hex())
+    stage_name = '.pod-book-' + os.urandom(12).hex()
+    stage = root/stage_name
     stage_fd = None
     stage_identity = None
     installed = []
@@ -137,6 +144,11 @@ def assemble(root, spec, pages, font):
         os.fsync(root_fd)
         _commit_manifest(stage_fd, root_fd, original_identity, original_bytes)
         committed = True
+        try:
+            if _identity(root.lstat()) != root_identity:
+                raise RuntimeError('PACKAGE_REPLACED')
+        except FileNotFoundError:
+            raise RuntimeError('PACKAGE_REPLACED') from None
         return manifest
     except BaseException as exc:
         failure = exc
@@ -145,8 +157,10 @@ def assemble(root, spec, pages, font):
         raise
     finally:
         try:
-            if stage_identity is not None and _identity(stage.lstat()) == stage_identity:
-                shutil.rmtree(stage)
+            if (stage_identity is not None and
+                    _identity(os.stat(stage_name, dir_fd=root_fd,
+                                      follow_symlinks=False)) == stage_identity):
+                shutil.rmtree(stage_name, dir_fd=root_fd)
         except FileNotFoundError:
             pass
         except OSError:
