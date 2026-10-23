@@ -78,6 +78,52 @@ test('cancellation after the final file write cannot return a live workspace',as
   assert.ok(written);await assert.rejects(fs.stat(path.dirname(written)),{code:'ENOENT'});
  }finally{fs.writeFile=originalWrite;}
 });
+test('cleanup never recursively removes a nonempty replacement workspace',async()=>{
+ const parent=await fs.mkdtemp(path.join(os.tmpdir(),'pod-cleanup-race-')),originalTmpdir=os.tmpdir;
+ const resolver=createStoredTaskResolvers({}, {store:{get:async id=>id===hashes.descriptor
+  ?{media_type:'application/json',body:Buffer.from(JSON.stringify(task))}
+  :artifact(id)}});
+ os.tmpdir=()=>parent;
+ let resolved, raced=false;
+ const originalRm=fs.rm,originalRmdir=fs.rmdir;
+ const replace=async target=>{
+  if(raced||target!==resolved?.assetRoot)return;
+  raced=true;
+  await fs.rename(target,`${target}-moved`);
+  await fs.mkdir(target);
+  await fs.writeFile(path.join(target,'replacement-marker'),'preserve me');
+ };
+ fs.rm=async(target,options)=>{if(options?.recursive)await replace(target);return originalRm(target,options);};
+ fs.rmdir=async(target,options)=>{await replace(target);return originalRmdir(target,options);};
+ try{
+  resolved=await resolver.resolveTask({brief:{task_sha256:hashes.descriptor}});
+  await resolved.cleanup();
+  assert.equal(raced,true,'the regression must replace the workspace at its final removal boundary');
+  assert.equal(await fs.readFile(path.join(resolved.assetRoot,'replacement-marker'),'utf8'),'preserve me');
+ }finally{
+  fs.rm=originalRm;fs.rmdir=originalRmdir;os.tmpdir=originalTmpdir;
+  await originalRm(parent,{recursive:true,force:true});
+ }
+});
+test('cleanup clears nested generated output without following symlinks',async()=>{
+ const outside=await fs.mkdtemp(path.join(os.tmpdir(),'pod-cleanup-outside-'));
+ const marker=path.join(outside,'marker');await fs.writeFile(marker,'outside');
+ const resolver=createStoredTaskResolvers({}, {store:{get:async id=>id===hashes.descriptor
+  ?{media_type:'application/json',body:Buffer.from(JSON.stringify(task))}
+  :artifact(id)}});
+ const resolved=await resolver.resolveTask({brief:{task_sha256:hashes.descriptor}});
+ try{
+  await fs.mkdir(path.join(resolved.output,'nested'),{recursive:true});
+  await fs.writeFile(path.join(resolved.output,'nested','generated.png'),'generated');
+  await fs.symlink(outside,path.join(resolved.output,'outside-link'));
+  await resolved.cleanup();
+  await assert.rejects(fs.stat(resolved.assetRoot),{code:'ENOENT'});
+  assert.equal(await fs.readFile(marker,'utf8'),'outside');
+ }finally{
+  await resolved.cleanup();
+  await fs.rm(outside,{recursive:true,force:true});
+ }
+});
 test('task descriptor blocks traversal and absent roles',()=>{
  assert.throws(()=>validateTask({...task,files:{'../escape':sha}}),/TASK_FILES_INVALID/);
  assert.throws(()=>validateTask({...task,source:'absent'}),/TASK_ROLE_INVALID/);

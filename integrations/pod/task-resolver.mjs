@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {constants} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {ArtifactStore} from './artifacts.mjs';
@@ -12,6 +13,55 @@ const roleMediaTypes={source:'image/png',template:'application/json',textLayers:
 const interiorMediaTypes={template:'application/json',pages:'application/json',font:'font/ttf',
  fontRights:'application/json',fontLicense:'text/plain',source:'application/zip',
  bookDetails:'application/json',regionalRightsEvidence:'text/plain'};
+const directoryFlags=constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW;
+const missingCodes=new Set(['ENOENT']);
+const replacedDirectoryCodes=new Set(['ENOENT','ENOTEMPTY','EEXIST']);
+const identity=stat=>`${stat.dev}:${stat.ino}`;
+async function clearHeldDirectory(handle){
+ const heldPath=`/proc/self/fd/${handle.fd}`;
+ let names;
+ try{names=await fs.readdir(heldPath);}catch(error){if(missingCodes.has(error.code))return;throw error;}
+ for(const name of names){
+  const entry=path.join(heldPath,name);
+  let before;
+  try{before=await fs.lstat(entry);}catch(error){if(missingCodes.has(error.code))continue;throw error;}
+  if(!before.isDirectory()){
+   try{await fs.unlink(entry);}catch(error){if(!missingCodes.has(error.code))throw error;}
+   continue;
+  }
+  let child;
+  try{child=await fs.open(entry,directoryFlags);}catch(error){
+   if(missingCodes.has(error.code))continue;
+   // A non-directory or symlink replacement is removed non-recursively. If it
+   // changed back into a directory, leave it for the final fail-closed rmdir.
+   if(error.code==='ENOTDIR'||error.code==='ELOOP'){
+    try{await fs.unlink(entry);}catch(replacementError){
+     if(!missingCodes.has(replacementError.code)&&replacementError.code!=='EISDIR'&&replacementError.code!=='EPERM')throw replacementError;
+    }
+    continue;
+   }
+   throw error;
+  }
+  let opened;
+  try{opened=await child.stat();await clearHeldDirectory(child);}finally{await child.close();}
+  let current;
+  try{current=await fs.lstat(entry);}catch(error){if(missingCodes.has(error.code))continue;throw error;}
+  if(identity(current)!==identity(opened))continue;
+  try{await fs.rmdir(entry);}catch(error){if(!replacedDirectoryCodes.has(error.code))throw error;}
+ }
+}
+function createWorkspaceCleanup(directory,handle,owned){
+ let pending;
+ return ()=>pending??=(async()=>{
+  try{await clearHeldDirectory(handle);}finally{await handle.close();}
+  let current;
+  try{current=await fs.lstat(directory);}catch(error){if(missingCodes.has(error.code))return;throw error;}
+  if(identity(current)!==identity(owned))return;
+  // Never recurse through the pathname. A concurrent nonempty replacement
+  // makes rmdir fail and is preserved.
+  try{await fs.rmdir(directory);}catch(error){if(!replacedDirectoryCodes.has(error.code))throw error;}
+ })();
+}
 function requiredMediaTypes(task){
  const expected=new Map();
  const bind=(name,mediaType)=>{
@@ -65,7 +115,13 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
    const task=validateTask(parsed);
    const mediaTypes=requiredMediaTypes(task);
    const directory=await fs.mkdtemp(path.join(os.tmpdir(),'cyzor-pod-'));
-   const cleanup=()=>fs.rm(directory,{recursive:true,force:true});
+   let workspace,owned;
+   try{workspace=await fs.open(directory,directoryFlags);owned=await workspace.stat();}catch(error){
+    try{await workspace?.close();}catch{}
+    try{await fs.rmdir(directory);}catch{}
+    throw error;
+   }
+   const cleanup=createWorkspaceCleanup(directory,workspace,owned);
    try{
     active();
     let total=0;
