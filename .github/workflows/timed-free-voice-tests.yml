@@ -7,6 +7,8 @@ on:
       - 'scripts/measure_timed_free_voice.py'
       - 'scripts/v2_free_voice.py'
       - 'scripts/v2_audio_assemble.py'
+      - 'scripts/v2_clip_transcription.py'
+      - 'tests/test_clip_spoken_number_decoding.py'
       - 'tests/test_timed_free_voice.py'
       - 'tests/test_v2_free_voice.py'
       - 'tests/boss-fight-nonverbal-text.test.mjs'
@@ -37,7 +39,7 @@ jobs:
           sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
           sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg espeak-ng
           command -v ffmpeg
-      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py
+      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py
       - run: node --test tests/boss-fight-nonverbal-text.test.mjs
       - name: Install existing free CPU model without ASR or rendering
         run: |
@@ -74,7 +76,7 @@ jobs:
           (root/'speech-ccsd.json').write_text(json.dumps(c))
           (root/'assembly.json').write_text(json.dumps(r['audio']))
           PYCODE
-          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model small.en
+          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model small.en --spoken-numbers
           python scripts/v2_captions.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --transcription state/boss-fight-free-voice/transcription.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/captions.json
           node scripts/verify_caption_frames.mjs --ccsd state/boss-fight-free-voice/speech-ccsd.json --captions state/boss-fight-free-voice/captions.json --out state/boss-fight-free-voice/caption-frames.json
           python - <<'PYCODE'
