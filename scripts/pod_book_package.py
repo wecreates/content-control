@@ -175,7 +175,16 @@ def assemble(root, spec, pages, font):
         os.fsync(root_fd)
         _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
                          package, dict(manifest['files']))
+        # The files and their links were synchronized before the manifest
+        # rename. Persist that final directory-entry change before reporting a
+        # durable package. Treat a sync failure as post-commit: leaving the
+        # complete manifest and its referenced files together is safer than
+        # deleting files from a manifest that may already survive a crash.
         committed = True
+        try:
+            os.fsync(root_fd)
+        except OSError as exc:
+            raise ValueError('BOOK_PACKAGE_DURABILITY_UNCERTAIN') from exc
         _require_path_identity(root, root_identity)
         return manifest
     except BaseException as exc:
