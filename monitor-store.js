@@ -13,7 +13,7 @@ export function serializeStore(store,{generatedAt=Date.now()}={}){
   return JSON.stringify({generated_at:generatedAt,watches:store.watches,events:store.events},null,2)+'\n';
 }
 
-export function createWatch(store,{clientId,kind='change',targetUrl,label='Watch'}){
+export function createWatch(store,{clientId,kind='change',targetUrl,label='Watch',priceCurrency,minimumDrop='0',minimumDropPercent='0'}){
   if(!clientId) throw new Error('clientId required');
   const u=new URL(targetUrl);
   if(!['http:','https:'].includes(u.protocol)) throw new Error('http(s) target required');
@@ -29,6 +29,20 @@ export function createWatch(store,{clientId,kind='change',targetUrl,label='Watch
     last_status:null,
     status:'active'
   };
+  if(w.kind==='price'){
+    if(!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(w.client_id)) throw new Error('opaque price clientId required');
+    w.price_monitoring_status='configuration_required';
+    if(priceCurrency!==undefined){
+      if(!'USD EUR GBP CAD AUD NZD JPY CHF CNY HKD SGD INR KRW KWD BHD OMR TND CLP'.split(' ').includes(priceCurrency)) throw new Error('unsupported priceCurrency');
+      const exact=v=>typeof v==='string' && /^(?:0|[1-9][0-9]{0,29})(?:\.[0-9]{1,12})?$/.test(v);
+      if(!exact(minimumDrop)||!exact(minimumDropPercent)) throw new Error('exact decimal threshold strings required');
+      const [whole,fraction='']=minimumDropPercent.split('.');
+      if(BigInt(whole)>100n || (BigInt(whole)===100n && /[1-9]/.test(fraction))) throw new Error('percentage must be at most 100');
+      w.price_currency=priceCurrency;
+      w.price_minimum_drop=minimumDrop;
+      w.price_minimum_drop_percent=minimumDropPercent;
+    }
+  }
   store.watches.unshift(w);
   return w;
 }
@@ -64,3 +78,4 @@ export function applyCheck(store,id,{hash,checkedAt,status}){
   }
   return {watch:w,changed};
 }
+

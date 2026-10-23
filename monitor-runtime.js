@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import {checkPriceWatch} from './pricewatch-adapter.js';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {createStore,hydrateStore,serializeStore,applyCheck} from './monitor-store.js';
@@ -20,9 +21,23 @@ export async function saveMonitorStore(store){
   await fs.writeFile(STATE_FILE,serializeStore(store));
 }
 
-export async function checkWatch(store,id,{fetchImpl=fetch,persist=true,timeoutMs=10000}={}){
+export async function checkWatch(store,id,{fetchImpl=fetch,persist=true,timeoutMs=10000,...priceOptions}={}){
   const w=store.watches.find(x=>x.id===String(id));
   if(!w||w.status!=='active') return {ok:false,reason:'not_found_or_inactive'};
+  if(w.kind==='price'){
+    const scope=w.client_id, watchId=w.id;
+    const configuration=JSON.stringify([w.target_url,w.price_currency,w.price_minimum_drop,w.price_minimum_drop_percent]);
+    const unchanged=()=>store.watches.includes(w)&&w.client_id===scope&&w.id===watchId&&w.status==='active'&&configuration===JSON.stringify([w.target_url,w.price_currency,w.price_minimum_drop,w.price_minimum_drop_percent]);
+    let result;
+    try{result=await checkPriceWatch(w,{...priceOptions,isCurrent:unchanged});}
+    catch{result={ok:false,reason:'price_check_failed'};}
+    if(unchanged()){
+      w.price_monitoring_status=result.monitoring_status||result.reason;
+      if(result.ok){w.last_checked_at=Date.parse(result.last_observed_at);w.price_last_observation=result.last_price;}
+      if(persist)await saveMonitorStore(store);
+    }
+    return {...result,last_checked_at:w.last_checked_at};
+  }
   try{
     const r=await fetchImpl(w.target_url,{signal:AbortSignal.timeout(timeoutMs),redirect:'follow',headers:{'user-agent':'CYZOR-Free-Monitor/1.0'}});
     const body=Buffer.from(await r.arrayBuffer());
@@ -39,9 +54,10 @@ export async function checkWatch(store,id,{fetchImpl=fetch,persist=true,timeoutM
   }
 }
 
-export async function checkMonitorStore(store){
+export async function checkMonitorStore(store,{saveStore=saveMonitorStore,...checkOptions}={}){
   for(const w of store.watches.filter(x=>x.status==='active')){
-    await checkWatch(store,w.id,{persist:false});
+    await checkWatch(store,w.id,{...checkOptions,persist:false});
   }
-  await saveMonitorStore(store);
+  await saveStore(store);
 }
+
