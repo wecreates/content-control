@@ -235,6 +235,13 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=ANY($1::uuid[])',[listingJobs])).rows[0].n,1);
+  const malformedPublished=crypto.randomUUID(),malformedEvent=crypto.randomUUID();
+  await pool.query(`INSERT INTO pod_production_queue
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
+   VALUES($1,$2,$3,'redbubble',5,'{}','{}',$4,'published',$5)`,[malformedPublished,concept,account,crypto.randomUUID(),manifest]);
+  await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:malformedPublished,
+   provider_id:'missing-durable-provider-id',provider_event_id:malformedEvent}),providerKey),/LISTING_SCOPE_INVALID/);
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=$1',[malformedEvent])).rows[0].n,0);
   // Distinct provider observations retain each proof but emit one state transition.
   const readbacks=Array.from({length:4},()=>({...observed,provider_event_id:crypto.randomUUID()}));
   const repeated=await Promise.all(readbacks.map(o=>reconcilePublication(db,signedObservation(o),providerKey)));

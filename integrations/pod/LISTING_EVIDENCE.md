@@ -28,6 +28,12 @@ returns published:true and already_published:true, and does not emit another
 pod.published transition or rewrite the original publication state timestamp.
 Concurrent observations are serialized by the existing job row lock.
 
+A row already marked published must retain the exact nonempty provider identity
+that the new observation names. A missing or different durable identity rejects
+the observation before its inbox insert. Readback may fill a missing identity only
+while resolving submitted or ambiguous work; it cannot retroactively legitimize a
+malformed published row or attach fresh evidence to one.
+
 Migration 005 makes (platform, account_id, provider_id) unique when provider_id is
 present, including submitted receipts and reconciled ambiguous jobs. A provider
 listing cannot be attributed to another job in the same account by changing its
