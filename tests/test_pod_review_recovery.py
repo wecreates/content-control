@@ -397,6 +397,37 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
         self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
 
+    def test_book_package_swap_before_open_rechecks_declared_files(self):
+        moved = self.root/'moved-before-open-package'
+        original_open = books.os.open
+        swapped = False
+        def swap_before_open(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if (not swapped and dir_fd is None and Path(path) == self.package
+                    and flags & os.O_DIRECTORY):
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                self.package.joinpath('manifest.json').write_bytes(self.original_manifest)
+                manifest = json.loads(self.original_manifest)
+                for name in manifest['files']:
+                    target = self.package/name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(b'tampered replacement')
+            return original_open(path, flags, mode, dir_fd=dir_fd)
+        with patch.object(books.os,'open',side_effect=swap_before_open), \
+             patch.object(books,'render_book',wraps=books.render_book) as render:
+            with self.assertRaisesRegex(ValueError,'^FILE_HASH_MISMATCH$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertFalse((moved/'interior.pdf').exists())
+        self.assertFalse((moved/'interior.receipt.json').exists())
+        self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+
     def test_book_package_swap_before_staging_never_writes_replacement(self):
         moved = self.root/'moved-before-staging-package'
         original_urandom = books.os.urandom
