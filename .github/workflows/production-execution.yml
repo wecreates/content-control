@@ -36,6 +36,9 @@ on:
       - 'tests/test_historical_runtime_regressions.py'
       - 'integrations/watch-video/**'
       - '.github/workflows/production-execution.yml'
+      - 'requirements-media-runtime.txt'
+      - 'scripts/setup_pinned_media_runtime.py'
+      - 'tests/test_setup_pinned_media_runtime.py'
 permissions:
   contents: read
   actions: read
@@ -54,23 +57,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Probe and install only missing test media capabilities
-        timeout-minutes: 9
-        run: |
-          probe_audio() {
-            command -v ffmpeg && command -v ffprobe &&
-            ffmpeg -v error -f lavfi -i anullsrc=r=16000:cl=mono -t 0.02 -f f32le -y "$RUNNER_TEMP/test-audio-runtime.f32" &&
-            test -s "$RUNNER_TEMP/test-audio-runtime.f32"
-          }
-          if ! probe_audio; then
-            sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
-            sudo timeout 300 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg
-          fi
-          probe_audio
-          ffmpeg -hide_banner -version
-          ffprobe -hide_banner -version
-          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy
       - run: npm ci
+      - name: Install hash-pinned full media runtime
+        timeout-minutes: 3
+        run: |
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 --require-hashes --only-binary=:all: -r requirements-media-runtime.txt
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy
+          python scripts/setup_pinned_media_runtime.py --bin-dir "$RUNNER_TEMP/content-control-media-bin" --github-path
+          python -m unittest tests.test_setup_pinned_media_runtime -v
       - run: python -m unittest tests.test_record_production_execution -v
       - run: node --test tests/production-status.test.mjs
       - run: npm run test:system
