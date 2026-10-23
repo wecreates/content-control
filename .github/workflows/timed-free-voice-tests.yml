@@ -9,6 +9,8 @@ on:
       - 'scripts/v2_audio_assemble.py'
       - 'scripts/v2_clip_transcription.py'
       - 'scripts/repair_boss_voice_turn.py'
+      - 'scripts/probe_audio_runtime.py'
+      - 'tests/test_audio_runtime_probe.py'
       - 'tests/test_boss_voice_turn_repair.py'
       - 'tests/test_clip_spoken_number_decoding.py'
       - 'tests/test_timed_free_voice.py'
@@ -39,10 +41,17 @@ jobs:
         with: {python-version: '3.12'}
       - name: Install and require audio contract prerequisite
         run: |
-          sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
-          sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg espeak-ng
-          command -v ffmpeg
-      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py tests/test_boss_voice_turn_repair.py
+          # Reuse working runner tools; install only genuinely missing packages.
+          packages=()
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then packages+=(ffmpeg); fi
+          if ! command -v espeak-ng >/dev/null; then packages+=(espeak-ng); fi
+          if ((${#packages[@]})); then
+            printf 'Missing runtime packages: %s\n' "${packages[*]}"
+            sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
+            sudo timeout 300 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends "${packages[@]}"
+          fi
+          python scripts/probe_audio_runtime.py
+      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py tests/test_boss_voice_turn_repair.py tests/test_audio_runtime_probe.py
       - run: node --test tests/boss-fight-nonverbal-text.test.mjs
       - name: Verify retained actual voice artifact provenance
         env:
