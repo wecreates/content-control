@@ -1,4 +1,4 @@
-name: Long storyboard performance previews
+name: Long repaired visual candidate
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
@@ -10,7 +10,7 @@ jobs:
   preview:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +26,8 @@ jobs:
           python - <<'PY'
           import json,os,subprocess
           def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
+          preview=api('actions/runs/40017320008')
+          assert preview['head_sha']=='0689e8feb3fad0a715b5c2a6aa55a96e7236268b' and preview['conclusion']=='success'
           run=api('actions/runs/40003210434')
           assert run['head_sha']=='8af9738a6523f2efe623b7249d556cdfe94f3a6a' and run['conclusion']=='success'
           for aid,name in [(12522178951,'long-review-video'),(12522912674,'long-review-evidence')]:
@@ -57,21 +59,19 @@ jobs:
           python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy==2.2.6 opencv-python-headless==4.12.0.88
           python scripts/setup_pinned_media_runtime.py --bin-dir "$RUNNER_TEMP/content-control-media-bin" --github-path
       - name: Test full media capabilities and unchanged QA guards
-        run: python -m unittest tests.test_setup_pinned_media_runtime tests.test_production_reality_media_qa -v
-      - name: Render and inspect only repaired story segments with retained audio
-        run: python scripts/render_long_storyboard_previews.py
+        run: python -m unittest tests.test_setup_pinned_media_runtime tests.test_production_reality_media_qa tests.test_long_storyboard_previews -v
+      - name: Verify repository system and workflow registration
+        run: npm run test:system
+      - name: Render full repaired visuals and verify unchanged encoded audio
+        run: python scripts/render_long_visual_candidate.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: long-storyboard-review
+          name: long-repaired-review
           path: |
-            storyboard-preview/fee-consequence.mp4
-            storyboard-preview/store-shelves.mp4
-            storyboard-preview/audit-cart.mp4
-            storyboard-preview/trophy-invoice.mp4
-            storyboard-preview/ladder-deletions.mp4
-            storyboard-preview/four-rules.mp4
-            storyboard-preview/horror-teaser.mp4
-            storyboard-preview/preview-receipt.json
+            long-visual-candidate/candidate.mp4
+            long-visual-candidate/caption-frames.json
+            long-visual-candidate/media-qa.json
+            long-visual-candidate/review-receipt.json
           retention-days: 14
           if-no-files-found: error
