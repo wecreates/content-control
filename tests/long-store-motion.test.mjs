@@ -100,3 +100,9 @@ test('natural prop handling and reactions cover formerly static dialogue holds',
  assert.ok(Math.abs(longTrophyPose(290.5,trophy).trophyY-longTrophyPose(291.3,trophy).trophyY)>15);
  assert.ok(longTrophyPose(308,trophy).copies>longTrophyPose(304,trophy).copies);
 });
+
+test('finding the object includes a physical reach step across the full timeline sampling interval',()=>{
+ const t=longStoreTiming(ccsd);
+ assert.ok(longStorePose(99.1,t).daveX>longStorePose(98.5,t).daveX+20);
+ assert.ok(longStorePose(98.9,t).gait>5);
+});

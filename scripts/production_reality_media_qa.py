@@ -45,12 +45,14 @@ def audio_covers_video(audio,duration):
          and math.isfinite(start) and math.isfinite(length) and duration>0
          and abs(start)<=.1 and abs(start+length-duration)<=.15)
 
-def probe(video):
+def probe(video,sample_offset_frames=0):
  cap=cv2.VideoCapture(str(video));fps=float(cap.get(cv2.CAP_PROP_FPS) or 0);n=int(cap.get(cv2.CAP_PROP_FRAME_COUNT));prev=None;hashes=[];motion=[];black=0;border=[];i=0;stride=max(1,round(fps/8)) if math.isfinite(fps) and fps>0 else 1
+ if not isinstance(sample_offset_frames,int) or not 0<=sample_offset_frames<stride:
+  cap.release();raise ValueError('Sampling offset must lie inside the actual sampling stride')
  while True:
   ok,f=cap.read()
   if not ok:break
-  if i%stride==0:
+  if i%stride==sample_offset_frames:
    g=cv2.cvtColor(cv2.resize(f,(180,320)),cv2.COLOR_BGR2GRAY);black+=int(g.mean()<8)
    h=cv2.resize(g,(16,16));hashes.append(h)
    if prev is not None:motion.append(float(cv2.absdiff(g,prev).mean()/255))

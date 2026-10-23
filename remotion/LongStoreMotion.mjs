@@ -30,7 +30,7 @@ export const longStorePose=(time,t)=>{
  const walking=span(time,t.walk,t.find),reach=span(time,t.find,t.grasp);
  const pickup=span(time,t.grasp,t.grasp+.72),returning=span(time,t.return,t.shelf);
  const shelfPull=span(time,t.shelf,t.returned-.14),recoil=span(time,t.stamp,t.stamp+.18)*(1-span(time,t.stamp+.18,t.stamp+.75));
- let daveX=mix(285,675,walking)-175*pickup-12*recoil;
+ let daveX=mix(285,675,walking)+45*reach-220*pickup-12*recoil;
  let objectX=mix(865,650,pickup)-12*recoil,objectY=mix(422,430,pickup);
  if(time>=t.return){daveX=mix(500,655,returning);objectX=mix(650,805,returning);objectY=mix(430,407,returning);}
  if(time>=t.shelf){objectX=mix(805,865,shelfPull);objectY=mix(407,422,shelfPull);}
@@ -50,7 +50,7 @@ export const longStorePose=(time,t)=>{
   monkLean:-7*pulse(time,105.7,1.5)-7*pulse(time,t.stamp+.55,1.2),monkPoint:span(time,105.7,t.stamp)*(1-span(time,t.return-.4,t.return)),
   scoreboardX:mix(280,470,span(time,t.returned-.14,t.end-.08)),
   objectOwner:time<t.grasp?'shelf':time<t.shelf?'dave':shelfPull<1?'shelf-hand':'shelf',
-  gait:time>=t.walk&&time<t.find?Math.sin((time-t.walk)*10)*15*Math.sin(walking*Math.PI):time>t.returned-.14?12*Math.sin((time-t.returned+.14)*10)*Math.sin(span(time,t.returned-.14,t.end-.06)*Math.PI):0,
+  gait:time>=t.walk&&time<t.find?Math.sin((time-t.walk)*10)*15*Math.sin(walking*Math.PI):time>=t.find&&time<t.grasp?14*Math.sin(Math.PI*reach):time>t.returned-.14?12*Math.sin((time-t.returned+.14)*10)*Math.sin(span(time,t.returned-.14,t.end-.06)*Math.PI):0,
   priceVisible:time>=t.price,creditProgress:span(time,t.credit,t.credit+.22),payProgress:span(time,t.pay,t.pay+.22),
   walletOpen:walletOpen*(1-span(time,t.stamp+.55,t.stamp+1.3)),mothX:daveX-70-95*moth,mothY:440-115*moth,mothVisible:time>=t.pay+.12&&time<t.pay+1.65,
   stampProgress:span(time,t.stamp-.14,t.stamp),stampOpacity:span(time,t.stamp-.14,t.stamp)*(1-span(time,t.return-.25,t.return)),

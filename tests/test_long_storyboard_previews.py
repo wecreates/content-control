@@ -13,11 +13,14 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 class PreviewOrchestrationTests(unittest.TestCase):
-    def test_stream_metadata_does_not_shadow_encoded_media_analyzer(self):
+    def run_preview_fixture(self, first=0, global_fail=False):
         metrics = {'complete_video_decode': True, 'complete_av_decode': True, 'audio_audible': True,
                    'black_samples': 0, 'max_duplicate_run_seconds': .125, 'max_border': .01}
         called = []
-        fake_qa = types.SimpleNamespace(probe=lambda path: (called.append(path) or metrics),
+        def media_probe(path, **kwargs):
+            called.append(kwargs)
+            return dict(metrics, max_duplicate_run_seconds=.75) if kwargs and global_fail else dict(metrics)
+        fake_qa = types.SimpleNamespace(probe=media_probe,
                                        audio_covers_video=lambda _metrics, _duration: True)
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -34,17 +37,30 @@ class PreviewOrchestrationTests(unittest.TestCase):
             try:
                 os.chdir(root)
                 with patch.object(MODULE,'SOURCE_SHA','fixture'), patch.object(MODULE,'CAPTION_SHA','fixture'), \
-                     patch.object(MODULE,'sha',return_value='fixture'), patch.object(MODULE,'SEGMENTS',[('test',0,23)]), \
+                     patch.object(MODULE,'sha',return_value='fixture'), patch.object(MODULE,'SEGMENTS',[('test',first,first+23)]), \
                      patch.object(MODULE.subprocess,'run'), patch.object(MODULE.subprocess,'check_output',return_value=json.dumps(metadata).encode()), \
                      patch.dict(sys.modules,{'production_reality_media_qa':fake_qa}):
-                    MODULE.main()
+                    if global_fail:
+                        with self.assertRaisesRegex(AssertionError,'Preview media checks failed'):MODULE.main()
+                    else:MODULE.main()
                 receipt=json.loads((root/'storyboard-preview/preview-receipt.json').read_text())
-                self.assertEqual(len(called),1)
-                self.assertTrue(all(receipt['segments'][0]['checks'].values()))
-                self.assertEqual(receipt['status'],'PREVIEWS_PENDING_CREATIVE_REVIEW')
+                self.assertEqual(len(called),1 if first%3==0 else 2)
+                if first%3:self.assertEqual(called[-1],{'sample_offset_frames':(-first)%3})
+                self.assertEqual(all(receipt['segments'][0]['checks'].values()),not global_fail)
+                self.assertEqual(receipt['status'],'BLOCKED_PREVIEW_MEDIA_CHECKS' if global_fail else 'PREVIEWS_PENDING_CREATIVE_REVIEW')
                 self.assertFalse(receipt['production_approved'])
             finally:
                 os.chdir(previous)
+
+    def test_stream_metadata_does_not_shadow_encoded_media_analyzer(self):
+        self.run_preview_fixture()
+
+    def test_every_segment_offset_is_aligned_to_full_timeline(self):
+        for first in [1,2,3,2162,4071,6896,8830,11439,12340]:
+            with self.subTest(first=first):self.run_preview_fixture(first)
+
+    def test_global_timeline_hold_blocks_even_when_local_sampling_passes(self):
+        self.run_preview_fixture(2162,global_fail=True)
 
 if __name__ == '__main__':
     unittest.main()

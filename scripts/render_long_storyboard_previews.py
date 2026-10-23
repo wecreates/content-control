@@ -55,7 +55,9 @@ def main():
         assert abs(float(video['duration']) - duration) < 1/24
         assert abs(float(audio['duration']) - duration) < .05
         metrics = probe(candidate)
-        checks = {'complete_video_decode': metrics['complete_video_decode'], 'complete_av_decode': metrics['complete_av_decode'], 'audio_audible': metrics['audio_audible'], 'audio_covers_video': audio_covers_video(metrics, duration), 'no_black': metrics['black_samples'] == 0, 'no_duplicate_run': metrics['max_duplicate_run_seconds'] < .75, 'safe_border': metrics['max_border'] < .18}
+        global_metrics = probe(candidate, sample_offset_frames=(-first) % 3) if first % 3 else metrics
+        metrics['global_sampling_max_duplicate_run_seconds'] = global_metrics['max_duplicate_run_seconds']
+        checks = {'complete_video_decode': metrics['complete_video_decode'], 'complete_av_decode': metrics['complete_av_decode'], 'audio_audible': metrics['audio_audible'], 'audio_covers_video': audio_covers_video(metrics, duration), 'no_black': metrics['black_samples'] == 0, 'no_duplicate_run': metrics['max_duplicate_run_seconds'] < .75, 'safe_border': metrics['max_border'] < .18, 'no_duplicate_run_global_alignment': global_metrics['max_duplicate_run_seconds'] < .75}
         receipts.append({'name': name, 'frames': [first, last], 'source_start_seconds': first/24, 'duration_seconds': duration, 'sha256': sha(candidate), 'full_av_decode': 'PASS', 'video_frames': int(video['nb_frames']), 'checks': checks, 'metrics': metrics})
         print(json.dumps(receipts[-1]), flush=True)
     assert sha(source) == SOURCE_SHA

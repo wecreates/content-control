@@ -107,3 +107,30 @@ class DeclarationSeparationTests(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
+
+
+class GlobalSamplingAlignmentTests(unittest.TestCase):
+    def test_all_three_frame_offsets_keep_complete_decode_and_select_correct_frames(self):
+        from scripts import production_reality_media_qa as qa
+        from unittest.mock import MagicMock
+        frames=[np.full((24,24,3),i*20,dtype=np.uint8) for i in range(9)]
+        for offset in range(3):
+            cap=MagicMock()
+            cap.get.side_effect=lambda key: 24 if key==qa.cv2.CAP_PROP_FPS else 9
+            cap.read.side_effect=[(True,f) for f in frames]+[(False,None)]
+            with patch.object(qa.cv2,'VideoCapture',return_value=cap), patch.object(qa,'measure_audio',return_value={}), \
+                 patch.object(qa,'decode_all_streams',return_value=True), patch.object(qa.subprocess,'check_output',return_value='video\naudio'), \
+                 patch.object(qa,'duplicate_run_stats',wraps=qa.duplicate_run_stats) as stats:
+                report=qa.probe('fixture',sample_offset_frames=offset)
+                observed=[float(a.mean()) for a in stats.call_args.args[0]]
+            self.assertEqual(observed,[i*20 for i in range(offset,9,3)])
+            self.assertEqual(report['decoded_frames'],9)
+            self.assertTrue(report['complete_video_decode'])
+    def test_out_of_stride_offset_cannot_silently_skip_all_samples(self):
+        from scripts import production_reality_media_qa as qa
+        from unittest.mock import MagicMock
+        for offset in [-1,3,1.5]:
+            cap=MagicMock();cap.get.return_value=24
+            with patch.object(qa.cv2,'VideoCapture',return_value=cap):
+                with self.assertRaises(ValueError):qa.probe('fixture',sample_offset_frames=offset)
+            cap.release.assert_called_once()
