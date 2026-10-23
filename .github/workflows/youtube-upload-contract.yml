@@ -1,0 +1,19 @@
+name: Dormant YouTube upload contract
+on:
+  pull_request:
+    paths:
+      - 'integrations/social-automation/youtube-upload*.mjs'
+      - 'tests/youtube-upload*.test.mjs'
+      - '.github/workflows/youtube-upload-contract.yml'
+permissions:
+  contents: read
+jobs:
+  fake-transport-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/youtube-upload*.test.mjs tests/social-automation.test.mjs
