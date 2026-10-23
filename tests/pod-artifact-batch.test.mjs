@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import {ARTIFACT_MEDIA_TYPES,ArtifactStore} from '../integrations/pod/artifacts.mjs';
-import {readPackageArtifacts,readPackageManifest} from '../integrations/pod/package-artifacts.mjs';
+import {readPackageArtifacts,readPackageManifest,readPackageSnapshot} from '../integrations/pod/package-artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
@@ -158,6 +158,42 @@ test('package manifest snapshot verifies exact package identity and disabled sco
  ]){
   const changed={...expected,...patch};await fs.writeFile(path.join(root,'manifest.json'),canonical(changed));
   await assert.rejects(readPackageManifest(root,{platform:'redbubble'}),/MANIFEST_(?:HASH_MISMATCH|INVALID)/);
+ }
+}));
+test('manifest reads remain bound to the opened package directory during a path swap',t=>fixture(async root=>{
+ const expected=manifest(),replacement=manifest({source_sha256:hash('replacement source')});
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(expected));
+ const moved=root+'-opened',alternate=root+'-replacement';
+ await fs.mkdir(alternate);await fs.writeFile(path.join(alternate,'manifest.json'),canonical(replacement));
+ const open=fs.open.bind(fs);let swapped=false;
+ t.mock.method(fs,'open',async(file,...args)=>{
+  if(!swapped&&String(file).endsWith('/manifest.json')){
+   swapped=true;await fs.rename(root,moved);await fs.rename(alternate,root);
+  }
+  return open(file,...args);
+ });
+ try{assert.deepEqual(await readPackageManifest(root,{platform:'redbubble'}),expected);}
+ finally{
+  t.mock.restoreAll();
+  await fs.rm(moved,{recursive:true,force:true});await fs.rm(alternate,{recursive:true,force:true});
+ }
+}));
+test('one descriptor binds manifest and artifacts across an inter-phase package swap',()=>fixture(async root=>{
+ const replacementPng=Buffer.from(png);replacementPng[30]^=1;
+ const expected=manifest(),replacement=manifest({files:{
+  'art-mask.png':hash(replacementPng),'print.png':hash(replacementPng),'text-mask.png':hash(replacementPng)}});
+ for(const name of Object.keys(expected.files))await fs.writeFile(path.join(root,name),png);
+ await fs.writeFile(path.join(root,'manifest.json'),canonical(expected));
+ const moved=root+'-opened',alternate=root+'-replacement';await fs.mkdir(alternate);
+ for(const name of Object.keys(replacement.files))await fs.writeFile(path.join(alternate,name),replacementPng);
+ await fs.writeFile(path.join(alternate,'manifest.json'),canonical(replacement));
+ try{
+  const snapshot=await readPackageSnapshot(root,{platform:'redbubble'},{platform:'redbubble'},
+   {beforeArtifacts:async()=>{await fs.rename(root,moved);await fs.rename(alternate,root);}});
+  assert.deepEqual(snapshot.manifest,expected);
+  assert.deepEqual(snapshot.artifacts.map(item=>item.body),[png,png,png]);
+ }finally{
+  await fs.rm(moved,{recursive:true,force:true});await fs.rm(alternate,{recursive:true,force:true});
  }
 }));
 test('package manifest rejects duplicate decoded keys at every depth before identity acceptance',()=>fixture(async root=>{

@@ -262,6 +262,15 @@ These parser tests use synthetic signatures only. They do not establish live
 source/reviewer authority, rights, production acceptance or deployment. Both
 publication flags remain false and all 24 live acceptance areas remain open.
 
+The parent production reader now holds one package-directory descriptor across
+manifest verification, its current-authority refresh and every package-member
+read. Linux descriptor-rooted opens prevent a caller-visible directory swap from
+combining one valid manifest with members from another package; unsupported
+runtimes fail closed instead of using a pathname fallback. Regressions cover a
+swap at the manifest-open boundary and another between manifest and artifact
+phases. This makes one production snapshot directory-consistent, but it is not an
+adversarial filesystem sandbox, live rights/quality approval or deployment proof.
+
 
 ## KDP interior output installation
 
