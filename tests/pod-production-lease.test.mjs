@@ -46,4 +46,24 @@ for(const [label,run] of [
   assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'COMMIT');
  });
 }
+for(const [label,state,receipt,reason] of [
+ ['successful submission','submitted',{id:'provider-listing'},null],
+ ['uncertain submission','ambiguous',{},'SUBMISSION_UNCERTAIN'],
+ ['blocked submission','blocked',{},'RELEASE_BLOCKED']
+]){
+ test('expired publication lease blocks '+label+' without writes',async()=>{
+  const f=fixture(false);await assert.rejects(f.db.finish(job,state,receipt,reason),/LEASE_LOST/);
+  assert.equal(f.writes.length,0);
+  const lock=f.queries.findIndex(q=>q.includes("state='publishing' FOR UPDATE"));
+  const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
+  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'ROLLBACK');
+ });
+ test('valid publication lease permits '+label,async()=>{
+  const f=fixture(true);await f.db.finish(job,state,receipt,reason);
+  assert.ok(f.writes.length>0);
+  const lock=f.queries.findIndex(q=>q.includes("state='publishing' FOR UPDATE"));
+  const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
+  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'COMMIT');
+ });
+}
 
