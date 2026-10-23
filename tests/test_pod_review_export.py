@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 spec = importlib.util.spec_from_file_location('export', Path(__file__).resolve().parents[1] / 'scripts/pod_review_export.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+import pod_output_attempt as attempts
 
 def png_bytes(marker=0, padding=0):
     body = bytearray(45 + padding)
@@ -90,6 +91,46 @@ class ExportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'ARTIFACT_INVALID'):
                 module.export_package('https://example.com/api/print', 'job', root, 'k'*32, lambda route, limit: good(route, limit) if route.endswith('/package') else b'corrupt')
             self.assertFalse(root.exists())
+
+    def test_failure_does_not_remove_a_replacement_directory(self):
+        good = self.fixture()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            moved = Path(tmp) / 'moved-attempt'
+            def replace(route, limit):
+                if route.endswith('/package'):
+                    return good(route, limit)
+                root.rename(moved)
+                root.mkdir()
+                (root / 'concurrent').write_bytes(b'keep')
+                raise RuntimeError('replacement fixture')
+            with self.assertRaisesRegex(RuntimeError, 'replacement fixture'):
+                module.export_package(
+                    'https://example.com/api/print', 'job', root, 'k'*32,
+                    replace)
+            self.assertEqual((root / 'concurrent').read_bytes(), b'keep')
+            self.assertTrue(moved.is_dir())
+
+    def test_cleanup_failure_preserves_original_error_and_marks_recovery(self):
+        good = self.fixture()
+        failure = RuntimeError('original export error')
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / 'review'
+            def fail(route, limit):
+                if route.endswith('/package'):
+                    return good(route, limit)
+                (root / 'partial').write_bytes(b'fixture')
+                raise failure
+            with patch.object(attempts.shutil, 'rmtree',
+                              side_effect=PermissionError('fixture')):
+                with self.assertRaises(RuntimeError) as caught:
+                    module.export_package(
+                        'https://example.com/api/print', 'job', root, 'k'*32,
+                        fail)
+            self.assertIs(caught.exception, failure)
+            self.assertIn('REVIEW_EXPORT_OUTPUT_CLEANUP_FAILED',
+                          failure.__notes__)
+            self.assertEqual((root / 'partial').read_bytes(), b'fixture')
 
     def test_hash_correct_malformed_media_remove_partial_directory(self):
         for bad in (b'not a png', b'\x89PNG\r\n\x1a\nmissing chunks'):

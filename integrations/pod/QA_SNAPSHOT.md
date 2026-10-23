@@ -87,6 +87,15 @@ hardening, not encryption, a defense against the same account/root, durable
 backup evidence or proof of independent approval. A regression runs the exporter
 under umask `000` and verifies the exact directory/file permission boundary.
 
+Once the new review directory is opened, export failure cleanup compares its
+held device/inode with the current output path before recursive removal. A moved
+attempt can remain for manual recovery, while a concurrent replacement directory
+or symlink is preserved. Cleanup denial keeps the original export failure and
+adds `REVIEW_EXPORT_OUTPUT_CLEANUP_FAILED` instead of replacing the diagnostic.
+Regressions exercise replacement and denied-cleanup behavior. This still is not
+a same-user adversarial filesystem sandbox and cannot guarantee cleanup after a
+process crash, `SIGKILL`, default `SIGTERM` or filesystem failure.
+
 
 ## Review generation failure recovery
 

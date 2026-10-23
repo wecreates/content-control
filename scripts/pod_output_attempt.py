@@ -4,10 +4,11 @@ import os
 import shutil
 
 @contextmanager
-def output_attempt(output, cleanup_note='REVIEW_OUTPUT_CLEANUP_FAILED'):
+def output_attempt(output, cleanup_note='REVIEW_OUTPUT_CLEANUP_FAILED', *,
+                   mode=0o777, parents=True):
     # Existing output is never a cleanup target. Hold the new directory open so
     # its inode cannot be recycled while checking for a concurrent replacement.
-    output.mkdir(parents=True, exist_ok=False)
+    output.mkdir(mode=mode, parents=parents, exist_ok=False)
     fd = os.open(output, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     owned = os.fstat(fd)
     try:
