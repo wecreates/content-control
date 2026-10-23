@@ -154,7 +154,7 @@
         "dialogue": [
           {
             "speaker": "points_monk",
-            "text": "Miss one payment and—critical hit.",
+            "text": "Miss one payment and\u2014critical hit.",
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
@@ -179,7 +179,9 @@
             "performance": {
               "tone": "anxious excited",
               "pace": 1.08
-            }
+            },
+            "start": 19.5,
+            "end": 22
           },
           {
             "speaker": "points_monk",
@@ -187,7 +189,9 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 22,
+            "end": 23
           }
         ]
       }
@@ -229,7 +233,9 @@
             "performance": {
               "tone": "anxious excited",
               "pace": 1.08
-            }
+            },
+            "start": 26,
+            "end": 28.3
           },
           {
             "speaker": "points_monk",
@@ -237,7 +243,9 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 28.3,
+            "end": 29
           }
         ]
       }
@@ -272,14 +280,16 @@
         "intent": "trap offer"
       },
       "audio": {
-        "dialogue": [
+        "dialogue": []
+      },
+      "visual": {
+        "text_events": [
           {
-            "speaker": "cashback_goblin",
+            "type": "nonverbal_text",
+            "character_id": "cashback_goblin",
             "text": "Instant credit repair. Totally legitimate.",
-            "performance": {
-              "tone": "mischievous",
-              "pace": 1.08
-            }
+            "start": 32,
+            "end": 35
           }
         ]
       }
