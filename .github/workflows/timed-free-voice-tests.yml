@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/timed_free_voice.py'
       - 'scripts/smoke_timed_free_voice.py'
+      - 'scripts/measure_timed_free_voice.py'
       - 'scripts/v2_free_voice.py'
       - 'scripts/v2_audio_assemble.py'
       - 'tests/test_timed_free_voice.py'
@@ -43,6 +44,8 @@ jobs:
           python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy==2.3.5
       - name: Synthesize three approved stock voices and fully decode audio
         run: python scripts/smoke_timed_free_voice.py --out-dir state/timed-free-voice-smoke
+      - name: Measure all actual dialogue durations before fit validation
+        run: python scripts/measure_timed_free_voice.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --out state/timed-free-voice-smoke/boss-dialogue-durations.json
       - name: Verify actual Boss Fight dialogue fits explicit speech windows
         run: |
           python scripts/timed_free_voice.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --out-dir state/boss-fight-free-voice
