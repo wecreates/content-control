@@ -33,6 +33,27 @@ test('stage captures exact UTF-8 and redacts nonzero/spawn errors',async()=>{
  await fixture("process.stderr.write('private');process.exit(2);",async options=>await assert.rejects(runPythonStage('fixture.cjs',[],options),/^Error: PYTHON_STAGE_FAILED$/));
  await fixture('',async options=>await assert.rejects(runPythonStage('fixture.cjs',[],{...options,env:{POD_PYTHON:'/nonexistent-pod-python'}}),/^Error: PYTHON_STAGE_SPAWN_FAILED$/));
 });
+test('stage paths use an inherited workspace descriptor after the pathname is replaced',async()=>{
+ await fixture("const fs=require('node:fs');fs.writeFileSync(process.argv[3],fs.readFileSync(process.argv[2]));",async options=>{
+  const workspacePath=path.join(options.root,'workspace'),moved=workspacePath+'-opened';
+  await fs.mkdir(workspacePath);await fs.writeFile(path.join(workspacePath,'input'),'trusted');
+  const handle=await fs.open(workspacePath,'r');
+  try{
+   const workspace={fd:handle.fd,root:`/proc/self/fd/${handle.fd}`};
+   await fs.rename(workspacePath,moved);await fs.mkdir(workspacePath);
+   await fs.writeFile(path.join(workspacePath,'input'),'replacement');
+   await runPythonStage('fixture.cjs',[path.join(workspace.root,'input'),path.join(workspace.root,'output')],{...options,workspace});
+   assert.equal(await fs.readFile(path.join(moved,'output'),'utf8'),'trusted');
+   await assert.rejects(fs.stat(path.join(workspacePath,'output')),{code:'ENOENT'});
+  }finally{await handle.close();}
+ });
+});
+test('invalid stage workspace descriptors fail before process launch',async()=>{
+ await fixture("process.stdout.write('must not run');",async options=>{
+  for(const workspace of [null,{}, {fd:2,root:'/proc/self/fd/2'},{fd:9,root:'/tmp/replaced'}])
+   await assert.rejects(runPythonStage('fixture.cjs',[],{...options,workspace}),/^Error: PYTHON_STAGE_WORKSPACE_INVALID$/);
+ });
+});
 test('output overflow fails even when the process exits successfully',async()=>{
  await fixture("process.stdout.write('x'.repeat(10000));",async options=>await assert.rejects(runPythonStage('fixture.cjs',[],{...options,maxOutputBytes:100}),/PYTHON_STAGE_OUTPUT_LIMIT/));
 });

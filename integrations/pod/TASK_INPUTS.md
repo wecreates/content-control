@@ -7,6 +7,21 @@ rejected. Each hash must be a lowercase 64-character hexadecimal **string**;
 arrays and other coercible values are invalid. Restored bytes remain bounded
 to 64 MiB in a private disposable workspace.
 
+The stored resolver opens that workspace once without following a symlink,
+verifies its Linux `/proc/self/fd` alias, and restores every input through the
+held directory descriptor. Returned parent-process paths use that same alias.
+Each bounded Python stage receives the descriptor explicitly as child fd 3 and
+its workspace arguments are rewritten to `/proc/self/fd/3`; replacing the
+temporary pathname therefore cannot redirect restored inputs or stage outputs.
+Missing descriptor aliases and malformed stage descriptors fail closed as
+`TASK_WORKSPACE_INVALID` or `PYTHON_STAGE_WORKSPACE_INVALID`. The descriptor
+stays open until every stage and reviewer settles and cleanup completes.
+
+This boundary is Linux-specific, matching the existing production container and
+package snapshot contract. It does not protect against an in-place writer that
+already has access to the opened directory, establish durable storage, or turn
+the disposable workspace into acceptance evidence.
+
 ## Input/output separation
 
 The names `package`, `qa.json` and `qa-signed.json` are reserved for generated
@@ -60,6 +75,7 @@ by the descriptor.
 
 Regression tests cover reserved filenames before input reads, malformed hashes,
 interior shape/extra fields/traversal, valid interior restoration and cleanup,
+pathname replacement during restoration, inherited child-descriptor execution,
 and production rejection before Python execution. They do not establish live
 platform or end-to-end acceptance.
 

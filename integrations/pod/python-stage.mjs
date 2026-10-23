@@ -6,17 +6,29 @@ import {stageFailureReason} from './failure-reasons.mjs';
 // workspace in finally. A dedicated POSIX group includes ordinary OCR/render
 // subprocesses; killing only the parent can leave inherited output pipes open.
 export async function runPythonStage(script,args,{root,signal,env=process.env,
- timeoutMs=480000,killGraceMs=5000,maxOutputBytes=1048576}={}){
+ timeoutMs=480000,killGraceMs=5000,maxOutputBytes=1048576,workspace}={}){
  if(signal?.aborted)throw Error('PYTHON_STAGE_ABORTED');
  if(process.platform==='win32')throw Error('PYTHON_STAGE_PLATFORM_UNSUPPORTED');
  for(const n of [timeoutMs,killGraceMs,maxOutputBytes])if(!Number.isSafeInteger(n)||n<1)throw Error('PYTHON_STAGE_CONFIG_INVALID');
+ let stageArgs=args,stdio=['ignore','pipe','pipe'];
+ if(workspace!==undefined){
+  if(!workspace||!Number.isSafeInteger(workspace.fd)||workspace.fd<3||
+   workspace.root!==`/proc/self/fd/${workspace.fd}`)throw Error('PYTHON_STAGE_WORKSPACE_INVALID');
+  const childRoot='/proc/self/fd/3',prefix=workspace.root+path.sep;
+  stageArgs=args.map(value=>typeof value==='string'&&value.startsWith(prefix)
+   ?childRoot+value.slice(workspace.root.length)
+   :value===workspace.root?childRoot:value);
+  // Duplicate the held parent directory descriptor into the child as fd 3.
+  // Child paths cannot be redirected by replacing the workspace pathname.
+  stdio.push(workspace.fd);
+ }
  const started=performance.now();if(!Number.isFinite(started))throw Error('PYTHON_STAGE_CONFIG_INVALID');
  const deadline=started+timeoutMs;
  const expired=()=>{const now=performance.now();return !Number.isFinite(now)||now>=deadline;};
  return new Promise((resolve,reject)=>{
   let child;
-  try{child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...args],
-   {cwd:root,env,detached:true,stdio:['ignore','pipe','pipe']});}catch{reject(Error('PYTHON_STAGE_SPAWN_FAILED'));return;}
+  try{child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...stageArgs],
+   {cwd:root,env,detached:true,stdio});}catch{reject(Error('PYTHON_STAGE_SPAWN_FAILED'));return;}
   let bytes=0,failure=null,forceTimer,timer,settled=false;
   const chunks=[];
   const signalGroup=signalName=>{

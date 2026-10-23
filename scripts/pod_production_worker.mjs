@@ -36,6 +36,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   task=await resolveTask(job,{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  const runStage=(script,args)=>python(script,args,{root,signal,env,workspace:task.stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    task.source,task.assetRights,task.textLayers,env.POD_RIGHTS_KEY,{signal});
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
@@ -57,25 +58,25 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    await authorizeProduction();
    // Re-read/hash the retained ZIP inside the bounded child, then check its
    // members and guide against the authenticated profile before rendering.
-   await python('pod_kdp_template_import.py',['--archive',task.templateSource,
-    '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash],{root,signal,env});
+   await runStage('pod_kdp_template_import.py',['--archive',task.templateSource,
+    '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash]);
    const interiorRecord=verifyEnvelope(interiorEnvelope,env.POD_TEMPLATE_KEY,'pod:interior-template');
    await verifyTemplateSource(task.interior.source,interiorRecord.source_sha256,{signal});
    await authorizeProduction();
-   await python('pod_kdp_interior_template_import.py',[
+   await runStage('pod_kdp_interior_template_import.py',[
     '--archive',task.interior.source,
     '--trim-width',String(interior.trim_inches[0]),
     '--trim-height',String(interior.trim_inches[1]),
     '--expected-sha256',interiorRecord.source_sha256,
-    '--source-member',interiorRecord.source_member],{root,signal,env});
+    '--source-member',interiorRecord.source_member]);
   }
   await authorizeProduction();
-  await python('pod_asset_generator.py',['--source',task.source,'--template',task.template,
-   '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])],{root,signal,env});
+  await runStage('pod_asset_generator.py',['--source',task.source,'--template',task.template,
+   '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])]);
   if(job.brief.platform==='kdp'){
    await authorizeProduction();
-   await python('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
-    '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
+   await runStage('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
+    '--pages',task.interior.pages,'--font',task.interior.font]);
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
   const {manifest,artifacts}=await readPackageSnapshot(task.output,
@@ -113,7 +114,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // A failed QA process still emits a signed FAIL when signing is available.
   await authorizeProduction();
   let qaProcessFailed=false;
-  try{await python('pod_vision_qa.py',args,{root,signal,env});}catch(error){
+  try{await runStage('pod_vision_qa.py',args);}catch(error){
    if(error.message!=='PYTHON_STAGE_FAILED')throw error;
    qaProcessFailed=true;
   }
