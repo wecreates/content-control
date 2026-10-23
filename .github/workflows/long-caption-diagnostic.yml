@@ -1,0 +1,57 @@
+name: Long retained caption diagnostic
+on:
+  push:
+    branches: [codex/long-caption-diagnostic-20261023]
+    paths: ['.github/workflows/long-caption-diagnostic.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify exact retained artifact identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
+          run=api('actions/runs/39993662037')
+          assert run['head_sha']=='0413f767ce00d41c9f4063301833db479bebbedf'
+          assert run['path']=='.github/workflows/production-execution.yml'
+          artifact=api('actions/artifacts/12518594645')
+          assert artifact['workflow_run']['id']==39993662037
+          assert artifact['name']=='production-state-long' and not artifact['expired']
+          print('Verified exact retained Long source; read-only diagnostic.')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '12518594645'
+          run-id: '39993662037'
+          github-token: ${{ github.token }}
+          path: retained
+          merge-multiple: true
+      - name: Emit bounded caption evidence only
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('retained')
+          for name in ['captions.json','v2_captions.log']:
+              p=root/name
+              assert p.is_file() and not p.is_symlink() and p.stat().st_size<65536, name
+              print('BEGIN '+name)
+              print(p.read_text())
+              print('END '+name)
+          p=root/'transcription-repaired.json'
+          assert p.is_file() and not p.is_symlink() and p.stat().st_size<4*1024*1024
+          d=json.loads(p.read_text())
+          summary={k:d.get(k) for k in ['status','audio_sha256','word_timestamps','sequence_similarity','content_token_recall']}
+          summary['word_count']=len(d.get('words',[]))
+          summary['repaired_windows']=[{'scene_id':x.get('scene_id'),'repair_reasons':x.get('repair_reasons')} for x in d.get('recognition_repair',{}).get('windows',[])]
+          print(json.dumps(summary))
+          PY
