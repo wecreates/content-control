@@ -1,23 +1,23 @@
 {
   "schema_version": 1,
   "format": "long",
-  "run_id": 38472504826,
+  "run_id": 39993662037,
   "run_attempt": 1,
-  "recorded_at": "2026-10-13T22:05:46.144443+00:00",
-  "source_commit": "89f02aaa10036df57283982fcf727b443dcc306e",
-  "workflow_outcome": "success",
-  "candidate_sha256": "ae4b2332c2c616b5004dc58ff9e8fcdbd754107ac04fd478bba8eb26a950d324",
-  "candidate_generated": true,
-  "technical_status": "PASS",
-  "status": "REVIEW_PENDING",
+  "recorded_at": "2026-10-23T17:29:19.542055+00:00",
+  "source_commit": "0413f767ce00d41c9f4063301833db479bebbedf",
+  "workflow_outcome": "failure",
+  "candidate_sha256": null,
+  "candidate_generated": false,
+  "technical_status": "BLOCKED",
+  "status": "BLOCKED",
   "checks": {
     "technical_video": {
-      "status": "PASS",
-      "hash_bound": true
+      "status": "BLOCKED",
+      "hash_bound": false
     },
     "openmontage_probe": {
-      "status": "PASS",
-      "hash_bound": true
+      "status": "BLOCKED",
+      "hash_bound": false
     }
   },
   "creative_review": "PENDING",
