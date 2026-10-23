@@ -345,6 +345,15 @@ Tests verify the required replace-then-sync order and the sync-failure state. Th
 improves local filesystem crash durability but is not an independent backup,
 multi-file transaction, retention policy or completed production recovery drill.
 
+After that final directory sync succeeds, assembly checks the exact committed
+manifest identity and bytes and re-hashes every declared package member through
+the held directory descriptor. A manifest or member changed while the sync was in
+progress is reported as `BOOK_PACKAGE_CHANGED_AFTER_COMMIT`; the possibly durable
+package is preserved intact for recovery rather than partially cleaned. Regressions
+cover both same-inode manifest mutation and interior mutation during the final
+sync. This closes that false-success window, but it cannot prevent a writer from
+changing files again after the final verification snapshot.
+
 Every final package member is also hash-verified again after the new manifest is
 visible. The private staging directory holds an fsynced byte-exact copy of the
 original manifest. A member modified during the manifest rename causes that copy
