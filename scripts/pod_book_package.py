@@ -15,6 +15,28 @@ def _identity(value):
     return value.st_dev, value.st_ino
 
 
+def _require_path_identity(path, expected):
+    try:
+        if _identity(path.lstat()) != expected:
+            raise RuntimeError('PACKAGE_REPLACED')
+    except FileNotFoundError:
+        raise RuntimeError('PACKAGE_REPLACED') from None
+
+
+def _descriptor_directory(directory_fd, expected):
+    # All supported worker environments are Linux, where /proc/self/fd is a
+    # kernel-owned alias for an already-open descriptor.  Keep pathname-only
+    # render and JSON helpers anchored to the directory we opened rather than
+    # resolving the caller-visible package path again.
+    path = Path('/proc/self/fd')/str(directory_fd)
+    try:
+        if _identity(path.stat()) == expected:
+            return path
+    except OSError:
+        pass
+    raise RuntimeError('BOOK_STAGING_PATH_UNAVAILABLE')
+
+
 def _snapshot_file(directory_fd, name):
     fd = os.open(name, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW,
                  dir_fd=directory_fd)
@@ -109,11 +131,7 @@ def assemble(root, spec, pages, font):
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         root_identity = _identity(os.fstat(root_fd))
-        try:
-            if _identity(root.lstat()) != root_identity:
-                raise RuntimeError('PACKAGE_REPLACED')
-        except FileNotFoundError:
-            raise RuntimeError('PACKAGE_REPLACED') from None
+        _require_path_identity(root, root_identity)
         original_identity, original_bytes = _snapshot_file(root_fd, 'manifest.json')
         original_manifest = {**manifest, 'package_sha256': previous}
         if strict_json(original_bytes.decode('utf-8', errors='strict')) != original_manifest:
@@ -122,16 +140,18 @@ def assemble(root, spec, pages, font):
         os.close(root_fd)
         raise
     stage_name = '.pod-book-' + os.urandom(12).hex()
-    stage = root/stage_name
     stage_fd = None
     stage_identity = None
     installed = []
     committed = False
     failure = None
     try:
-        stage.mkdir(mode=0o700)
-        stage_fd = os.open(stage, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        _require_path_identity(root, root_identity)
+        os.mkdir(stage_name, mode=0o700, dir_fd=root_fd)
+        stage_fd = os.open(stage_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                           dir_fd=root_fd)
         stage_identity = _identity(os.fstat(stage_fd))
+        stage = _descriptor_directory(stage_fd, stage_identity)
         receipt = render_book(spec, pages, font, stage/'interior.pdf')
         save_json(stage/'interior.receipt.json', receipt)
         manifest['interior'] = {'template': spec, 'receipt': receipt}
@@ -144,11 +164,7 @@ def assemble(root, spec, pages, font):
         os.fsync(root_fd)
         _commit_manifest(stage_fd, root_fd, original_identity, original_bytes)
         committed = True
-        try:
-            if _identity(root.lstat()) != root_identity:
-                raise RuntimeError('PACKAGE_REPLACED')
-        except FileNotFoundError:
-            raise RuntimeError('PACKAGE_REPLACED') from None
+        _require_path_identity(root, root_identity)
         return manifest
     except BaseException as exc:
         failure = exc

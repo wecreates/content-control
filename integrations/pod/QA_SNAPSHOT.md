@@ -303,9 +303,15 @@ recovery instead of being partially rolled back.
 
 Staging cleanup is rooted at the held package descriptor, so a moved completed
 package does not strand its private `.pod-book-*` directory and a replacement path
-is not traversed. Two regressions cover acquisition and successful-handoff swaps.
-This is not a same-user adversarial filesystem sandbox, crash recovery, editorial
-approval or actual KDP preview/print acceptance. Publication remains disabled.
+is not traversed. Staging creation and all pathname-only render/hash/JSON work are
+also rooted at that descriptor through Linux `/proc/self/fd`; a path replacement
+observed before creation fails before rendering, while a later handoff can only
+write into the already-open original package. Runtimes without the verified
+descriptor alias fail with `BOOK_STAGING_PATH_UNAVAILABLE` rather than falling
+back to the caller-visible path. Four regressions cover acquisition, pre-staging,
+stage-creation and successful-handoff swaps. This is not a same-user adversarial
+filesystem sandbox, crash recovery, editorial approval or actual KDP preview/print
+acceptance. Publication remains disabled.
 
 
 ## Direct asset generation failure recovery
