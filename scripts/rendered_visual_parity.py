@@ -292,6 +292,10 @@ def evaluate_visual_review(reference_dir, candidate_video, review):
         name=Path(entry['path']).name
         if name not in files or name in seen or entry.get('sha256')!=sha256(files[name]):
             return blocked('Reference hashes or frame set do not match')
+        # This validator is also called directly by review reconciliation,
+        # without the CLI's load_reference_metrics decode check.
+        if cv2.imread(str(files[name])) is None:
+            return blocked(f'Review reference frame cannot be decoded: {name}')
         seen.add(name)
     findings=review.get('findings');decision=review.get('decision');issues=review.get('unresolved_issues')
     if decision not in ('PASS','FAIL') or not isinstance(issues,list) or any(not isinstance(x,str) or not x.strip() for x in issues):
