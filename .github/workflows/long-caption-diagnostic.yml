@@ -1,21 +1,21 @@
-name: Long retained caption repair and review candidate
+name: Long retained candidate review export
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
-    paths: ['.github/workflows/long-caption-diagnostic.yml', 'scripts/v2_transcription_repair.py', 'tests/test_v2_transcription_repair.py']
+    paths: ['.github/workflows/long-caption-diagnostic.yml']
 permissions:
   contents: read
   actions: read
 jobs:
-  inspect:
+  export:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - name: Verify exact retained artifact identity
+      - name: Test completion status and process safeguards
+        run: python -m unittest tests.test_v2_execution tests.test_v2_execution_processes -v
+      - name: Verify successful retained candidate source
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -24,100 +24,50 @@ jobs:
           import json,os,subprocess
           def api(path):
               return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
-          run=api('actions/runs/39993662037')
-          assert run['head_sha']=='0413f767ce00d41c9f4063301833db479bebbedf'
-          assert run['path']=='.github/workflows/production-execution.yml'
-          artifact=api('actions/artifacts/12518594645')
-          assert artifact['workflow_run']['id']==39993662037
-          assert artifact['name']=='production-state-long' and not artifact['expired']
-          print('Verified exact retained Long source; read-only diagnostic.')
+          run=api('actions/runs/40001068907')
+          assert run['head_sha']=='bdf98a124a5d127550307c7c36074fd739f78bbf' and run['conclusion']=='success'
+          artifact=api('actions/artifacts/12523021493')
+          assert artifact['workflow_run']['id']==40001068907 and not artifact['expired']
+          assert artifact['name']=='production-state-long'
           PY
       - uses: actions/download-artifact@v4
         with:
-          artifact-ids: '12518594645'
-          run-id: '39993662037'
+          artifact-ids: '12523021493'
+          run-id: '40001068907'
           github-token: ${{ github.token }}
-          path: state/production-long
+          path: retained
           merge-multiple: true
-      - name: Emit bounded caption evidence only
+      - name: Verify candidate and prepare separate review evidence
         run: |
           python - <<'PY'
-          import json,pathlib
-          root=pathlib.Path('state/production-long')
-          for name in ['captions.json','v2_captions.log']:
-              p=root/name
-              assert p.is_file() and not p.is_symlink() and p.stat().st_size<65536, name
-              print('BEGIN '+name)
-              print(p.read_text())
-              print('END '+name)
-          p=root/'transcription-repaired.json'
-          assert p.is_file() and not p.is_symlink() and p.stat().st_size<4*1024*1024
-          d=json.loads(p.read_text())
-          summary={k:d.get(k) for k in ['status','audio_sha256','word_timestamps','sequence_similarity','content_token_recall']}
-          summary['word_count']=len(d.get('words',[]))
-          summary['repaired_windows']=[{'scene_id':x.get('scene_id'),'repair_reasons':x.get('repair_reasons')} for x in d.get('recognition_repair',{}).get('windows',[])]
-          from scripts.v2_captions import norm,coalesce_numeric_tokens
-          doc=json.loads(pathlib.Path('projects/long/credit-card-dlc/ccsd.json').read_text())
-          scenes=[s for s in doc['scenes'] if s.get('audio',{}).get('dialogue')]
-          observed=coalesce_numeric_tokens(d['words'])
-          actual=[];boundaries={0:0}
-          for i,w in enumerate(observed):
-              actual.extend(norm(w['word']).split());boundaries[len(actual)]=i+1
-          expected=[];violations=[]
-          for n,s in enumerate(scenes):
-              first=len(expected)
-              expected.extend(norm(s['audio']['dialogue'][0]['text']).split())
-              end=scenes[n+1]['start'] if n+1<len(scenes) else doc['duration_seconds']
-              if first in boundaries and len(expected) in boundaries:
-                  words=observed[boundaries[first]:boundaries[len(expected)]]
-                  if words and (words[0]['start']<s['start'] or words[-1]['end']>end):
-                      violations.append({'scene_id':s['id'],'start':s['start'],'end':end,'observed_start':words[0]['start'],'observed_end':words[-1]['end']})
-          assert actual==expected
-          summary['dialogue_window_violations']=violations[:30]
-          summary['violation_count']=len(violations)
-          print(json.dumps(summary))
+          import hashlib,json,pathlib,shutil
+          from scripts.v2_execution import mark_review_candidate
+          root=pathlib.Path('retained'); out=pathlib.Path('review-evidence');out.mkdir()
+          video=root/'candidate.mp4'
+          digest=hashlib.sha256(video.read_bytes()).hexdigest()
+          assert digest=='873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc'
+          state=json.loads((root/'execution.json').read_text())
+          assert state['status']=='REVIEW_CANDIDATE' and state['candidate_sha256']==digest
+          qa=json.loads((root/'media-qa.json').read_text())
+          assert qa['status']=='PASS' and qa['candidate_sha256']==digest and all(v is True for v in qa['checks'].values())
+          for name in ['execution.json','media-qa.json','captions.json','caption-frames.json','memory.json','review-package.json','transcription-repaired.json','assembly.json']:
+              shutil.copyfile(root/name,out/name)
+          mark_review_candidate(state,video)
+          (out/'review-execution.json').write_text(json.dumps(state,indent=2)+'\n')
+          shutil.copyfile('projects/long/credit-card-dlc/ccsd.json',out/'ccsd.json')
+          (out/'identity.json').write_text(json.dumps({'candidate_sha256':digest,'bytes':video.stat().st_size,'source_run':40001068907,'source_artifact':12523021493,'creative_review':'PENDING','audio_listening_review':'PENDING','publication_enabled':False},indent=2)+'\n')
+          print(json.dumps({'candidate_sha256':digest,'candidate_bytes':video.stat().st_size,'technical_qa':'PASS','creative_review':'PENDING'}))
           PY
-      - uses: actions/setup-python@v5
-        with: {python-version: '3.12'}
-      - uses: actions/setup-node@v4
-        with: {node-version: '20'}
-      - name: Install bounded CPU ASR dependencies
-        run: |
-          command -v ffmpeg || (sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update && sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg)
-          python -m pip install --disable-pip-version-check numpy -r requirements-transcription.txt
-      - name: Test strict caption and repair guards
-        run: python -m unittest tests.test_v2_transcription_repair tests.test_v2_captions -v
-      - name: Verify completed retained stages before resume
-        run: |
-          python - <<'PY'
-          import hashlib,json,pathlib
-          root=pathlib.Path.cwd().resolve()
-          work=root/'state/production-long'
-          state=json.loads((work/'execution.json').read_text())
-          assert hashlib.sha256(pathlib.Path('projects/long/credit-card-dlc/ccsd.json').read_bytes()).hexdigest()=='2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021'
-          assert hashlib.sha256((work/'voice.wav').read_bytes()).hexdigest()=='b89b60dab969964a0d488139f504718491650f8833266c5dee0d11ad026897a2'
-          for name in ['voice','assembly','mix','transcription_contract','transcription']:
-              record=state['stages'][name]
-              assert record['status']=='PASS' and record['inputs'] and record['outputs'],name
-              for key in ['inputs','outputs']:
-                  for path,digest in record[key].items():
-                      p=pathlib.Path(path)
-                      assert p.is_relative_to(root) and p.is_file(),(name,'missing retained path')
-                      assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,(name,'changed retained dependency')
-              assert str(root/'scripts/v2_execution.py') in record['inputs']
-              print(name+': actual retained inputs and outputs verified')
-          PY
-      - name: Install existing renderer and QA dependencies
-        run: |
-          npm ci
-          python -m pip install --disable-pip-version-check opencv-python-headless
-      - name: Resume Long captions, Remotion render, and actual media QA
-        run: python scripts/v2_execution.py --ccsd projects/long/credit-card-dlc/ccsd.json --workdir state/production-long --composition StudioLong
-      - name: Preserve resumable Long state and actual review media
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: production-state-long
-          path: state/production-long/
+          name: long-review-video
+          path: retained/candidate.mp4
+          compression-level: 0
+          retention-days: 14
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: long-review-evidence
+          path: review-evidence/
           retention-days: 14
           if-no-files-found: error
