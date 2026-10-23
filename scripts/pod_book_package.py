@@ -15,6 +15,10 @@ def _identity(value):
     return value.st_dev, value.st_ino
 
 
+class _ManifestRollbackFailed(ValueError):
+    preserve_installed = True
+
+
 def _require_path_identity(path, expected):
     try:
         if _identity(path.lstat()) != expected:
@@ -57,6 +61,22 @@ def _snapshot_file(directory_fd, name):
         os.close(fd)
 
 
+def _stage_bytes(directory_fd, name, data):
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    fd = os.open(name, flags, 0o600, dir_fd=directory_fd)
+    try:
+        view = memoryview(data)
+        while view:
+            written = os.write(fd, view)
+            if written == 0:
+                raise OSError('short write')
+            view = view[written:]
+        os.fsync(fd)
+        return _identity(os.fstat(fd))
+    finally:
+        os.close(fd)
+
+
 def _link_staged(stage_fd, root_fd, name):
     expected = _identity(os.stat(name, dir_fd=stage_fd, follow_symlinks=False))
     try:
@@ -75,8 +95,24 @@ def _verify_declared_files(package, files):
             raise ValueError('FILE_HASH_MISMATCH')
 
 
+def _replace_staged(stage_fd, root_fd, name, expected):
+    try:
+        os.replace(name, 'manifest.json',
+                   src_dir_fd=stage_fd, dst_dir_fd=root_fd)
+    except BaseException:
+        # An injected or platform error can be reported after rename. Recognize
+        # only the exact staged inode as installed before deciding to recover.
+        try:
+            if _identity(os.stat('manifest.json', dir_fd=root_fd,
+                                 follow_symlinks=False)) == expected:
+                return
+        except OSError:
+            pass
+        raise
+
+
 def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
-                     package, expected_files):
+                     rollback_identity, package, expected_files):
     if _snapshot_file(root_fd, 'manifest.json') != (original_identity, original_bytes):
         raise ValueError('MANIFEST_CHANGED')
     # Rendering and installation can take long enough for a package member to
@@ -86,18 +122,17 @@ def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
     expected = _identity(os.stat('manifest.json', dir_fd=stage_fd,
                                  follow_symlinks=False))
     try:
-        os.replace('manifest.json', 'manifest.json',
-                   src_dir_fd=stage_fd, dst_dir_fd=root_fd)
-    except BaseException:
-        # os.replace has no ordinary post-commit work. If an injected or
-        # platform error is reported after the rename, recognize the exact
-        # staged inode as committed rather than deleting files it references.
+        _replace_staged(stage_fd, root_fd, 'manifest.json', expected)
+        _verify_declared_files(package, expected_files)
+    except BaseException as verification_failure:
         try:
-            if _identity(os.stat('manifest.json', dir_fd=root_fd,
-                                 follow_symlinks=False)) == expected:
-                return
-        except OSError:
-            pass
+            _replace_staged(stage_fd, root_fd, 'manifest.rollback.json',
+                            rollback_identity)
+            os.fsync(root_fd)
+        except BaseException as rollback_failure:
+            failure = _ManifestRollbackFailed('BOOK_MANIFEST_ROLLBACK_FAILED')
+            failure.add_note(type(verification_failure).__name__)
+            raise failure from rollback_failure
         raise
 
 
@@ -163,6 +198,8 @@ def assemble(root, spec, pages, font):
         stage_identity = _identity(os.fstat(stage_fd))
         stage = _descriptor_directory(stage_fd, stage_identity,
                                       'BOOK_STAGING_PATH_UNAVAILABLE')
+        rollback_identity = _stage_bytes(stage_fd, 'manifest.rollback.json',
+                                         original_bytes)
         receipt = render_book(spec, pages, font, stage/'interior.pdf')
         save_json(stage/'interior.receipt.json', receipt)
         manifest['interior'] = {'template': spec, 'receipt': receipt}
@@ -174,7 +211,7 @@ def assemble(root, spec, pages, font):
             installed.append((name, _link_staged(stage_fd, root_fd, name)))
         os.fsync(root_fd)
         _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
-                         package, dict(manifest['files']))
+                         rollback_identity, package, dict(manifest['files']))
         # The files and their links were synchronized before the manifest
         # rename. Persist that final directory-entry change before reporting a
         # durable package. Treat a sync failure as post-commit: leaving the
@@ -189,7 +226,7 @@ def assemble(root, spec, pages, font):
         return manifest
     except BaseException as exc:
         failure = exc
-        if not committed:
+        if not committed and not getattr(exc, 'preserve_installed', False):
             _cleanup_installed(root_fd, installed, exc)
         raise
     finally:
