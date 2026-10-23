@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import signal
 import sys
 import threading
@@ -14,6 +13,7 @@ import time
 import urllib.parse
 import urllib.request
 from pod_common import strict_json
+from pod_output_attempt import output_attempt
 
 HASH = re.compile(r'^[a-f0-9]{64}$')
 PLATFORMS = ('kdp','redbubble','teepublic','zazzle','spreadshirt')
@@ -159,8 +159,9 @@ def export_package(base_url, job_id, output, key, fetch=None):
             hashlib.sha256(canonical).hexdigest() != stored_identity):
         raise ValueError('MANIFEST_IDENTITY_MISMATCH')
     root = Path(output)
-    root.mkdir(mode=0o700, parents=False, exist_ok=False)
-    try:
+    with output_attempt(
+            root, 'REVIEW_EXPORT_OUTPUT_CLEANUP_FAILED', mode=0o700,
+            parents=False):
         total = 0
         for name, sha in files.items():
             body = fetch('/jobs/' + job_id + '/artifacts/' + sha, 16 * 1024 * 1024)
@@ -172,9 +173,6 @@ def export_package(base_url, job_id, output, key, fetch=None):
         encoded_manifest = json.dumps(
             manifest, ensure_ascii=False, allow_nan=False).encode('utf-8')
         write_private_file(root / 'manifest.json', encoded_manifest)
-    except BaseException:
-        shutil.rmtree(root)
-        raise
     return {'status': 'REVIEW_REQUIRED', 'job_id': job_id, 'package_sha256': expected, 'publication_enabled': False}
 
 def main():
