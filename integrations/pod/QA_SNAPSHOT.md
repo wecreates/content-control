@@ -345,6 +345,17 @@ Tests verify the required replace-then-sync order and the sync-failure state. Th
 improves local filesystem crash durability but is not an independent backup,
 multi-file transaction, retention policy or completed production recovery drill.
 
+Every final package member is also hash-verified again after the new manifest is
+visible. The private staging directory holds an fsynced byte-exact copy of the
+original manifest. A member modified during the manifest rename causes that copy
+to be atomically restored and synchronized before the installed interior files are
+removed. If rollback itself cannot be confirmed and synchronized, assembly reports
+`BOOK_MANIFEST_ROLLBACK_FAILED` and preserves the installed files rather than
+deleting data that a possibly committed manifest references. Regressions cover the
+former false-success window and failed-rollback preservation. This is fail-closed
+recovery, not an atomic multi-file filesystem transaction or protection against a
+same-user adversary that continues mutating files after the final verification.
+
 
 ## Direct asset generation failure recovery
 
