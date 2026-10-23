@@ -356,6 +356,16 @@ former false-success window and failed-rollback preservation. This is fail-close
 recovery, not an atomic multi-file filesystem transaction or protection against a
 same-user adversary that continues mutating files after the final verification.
 
+Both the forward manifest rename and the rollback rename are now followed by an
+identity check that the package path still names the exact staged inode. A
+replacement that lands after a successful forward rename is treated as
+`MANIFEST_CHANGED`, the byte-exact original manifest is restored, and only the
+owned interior links are cleaned. If the rollback destination is itself replaced,
+assembly reports `BOOK_MANIFEST_ROLLBACK_FAILED` and preserves installed files
+because cleanup can no longer prove which manifest is authoritative. Regressions
+cover both post-rename namespace changes. This check narrows a same-user race; it
+does not prevent a writer from changing the path again after the identity check.
+
 
 ## Direct asset generation failure recovery
 

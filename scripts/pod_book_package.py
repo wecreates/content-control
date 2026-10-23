@@ -109,6 +109,17 @@ def _replace_staged(stage_fd, root_fd, name, expected):
         except OSError:
             pass
         raise
+    # A successful rename does not prove that the destination still names the
+    # installed inode when another same-user writer can replace it immediately
+    # afterwards. Confirm the namespace result before treating the commit (or
+    # rollback) as complete.
+    try:
+        current = _identity(os.stat('manifest.json', dir_fd=root_fd,
+                                    follow_symlinks=False))
+    except OSError:
+        raise ValueError('MANIFEST_CHANGED') from None
+    if current != expected:
+        raise ValueError('MANIFEST_CHANGED')
 
 
 def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
