@@ -291,6 +291,23 @@ measured capacity. Both publication flags remain false and all 24 live acceptanc
 areas remain open.
 
 
+## KDP book-package identity handoff
+
+Interior assembly now holds the existing cover-package directory open and compares
+that descriptor's device/inode with the caller-visible package path both during
+acquisition and after the new hash-bound manifest is committed. A replacement in
+either interval fails with `PACKAGE_REPLACED`; it is never reported as the updated
+package. The replacement is preserved. If the original package was moved after
+commit, its completed manifest, interior PDF and receipt remain together for manual
+recovery instead of being partially rolled back.
+
+Staging cleanup is rooted at the held package descriptor, so a moved completed
+package does not strand its private `.pod-book-*` directory and a replacement path
+is not traversed. Two regressions cover acquisition and successful-handoff swaps.
+This is not a same-user adversarial filesystem sandbox, crash recovery, editorial
+approval or actual KDP preview/print acceptance. Publication remains disabled.
+
+
 ## Direct asset generation failure recovery
 
 The asset generator now uses the same ownership-checked output-attempt guard as
