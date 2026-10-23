@@ -131,6 +131,40 @@ class ReviewRecoveryTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'replacement fixture'): self.run_review()
         self.assertTrue(self.output.is_symlink()); self.assertEqual((other/'concurrent').read_bytes(),b'keep')
 
+    def test_successful_stage_cannot_hide_replaced_output_directory(self):
+        moved=self.root/'moved-success'
+        original=review.save_json
+        def replace_after_result(path,value):
+            result=original(path,value)
+            if Path(path).name=='result.json':
+                self.output.rename(moved)
+                self.output.mkdir()
+                (self.output/'concurrent').write_bytes(b'keep')
+            return result
+        with patch.object(review,'save_json',side_effect=replace_after_result):
+            with self.assertRaisesRegex(RuntimeError,'^OUTPUT_REPLACED$'): self.run_review()
+        self.assertEqual((self.output/'concurrent').read_bytes(),b'keep')
+        self.assertTrue((moved/'result.json').is_file())
+
+    def test_directory_swap_during_acquisition_never_enters_attempt(self):
+        moved=self.root/'moved-acquisition'
+        original=attempts.os.open
+        swapped=False
+        def replace_before_open(path,*args,**kwargs):
+            nonlocal swapped
+            if Path(path)==self.output and not swapped:
+                swapped=True
+                self.output.rename(moved)
+                self.output.mkdir()
+                (self.output/'concurrent').write_bytes(b'keep')
+            return original(path,*args,**kwargs)
+        with patch.object(attempts.os,'open',side_effect=replace_before_open):
+            with self.assertRaisesRegex(RuntimeError,'^OUTPUT_REPLACED$'):
+                with attempts.output_attempt(self.output):
+                    self.fail('replaced attempt must not be entered')
+        self.assertEqual((self.output/'concurrent').read_bytes(),b'keep')
+        self.assertTrue(moved.is_dir())
+
 
 class AssetRecoveryTests(unittest.TestCase):
     def setUp(self):
