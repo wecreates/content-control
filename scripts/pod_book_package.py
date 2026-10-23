@@ -69,9 +69,20 @@ def _link_staged(stage_fd, root_fd, name):
     return expected
 
 
-def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes):
+def _verify_declared_files(package, files):
+    for name, sha in files.items():
+        if digest(scoped_file(package, name)) != sha:
+            raise ValueError('FILE_HASH_MISMATCH')
+
+
+def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
+                     package, declared_files):
     if _snapshot_file(root_fd, 'manifest.json') != (original_identity, original_bytes):
         raise ValueError('MANIFEST_CHANGED')
+    # Rendering can take long enough for a caller-controlled cover member to
+    # be replaced after initial admission. Bind the final manifest commit to
+    # the current bytes through the already-verified package descriptor.
+    _verify_declared_files(package, declared_files)
     expected = _identity(os.stat('manifest.json', dir_fd=stage_fd,
                                  follow_symlinks=False))
     try:
@@ -118,9 +129,8 @@ def assemble(root, spec, pages, font):
         previous = manifest.pop('package_sha256')
         if hashlib.sha256(canonical(manifest).encode()).hexdigest() != previous:
             raise ValueError('MANIFEST_HASH_MISMATCH')
-        for name, sha in manifest['files'].items():
-            if digest(scoped_file(package, name)) != sha:
-                raise ValueError('FILE_HASH_MISMATCH')
+        declared_files = dict(manifest['files'])
+        _verify_declared_files(package, declared_files)
         cover = manifest['template']
         if manifest['platform'] != 'kdp' or spec['platform'] != 'kdp':
             raise ValueError('PLATFORM_BLOCKED')
@@ -163,7 +173,8 @@ def assemble(root, spec, pages, font):
         for name in ('interior.pdf', 'interior.receipt.json'):
             installed.append((name, _link_staged(stage_fd, root_fd, name)))
         os.fsync(root_fd)
-        _commit_manifest(stage_fd, root_fd, original_identity, original_bytes)
+        _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
+                         package, declared_files)
         committed = True
         _require_path_identity(root, root_identity)
         return manifest

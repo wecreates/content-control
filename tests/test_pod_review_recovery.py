@@ -344,18 +344,42 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
     def test_concurrent_manifest_replacement_is_preserved(self):
         original_commit=books._commit_manifest
         concurrent=b'{"concurrent":true}\n'
-        def replace_manifest(stage_fd,root_fd,identity,contents):
+        def replace_manifest(stage_fd,root_fd,identity,contents,*commit_checks):
             os.unlink('manifest.json',dir_fd=root_fd)
             fd=os.open('manifest.json',os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600,dir_fd=root_fd)
             try:os.write(fd,concurrent)
             finally:os.close(fd)
-            return original_commit(stage_fd,root_fd,identity,contents)
+            return original_commit(stage_fd,root_fd,identity,contents,*commit_checks)
         with patch.object(books,'_commit_manifest',side_effect=replace_manifest):
             with self.assertRaisesRegex(ValueError,'^MANIFEST_CHANGED$'):self.run_assembly()
         self.assertEqual((self.package/'manifest.json').read_bytes(),concurrent)
         self.assertFalse((self.package/'interior.pdf').exists())
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
+    def test_declared_cover_replacement_before_manifest_commit_is_rejected(self):
+        original_commit = books._commit_manifest
+        cover_name = 'print.png'
+        concurrent = b'tampered after initial cover verification'
+        def replace_cover_then_commit(*args, **kwargs):
+            os.unlink(cover_name, dir_fd=args[1])
+            fd = os.open(cover_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                         0o600, dir_fd=args[1])
+            try:
+                os.write(fd, concurrent)
+            finally:
+                os.close(fd)
+            return original_commit(*args, **kwargs)
+        with patch.object(books, '_commit_manifest',
+                          side_effect=replace_cover_then_commit):
+            with self.assertRaisesRegex(ValueError, '^FILE_HASH_MISMATCH$'):
+                self.run_assembly()
+        self.assertEqual((self.package/cover_name).read_bytes(), concurrent)
+        self.assertEqual((self.package/'manifest.json').read_bytes(),
+                         self.original_manifest)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
     def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
         moved = self.root/'moved-package'

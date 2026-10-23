@@ -320,6 +320,15 @@ pre-staging, stage-creation and successful-handoff swaps. This is not a same-use
 adversarial filesystem sandbox, crash recovery, editorial approval or actual KDP
 preview/print acceptance. Publication remains disabled.
 
+The cover members declared by the original manifest are hash-verified twice
+through that held package descriptor: once before rendering and again immediately
+before the new interior manifest is committed. A cover file replaced during the
+potentially long render is rejected with `FILE_HASH_MISMATCH`; newly linked
+interior files are removed, the original manifest is retained, and the concurrent
+cover replacement is preserved for investigation. A regression reproduces the
+previous false success at the commit boundary. This narrows a late mutation window;
+it does not make the package an atomic multi-file object.
+
 
 ## Direct asset generation failure recovery
 
