@@ -634,6 +634,71 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
                          digest(self.package/'interior.receipt.json'))
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_interior_mutation_during_final_fsync_is_reported_and_preserved(self):
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        package_syncs = 0
+        concurrent = b'tampered during final package sync'
+
+        def mutate_during_final_package_sync(fd):
+            nonlocal package_syncs
+            value = os.fstat(fd)
+            if (stat.S_ISDIR(value.st_mode)
+                    and books._identity(value) == root_identity):
+                package_syncs += 1
+                if package_syncs == 2:
+                    target = os.open('interior.pdf', os.O_WRONLY | os.O_TRUNC,
+                                     dir_fd=fd)
+                    try:
+                        os.write(target, concurrent)
+                    finally:
+                        os.close(target)
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'fsync',
+                          side_effect=mutate_during_final_package_sync):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_PACKAGE_CHANGED_AFTER_COMMIT$'):
+                self.run_assembly()
+
+        completed = json.loads((self.package/'manifest.json').read_text())
+        self.assertNotEqual(completed['files']['interior.pdf'],
+                            digest(self.package/'interior.pdf'))
+        self.assertTrue((self.package/'interior.receipt.json').is_file())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
+    def test_manifest_mutation_during_final_fsync_is_reported_and_preserved(self):
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        package_syncs = 0
+        concurrent = b'{"mutated_during_final_sync":true}\n'
+
+        def mutate_during_final_package_sync(fd):
+            nonlocal package_syncs
+            value = os.fstat(fd)
+            if (stat.S_ISDIR(value.st_mode)
+                    and books._identity(value) == root_identity):
+                package_syncs += 1
+                if package_syncs == 2:
+                    target = os.open('manifest.json', os.O_WRONLY | os.O_TRUNC,
+                                     dir_fd=fd)
+                    try:
+                        os.write(target, concurrent)
+                    finally:
+                        os.close(target)
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'fsync',
+                          side_effect=mutate_during_final_package_sync):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_PACKAGE_CHANGED_AFTER_COMMIT$'):
+                self.run_assembly()
+
+        self.assertEqual((self.package/'manifest.json').read_bytes(), concurrent)
+        self.assertTrue((self.package/'interior.pdf').is_file())
+        self.assertTrue((self.package/'interior.receipt.json').is_file())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
     def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
         moved = self.root/'moved-package'
         original_commit = books._commit_manifest
