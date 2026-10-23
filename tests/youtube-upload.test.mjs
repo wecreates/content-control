@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {createYouTubeUploadAdapter, uploadPlan} from '../integrations/social-automation/youtube-upload.mjs';
+import {createYouTubeUploadAdapter, uploadPlan, UPLOAD_CHUNK_BYTES} from '../integrations/social-automation/youtube-upload.mjs';
 import {InMemoryUploadReceiptStore} from '../integrations/social-automation/youtube-upload-receipts.mjs';
 const bytes=Buffer.from('fake mp4 test bytes');
 const channelId='UC'+'a'.repeat(22), videoId='b'.repeat(11);
@@ -108,4 +108,62 @@ test('credential expires during renewed authorization: no POST',async()=>{
 for(const planned of [undefined,new Date(90000).toISOString()])test('unexpected schedule reports mismatch '+planned,async()=>{
  const req=request();if(planned)req.metadata.status.publishAt=planned;const h=harness();await h.adapter.start(req,'a');
  h.queue.push(response(200,{items:[{id:videoId,snippet:{...req.metadata.snippet,channelId},status:{...req.metadata.status,publishAt:new Date(80000).toISOString()},processingDetails:{processingStatus:'succeeded'}}]}));assert.equal((await h.adapter.verify(req,'a')).state,'metadata_mismatch');
+});
+
+function logicalMedia(size,byte=7) {
+ let maximumRead=0, reads=0;
+ const hash=createHash('sha256');const block=Buffer.alloc(UPLOAD_CHUNK_BYTES,byte);
+ for(let offset=0;offset<size;offset+=block.length)hash.update(block.subarray(0,Math.min(block.length,size-offset)));
+ return {sha256:hash.digest('hex'),reader:{size,async readRange(offset,length){assert.ok(Number.isSafeInteger(offset)&&offset>=0&&offset+length<=size);assert.ok(length<=UPLOAD_CHUNK_BYTES);maximumRead=Math.max(maximumRead,length);reads++;return Buffer.alloc(length,byte);}},stats:()=>({maximumRead,reads})};
+}
+test('343 MiB logical long uploads completely with bounded 8 MiB buffers',async()=>{
+ const size=343*1024*1024+17;const media=logicalMedia(size);const req={...request(),size,sha256:media.sha256};
+ let offset=0,maxBody=0,puts=0,posts=0;
+ const h=harness({readMedia:async()=>media.reader,transport:async(url,init)=>{
+   if(url.includes('/channels?'))return response(200,{items:[{id:channelId}]});
+   if(init.method==='POST'){posts++;return response(200,{}, {Location:session});}
+   assert.equal(init.method,'PUT');const body=init.body;maxBody=Math.max(maxBody,body.length);puts++;
+   assert.ok(body.length<=UPLOAD_CHUNK_BYTES);assert.equal(init.headers['Content-Range'],`bytes ${offset}-${offset+body.length-1}/${size}`);
+   assert.ok(body.every(x=>x===7));offset+=body.length;
+   return offset===size ? response(201,{id:videoId,snippet:{channelId}}) : response(308,{}, {Range:`bytes=0-${offset-1}`});
+ }});
+ const result=await h.adapter.start(req,'a');assert.equal(result.state,'uploaded');assert.equal(result.acknowledgedBytes,size);assert.equal(offset,size);assert.equal(posts,1);assert.equal(puts,Math.ceil(size/UPLOAD_CHUNK_BYTES));assert.equal(maxBody,UPLOAD_CHUNK_BYTES);assert.equal(media.stats().maximumRead,UPLOAD_CHUNK_BYTES);assert.equal(media.stats().reads,puts*2);
+});
+test('reader mutation after full hash is rejected before media PUT',async()=>{
+ const media=logicalMedia(UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};let reads=0;
+ const h=harness({readMedia:async()=>({size:req.size,readRange:async(_offset,length)=>Buffer.alloc(length,++reads>2?9:7)})});
+ await assert.rejects(h.adapter.start(req,'a'),/MEDIA_MISMATCH/);assert.equal(h.calls.filter(x=>x.init.method==='PUT').length,0);
+});
+test('reader short-read or wrong complete hash makes zero network calls',async()=>{
+ const req=request();for(const reader of [{size:bytes.length,readRange:async()=>Buffer.alloc(1)},{size:bytes.length,readRange:async()=>Buffer.alloc(bytes.length)}]){const h=harness({readMedia:async()=>reader});await assert.rejects(h.adapter.start(req,'a'),/MEDIA_MISMATCH/);assert.equal(h.calls.length,0);}
+});
+test('provider cannot acknowledge beyond sent chunk or finish early',async()=>{
+ const media=logicalMedia(UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};
+ for(const answer of [response(308,{}, {Range:`bytes=0-${req.size-1}`}),response(201,{id:videoId,snippet:{channelId}})]){const h=harness({readMedia:async()=>media.reader,queue:[response(200,{}, {Location:session}),answer]});await assert.rejects(h.adapter.start(req,'a'),/UPLOAD_UNCERTAIN/);}
+});
+test('partial chunk resume retransmits only hash-verified remaining suffix',async()=>{
+ const media=logicalMedia(UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};
+ const h=harness({readMedia:async()=>media.reader,queue:[response(200,{}, {Location:session}),response(308,{}, {Range:'bytes=0-262143'}),response(308,{}, {Range:'bytes=0-262143'}),response(201,{id:videoId,snippet:{channelId}})]});
+ await h.adapter.start(req,'a');assert.equal((await h.adapter.resume(req,'a')).state,'uploaded');
+ const puts=h.calls.filter(x=>x.init.method==='PUT'&&x.init.body);assert.equal(puts[1].init.body.length,req.size-262144);assert.equal(h.calls.filter(x=>x.init.method==='POST').length,1);
+});
+
+test('non-aligned acknowledged offset still uses bounded valid chunk length',async()=>{
+ const media=logicalMedia(2*UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};
+ const h=harness({readMedia:async()=>media.reader,queue:[response(200,{}, {Location:session}),response(308,{}, {Range:'bytes=0-6'}),response(308,{}, {Range:'bytes=0-6'}),response(308,{}, {Range:`bytes=0-${UPLOAD_CHUNK_BYTES+6}`}),response(201,{id:videoId,snippet:{channelId}})]});
+ await h.adapter.start(req,'a');assert.equal((await h.adapter.resume(req,'a')).state,'uploaded');
+ const puts=h.calls.filter(x=>x.init.method==='PUT'&&x.init.body);assert.equal(puts[1].init.body.length,UPLOAD_CHUNK_BYTES);assert.equal(puts[2].init.body.length,UPLOAD_CHUNK_BYTES-4);assert.ok(puts.every(x=>x.init.body.every(b=>b===7)));
+});
+
+test('status query cannot finish or skip bytes never attempted',async()=>{
+ const media=logicalMedia(UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};
+ for(const answer of [response(201,{id:videoId,snippet:{channelId}}),response(308,{}, {Range:`bytes=0-${req.size-1}`})]){
+ const h=harness({readMedia:async()=>media.reader,queue:[response(200,{}, {Location:session}),Error('timeout'),answer]});await assert.rejects(h.adapter.start(req,'a'),/UPLOAD_UNCERTAIN/);await assert.rejects(h.adapter.resume(req,'a'),/UPLOAD_UNCERTAIN/);assert.equal(h.calls.filter(x=>x.init.method==='PUT'&&x.init.body).length,1);assert.equal((await h.store.get(uploadPlan(req).key)).attemptedBytes,UPLOAD_CHUNK_BYTES);
+ }
+});
+
+test('session with zero attempted bytes resumes after original media restored',async()=>{
+ const media=logicalMedia(UPLOAD_CHUNK_BYTES+3);const req={...request(),size:media.reader.size,sha256:media.sha256};let reads=0,restored=false;
+ const h=harness({readMedia:async()=>restored?media.reader:({size:req.size,readRange:async(_offset,length)=>Buffer.alloc(length,++reads>2?9:7)}),queue:[response(200,{}, {Location:session}),response(308),response(308,{}, {Range:`bytes=0-${UPLOAD_CHUNK_BYTES-1}`}),response(201,{id:videoId,snippet:{channelId}})]});
+ await assert.rejects(h.adapter.start(req,'a'),/MEDIA_MISMATCH/);assert.equal((await h.store.get(uploadPlan(req).key)).attemptedBytes,0);restored=true;assert.equal((await h.adapter.resume(req,'a')).state,'uploaded');assert.equal(h.calls.filter(x=>x.init.method==='POST').length,1);
 });

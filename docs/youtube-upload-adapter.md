@@ -22,9 +22,27 @@ Dependencies are intentionally unconfigured: transport, authorize, credentials,
 readMedia, store. They are injected only by fake tests in this PR. `transport` must
 honor abort signals, reject redirects, and use no ambient browser credentials.
 The core pins provider hosts/paths and keeps session URLs/tokens out of results.
-`readMedia` returns bytes; the core copies and hashes them. This first bounded
-implementation accepts MP4 files up to 256 MiB in memory, **not YouTube's full
-file-size limit**. Larger media needs a separately tested streaming implementation.
+`readMedia(sha256)` may return a Buffer only for inputs up to 256 MiB. Long media
+must return `{size, readRange(offset, length)}` instead. `size` must equal the
+approved byte count; readRange must return exactly the requested bytes in a Buffer,
+with no hidden whole-file allocation. It must use bounded positional reads of an
+already selected artifact, not arbitrary URLs. The reader owns its file-handle
+lifecycle. No production filesystem reader is wired in this patch.
+
+The range-reader path accepts MP4 files up to 256 GiB without loading the whole
+file. It first computes the complete approved SHA-256 through 8 MiB chunks before
+any provider request, keeping only per-chunk hashes. Before each PUT, it re-reads
+and verifies the affected original chunks against those hashes. File replacement
+or mutation after initial hashing therefore fails before altered bytes are sent.
+Each PUT is at most 8 MiB. Nonaligned resume offsets require at most two verified
+source chunks plus one bounded output buffer, never a full-file concatenation.
+The reader and transport must themselves honor these bounded-memory contracts.
+
+Each execution attempt rehashes the complete file; this intentionally favors
+integrity over I/O speed. A 343 MiB + 17-byte logical fixture (larger than the known
+339 MB long-form artifact) exercises all 43 fake media PUTs with bounded buffers.
+This establishes size/path compatibility, not a real artifact upload or provider
+acceptance. Production wiring and live end-to-end verification remain gated.
 
 ## Receipt contract and recovery
 
@@ -43,7 +61,10 @@ A receipt key binds channel + media hash. Different metadata for an existing key
 fails instead of creating a duplicate. Concurrent calls serialize on this key.
 Initialization is checkpointed before POST. An uncertain initialization cannot
 restart automatically. A session is saved before sending bytes; an uncertain
-PUT is reconciled by querying the same session before retransmitting. Invalid or
+PUT is reconciled by querying the same session before retransmitting. A durable
+attempted-byte high-water mark caps even status-query acknowledgements; the server
+cannot cause unsent bytes to be skipped or report completion before the final bytes
+were attempted. Old receipts lacking this bound require explicit reconciliation. Invalid or
 expired sessions stop for reconciliation. 401/403 stop for reauthorization.
 Retryable 5xx responses use bounded backoff and stop after three failures; resume
 is explicit, with no timer or automatic job. Network uncertainty may be inspected
