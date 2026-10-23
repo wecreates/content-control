@@ -1,10 +1,18 @@
 # Bounded atomic package storage
 
-Production verifies all output files before persisting any of them. Reads are
-limited to 32 files, 16 MiB per file and 64 MiB per package. The open descriptor
-must identify a nonempty regular file inside the output directory. Fixed-size
-reads and a final length/hash check reject changed, truncated or oversized files.
-The worker refreshes upstream and local production authority after reading.
+Production verifies all output files before persisting any of them. It holds the
+package directory descriptor across manifest verification, the intervening
+authority refresh and every declared member read. Manifest, KDP receipt and member
+opens are rooted through the verified Linux descriptor alias, so replacing or
+moving the caller-visible package path cannot splice files from another directory
+into the accepted snapshot. A runtime without that descriptor alias fails closed;
+it does not fall back to path-based reads. Final member symlinks are refused.
+
+Reads are limited to 32 files, 16 MiB per file and 64 MiB per package. Each open
+descriptor must identify a nonempty regular file inside that held output directory.
+Fixed-size reads and a final length/hash check reject changed, truncated or oversized
+files. The worker refreshes upstream and local production authority before artifact
+reads and again after the snapshot.
 
 The production boundary also binds output names to exact media metadata. Every
 platform package must contain exactly `print.png`, `art-mask.png` and

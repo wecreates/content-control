@@ -15,6 +15,25 @@ const BASE_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_FILES=Object.freeze([...BASE_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 const PNG_SIGNATURE=Buffer.from('89504e470d0a1a0a','hex');
 const MAX_MANIFEST_BYTES=1024*1024;
+const DIRECTORY_FLAGS=constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW;
+
+function identity(info){return `${info.dev}:${info.ino}`;}
+
+async function openPackageDirectory(directory,reason){
+ let handle;
+ try{
+  handle=await fs.open(directory,DIRECTORY_FLAGS);
+  const opened=await handle.stat();
+  if(!opened.isDirectory())throw Error(reason);
+  const base=`/proc/self/fd/${handle.fd}`,alias=await fs.stat(base);
+  if(!alias.isDirectory()||identity(alias)!==identity(opened))throw Error(reason);
+  return {base,handle};
+ }catch(error){
+  if(handle)try{await handle.close();}catch{}
+  if(error.message===reason)throw error;
+  throw Error(reason);
+ }
+}
 
 function canonical(value){
  return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
@@ -92,13 +111,11 @@ async function readRegularFile(file,maxBytes,reason){
  }finally{await handle.close();}
 }
 
-export async function readPackageManifest(directory,{platform,template,interiorTemplate,sourceSha256,textLayers,maxBytes=MAX_MANIFEST_BYTES}={}){
+async function readPackageManifestAt(base,{platform,template,interiorTemplate,sourceSha256,textLayers,maxBytes=MAX_MANIFEST_BYTES}={}){
  if(!PLATFORMS.includes(platform)||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>MAX_MANIFEST_BYTES)throw Error('MANIFEST_INVALID');
- let base,candidate,file,body;
+ let body;
  try{
-  base=await fs.realpath(directory);candidate=path.resolve(base,'manifest.json');file=await fs.realpath(candidate);
-  if(!file.startsWith(base+path.sep))throw Error('MANIFEST_INVALID');
-  body=await readRegularFile(candidate,maxBytes,'MANIFEST_INVALID');
+  body=await readRegularFile(path.join(base,'manifest.json'),maxBytes,'MANIFEST_INVALID');
  }catch(error){if(error.message==='MANIFEST_INVALID')throw error;throw Error('MANIFEST_INVALID');}
  let text,manifest;
  try{text=new TextDecoder('utf-8',{fatal:true}).decode(body);manifest=parseSignedJSON(text);}catch{throw Error('MANIFEST_INVALID');}
@@ -160,6 +177,11 @@ export async function readPackageManifest(directory,{platform,template,interiorT
  return manifest;
 }
 
+export async function readPackageManifest(directory,options={}){
+ const {base,handle}=await openPackageDirectory(directory,'MANIFEST_INVALID');
+ try{return await readPackageManifestAt(base,options);}finally{await handle.close();}
+}
+
 export function assertPackageFormat(name,body){
  const mediaType=PACKAGE_MEDIA_TYPES[name];
  if(mediaType==='image/png'){
@@ -188,7 +210,7 @@ export function assertPackageFormat(name,body){
  }catch{throw Error('ARTIFACT_INVALID');}
 }
 
-export async function readPackageArtifacts(directory,files,{maxObjectBytes=16777216,maxBatchBytes=MAX_PACKAGE_BYTES,platform}={}){
+async function readPackageArtifactsAt(base,files,{maxObjectBytes=16777216,maxBatchBytes=MAX_PACKAGE_BYTES,platform}={}){
  if(!Number.isSafeInteger(maxObjectBytes)||maxObjectBytes<1||maxObjectBytes>16777216||
   !Number.isSafeInteger(maxBatchBytes)||maxBatchBytes<1||maxBatchBytes>MAX_PACKAGE_BYTES)throw Error('ARTIFACT_LIMIT_INVALID');
  if(!files||typeof files!=='object'||Array.isArray(files)||!Object.keys(files).length||Object.keys(files).length>32)throw Error('ARTIFACT_BATCH_INVALID');
@@ -199,14 +221,14 @@ export async function readPackageArtifacts(directory,files,{maxObjectBytes=16777
   const expected=platform==='kdp'?KDP_FILES:BASE_FILES;
   if(JSON.stringify([...names].sort())!==JSON.stringify(expected))throw Error('ARTIFACT_PACKAGE_INVALID');
  }
- const base=await fs.realpath(directory),artifacts=[];let total=0;
+ const artifacts=[];let total=0;
  for(const [name,sha] of Object.entries(files)){
   if(!/^[a-f0-9]{64}$/.test(sha))throw Error('ARTIFACT_HASH_MISMATCH');
-  const file=await fs.realpath(path.resolve(base,name));
-  if(!file.startsWith(base+path.sep))throw Error('ARTIFACT_PATH_INVALID');
   // Do not block on pipes or follow a replaced final symlink. Check the open
   // descriptor, then read into a fixed-size allocation bounded before IO.
-  const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);
+  let handle;
+  try{handle=await fs.open(path.join(base,name),constants.O_RDONLY|constants.O_NOFOLLOW|constants.O_NONBLOCK);}
+  catch{throw Error('ARTIFACT_PATH_INVALID');}
   try{
    const info=await handle.stat();
    if(!info.isFile()||!Number.isSafeInteger(info.size)||info.size<1||info.size>maxObjectBytes)throw Error('ARTIFACT_INVALID');
@@ -222,4 +244,20 @@ export async function readPackageArtifacts(directory,files,{maxObjectBytes=16777
   }finally{await handle.close();}
  }
  return artifacts;
+}
+
+
+export async function readPackageArtifacts(directory,files,options={}){
+ const {base,handle}=await openPackageDirectory(directory,'ARTIFACT_PATH_INVALID');
+ try{return await readPackageArtifactsAt(base,files,options);}finally{await handle.close();}
+}
+
+export async function readPackageSnapshot(directory,manifestOptions={},artifactOptions={},hooks={}){
+ const {base,handle}=await openPackageDirectory(directory,'MANIFEST_INVALID');
+ try{
+  const manifest=await readPackageManifestAt(base,manifestOptions);
+  if(hooks.beforeArtifacts)await hooks.beforeArtifacts();
+  const artifacts=await readPackageArtifactsAt(base,manifest.files,artifactOptions);
+  return {manifest,artifacts};
+ }finally{await handle.close();}
 }

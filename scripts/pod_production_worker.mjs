@@ -1,7 +1,7 @@
 import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
-import {readPackageArtifacts,readPackageManifest} from '../integrations/pod/package-artifacts.mjs';
+import {readPackageSnapshot} from '../integrations/pod/package-artifacts.mjs';
 import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
 import {readSignedJSONFile} from '../integrations/pod/signed-file.mjs';
 import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '../integrations/pod/templates.mjs';
@@ -78,10 +78,10 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--pages',task.interior.pages,'--font',task.interior.font],{root,signal,env});
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
-  const manifest=await readPackageManifest(task.output,{platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256,textLayers});
+  const {manifest,artifacts}=await readPackageSnapshot(task.output,
+   {platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256,textLayers},
+   {platform:job.brief.platform},{beforeArtifacts:authorizeProduction});
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
-  await authorizeProduction();
-  const artifacts=await readPackageArtifacts(task.output,manifest.files,{platform:job.brief.platform});
   await authorizeProduction();
   await store.putMany(artifacts);
   await authorizeProduction();
