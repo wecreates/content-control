@@ -397,6 +397,54 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
         self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
 
+    def test_book_package_swap_before_staging_never_writes_replacement(self):
+        moved = self.root/'moved-before-staging-package'
+        original_urandom = books.os.urandom
+        swapped = False
+        def swap_before_stage(size):
+            nonlocal swapped
+            if not swapped:
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                (self.package/'concurrent').write_bytes(b'keep')
+            return original_urandom(size)
+        with patch.object(books.os,'urandom',side_effect=swap_before_stage), \
+             patch.object(books,'render_book',wraps=books.render_book) as render:
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertFalse((moved/'interior.pdf').exists())
+        self.assertFalse((moved/'interior.receipt.json').exists())
+
+    def test_book_package_swap_during_stage_creation_stays_descriptor_anchored(self):
+        moved = self.root/'moved-during-stage-package'
+        original_mkdir = books.os.mkdir
+        swapped = False
+        def swap_during_stage(path, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if not swapped and dir_fd is not None and str(path).startswith('.pod-book-'):
+                swapped = True
+                self.package.rename(moved)
+                original_mkdir(self.package, 0o777)
+                (self.package/'concurrent').write_bytes(b'keep')
+            return original_mkdir(path, mode, dir_fd=dir_fd)
+        with patch.object(books.os,'mkdir',side_effect=swap_during_stage):
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        completed = json.loads((moved/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],digest(moved/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(moved/'interior.receipt.json'))
+        self.assertEqual(list(moved.glob('.pod-book-*')),[])
+
 
 if __name__ == '__main__': unittest.main()
 
