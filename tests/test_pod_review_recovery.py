@@ -98,7 +98,7 @@ class ReviewRecoveryTests(unittest.TestCase):
             (self.output/'partial').write_bytes(b'fixture')
             raise failure
         with patch.object(review,'create_art',side_effect=fail), \
-             patch.object(attempts.shutil,'rmtree',side_effect=PermissionError('fixture')):
+             patch.object(attempts,'_clear_directory',side_effect=PermissionError('fixture')):
             with self.assertRaises(RuntimeError) as caught: self.run_review()
         self.assertIs(caught.exception,failure)
         self.assertIn('REVIEW_OUTPUT_CLEANUP_FAILED',failure.__notes__)
@@ -130,6 +130,36 @@ class ReviewRecoveryTests(unittest.TestCase):
         with patch.object(review,'create_art',side_effect=replace):
             with self.assertRaisesRegex(RuntimeError,'replacement fixture'): self.run_review()
         self.assertTrue(self.output.is_symlink()); self.assertEqual((other/'concurrent').read_bytes(),b'keep')
+
+    def test_cleanup_race_never_recursively_deletes_replacement(self):
+        failure = RuntimeError('cleanup race fixture')
+        moved = self.root/'moved-cleanup-attempt'
+        original_lstat = type(self.output).lstat
+        calls = 0
+
+        def fail_after_partial(*args, **kwargs):
+            (self.output/'partial').write_bytes(b'fixture')
+            raise failure
+
+        def swap_after_cleanup_identity(path):
+            nonlocal calls
+            value = original_lstat(path)
+            if path == self.output:
+                calls += 1
+                if calls == 2:
+                    self.output.rename(moved)
+                    self.output.mkdir()
+                    (self.output/'concurrent').write_bytes(b'keep')
+            return value
+
+        with patch.object(review, 'create_art', side_effect=fail_after_partial), \
+             patch.object(type(self.output), 'lstat', autospec=True,
+                          side_effect=swap_after_cleanup_identity):
+            with self.assertRaises(RuntimeError) as caught:
+                self.run_review()
+
+        self.assertIs(caught.exception, failure)
+        self.assertEqual((self.output/'concurrent').read_bytes(), b'keep')
 
     def test_successful_stage_cannot_hide_replaced_output_directory(self):
         moved=self.root/'moved-success'
@@ -263,7 +293,7 @@ class AssetRecoveryTests(unittest.TestCase):
     def test_asset_cleanup_denial_retains_original_failure_and_files(self):
         failure=RuntimeError('asset original fixture')
         with patch.object(assets,'save_json',side_effect=failure), \
-             patch('shutil.rmtree',side_effect=PermissionError('fixture')):
+             patch.object(attempts,'_clear_directory',side_effect=PermissionError('fixture')):
             with self.assertRaises(RuntimeError) as caught: self.run_asset()
         self.assertIs(caught.exception,failure)
         self.assertIn('ASSET_OUTPUT_CLEANUP_FAILED',getattr(failure,'__notes__',[]))

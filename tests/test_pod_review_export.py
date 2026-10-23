@@ -121,7 +121,7 @@ class ExportTests(unittest.TestCase):
                     return good(route, limit)
                 (root / 'partial').write_bytes(b'fixture')
                 raise failure
-            with patch.object(attempts.shutil, 'rmtree',
+            with patch.object(attempts, '_clear_directory',
                               side_effect=PermissionError('fixture')):
                 with self.assertRaises(RuntimeError) as caught:
                     module.export_package(
