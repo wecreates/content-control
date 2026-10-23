@@ -27,3 +27,34 @@ class TurnRepairTests(unittest.TestCase):
    with patch('repair_boss_voice_turn.local_synthesizer') as synth:
     with self.assertRaisesRegex(ValueError,'Unrelated'):repair(new,base,Path(d)/'new')
     synth.assert_not_called()
+
+ def test_changed_audio_discards_prior_approval_and_listening_receipts(self):
+  new=self.source();old=copy.deepcopy(new);old['scenes'][7]['audio']['dialogue'][0]['text']='So I just stop getting punched?'
+  with tempfile.TemporaryDirectory() as d:
+   base=Path(d)/'old';r=build(old,base,self.tone)
+   r.update(status='APPROVED',production_approved=True,full_av_review=True,listening_review={'approved':True},caption_track={'status':'PASS'})
+   (base/'timed-voice.json').write_text(json.dumps(r))
+   result=repair(new,base,Path(d)/'new',self.tone)
+   self.assertEqual(result['status'],'GENERATED_PENDING_LISTENING_REVIEW')
+   self.assertFalse(result['production_approved']);self.assertFalse(result['full_av_review'])
+   self.assertFalse(result['publication_enabled'])
+   self.assertNotIn('listening_review',result);self.assertNotIn('caption_track',result)
+
+ def test_changed_silent_tail_rejected_before_synthesis(self):
+  new=self.source();old=copy.deepcopy(new);old['scenes'][7]['audio']['dialogue'][0]['text']='So I just stop getting punched?'
+  with tempfile.TemporaryDirectory() as d:
+   base=Path(d)/'old';build(old,base,self.tone)
+   new['scenes'][-1]['end']+=1
+   with patch('repair_boss_voice_turn.local_synthesizer') as synth:
+    with self.assertRaisesRegex(ValueError,'timeline metadata or duration'):repair(new,base,Path(d)/'new')
+    synth.assert_not_called()
+
+ def test_workflow_reuses_consumed_take_without_synthesis_or_asr_rerun(self):
+  workflow=Path('.github/workflows/timed-free-voice-tests.yml').read_text()
+  self.assertIn("artifact-ids: '12525385780'",workflow)
+  self.assertIn("run-id: '40007452667'",workflow)
+  self.assertIn("run['head_sha']=='4062d49bb2396f6070972ac6f9dcb4c4476ae670'",workflow)
+  self.assertNotIn('python scripts/repair_boss_voice_turn.py',workflow)
+  self.assertNotIn('python scripts/timed_free_voice.py',workflow)
+  self.assertNotIn('python scripts/v2_clip_transcription.py',workflow)
+  self.assertIn("raise SystemExit('Listening resolution and reviewed caption continuation required')",workflow)

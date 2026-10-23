@@ -23,6 +23,9 @@ def repair(source, retained, output, synth=None):
             if norm(line['text'])!=norm(revised['text']): raise ValueError('Spoken words changed')
             line['text']=revised['text']
         if expected!=after: raise ValueError('Unrelated source or timing changed')
+    expected_timeline=copy.deepcopy(old['timeline'])
+    expected_timeline['scenes'][7]['audio']['dialogue'][0]['text']=newturns[7]['audio']['dialogue'][0]['text']
+    if expected_timeline!=timeline: raise ValueError('Unrelated timeline metadata or duration changed')
     if hashlib.sha256((retained/'voice.wav').read_bytes()).hexdigest()!=old['audio']['audio_sha256']:
         raise ValueError('Original audio hash mismatch')
     for clip in old['manifest']['clips']:
@@ -40,7 +43,15 @@ def repair(source, retained, output, synth=None):
     clip=copy.deepcopy(new['clips'][0])
     if clip['speed']!=1.0: raise ValueError('Natural speed required; do not distort timing')
     clip['file']='clearer-dave-take/'+clip['file']
-    result=copy.deepcopy(old);result['timeline']=timeline;result['manifest']['clips'][7]=clip
+    # New audio invalidates every prior review/approval, including unknown future
+    # top-level review fields. Rebuild the receipt from explicit technical fields.
+    result={'status':'GENERATED_PENDING_LISTENING_REVIEW','provider':'kokoro',
+        'publication_enabled':False,'production_approved':False,'full_av_review':False,
+        'timeline':timeline,'manifest':copy.deepcopy(old['manifest']),
+        'scope':'One revised take; requires fresh transcript and full audiovisual review'}
+    result['manifest']['status']='GENERATED_PENDING_LISTENING_REVIEW'
+    result['manifest']['publication_enabled']=False
+    result['manifest']['clips'][7]=clip
     assembly=copy.deepcopy(timeline)
     if assembly['scenes'][-1]['end']<timeline['source_duration_seconds']:
         assembly['scenes'].append({'id':'silent-tail','start':assembly['scenes'][-1]['end'],'end':timeline['source_duration_seconds'],'audio':{'dialogue':[]}})

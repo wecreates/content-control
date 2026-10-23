@@ -57,19 +57,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api repos/wecreates/content-control/actions/runs/40003044732 > retained-run.json
-          gh api repos/wecreates/content-control/actions/artifacts/12522863107 > retained-artifact.json
+          gh api repos/wecreates/content-control/actions/runs/40007452667 > retained-run.json
+          gh api repos/wecreates/content-control/actions/artifacts/12525385780 > retained-artifact.json
           python - <<'PYCODE'
           import json
           run=json.load(open('retained-run.json')); artifact=json.load(open('retained-artifact.json'))
-          assert run['head_sha']=='e56e156ed81803ee6083ffecd032f9210dac201c'
-          assert artifact['workflow_run']['id']==40003044732 and artifact['expired'] is False
+          assert run['head_sha']=='4062d49bb2396f6070972ac6f9dcb4c4476ae670'
+          assert artifact['workflow_run']['id']==40007452667 and artifact['expired'] is False
           assert artifact['name']=='timed-free-voice-real-cpu-smoke'
           PYCODE
       - uses: actions/download-artifact@v4
         with:
-          artifact-ids: '12522863107'
-          run-id: '40003044732'
+          artifact-ids: '12525385780'
+          run-id: '40007452667'
           github-token: ${{ github.token }}
           path: state
           merge-multiple: true
@@ -81,19 +81,13 @@ jobs:
           from scripts.timed_free_voice import prepare_timeline
           root=Path('state/boss-fight-free-voice'); r=json.load(open(root/'timed-voice.json'))
           source=json.load(open('projects/shorts/credit-score-boss-fight/ccsd.json'))
-          source['scenes'][7]['audio']['dialogue'][0]['text']='So I just stop getting punched?'
           assert r['timeline']==prepare_timeline(source), 'Retained speech source is stale'
           assert hashlib.sha256((root/'voice.wav').read_bytes()).hexdigest()==r['audio']['audio_sha256']
           for clip in r['manifest']['clips']:
               assert hashlib.sha256((root/clip['file']).read_bytes()).hexdigest()==clip['audio_sha256']
           PYCODE
-      - name: One bounded clearer Dave take preserving original audio
-        run: |
-          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy==2.3.5
-          python scripts/repair_boss_voice_turn.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --retained state/boss-fight-free-voice --out state/boss-fight-repaired
-          mv state/boss-fight-free-voice state/boss-fight-original-evidence
-          mv state/boss-fight-repaired state/boss-fight-free-voice
+      # The single authorized Dave retake is consumed in run 40007452667.
+      # Reuse its exact bytes. Never resynthesize on PR updates or reruns.
       - name: Require all actual dialogue at natural speed
         run: |
           python - <<'PYCODE'
@@ -103,28 +97,17 @@ jobs:
           assert all(c['speed']==1.0 for c in r['manifest']['clips']), 'Retiming required; do not rush speech'
           assert r['production_approved'] is False and r['publication_enabled'] is False
           PYCODE
-      - name: Observe actual speech windows and align spoken captions
+      - name: Require genuine listening resolution before caption continuation
         run: |
-          python -m pip install --disable-pip-version-check numpy==2.3.5 -r requirements-transcription.txt
           python - <<'PYCODE'
           import json
           from pathlib import Path
           root=Path('state/boss-fight-free-voice')
-          r=json.load(open(root/'timed-voice.json')); c=r['timeline']
-          if c['scenes'][-1]['end']<r['audio']['duration']:
-              c['scenes'].append({'id':'silent-tail','start':c['scenes'][-1]['end'],'end':r['audio']['duration'],'audio':{'dialogue':[]}})
-          (root/'speech-ccsd.json').write_text(json.dumps(c))
-          (root/'assembly.json').write_text(json.dumps(r['audio']))
-          PYCODE
-          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model medium.en --spoken-numbers
-          python scripts/v2_captions.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --transcription state/boss-fight-free-voice/transcription.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/captions.json
-          node scripts/verify_caption_frames.mjs --ccsd state/boss-fight-free-voice/speech-ccsd.json --captions state/boss-fight-free-voice/captions.json --out state/boss-fight-free-voice/caption-frames.json
-          python - <<'PYCODE'
-          import json
-          c=json.load(open('projects/shorts/credit-score-boss-fight/ccsd.json'))
-          c['caption_track']=json.load(open('state/boss-fight-free-voice/captions.json'))
-          assert c['caption_track']['status']=='PASS'
-          json.dump(c,open('state/boss-fight-free-voice/render-ccsd.json','w'))
+          transcription=json.load(open(root/'transcription.json'))
+          assert transcription['status']=='PASS', transcription.get('reason', 'Listening review required')
+          # A later reviewed continuation must bind any resolved transcript to the
+          # exact retained audio and rerun strict captions and frame verification.
+          raise SystemExit('Listening resolution and reviewed caption continuation required')
           PYCODE
       - name: Render retimed Short candidate for full review
         run: |
