@@ -95,7 +95,7 @@ def _verify_declared_files(package, files):
             raise ValueError('FILE_HASH_MISMATCH')
 
 
-def _replace_staged(stage_fd, root_fd, name, expected):
+def _replace_staged(stage_fd, root_fd, name, expected, expected_bytes):
     try:
         os.replace(name, 'manifest.json',
                    src_dir_fd=stage_fd, dst_dir_fd=root_fd)
@@ -103,22 +103,21 @@ def _replace_staged(stage_fd, root_fd, name, expected):
         # An injected or platform error can be reported after rename. Recognize
         # only the exact staged inode as installed before deciding to recover.
         try:
-            if _identity(os.stat('manifest.json', dir_fd=root_fd,
-                                 follow_symlinks=False)) == expected:
+            if _snapshot_file(root_fd, 'manifest.json') == \
+                    (expected, expected_bytes):
                 return
-        except OSError:
+        except BaseException:
             pass
         raise
     # A successful rename does not prove that the destination still names the
-    # installed inode when another same-user writer can replace it immediately
-    # afterwards. Confirm the namespace result before treating the commit (or
-    # rollback) as complete.
+    # installed inode or retains its staged bytes when another same-user writer
+    # can replace or modify it immediately afterwards. Confirm the complete
+    # namespace result before treating the commit (or rollback) as complete.
     try:
-        current = _identity(os.stat('manifest.json', dir_fd=root_fd,
-                                    follow_symlinks=False))
-    except OSError:
+        current = _snapshot_file(root_fd, 'manifest.json')
+    except (OSError, ValueError):
         raise ValueError('MANIFEST_CHANGED') from None
-    if current != expected:
+    if current != (expected, expected_bytes):
         raise ValueError('MANIFEST_CHANGED')
 
 
@@ -130,15 +129,15 @@ def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
     # be replaced after its digest is recorded. Bind the final manifest commit
     # to every current byte through the already-verified package descriptor.
     _verify_declared_files(package, expected_files)
-    expected = _identity(os.stat('manifest.json', dir_fd=stage_fd,
-                                 follow_symlinks=False))
+    expected, expected_bytes = _snapshot_file(stage_fd, 'manifest.json')
     try:
-        _replace_staged(stage_fd, root_fd, 'manifest.json', expected)
+        _replace_staged(stage_fd, root_fd, 'manifest.json', expected,
+                        expected_bytes)
         _verify_declared_files(package, expected_files)
     except BaseException as verification_failure:
         try:
             _replace_staged(stage_fd, root_fd, 'manifest.rollback.json',
-                            rollback_identity)
+                            rollback_identity, original_bytes)
             os.fsync(root_fd)
         except BaseException as rollback_failure:
             failure = _ManifestRollbackFailed('BOOK_MANIFEST_ROLLBACK_FAILED')
