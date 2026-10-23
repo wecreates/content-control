@@ -23,7 +23,7 @@ def _require_path_identity(path, expected):
         raise RuntimeError('PACKAGE_REPLACED') from None
 
 
-def _descriptor_directory(directory_fd, expected):
+def _descriptor_directory(directory_fd, expected, unavailable):
     # All supported worker environments are Linux, where /proc/self/fd is a
     # kernel-owned alias for an already-open descriptor.  Keep pathname-only
     # render and JSON helpers anchored to the directory we opened rather than
@@ -34,7 +34,7 @@ def _descriptor_directory(directory_fd, expected):
             return path
     except OSError:
         pass
-    raise RuntimeError('BOOK_STAGING_PATH_UNAVAILABLE')
+    raise RuntimeError(unavailable)
 
 
 def _snapshot_file(directory_fd, name):
@@ -107,35 +107,35 @@ def _cleanup_installed(root_fd, installed, failure):
 
 def assemble(root, spec, pages, font):
     root = Path(root)
-    manifest = read_json(root/'manifest.json')
-    previous = manifest.pop('package_sha256')
-    if hashlib.sha256(canonical(manifest).encode()).hexdigest() != previous:
-        raise ValueError('MANIFEST_HASH_MISMATCH')
-    for name, sha in manifest['files'].items():
-        if digest(scoped_file(root, name)) != sha:
-            raise ValueError('FILE_HASH_MISMATCH')
-    cover = manifest['template']
-    if manifest['platform'] != 'kdp' or spec['platform'] != 'kdp':
-        raise ValueError('PLATFORM_BLOCKED')
-    kdp = cover['kdp']
-    # The cover and interior templates are independently authenticated.
-    # Bind their product-defining print choices before rendering: paper and ink
-    # determine spine geometry, while binding determines the cover construction.
-    if (spec.get('binding') != kdp.get('binding') or
-        spec.get('ink_type') != kdp.get('ink_type') or
-        spec.get('paper_type') != kdp.get('paper_type') or
-        spec['page_count'] != kdp['page_count'] or
-        abs(spec['trim_inches'][0]-kdp['trim_width_inches']) > 1e-6 or
-        abs(spec['trim_inches'][1]+2*kdp['bleed_inches']-cover['size_inches'][1]) > 1e-6):
-        raise ValueError('COVER_INTERIOR_MISMATCH')
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         root_identity = _identity(os.fstat(root_fd))
         _require_path_identity(root, root_identity)
+        package = _descriptor_directory(root_fd, root_identity,
+                                        'BOOK_PACKAGE_PATH_UNAVAILABLE')
         original_identity, original_bytes = _snapshot_file(root_fd, 'manifest.json')
-        original_manifest = {**manifest, 'package_sha256': previous}
-        if strict_json(original_bytes.decode('utf-8', errors='strict')) != original_manifest:
-            raise ValueError('MANIFEST_CHANGED')
+        manifest = strict_json(original_bytes.decode('utf-8', errors='strict'))
+        previous = manifest.pop('package_sha256')
+        if hashlib.sha256(canonical(manifest).encode()).hexdigest() != previous:
+            raise ValueError('MANIFEST_HASH_MISMATCH')
+        for name, sha in manifest['files'].items():
+            if digest(scoped_file(package, name)) != sha:
+                raise ValueError('FILE_HASH_MISMATCH')
+        cover = manifest['template']
+        if manifest['platform'] != 'kdp' or spec['platform'] != 'kdp':
+            raise ValueError('PLATFORM_BLOCKED')
+        kdp = cover['kdp']
+        # The cover and interior templates are independently authenticated.
+        # Bind their product-defining print choices before rendering: paper and
+        # ink determine spine geometry, while binding determines construction.
+        if (spec.get('binding') != kdp.get('binding') or
+            spec.get('ink_type') != kdp.get('ink_type') or
+            spec.get('paper_type') != kdp.get('paper_type') or
+            spec['page_count'] != kdp['page_count'] or
+            abs(spec['trim_inches'][0]-kdp['trim_width_inches']) > 1e-6 or
+            abs(spec['trim_inches'][1]+2*kdp['bleed_inches']-
+                cover['size_inches'][1]) > 1e-6):
+            raise ValueError('COVER_INTERIOR_MISMATCH')
     except BaseException:
         os.close(root_fd)
         raise
@@ -151,7 +151,8 @@ def assemble(root, spec, pages, font):
         stage_fd = os.open(stage_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
                            dir_fd=root_fd)
         stage_identity = _identity(os.fstat(stage_fd))
-        stage = _descriptor_directory(stage_fd, stage_identity)
+        stage = _descriptor_directory(stage_fd, stage_identity,
+                                      'BOOK_STAGING_PATH_UNAVAILABLE')
         receipt = render_book(spec, pages, font, stage/'interior.pdf')
         save_json(stage/'interior.receipt.json', receipt)
         manifest['interior'] = {'template': spec, 'receipt': receipt}

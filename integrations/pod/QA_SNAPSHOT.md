@@ -308,10 +308,17 @@ also rooted at that descriptor through Linux `/proc/self/fd`; a path replacement
 observed before creation fails before rendering, while a later handoff can only
 write into the already-open original package. Runtimes without the verified
 descriptor alias fail with `BOOK_STAGING_PATH_UNAVAILABLE` rather than falling
-back to the caller-visible path. Four regressions cover acquisition, pre-staging,
-stage-creation and successful-handoff swaps. This is not a same-user adversarial
-filesystem sandbox, crash recovery, editorial approval or actual KDP preview/print
-acceptance. Publication remains disabled.
+back to the caller-visible path.
+
+The manifest snapshot and every declared cover-artifact digest are now acquired
+only after the package descriptor is open, through that same verified descriptor
+alias. A replacement inserted at the open boundary must therefore satisfy its own
+declared hashes; it cannot reuse the original manifest while substituting different
+cover bytes. A runtime without the package alias fails closed with
+`BOOK_PACKAGE_PATH_UNAVAILABLE`. Five regressions cover pre-open, acquisition,
+pre-staging, stage-creation and successful-handoff swaps. This is not a same-user
+adversarial filesystem sandbox, crash recovery, editorial approval or actual KDP
+preview/print acceptance. Publication remains disabled.
 
 
 ## Direct asset generation failure recovery
