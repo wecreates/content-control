@@ -5,7 +5,7 @@ import shutil
 
 @contextmanager
 def output_attempt(output, cleanup_note='REVIEW_OUTPUT_CLEANUP_FAILED', *,
-                   mode=0o777, parents=True):
+                   mode=0o700, parents=True):
     # Existing output is never a cleanup target. Hold the new directory open so
     # its inode cannot be recycled while checking for a concurrent replacement.
     output.mkdir(mode=mode, parents=parents, exist_ok=False)

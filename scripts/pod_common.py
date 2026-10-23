@@ -87,13 +87,21 @@ def save_json(path, value):
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     temp = p.with_name(p.name + '.tmp-' + os.urandom(6).hex())
+    fd = None
     try:
-        with temp.open('x') as f:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        if hasattr(os, 'O_NOFOLLOW'):
+            flags |= os.O_NOFOLLOW
+        fd = os.open(temp, flags, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            fd = None
             f.write(canonical(value) + '\n')
             f.flush()
             os.fsync(f.fileno())
         os.replace(temp, p)
     finally:
+        if fd is not None:
+            os.close(fd)
         temp.unlink(missing_ok=True)
 
 def verified(envelope, key_env, audience):
