@@ -22,7 +22,7 @@ test('only one novelty object moves shelf to Dave to shelf, then remains returne
  assert.equal(longStorePose(103.6,store).objectOwner,'dave');
  assert.equal(longStorePose(store.shelf+.1,store).objectOwner,'shelf-hand');
  const end=longStorePose(112,store);assert.equal(end.objectOwner,'shelf');assert.equal(end.objectX,865);assert.equal(end.objectY,422);
- for(let t=store.grasp+.01;t<store.shelf;t+=1/240){const p=longStorePose(t,store);assert.equal(p.handX,p.objectX-40);assert.equal(p.handY,p.objectY+15);}
+ for(let t=store.grasp+.01;t<store.shelf;t+=1/240){const p=longStorePose(t,store);const a=p.objectAngle*Math.PI/180;assert.ok(Math.abs(p.handX-(p.objectX-40*Math.cos(a)-15*Math.sin(a)))<1e-9);assert.ok(Math.abs(p.handY-(p.objectY-40*Math.sin(a)+15*Math.cos(a)))<1e-9);}
 });
 test('five-dollar math precedes negative savings stamp; return retires stamp',()=>{
  assert.equal(longStorePose(store.pay-.01,store).payProgress,0);
@@ -40,8 +40,8 @@ test('trophy is taken once and invoice stays in Dave hand after handoff',()=>{
 test('one reward contrasts with bounded repeated invoices only on billing dialogue',()=>{
  assert.equal(longTrophyPose(trophy.billing-.01,trophy).copies,0);
  assert.equal(longTrophyPose(trophy.billing+.01,trophy).copies,1);
- assert.equal(longTrophyPose(304,trophy).copies,4);
- assert.equal(longTrophyPose(308,trophy).copies,4);
+ assert.equal(longTrophyPose(304,trophy).copies,3);
+ assert.equal(longTrophyPose(308,trophy).copies,9);
 });
 test('all frame states are finite, props stay below caption and headline zones',()=>{
  for(const [start,end,pose,timing] of [[store.start,store.end,longStorePose,store],[trophy.start,trophy.end,longTrophyPose,trophy]]){
@@ -58,7 +58,7 @@ test('physical pose never restarts at intermediate storyboard scene cuts',()=>{
 
 test('repeated invoices emerge continuously from the original document',()=>{
  for(let index=0;index<4;index++){
-  const start=trophy.billing+index*.48,before=longInvoiceCopyPose(index,start,trophy),after=longInvoiceCopyPose(index,start+.42,trophy);
+  const start=trophy.billing+index*.72,before=longInvoiceCopyPose(index,start,trophy),after=longInvoiceCopyPose(index,start+.66,trophy);
   assert.equal(before.x,550);assert.equal(before.y,400);assert.equal(before.progress,0);
   assert.equal(after.x,672+index*77);assert.equal(after.progress,1);
  }
@@ -72,7 +72,7 @@ test('SVG server render keeps exactly one physical novelty and uses observed cap
  for(const time of [92.1,99.7,103.8,107.5,110.7,112.1]){const svg=render(time);assert.equal((svg.match(/data-novelty-object=/g)||[]).length,1);assert.ok(svg.includes('y="73"'));assert.ok(!/NaN|undefined|Infinity/.test(svg));}
  const paid=render(103.8);assert.ok(paid.includes('I pay five.'));assert.ok(paid.includes('data-wallet-state="open-empty"'));
  const transferred=render(297.9);assert.ok(transferred.includes('data-invoice-owner="dave"'));assert.equal((transferred.match(/data-trophy="single-reward"/g)||[]).length,1);
- const payoff=render(304);assert.equal((payoff.match(/data-invoice="repeat"/g)||[]).length,4);assert.equal((payoff.match(/data-one-time-reward=/g)||[]).length,1);assert.equal((payoff.match(/data-trophy="single-reward"/g)||[]).length,0);
+ const payoff=render(304.5);assert.equal((payoff.match(/data-invoice="repeat"/g)||[]).length,4);assert.equal((payoff.match(/data-one-time-reward=/g)||[]).length,1);assert.equal((payoff.match(/data-trophy="single-reward"/g)||[]).length,0);
  assert.ok(payoff.includes('stroke="none" fill="#D8342C"'));
 });
 
@@ -83,4 +83,20 @@ test('camera push-ins preserve the entire fixed art safe region including stroke
   if(p.stampOpacity>0){const angle=5*p.stampProgress*Math.PI/180,scale=1+.15*(1-p.stampProgress);const top=304-(165*Math.sin(angle)+44*Math.cos(angle))*scale-3.5*scale;assert.ok(screenY(top)>=200);}
  }
  for(let time=trophy.start;time<trophy.end;time+=1/240){const p=longTrophyPose(time,trophy),screenY=y=>450+p.cameraOffsetY+(y-450)*p.cameraScale;assert.ok(screenY(p.trophyY-68.5)>=200);assert.ok(screenY(639.5)<=650);}
+});
+
+test('scoreboard label stays inside a full-width container throughout its entrance',()=>{
+ const require=createRequire(import.meta.url),React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const code=buildSync({entryPoints:[new URL('../remotion/LongStorePerformance.jsx',import.meta.url).pathname],bundle:true,write:false,platform:'node',format:'cjs',external:['react']}).outputFiles[0].text;const module={exports:{}};new Function('require','module','exports',code)(require,module,module.exports);
+ const time=111.833,scene=doc.scenes.find(s=>time>=s.start&&time<s.end),svg=renderToStaticMarkup(React.createElement(module.exports.LongStorePerformance,{ccsd:doc,time,scene}));assert.ok(svg.includes('x="-220" y="250" width="440"'));assert.ok(svg.includes('x="0" y="296"'));
+});
+
+test('natural prop handling and reactions cover formerly static dialogue holds',()=>{
+ assert.ok(Math.abs(longStorePose(90.5,store).phoneY-longStorePose(90.95,store).phoneY)>20);
+ assert.ok(Math.abs(longStorePose(100.44,store).objectAngle-longStorePose(101.09,store).objectAngle)>10);
+ assert.ok(Math.abs(longStorePose(108.25,store).objectAngle-longStorePose(108.9,store).objectAngle)>10);
+ assert.ok(longStorePose(108.8,store).walletOpen<.1);
+ assert.ok(longStorePose(112.1,store).daveX<longStorePose(111.2,store).daveX-80);
+ assert.ok(Math.abs(longTrophyPose(290.5,trophy).trophyY-longTrophyPose(291.3,trophy).trophyY)>15);
+ assert.ok(longTrophyPose(308,trophy).copies>longTrophyPose(304,trophy).copies);
 });

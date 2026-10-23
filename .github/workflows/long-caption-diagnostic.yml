@@ -15,6 +15,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
       - run: npm ci
       - name: Verify retained review source
         env:
@@ -48,9 +50,18 @@ jobs:
           PY
       - name: Test exact cue-driven motion and all scene integrations
         run: node --test tests/long-*-motion.test.mjs tests/studio-long-layout.test.mjs
-      - name: Render only repaired story segments with retained audio
+      - name: Install pinned image-analysis runtime
+        timeout-minutes: 3
+        run: |
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 --require-hashes --only-binary=:all: -r requirements-media-runtime.txt
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy==2.2.6 opencv-python-headless==4.12.0.88
+          python scripts/setup_pinned_media_runtime.py --bin-dir "$RUNNER_TEMP/content-control-media-bin" --github-path
+      - name: Test full media capabilities and unchanged QA guards
+        run: python -m unittest tests.test_setup_pinned_media_runtime tests.test_production_reality_media_qa -v
+      - name: Render and inspect only repaired story segments with retained audio
         run: python scripts/render_long_storyboard_previews.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: long-storyboard-review
           path: |

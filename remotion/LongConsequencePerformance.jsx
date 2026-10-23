@@ -9,7 +9,7 @@ const K='#111',R='#d83532',G='#268449';
 const Text=({children,x=640,y=155,size=32,width=1100,fill=K})=><text x={x} y={y} textAnchor="middle" fill={fill} fontFamily="Arial,sans-serif" fontWeight="800" fontSize={Math.min(size,width/Math.max(1,String(children??'').length*.68))}>{children}</text>;
 const Ladder=({x,y,scale=1,angle=0})=><g data-prop="decorative-ladder" transform={`translate(${x} ${y}) scale(${scale}) rotate(${angle})`} stroke={K} strokeWidth="7" strokeLinecap="round"><path d="M-34 -80 V80 M34 -80 V80 M-34 -58 H34 M-34 -14 H34 M-34 30 H34 M-34 70 H34" fill="none"/></g>;
 const Groceries=({x,y})=><g data-prop="planned-groceries" transform={`translate(${x} ${y})`}><path d="M-33 -38 H33 L29 40 H-29 Z" fill="#edf6ed" stroke={K} strokeWidth="4"/><path d="M-12 -38 Q-25 -76 -12 -81 Q4 -80 3 -38 M8 -38 Q2 -68 20 -69 Q36 -56 22 -38" fill="white" stroke={K} strokeWidth="4"/><Text x={0} y={12} size={13} width={54}>FOOD</Text></g>;
-const Invoice=({x,y})=><g data-prop="annual-fee-invoice" transform={`translate(${x} ${y})`}><path d="M-175 -80 H175 V72 L150 80 L125 72 L100 80 L75 72 L50 80 L25 72 L0 80 L-25 72 L-50 80 L-75 72 L-100 80 L-125 72 L-150 80 L-175 72 Z" fill="white" stroke={K} strokeWidth="7"/><Text x={0} y={-8} size={52} width={310}>$200</Text><Text x={0} y={39} size={30} width={310}>ANNUAL FEE</Text></g>;
+const Invoice=({x,y,angle=0})=><g data-prop="annual-fee-invoice" transform={`translate(${x} ${y}) rotate(${angle} 0 80)`}><path d="M-175 -80 H175 V72 L150 80 L125 72 L100 80 L75 72 L50 80 L25 72 L0 80 L-25 72 L-50 80 L-75 72 L-100 80 L-125 72 L-150 80 L-175 72 Z" fill="white" stroke={K} strokeWidth="7"/><Text x={0} y={-8} size={52} width={310}>$200</Text><Text x={0} y={39} size={30} width={310}>ANNUAL FEE</Text></g>;
 function PromiseIcon({index,x,y,active,pulse}){
  const scale=1+pulse*.12;
  return <g data-promise-icon={['rewards','interest','bonuses','zero-asterisk'][index]} data-topic-mentioned={String(active)} transform={`translate(${x} ${y}) scale(${scale})`}>
@@ -27,16 +27,16 @@ export function LongConsequencePerformance({ccsd,time,scene}){
  if(!audit&&!deletion){
   const p=feeConsequencePose(time,timing);action='fee_drop';headline=time>=timing.promise?'FOUR WAYS TO LOSE THE ADVANTAGE':'METAL CARD. REAL BILL.';
   art=p.phase==='promise'?<g data-consequence-phase="viewer-promise">
-   <Dave x={640} y={497} s={.98} label="" mood="shock" leftHandTarget={{x:-105,y:-30}} rightHandTarget={{x:105,y:-30}} mouthOpen={mouth('dave')} gazeX={2}/>
+   <Dave x={640-120*p.promiseOutro} y={497} s={.98} label="" mood="shock" leftHandTarget={{x:-105+45*p.promiseOutro,y:-30+50*p.promiseOutro}} rightHandTarget={{x:105+15*p.promiseOutro,y:-30-115*p.promiseOutro}} leftFootTarget={{x:-55,y:150-18*Math.max(0,Math.sin(p.promiseOutro*Math.PI*2))}} rightFootTarget={{x:55,y:150-18*Math.max(0,-Math.sin(p.promiseOutro*Math.PI*2))}} mouthOpen={mouth('dave')} gazeX={2}/>
    {p.iconsVisible&&[0,1,2,3].map(index=>{const angle=[-Math.PI*.75,-Math.PI*.25,Math.PI*.75,Math.PI*.25][index]+p.iconOrbit;return <PromiseIcon key={index} index={index} x={640+375*Math.cos(angle)} y={400+135*Math.sin(angle)} active={p.iconActive[index]} pulse={p.iconPulse[index]}/>;})}
   </g>:<g data-consequence-phase={p.phase}>
    <g data-causal-motion="invoice-crushes-dave" data-dave-squash={p.squashY}>
     {time>=timing.crawl?<g data-dave-recovery="crawl-then-stand">
-     <Dave x={p.daveX} y={615-102*p.riseProgress-40*Math.sin(Math.PI*p.riseProgress)+p.crawlBob} s={.65+.23*p.riseProgress} lean={90*(1-p.riseProgress)} label="" mood="shock" leftHandTarget={{x:45-115*p.riseProgress,y:20}} rightHandTarget={{x:50+20*p.riseProgress,y:-135+155*p.riseProgress}} leftFootTarget={{x:-50,y:150}} rightFootTarget={{x:50,y:150}} mouthOpen={mouth('dave')} gazeX={3}/>
+     <Dave x={p.daveX} y={615-102*p.riseProgress-40*Math.sin(Math.PI*p.riseProgress)+p.crawlBob} s={.65+.23*p.riseProgress} lean={90*(1-p.riseProgress)} label="" mood="shock" leftHandTarget={{x:45-115*p.riseProgress,y:20}} rightHandTarget={{x:50+20*p.riseProgress,y:-135+155*p.riseProgress}} leftFootTarget={{x:-50,y:150-18*Math.max(0,p.resetStep)}} rightFootTarget={{x:50,y:150-18*Math.max(0,-p.resetStep)}} mouthOpen={mouth('dave')} gazeX={3}/>
     </g>:<g transform={`translate(${p.daveX} 645) scale(${p.squashX} ${p.squashY}) translate(${-p.daveX} -645)`}>
-     <Dave x={p.daveX} y={p.daveY} s={.88} label="" mood={time<timing.fall?'smile':'shock'} leftHandTarget={{x:-80,y:time<timing.impact?-70:25}} rightHandTarget={{x:80,y:time<timing.impact?-80:25}} mouthOpen={mouth('dave')} gazeY={-4}/>
+     <Dave x={p.daveX} y={p.daveY} s={.88} label="" mood={time<timing.fall?'smile':'shock'} leftHandTarget={{x:time<timing.impact?-80:-180-35*p.push,y:time<timing.impact?-15-55*p.brace:25}} rightHandTarget={{x:time<timing.impact?80:180+35*p.push,y:time<timing.impact?-10-70*p.brace:25}} leftFootTarget={{x:-55,y:150-18*Math.max(0,p.walkStep)}} rightFootTarget={{x:55,y:150-18*Math.max(0,-p.walkStep)}} mouthOpen={mouth('dave')} gazeY={-4}/>
     </g>}
-    {p.invoiceVisible&&<Invoice x={p.invoiceX} y={p.invoiceY}/>}
+    {p.invoiceVisible&&<Invoice x={p.invoiceX} y={p.invoiceY} angle={p.invoiceAngle}/>}
     {p.impact>0&&<g opacity={p.impact} stroke={K} strokeWidth="5"><path d="M402 584 l-33 -19 M398 604 h-40 M798 584 l33 -19 M802 604 h40 M470 634 l-20 6 M730 634 l20 6"/></g>}
    </g>
    {time>=timing.crawl&&<PointsMonk x={1110} y={474} s={.97} label="" leftHandTarget={{x:-105,y:-42}} mouthOpen={mouth('points_monk')}/>}
@@ -45,25 +45,32 @@ export function LongConsequencePerformance({ccsd,time,scene}){
  }else if(audit){
   const p=auditCartPose(time,timing);action='cart';headline='NORMAL SPENDING ONLY';
   art=<g data-consequence-phase="planned-cart-audit" data-ladder-in-cart="false">
-   <Dave x={310} y={484} s={.98} label="" mood={p.ladderVisible?'mad':'smile'} rightHandTarget={{x:140+28*p.swat,y:-25-50*p.swat}} mouthOpen={mouth('dave')} gazeX={4}/>
+   <Dave x={310+p.cartOffset} y={484} s={.98} label="" mood={p.ladderVisible?'mad':'smile'} lean={8*p.inspection} leftHandTarget={p.listVisible?{x:-75+60*p.onward,y:(21-135*p.listLift+140*p.onward)/.98}:undefined} rightHandTarget={{x:185+28*p.swat,y:-80-35*p.swat}} leftFootTarget={{x:-55,y:150-18*Math.max(0,p.walkStep)}} rightFootTarget={{x:55,y:150-18*Math.max(0,-p.walkStep)}} mouthOpen={mouth('dave')} gazeX={4}/>
+   {p.listVisible&&<g data-planned-list="inspection"><PropIcon id="receipt" x={200+p.cartOffset+60*p.onward} y={480-135*p.listLift+140*p.onward} s={.5}/></g>}
+   <g data-cart-handling="planned-purchases" transform={`translate(${p.cartOffset} 0)`}>
    {p.groceriesVisible&&<Groceries x={600} y={437}/>}
    {p.gasVisible&&<g data-prop="planned-gas"><PropIcon id="gas_pump" x={711} y={427} s={.44}/></g>}
    <PropIcon id="shopping_cart" x={640} y={493} s={1.65}/>
+   </g>
    {p.checkVisible&&<g data-planned-cart-check="true"><path d="M566 258 l28 29 l55 -63" stroke={G} strokeWidth="10" fill="none" strokeLinecap="round"/><Text x={640} y={325} size={24} width={340} fill={G}>PLANNED PURCHASES</Text></g>}
    {p.ladderVisible&&<g data-causal-motion="uninvited-ladder-rejected"><Ladder x={p.ladderX} y={p.ladderY} angle={p.ladderAngle} scale={.84}/><path d={`M${p.ladderX-50} ${p.ladderY+84} l-13 9 M${p.ladderX+35} ${p.ladderY+84} l15 9`} stroke={K} strokeWidth="4" fill="none"/>{p.swat>0&&<path d="M815 365 l18 -20 M831 394 h28 M814 418 l19 19" stroke={K} strokeWidth="5"/>}</g>}
   </g>;
  }else{
-  const p=deletionPose(time,timing);action='cart';headline=p.winning?'WINNING BACKWARDS':'SPEND $500 · GET $300';
+  const p=deletionPose(time,timing);action='cart';headline=p.deletionCount>0?'REMOVE EXTRA CART ITEMS':p.winning?'WINNING BACKWARDS':'SPEND $500 · GET $300';
   art=<g data-consequence-phase="delete-unneeded-purchases" data-cart-item-count={p.itemCount} data-deletion-count={p.deletionCount}>
-   <Dave x={300} y={484} s={.98} label="" mood={p.ladderReturned?'shock':p.deletionCount>0?'mad':'deadpan'} rightHandTarget={{x:150,y:-15-152*p.press}} mouthOpen={mouth('dave')} gazeX={4}/>
-   <PointsMonk x={1060} y={470} s={.98} label="" leftHandTarget={{x:-90,y:-40}} mouthOpen={mouth('points_monk')}/>
-   <g data-delete-button="true" transform={`translate(452 ${314+5*p.press})`}><rect x="-79" y="-36" width="158" height="72" rx="10" fill={p.press>0?R:'white'} stroke={K} strokeWidth="5"/><Text x={0} y={9} size={27} width={142} fill={p.press>0?'white':K}>DELETE</Text></g>
-   {p.extraVisible&&<g data-prop="unneeded-extra"><PropIcon id="reward_box" x={602} y={425} s={.62}/></g>}
-   {p.ladderVisible&&<Ladder x={727} y={359} scale={p.ladderReturned?p.returnScale:1} angle={p.ladderReturned?-7:7}/>}
+   <Dave x={p.daveX} y={484} s={.98} label="" mood={p.deletionCount>0?'mad':'deadpan'} rightHandTarget={p.receiptVisible?{x:95,y:(p.receiptY+65-484)/.98}:{x:150+65*p.onward,y:-15-152*p.press-45*p.onward}} leftFootTarget={{x:-55,y:150-20*Math.max(0,p.walkStep)}} rightFootTarget={{x:55,y:150-20*Math.max(0,-p.walkStep)}} mouthOpen={mouth('dave')} gazeX={4}/>
+   <PointsMonk x={1060} y={470} s={.98} label="" leftHandTarget={{x:-90-70*p.compareGesture,y:-40-95*p.compareGesture+90*p.onward}} mouthOpen={mouth('points_monk')}/>
+   {p.receiptVisible&&<g data-past-cost-example="true" transform={`translate(${p.receiptX} ${p.receiptY}) rotate(${p.receiptAngle}) scale(${p.receiptScale})`}><rect x="-110" y="-74" width="220" height="148" rx="5" fill="#fff0ed" stroke={K} strokeWidth="5"/><Text x={0} y={-35} size={22} width={205}>$500 SPENT</Text><Text x={0} y={1} size={22} width={205}>− $300 BONUS</Text><path d="M-90 16 H90" stroke={K} strokeWidth="3"/><Text x={0} y={52} size={28} width={205} fill={R}>$200 COST</Text></g>}
+   {!p.receiptVisible&&<g data-delete-button="true" transform={`translate(452 ${314+5*p.press})`}><rect x="-79" y="-36" width="158" height="72" rx="10" fill={p.press>0?R:'white'} stroke={K} strokeWidth="5"/><Text x={0} y={9} size={27} width={142} fill={p.press>0?'white':K}>DELETE</Text></g>}
+   <g data-cart-handling="delete-extras" transform={`translate(${p.cartOffset} 0)`}>
+   {p.extraVisible&&<g data-prop="unneeded-extra" transform="translate(586 436)"><rect x="-40" y="-27" width="80" height="54" rx="12" fill="white" stroke={K} strokeWidth="4"/><path d="M-27 -29 V-38 H27 V-29 M-16 -13 H17" fill="none" stroke={K} strokeWidth="4"/><circle cx="27" cy="9" r="4" fill={K}/></g>}
+   {p.secondExtraVisible&&<g data-prop="unneeded-second-extra" transform="translate(654 425)"><path d="M-24 -61 H24 L17 -5 H-17 Z" fill="white" stroke={K} strokeWidth="4"/><rect x="-25" y="-4" width="50" height="40" rx="6" fill="#eee" stroke={K} strokeWidth="4"/><path d="M24 -52 H39 V-20 H20" fill="none" stroke={K} strokeWidth="4"/><circle cy="17" r="5" fill={K}/></g>}
+   {p.ladderVisible&&<Ladder x={727} y={359} scale={1} angle={7}/>}
    <PropIcon id="shopping_cart" x={666} y={501} s={1.65}/>
-   {p.puff>0&&<g data-deletion-feedback="removed" opacity={p.puff} stroke={R} strokeWidth="5" fill="none"><path d={p.deletionCount===1?'M575 401 l-25 -19 M626 396 l18 -25 M636 438 h28':'M690 331 l-27 -21 M755 324 l22 -25 M768 373 h30'}/></g>}
-   <g><Text x={1030} y={270} size={42} width={240} fill={R}>−$200</Text><Text x={1030} y={306} size={22} width={240}>NET RESULT</Text></g>
-   {p.deletionCount===3?<g data-final-cart-empty="true"><path d="M632 430 l24 24 l48 -56" stroke={G} strokeWidth="9" fill="none"/><Text x={666} y={250} size={24} width={490} fill={G}>EXTRA PURCHASES REMOVED</Text></g>:<Text x={666} y={250} size={24} width={490}>{p.itemCount} UNNEEDED {p.itemCount===1?'ITEM':'ITEMS'}</Text>}
+   </g>
+   {p.puff>0&&<g data-deletion-feedback="removed" opacity={p.puff} stroke={R} strokeWidth="5" fill="none"><path d={p.deletionCount===1?'M575 401 l-25 -19 M626 396 l18 -25 M636 438 h28':p.deletionCount===2?'M620 384 l-20 -20 M681 381 l18 -20 M686 428 h25':'M690 331 l-27 -21 M755 324 l22 -25 M768 373 h30'}/></g>}
+   {p.receiptVisible&&<g><Text x={1030} y={270} size={36} width={240} fill={R}>−$200</Text><Text x={1030} y={306} size={20} width={240}>PAST EXAMPLE</Text></g>}
+   {p.receiptVisible?null:p.deletionCount===3?<g data-final-cart-empty="true"><path transform={`translate(${p.cartOffset} 0)`} d="M632 430 l24 24 l48 -56" stroke={G} strokeWidth="9" fill="none"/><Text x={666} y={250} size={24} width={490} fill={G}>EXTRA PURCHASES REMOVED</Text></g>:<Text x={666} y={250} size={24} width={490}>{p.itemCount} UNNEEDED {p.itemCount===1?'ITEM':'ITEMS'}</Text>}
   </g>;
  }
  return <g data-long-action={action} data-long-performance="consequence">

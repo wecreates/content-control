@@ -43,39 +43,48 @@ export function finalePose(time,timing) {
  const t=timing;
  if(time>=t.teaserStart&&time<t.teaserEnd){
   const button=ramp(time,t.button-.25,t.button+.45),eyes=ramp(time,t.horror,t.horror+.48);
-  const danger=ramp(time,t.horror+.18,t.horror+.65);
-  return {kind:'teaser',shot:'hallway-slow-push',button,eyes,
+  const danger=ramp(time,t.horror+.18,t.horror+.65),approach=ramp(time,t.horror+.35,t.teaserEnd);
+  // The threat approaches after opening its eyes; reflected red light fills the hall.
+
+  return {kind:'teaser',shot:'hallway-slow-push',button,eyes,approach,
    buttonY:495-28*button,tremble:Math.sin((time-t.horror)*31)*2.3*danger,
    push:1+.1*clamp((time-t.teaserStart)/(t.teaserEnd-t.teaserStart)),
    hallwayLight:1-.42*eyes};
  }
  if(time<t.start||time>=t.end)return {kind:'outside',shot:'outside'};
- if(time<t.starts[0])return {kind:'intro',shot:'four-rule-overview',reveal:[0,1,2,3].map(i=>ramp(time,t.start+.15+i*.28,t.start+.5+i*.28))};
+ if(time<t.starts[0])return {kind:'intro',shot:'four-rule-overview',reveal:[0,1,2,3].map(i=>ramp(time,t.start+.15+i*.5,t.start+.85+i*.65)),count:ramp(time,t.start+.3,t.starts[0]-.1)};
  if(time<t.starts[1]){
   const change=ramp(time,t.rewardChange,t.rewardUsed),cart=ramp(change,.35,.9);
-  return {kind:'rewards',shot:change<.45?'yacht-medium':'useful-reward-close',change,cart,
+  const sail=ramp(time,t.starts[0],t.rewardChange),push=55*ramp(time,t.rewardUsed,t.starts[1]-.05);
+  return {kind:'rewards',shot:change<.45?'yacht-medium':'useful-reward-close',change,cart,sail,push,
+   yachtX:645+60*sail,cartX:690+push,daveX:420+push,
    yachtScale:1-.93*ramp(change,0,.68),yachtOpacity:1-ramp(change,.55,.75),
    yachtY:370+68*change,coinY:310+106*ramp(change,.65,1),coinOpacity:ramp(change,.63,.78),
-   daveHandX:560+31*cart,daveHandY:400-27*cart};
+   daveHandX:535+25*sail+31*cart+push,daveHandY:400-27*cart};
  }
  if(time<t.starts[2]){
   const reach=ramp(time,t.carry,t.wipe),take=ramp(time,t.wipe,t.stolen),exchange=ramp(time,t.wipe+.1,t.stolen);
+  const proudLift=35*(1-ramp(time,t.starts[1],t.compare+.15));
   return {kind:'interest',shot:time<t.carry?'reward-cost-comparison':'trophy-theft-close',reach,take,exchange,
-   trophyX:510+270*take,trophyY:365-20*Math.sin(take*Math.PI),
+   trophyX:510+270*take,trophyY:365-20*Math.sin(take*Math.PI)+proudLift,
    monsterHandX:820-310*reach+270*take,monsterHandY:425-25*Math.sin(take*Math.PI),
    invoiceX:780-270*exchange,invoiceY:365+35*exchange,
-   daveHandX:510,daveHandY:425+35*exchange,
+   daveHandX:510,daveHandY:425+35*exchange+proudLift,
    trophyOwner:take>0?'interest':'dave',receiptDelivered:exchange>=1};
  }
  if(time<t.starts[3]){
   const drop=ramp(time,t.manufacture,t.spending),impact=ramp(drop,.7,1);
-  return {kind:'bonus',shot:drop>0?'manufactured-spending-close':'bonus-cart-wide',drop,impact,
+  const advance=130*ramp(time,t.starts[2],t.manufacture),retreat=40*ramp(time,t.spending-.1,t.starts[3]-.05);
+  return {kind:'bonus',shot:drop>0?'manufactured-spending-close':'bonus-cart-wide',drop,impact,advance,retreat,
+   cartX:520+advance-retreat,daveX:300+advance-retreat,carrotX:687+60*advance/130,
    ladderY:322+95*drop,ladderOpacity:ramp(drop,0,.15),ladderAngle:-22+14*drop,
    cartY:510+8*impact,spendingVisible:ramp(drop,.65,.9),
    bonusRotation:-16+8*ramp(time,t.starts[2],t.manufacture),daveShock:drop>.35};
  }
  const inspect=ramp(time,t.read-.15,t.condition),reveal=ramp(time,t.read+.15,t.condition+.3);
+ const down=ramp(time,t.condition+.05,t.condition+.65),across=ramp(time,t.condition+.35,t.condition+1.35),nextLine=ramp(time,t.condition+1.35,t.end-.08);
+ const lensX=755-95*inspect-115*across+90*nextLine,lensY=340+75*inspect+50*down+32*nextLine;
  return {kind:'terms',shot:inspect<.45?'giant-zero-wide':'condition-magnifier-close',inspect,reveal,
-  lensX:755-95*inspect,lensY:340+75*inspect,
-  handX:755-95*inspect+92*.78,handY:340+75*inspect+92*.78};
+  lensX,lensY,
+  handX:lensX+92*.78,handY:lensY+92*.78};
 }

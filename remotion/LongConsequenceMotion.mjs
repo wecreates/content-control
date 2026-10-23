@@ -10,6 +10,14 @@ export function consequenceTiming(ccsd={}){
  const cues=ccsd.caption_track?.cues||[];
  const deletions=cues.filter(c=>c.scene_id==='scene-137'&&word(c.word)==='delete');
  return {
+  feeStart:7.958333333333333,
+  spent:cueAt(cues,'scene-132','spent',368.6366875),
+  receive:cueAt(cues,'scene-132','receive',370.1166875),
+  thisIs:cueAt(cues,'scene-135','this',372.68),
+  promiseEnd:cueAt(cues,'scene-009','percent',27.6350625,'end'),
+  debtEnd:cueAt(cues,'scene-007','debt',16.4,'end'),
+  auditStart:169.625,auditEnd:179.375,
+  auditCheckEnd:cueAt(cues,'extension-audit-04','cart',171.365,'end'),
   feeReveal:cueAt(cues,'scene-005','two-hundred-dollar',9.06),
   fall:cueAt(cues,'scene-005','falls',10.2),
   impact:cueAt(cues,'scene-005','ceiling',11.02),
@@ -27,7 +35,7 @@ export function consequenceTiming(ccsd={}){
   swat:cueAt(cues,'extension-audit-04','aboard',177.425),
   winning:cueAt(cues,'scene-135','backwards',373.62),
   deletes:[375.333375,375.993375,377.493375].map((fallback,i)=>Number.isFinite(deletions[i]?.start)?deletions[i].start:fallback),
-  ladderReturn:cueAt(cues,'scene-137','ladder',377.033375),
+  ladderQuestion:cueAt(cues,'scene-137','ladder',377.033375),
  };
 }
 export function feeConsequencePose(time,t){
@@ -36,42 +44,62 @@ export function feeConsequencePose(time,t){
  const crawl=smooth((time-t.crawl)/Math.max(.2,t.rise-t.crawl));
  const rise=smooth((time-t.rise)/.75);
  const departure=smooth((time-t.rise)/.9);
+ const approach=smooth((time-t.feeStart)/(t.feeReveal-t.feeStart));
+ const push=smooth((time-t.impact-.2)/(t.crawl-t.impact-.2));
+ const reset=smooth((time-t.debtEnd)/(t.promise-t.debtEnd));
  const phase=time<t.impact?'falling':time<t.crawl?'flattened':time<t.rise?'crawling':time<t.promise?'recovered':'promise';
  return {phase,invoiceVisible:time>=t.feeReveal&&time<t.title,
-  invoiceY:285+245*fall*fall,invoiceX:600-670*departure,
+  invoiceY:285+245*fall*fall,invoiceX:600+65*push-735*departure,
+  invoiceAngle:-9*push*(1-smooth((time-t.crawl)/.45)),
+  brace:approach,walkStep:Math.sin(Math.PI*2*approach),resetStep:Math.sin(Math.PI*2*reset),push,
   squashY:1-.87*crush*(1-rise),squashX:1+.4*crush*(1-rise),
-  daveX:600+265*crawl,daveY:513,riseProgress:rise,
+  daveX:500+100*approach+265*crawl-225*reset,daveY:513,riseProgress:rise,
   crawlBob:time>=t.crawl&&time<t.rise?Math.sin((time-t.crawl)*16)*2:0,
   impact:time>=t.impact&&time<t.impact+.26?1-(time-t.impact)/.26:0,
   titleVisible:time>=t.title&&time<t.title+.9,
   titleScale:.86+.14*smooth((time-t.title)/.09),
   iconsVisible:time>=t.four,
   iconOrbit:Math.sin((time-t.four)*.45)*.11,
+  promiseOutro:smooth((time-t.promiseEnd)/(28.708333333333332-t.promiseEnd)),
   iconActive:t.topics.map(start=>time>=start),
   iconPulse:t.topics.map(start=>time>=start&&time<start+.34?Math.sin((time-start)/.34*Math.PI):0),
  };
 }
 export function deletionPose(time,t){
  const [one,two,three]=t.deletes;
- const extraVisible=time<one;
- const ladderVisible=time<two||(time>=t.ladderReturn&&time<three);
+ const extraVisible=time<one,secondExtraVisible=time<two,ladderVisible=time<three;
  const last=[one,two,three].filter(start=>time>=start).at(-1);
  const press=last===undefined?0:Math.max(0,1-(time-last)/.25);
- return {extraVisible,ladderVisible,ladderReturned:time>=t.ladderReturn&&time<three,
-  itemCount:Number(extraVisible)+Number(ladderVisible),press,
+ const read=smooth((time-t.spent)/(t.receive-t.spent));
+ const reckon=smooth((time-t.receive)/(t.thisIs-t.receive));
+ const retreat=smooth((time-t.thisIs)/(t.winning+.5-t.thisIs));
+ const prepare=smooth((time-(t.winning+.5))/(one-t.winning-.5));
+ const onward=smooth((time-three)/(378.75-three));
+ const daveX=300+100*read-100*reckon-55*retreat+55*prepare+105*onward;
+ return {extraVisible,secondExtraVisible,ladderVisible,
+  itemCount:Number(extraVisible)+Number(secondExtraVisible)+Number(ladderVisible),press,
   deletionCount:t.deletes.filter(start=>time>=start).length,
   puff:press,winning:time>=t.winning,
-  returnScale:.75+.25*smooth((time-t.ladderReturn)/.14)};
+  daveX,cartOffset:105*onward,walkStep:Math.sin(Math.PI*2*(read+reckon+retreat+prepare+onward)),
+  receiptVisible:time<one,receiptX:daveX+165,receiptY:300+45*Math.sin(Math.PI*reckon),
+  receiptAngle:-9+18*reckon-9*retreat,receiptScale:1-.35*prepare,
+  compareGesture:smooth((time-t.receive)/1.25),onward,
+ };
 }
 export function auditCartPose(time,t){
  const approaching=smooth((time-t.ladderAttempt)/Math.max(.2,t.climb-t.ladderAttempt));
  const climbing=smooth((time-t.climb)/Math.max(.15,t.swat-t.climb));
  const rejected=smooth((time-t.swat)/.42);
+ const arrival=smooth((time-t.auditStart)/(t.auditCheckEnd-t.auditStart));
+ const onward=smooth((time-(t.swat+.55))/(t.auditEnd-t.swat-.55));
  return {groceriesVisible:time>=t.groceries,gasVisible:time>=t.gas,
   ladderVisible:time>=t.ladderAttempt,ladderInCart:false,
-  ladderX:1040-190*approaching-45*climbing+155*rejected,
+  ladderX:1040-190*approaching-45*climbing+155*rejected+135*onward,
   ladderY:510-105*climbing+75*rejected,
-  ladderAngle:-12-18*climbing+48*rejected,
+  ladderAngle:-12-18*climbing+48*rejected-15*onward,
+  cartOffset:-80+80*arrival-105*onward,walkStep:Math.sin(Math.PI*2*(arrival+onward)),
+  inspection:Math.sin(Math.PI*arrival),onward,
+  listVisible:time>=t.auditCheckEnd-.35,listLift:smooth((time-(t.auditCheckEnd-.35))/(t.groceries-t.auditCheckEnd+.35)),
   swat:time>=t.swat&&time<t.swat+.3?Math.sin((time-t.swat)/.3*Math.PI):0,
   checkVisible:time>=t.noLadder};
 }

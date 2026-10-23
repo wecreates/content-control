@@ -16,7 +16,7 @@ const {LongConsequencePerformance}=await import('data:text/javascript;base64,'+B
 const render=(time,doc=ccsd)=>renderToStaticMarkup(React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',viewBox:'0 0 1280 720',width:1280,height:720},React.createElement('rect',{width:1280,height:720,fill:'white'}),React.createElement(LongConsequencePerformance,{ccsd:doc,time,scene:doc.scenes.find(scene=>scene.start<=time&&time<scene.end)})));
 test('exact observed cue timestamps drive consequences and inputs remain unchanged',()=>{
  const before=JSON.stringify(ccsd);assert.equal(timing.fall,10.2);assert.equal(timing.impact,11.02);assert.equal(timing.crawl,12.9);assert.equal(timing.title,15.2);
- assert.deepEqual(timing.deletes,[375.333375,375.993375,377.493375]);assert.equal(timing.ladderReturn,377.033375);assert.equal(timing.ladderAttempt,176.385);
+ assert.deepEqual(timing.deletes,[375.333375,375.993375,377.493375]);assert.equal(timing.ladderQuestion,377.033375);assert.equal(timing.ladderAttempt,176.385);
  const changed=structuredClone(ccsd);changed.caption_track.cues.find(c=>c.word==='falls').start+=.2;assert.ok(Math.abs(consequenceTiming(changed).fall-10.4)<1e-10);
  assert.equal(JSON.stringify(ccsd),before);
 });
@@ -37,13 +37,13 @@ test('title sting lasts exactly 0.9 seconds and four distinct promise icons foll
  const markup=render(26.7);for(const name of ['rewards','interest','bonuses','zero-asterisk'])assert.match(markup,new RegExp('data-promise-icon="'+name+'"'));
  assert.match(render(15.5),/data-title-sting="0.9-seconds"/);assert.doesNotMatch(render(16.2),/data-title-sting=/);
 });
-test('each spoken Delete removes real geometry; ladder returns only once then stays absent',()=>{
+test('each spoken Delete removes one of three real items; ladder waits for final Delete',()=>{
  const [one,two,three]=timing.deletes;
- assert.equal(deletionPose(one-.001,timing).itemCount,2);assert.equal(deletionPose(one,timing).itemCount,1);
- assert.equal(deletionPose(two,timing).ladderVisible,false);assert.equal(deletionPose(timing.ladderReturn,timing).ladderVisible,true);
+ assert.equal(deletionPose(one-.001,timing).itemCount,3);assert.equal(deletionPose(one,timing).itemCount,2);
+ assert.equal(deletionPose(two,timing).itemCount,1);assert.equal(deletionPose(two,timing).ladderVisible,true);assert.equal(deletionPose(timing.ladderQuestion,timing).ladderVisible,true);
  assert.equal(deletionPose(three,timing).itemCount,0);
  assert.match(render(one-.001),/data-prop="unneeded-extra"/);assert.doesNotMatch(render(one),/data-prop="unneeded-extra"/);
- assert.doesNotMatch(render(two),/data-prop="decorative-ladder"/);assert.match(render(timing.ladderReturn),/data-prop="decorative-ladder"/);
+ assert.doesNotMatch(render(two),/data-prop="unneeded-second-extra"/);assert.match(render(two),/data-prop="decorative-ladder"/);assert.match(render(timing.ladderQuestion),/data-prop="decorative-ladder"/);
  for(let time=three;time<378.75;time+=1/24){assert.doesNotMatch(render(time),/data-prop="decorative-ladder"/);assert.match(render(time),/data-final-cart-empty="true"/);}
 });
 test('earlier no-ladder line has no ladder; attempt begins only at its next observed mention',()=>{
@@ -88,4 +88,22 @@ if(process.env.LONG_CONSEQUENCE_STILLS&&sharp){
  const times=[9.5,10.6,11.4,13.5,15.5,26.7,175.5,177.5,375.5,376.3,377.2,378.3];
  const tiles=await Promise.all(times.map(async(time,index)=>({input:await sharp(Buffer.from(render(time))).resize(640,360).png().toBuffer(),left:index%3*640,top:Math.floor(index/3)*360})));
  await sharp({create:{width:1920,height:1440,channels:4,background:'white'}}).composite(tiles).png().toFile(process.env.LONG_CONSEQUENCE_STILLS);
+}
+
+test('holds have motivated approach, handling and departure while past cost is clearly retired',()=>{
+ assert.ok(feeConsequencePose(8.8,timing).daveX>feeConsequencePose(8,timing).daveX);
+ assert.ok(feeConsequencePose(12.6,timing).invoiceX>feeConsequencePose(11.5,timing).invoiceX);
+ assert.ok(feeConsequencePose(17.2,timing).daveX<feeConsequencePose(16.5,timing).daveX);
+ assert.notEqual(auditCartPose(169.7,timing).cartOffset,auditCartPose(170.4,timing).cartOffset);
+ assert.ok(auditCartPose(179.2,timing).ladderX>auditCartPose(178.3,timing).ladderX);
+ assert.match(render(372),/PAST EXAMPLE/);assert.match(render(372),/data-past-cost-example="true"/);
+ assert.doesNotMatch(render(375.5),/PAST EXAMPLE|−\$200|data-past-cost-example/);
+ assert.ok(deletionPose(378.5,timing).cartOffset>deletionPose(377.7,timing).cartOffset);
+});
+if(process.env.LONG_CONSEQUENCE_SEQUENCE&&sharp){
+ const root=process.env.LONG_CONSEQUENCE_SEQUENCE;fs.mkdirSync(root,{recursive:true});
+ for(const [name,start,end] of [['fee-consequence',191,689],['audit-cart',4071,4305],['ladder-deletions',8830,9090]]){
+  fs.mkdirSync(root+'/'+name,{recursive:true});let index=0;
+  for(let frame=start;frame<end;frame+=3){await sharp(Buffer.from(render(frame/24))).png().toFile(`${root}/${name}/${String(index++).padStart(4,'0')}.png`);}
+ }
 }

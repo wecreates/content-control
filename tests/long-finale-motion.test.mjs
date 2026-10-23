@@ -60,6 +60,20 @@ test('final dark hallway reveals button before eyes; eyes cause trembling and ho
  assert.ok(last.push>initial.push);assert.ok(Math.abs(eyes.tremble)>0);
 });
 
+test('formerly held beats retain purposeful prop handling and suspense after reveals',()=>{
+ const introA=finalePose(478.7,t),introB=finalePose(479.3,t);
+ assert.ok(introB.reveal[3]>introA.reveal[3]);
+ assert.ok(finalePose(480.5,t).yachtX>finalePose(479.7,t).yachtX);
+ const usedA=finalePose(482.6,t),usedB=finalePose(483.2,t);
+ assert.ok(usedB.cartX>usedA.cartX);assert.ok(Math.abs((usedB.cartX-usedB.daveX)-(usedA.cartX-usedA.daveX))<1e-9);
+ assert.ok(finalePose(484.1,t).trophyY<finalePose(483.5,t).trophyY);
+ const chaseA=finalePose(490,t),chaseB=finalePose(491.8,t),retreat=finalePose(494.4,t);
+ assert.ok(chaseB.cartX>chaseA.cartX);assert.ok(retreat.cartX<finalePose(493.3,t).cartX);
+ assert.ok(finalePose(498.4,t).lensY>finalePose(497,t).lensY);
+ assert.notEqual(finalePose(498.4,t).lensX,finalePose(497,t).lensX);
+ assert.ok(finalePose(519.2,t).approach>finalePose(518.1,t).approach);
+});
+
 test('all poses are finite, physically contained, and source documents remain unmodified',()=>{
  const before=JSON.stringify(ccsd);
  for(const [start,end] of [[t.start,t.end],[t.teaserStart,t.teaserEnd]])for(let time=start;time<end;time+=1/240){

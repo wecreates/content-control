@@ -39,6 +39,7 @@ def main():
     bin_dir = Path('node_modules/@remotion/compositor-linux-x64-gnu')
     ffmpeg, ffprobe = bin_dir / 'ffmpeg', bin_dir / 'ffprobe'
     assert all(p.is_file() and os.access(p, os.X_OK) for p in (ffmpeg, ffprobe)), 'Pinned media binaries missing'
+    from production_reality_media_qa import probe, audio_covers_video
     receipts = []
     for name, first, last in SEGMENTS:
         silent, candidate = output / (name + '-silent.mp4'), output / (name + '.mp4')
@@ -53,11 +54,16 @@ def main():
         assert (video['width'], video['height'], video['r_frame_rate']) == (1280, 720, '24/1')
         assert abs(float(video['duration']) - duration) < 1/24
         assert abs(float(audio['duration']) - duration) < .05
-        receipts.append({'name': name, 'frames': [first, last], 'source_start_seconds': first/24, 'duration_seconds': duration, 'sha256': sha(candidate), 'full_av_decode': 'PASS', 'video_frames': int(video['nb_frames'])})
+        metrics = probe(candidate)
+        checks = {'complete_video_decode': metrics['complete_video_decode'], 'complete_av_decode': metrics['complete_av_decode'], 'audio_audible': metrics['audio_audible'], 'audio_covers_video': audio_covers_video(metrics, duration), 'no_black': metrics['black_samples'] == 0, 'no_duplicate_run': metrics['max_duplicate_run_seconds'] < .75, 'safe_border': metrics['max_border'] < .18}
+        receipts.append({'name': name, 'frames': [first, last], 'source_start_seconds': first/24, 'duration_seconds': duration, 'sha256': sha(candidate), 'full_av_decode': 'PASS', 'video_frames': int(video['nb_frames']), 'checks': checks, 'metrics': metrics})
         print(json.dumps(receipts[-1]), flush=True)
     assert sha(source) == SOURCE_SHA
     receipt = {'status': 'PREVIEWS_PENDING_CREATIVE_REVIEW', 'publication_enabled': False, 'production_approved': False, 'source_commit': os.environ.get('GITHUB_SHA'), 'source_candidate_sha256': SOURCE_SHA, 'source_captions_sha256': CAPTION_SHA, 'audio': 'Existing source audio extracted at exact segment start and AAC encoded for preview only; no voice generation', 'segments': receipts}
+    passed = all(all(segment['checks'].values()) for segment in receipts)
+    if not passed: receipt['status'] = 'BLOCKED_PREVIEW_MEDIA_CHECKS'
     (output / 'preview-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    assert passed, 'Preview media checks failed; inspect the preserved receipt and clips'
 
 if __name__ == '__main__':
     main()
