@@ -1,4 +1,4 @@
-name: Long retained caption diagnostic
+name: Long retained caption repair and review candidate
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
@@ -10,7 +10,7 @@ jobs:
   inspect:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,13 +37,13 @@ jobs:
           artifact-ids: '12518594645'
           run-id: '39993662037'
           github-token: ${{ github.token }}
-          path: retained
+          path: state/production-long
           merge-multiple: true
       - name: Emit bounded caption evidence only
         run: |
           python - <<'PY'
           import json,pathlib
-          root=pathlib.Path('retained')
+          root=pathlib.Path('state/production-long')
           for name in ['captions.json','v2_captions.log']:
               p=root/name
               assert p.is_file() and not p.is_symlink() and p.stat().st_size<65536, name
@@ -83,25 +83,41 @@ jobs:
         with: {node-version: '20'}
       - name: Install bounded CPU ASR dependencies
         run: |
-          command -v ffmpeg || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg)
+          command -v ffmpeg || (sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update && sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg)
           python -m pip install --disable-pip-version-check numpy -r requirements-transcription.txt
       - name: Test strict caption and repair guards
         run: python -m unittest tests.test_v2_transcription_repair tests.test_v2_captions -v
-      - name: Reobserve actual retained audio and rebuild captions
-        run: |
-          mkdir -p repair-output
-          echo '2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021  projects/long/credit-card-dlc/ccsd.json' | sha256sum -c -
-          python scripts/v2_transcription_repair.py --ccsd projects/long/credit-card-dlc/ccsd.json --transcription retained/transcription.json --assembly retained/assembly.json --audio retained/voice.wav --out repair-output/transcription-repaired.json
-          python scripts/v2_captions.py --ccsd projects/long/credit-card-dlc/ccsd.json --transcription repair-output/transcription-repaired.json --audio retained/voice.wav --out repair-output/captions.json
-          node scripts/verify_caption_frames.mjs --ccsd projects/long/credit-card-dlc/ccsd.json --captions repair-output/captions.json --out repair-output/caption-frames.json
-      - name: Emit bounded repair outcome
-        if: always()
+      - name: Verify completed retained stages before resume
         run: |
           python - <<'PY'
-          import json,pathlib
-          for name in ['captions.json','caption-frames.json']:
-              p=pathlib.Path('repair-output')/name
-              if p.is_file():
-                  d=json.loads(p.read_text())
-                  print(json.dumps({'file':name,'status':d.get('status'),'reason':d.get('reason'),'cue_count':len(d.get('cues',[])),'publication_enabled':False,'production_approved':False}))
+          import hashlib,json,pathlib
+          root=pathlib.Path.cwd().resolve()
+          work=root/'state/production-long'
+          state=json.loads((work/'execution.json').read_text())
+          assert hashlib.sha256(pathlib.Path('projects/long/credit-card-dlc/ccsd.json').read_bytes()).hexdigest()=='2b95d6c320a9add7ca40700540a900172fe5063cf7cfbd78d09bff2a2fa7c021'
+          assert hashlib.sha256((work/'voice.wav').read_bytes()).hexdigest()=='b89b60dab969964a0d488139f504718491650f8833266c5dee0d11ad026897a2'
+          for name in ['voice','assembly','mix','transcription_contract','transcription']:
+              record=state['stages'][name]
+              assert record['status']=='PASS' and record['inputs'] and record['outputs'],name
+              for key in ['inputs','outputs']:
+                  for path,digest in record[key].items():
+                      p=pathlib.Path(path)
+                      assert p.is_relative_to(root) and p.is_file(),(name,'missing retained path')
+                      assert hashlib.sha256(p.read_bytes()).hexdigest()==digest,(name,'changed retained dependency')
+              assert str(root/'scripts/v2_execution.py') in record['inputs']
+              print(name+': actual retained inputs and outputs verified')
           PY
+      - name: Install existing renderer and QA dependencies
+        run: |
+          npm ci
+          python -m pip install --disable-pip-version-check opencv-python-headless
+      - name: Resume Long captions, Remotion render, and actual media QA
+        run: python scripts/v2_execution.py --ccsd projects/long/credit-card-dlc/ccsd.json --workdir state/production-long --composition StudioLong
+      - name: Preserve resumable Long state and actual review media
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-state-long
+          path: state/production-long/
+          retention-days: 14
+          if-no-files-found: error
