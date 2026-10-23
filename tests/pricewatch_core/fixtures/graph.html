@@ -1,0 +1,28 @@
+<!doctype html><html><head><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "@id": "#mug",
+      "sku": "MUG-BLUE-12",
+      "name": "Synthetic fixture mug",
+      "color": "blue",
+      "size": "12 oz",
+      "offers": {
+        "@id": "#offer"
+      },
+      "description": "New promotional copy unrelated to item price"
+    },
+    {
+      "@id": "#offer",
+      "@type": "Offer",
+      "price": "12.99",
+      "priceCurrency": "USD",
+      "availability": "InStock",
+      "itemOffered": {
+        "@id": "#mug"
+      }
+    }
+  ]
+}</script></head><body>Graph fixture</body></html>
