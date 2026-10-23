@@ -402,6 +402,181 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_book_manifest_commit_is_followed_by_directory_fsync(self):
+        original_replace = books.os.replace
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        events = []
+
+        def record_replace(src, dst, *args, **kwargs):
+            result = original_replace(src, dst, *args, **kwargs)
+            if (src == 'manifest.json' and dst == 'manifest.json'
+                    and kwargs.get('dst_dir_fd') is not None):
+                events.append('manifest_replace')
+            return result
+
+        def record_fsync(fd):
+            if (stat.S_ISDIR(os.fstat(fd).st_mode)
+                    and books._identity(os.fstat(fd)) == root_identity):
+                events.append('package_fsync')
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'replace', side_effect=record_replace), \
+             patch.object(books.os, 'fsync', side_effect=record_fsync):
+            self.run_assembly()
+
+        self.assertGreaterEqual(events.count('package_fsync'), 2)
+        self.assertEqual(events[-2:], ['manifest_replace', 'package_fsync'])
+
+    def test_manifest_fsync_failure_preserves_complete_committed_package(self):
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        package_syncs = 0
+
+        def fail_final_package_sync(fd):
+            nonlocal package_syncs
+            value = os.fstat(fd)
+            if (stat.S_ISDIR(value.st_mode)
+                    and books._identity(value) == root_identity):
+                package_syncs += 1
+                if package_syncs == 2:
+                    raise OSError('manifest durability fixture')
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'fsync', side_effect=fail_final_package_sync):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_PACKAGE_DURABILITY_UNCERTAIN
+        moved = self.root/'moved-package'
+        original_commit = books._commit_manifest
+        def commit_then_replace(*args, **kwargs):
+            result = original_commit(*args, **kwargs)
+            self.package.rename(moved)
+            self.package.mkdir()
+            (self.package/'concurrent').write_bytes(b'keep')
+            return result
+        with patch.object(books,'_commit_manifest',side_effect=commit_then_replace):
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        completed = json.loads((moved/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],digest(moved/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(moved/'interior.receipt.json'))
+        self.assertEqual(list(moved.glob('.pod-book-*')),[])
+
+    def test_book_package_swap_during_acquisition_never_starts_render(self):
+        moved = self.root/'moved-acquisition-package'
+        original_fstat = books.os.fstat
+        swapped = False
+        def swap_after_fstat(fd):
+            nonlocal swapped
+            value = original_fstat(fd)
+            if not swapped and stat.S_ISDIR(value.st_mode):
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                (self.package/'concurrent').write_bytes(b'keep')
+            return value
+        with patch.object(books.os,'fstat',side_effect=swap_after_fstat), \
+             patch.object(books,'render_book') as render:
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+
+    def test_book_package_swap_before_open_rechecks_declared_files(self):
+        moved = self.root/'moved-before-open-package'
+        original_open = books.os.open
+        swapped = False
+        def swap_before_open(path, flags, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if (not swapped and dir_fd is None and Path(path) == self.package
+                    and flags & os.O_DIRECTORY):
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                self.package.joinpath('manifest.json').write_bytes(self.original_manifest)
+                manifest = json.loads(self.original_manifest)
+                for name in manifest['files']:
+                    target = self.package/name
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_bytes(b'tampered replacement')
+            return original_open(path, flags, mode, dir_fd=dir_fd)
+        with patch.object(books.os,'open',side_effect=swap_before_open), \
+             patch.object(books,'render_book',wraps=books.render_book) as render:
+            with self.assertRaisesRegex(ValueError,'^FILE_HASH_MISMATCH$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertFalse((moved/'interior.pdf').exists())
+        self.assertFalse((moved/'interior.receipt.json').exists())
+        self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+
+    def test_book_package_swap_before_staging_never_writes_replacement(self):
+        moved = self.root/'moved-before-staging-package'
+        original_urandom = books.os.urandom
+        swapped = False
+        def swap_before_stage(size):
+            nonlocal swapped
+            if not swapped:
+                swapped = True
+                self.package.rename(moved)
+                self.package.mkdir()
+                (self.package/'concurrent').write_bytes(b'keep')
+            return original_urandom(size)
+        with patch.object(books.os,'urandom',side_effect=swap_before_stage), \
+             patch.object(books,'render_book',wraps=books.render_book) as render:
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertEqual((moved/'manifest.json').read_bytes(),self.original_manifest)
+        self.assertFalse((moved/'interior.pdf').exists())
+        self.assertFalse((moved/'interior.receipt.json').exists())
+
+    def test_book_package_swap_during_stage_creation_stays_descriptor_anchored(self):
+        moved = self.root/'moved-during-stage-package'
+        original_mkdir = books.os.mkdir
+        swapped = False
+        def swap_during_stage(path, mode=0o777, *, dir_fd=None):
+            nonlocal swapped
+            if not swapped and dir_fd is not None and str(path).startswith('.pod-book-'):
+                swapped = True
+                self.package.rename(moved)
+                original_mkdir(self.package, 0o777)
+                (self.package/'concurrent').write_bytes(b'keep')
+            return original_mkdir(path, mode, dir_fd=dir_fd)
+        with patch.object(books.os,'mkdir',side_effect=swap_during_stage):
+            with self.assertRaisesRegex(RuntimeError,'^PACKAGE_REPLACED$'):
+                self.run_assembly()
+        self.assertEqual((self.package/'concurrent').read_bytes(),b'keep')
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        completed = json.loads((moved/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],digest(moved/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(moved/'interior.receipt.json'))
+        self.assertEqual(list(moved.glob('.pod-book-*')),[])
+
+
+if __name__ == '__main__': unittest.main()
+
+):
+                self.run_assembly()
+
+        completed = json.loads((self.package/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],
+                         digest(self.package/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(self.package/'interior.receipt.json'))
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
     def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
         moved = self.root/'moved-package'
         original_commit = books._commit_manifest
