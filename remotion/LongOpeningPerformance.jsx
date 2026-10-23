@@ -21,16 +21,16 @@ export const LongOpeningPerformance=({ccsd,time})=>{
    <g data-impact-response="table-deformation" opacity={p.impactOpacity} stroke="#111" strokeWidth="5" strokeLinecap="round"><path d="M480 470 l-42 -22 M480 493 l-55 0 M802 470 l42 -22 M802 493 l55 0 M590 575 l-15 28 M690 575 l15 28"/></g>
   </g>:p.shot==='hero-low-angle'?<g data-causal-motion="hero-card-lift">
    <path d="M330 640 H950" stroke="#111" strokeWidth="4"/>
-   <g transform={`translate(640 460) scale(${1+.04*p.heroProgress}) translate(-640 -460)`}>
-    <Dave x={570} y={435} s={1.35} lean={-4} rightHandTarget={{x:115,y:-108}} leftHandTarget={{x:-62,y:20}} leftFootTarget={{x:-68,y:150}} rightFootTarget={{x:72,y:150}} mood="smile" label="" gazeX={4} gazeY={-3} mouthOpen={speechMouthActivity('dave',time,cue)}/>
-    <PropIcon id="card" x={715} y={278-18*p.heroProgress} s={.9} rotation={-18}/>
-    <path d="M774 240 l15 -20 M790 262 l26 -2 M767 212 l-2 -23" stroke="#111" strokeWidth="4"/>
+   <g transform={`translate(640 460) scale(${1+.045*p.heroProgress}) translate(-640 -460)`}>
+    <Dave x={570} y={435} s={1.35} lean={-4-10*p.heroProgress} rightHandTarget={{x:(715-570)/1.35,y:(350-95*p.heroProgress+24-435)/1.35}} leftHandTarget={{x:-62,y:20}} leftFootTarget={{x:-68,y:150}} rightFootTarget={{x:72,y:150}} mood="smile" label="" gazeX={4} gazeY={-3} mouthOpen={speechMouthActivity('dave',time,cue)}/>
+    <PropIcon id="card" x={715} y={350-95*p.heroProgress} s={.9} rotation={-18}/>
+    <path transform={`translate(0 ${72-95*p.heroProgress})`} d="M774 240 l15 -20 M790 262 l26 -2 M767 212 l-2 -23" stroke="#111" strokeWidth="4"/>
    </g>
   </g>:<g data-causal-motion="dangerous-reaction">
-   <Dave x={430} y={435} s={1.2} rightHandTarget={{x:80,y:-50}} leftHandTarget={{x:-65,y:10}} mood="smile" label="" gazeX={3} browLift={4*p.reactionProgress} mouthOpen={speechMouthActivity('dave',time,cue)}/>
+   <Dave x={430+65*p.reactionProgress} y={435} s={1.2} lean={-3+12*p.reactionProgress} rightHandTarget={{x:60+65*p.reactionProgress,y:-15-80*p.reactionProgress}} leftHandTarget={{x:-45-65*p.reactionProgress,y:50-100*p.reactionProgress}} mood="smile" label="" gazeX={3} browLift={4*p.reactionProgress} mouthOpen={speechMouthActivity('dave',time,cue)}/>
    {table(18,535)}
    <PropIcon id="card" x={640} y={472} s={1.05} rotation={0}/>
-   <g transform={`translate(${Math.sin(time*20)*(time-timing.heroEnd<.25?4:0)} 0)`}>
+   <g transform={`translate(${Math.sin(time*20)*(time-timing.heroEnd<.25?4:0)+p.labelGlitch} 0)`}>
     <rect x="690" y="285" width="410" height="112" rx="12" fill="#fff" stroke="#111" strokeWidth="5"/>
     <text x="895" y="329" textAnchor="middle" fill="#111" fontFamily="Arial,sans-serif" fontWeight="800" fontSize="27">FINANCIALLY</text><text x="895" y="365" textAnchor="middle" fill="#111" fontFamily="Arial,sans-serif" fontWeight="800" fontSize="27">DANGEROUS</text>
    </g>

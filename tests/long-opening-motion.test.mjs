@@ -22,3 +22,19 @@ test('observed caption words drive hook timing without altering audio or caption
  const before=JSON.stringify(doc),t=openingTiming(doc);
  assert.equal(t.impact,1.8);assert.ok(Math.abs(t.closeEnd-2.82)<1e-12);assert.equal(JSON.stringify(doc),before);
 });
+
+test('hero lift and proud reaction continue purposefully across former held poses',()=>{
+ assert.ok(openingPose(4.3,timing).heroProgress>openingPose(3.5,timing).heroProgress);
+ assert.ok(openingPose(5.8,timing).reactionProgress>openingPose(5.2,timing).reactionProgress);
+});
+
+test('source label glitch is a single bounded payoff, not constant shaking',()=>{
+ assert.equal(openingPose(6.8,timing).labelGlitch,0);
+ assert.notEqual(openingPose(timing.end-.6,timing).labelGlitch,0);
+ assert.equal(openingPose(timing.end-.2,timing).labelGlitch,0);
+});
+
+test('reaction reach continues through the final spoken line rather than settling early',()=>{
+ assert.ok(openingPose(7.8,timing).reactionProgress>openingPose(7.1,timing).reactionProgress+.2);
+ assert.ok(openingPose(5.8,timing).reactionProgress<.4);
+});

@@ -19,5 +19,7 @@ export const openingPose=(time,timing)=>{
   cardY:y,cardAngle:hit<0?-12*(1-drop):3*Math.exp(-hit*10)*Math.sin(hit*22),
   dent,shake:hit>=0&&hit<.35?4*Math.exp(-hit*10)*Math.sin(hit*85):0,
   impactOpacity:hit>=0?Math.max(0,1-hit/.28):0,
-  heroProgress:ease((time-timing.closeEnd)/.6),reactionProgress:ease((time-timing.heroEnd)/.35)};
+  labelGlitch:time>=timing.end-.75&&time<timing.end-.35?9*Math.sin((time-(timing.end-.75))*65):0,
+  heroProgress:clamp((time-timing.closeEnd)/Math.max(.1,timing.heroEnd-timing.closeEnd)),reactionProgress:clamp((time-timing.heroEnd)/Math.max(.1,timing.end-timing.heroEnd))};
 };
+
