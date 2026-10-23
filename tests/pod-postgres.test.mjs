@@ -227,6 +227,9 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const signedObservation=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:listing-observation',
    issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
    return {payload,signature:crypto.createHmac('sha256',providerKey).update(payload).digest('hex')};};
+  await assert.rejects(reconcilePublication(db,signedObservation({...observed,private_token:'must-not-persist'}),providerKey),/LISTING_EVIDENCE_REQUIRED/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[0]])).rows[0].state,'submitted');
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=$1',[observed.provider_event_id])).rows[0].n,0);
   assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{published:true});
   assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{duplicate:true});
   await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);

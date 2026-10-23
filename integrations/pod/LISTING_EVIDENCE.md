@@ -10,6 +10,13 @@ be true. Identities are nonempty strings of at most 256 characters. The existing
 short-lived signature, exact account/package checks and stored proof checks apply.
 Never manufacture provider readback, permission or evidence to satisfy this gate.
 
+Schema version 1 accepts only those listing fields plus the required signed-
+envelope fields. Extra response fields and unsupported platforms fail before
+database access. The inbox payload is reconstructed from the exact allowlist;
+adapter bodies, headers, URLs, credentials and private diagnostic text are not
+durable provider evidence. A future field requires an explicit schema-version
+change rather than silently widening retained evidence.
+
 Replaying the same provider event must preserve every observed field, including
 its evidence hash. Only envelope issue/expiry times can differ. Exact retries
 return duplicate:true and emit no additional event. Changed content under the
