@@ -402,6 +402,59 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_book_manifest_commit_is_followed_by_directory_fsync(self):
+        original_replace = books.os.replace
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        events = []
+
+        def record_replace(src, dst, *args, **kwargs):
+            result = original_replace(src, dst, *args, **kwargs)
+            if (src == 'manifest.json' and dst == 'manifest.json'
+                    and kwargs.get('dst_dir_fd') is not None):
+                events.append('manifest_replace')
+            return result
+
+        def record_fsync(fd):
+            if (stat.S_ISDIR(os.fstat(fd).st_mode)
+                    and books._identity(os.fstat(fd)) == root_identity):
+                events.append('package_fsync')
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'replace', side_effect=record_replace), \
+             patch.object(books.os, 'fsync', side_effect=record_fsync):
+            self.run_assembly()
+
+        self.assertGreaterEqual(events.count('package_fsync'), 2)
+        self.assertEqual(events[-2:], ['manifest_replace', 'package_fsync'])
+
+    def test_manifest_fsync_failure_preserves_complete_committed_package(self):
+        original_fsync = books.os.fsync
+        root_identity = books._identity(self.package.stat())
+        package_syncs = 0
+
+        def fail_final_package_sync(fd):
+            nonlocal package_syncs
+            value = os.fstat(fd)
+            if (stat.S_ISDIR(value.st_mode)
+                    and books._identity(value) == root_identity):
+                package_syncs += 1
+                if package_syncs == 2:
+                    raise OSError('manifest durability fixture')
+            return original_fsync(fd)
+
+        with patch.object(books.os, 'fsync', side_effect=fail_final_package_sync):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_PACKAGE_DURABILITY_UNCERTAIN$'):
+                self.run_assembly()
+
+        completed = json.loads((self.package/'manifest.json').read_text())
+        self.assertEqual(completed['files']['interior.pdf'],
+                         digest(self.package/'interior.pdf'))
+        self.assertEqual(completed['files']['interior.receipt.json'],
+                         digest(self.package/'interior.receipt.json'))
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
     def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
         moved = self.root/'moved-package'
         original_commit = books._commit_manifest

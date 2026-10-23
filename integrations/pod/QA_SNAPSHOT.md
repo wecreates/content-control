@@ -335,6 +335,16 @@ or modified in place after its digest is recorded, assembly fails before manifes
 commit and removes only the exact linked interior inodes. A regression mutates the
 hard-linked PDF at that boundary and confirms the original cover manifest remains.
 
+The package directory is synchronized once after installing the complete interior
+files and again after atomically replacing the manifest. Assembly does not report
+success until that final directory `fsync` completes. If the final sync fails, the
+complete manifest and the exact files it references remain together for recovery;
+cleanup does not delete files from a manifest that may already survive a crash,
+and assembly reports `BOOK_PACKAGE_DURABILITY_UNCERTAIN`.
+Tests verify the required replace-then-sync order and the sync-failure state. This
+improves local filesystem crash durability but is not an independent backup,
+multi-file transaction, retention policy or completed production recovery drill.
+
 
 ## Direct asset generation failure recovery
 
