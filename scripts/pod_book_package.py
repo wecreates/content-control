@@ -3,7 +3,6 @@ import argparse
 import sys
 import hashlib
 import os
-import shutil
 import stat
 from pathlib import Path
 from pod_common import (MAX_DIGEST_BYTES, MAX_JSON_BYTES, canonical, digest,
@@ -207,6 +206,15 @@ def _cleanup_installed(root_fd, installed, failure):
         failure.add_note('BOOK_PACKAGE_CLEANUP_FAILED')
 
 
+def _clear_staging(stage_fd):
+    """Remove only non-directory entries from the staging dir we opened."""
+    for name in os.listdir(stage_fd):
+        current = os.stat(name, dir_fd=stage_fd, follow_symlinks=False)
+        if stat.S_ISDIR(current.st_mode):
+            raise OSError('unexpected staging directory')
+        os.unlink(name, dir_fd=stage_fd)
+
+
 def assemble(root, spec, pages, font):
     root = Path(root)
     root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -300,10 +308,16 @@ def assemble(root, spec, pages, font):
         raise
     finally:
         try:
+            if stage_identity is not None:
+                # Empty the directory through its held descriptor first.  A
+                # same-user writer can replace the caller-visible stage name
+                # after the identity check below; a final non-recursive rmdir
+                # cannot traverse and delete that replacement's contents.
+                _clear_staging(stage_fd)
             if (stage_identity is not None and
                     _identity(os.stat(stage_name, dir_fd=root_fd,
                                       follow_symlinks=False)) == stage_identity):
-                shutil.rmtree(stage_name, dir_fd=root_fd)
+                os.rmdir(stage_name, dir_fd=root_fd)
         except FileNotFoundError:
             pass
         except OSError:

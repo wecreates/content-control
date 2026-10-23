@@ -341,6 +341,43 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertEqual((self.package/'manifest.json').read_bytes(),self.original_manifest)
         self.assertEqual(list(self.package.glob('.pod-book-*')),[])
 
+    def test_staging_cleanup_never_deletes_a_concurrent_replacement(self):
+        original_stat = books.os.stat
+        swapped = False
+        moved_name = '.moved-book-stage-fixture'
+
+        def swap_after_stage_stat(path, *args, **kwargs):
+            nonlocal swapped
+            value = original_stat(path, *args, **kwargs)
+            root_fd = kwargs.get('dir_fd')
+            if (not swapped and root_fd is not None and
+                    str(path).startswith('.pod-book-')):
+                swapped = True
+                os.rename(path, moved_name, src_dir_fd=root_fd,
+                          dst_dir_fd=root_fd)
+                os.mkdir(path, mode=0o700, dir_fd=root_fd)
+                replacement_fd = os.open(
+                    path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=root_fd)
+                try:
+                    marker_fd = os.open(
+                        'concurrent', os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                        0o600, dir_fd=replacement_fd)
+                    try:
+                        os.write(marker_fd, b'keep')
+                    finally:
+                        os.close(marker_fd)
+                finally:
+                    os.close(replacement_fd)
+            return value
+
+        with patch.object(books.os, 'stat', side_effect=swap_after_stage_stat):
+            self.run_assembly()
+
+        replacements = list(self.package.glob('.pod-book-*'))
+        self.assertEqual(len(replacements), 1)
+        self.assertEqual((replacements[0]/'concurrent').read_bytes(), b'keep')
+
     def test_concurrent_manifest_replacement_is_preserved(self):
         original_commit=books._commit_manifest
         concurrent=b'{"concurrent":true}\n'
