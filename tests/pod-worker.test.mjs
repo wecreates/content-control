@@ -22,6 +22,39 @@ test('production-only grant reaches task resolution without publishing',async()=
   resolveTask:async()=>{resolved=true;return {rights_verified:false};}});
  assert.equal(resolved,true);assert.equal(failed,true);assert.equal(result.status,'BLOCKED');
 });
+test('workspace cleanup failure preserves the durable job result and exposes only a fixed signal',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const options={env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:key},upstreamKey:key,
+  db:{recover:async()=>{},claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{}},
+  resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
+  resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('private workspace path');}})};
+ const result=await produceOnce(options);
+ assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED',cleanup_failed:true});
+ assert.ok(!JSON.stringify(result).includes('private'));
+ let observed,timer;const failure=new Promise(resolve=>observed=resolve);
+ const runtime=startProductionRuntime({db:options.db,env:options.env,
+  production:{resolveTask:options.resolveTask,resolveGrant:options.resolveGrant},onError:observed});
+ try{
+  const report=await Promise.race([failure,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('cleanup health event missing')),5000);})]);
+  assert.deepEqual(report,{code:'POD_WORKSPACE_CLEANUP_FAILED'});
+  const health=runtime.health();assert.equal(health.last_result,'BLOCKED');
+  assert.equal(health.last_error_code,'POD_WORKSPACE_CLEANUP_FAILED');assert.equal(health.consecutive_failures,1);
+  assert.ok(!JSON.stringify(health).includes('private'));
+ }finally{clearTimeout(timer);await runtime.stop();}
+});
+test('workspace cleanup failure cannot mask an earlier persistence failure',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const persistenceFailure=Error('primary persistence failure');
+ await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
+  db:{claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{throw persistenceFailure;}},
+  resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
+  resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('secondary cleanup failure');}})}),
+ error=>error===persistenceFailure);
+});
 import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
 import {runPodWorker} from '../integrations/pod/orchestrator.mjs';
 for(const phase of ['recovery','rejected recovery','claim']){

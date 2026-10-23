@@ -25,6 +25,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
   enabled();
  };
+ let result,primaryError;
+ try{result=await (async()=>{
  try{
   enabled();
   const grant=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
@@ -130,6 +132,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const reason=productionFailure(error);
   await db.failProduction(job,reason);
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
- }finally{if(task?.cleanup)await task.cleanup();}
+ }
+ })();}catch(error){primaryError=error;}
+ let cleanupFailed=false;
+ if(task?.cleanup)try{await task.cleanup();}catch{cleanupFailed=true;}
+ if(primaryError)throw primaryError;
+ return cleanupFailed?{...result,cleanup_failed:true}:result;
 }
 

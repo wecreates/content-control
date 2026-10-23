@@ -24,7 +24,8 @@ export function startProductionRuntime({db,production,env=process.env,pythonRead
      if(event.phase==='started'){lastStartedAt=new Date().toISOString();return;}
      cycles++;lastCompletedAt=new Date().toISOString();
      lastResult=['IDLE','STOPPED','BLOCKED','REVIEW_REQUIRED','QA_PASSED','QA_FAILED'].includes(event.result?.status)?event.result.status:'UNKNOWN';
-     if(lastResult==='BLOCKED'){
+     if(event.result?.cleanup_failed===true){reportError({code:'POD_WORKSPACE_CLEANUP_FAILED'});}
+     else if(lastResult==='BLOCKED'){
       const reason=productionReason(event.result?.reason_code);
       reportError({code:reason==='PRODUCTION_BLOCKED'?'POD_PRODUCTION_BLOCKED':reason});
      }
