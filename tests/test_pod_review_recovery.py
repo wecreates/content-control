@@ -381,6 +381,27 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_interior_mutation_before_manifest_commit_is_rejected(self):
+        original_commit = books._commit_manifest
+        concurrent = b'tampered after interior digest'
+        def mutate_interior_then_commit(*args, **kwargs):
+            fd = os.open('interior.pdf', os.O_WRONLY | os.O_TRUNC,
+                         dir_fd=args[1])
+            try:
+                os.write(fd, concurrent)
+            finally:
+                os.close(fd)
+            return original_commit(*args, **kwargs)
+        with patch.object(books, '_commit_manifest',
+                          side_effect=mutate_interior_then_commit):
+            with self.assertRaisesRegex(ValueError, '^FILE_HASH_MISMATCH$'):
+                self.run_assembly()
+        self.assertEqual((self.package/'manifest.json').read_bytes(),
+                         self.original_manifest)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
     def test_successful_book_commit_cannot_hide_replaced_package_directory(self):
         moved = self.root/'moved-package'
         original_commit = books._commit_manifest
