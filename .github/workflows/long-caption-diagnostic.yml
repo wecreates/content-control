@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0413f767ce00d41c9f4063301833db479bebbedf
       - name: Verify exact retained artifact identity
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,5 +56,24 @@ jobs:
           summary={k:d.get(k) for k in ['status','audio_sha256','word_timestamps','sequence_similarity','content_token_recall']}
           summary['word_count']=len(d.get('words',[]))
           summary['repaired_windows']=[{'scene_id':x.get('scene_id'),'repair_reasons':x.get('repair_reasons')} for x in d.get('recognition_repair',{}).get('windows',[])]
+          from scripts.v2_captions import norm,coalesce_numeric_tokens
+          doc=json.loads(pathlib.Path('projects/long/credit-card-dlc/ccsd.json').read_text())
+          scenes=[s for s in doc['scenes'] if s.get('audio',{}).get('dialogue')]
+          observed=coalesce_numeric_tokens(d['words'])
+          actual=[];boundaries={0:0}
+          for i,w in enumerate(observed):
+              actual.extend(norm(w['word']).split());boundaries[len(actual)]=i+1
+          expected=[];violations=[]
+          for n,s in enumerate(scenes):
+              first=len(expected)
+              expected.extend(norm(s['audio']['dialogue'][0]['text']).split())
+              end=scenes[n+1]['start'] if n+1<len(scenes) else doc['duration_seconds']
+              if first in boundaries and len(expected) in boundaries:
+                  words=observed[boundaries[first]:boundaries[len(expected)]]
+                  if words and (words[0]['start']<s['start'] or words[-1]['end']>end):
+                      violations.append({'scene_id':s['id'],'start':s['start'],'end':end,'observed_start':words[0]['start'],'observed_end':words[-1]['end']})
+          assert actual==expected
+          summary['dialogue_window_violations']=violations[:30]
+          summary['violation_count']=len(violations)
           print(json.dumps(summary))
           PY
