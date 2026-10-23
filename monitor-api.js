@@ -1,6 +1,6 @@
 import express from 'express';
 import {deletePriceWatch,deletedPriceWatches} from './pricewatch-adapter.js';
-import {createWatch,listWatches,deleteWatch} from './monitor-store.js';
+import {createWatch,listWatches,deleteWatch,isDurablePriceWatch} from './monitor-store.js';
 import {saveMonitorStore,checkWatch} from './monitor-runtime.js';
 
 export function createMonitorRouter(store,{saveStore=saveMonitorStore,enablePriceWatches=false,...checkOptions}={}){
@@ -14,7 +14,7 @@ export function createMonitorRouter(store,{saveStore=saveMonitorStore,enablePric
     if(!priceToken(clientId))return;
     const prices=listWatches(store,clientId).filter(w=>w.kind==='price');
     if(!checkOptions.priceDbPath){
-      if(prices.length)throw new Error('price_storage_not_configured');
+      if(prices.some(isDurablePriceWatch))throw new Error('price_storage_not_configured');
       return;
     }
     const ids=[...new Set([...prices.map(w=>w.id),...store.events.filter(e=>e.client_id===clientId).map(e=>e.watch_id)])].filter(priceToken);
@@ -57,7 +57,7 @@ export function createMonitorRouter(store,{saveStore=saveMonitorStore,enablePric
     const clientId=String(req.query.clientId||''),id=req.params.id;
     const w=store.watches.find(w=>w.client_id===clientId&&w.id===id);
     try{
-      if(w?.kind==='price'){
+      if(isDurablePriceWatch(w)){
         // Prevent new scheduled work immediately; durable tombstone also blocks
         // already-running worker commits and stale JSON/backup restorations.
         w.status='deletion_pending';

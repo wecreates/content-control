@@ -6,7 +6,7 @@ This draft integrates the exact-price/history core, runtime/API adapter, durable
 
 The existing `server-lowmem.js` is unchanged. It calls the monitor router and scheduler without PriceWatch configuration. New `kind: "price"` API creation returns HTTP 503 (`price watches disabled`) unless the trusted host constructs the router with `enablePriceWatches: true`. Request bodies cannot enable the feature. Generic watches retain their existing behavior.
 
-Restored price watches fail closed without both `priceDbPath` and `fetchPricePage`; they never fall back to the legacy unrestricted fetch. The HTTPS fetcher also defaults to an empty allowed-host set. No environment variable, public endpoint, credential or production startup configuration is added by this change.
+Restored durable PriceWatch records fail closed without both `priceDbPath` and `fetchPricePage`; they never fall back to the legacy unrestricted fetch. The HTTPS fetcher also defaults to an empty allowed-host set. No environment variable, public endpoint, credential or production startup configuration is added by this change.
 
 Only after the release gates below are approved may a host supply:
 
@@ -16,6 +16,14 @@ Only after the release gates below are approved may a host supply:
 - `priceOptions.fetchPricePage`: one shared `createPricePageFetcher` instance with exact approved hosts, or a trusted synthetic fixture during testing.
 
 The flag is a feature-admission gate, not authentication. The existing client-ID trust model is unchanged and must not be treated as authenticated ownership.
+
+## Legacy metadata compatibility
+
+Before this feature, the generic monitor accepted arbitrary kinds, including `price`. Those historical JSON records contain no `price_*` fields and remain generic hash monitors for listing, deletion and checking. They are not silently converted to the durable price engine.
+
+New price records carry `price_schema: "pricewatch.monitor.v1"`, including unconfigured ones. Any own `price_*` field identifies durable PriceWatch provenance, so earlier candidate records (which already carry `price_monitoring_status`), unknown versions and malformed markers cannot downgrade into the legacy path. Missing durable storage continues to block their listing/deletion and price checks fail closed. This discriminator is a persisted-format distinction, not an authorization boundary; external metadata tampering remains outside it.
+
+When a price database is configured, listing reconciliation still checks every price-kind watch ID, plus event IDs, against tombstones, including legacy-shaped restores. Tests cover historical mixed generic/price lists and deletion without a database, exact hash behavior, marker roundtrip, pre-marker/unknown metadata fail-closed behavior and durable tombstone reconciliation.
 
 ## Data and lifecycle
 
@@ -43,7 +51,7 @@ Run with Node 24 (verified locally on v24.19.0), Python 3 and the repository's E
 
     bash scripts/test_pricewatch.sh
 
-Local cloud results: 60 Node tests (one inherited cleanup test), 22 SQLite transaction/lifecycle Python tests and all 127 original extraction/history Python tests pass. Test data is synthetic; HTTP test servers are loopback only. A native malformed-TLS failure smoke test is included; successful real TLS validation has not been established. Full application CI, browser UI and live retailer tests are not claimed.
+Local cloud results: 65 Node tests (one inherited cleanup test), 22 SQLite transaction/lifecycle Python tests and all 127 original extraction/history Python tests pass. Test data is synthetic; HTTP test servers are loopback only. A native malformed-TLS failure smoke test is included; successful real TLS validation has not been established. Full application CI, browser UI and live retailer tests are not claimed.
 
 Original core tests are retained in `tests/pricewatch_core/` with their fixtures. Existing monitor regression tests are unchanged. The feature tests explicitly opt into the API flag; separate tests prove default rejection, request-body inability to enable it, generic compatibility and restored-watch fail-closed behavior.
 

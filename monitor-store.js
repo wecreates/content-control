@@ -1,5 +1,12 @@
 import crypto from 'node:crypto';
 
+// Pre-feature metadata allowed arbitrary kinds, including 'price', but never
+// persisted price_* fields. Treat every such field as durable provenance so
+// older unversioned candidates and unknown schemas cannot silently downgrade.
+export function isDurablePriceWatch(w){
+  return w?.kind==='price'&&Object.keys(w).some(key=>key.startsWith('price_'));
+}
+
 export function createStore(seed={}){
   return {
     watches:Array.isArray(seed.watches)?seed.watches:[],
@@ -31,6 +38,7 @@ export function createWatch(store,{clientId,kind='change',targetUrl,label='Watch
   };
   if(w.kind==='price'){
     if(!/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(w.client_id)) throw new Error('opaque price clientId required');
+    w.price_schema='pricewatch.monitor.v1';
     w.price_monitoring_status='configuration_required';
     if(priceCurrency!==undefined){
       if(!'USD EUR GBP CAD AUD NZD JPY CHF CNY HKD SGD INR KRW KWD BHD OMR TND CLP'.split(' ').includes(priceCurrency)) throw new Error('unsupported priceCurrency');
