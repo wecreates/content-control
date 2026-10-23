@@ -19,7 +19,7 @@
     {
       "id": "cold-open",
       "start": 0,
-      "end": 2.2,
+      "end": 2.875,
       "story": {
         "beat": "BOSS FIGHT",
         "intent": "instant conflict"
@@ -32,15 +32,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 0,
+            "end": 2.875
           }
         ]
       }
     },
     {
       "id": "three-bars",
-      "start": 2.2,
-      "end": 5,
+      "start": 2.875,
+      "end": 5.708333,
       "story": {
         "beat": "THREE HEALTH BARS",
         "intent": "reveal"
@@ -53,15 +55,17 @@
             "performance": {
               "tone": "anxious excited",
               "pace": 1.08
-            }
+            },
+            "start": 2.875,
+            "end": 4.85
           }
         ]
       }
     },
     {
       "id": "util-drop",
-      "start": 5,
-      "end": 7.5,
+      "start": 5.708333,
+      "end": 8.208333,
       "story": {
         "beat": "UTILIZATION DROPS",
         "intent": "physical attack"
@@ -74,15 +78,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 5.708333,
+            "end": 8.108333
           }
         ]
       }
     },
     {
       "id": "util-crush",
-      "start": 7.5,
-      "end": 10.5,
+      "start": 8.208333,
+      "end": 11.458333,
       "story": {
         "beat": "HIGH BALANCE CRUSH",
         "intent": "escalation"
@@ -95,15 +101,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 8.208333,
+            "end": 11.458333
           }
         ]
       }
     },
     {
       "id": "util-counter",
-      "start": 10.5,
-      "end": 14,
+      "start": 11.458333,
+      "end": 14.958333,
       "story": {
         "beat": "LOWER THE LOAD",
         "intent": "counter attack"
@@ -116,15 +124,17 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 11.458333,
+            "end": 14.958333
           }
         ]
       }
     },
     {
       "id": "calendar-drop",
-      "start": 14,
-      "end": 16.5,
+      "start": 14.958333,
+      "end": 17.625,
       "story": {
         "beat": "PAYMENT HISTORY",
         "intent": "new threat"
@@ -137,15 +147,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 14.958333,
+            "end": 17.608333
           }
         ]
       }
     },
     {
       "id": "critical-hit",
-      "start": 16.5,
-      "end": 19.5,
+      "start": 17.625,
+      "end": 20.833333,
       "story": {
         "beat": "CRITICAL HIT",
         "intent": "impact"
@@ -158,15 +170,17 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 17.625,
+            "end": 20.8
           }
         ]
       }
     },
     {
       "id": "payment-recover",
-      "start": 19.5,
-      "end": 23,
+      "start": 20.833333,
+      "end": 25.916667,
       "story": {
         "beat": "PAY ON TIME",
         "intent": "recovery"
@@ -180,8 +194,8 @@
               "tone": "anxious excited",
               "pace": 1.08
             },
-            "start": 19.5,
-            "end": 21.65
+            "start": 20.833333,
+            "end": 23.158333
           },
           {
             "speaker": "points_monk",
@@ -190,16 +204,16 @@
               "tone": "deadpan calm",
               "pace": 0.95
             },
-            "start": 21.65,
-            "end": 23
+            "start": 23.308333,
+            "end": 25.908333
           }
         ]
       }
     },
     {
       "id": "clock-wall",
-      "start": 23,
-      "end": 26,
+      "start": 25.916667,
+      "end": 28.916667,
       "story": {
         "beat": "AGE OF CREDIT",
         "intent": "new obstacle"
@@ -212,15 +226,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 25.916667,
+            "end": 28.166667
           }
         ]
       }
     },
     {
       "id": "clock-drag",
-      "start": 26,
-      "end": 29,
+      "start": 28.916667,
+      "end": 32.5,
       "story": {
         "beat": "CANNOT SPEEDRUN",
         "intent": "frustration"
@@ -234,8 +250,8 @@
               "tone": "anxious excited",
               "pace": 1.08
             },
-            "start": 26,
-            "end": 28.3
+            "start": 28.916667,
+            "end": 30.841667
           },
           {
             "speaker": "points_monk",
@@ -244,16 +260,16 @@
               "tone": "deadpan calm",
               "pace": 0.95
             },
-            "start": 28.3,
-            "end": 29
+            "start": 30.991667,
+            "end": 32.491667
           }
         ]
       }
     },
     {
       "id": "fake-button",
-      "start": 29,
-      "end": 32,
+      "start": 32.5,
+      "end": 35.5,
       "story": {
         "beat": "SHINY BUTTON",
         "intent": "temptation"
@@ -266,15 +282,17 @@
             "performance": {
               "tone": "anxious excited",
               "pace": 1.08
-            }
+            },
+            "start": 32.5,
+            "end": 34.825
           }
         ]
       }
     },
     {
       "id": "goblin-offer",
-      "start": 32,
-      "end": 35,
+      "start": 35.5,
+      "end": 38.5,
       "story": {
         "beat": "INSTANT FIX",
         "intent": "trap offer"
@@ -288,16 +306,16 @@
             "type": "nonverbal_text",
             "character_id": "cashback_goblin",
             "text": "Instant credit repair. Totally legitimate.",
-            "start": 32,
-            "end": 35
+            "start": 35.5,
+            "end": 38.5
           }
         ]
       }
     },
     {
       "id": "trap-snap",
-      "start": 35,
-      "end": 38,
+      "start": 38.5,
+      "end": 41.708333,
       "story": {
         "beat": "TRAP",
         "intent": "reversal"
@@ -310,15 +328,17 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 38.5,
+            "end": 41.675
           }
         ]
       }
     },
     {
       "id": "monk-cut",
-      "start": 38,
-      "end": 41,
+      "start": 41.708333,
+      "end": 44.708333,
       "story": {
         "beat": "NO SHORTCUT",
         "intent": "rescue"
@@ -331,15 +351,17 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 41.708333,
+            "end": 44.358333
           }
         ]
       }
     },
     {
       "id": "victory",
-      "start": 41,
-      "end": 44.5,
+      "start": 44.708333,
+      "end": 48.208333,
       "story": {
         "beat": "BOSS DEFEATED",
         "intent": "payoff"
@@ -352,15 +374,17 @@
             "performance": {
               "tone": "anxious excited",
               "pace": 1.08
-            }
+            },
+            "start": 44.708333,
+            "end": 46.283333
           }
         ]
       }
     },
     {
       "id": "i-beat-it",
-      "start": 44.5,
-      "end": 47,
+      "start": 48.208333,
+      "end": 50.708333,
       "story": {
         "beat": "VICTORY HOLD",
         "intent": "comic pause"
@@ -373,15 +397,17 @@
             "performance": {
               "tone": "deadpan calm",
               "pace": 0.95
-            }
+            },
+            "start": 48.208333,
+            "end": 50.108333
           }
         ]
       }
     },
     {
       "id": "respawn",
-      "start": 47,
-      "end": 50,
+      "start": 50.708333,
+      "end": 54.0,
       "story": {
         "beat": "NEXT STATEMENT",
         "intent": "loop payoff"
@@ -394,10 +420,20 @@
             "performance": {
               "tone": "confident",
               "pace": 1.03
-            }
+            },
+            "start": 50.708333,
+            "end": 53.983333
           }
         ]
       }
     }
-  ]
+  ],
+  "timing_basis": {
+    "type": "measured_local_kokoro_natural_speed",
+    "measurement_run": 39998799923,
+    "requested_speed": 1.0,
+    "minimum_tail_seconds": 0.25,
+    "inter_turn_gap_seconds": 0.15,
+    "quality_approved": false
+  }
 }

@@ -3,6 +3,7 @@ import {AbsoluteFill,useCurrentFrame,interpolate,spring} from "remotion";
 import {Dave,PointsMonk,CashbackGoblin} from "./CharacterSystem";
 import {PropIcon} from "./PropSystem";
 import {nonverbalTextAtTime,nonverbalTextLines} from "./NonverbalText.mjs";
+import {bossFightBeats} from "./BossFightTimeline.mjs";
 const K="#111111",W="#F6F1E7",R="#EF3E36",Y="#F4C542",T="#16A7B5";
 const beats=[
  {id:"cold-open",start:0,end:2.2,scale:"close"},{id:"three-bars",start:2.2,end:5,scale:"wide"},
@@ -15,7 +16,7 @@ const beats=[
  {id:"victory",start:41,end:44.5,scale:"wide"},{id:"i-beat-it",start:44.5,end:47,scale:"close"},
  {id:"respawn",start:47,end:50,scale:"wide"}];
 const clamp=v=>Math.max(0,Math.min(1,v)); const ease=p=>p*p*(3-2*p); const lerp=(a,b,p)=>a+(b-a)*p;
-const beatAt=t=>beats.find(b=>t>=b.start&&t<b.end)||beats[beats.length-1];
+const beatAt=(timeline,t)=>timeline.find(b=>t>=b.start&&t<b.end)||timeline[timeline.length-1];
 const pop=(frame,fps,delay=0,damping=11)=>spring({frame:Math.max(0,frame-delay),fps,config:{damping,stiffness:160,mass:.65}});
 const HealthBar=({x=80,y=120,w=560,label="FICO BOSS",fill=.8,accent=R,shake=0})=><g transform={`translate(${shake} 0)`}><rect x={x} y={y} width={w} height="62" rx="18" fill={W} stroke={K} strokeWidth="6"/><rect x={x+8} y={y+8} width={(w-16)*clamp(fill)} height="46" rx="11" fill={accent}/><text x={x+w/2} y={y-18} textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="28" fill={K}>{label}</text></g>;
 const ImpactLines=({x=360,y=650,r=170,opacity=1})=><g opacity={opacity} stroke={K} strokeWidth="7" strokeLinecap="round">{Array.from({length:12}).map((_,i)=>{const a=i*Math.PI*2/12;return <line key={i} x1={x+Math.cos(a)*r} y1={y+Math.sin(a)*r} x2={x+Math.cos(a)*(r+95)} y2={y+Math.sin(a)*(r+95)}/>})}</g>;
@@ -31,7 +32,8 @@ const AccentTitle=({top,bottom,y=180,topSize=50,bottomSize=58})=><g><text x="360
 const UtilMeter=({x=360,y=400,s=1,fill=.7})=><g transform={`translate(${x} ${y}) scale(${s})`}><rect x="-180" y="-65" width="360" height="130" rx="22" fill={W} stroke={K} strokeWidth="6"/><rect x="-160" y="-25" width="320" height="44" rx="12" fill="#EEE"/><rect x="-160" y="-25" width={320*clamp(fill)} height="44" rx="12" fill={fill>.6?R:Y}/><text x="0" y="-85" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="27" fill={K}>UTILIZATION</text><text x="0" y="52" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="25" fill={K}>{Math.round(fill*100)}%</text></g>;
 const BigClock=({x=360,y=460,s=1,angle=0})=><g transform={`translate(${x} ${y}) scale(${s})`}><circle r="170" fill={W} stroke={K} strokeWidth="8"/><line x1="0" y1="0" x2={Math.sin(angle)*92} y2={-Math.cos(angle)*92} stroke={K} strokeWidth="9" strokeLinecap="round"/><line x1="0" y1="0" x2={Math.sin(angle*.35)*58} y2={-Math.cos(angle*.35)*58} stroke={K} strokeWidth="9" strokeLinecap="round"/><circle r="10" fill={K}/><text y="-205" textAnchor="middle" fontFamily="Arial Black,Arial" fontSize="30" fill={K}>AGE OF CREDIT</text></g>;
 export const BossFightShortComposition=({ccsd})=>{
- const frame=useCurrentFrame(),fps=ccsd?.fps||24,t=frame/fps,b=beatAt(t),p=clamp((t-b.start)/(b.end-b.start)),beatIndex=Math.max(0,beats.findIndex(x=>x.id===b.id)),dir=beatIndex%2?1:-1;
+ const timeline=bossFightBeats(ccsd,beats);
+ const frame=useCurrentFrame(),fps=ccsd?.fps||24,t=frame/fps,b=beatAt(timeline,t),p=clamp((t-b.start)/(b.end-b.start)),beatIndex=Math.max(0,timeline.findIndex(x=>x.id===b.id)),dir=beatIndex%2?1:-1;
  const local=frame-Math.round(b.start*fps),pulse=Math.sin(frame*.45),camScale=b.scale==="close"?1.16:b.scale==="wide"?.92:1.03,enter=pop(local,fps,0,10),impact=Math.max(0,1-p*2.2);
  const subBeat=Math.floor((t-b.start)/.75),kineticX=Math.sin(frame*.31+beatIndex)*7+((subBeat%2)*2-1)*3,kineticY=Math.cos(frame*.27+beatIndex*.7)*5,kineticScale=1+Math.sin(frame*.24+beatIndex)*.018;
  const baseCamX=b.id==="critical-hit"?lerp(0,-42,ease(p)):b.id==="trap-snap"?Math.sin(frame*2.4)*7:0,camX=baseCamX+dir*lerp(-22,22,ease(p))+kineticX,camY=(b.id==="respawn"?lerp(45,0,ease(p)):0)+lerp(10,-10,ease(p))+kineticY,camRot=(b.id==="critical-hit"?lerp(0,-2,ease(p)):0)+Math.sin(frame*.19)*.45,microScale=(.965+.09*ease(p))*kineticScale;

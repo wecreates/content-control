@@ -49,7 +49,7 @@ jobs:
           python scripts/timed_free_voice.py --ccsd state/boss-fight/ccsd.json --out-dir state/boss-fight/free-voice
           cp state/boss-fight/free-voice/voice.wav state/boss-fight/voice.wav
           cp state/boss-fight/free-voice/timed-voice.json state/boss-fight/receipts/free-voice.json
-      - name: Render complete 50 second Short
+      - name: Render complete source-timed Short
         run: |
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/boss-fight/ccsd.json"))},separators=(",",":")))')
           npx remotion render remotion/studio-animatic-index.jsx BossFightShort state/boss-fight/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18

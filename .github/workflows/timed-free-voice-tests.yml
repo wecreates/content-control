@@ -11,6 +11,7 @@ on:
       - 'tests/test_v2_free_voice.py'
       - 'tests/boss-fight-nonverbal-text.test.mjs'
       - 'remotion/NonverbalText.mjs'
+      - 'remotion/BossFightTimeline.mjs'
       - 'remotion/BossFightShortComposition.jsx'
       - 'projects/shorts/credit-score-boss-fight/ccsd.json'
       - '.github/workflows/credit-score-boss-fight-short.yml'
@@ -51,6 +52,26 @@ jobs:
           python scripts/timed_free_voice.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --out-dir state/boss-fight-free-voice
           ffmpeg -nostdin -v error -i state/boss-fight-free-voice/voice.wav -f null -
           ffprobe -v error -show_streams -show_format -of json state/boss-fight-free-voice/voice.wav > state/boss-fight-free-voice/ffprobe.json
+      - name: Require all actual dialogue at natural speed
+        run: |
+          python - <<'PYCODE'
+          import json
+          r=json.load(open('state/boss-fight-free-voice/timed-voice.json'))
+          assert len(r['manifest']['clips'])==18
+          assert all(c['speed']==1.0 for c in r['manifest']['clips']), 'Retiming required; do not rush speech'
+          assert r['production_approved'] is False and r['publication_enabled'] is False
+          PYCODE
+      - name: Render retimed Short candidate for full review
+        run: |
+          npm ci
+          mkdir -p state/boss-fight-free-voice/render
+          PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("projects/shorts/credit-score-boss-fight/ccsd.json"))},separators=(",",":")))')
+          npx remotion render remotion/studio-animatic-index.jsx BossFightShort state/boss-fight-free-voice/render/silent.mp4 --props="$PROPS" --codec=h264 --crf=18
+          ffmpeg -nostdin -y -i state/boss-fight-free-voice/render/silent.mp4 -i state/boss-fight-free-voice/voice.wav -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -b:a 192k -af apad -shortest state/boss-fight-free-voice/render/candidate.mp4
+          ffmpeg -nostdin -v error -i state/boss-fight-free-voice/render/candidate.mp4 -f null -
+          ffprobe -v error -show_streams -show_format -of json state/boss-fight-free-voice/render/candidate.mp4 > state/boss-fight-free-voice/render/ffprobe.json
+          ffmpeg -nostdin -y -ss 36.5 -i state/boss-fight-free-voice/render/candidate.mp4 -frames:v 1 state/boss-fight-free-voice/render/goblin-text-review.png
+          sha256sum state/boss-fight-free-voice/render/candidate.mp4 > state/boss-fight-free-voice/render/candidate.sha256
       - uses: actions/upload-artifact@v4
         if: always()
         with:

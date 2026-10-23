@@ -43,12 +43,12 @@ class TimelineTests(unittest.TestCase):
         source = json.loads(Path('projects/shorts/credit-score-boss-fight/ccsd.json').read_text())
         prepared = prepare_timeline(source)
         self.assertEqual(len(prepared['scenes']), 18)
-        self.assertEqual(prepared['source_duration_seconds'], 50)
+        self.assertEqual(prepared['source_duration_seconds'], 54)
         self.assertEqual({s['audio']['dialogue'][0]['speaker'] for s in prepared['scenes']}, set(VOICE_ASSIGNMENTS))
         goblin = next(s for s in source['scenes'] if s['id'] == 'goblin-offer')
         self.assertEqual(goblin['audio']['dialogue'], [])
         self.assertEqual(goblin['visual']['text_events'][0]['text'], 'Instant credit repair. Totally legitimate.')
-        self.assertFalse(any(s['start'] < 35 and s['end'] > 32 for s in prepared['scenes']))
+        self.assertFalse(any(s['start'] < goblin['end'] and s['end'] > goblin['start'] for s in prepared['scenes']))
 
     def test_untimed_multi_turn_never_invents_speech_positions(self):
         source = fixture(); del source['scenes'][1]['audio']['dialogue'][0]['start']; del source['scenes'][1]['audio']['dialogue'][0]['end']
