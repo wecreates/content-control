@@ -73,3 +73,13 @@ Synthetic adapter and signed-readback tests cover both malformed and valid
 receipt boundaries, plus direct database-transition admission. Test publication
 flags enable in-memory doubles only; live publication flags remain false and
 actual adapters/readback still require separate acceptance.
+
+## Release lease settlement
+
+The final submitted, ambiguous or blocked transition locks the publishing row
+and then checks the live PostgreSQL clock. Fencing identity and a still-valid
+release lease are both required after that lock wait and again by the update.
+An adapter response arriving after the five-minute lease cannot overwrite the
+job, even if recovery has not yet swept it to ambiguous. The expired row remains
+available for the existing recovery and provider-readback reconciliation path;
+the stale worker must not retry submission or infer a successful listing.

@@ -338,6 +338,9 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
   await pool.query("UPDATE pod_production_queue SET state='publishing',lease_until=now()-interval '1 second' WHERE id=$1",[releaseJob]);
   await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await assert.rejects(db.finish(releaseClaim,'submitted',{id:'stale-provider-listing'}),/LEASE_LOST/);
+  assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[releaseJob])).rows[0].state,'publishing');
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.submitted'",[releaseJob])).rows[0].n,0);
   await pool.query("UPDATE pod_production_queue SET lease_until=now()+interval '5 minutes' WHERE id=$1",[releaseJob]);
   assert.equal(await db.assertPublishable(releaseClaim),true);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[releaseConcept]);

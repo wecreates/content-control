@@ -46,6 +46,14 @@ async function lockProductionLease(client,job){
  const lease=(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
  if(lease?.valid!==true)throw Error('LEASE_LOST');
 }
+async function lockPublishingLease(client,job){
+ const current=(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='publishing' FOR UPDATE",[job.id,job.fencing_token])).rows[0];
+ if(!current)throw Error('LEASE_LOST');
+ // The provider call can outlive its release lease. Check wall time only after
+ // acquiring the row lock so a stale publisher cannot commit a late outcome.
+ const lease=(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+ if(lease?.valid!==true)throw Error('LEASE_LOST');
+}
 export async function createPodPool(env=process.env) {
  const {default:pg}=await import('pg');
  let u;try{u=new URL(env.POD_DATABASE_URL);}catch{throw Error('POD_DATABASE_REQUIRED');}
@@ -317,8 +325,9 @@ export class PodDB {
   if(!['blocked','ambiguous','submitted'].includes(state))throw Error('INVALID_FINISH');
   if(state==='submitted'&&(typeof receipt?.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256))throw Error('RECEIPT_INVALID');
   return this.tx(async c=>{
+   await lockPublishingLease(c,job);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='publishing' RETURNING id`,[state,receipt.id||null,reason,job.id,job.fencing_token]);
+    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp() RETURNING id`,[state,receipt.id||null,reason,job.id,job.fencing_token]);
    if(!r.rows.length)throw Error('LEASE_LOST');
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.'+state,receipt]);
   });

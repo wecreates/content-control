@@ -302,7 +302,10 @@ test('direct submitted transition rejects malformed listing IDs before database 
 test('direct submitted transition preserves a valid opaque listing ID',async()=>{
  const queries=[],id=' Provider/Case-A ';
  const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>({
-  query:async(sql,args)=>{queries.push({sql,args});return {rows:sql.startsWith('UPDATE')?[{id:'fixture-job'}]:[]};},release(){}
+  query:async(sql,args)=>{queries.push({sql,args});
+   if(sql.includes("state='publishing' FOR UPDATE"))return {rows:[{id:'fixture-job'}]};
+   if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+   return {rows:sql.startsWith('UPDATE')?[{id:'fixture-job'}]:[]};},release(){}
  })}});
  await db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id});
  assert.equal(queries.find(q=>q.sql.startsWith('UPDATE')).args[1],id);
