@@ -76,13 +76,13 @@ def _verify_declared_files(package, files):
 
 
 def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
-                     package, declared_files):
+                     package, expected_files):
     if _snapshot_file(root_fd, 'manifest.json') != (original_identity, original_bytes):
         raise ValueError('MANIFEST_CHANGED')
-    # Rendering can take long enough for a caller-controlled cover member to
-    # be replaced after initial admission. Bind the final manifest commit to
-    # the current bytes through the already-verified package descriptor.
-    _verify_declared_files(package, declared_files)
+    # Rendering and installation can take long enough for a package member to
+    # be replaced after its digest is recorded. Bind the final manifest commit
+    # to every current byte through the already-verified package descriptor.
+    _verify_declared_files(package, expected_files)
     expected = _identity(os.stat('manifest.json', dir_fd=stage_fd,
                                  follow_symlinks=False))
     try:
@@ -174,7 +174,7 @@ def assemble(root, spec, pages, font):
             installed.append((name, _link_staged(stage_fd, root_fd, name)))
         os.fsync(root_fd)
         _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
-                         package, declared_files)
+                         package, dict(manifest['files']))
         committed = True
         _require_path_identity(root, root_identity)
         return manifest
