@@ -402,6 +402,65 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_interior_mutation_during_manifest_replace_is_rolled_back(self):
+        original_replace = books.os.replace
+        concurrent = b'tampered during manifest replace'
+        mutated = False
+
+        def mutate_then_replace(src, dst, *args, **kwargs):
+            nonlocal mutated
+            if (not mutated and src == 'manifest.json'
+                    and dst == 'manifest.json'
+                    and kwargs.get('dst_dir_fd') is not None):
+                mutated = True
+                fd = os.open('interior.pdf', os.O_WRONLY | os.O_TRUNC,
+                             dir_fd=kwargs['dst_dir_fd'])
+                try:
+                    os.write(fd, concurrent)
+                finally:
+                    os.close(fd)
+            return original_replace(src, dst, *args, **kwargs)
+
+        with patch.object(books.os, 'replace', side_effect=mutate_then_replace):
+            with self.assertRaisesRegex(ValueError, '^FILE_HASH_MISMATCH$'):
+                self.run_assembly()
+
+        self.assertEqual((self.package/'manifest.json').read_bytes(),
+                         self.original_manifest)
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertFalse((self.package/'interior.receipt.json').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
+    def test_manifest_rollback_failure_preserves_installed_files(self):
+        original_replace = books.os.replace
+        concurrent = b'tampered before failed manifest rollback'
+
+        def mutate_then_block_rollback(src, dst, *args, **kwargs):
+            if (src == 'manifest.json' and dst == 'manifest.json'
+                    and kwargs.get('dst_dir_fd') is not None):
+                fd = os.open('interior.pdf', os.O_WRONLY | os.O_TRUNC,
+                             dir_fd=kwargs['dst_dir_fd'])
+                try:
+                    os.write(fd, concurrent)
+                finally:
+                    os.close(fd)
+                return original_replace(src, dst, *args, **kwargs)
+            if src == 'manifest.rollback.json':
+                raise OSError('rollback fixture')
+            return original_replace(src, dst, *args, **kwargs)
+
+        with patch.object(books.os, 'replace',
+                          side_effect=mutate_then_block_rollback):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_MANIFEST_ROLLBACK_FAILED$'):
+                self.run_assembly()
+
+        committed = json.loads((self.package/'manifest.json').read_text())
+        self.assertNotEqual(committed['files']['interior.pdf'],
+                            digest(self.package/'interior.pdf'))
+        self.assertTrue((self.package/'interior.receipt.json').is_file())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
     def test_book_manifest_commit_is_followed_by_directory_fsync(self):
         original_replace = books.os.replace
         original_fsync = books.os.fsync
