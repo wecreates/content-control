@@ -49,11 +49,18 @@ test('missing package hash and non-string identities fail before any database ac
   await assert.rejects(reconcilePublication({tx(){throw Error('unexpected database access');}},sign({...observation,...change}),key),/LISTING_EVIDENCE_REQUIRED/);
  }
 });
+test('signed listing observations reject extra fields and unknown platforms before database access',async()=>{
+ for(const change of [{private_token:'must-not-persist'},{platform:'etsy'}]){
+  await assert.rejects(reconcilePublication({tx(){assert.fail('unexpected database access');}},
+   sign({...observation,...change}),key),/LISTING_EVIDENCE_REQUIRED/);
+ }
+});
 test('new scoped observation records inbox, listing state and outbox atomically',async()=>{
  const db=database(observation,null);
  assert.deepEqual(await reconcilePublication(db,sign(observation),key),{published:true});
  assert.equal(db.writes.length,3);
  assert.match(db.writes[0].sql,/INSERT INTO pod_provider_inbox/);
+ assert.deepEqual(db.writes[0].args[4],observation);
  assert.match(db.writes[1].sql,/UPDATE pod_production_queue/);
  assert.match(db.writes[2].sql,/INSERT INTO pod_events/);
 });
