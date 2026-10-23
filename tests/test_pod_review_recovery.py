@@ -431,6 +431,32 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.receipt.json').exists())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
+    def test_manifest_replacement_after_successful_replace_is_rolled_back(self):
+        original_replace = books.os.replace
+        concurrent = b'{"concurrent":true}\n'
+        concurrent_name = '.concurrent-manifest'
+        (self.package/concurrent_name).write_bytes(concurrent)
+        replaced = False
+
+        def replace_then_swap_destination(src, dst, *args, **kwargs):
+            nonlocal replaced
+            result = original_replace(src, dst, *args, **kwargs)
+            if (not replaced and src == 'manifest.json'
+                    and dst == 'manifest.json'
+                    and kwargs.get('dst_dir_fd') is not None):
+                replaced = True
+                root_fd = kwargs['dst_dir_fd']
+                original_replace(concurrent_name, 'manifest.json',
+                                 src_dir_fd=root_fd, dst_dir_fd=root_fd)
+            return result
+
+        with patch.object(books.os, 'replace',
+                          side_effect=replace_then_swap_destination):
+            with self.assertRaisesRegex(ValueError, '^MANIFEST_CHANGED$'):
+                self.run_assembly()
+
+        self.assert_clean_attempt()
+
     def test_manifest_rollback_failure_preserves_installed_files(self):
         original_replace = books.os.replace
         concurrent = b'tampered before failed manifest rollback'
@@ -458,6 +484,39 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         committed = json.loads((self.package/'manifest.json').read_text())
         self.assertNotEqual(committed['files']['interior.pdf'],
                             digest(self.package/'interior.pdf'))
+        self.assertTrue((self.package/'interior.receipt.json').is_file())
+        self.assertEqual(list(self.package.glob('.pod-book-*')), [])
+
+    def test_manifest_rollback_replacement_preserves_installed_files(self):
+        original_replace = books.os.replace
+        concurrent = b'{"concurrent_rollback":true}\n'
+        concurrent_name = '.concurrent-rollback-manifest'
+        (self.package/concurrent_name).write_bytes(concurrent)
+
+        def mutate_commit_and_swap_rollback(src, dst, *args, **kwargs):
+            root_fd = kwargs.get('dst_dir_fd')
+            if src == 'manifest.json' and dst == 'manifest.json' \
+                    and root_fd is not None:
+                fd = os.open('interior.pdf', os.O_WRONLY | os.O_TRUNC,
+                             dir_fd=root_fd)
+                try:
+                    os.write(fd, b'tampered before rollback')
+                finally:
+                    os.close(fd)
+            result = original_replace(src, dst, *args, **kwargs)
+            if src == 'manifest.rollback.json' and root_fd is not None:
+                original_replace(concurrent_name, 'manifest.json',
+                                 src_dir_fd=root_fd, dst_dir_fd=root_fd)
+            return result
+
+        with patch.object(books.os, 'replace',
+                          side_effect=mutate_commit_and_swap_rollback):
+            with self.assertRaisesRegex(
+                    ValueError, '^BOOK_MANIFEST_ROLLBACK_FAILED$'):
+                self.run_assembly()
+
+        self.assertEqual((self.package/'manifest.json').read_bytes(), concurrent)
+        self.assertTrue((self.package/'interior.pdf').is_file())
         self.assertTrue((self.package/'interior.receipt.json').is_file())
         self.assertEqual(list(self.package.glob('.pod-book-*')), [])
 
