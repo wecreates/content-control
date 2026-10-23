@@ -8,6 +8,8 @@ on:
       - 'scripts/v2_free_voice.py'
       - 'scripts/v2_audio_assemble.py'
       - 'scripts/v2_clip_transcription.py'
+      - 'scripts/repair_boss_voice_turn.py'
+      - 'tests/test_boss_voice_turn_repair.py'
       - 'tests/test_clip_spoken_number_decoding.py'
       - 'tests/test_timed_free_voice.py'
       - 'tests/test_v2_free_voice.py'
@@ -38,9 +40,9 @@ jobs:
       - name: Install and require audio contract prerequisite
         run: |
           sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
-          sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg
+          sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg espeak-ng
           command -v ffmpeg
-      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py
+      - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py tests/test_boss_voice_turn_repair.py
       - run: node --test tests/boss-fight-nonverbal-text.test.mjs
       - name: Verify retained actual voice artifact provenance
         env:
@@ -70,11 +72,19 @@ jobs:
           from scripts.timed_free_voice import prepare_timeline
           root=Path('state/boss-fight-free-voice'); r=json.load(open(root/'timed-voice.json'))
           source=json.load(open('projects/shorts/credit-score-boss-fight/ccsd.json'))
+          source['scenes'][7]['audio']['dialogue'][0]['text']='So I just stop getting punched?'
           assert r['timeline']==prepare_timeline(source), 'Retained speech source is stale'
           assert hashlib.sha256((root/'voice.wav').read_bytes()).hexdigest()==r['audio']['audio_sha256']
           for clip in r['manifest']['clips']:
               assert hashlib.sha256((root/clip['file']).read_bytes()).hexdigest()==clip['audio_sha256']
           PYCODE
+      - name: One bounded clearer Dave take preserving original audio
+        run: |
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy==2.3.5
+          python scripts/repair_boss_voice_turn.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --retained state/boss-fight-free-voice --out state/boss-fight-repaired
+          mv state/boss-fight-free-voice state/boss-fight-original-evidence
+          mv state/boss-fight-repaired state/boss-fight-free-voice
       - name: Require all actual dialogue at natural speed
         run: |
           python - <<'PYCODE'
@@ -86,7 +96,7 @@ jobs:
           PYCODE
       - name: Observe actual speech windows and align spoken captions
         run: |
-          python -m pip install --disable-pip-version-check -r requirements-transcription.txt
+          python -m pip install --disable-pip-version-check numpy==2.3.5 -r requirements-transcription.txt
           python - <<'PYCODE'
           import json
           from pathlib import Path
@@ -125,4 +135,5 @@ jobs:
           path: |
             state/timed-free-voice-smoke
             state/boss-fight-free-voice
+            state/boss-fight-original-evidence
           retention-days: 7
