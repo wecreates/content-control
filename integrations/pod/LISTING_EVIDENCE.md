@@ -83,3 +83,10 @@ An adapter response arriving after the five-minute lease cannot overwrite the
 job, even if recovery has not yet swept it to ambiguous. The expired row remains
 available for the existing recovery and provider-readback reconciliation path;
 the stale worker must not retry submission or infer a successful listing.
+
+Release settlement also accepts only three exact durable shapes: submitted has
+one opaque provider `id` and no reason; ambiguous has an empty receipt plus
+`SUBMISSION_UNCERTAIN`; blocked has an empty receipt plus `RELEASE_BLOCKED`.
+Extra adapter fields, non-plain objects and arbitrary reason text are rejected
+before database access. Adapter response bodies, headers, URLs, credentials and
+private failure messages therefore cannot become queue or event evidence.

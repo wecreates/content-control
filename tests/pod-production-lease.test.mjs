@@ -66,4 +66,19 @@ for(const [label,state,receipt,reason] of [
   assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'COMMIT');
  });
 }
+test('publication settlement rejects extra payload and arbitrary reasons before database access',async()=>{
+ const f=fixture(true),nullPrototype=Object.assign(Object.create(null),{id:'provider-listing'});
+ for(const [state,receipt,reason,error] of [
+  ['submitted',{id:'provider-listing',private_token:'must-not-persist'},null,/RECEIPT_INVALID/],
+  ['submitted',nullPrototype,null,/RECEIPT_INVALID/],
+  ['submitted',{id:'provider-listing'},'private adapter detail',/SETTLEMENT_INVALID/],
+  ['ambiguous',{id:'untrusted-listing'},'SUBMISSION_UNCERTAIN',/SETTLEMENT_INVALID/],
+  ['ambiguous',{},null,/SETTLEMENT_INVALID/],
+  ['blocked',[],'RELEASE_BLOCKED',/SETTLEMENT_INVALID/],
+  ['blocked',{},'postgres://private:secret@host/db',/SETTLEMENT_INVALID/]
+ ]){
+  await assert.rejects(f.db.finish(job,state,receipt,reason),error);
+ }
+ assert.equal(f.queries.length,0);assert.equal(f.writes.length,0);
+});
 
