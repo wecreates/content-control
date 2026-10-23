@@ -9,9 +9,11 @@ on:
       - 'remotion/studio-animatic-index.jsx'
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/production_reality_media_qa.py'
-      - 'scripts/cartesia_sonic_generate.py'
-      - 'scripts/eleven_v3_generate.py'
-      - 'control/voice-engine-v3.json'
+      - 'scripts/timed_free_voice.py'
+      - 'scripts/v2_free_voice.py'
+      - 'scripts/v2_audio_assemble.py'
+      - 'control/free-voice-policy.json'
+      - 'remotion/NonverbalText.mjs'
       - 'tests/test_rendered_visual_parity.py'
       - 'tests/test_production_reality_media_qa.py'
       - 'tests/test_boss_fight_viral_parity_render.py'
@@ -33,7 +35,8 @@ jobs:
           npm ci
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg espeak-ng
-          python -m pip install --disable-pip-version-check numpy opencv-python-headless
+          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy==2.3.5 opencv-python-headless==5.0.0.93
       - name: Verify rendered visual parity comparator
         run: python -m unittest -v tests/test_rendered_visual_parity.py tests/test_production_reality_media_qa.py tests/test_boss_fight_viral_parity_render.py
       - name: Prepare CCSD and dialogue
@@ -41,48 +44,11 @@ jobs:
           mkdir -p state/boss-fight/render state/boss-fight/receipts
           cp projects/shorts/credit-score-boss-fight/ccsd.json state/boss-fight/ccsd.json
           python scripts/ccsd_voice_manifest.py --ccsd state/boss-fight/ccsd.json --out state/boss-fight/dialogue.json
-      - name: Generate premium character voices
-        env:
-          CARTESIA_API_KEY: ${{ secrets.CARTESIA_API_KEY }}
-          CARTESIA_VOICE_NARRATOR: ${{ secrets.CARTESIA_VOICE_NARRATOR }}
-          CARTESIA_VOICE_DAVE: ${{ secrets.CARTESIA_VOICE_DAVE }}
-          CARTESIA_VOICE_POINTS_MONK: ${{ secrets.CARTESIA_VOICE_POINTS_MONK }}
-          CARTESIA_VOICE_CASHBACK_GOBLIN: ${{ secrets.CARTESIA_VOICE_CASHBACK_GOBLIN }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          ELEVENLABS_VOICE_NARRATOR: ${{ secrets.ELEVENLABS_VOICE_NARRATOR }}
-          ELEVENLABS_VOICE_DAVE: ${{ secrets.ELEVENLABS_VOICE_DAVE }}
-          ELEVENLABS_VOICE_POINTS_MONK: ${{ secrets.ELEVENLABS_VOICE_POINTS_MONK }}
-          ELEVENLABS_VOICE_CASHBACK_GOBLIN: ${{ secrets.ELEVENLABS_VOICE_CASHBACK_GOBLIN }}
+      - name: Generate separate locked voices with free local Kokoro
         run: |
-          python scripts/cartesia_sonic_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice-cartesia.wav --receipt state/boss-fight/receipts/cartesia-voice.json
-          if python - <<'PY'
-          import json
-          r=json.load(open("state/boss-fight/receipts/cartesia-voice.json"))
-          raise SystemExit(0 if r.get("status")=="PASS" else 1)
-          PY
-          then
-            cp state/boss-fight/voice-cartesia.wav state/boss-fight/voice.wav
-            cp state/boss-fight/receipts/cartesia-voice.json state/boss-fight/receipts/premium-voice.json
-          else
-            python scripts/eleven_v3_generate.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice-eleven.mp3 --receipt state/boss-fight/receipts/eleven-voice.json --reference-id credit-score-boss-fight
-            if python - <<'PY'
-          import json
-          r=json.load(open("state/boss-fight/receipts/eleven-voice.json"))
-          raise SystemExit(0 if r.get("status")=="PASS" else 1)
-          PY
-            then
-              ffmpeg -y -i state/boss-fight/voice-eleven.mp3 -ar 44100 -ac 2 state/boss-fight/voice.wav
-              cp state/boss-fight/receipts/eleven-voice.json state/boss-fight/receipts/premium-voice.json
-            else
-              python scripts/local_tts_fallback.py --dialogue state/boss-fight/dialogue.json --out state/boss-fight/voice.wav --receipt state/boss-fight/receipts/voice.json
-              python - <<'PY'
-          import json
-          c=json.load(open("state/boss-fight/receipts/cartesia-voice.json"))
-          e=json.load(open("state/boss-fight/receipts/eleven-voice.json"))
-          json.dump({"schema_version":1,"status":"FALLBACK_REQUIRED","provider":"none","cartesia":c,"elevenlabs":e,"publication_enabled":False},open("state/boss-fight/receipts/premium-voice.json","w"),indent=2)
-          PY
-            fi
-          fi
+          python scripts/timed_free_voice.py --ccsd state/boss-fight/ccsd.json --out-dir state/boss-fight/free-voice
+          cp state/boss-fight/free-voice/voice.wav state/boss-fight/voice.wav
+          cp state/boss-fight/free-voice/timed-voice.json state/boss-fight/receipts/free-voice.json
       - name: Render complete 50 second Short
         run: |
           PROPS=$(python -c 'import json; print(json.dumps({"ccsd":json.load(open("state/boss-fight/ccsd.json"))},separators=(",",":")))')
@@ -105,9 +71,9 @@ jobs:
           from pathlib import Path
           media=json.load(open("state/boss-fight/receipts/render.json"))
           parity=json.load(open("state/boss-fight/receipts/visual-parity.json"))
-          voice=json.load(open("state/boss-fight/receipts/premium-voice.json"))
+          voice=json.load(open("state/boss-fight/receipts/free-voice.json"))
           video=Path("state/boss-fight/render/credit-score-boss-fight.mp4")
-          voice_ok=voice.get("status")=="PASS" and voice.get("provider") in ("cartesia","elevenlabs")
+          voice_ok=voice.get("status")=="PASS" and voice.get("provider")=="kokoro" and voice.get("listening_review_approved") is True
           status="PASS" if media.get("status")=="PASS" and parity.get("status")=="PASS" and voice_ok else "FAIL"
           receipt={
             "schema_version":1,
