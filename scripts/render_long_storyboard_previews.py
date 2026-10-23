@@ -13,7 +13,7 @@ import subprocess
 SOURCE_SHA = '873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc'
 CAPTION_SHA = '380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02'
 SEGMENTS = (
-    ('fee-consequence', 191, 688),
+    ('fee-consequence', 0, 688),
     ('store-shelves', 2162, 2696),
     ('audit-cart', 4071, 4304),
     ('trophy-invoice', 6896, 7425),
@@ -47,9 +47,9 @@ def main():
         subprocess.run(['node_modules/.bin/remotion', 'render', 'remotion/studio-animatic-index.jsx', 'StudioLong', str(silent), '--props=' + str(props), f'--frames={first}-{last}', '--concurrency=2', '--pixel-format=yuv420p', '--color-space=bt709'], check=True, timeout=240)
         subprocess.run([str(ffmpeg), '-v', 'error', '-i', str(silent), '-ss', str(first / 24), '-i', str(source), '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-t', str(duration), str(candidate)], check=True, timeout=60)
         subprocess.run([str(ffmpeg), '-v', 'error', '-i', str(candidate), '-c:v', 'rawvideo', '-c:a', 'pcm_s16le', '-f', 'null', '-'], check=True, timeout=60)
-        probe = json.loads(subprocess.check_output([str(ffprobe), '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(candidate)]))
-        video = next(s for s in probe['streams'] if s['codec_type'] == 'video')
-        audio = next(s for s in probe['streams'] if s['codec_type'] == 'audio')
+        stream_probe = json.loads(subprocess.check_output([str(ffprobe), '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(candidate)]))
+        video = next(s for s in stream_probe['streams'] if s['codec_type'] == 'video')
+        audio = next(s for s in stream_probe['streams'] if s['codec_type'] == 'audio')
         assert int(video['nb_frames']) == last - first + 1
         assert (video['width'], video['height'], video['r_frame_rate']) == (1280, 720, '24/1')
         assert abs(float(video['duration']) - duration) < 1/24
