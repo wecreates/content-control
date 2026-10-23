@@ -1,10 +1,10 @@
 name: POD integration gates
 on:
   pull_request:
-    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','package.json','.github/workflows/pod-database-deploy.yml']
   push:
     branches: [main]
-    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','.github/workflows/pod-database-deploy.yml']
+    paths: ['integrations/pod/**','scripts/pod*','migrations/*pod.sql','pod-db-bridge.js','tests/pod*','tests/test_pod*.py','.github/workflows/pod-integration.yml','server-lowmem.js','requirements-pod-runtime.txt','package.json','.github/workflows/pod-database-deploy.yml']
   workflow_dispatch:
 concurrency:
   group: pod-integration-${{ github.event.pull_request.number || github.ref }}
@@ -40,16 +40,6 @@ jobs:
       - run: npm run test:pod
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr fonts-dejavu-core
       - run: pip install Pillow==12.3.0 numpy==2.3.5 opencv-python-headless==5.0.0.93 reportlab==4.4.9 PyMuPDF==1.26.6 fonttools==4.61.1
-      - run: python -m unittest discover -s tests -p test_pod_review_export.py
-      - run: python -m unittest discover -s tests -p test_pod_review_recovery.py
-      - run: python -m unittest discover -s tests -p test_pod_market_intake.py
-      - run: python -m unittest discover -s tests -p test_pod_evidence.py
-      - run: python -m unittest discover -s tests -p test_pod_binary_io.py
-      - run: python -m unittest discover -s tests -p test_pod_stage_expiry.py
-      - run: python -m unittest discover -s tests -p test_pod_book_bounds.py
-      - run: python -m unittest discover -s tests -p test_pod_font_rights.py
-      - run: python -m unittest discover -s tests -p test_pod_kdp_interior_template_import.py
-      - run: python -m unittest discover -s tests -p test_pod_raster_bounds.py
       - run: npm run test:pod-python
       - run: node --test tests/pod-production-e2e.mjs
       - run: node --check server-lowmem.js
