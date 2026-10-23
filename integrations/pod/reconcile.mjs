@@ -20,7 +20,8 @@ export async function reconcilePublication(db,envelope,key){
  return db.tx(async c=>{
   const job=(await c.query('SELECT * FROM pod_production_queue WHERE id=$1 FOR UPDATE',[e.job_id])).rows[0];
   if(!job||job.account_id!==e.account_id||job.platform!==e.platform||job.manifest?.package_sha256!==e.package_sha256||
-   !['submitted','ambiguous','published'].includes(job.state)||(job.provider_id&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
+   !['submitted','ambiguous','published'].includes(job.state)||
+   (job.state==='published'?job.provider_id!==e.provider_id:job.provider_id!=null&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
   await assertStoredEvidence(c,[e.evidence_sha256],'LISTING_EVIDENCE_MISSING');
   const seen=await c.query('SELECT evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]);
   if(seen.rowCount){
