@@ -1,8 +1,8 @@
-name: Long opening performance preview
+name: Long storyboard performance previews
 on:
   push:
     branches: [codex/long-caption-diagnostic-20261023]
-    paths: ['.github/workflows/long-caption-diagnostic.yml', 'remotion/LongOpening*', 'remotion/StudioLongComposition.jsx', 'tests/long-opening-motion.test.mjs', 'tests/studio-long-layout.test.mjs']
+    paths: ['.github/workflows/long-caption-diagnostic.yml', 'scripts/render_long_storyboard_previews.py', 'remotion/Long*', 'remotion/StudioLongComposition.jsx', 'tests/long-*-motion.test.mjs', 'tests/studio-long-layout.test.mjs']
 permissions:
   contents: read
   actions: read
@@ -16,7 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '20'}
       - run: npm ci
-      - run: node --test tests/studio-long-layout.test.mjs tests/long-opening-motion.test.mjs
       - name: Verify retained review source
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,39 +37,30 @@ jobs:
           github-token: ${{ github.token }}
           path: retained
           merge-multiple: true
-      - name: Bind preview to unchanged actual audio and captions
+      - name: Stage verified observed caption fixture
         run: |
-          mkdir -p hook-preview
+          mkdir -p evidence/actual-long/receipts
           python - <<'PY'
-          import hashlib,json,pathlib
-          p=pathlib.Path('retained')
-          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
-          assert sha(p/'candidate.mp4')=='873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc'
-          assert sha(p/'captions.json')=='380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02'
-          c=json.loads((p/'ccsd.json').read_text())
-          assert sha(p/'ccsd.json')==sha(pathlib.Path('projects/long/credit-card-dlc/ccsd.json'))
-          c['caption_track']=json.loads((p/'captions.json').read_text())
-          pathlib.Path('hook-preview/props.json').write_text(json.dumps({'ccsd':c}))
+          import hashlib,pathlib,shutil
+          p=pathlib.Path('retained/captions.json')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02'
+          shutil.copyfile(p,'evidence/actual-long/receipts/captions.json')
           PY
-      - name: Render only the first 191 frames
-        run: node_modules/.bin/remotion render remotion/studio-animatic-index.jsx StudioLong hook-preview/silent.mp4 --props=hook-preview/props.json --frames=0-190 --concurrency=2 --pixel-format=yuv420p --color-space=bt709
-      - name: Attach original audio prefix and verify complete preview decode
-        run: |
-          FFMPEG=node_modules/@remotion/compositor-linux-x64-gnu/ffmpeg
-          "$FFMPEG" -v error -i hook-preview/silent.mp4 -i retained/candidate.mp4 -map 0:v:0 -map 1:a:0 -c copy -shortest hook-preview/opening.mp4
-          "$FFMPEG" -v error -i hook-preview/opening.mp4 -c:v rawvideo -c:a pcm_s16le -f null -
-          python - <<'PY'
-          import hashlib,json,pathlib
-          p=pathlib.Path('hook-preview')
-          receipt={'status':'PREVIEW_PENDING_CREATIVE_REVIEW','publication_enabled':False,'production_approved':False,'source_candidate_sha256':'873dbe0a3ee19db6c7a1eb7441b20dfa35ae9e78b92dc90015ca6858f0718bcc','source_captions_sha256':'380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02','preview_sha256':hashlib.sha256((p/'opening.mp4').read_bytes()).hexdigest(),'frames':[0,190],'audio':'unchanged original encoded audio prefix','full_av_decode':'PASS'}
-          (p/'preview-receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
-          print(json.dumps(receipt))
-          PY
+      - name: Test exact cue-driven motion and all scene integrations
+        run: node --test tests/long-*-motion.test.mjs tests/studio-long-layout.test.mjs
+      - name: Render only repaired story segments with retained audio
+        run: python scripts/render_long_storyboard_previews.py
       - uses: actions/upload-artifact@v4
         with:
-          name: long-opening-review
+          name: long-storyboard-review
           path: |
-            hook-preview/opening.mp4
-            hook-preview/preview-receipt.json
+            storyboard-preview/fee-consequence.mp4
+            storyboard-preview/store-shelves.mp4
+            storyboard-preview/audit-cart.mp4
+            storyboard-preview/trophy-invoice.mp4
+            storyboard-preview/ladder-deletions.mp4
+            storyboard-preview/four-rules.mp4
+            storyboard-preview/horror-teaser.mp4
+            storyboard-preview/preview-receipt.json
           retention-days: 14
           if-no-files-found: error

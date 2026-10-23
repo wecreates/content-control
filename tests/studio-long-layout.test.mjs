@@ -4,10 +4,24 @@ import fs from 'node:fs';
 import {build} from 'esbuild';
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
+import {matchesLongStore} from '../remotion/LongStoreMotion.mjs';
+import {matchesLongFinale} from '../remotion/LongFinaleMotion.mjs';
+import {matchesLongConsequence} from '../remotion/LongConsequenceMotion.mjs';
 const ccsd=JSON.parse(fs.readFileSync('projects/long/credit-card-dlc/ccsd.json','utf8'));
 const result=await build({entryPoints:['remotion/StudioLongComposition.jsx'],bundle:true,write:false,format:'esm',platform:'browser',define:{'process.env.NODE_ENV':'"production"'},plugins:[{name:'frame-fixture',setup(build){build.onResolve({filter:/^remotion$/},()=>({path:'remotion',namespace:'frame'}));build.onLoad({filter:/.*/,namespace:'frame'},()=>({contents:'export const useCurrentFrame=()=>globalThis.__longTestFrame;export const useVideoConfig=()=>({fps:24});export const AbsoluteFill="div";'}));}}]});
 const {StudioLongComposition,longActionTiming,longActorPose,feeReceiptPose,cardSlamPose}=await import('data:text/javascript;base64,'+Buffer.from(result.outputFiles[0].text).toString('base64'));
 const render=(time,doc=ccsd)=>{globalThis.__longTestFrame=time*24;return renderToStaticMarkup(React.createElement(StudioLongComposition,{ccsd:doc}));};
+test('storyboard performance selectors are disjoint and wired before generic action rendering',()=>{
+ const counts=[0,0,0];
+ for(const scene of ccsd.scenes){
+  const hits=[matchesLongConsequence(scene),matchesLongStore(scene),matchesLongFinale(scene)];
+  assert.ok(hits.filter(Boolean).length<=1,scene.id+' has overlapping performance owners');
+  hits.forEach((hit,i)=>{if(hit)counts[i]++;});
+  if(hits.some(Boolean))assert.match(render((scene.start+scene.end)/2),/data-long-performance-module="storyboard"/);
+  if(/^scene-00[0-4]$/.test(scene.id))assert.equal(hits.some(Boolean),false);
+ }
+ assert.ok(counts.every(n=>n>0));
+});
 test('physical actions remain continuous across narration cuts',()=>{
  for(let i=1;i<ccsd.scenes.length;i++){
   const scene=ccsd.scenes[i],previous=ccsd.scenes[i-1];
@@ -43,7 +57,9 @@ test('comparison cards fit their own boxes and action doors distinguish terms',(
  const doors=render((doorScene.start+doorScene.end)/2);assert.match(doors,/INTRO APR/);assert.match(doors,/DEFERRED/);
 });
 test('formerly static explanations contain continuing causal prop actions',()=>{
- for(const [action,motion] of [['fee_drop','fee-weight'],['scoreboard','net-value-delivery'],['autopay','monthly-statement'],['calendar','monthly-payment']]){
+ assert.match(render(10.3),/data-causal-motion="invoice-crushes-dave"/);
+ assert.notEqual(render(10.3),render(10.8));
+ for(const [action,motion] of [['scoreboard','net-value-delivery'],['autopay','monthly-statement'],['calendar','monthly-payment']]){
   const scene=ccsd.scenes.find(scene=>scene.visual.action===action);
   assert.ok(scene,'Required story action exists: '+action);
   const time=scene.start+Math.min(.1,(scene.end-scene.start)/4);
@@ -115,3 +131,4 @@ test('opening stages show hand impact, retained dent, hero and reaction framing'
  assert.match(render(5.7,doc),/FINANCIALLY/);
  assert.doesNotMatch(render(9,doc),/data-opening-shot=/);
 });
+

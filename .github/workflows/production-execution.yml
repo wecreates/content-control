@@ -45,6 +45,7 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -53,11 +54,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install test media dependencies
+      - name: Probe and install only missing test media capabilities
+        timeout-minutes: 9
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          python -m pip install --disable-pip-version-check numpy
+          probe_audio() {
+            command -v ffmpeg && command -v ffprobe &&
+            ffmpeg -v error -f lavfi -i anullsrc=r=16000:cl=mono -t 0.02 -f f32le -y "$RUNNER_TEMP/test-audio-runtime.f32" &&
+            test -s "$RUNNER_TEMP/test-audio-runtime.f32"
+          }
+          if ! probe_audio; then
+            sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
+            sudo timeout 300 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg
+          fi
+          probe_audio
+          ffmpeg -hide_banner -version
+          ffprobe -hide_banner -version
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy
       - run: npm ci
       - run: python -m unittest tests.test_record_production_execution -v
       - run: node --test tests/production-status.test.mjs
