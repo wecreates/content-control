@@ -770,6 +770,38 @@ class BookAssemblyRecoveryTests(unittest.TestCase):
         self.assertFalse((self.package/'interior.pdf').exists())
         self.assertFalse((self.package/'interior.receipt.json').exists())
 
+    def test_declared_file_parent_swap_is_rejected_before_render(self):
+        nested=self.package/'nested'; nested.mkdir()
+        member=nested/'member.bin'; member.write_bytes(b'trusted member')
+        outside=self.root/'outside'; outside.mkdir()
+        (outside/'member.bin').write_bytes(member.read_bytes())
+        manifest=json.loads((self.package/'manifest.json').read_text())
+        manifest['files']['nested/member.bin']=digest(member)
+        manifest.pop('package_sha256')
+        manifest['package_sha256']=books.hashlib.sha256(
+            books.canonical(manifest).encode()).hexdigest()
+        books.save_json(self.package/'manifest.json',manifest)
+
+        original_scoped=books.scoped_file
+        swapped=False
+        def swap_after_scope(root,relative):
+            nonlocal swapped
+            target=original_scoped(root,relative)
+            if relative=='nested/member.bin' and not swapped:
+                swapped=True
+                nested.rename(self.package/'nested-original')
+                nested.symlink_to(outside,target_is_directory=True)
+            return target
+
+        with patch.object(books,'scoped_file',side_effect=swap_after_scope), \
+             patch.object(books,'render_book',wraps=books.render_book) as render:
+            with self.assertRaisesRegex(ValueError,'^ARTIFACT_PATH_INVALID$'):
+                self.run_assembly()
+        render.assert_not_called()
+        self.assertTrue(nested.is_symlink())
+        self.assertFalse((self.package/'interior.pdf').exists())
+        self.assertEqual(list(self.package.glob('.pod-book-*')),[])
+
     def test_book_package_swap_before_staging_never_writes_replacement(self):
         moved = self.root/'moved-before-staging-package'
         original_urandom = books.os.urandom

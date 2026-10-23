@@ -6,8 +6,8 @@ import os
 import shutil
 import stat
 from pathlib import Path
-from pod_common import (MAX_JSON_BYTES, canonical, digest, read_json, save_json,
-                        scoped_file, strict_json, verified)
+from pod_common import (MAX_DIGEST_BYTES, MAX_JSON_BYTES, canonical, digest,
+                        read_json, save_json, scoped_file, strict_json, verified)
 from pod_book_interior import render_book
 
 
@@ -89,9 +89,54 @@ def _link_staged(stage_fd, root_fd, name):
     return expected
 
 
-def _verify_declared_files(package, files):
+def _descriptor_digest(root_fd, relative):
+    if (type(relative) is not str or not relative or relative.startswith('/')
+            or any(part in ('', '.', '..') for part in relative.split('/'))):
+        raise ValueError('ARTIFACT_PATH_INVALID')
+    directory_fd = None
+    file_fd = None
+    try:
+        directory_fd = os.dup(root_fd)
+        parts = relative.split('/')
+        for part in parts[:-1]:
+            next_fd = os.open(
+                part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = next_fd
+        file_fd = os.open(
+            parts[-1], os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW,
+            dir_fd=directory_fd)
+        if not stat.S_ISREG(os.fstat(file_fd).st_mode):
+            raise ValueError('ARTIFACT_PATH_INVALID')
+        hasher = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(file_fd,
+                            min(1024 * 1024, MAX_DIGEST_BYTES - total + 1))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_DIGEST_BYTES:
+                raise ValueError('DIGEST_TOO_LARGE')
+            hasher.update(chunk)
+        return hasher.hexdigest()
+    except OSError:
+        raise ValueError('ARTIFACT_PATH_INVALID') from None
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+        if directory_fd is not None:
+            os.close(directory_fd)
+
+
+def _verify_declared_files(package, root_fd, files):
     for name, sha in files.items():
-        if digest(scoped_file(package, name)) != sha:
+        # Preserve the manifest-facing scope validation and then walk every
+        # path component through the held package descriptor. A parent cannot
+        # be swapped to a symlink between pathname validation and hashing.
+        scoped_file(package, name)
+        if _descriptor_digest(root_fd, name) != sha:
             raise ValueError('FILE_HASH_MISMATCH')
 
 
@@ -128,12 +173,12 @@ def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
     # Rendering and installation can take long enough for a package member to
     # be replaced after its digest is recorded. Bind the final manifest commit
     # to every current byte through the already-verified package descriptor.
-    _verify_declared_files(package, expected_files)
+    _verify_declared_files(package, root_fd, expected_files)
     expected, expected_bytes = _snapshot_file(stage_fd, 'manifest.json')
     try:
         _replace_staged(stage_fd, root_fd, 'manifest.json', expected,
                         expected_bytes)
-        _verify_declared_files(package, expected_files)
+        _verify_declared_files(package, root_fd, expected_files)
     except BaseException as verification_failure:
         try:
             _replace_staged(stage_fd, root_fd, 'manifest.rollback.json',
@@ -176,7 +221,7 @@ def assemble(root, spec, pages, font):
         if hashlib.sha256(canonical(manifest).encode()).hexdigest() != previous:
             raise ValueError('MANIFEST_HASH_MISMATCH')
         declared_files = dict(manifest['files'])
-        _verify_declared_files(package, declared_files)
+        _verify_declared_files(package, root_fd, declared_files)
         cover = manifest['template']
         if manifest['platform'] != 'kdp' or spec['platform'] != 'kdp':
             raise ValueError('PLATFORM_BLOCKED')
@@ -243,7 +288,7 @@ def assemble(root, spec, pages, font):
         try:
             if _snapshot_file(root_fd, 'manifest.json') != committed_manifest:
                 raise ValueError('MANIFEST_CHANGED')
-            _verify_declared_files(package, expected_files)
+            _verify_declared_files(package, root_fd, expected_files)
         except (OSError, ValueError):
             raise ValueError('BOOK_PACKAGE_CHANGED_AFTER_COMMIT') from None
         _require_path_identity(root, root_identity)
