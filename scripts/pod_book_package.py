@@ -144,6 +144,7 @@ def _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
             failure.add_note(type(verification_failure).__name__)
             raise failure from rollback_failure
         raise
+    return expected, expected_bytes
 
 
 def _cleanup_installed(root_fd, installed, failure):
@@ -220,8 +221,10 @@ def assemble(root, spec, pages, font):
         for name in ('interior.pdf', 'interior.receipt.json'):
             installed.append((name, _link_staged(stage_fd, root_fd, name)))
         os.fsync(root_fd)
-        _commit_manifest(stage_fd, root_fd, original_identity, original_bytes,
-                         rollback_identity, package, dict(manifest['files']))
+        expected_files = dict(manifest['files'])
+        committed_manifest = _commit_manifest(
+            stage_fd, root_fd, original_identity, original_bytes,
+            rollback_identity, package, expected_files)
         # The files and their links were synchronized before the manifest
         # rename. Persist that final directory-entry change before reporting a
         # durable package. Treat a sync failure as post-commit: leaving the
@@ -232,6 +235,17 @@ def assemble(root, spec, pages, font):
             os.fsync(root_fd)
         except OSError as exc:
             raise ValueError('BOOK_PACKAGE_DURABILITY_UNCERTAIN') from exc
+        # A same-user writer can still modify the installed manifest or one of
+        # its members while the final directory sync is in progress. Recheck
+        # the exact committed manifest and every declared byte after that
+        # durability boundary. The manifest may already be durable, so a
+        # mismatch is preserved for recovery rather than partially cleaned.
+        try:
+            if _snapshot_file(root_fd, 'manifest.json') != committed_manifest:
+                raise ValueError('MANIFEST_CHANGED')
+            _verify_declared_files(package, expected_files)
+        except (OSError, ValueError):
+            raise ValueError('BOOK_PACKAGE_CHANGED_AFTER_COMMIT') from None
         _require_path_identity(root, root_identity)
         return manifest
     except BaseException as exc:
