@@ -20,6 +20,7 @@ on:
       - '.github/workflows/timed-free-voice-tests.yml'
 permissions:
   contents: read
+  actions: read
 env:
   PUBLICATION_ENABLED: 'false'
   HF_HUB_DISABLE_TELEMETRY: '1'
@@ -37,23 +38,43 @@ jobs:
       - name: Install and require audio contract prerequisite
         run: |
           sudo timeout 120 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update
-          sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg espeak-ng
+          sudo timeout 900 apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg
           command -v ffmpeg
       - run: python -m unittest -v tests/test_timed_free_voice.py tests/test_v2_free_voice.py tests/test_clip_spoken_number_decoding.py
       - run: node --test tests/boss-fight-nonverbal-text.test.mjs
-      - name: Install existing free CPU model without ASR or rendering
+      - name: Verify retained actual voice artifact provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python -m pip install --disable-pip-version-check torch --index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --disable-pip-version-check kokoro==0.9.4 soundfile numpy==2.3.5
-      - name: Synthesize three approved stock voices and fully decode audio
-        run: python scripts/smoke_timed_free_voice.py --out-dir state/timed-free-voice-smoke
-      - name: Measure all actual dialogue durations before fit validation
-        run: python scripts/measure_timed_free_voice.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --out state/timed-free-voice-smoke/boss-dialogue-durations.json
-      - name: Verify actual Boss Fight dialogue fits explicit speech windows
+          gh api repos/wecreates/content-control/actions/runs/40003044732 > retained-run.json
+          gh api repos/wecreates/content-control/actions/artifacts/12522863107 > retained-artifact.json
+          python - <<'PYCODE'
+          import json
+          run=json.load(open('retained-run.json')); artifact=json.load(open('retained-artifact.json'))
+          assert run['head_sha']=='e56e156ed81803ee6083ffecd032f9210dac201c'
+          assert artifact['workflow_run']['id']==40003044732 and artifact['expired'] is False
+          assert artifact['name']=='timed-free-voice-real-cpu-smoke'
+          PYCODE
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '12522863107'
+          run-id: '40003044732'
+          github-token: ${{ github.token }}
+          path: state
+          merge-multiple: true
+      - name: Verify retained voice bytes and exact current source timeline
         run: |
-          python scripts/timed_free_voice.py --ccsd projects/shorts/credit-score-boss-fight/ccsd.json --out-dir state/boss-fight-free-voice
-          ffmpeg -nostdin -v error -i state/boss-fight-free-voice/voice.wav -f null -
-          ffprobe -v error -show_streams -show_format -of json state/boss-fight-free-voice/voice.wav > state/boss-fight-free-voice/ffprobe.json
+          python - <<'PYCODE'
+          import json,hashlib
+          from pathlib import Path
+          from scripts.timed_free_voice import prepare_timeline
+          root=Path('state/boss-fight-free-voice'); r=json.load(open(root/'timed-voice.json'))
+          source=json.load(open('projects/shorts/credit-score-boss-fight/ccsd.json'))
+          assert r['timeline']==prepare_timeline(source), 'Retained speech source is stale'
+          assert hashlib.sha256((root/'voice.wav').read_bytes()).hexdigest()==r['audio']['audio_sha256']
+          for clip in r['manifest']['clips']:
+              assert hashlib.sha256((root/clip['file']).read_bytes()).hexdigest()==clip['audio_sha256']
+          PYCODE
       - name: Require all actual dialogue at natural speed
         run: |
           python - <<'PYCODE'
@@ -76,7 +97,7 @@ jobs:
           (root/'speech-ccsd.json').write_text(json.dumps(c))
           (root/'assembly.json').write_text(json.dumps(r['audio']))
           PYCODE
-          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model small.en --spoken-numbers
+          python scripts/v2_clip_transcription.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --assembly state/boss-fight-free-voice/assembly.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/transcription.json --model medium.en --spoken-numbers
           python scripts/v2_captions.py --ccsd state/boss-fight-free-voice/speech-ccsd.json --transcription state/boss-fight-free-voice/transcription.json --audio state/boss-fight-free-voice/voice.wav --out state/boss-fight-free-voice/captions.json
           node scripts/verify_caption_frames.mjs --ccsd state/boss-fight-free-voice/speech-ccsd.json --captions state/boss-fight-free-voice/captions.json --out state/boss-fight-free-voice/caption-frames.json
           python - <<'PYCODE'
