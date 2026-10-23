@@ -122,11 +122,18 @@ provide atomic publication, a same-user adversarial filesystem sandbox, or clean
 after process crashes, SIGKILL or default SIGTERM termination. Parent directories
 created for the output path are not removed.
 
-Eight regression tests cover the exact private tree under umask `000`, five late
+The guard also compares the directory created at acquisition with the descriptor
+it opens, then compares that held identity with the output path again before a
+successful handoff. A swap in either interval fails with `OUTPUT_REPLACED` and
+never turns the replacement into a successful package or cleanup target. The
+replacement and any moved attempt remain available for manual investigation.
+
+Ten regression tests cover the exact private tree under umask `000`, five late
 stage failures followed by genuine reproducible rendering, corrected worker-font
-input, KeyboardInterrupt, existing output/symlink protection, concurrent
-replacements and denied cleanup. Fixtures are synthetic and supply no official-
-template, rights, editorial or live evidence.
+input, KeyboardInterrupt, existing output/symlink protection, failed and
+success-path concurrent replacements, acquisition swaps and denied cleanup.
+Fixtures are synthetic and supply no official-template, rights, editorial or
+live evidence.
 
 
 ## Review CLI cancellation
