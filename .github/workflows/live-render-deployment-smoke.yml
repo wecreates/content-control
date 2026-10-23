@@ -147,7 +147,7 @@ jobs:
           git config user.name content-control-runtime
           git config user.email actions@users.noreply.github.com
           git add state/live-deployment-health.json
-          git diff --cached --quiet || git commit -m "Update live Render deployment health"
+          git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update live Render deployment health')"
           for attempt in 1 2 3; do
             if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort || true

@@ -9,6 +9,9 @@ export const REPORT_ONLY_PATHS=Object.freeze([
  // Watchdog observation consumed by repository verification/repair routing.
  // Other watchdog-staged health and completion paths are not allowlisted.
  'state/free-production-watchdog.json',
+ // Live-probe receipt only. A later application release carries this metadata;
+ // rebuilding identical runtime bytes cannot make a failed probe pass.
+ 'state/live-deployment-health.json',
  'POD_COMPLETION_CHECKLIST.md',
  'POD_IMPLEMENTATION_STATUS.md',
  'POD_FREE_DEPLOYMENT.md',
