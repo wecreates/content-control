@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
+const MAX_EVENT_PAYLOAD_BYTES=262144;
+const MAX_EVENT_REQUEST_BYTES=524288;
 // Receiver must atomically deduplicate event IDs. Delivery is at least once.
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
@@ -16,11 +18,14 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   db.active();
   try{
   const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:Date.now(),event});
+  if(Buffer.byteLength(payload)>MAX_EVENT_PAYLOAD_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const signature=crypto.createHmac('sha256',key).update(payload).digest('hex');
+  const body=JSON.stringify({payload,signature});
+  if(Buffer.byteLength(body)>MAX_EVENT_REQUEST_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const deadline=performance.now()+15000;
   const timeout=AbortSignal.timeout(15000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
-  const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,headers:{'content-type':'application/json','idempotency-key':event.id},body:JSON.stringify({payload,signature})},{deadline});
+  const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,headers:{'content-type':'application/json','idempotency-key':event.id},body},{deadline});
   const ack=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:4096,statusError:'OUTBOX_DELIVERY_FAILED',sizeError:'OUTBOX_ACK_TOO_LARGE'});
   if(ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);

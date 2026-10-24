@@ -24,6 +24,26 @@ test('direct delivery rejects query and fragment endpoint variants before storag
   assert.equal(active,0);
  }
 });
+test('direct delivery enforces receiver byte ceilings before network access',async t=>{
+ const now=1800000000000;t.mock.method(Date,'now',()=>now);
+ const encoded=event=>JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:now,event});
+ const event=n=>({id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.large',
+  payload:{value:'\\'.repeat(n)},created_at:new Date(now).toISOString()});
+ let low=0,high=262144;
+ while(low<high){const middle=Math.ceil((low+high)/2);if(Buffer.byteLength(encoded(event(middle)))<=262144)low=middle;else high=middle-1;}
+ const boundary=event(low),boundaryPayload=encoded(boundary);
+ assert.ok(Buffer.byteLength(boundaryPayload)<=262144);
+ assert.ok(Buffer.byteLength(encoded(event(low+1)))>262144);
+ assert.ok(Buffer.byteLength(JSON.stringify({payload:boundaryPayload,signature:'0'.repeat(64)}))<=524288);
+ const accepted=dbFixture([boundary]);
+ await deliverOutbox(accepted,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+  fetchImpl:async()=>new Response(JSON.stringify({accepted_event_id:boundary.id}))});
+ assert.deepEqual(accepted.updated,[boundary.id]);
+ const rejected=dbFixture([event(low+1)]);
+ await assert.rejects(deliverOutbox(rejected,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+  fetchImpl:()=>assert.fail('unexpected network request')}),/OUTBOX_EVENT_TOO_LARGE/);
+ assert.deepEqual(rejected.updated,[]);
+});
 test('retry backoff is bounded, uses pagination and recovers',async()=>{
  let calls=0;const delays=[],cursors=[];let runtime;
  const completed=new Promise(resolve=>{

@@ -4,6 +4,12 @@ The existing POD service owns an optional outbox lifecycle. Configure POD_OUTBOX
 
 Delivery uses the existing signed event envelope and idempotency-key header. The receiver must transactionally deduplicate event IDs. Only a bounded acknowledgement naming the exact accepted event permits delivered_at to change. A lost acknowledgement is retried: delivery is at least once, not exactly once. Multiple service instances may send duplicates safely only with the required receiver deduplication.
 
+Before dispatch, the sender enforces the Money Factory inbox's exact 262,144-byte
+decoded signed-payload ceiling and 524,288-byte outer JSON wire ceiling. An
+oversized durable event stays undelivered and follows the existing bounded retry
+and pagination path; it is never truncated or transmitted as a request the
+receiver cannot accept. These are UTF-8 byte limits, not character counts.
+
 Each cycle handles up to 20 events. Failed events remain durable and undelivered. A cursor advances through full batches and wraps after the final batch, so rejected early events cannot permanently starve later events. The cursor is disposable process state; restart safely retries undelivered events. Failures back off to at most five minutes. Persistent failures appear as RETRYING with an aggregate failure count in /api/print/status. No payloads, destination URL, signing keys, or exception details are exposed there.
 
 Shutdown aborts outbound requests and waits for worker and outbox loops before closing PostgreSQL. Network requests have a 15-second limit and disallow redirects. No new tables, cloud resources, or migration credentials are required.
