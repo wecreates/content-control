@@ -12,9 +12,10 @@ const env={POD_GRANT_URL:'https://authority.example/grant',POD_GRANT_AUTH_KEY:'a
 function streamResponse({status=200,headers={},chunks=[]}={}){
  let cancelled=0;
  const body=new ReadableStream({start(c){for(const chunk of chunks)c.enqueue(Buffer.from(chunk));},cancel(){cancelled++;}});
- return {response:new Response(body,{status,headers}),cancelled:()=>cancelled};
+ return {response:new Response(body,{status,headers:{'content-type':'application/json',...headers}}),cancelled:()=>cancelled};
 }
 function dbFixture(){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:[{id:'event'}]})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
 test('rejected authority response is cancelled without consuming its body',async()=>{
  const f=streamResponse({status:403});
  const resolve=createGrantResolver({env,fetchImpl:async()=>f.response});
@@ -56,7 +57,8 @@ test('malformed JSON, invalid UTF-8 and absent body cannot acknowledge an event'
 test('escaped duplicate acknowledgement keys cannot mark an event delivered',async()=>{
  const db=dbFixture();
  const response='{"accepted_event_id":"wrong","accepted_event\\u005fid":"event"}';
- await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(response)}));
+ await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
+  fetchImpl:async()=>new Response(response,{headers:{'content-type':'application/json'}})}));
  assert.deepEqual(db.updated,[]);
 });
 test('acknowledgement must be the exact receiver response object',async()=>{
@@ -66,13 +68,32 @@ test('acknowledgement must be the exact receiver response object',async()=>{
  ]){
   const db=dbFixture();
   await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
-   fetchImpl:async()=>new Response(JSON.stringify(acknowledgement))}),/OUTBOX_ACK_INVALID/);
+   fetchImpl:async()=>jsonResponse(acknowledgement)}),/OUTBOX_ACK_INVALID/);
   assert.deepEqual(db.updated,[]);
  }
 });
+test('acknowledgement requires the receiver JSON media type',async()=>{
+ const text=JSON.stringify({accepted_event_id:'event'});
+ for(const response of [
+  new Response(text,{headers:{'content-type':'text/html; charset=utf-8'}}),
+  new Response(text,{headers:{'content-type':'application/problem+json'}}),
+  new Response(Buffer.from(text)),
+ ]){
+  const db=dbFixture();
+  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
+   fetchImpl:async()=>response}),/OUTBOX_ACK_MEDIA_TYPE_INVALID/);
+  assert.deepEqual(db.updated,[]);
+  assert.equal(response.body.locked,false);
+ }
+ const db=dbFixture();
+ await deliverOutbox(db,{url:'https://authority.example/events',key,
+  fetchImpl:async()=>new Response(text,{headers:{'content-type':'Application/JSON; charset=utf-8'}})});
+ assert.deepEqual(db.updated,['event']);
+});
 test('a leading UTF-8 BOM cannot acknowledge an event',async()=>{
  const db=dbFixture(),body=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"accepted_event_id":"event"}')]);
- await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(body)}));
+ await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
+  fetchImpl:async()=>new Response(body,{headers:{'content-type':'application/json'}})}));
  assert.deepEqual(db.updated,[]);
 });
 test('exact-limit UTF-8 JSON split across every byte preserves the original text',async()=>{
@@ -96,7 +117,7 @@ test('failed event response is released before processing the next event',async(
  let calls=0;
  const result=await deliverOutbox(db,{url:'https://authority.example/events',key,continueOnError:true,fetchImpl:async()=>{
   if(calls++===0)return f.response;
-  assert.equal(f.cancelled(),1);return new Response(JSON.stringify({accepted_event_id:'ok'}));
+  assert.equal(f.cancelled(),1);return jsonResponse({accepted_event_id:'ok'});
  }});
  assert.deepEqual(result,{delivered:1,failed:1,nextCursor:null});assert.deepEqual(db.updated,['ok']);
 });
@@ -296,7 +317,7 @@ for(const caller of ['grant','outbox'])for(const phase of ['headers','body','par
     if(phase==='headers')now=completion;
     body=new ReadableStream({pull(c){pulls++;if(phase==='body')now=completion;c.enqueue(Buffer.from(text));c.close();},
      cancel(){cancelled++;return new Promise(()=>{});}},{highWaterMark:0});
-    return new Response(body);
+    return new Response(body,{headers:caller==='outbox'?{'content-type':'application/json'}:{}});
    };
    const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job',brief:grant.brief}):
     deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl});

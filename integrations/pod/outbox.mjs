@@ -26,7 +26,8 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   const timeout=AbortSignal.timeout(15000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,headers:{'content-type':'application/json','idempotency-key':event.id},body},{deadline});
-  const ack=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:4096,statusError:'OUTBOX_DELIVERY_FAILED',sizeError:'OUTBOX_ACK_TOO_LARGE'});
+  const ack=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:4096,statusError:'OUTBOX_DELIVERY_FAILED',
+   sizeError:'OUTBOX_ACK_TOO_LARGE',mediaTypeError:'OUTBOX_ACK_MEDIA_TYPE_INVALID'});
   if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.getPrototypeOf(ack)!==Object.prototype||
    Object.keys(ack).length!==1||!Object.hasOwn(ack,'accepted_event_id')||ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);

@@ -51,11 +51,15 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
 // All bridge responses have a byte limit, including chunked/decoded bodies.
 // Body reads share the request deadline even if a transport does not propagate
 // aborts. Best-effort cancellation must not delay a result or replace its error.
-export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,signal,deadline}){
+export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,mediaTypeError,signal,deadline}){
  let reader,onAbort;
  try{
   assertBridgeRequest(signal,deadline);
   if(!response.ok)throw Error(statusError);
+  if(mediaTypeError){
+   const mediaType=response.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase();
+   if(mediaType!=='application/json')throw Error(mediaTypeError);
+  }
   if(Number(response.headers.get('content-length'))>maxBytes)throw Error(sizeError);
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
   reader=response.body.getReader();
