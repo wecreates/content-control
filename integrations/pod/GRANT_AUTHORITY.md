@@ -4,6 +4,12 @@ POD_GRANT_URL selects the Money Factory HTTPS grant endpoint. POD_GRANT_AUTH_KEY
 
 The Money Factory createPodAuthorityHandler export belongs in the existing authoritative HTTP host. Supply a server-owned loadSnapshot(jobId) that loads the job, current readiness, current approval and verified facts from their actual sources. Mount the handler at the configured route behind HTTPS. The handler is code, not a deployed service or a fabricated approval source. Request JSON containing extra fields is rejected.
 
+Successful authority responses must use the `application/json` media type, with
+optional parameters such as `charset=utf-8`. HTML, problem JSON and missing
+media types fail closed before the signed envelope is parsed. A correctly signed
+body delivered under a different response contract is not accepted as a current
+grant.
+
 Each execution calls the authority again, verifies signature, age, remaining lifetime, account/business/platform/task scope and readiness ceiling. A failed authority call never falls back to an old approval. Abort signals cancel the request. If no URL is configured, the built-in stored-task resolver reports authorityReady=false and production remains BLOCKED_GRANT_AUTHORITY. A stored queue envelope is intake evidence, never a fallback execution approval.
 
 The authority re-evaluates approval after loading its snapshot. Revoked or expired approval fails closed. It cannot make an unready business ready, authorize Etsy, or elevate PRELAUNCH to LAUNCH. Configure snapshot database reads with bounded timeouts and consistent transactions. Test changes to readiness and revocation in the deployed authority before enabling queue production.
