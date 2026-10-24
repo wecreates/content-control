@@ -59,6 +59,17 @@ test('escaped duplicate acknowledgement keys cannot mark an event delivered',asy
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(response)}));
  assert.deepEqual(db.updated,[]);
 });
+test('acknowledgement must be the exact receiver response object',async()=>{
+ for(const acknowledgement of [
+  {accepted_event_id:'event',status:'rejected'},
+  {accepted_event_id:'event',error:'EVENT_REJECTED'},
+ ]){
+  const db=dbFixture();
+  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
+   fetchImpl:async()=>new Response(JSON.stringify(acknowledgement))}),/OUTBOX_ACK_INVALID/);
+  assert.deepEqual(db.updated,[]);
+ }
+});
 test('a leading UTF-8 BOM cannot acknowledge an event',async()=>{
  const db=dbFixture(),body=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"accepted_event_id":"event"}')]);
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>new Response(body)}));

@@ -4,6 +4,11 @@ The existing POD service owns an optional outbox lifecycle. Configure POD_OUTBOX
 
 Delivery uses the existing signed event envelope and idempotency-key header. The receiver must transactionally deduplicate event IDs. Only a bounded acknowledgement naming the exact accepted event permits delivered_at to change. A lost acknowledgement is retried: delivery is at least once, not exactly once. Multiple service instances may send duplicates safely only with the required receiver deduplication.
 
+The acknowledgement must be the receiver's exact one-member JSON object,
+`{"accepted_event_id":"<event UUID>"}`. Additional status, error or private
+members make the acknowledgement invalid even when the event ID matches, so a
+mixed or confused response cannot mark the durable event delivered.
+
 Before dispatch, the sender enforces the Money Factory inbox's exact 262,144-byte
 decoded signed-payload ceiling and 524,288-byte outer JSON wire ceiling. An
 oversized durable event stays undelivered and follows the existing bounded retry
