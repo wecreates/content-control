@@ -46,6 +46,7 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
   const options={directory,key,budgetBytes,signal,base:opened.base};
   const {catalog,bytes,archive_sha256}=await readCatalog(options);
   await verifyItems(catalog,options);
+  await assertArchiveDirectory(directory,opened);
   return {status:'VERIFIED',scope:'artifacts_only',archive_sha256,created_at:catalog.created_at,
    verified_at:new Date().toISOString(),objects:catalog.items.length,bytes,publication_enabled:false};
  }finally{await closeArchiveDirectory(opened);}
