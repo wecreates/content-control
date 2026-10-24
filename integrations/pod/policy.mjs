@@ -3,6 +3,22 @@ import {parseSignedJSON} from './signed-json.mjs';
 export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
 const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
 const evidenceId=value=>typeof value==='string'&&value.trim().length>0&&value.length<=256;
+function exactEnvelopeRecord(envelope){
+ try{
+  if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||
+   Object.getPrototypeOf(envelope)!==Object.prototype)return null;
+  const keys=Reflect.ownKeys(envelope);
+  if(keys.length!==2||!keys.every(key=>typeof key==='string')||
+   !keys.includes('payload')||!keys.includes('signature'))return null;
+  const payload=Object.getOwnPropertyDescriptor(envelope,'payload');
+  const signature=Object.getOwnPropertyDescriptor(envelope,'signature');
+  // JSON.parse creates enumerable data properties. Reject accessors before
+  // reading them so an untrusted wrapper cannot run code at authentication.
+  if(!payload?.enumerable||!signature?.enumerable||
+   !Object.hasOwn(payload,'value')||!Object.hasOwn(signature,'value'))return null;
+  return {payload:payload.value,signature:signature.value};
+ }catch{return null;}
+}
 export const BRIDGE_RULES = Object.freeze([
  'Content Control may never exceed the business max_mode',
  'LAUNCH CTA is blocked unless launch_content_allowed=true',
@@ -17,12 +33,13 @@ export function assertBridge(bridge) {
 }
 export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
  if(typeof key!=='string'||Buffer.byteLength(key)<32) throw Error('SIGNING_KEY_REQUIRED');
- if(typeof envelope?.payload!=='string'||Buffer.byteLength(envelope.payload)>262144||
-  typeof envelope.signature!=='string'||envelope.signature.length!==64||
-  !/^[a-f0-9]{64}$/.test(envelope.signature)) throw Error('ENVELOPE_INVALID');
- const expected=crypto.createHmac('sha256',key).update(envelope.payload).digest();
- if(!crypto.timingSafeEqual(expected,Buffer.from(envelope.signature,'hex'))) throw Error('SIGNATURE_INVALID');
- const p=parseSignedJSON(envelope.payload,{canonicalNumbers:true});
+ const record=exactEnvelopeRecord(envelope);
+ if(typeof record?.payload!=='string'||Buffer.byteLength(record.payload)>262144||
+  typeof record.signature!=='string'||record.signature.length!==64||
+  !/^[a-f0-9]{64}$/.test(record.signature)) throw Error('ENVELOPE_INVALID');
+ const expected=crypto.createHmac('sha256',key).update(record.payload).digest();
+ if(!crypto.timingSafeEqual(expected,Buffer.from(record.signature,'hex'))) throw Error('SIGNATURE_INVALID');
+ const p=parseSignedJSON(record.payload,{canonicalNumbers:true});
  // Relational comparisons coerce values and are all false for NaN. Validate
  // the clock and signed millisecond integers before making an expiry decision.
  if(!p||typeof p!=='object'||Array.isArray(p)||!Number.isSafeInteger(now)||now<0||p.audience!==audience||p.schema_version!==1||
