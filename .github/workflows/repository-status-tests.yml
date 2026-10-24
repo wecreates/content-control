@@ -6,8 +6,11 @@ on:
       - 'repository-worker-status.js'
       - 'repository-additional-status.js'
       - 'repository-integrations.js'
+      - 'repository-reel-status.js'
       - 'tests/repository-worker-status.test.mjs'
       - 'tests/repository-integrations.test.mjs'
+      - 'tests/repository-additional-status.test.mjs'
+      - 'tests/repository-reel-status.test.mjs'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/repository-status-tests.yml'
@@ -38,4 +41,4 @@ jobs:
       - name: Install locked dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Run only repository reporting regressions
-        run: node --test tests/repository-worker-status.test.mjs tests/repository-integrations.test.mjs
+        run: node --test tests/repository-worker-status.test.mjs tests/repository-integrations.test.mjs tests/repository-additional-status.test.mjs tests/repository-reel-status.test.mjs
