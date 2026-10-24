@@ -69,14 +69,23 @@ duplicate decoded keys before choosing the outer payload/signature pair. An
 escaped spelling cannot override an earlier response member even when the final
 pair would otherwise contain a valid signature.
 
-After authentication, duplicate decoded object member names and numbers that
-overflow to infinity are rejected at every nesting level. Escaped spellings of
-the same key count as duplicates, including identical repeated values. Separate
-objects may reuse names, and text containing JSON-like strings is unchanged.
-The root must be an object; timestamp, audience and schema checks still apply.
-These rules cover all callers of the shared verifier, including grants and QA.
-They align with the existing Money Factory event parser. They do not establish
-arbitrary-precision numeric semantics, real approvals or live acceptance.
+After authentication, duplicate decoded object member names, numeric overflow,
+unsafe integers and noncanonical numeric spellings are rejected at every
+nesting level. A number must retain the same value and token when serialized by
+the native JSON implementation; negative zero, redundant decimal/exponent
+spellings, underflow to zero and excess fractional precision fail closed.
+Escaped spellings of the same key count as duplicates, including identical
+repeated values. Separate objects may reuse names, and text containing JSON-like
+strings is unchanged. The root must be an object; timestamp, audience and schema
+checks still apply. Canonical numeric enforcement applies to every
+HMAC-authenticated payload passed through the shared envelope verifier,
+including grants, QA, intake, evidence and listing observations. The underlying
+strict parser retains exact JSON text for bounded recovery records whose
+PostgreSQL bigint fields must not be coerced through JavaScript numbers. These
+rules align signed bridge payloads with the Money Factory event parser and
+require their senders to serialize finite safe numbers canonically. They do not
+establish arbitrary-precision numeric semantics, real approvals or live
+acceptance.
 
 
 ## Claim and price evidence references
