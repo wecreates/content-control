@@ -168,6 +168,24 @@ test('state export cannot be redirected by replacing its new directory',async t=
  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
  await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
 });
+test('state export rejects moving its archive into a replaced parent during flush',async t=>{
+ const f=await fixture(t),parent=path.join(f.root,'current'),held=path.join(f.root,'held');
+ f.directory=path.join(parent,'snapshot');await fs.mkdir(parent);
+ const open=fs.open.bind(fs);let replaced=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  const handle=await open(file,...args);
+  if(file!==parent)return handle;
+  return {fd:handle.fd,stat:handle.stat.bind(handle),close:handle.close.bind(handle),async sync(){
+   await fs.rename(parent,held);await fs.mkdir(parent);
+   await fs.rename(path.join(held,'snapshot'),f.directory);replaced=true;
+   await handle.sync();
+  }};
+ });
+ try{
+  await assert.rejects(exportStateArchive(f.db,{...f,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
+  assert.equal(replaced,true);assert.equal((await verifyStateArchive({...f,key})).status,'VERIFIED');
+ }finally{mock.mock.restore();}
+});
 test('state verification rejects a replaced archive root',async t=>{
  const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
  await exportStateArchive(f.db,{...f,key,env});

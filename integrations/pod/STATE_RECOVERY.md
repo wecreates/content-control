@@ -124,6 +124,9 @@ Creation, encrypted writes and directory flushes stay bound to held descriptors
 for the original parent and newly created snapshot directory. A concurrent rename,
 symlink or replacement of either pathname cannot redirect archive output; a
 changed destination identity rejects the export instead of returning EXPORTED.
+The final check binds both the snapshot and its parent by device/inode. Moving
+the same snapshot inode beneath a replacement parent during the flush is rejected,
+because fsync of the former parent cannot prove the new directory entry durable.
 Verification and restore likewise read the catalog and every row through one held
 snapshot-directory descriptor rather than resolving the pathname for each file.
 Offline verification also rejects success if the requested root pathname no
