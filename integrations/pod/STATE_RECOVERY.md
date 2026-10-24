@@ -120,6 +120,13 @@ storage; see the [Linux fsync documentation](https://man7.org/linux/man-pages/ma
 (checked October 16, 2026). A directory open/flush failure rejects the export.
 Opened handles are closed even when a flush fails.
 
+Creation, encrypted writes and directory flushes stay bound to held descriptors
+for the original parent and newly created snapshot directory. A concurrent rename,
+symlink or replacement of either pathname cannot redirect archive output; a
+changed destination identity rejects the export instead of returning EXPORTED.
+Verification and restore likewise read the catalog and every row through one held
+snapshot-directory descriptor rather than resolving the pathname for each file.
+
 A rejected final flush can leave a readable catalog and ciphertext. Offline
 VERIFIED means those bytes currently authenticate; it is not evidence that the
 failed export completed durably. Preserve the failed attempt for diagnosis and

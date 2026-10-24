@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
-import {seal,unseal,parseArchiveJSON,readBounded,writeNew,syncArchiveDirectory} from './archive-codec.mjs';
+import {seal,unseal,parseArchiveJSON,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
+ assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
@@ -14,10 +14,9 @@ function config(directory,key,budgetBytes){
 }
 const aad=item=>`pod:artifact:v1:${item.sha256}:${item.media_type}:${item.bytes}`;
 
-async function readCatalog({directory,key,budgetBytes,signal}){
+async function readCatalog({directory,key,budgetBytes,signal,base}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
- if(!(await fs.lstat(directory)).isDirectory())throw Error('ARCHIVE_DIRECTORY_INVALID');
- const encrypted=await readBounded(path.join(directory,'catalog.pod'),MAX_CATALOG+36,signal);
+ const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:artifact-catalog:v1'),'ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
   typeof catalog.created_at!=='string'||!Number.isFinite(Date.parse(catalog.created_at)))throw Error('ARCHIVE_CATALOG_INVALID');
@@ -30,8 +29,8 @@ async function readCatalog({directory,key,budgetBytes,signal}){
  if(bytes>budgetBytes)throw Error('ARCHIVE_BUDGET_EXCEEDED');
  return {catalog,bytes,archive_sha256:digest(encrypted)};
 }
-async function readArtifact(item,{directory,key,signal}){
- const body=unseal(await readBounded(path.join(directory,item.sha256+'.pod'),MAX_OBJECT+36,signal),key,aad(item));
+async function readArtifact(item,{base,key,signal}){
+ const body=unseal(await readBounded(path.join(base,item.sha256+'.pod'),MAX_OBJECT+36,signal),key,aad(item));
  if(body.length!==item.bytes||digest(body)!==item.sha256)throw Error('ARCHIVE_ARTIFACT_INVALID');
  return body;
 }
@@ -42,20 +41,24 @@ async function verifyItems(catalog,options){
 
 // Offline and read-only: no database, credentials, authority renewal or uploads.
 export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728,signal}={}){
- const options={directory,key,budgetBytes,signal};
- const {catalog,bytes,archive_sha256}=await readCatalog(options);
- await verifyItems(catalog,options);
- return {status:'VERIFIED',scope:'artifacts_only',archive_sha256,created_at:catalog.created_at,
-  verified_at:new Date().toISOString(),objects:catalog.items.length,bytes,publication_enabled:false};
+ config(directory,key,budgetBytes);signal?.throwIfAborted();const opened=await openArchiveDirectory(directory);
+ try{
+  const options={directory,key,budgetBytes,signal,base:opened.base};
+  const {catalog,bytes,archive_sha256}=await readCatalog(options);
+  await verifyItems(catalog,options);
+  return {status:'VERIFIED',scope:'artifacts_only',archive_sha256,created_at:catalog.created_at,
+   verified_at:new Date().toISOString(),objects:catalog.items.length,bytes,publication_enabled:false};
+ }finally{await closeArchiveDirectory(opened);}
 }
 
 // Reads only the dedicated artifact table, never queue envelopes or the social vault.
 // A repeatable-read snapshot keeps the final catalog tied to the exported bytes.
 export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
- await fs.mkdir(directory,{mode:0o700}); // No overwrite or reuse of an existing directory.
- const client=await db.pool.connect();const items=[];let bytes=0,bad=false;
+ const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
+ let client;const items=[];let bytes=0,bad=false;
  try{
+  client=await db.pool.connect();
   await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
   await client.query("SET LOCAL statement_timeout='10s'");
   // Keep invalid rows visible so export fails, but do not transfer an oversized
@@ -69,30 +72,31 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
    if(!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>MAX_OBJECT||digest(row.body)!==row.sha256||!TYPES.has(row.media_type))throw Error('ARCHIVE_ARTIFACT_INVALID');
    bytes+=row.body.length;if(bytes>budgetBytes||items.length>=MAX_ITEMS)throw Error('ARCHIVE_BUDGET_EXCEEDED');
    const item={sha256:row.sha256,media_type:row.media_type,bytes:row.body.length};
-   await writeNew(path.join(directory,item.sha256+'.pod'),seal(row.body,key,aad(item)));items.push(item);
+   await writeNew(path.join(opened.base,item.sha256+'.pod'),seal(row.body,key,aad(item)));items.push(item);
   }
   const catalog=Buffer.from(JSON.stringify({schema_version:1,scope:'artifacts_only',created_at:new Date().toISOString(),items}));
   if(catalog.length>MAX_CATALOG)throw Error('ARCHIVE_CATALOG_TOO_LARGE');
   await client.query('COMMIT');signal?.throwIfAborted();
   // Written last: an interrupted export without this catalog is not restorable.
-  await writeNew(path.join(directory,'catalog.pod'),seal(catalog,key,'pod:artifact-catalog:v1'));
-  await syncArchiveDirectory(directory);
+  await writeNew(path.join(opened.base,'catalog.pod'),seal(catalog,key,'pod:artifact-catalog:v1'));
+  await assertArchiveDirectory(directory,opened);await syncArchiveDirectory(directory,opened);
   // Cancellation may arrive while the catalog or directory entries are
   // being flushed. Completed writes do not authorize a success receipt.
-  signal?.throwIfAborted();
+  signal?.throwIfAborted();await assertArchiveDirectory(directory,opened);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){
   // An unsuccessful rollback leaves transaction state unknown. Never return
   // that connection to the pool, and preserve the original export failure.
-  try{await client.query('ROLLBACK');}catch{bad=true;}throw error;
- }finally{client.release(bad);}
+  if(client)try{await client.query('ROLLBACK');}catch{bad=true;}throw error;
+ }finally{client?.release(bad);await closeArchiveDirectory(opened);}
 }
 
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
  budgetBytes=Math.min(budgetBytes,artifactBudgetBytes(env));
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
- const options={directory,key,budgetBytes,signal};
+ const opened=await openArchiveDirectory(directory),options={directory,key,budgetBytes,signal,base:opened.base};
+ try{
  const {catalog,bytes}=await readCatalog(options);
  // Reject an already broken backup before acquiring a database connection/lock.
  // Read and authenticate again during insertion to catch intervening changes.
@@ -122,5 +126,6 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
  signal?.throwIfAborted();
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
  return restored;
+ }finally{await closeArchiveDirectory(opened);}
 }
 

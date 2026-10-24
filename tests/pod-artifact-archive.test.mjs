@@ -103,6 +103,18 @@ test('export never overwrites a directory and incomplete export has no catalog',
  await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),e=>e.code==='ENOENT');
  await assert.rejects(exportArtifactLibrary(source,{directory,key}),e=>e.code==='EEXIST');
 });
+test('artifact export cannot be redirected by replacing its new directory',async t=>{
+ const directory=await workspace(t),held=directory+'-held',replacement=directory+'-replacement';
+ const source=database([Buffer.from('path identity fixture')]);
+ const connect=source.pool.connect.bind(source.pool);
+ source.pool.connect=async()=>{
+  await fs.rename(directory,held);await fs.mkdir(replacement,{mode:0o700});
+  await fs.symlink(replacement,directory,'dir');
+  return connect();
+ };
+ await assert.rejects(exportArtifactLibrary(source,{directory,key}),/ARCHIVE_DIRECTORY_INVALID/);
+ await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
+});
 test('restore requires both explicit disabled flags and rejects cancellation',async t=>{
  const directory=await workspace(t);await exportArtifactLibrary(database(),{directory,key});
  for(const flags of [{},{...env,PUBLICATION_ENABLED:'true'},{PUBLICATION_ENABLED:'false'}]){
