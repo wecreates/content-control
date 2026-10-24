@@ -5,6 +5,7 @@ import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const env={POD_OUTBOX_ENABLED:'true',POD_OUTBOX_URL:'https://authority.example/events',POD_OUTBOX_KEY:'k'.repeat(32)};
+const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
 test('disabled and incomplete configurations never deliver',async()=>{
  for(const config of [{},{...env,POD_OUTBOX_KEY:''},{...env,POD_OUTBOX_URL:'http://example.com'},
   {...env,POD_OUTBOX_URL:'https://authority.example/events?route=other'},
@@ -37,7 +38,7 @@ test('direct delivery enforces receiver byte ceilings before network access',asy
  assert.ok(Buffer.byteLength(JSON.stringify({payload:boundaryPayload,signature:'0'.repeat(64)}))<=524288);
  const accepted=dbFixture([boundary]);
  await deliverOutbox(accepted,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
-  fetchImpl:async()=>new Response(JSON.stringify({accepted_event_id:boundary.id}))});
+  fetchImpl:async()=>jsonResponse({accepted_event_id:boundary.id})});
  assert.deepEqual(accepted.updated,[boundary.id]);
  const rejected=dbFixture([event(low+1)]);
  await assert.rejects(deliverOutbox(rejected,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
@@ -124,7 +125,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
    fetchImpl:async(_url,options)=>{
     const id=options.headers['idempotency-key'];sent.push(id);
     if(phase.endsWith('response'))expire();
-    return new Response(JSON.stringify({accepted_event_id:id}));
+    return jsonResponse({accepted_event_id:id});
    }}),/POD_STORAGE_EXPIRING/);
   assert.deepEqual(sent,phase.endsWith('select')?[]:['a']);
   assert.deepEqual(committed,phase.endsWith('commit')?['a']:[]);
@@ -133,7 +134,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
 test('failed acknowledgement does not mark delivered or block another event',async()=>{
  const db=dbFixture([{id:'a'},{id:'b'}]);
  const result=await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
-  fetchImpl:async(_url,opts)=>new Response(JSON.stringify({accepted_event_id:opts.headers['idempotency-key']==='a'?'wrong':'b'}))});
+  fetchImpl:async(_url,opts)=>jsonResponse({accepted_event_id:opts.headers['idempotency-key']==='a'?'wrong':'b'})});
  assert.deepEqual(db.updated,['b']);assert.deepEqual(result,{delivered:1,failed:1,nextCursor:null});
 });
 test('full rejected batch returns a cursor so later events remain reachable',async()=>{
