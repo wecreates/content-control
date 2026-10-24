@@ -16,10 +16,11 @@ function streamResponse({status=200,headers={},chunks=[]}={}){
 }
 function dbFixture(){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:[{id:'event'}]})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
 const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
+const grantJob=()=>({id:'job',brief:scopedGrant().brief});
 test('rejected authority response is cancelled without consuming its body',async()=>{
  const f=streamResponse({status:403});
  const resolve=createGrantResolver({env,fetchImpl:async()=>f.response});
- await assert.rejects(resolve({id:'job'}),/GRANT_AUTHORITY_BLOCKED/);
+ await assert.rejects(resolve(grantJob()),/GRANT_AUTHORITY_BLOCKED/);
  assert.equal(f.cancelled(),1);assert.equal(f.response.body.locked,false);
 });
 test('oversized declared acknowledgement is cancelled and never delivered',async()=>{
@@ -37,7 +38,7 @@ test('chunked and understated acknowledgement bounds cancel the reader',async()=
 test('grant response has both declared and streamed byte limits',async()=>{
  for(const config of [{headers:{'content-length':'262145'}},{chunks:['x'.repeat(262145)]}]){
   const f=streamResponse(config),resolve=createGrantResolver({env,fetchImpl:async()=>f.response});
-  await assert.rejects(resolve({id:'job'}),/GRANT_TOO_LARGE/);
+  await assert.rejects(resolve(grantJob()),/GRANT_TOO_LARGE/);
   assert.equal(f.cancelled(),1);assert.equal(f.response.body.locked,false);
  }
 });
@@ -196,7 +197,7 @@ for(const caller of ['grant','outbox']){
   const entered=new Promise(resolve=>reading=resolve),db=dbFixture();
   let body;
   const fetchImpl=async()=>{body=new ReadableStream({pull(){reading();return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}});return new Response(body);};
-  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'},{signal:controller.signal}):
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})(grantJob(),{signal:controller.signal}):
    deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl,signal:controller.signal});
   await entered;controller.abort();
   if(caller==='grant')await assert.rejects(bounded(operation),{name:'AbortError'});
@@ -232,7 +233,7 @@ for(const caller of ['grant','outbox']){
   const controller=new AbortController(),db=dbFixture();let entered;
   const started=new Promise(resolve=>entered=resolve);
   const fetchImpl=()=>{entered();return new Promise(()=>{});};
-  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'},{signal:controller.signal}):
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})(grantJob(),{signal:controller.signal}):
    deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl,signal:controller.signal});
   await started;controller.abort();
   const result=await outcomeAfterTurn(operation);
@@ -244,7 +245,7 @@ for(const caller of ['grant','outbox']){
 test('already aborted grant never starts the authority transport',async()=>{
  let calls=0;
  const resolve=createGrantResolver({env,fetchImpl:()=>{calls++;return new Promise(()=>{});}});
- const result=await outcomeAfterTurn(resolve({id:'job'},{signal:AbortSignal.abort()}));
+ const result=await outcomeAfterTurn(resolve(grantJob(),{signal:AbortSignal.abort()}));
  assert.equal(result.error?.name,'AbortError');assert.equal(calls,0);
 });
 
@@ -269,7 +270,7 @@ for(const caller of ['grant','outbox']){
   t.mock.method(AbortSignal,'timeout',ms=>{deadline=ms;return controller.signal;});
   const started=new Promise(resolve=>entered=resolve);
   const fetchImpl=()=>{entered();return new Promise(()=>{});};
-  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job'}):
+  const operation=caller==='grant'?createGrantResolver({env,fetchImpl})(grantJob()):
    deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl});
   await started;controller.abort(new DOMException('deadline','TimeoutError'));
   assert.equal((await outcomeAfterTurn(operation)).error?.name,'TimeoutError');
@@ -287,7 +288,7 @@ test('unsettled header calls retain a shared per-transport admission bound after
  await new Promise(resolve=>setImmediate(resolve));assert.equal(calls,32);
  controllers.forEach(c=>c.abort());assert.deepEqual(await outcomes,Array(32).fill('AbortError'));
  // Both clients use the same bound when they reuse a transport function.
- await assert.rejects(createGrantResolver({env,fetchImpl})({id:'job'}),/^Error: BRIDGE_REQUEST_BUSY$/);
+ await assert.rejects(createGrantResolver({env,fetchImpl})(grantJob()),/^Error: BRIDGE_REQUEST_BUSY$/);
  const db=dbFixture();
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl}),/^Error: BRIDGE_REQUEST_BUSY$/);
  assert.equal(calls,32);assert.deepEqual(db.updated,[]);
