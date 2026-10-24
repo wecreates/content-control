@@ -16,7 +16,12 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',sizeError:'GRANT_TOO_LARGE'});
   const grant=verifyEnvelope(envelope,env.POD_UPSTREAM_KEY,'content-control:pod');
   enforceBrief(grant,job.brief);
-  if(grant.expires_at_ms-Date.now()<30000)throw Error('GRANT_LIFETIME_TOO_SHORT');
+  // Recheck wall-clock validity after signature/scope work. A nonfinite or
+  // rolled-back second clock read must not turn the lifetime comparison into
+  // a false result and authorize a grant from the apparent future.
+  const current=Date.now();
+  if(!Number.isSafeInteger(current)||current<0||grant.issued_at_ms>current)throw Error('GRANT_CLOCK_INVALID');
+  if(grant.expires_at_ms-current<30000)throw Error('GRANT_LIFETIME_TOO_SHORT');
   assertBridgeRequest(requestSignal,deadline);
   return envelope;
  };
