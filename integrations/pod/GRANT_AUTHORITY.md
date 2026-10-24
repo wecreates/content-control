@@ -10,6 +10,11 @@ media types fail closed before the signed envelope is parsed. A correctly signed
 body delivered under a different response contract is not accepted as a current
 grant.
 
+The response body must be the authority's exact two-member object containing
+only `payload` and `signature`. Additional status, error or private members fail
+closed even when the payload and signature would otherwise verify. This prevents
+a mixed or confused response from authorizing execution.
+
 Each execution calls the authority again, verifies signature, age, remaining lifetime, account/business/platform/task scope and readiness ceiling. A failed authority call never falls back to an old approval. Abort signals cancel the request. If no URL is configured, the built-in stored-task resolver reports authorityReady=false and production remains BLOCKED_GRANT_AUTHORITY. A stored queue envelope is intake evidence, never a fallback execution approval.
 
 The authority re-evaluates approval after loading its snapshot. Revoked or expired approval fails closed. It cannot make an unready business ready, authorize Etsy, or elevate PRELAUNCH to LAUNCH. Configure snapshot database reads with bounded timeouts and consistent transactions. Test changes to readiness and revocation in the deployed authority before enabling queue production.
