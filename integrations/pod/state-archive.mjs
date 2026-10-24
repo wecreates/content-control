@@ -178,7 +178,9 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   disabled(env,true);signal?.throwIfAborted();return receipt;
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
- // be undone here; reject late cancellation/flag changes without claiming rollback.
+ // be undone here; reject a late source replacement, cancellation or flag
+ // change without claiming rollback or encouraging a blind retry.
+ await assertArchiveDirectory(directory,opened);
  signal?.throwIfAborted();
  disabled(env,true);
  return restored;
