@@ -16,6 +16,9 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
    headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:job.id})},{deadline});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
    sizeError:'GRANT_TOO_LARGE',mediaTypeError:'GRANT_MEDIA_TYPE_INVALID'});
+  if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||
+   Object.getPrototypeOf(envelope)!==Object.prototype||Object.keys(envelope).length!==2||
+   !Object.hasOwn(envelope,'payload')||!Object.hasOwn(envelope,'signature'))throw Error('GRANT_RESPONSE_INVALID');
   const grant=verifyEnvelope(envelope,env.POD_UPSTREAM_KEY,'content-control:pod');
   enforceBrief(grant,job.brief);
   // Recheck wall-clock validity after signature/scope work. A nonfinite or
