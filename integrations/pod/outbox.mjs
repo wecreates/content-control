@@ -2,6 +2,28 @@ import crypto from 'node:crypto';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 const MAX_EVENT_PAYLOAD_BYTES=262144;
 const MAX_EVENT_REQUEST_BYTES=524288;
+function assertEventJSON(value){
+ const pending=[[value,0]];let nodes=0;
+ while(pending.length){
+  const [item,depth]=pending.pop(),type=typeof item;
+  if(depth>64||++nodes>10000)throw Error('OUTBOX_EVENT_JSON_INVALID');
+  if(item===null||type==='string'||type==='boolean')continue;
+  if(type==='number'){
+   if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))throw Error('OUTBOX_EVENT_JSON_INVALID');
+   continue;
+  }
+  if(type!=='object')throw Error('OUTBOX_EVENT_JSON_INVALID');
+  if(Array.isArray(item)){
+   if(item.length>10000)throw Error('OUTBOX_EVENT_JSON_INVALID');
+   for(const child of item)pending.push([child,depth+1]);
+   continue;
+  }
+  if(Object.getPrototypeOf(item)!==Object.prototype)throw Error('OUTBOX_EVENT_JSON_INVALID');
+  const keys=Reflect.ownKeys(item);
+  if(keys.length>10000||keys.some(key=>typeof key!=='string'||!Object.prototype.propertyIsEnumerable.call(item,key)))throw Error('OUTBOX_EVENT_JSON_INVALID');
+  for(const key of keys)pending.push([item[key],depth+1]);
+ }
+}
 // Receiver must atomically deduplicate event IDs. Delivery is at least once.
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
@@ -19,6 +41,9 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   try{
   const issuedAt=Date.now();
   if(!Number.isSafeInteger(issuedAt)||issuedAt<0)throw Error('OUTBOX_CLOCK_INVALID');
+  // PostgreSQL rows always include payload. Keep transport-only fixtures that
+  // intentionally omit it focused on their response boundary.
+  if(Object.hasOwn(event,'payload'))assertEventJSON(event.payload);
   const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:issuedAt,event});
   if(Buffer.byteLength(payload)>MAX_EVENT_PAYLOAD_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const signature=crypto.createHmac('sha256',key).update(payload).digest('hex');
