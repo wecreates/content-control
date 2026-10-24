@@ -17,7 +17,9 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   // This is a batch-wide stop, not a skippable per-event delivery failure.
   db.active();
   try{
-  const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:Date.now(),event});
+  const issuedAt=Date.now();
+  if(!Number.isSafeInteger(issuedAt)||issuedAt<0)throw Error('OUTBOX_CLOCK_INVALID');
+  const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:issuedAt,event});
   if(Buffer.byteLength(payload)>MAX_EVENT_PAYLOAD_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const signature=crypto.createHmac('sha256',key).update(payload).digest('hex');
   const body=JSON.stringify({payload,signature});
