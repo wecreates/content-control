@@ -26,7 +26,7 @@ test('worker blocks missing authority before recovery or queue claims',async()=>
 test('stored resolver rechecks authority for each call and honors revocation over queue approval',async()=>{
  let calls=0;const resolver=createStoredTaskResolvers({}, {env,fetchImpl:async(url,options)=>{
   assert.equal(url.href,env.POD_GRANT_URL);assert.deepEqual(JSON.parse(options.body),{job_id:'job'});
-  assert.equal(options.redirect,'error');calls++;return new Response(JSON.stringify(signed({revoked:calls>1})));
+  assert.equal(options.redirect,'error');calls++;return new Response(JSON.stringify(signed({revoked:calls>1})),{headers:{'content-type':'application/json'}});
  }});
  assert.equal(resolver.authorityReady,true);
  const job={id:'job',brief,upstream_envelope:signed()};
