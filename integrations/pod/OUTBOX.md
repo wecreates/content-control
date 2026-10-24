@@ -16,6 +16,13 @@ oversized durable event stays undelivered and follows the existing bounded retry
 and pagination path; it is never truncated or transmitted as a request the
 receiver cannot accept. These are UTF-8 byte limits, not character counts.
 
+The sender also requires its issuance clock to return a nonnegative safe-integer
+millisecond value before serializing or signing an event. NaN, infinity,
+fractions, negative values and overflowing integers fail with
+`OUTBOX_CLOCK_INVALID` without contacting the receiver. In particular,
+`JSON.stringify` cannot silently turn NaN or infinity into a signed `null`
+timestamp. This does not prove clock synchronization or current live delivery.
+
 Each cycle handles up to 20 events. Failed events remain durable and undelivered. A cursor advances through full batches and wraps after the final batch, so rejected early events cannot permanently starve later events. The cursor is disposable process state; restart safely retries undelivered events. Failures back off to at most five minutes. Persistent failures appear as RETRYING with an aggregate failure count in /api/print/status. No payloads, destination URL, signing keys, or exception details are exposed there.
 
 Shutdown aborts outbound requests and waits for worker and outbox loops before closing PostgreSQL. Network requests have a 15-second limit and disallow redirects. No new tables, cloud resources, or migration credentials are required.

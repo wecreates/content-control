@@ -45,6 +45,16 @@ test('direct delivery enforces receiver byte ceilings before network access',asy
   fetchImpl:()=>assert.fail('unexpected network request')}),/OUTBOX_EVENT_TOO_LARGE/);
  assert.deepEqual(rejected.updated,[]);
 });
+test('invalid issuer clocks cannot create or dispatch a signed outbox event',async t=>{
+ let now=NaN;t.mock.method(Date,'now',()=>now);
+ const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.clock',payload:{},created_at:'2026-01-01T00:00:00.000Z'};
+ for(const invalid of [NaN,-1,0.5,Number.MAX_SAFE_INTEGER+1]){
+  now=invalid;const db=dbFixture([event]);let calls=0;
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>{calls++;return jsonResponse({accepted_event_id:event.id});}}),/^Error: OUTBOX_CLOCK_INVALID$/);
+  assert.equal(calls,0);assert.deepEqual(db.updated,[]);
+ }
+});
 test('retry backoff is bounded, uses pagination and recovers',async()=>{
  let calls=0;const delays=[],cursors=[];let runtime;
  const completed=new Promise(resolve=>{
