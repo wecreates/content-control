@@ -6,7 +6,8 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
  try{endpoint=new URL(env.POD_GRANT_URL);}catch{throw Error('GRANT_AUTHORITY_REQUIRED');}
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||endpoint.search||
   typeof env.POD_GRANT_AUTH_KEY!=='string'||Buffer.byteLength(env.POD_GRANT_AUTH_KEY)<32||
-  typeof env.POD_UPSTREAM_KEY!=='string'||Buffer.byteLength(env.POD_UPSTREAM_KEY)<32||env.POD_GRANT_AUTH_KEY===env.POD_UPSTREAM_KEY)throw Error('GRANT_AUTHORITY_INVALID');
+  typeof env.POD_UPSTREAM_KEY!=='string'||Buffer.byteLength(env.POD_UPSTREAM_KEY)<32||
+  Buffer.from(env.POD_GRANT_AUTH_KEY).equals(Buffer.from(env.POD_UPSTREAM_KEY)))throw Error('GRANT_AUTHORITY_INVALID');
  return async(job,{signal}={})=>{
   const deadline=performance.now()+10000;
   const timeout=AbortSignal.timeout(10000);
