@@ -55,6 +55,16 @@ test('invalid issuer clocks cannot create or dispatch a signed outbox event',asy
   assert.equal(calls,0);assert.deepEqual(db.updated,[]);
  }
 });
+test('non-JSON and unsafe event values cannot be normalized into a delivered event',async()=>{
+ const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.value',
+  payload:{nested:{value:null}},created_at:'2026-01-01T00:00:00.000Z'};
+ for(const invalid of [NaN,Infinity,-Infinity,Number.MAX_SAFE_INTEGER+1,undefined,1n]){
+  event.payload.nested.value=invalid;const db=dbFixture([event]);let calls=0;
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>{calls++;return jsonResponse({accepted_event_id:event.id});}}),/^Error: OUTBOX_EVENT_JSON_INVALID$/);
+  assert.equal(calls,0);assert.deepEqual(db.updated,[]);
+ }
+});
 test('retry backoff is bounded, uses pagination and recovers',async()=>{
  let calls=0;const delays=[],cursors=[];let runtime;
  const completed=new Promise(resolve=>{

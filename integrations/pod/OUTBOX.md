@@ -16,6 +16,15 @@ oversized durable event stays undelivered and follows the existing bounded retry
 and pagination path; it is never truncated or transmitted as a request the
 receiver cannot accept. These are UTF-8 byte limits, not character counts.
 
+The sender also validates the complete durable event payload before JSON
+serialization. Non-finite numbers, unsafe integers, `undefined`, bigint,
+functions, symbols, exotic objects, non-enumerable or symbol members, and
+structures deeper than 64 levels or larger than 10,000 values fail with
+`OUTBOX_EVENT_JSON_INVALID` before signing or network access. JSON may not
+silently turn a durable value into `null`, omit it, or round it and then accept
+an acknowledgement for different bytes. Failed events remain pending for the
+existing retry path.
+
 The sender also requires its issuance clock to return a nonnegative safe-integer
 millisecond value before serializing or signing an event. NaN, infinity,
 fractions, negative values and overflowing integers fail with
