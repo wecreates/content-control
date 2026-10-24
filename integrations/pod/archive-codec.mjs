@@ -4,6 +4,8 @@ import path from 'node:path';
 import {constants} from 'node:fs';
 import {parseSignedJSON} from './signed-json.mjs';
 const MAGIC=Buffer.from('CYZPOD1\n');
+const DIRECTORY_FLAGS=constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW;
+const identity=stat=>`${stat.dev}:${stat.ino}`;
 export function parseArchiveJSON(body,reason='ARCHIVE_INVALID'){
  try{
   if(!Buffer.isBuffer(body)||!body.length)throw Error(reason);
@@ -39,13 +41,55 @@ export async function writeNew(file,body){
  const handle=await fs.open(file,'wx',0o600);
  try{await handle.writeFile(body);await handle.sync();}finally{await handle.close();}
 }
-export async function syncArchiveDirectory(directory){
+export async function openArchiveDirectory(directory,reason='ARCHIVE_DIRECTORY_INVALID'){
+ let handle;
+ try{
+  handle=await fs.open(directory,DIRECTORY_FLAGS);
+  const opened=await handle.stat(),base=`/proc/self/fd/${handle.fd}`,alias=await fs.stat(base);
+  if(!opened.isDirectory()||!alias.isDirectory()||identity(alias)!==identity(opened))throw Error(reason);
+  return {base,handle,identity:identity(opened)};
+ }catch(error){
+  if(handle)try{await handle.close();}catch{}
+  if(error.message===reason)throw error;
+  throw Error(reason);
+ }
+}
+export async function createArchiveDirectory(directory,reason='ARCHIVE_DIRECTORY_INVALID'){
+ const archive=path.resolve(directory),parentPath=path.dirname(archive),name=path.basename(archive);
+ let parentHandle,handle,created=false;
+ try{
+  parentHandle=await fs.open(parentPath,DIRECTORY_FLAGS);
+  const parentOpened=await parentHandle.stat(),parentBase=`/proc/self/fd/${parentHandle.fd}`,parentAlias=await fs.stat(parentBase);
+  if(!parentOpened.isDirectory()||!parentAlias.isDirectory()||identity(parentAlias)!==identity(parentOpened))throw Error(reason);
+  await fs.mkdir(path.join(parentBase,name),{mode:0o700});created=true;
+  handle=await fs.open(path.join(parentBase,name),DIRECTORY_FLAGS);
+  const opened=await handle.stat(),base=`/proc/self/fd/${handle.fd}`,alias=await fs.stat(base);
+  if(!opened.isDirectory()||!alias.isDirectory()||identity(alias)!==identity(opened))throw Error(reason);
+  const result={base,handle,parentHandle,identity:identity(opened)};
+  await assertArchiveDirectory(archive,result,reason);
+  return result;
+ }catch(error){
+  if(handle)try{await handle.close();}catch{}
+  if(parentHandle)try{await parentHandle.close();}catch{}
+  if(!created)throw error;
+  if(error.message===reason)throw error;
+  throw Error(reason);
+ }
+}
+export async function assertArchiveDirectory(directory,opened,reason='ARCHIVE_DIRECTORY_INVALID'){
+ let current;
+ try{current=await fs.lstat(directory);}catch{throw Error(reason);}
+ if(!current.isDirectory()||identity(current)!==opened.identity)throw Error(reason);
+}
+export async function syncArchiveDirectory(directory,opened){
  // Files have already been fsynced. Persist their directory entries first,
  // then the new archive directory's entry in its existing parent. Neither
  // failure may be reported as a successful export.
- const archive=path.resolve(directory);
- for(const target of [archive,path.dirname(archive)]){
-  const handle=await fs.open(target,'r');
-  try{await handle.sync();}finally{await handle.close();}
- }
+ await opened.handle.sync();
+ if(opened.parentHandle){await opened.parentHandle.sync();return;}
+ const parentHandle=await fs.open(path.dirname(path.resolve(directory)),DIRECTORY_FLAGS);
+ try{await parentHandle.sync();}finally{await parentHandle.close();}
+}
+export async function closeArchiveDirectory(opened){
+ try{await opened.handle.close();}finally{if(opened.parentHandle)await opened.parentHandle.close();}
 }

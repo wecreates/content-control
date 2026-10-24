@@ -50,12 +50,14 @@ for(const phase of ['commit','catalog','archive','parent'])for(const flag of ['P
    if(phase==='commit'&&args[0]==='COMMIT')settings[flag]='true';
    return result;
   });
-  const open=fs.open.bind(fs),target=phase==='catalog'?path.join(f.directory,'catalog.pod'):
-   phase==='archive'?f.directory:path.dirname(f.directory);
+  const open=fs.open.bind(fs),target=phase==='catalog'?'catalog.pod':
+   phase==='archive'?path.basename(f.directory):path.dirname(f.directory);
   const mock=t.mock.method(fs,'open',async(file,...args)=>{
    const handle=await open(file,...args);
-   if(phase==='commit'||file!==target||(phase==='catalog'&&args[0]!=='wx'))return handle;
-   return {writeFile:handle.writeFile.bind(handle),
+   const matched=phase==='catalog'?path.basename(file)===target&&args[0]==='wx':
+    phase==='archive'?typeof file==='string'&&file.startsWith('/proc/self/fd/')&&path.basename(file)===target:file===target;
+   if(phase==='commit'||!matched)return handle;
+   return {fd:handle.fd,stat:handle.stat.bind(handle),writeFile:handle.writeFile.bind(handle),
     async sync(){await handle.sync();settings[flag]='true';},close:handle.close.bind(handle)};
   });
   try{
@@ -154,6 +156,17 @@ test('invalid source or exhausted artifact budget cannot create a complete catal
   assert.equal(f.queries.at(-1),'ROLLBACK');
  }
  const f=await fixture(t);await assert.rejects(exportStateArchive(f.db,{...f,key,env:{...env,POD_ARTIFACT_BUDGET_BYTES:'1'}}),/STATE_ARCHIVE_BUDGET_EXCEEDED/);
+});
+test('state export cannot be redirected by replacing its new directory',async t=>{
+ const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
+ const connect=f.db.pool.connect.bind(f.db.pool);
+ f.db.pool.connect=async()=>{
+  await fs.rename(f.directory,held);await fs.mkdir(replacement,{mode:0o700});
+  await fs.symlink(replacement,f.directory,'dir');
+  return connect();
+ };
+ await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
+ await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
 });
 test('restore and CLI require disabled workers and explicit empty-target recovery confirmation',async()=>{
  let called=false;const db={tx(){called=true;}};

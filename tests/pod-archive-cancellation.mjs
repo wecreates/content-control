@@ -14,11 +14,12 @@ export async function verifyExportCancellation(t,{db,directory,run,verify,phase}
   if(phase==='commit'&&args[0]==='COMMIT')controller.abort(reason);
   return result;
  });
- const open=fs.open.bind(fs),target=phase==='catalog'?path.join(directory,'catalog.pod'):path.dirname(directory);
+ const open=fs.open.bind(fs),target=phase==='catalog'?'catalog.pod':path.dirname(directory);
  const mock=t.mock.method(fs,'open',async(file,...args)=>{
   const handle=await open(file,...args);
-  if(phase==='commit'||file!==target||(phase==='catalog'&&args[0]!=='wx'))return handle;
-  return {writeFile:handle.writeFile.bind(handle),
+  const matched=phase==='catalog'?path.basename(file)===target&&args[0]==='wx':file===target;
+  if(phase==='commit'||!matched)return handle;
+  return {fd:handle.fd,stat:handle.stat.bind(handle),writeFile:handle.writeFile.bind(handle),
    async sync(){await handle.sync();controller.abort(reason);},
    close:handle.close.bind(handle)};
  });
