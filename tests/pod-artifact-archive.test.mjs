@@ -115,6 +115,20 @@ test('artifact export cannot be redirected by replacing its new directory',async
  await assert.rejects(exportArtifactLibrary(source,{directory,key}),/ARCHIVE_DIRECTORY_INVALID/);
  await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
 });
+test('artifact verification rejects a replaced archive root',async t=>{
+ const directory=await workspace(t),held=directory+'-held',replacement=directory+'-replacement';
+ await exportArtifactLibrary(database([Buffer.from('verification identity fixture')]),{directory,key});
+ const open=fs.open.bind(fs);let replaced=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  if(!replaced&&typeof file==='string'&&file.startsWith('/proc/self/fd/')&&path.basename(file)==='catalog.pod'){
+   replaced=true;await fs.rename(directory,held);await fs.mkdir(replacement,{mode:0o700});
+   await fs.symlink(replacement,directory,'dir');
+  }
+  return open(file,...args);
+ });
+ try{await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_DIRECTORY_INVALID/);}
+ finally{mock.mock.restore();}
+});
 test('restore requires both explicit disabled flags and rejects cancellation',async t=>{
  const directory=await workspace(t);await exportArtifactLibrary(database(),{directory,key});
  for(const flags of [{},{...env,PUBLICATION_ENABLED:'true'},{PUBLICATION_ENABLED:'false'}]){

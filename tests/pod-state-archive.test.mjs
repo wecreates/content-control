@@ -168,6 +168,20 @@ test('state export cannot be redirected by replacing its new directory',async t=
  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
  await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
 });
+test('state verification rejects a replaced archive root',async t=>{
+ const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
+ await exportStateArchive(f.db,{...f,key,env});
+ const open=fs.open.bind(fs);let replaced=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  if(!replaced&&typeof file==='string'&&file.startsWith('/proc/self/fd/')&&path.basename(file)==='catalog.pod'){
+   replaced=true;await fs.rename(f.directory,held);await fs.mkdir(replacement,{mode:0o700});
+   await fs.symlink(replacement,f.directory,'dir');
+  }
+  return open(file,...args);
+ });
+ try{await assert.rejects(verifyStateArchive({...f,key}),/ARCHIVE_DIRECTORY_INVALID/);}
+ finally{mock.mock.restore();}
+});
 test('restore and CLI require disabled workers and explicit empty-target recovery confirmation',async()=>{
  let called=false;const db={tx(){called=true;}};
  for(const flag of Object.keys(env))await assert.rejects(restoreStateArchive(db,{directory:'/unused',key,env:{...env,[flag]:'true'}}),/WORKERS_MUST_BE_DISABLED/);

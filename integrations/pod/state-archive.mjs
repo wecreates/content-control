@@ -96,7 +96,10 @@ async function verifyStateArchiveAt({directory,key,signal,budgetBytes,base}){
 }
 export async function verifyStateArchive({directory,key,signal,budgetBytes=134217728}={}){
  config(directory,key);signal?.throwIfAborted();const opened=await openArchiveDirectory(directory);
- try{return await verifyStateArchiveAt({directory,key,signal,budgetBytes,base:opened.base});}
+ try{
+  const result=await verifyStateArchiveAt({directory,key,signal,budgetBytes,base:opened.base});
+  await assertArchiveDirectory(directory,opened);return result;
+ }
  finally{await closeArchiveDirectory(opened);}
 }
 

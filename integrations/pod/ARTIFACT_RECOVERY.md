@@ -134,6 +134,8 @@ symlink or replacement of either pathname cannot redirect archive output; a
 changed destination identity rejects the export instead of returning EXPORTED.
 Verification and restore likewise read every catalog/object through one held
 archive-directory descriptor rather than resolving the pathname for each file.
+Offline verification also rejects success if the requested root pathname no
+longer names that opened directory after all authenticated reads complete.
 
 A rejected final flush can leave a readable catalog and ciphertext. Offline
 VERIFIED means those bytes currently authenticate; it is not evidence that the
