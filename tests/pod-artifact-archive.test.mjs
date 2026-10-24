@@ -115,6 +115,27 @@ test('artifact export cannot be redirected by replacing its new directory',async
  await assert.rejects(exportArtifactLibrary(source,{directory,key}),/ARCHIVE_DIRECTORY_INVALID/);
  await assert.rejects(fs.stat(path.join(replacement,'catalog.pod')),{code:'ENOENT'});
 });
+test('artifact export rejects moving its archive into a replaced parent during flush',async t=>{
+ const outer=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-parent-'));
+ t.after(()=>fs.rm(outer,{recursive:true,force:true}));
+ const parent=path.join(outer,'current'),held=path.join(outer,'held'),directory=path.join(parent,'archive');
+ await fs.mkdir(parent);
+ const open=fs.open.bind(fs);let replaced=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  const handle=await open(file,...args);
+  if(file!==parent)return handle;
+  return {fd:handle.fd,stat:handle.stat.bind(handle),close:handle.close.bind(handle),async sync(){
+   await fs.rename(parent,held);await fs.mkdir(parent);
+   await fs.rename(path.join(held,'archive'),directory);replaced=true;
+   await handle.sync();
+  }};
+ });
+ try{
+  await assert.rejects(exportArtifactLibrary(database([Buffer.from('parent identity fixture')]),{directory,key}),
+   /ARCHIVE_DIRECTORY_INVALID/);
+  assert.equal(replaced,true);assert.equal((await verifyArtifactLibrary({directory,key})).status,'VERIFIED');
+ }finally{mock.mock.restore();}
+});
 test('artifact verification rejects a replaced archive root',async t=>{
  const directory=await workspace(t),held=directory+'-held',replacement=directory+'-replacement';
  await exportArtifactLibrary(database([Buffer.from('verification identity fixture')]),{directory,key});

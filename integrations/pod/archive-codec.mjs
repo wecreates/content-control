@@ -65,7 +65,7 @@ export async function createArchiveDirectory(directory,reason='ARCHIVE_DIRECTORY
   handle=await fs.open(path.join(parentBase,name),DIRECTORY_FLAGS);
   const opened=await handle.stat(),base=`/proc/self/fd/${handle.fd}`,alias=await fs.stat(base);
   if(!opened.isDirectory()||!alias.isDirectory()||identity(alias)!==identity(opened))throw Error(reason);
-  const result={base,handle,parentHandle,identity:identity(opened)};
+  const result={base,handle,parentHandle,identity:identity(opened),parentIdentity:identity(parentOpened)};
   await assertArchiveDirectory(archive,result,reason);
   return result;
  }catch(error){
@@ -77,9 +77,16 @@ export async function createArchiveDirectory(directory,reason='ARCHIVE_DIRECTORY
  }
 }
 export async function assertArchiveDirectory(directory,opened,reason='ARCHIVE_DIRECTORY_INVALID'){
- let current;
- try{current=await fs.lstat(directory);}catch{throw Error(reason);}
+ let current,parent;
+ try{
+  current=await fs.lstat(directory);
+  if(opened.parentIdentity)parent=await fs.lstat(path.dirname(path.resolve(directory)));
+ }catch{throw Error(reason);}
  if(!current.isDirectory()||identity(current)!==opened.identity)throw Error(reason);
+ // Export durability depends on fsyncing the same parent that still contains
+ // the archive. Moving the pinned archive inode beneath a replacement parent
+ // must not turn a flush of the old parent into a successful receipt.
+ if(opened.parentIdentity&&(!parent.isDirectory()||identity(parent)!==opened.parentIdentity))throw Error(reason);
 }
 export async function syncArchiveDirectory(directory,opened){
  // Files have already been fsynced. Persist their directory entries first,

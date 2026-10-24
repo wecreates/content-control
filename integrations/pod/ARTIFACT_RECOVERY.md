@@ -132,6 +132,9 @@ Creation, encrypted writes and directory flushes stay bound to held descriptors
 for the original parent and newly created archive directory. A concurrent rename,
 symlink or replacement of either pathname cannot redirect archive output; a
 changed destination identity rejects the export instead of returning EXPORTED.
+The final check binds both the archive and its parent by device/inode. Moving the
+same archive inode beneath a replacement parent during the flush is rejected,
+because fsync of the former parent cannot prove the new directory entry durable.
 Verification and restore likewise read every catalog/object through one held
 archive-directory descriptor rather than resolving the pathname for each file.
 Offline verification also rejects success if the requested root pathname no
