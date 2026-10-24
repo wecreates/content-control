@@ -9,7 +9,7 @@ export function startOutboxRuntime({db,env=process.env,deliver=deliverOutbox,wai
  const pollMs=Number(env.POD_OUTBOX_POLL_MS||15000);
  if(env.POD_OUTBOX_ENABLED==='true'){
   let valid=false;
-  try{const url=new URL(env.POD_OUTBOX_URL);valid=url.protocol==='https:'&&!url.username&&!url.password&&!url.hash;}catch{}
+  try{const url=new URL(env.POD_OUTBOX_URL);valid=url.protocol==='https:'&&!url.username&&!url.password&&!url.search&&!url.hash;}catch{}
   if(!db||!valid||typeof env.POD_OUTBOX_KEY!=='string'||Buffer.byteLength(env.POD_OUTBOX_KEY)<32||
    !Number.isInteger(pollMs)||pollMs<1000||pollMs>300000){status='BLOCKED_OUTBOX_CONFIGURATION';}
   else{
