@@ -105,6 +105,16 @@ test('grant authority response requires the JSON media type',async()=>{
   {headers:{'content-type':'Application/JSON; charset=utf-8'}})});
  assert.deepEqual(await resolve({id:'job',brief:grant.brief}),grant.envelope);
 });
+test('grant authority response must be the exact signed envelope object',async()=>{
+ const grant=scopedGrant();
+ for(const response of [
+  {...grant.envelope,status:'revoked'},
+  {...grant.envelope,error:'APPROVAL_REVOKED'},
+ ]){
+  const resolve=createGrantResolver({env,fetchImpl:async()=>jsonResponse(response)});
+  await assert.rejects(resolve({id:'job',brief:grant.brief}),/GRANT_RESPONSE_INVALID/);
+ }
+});
 test('a leading UTF-8 BOM cannot acknowledge an event',async()=>{
  const db=dbFixture(),body=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"accepted_event_id":"event"}')]);
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
