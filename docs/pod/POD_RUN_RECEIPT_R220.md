@@ -57,14 +57,17 @@ remained at the reviewed base.
 ## Render and acceptance state
 
 This was a Money Factory-only runtime contract repair and did not change the
-Content Control Render service. The authorized service remained an unsuspended
+Content Control application. The authorized service remained an unsuspended
 free-plan Docker web service on `main`, one instance, commit-triggered auto-deploy
-and `/health`. Its latest event was `commit_ignored` for the prior r219 receipt
-commit `a54478e381aa35758371550fba3e50dd13db9fdb`. The latest application deploy
-attempt remained `dep-dbdv0mm1egvs73fb4b80` for Content Control
-`08469319dab2e543dc777554de994220f028e186`; Render recorded
-`pipeline_minutes_exhausted` and failed it before a build. No retry, purchase,
-replacement service, secret access or network widening occurred.
+and `/health`. The receipt feature commit carried `[skip render]`, but its merge
+commit `2e77e55549343bd8ca2c5077e4fb8de8a0d3bf33` did not preserve that marker.
+Render therefore created documentation-only deploy `dep-dbe0fju1egvs73fcer30`.
+Event `evt-dbe0fjubv0ns73bt6en0` recorded deploy start at
+2026-10-24T01:20:15.833189Z, event `evt-dbe0fk6c36kc73836js0` recorded
+`pipeline_minutes_exhausted` at 01:20:16.007097Z, and event
+`evt-dbe0fk0k84hc73eelr10` recorded the failed deploy at 01:20:16.392934Z.
+No application build or rollout occurred. No retry, purchase, replacement
+service, secret access or network widening occurred.
 
 All 24 live acceptance areas remain **OPEN**. This closes one authenticated
 event-ingress boundary only; merged code and hosted CI are not live acceptance.
