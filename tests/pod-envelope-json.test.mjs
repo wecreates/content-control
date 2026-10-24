@@ -44,6 +44,7 @@ test('signed envelope wrapper is an exact plain two-field JSON record',()=>{
  wrappers.push(Object.assign([],valid));
  wrappers.push(Object.assign(Object.create(null),valid));
  wrappers.push(Object.assign(new class Envelope {},valid));
+ wrappers.push(new Proxy({...valid},{}));
  const symbolic={...valid};symbolic[Symbol('private')]='must-not-persist';wrappers.push(symbolic);
  const hidden={...valid};Object.defineProperty(hidden,'private_token',{value:'must-not-persist'});wrappers.push(hidden);
  let reads=0;const accessor={signature:valid.signature};
