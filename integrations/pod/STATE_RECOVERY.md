@@ -130,6 +130,9 @@ Offline verification also rejects success if the requested root pathname no
 longer names that opened directory after all authenticated reads complete.
 Restore rechecks that device/inode identity inside its database transaction,
 before safety-state mutations, so replacement rolls back the entire snapshot.
+It checks again after the transaction returns. A late replacement rejects the
+receipt, but the committed snapshot and safety holds may remain and require
+reconciliation before any retry.
 
 A rejected final flush can leave a readable catalog and ciphertext. Offline
 VERIFIED means those bytes currently authenticate; it is not evidence that the

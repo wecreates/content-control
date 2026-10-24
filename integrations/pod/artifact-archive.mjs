@@ -127,7 +127,9 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
- // be undone here; reject late cancellation/flag changes without claiming rollback.
+ // be undone here; reject a late source replacement, cancellation or flag
+ // change without claiming rollback or encouraging a blind retry.
+ await assertArchiveDirectory(directory,opened);
  signal?.throwIfAborted();
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
  return restored;

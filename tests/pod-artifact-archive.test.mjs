@@ -232,6 +232,20 @@ test('artifact restore rolls back when the requested archive root is replaced',a
  assert.equal(target.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),true);
 });
 
+test('artifact restore rejects its receipt when the root is replaced after commit',async t=>{
+ const directory=await workspace(t),held=directory+'-held',replacement=directory+'-replacement';
+ const target=database(),tx=target.tx;
+ await exportArtifactLibrary(database([Buffer.from('post-commit identity fixture')]),{directory,key});
+ target.tx=async fn=>{
+  const result=await tx(fn);
+  await fs.rename(directory,held);await fs.mkdir(replacement,{mode:0o700});
+  await fs.symlink(replacement,directory,'dir');
+  return result;
+ };
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
+ assert.equal(target.rows.size,1,'the committed restore requires reconciliation, not a blind retry');
+});
+
 test('symlinked roots and artifact entries are rejected',async t=>{
  const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
  const link=directory+'-link';await fs.symlink(directory,link);

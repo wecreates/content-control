@@ -194,6 +194,18 @@ test('state restore rolls back when the requested archive root is replaced',asyn
  assert.equal(rolledBack,true);
  assert.equal(f.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),true);
 });
+test('state restore rejects its receipt when the root is replaced after commit',async t=>{
+ const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
+ await exportStateArchive(f.db,{...f,key,env});let committed=false;
+ const target={tx:async fn=>{
+  const result=await fn(await f.db.pool.connect());committed=true;
+  await fs.rename(f.directory,held);await fs.mkdir(replacement,{mode:0o700});
+  await fs.symlink(replacement,f.directory,'dir');
+  return result;
+ }};
+ await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
+ assert.equal(committed,true,'the committed restore requires reconciliation, not a blind retry');
+});
 test('restore and CLI require disabled workers and explicit empty-target recovery confirmation',async()=>{
  let called=false;const db={tx(){called=true;}};
  for(const flag of Object.keys(env))await assert.rejects(restoreStateArchive(db,{directory:'/unused',key,env:{...env,[flag]:'true'}}),/WORKERS_MUST_BE_DISABLED/);
