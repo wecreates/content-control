@@ -6,9 +6,22 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const env={POD_OUTBOX_ENABLED:'true',POD_OUTBOX_URL:'https://authority.example/events',POD_OUTBOX_KEY:'k'.repeat(32)};
 test('disabled and incomplete configurations never deliver',async()=>{
- for(const config of [{},{...env,POD_OUTBOX_KEY:''},{...env,POD_OUTBOX_URL:'http://example.com'},{...env,POD_OUTBOX_POLL_MS:'0'}]){
-  const r=startOutboxRuntime({db:{},env:config,deliver:()=>assert.fail('unexpected delivery')});
-  assert.notEqual(r.status().status,'RUNNING');await r.stop();
+ for(const config of [{},{...env,POD_OUTBOX_KEY:''},{...env,POD_OUTBOX_URL:'http://example.com'},
+  {...env,POD_OUTBOX_URL:'https://authority.example/events?route=other'},
+  {...env,POD_OUTBOX_URL:'https://authority.example/events#other'},{...env,POD_OUTBOX_POLL_MS:'0'}]){
+  let calls=0;
+  const r=startOutboxRuntime({db:{},env:config,deliver:async()=>{calls++;return {delivered:0,failed:0};}});
+  const observed=r.status();await r.stop();
+  assert.notEqual(observed.status,'RUNNING');assert.equal(calls,0);
+ }
+});
+test('direct delivery rejects query and fragment endpoint variants before storage access',async()=>{
+ for(const suffix of ['?route=other','#other']){
+  let active=0;
+  const db={active(){active++;},pool:{query:()=>assert.fail('unexpected database query')}};
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL+suffix,key:env.POD_OUTBOX_KEY,
+   fetchImpl:()=>assert.fail('unexpected network request')}),/OUTBOX_CONFIG_INVALID/);
+  assert.equal(active,0);
  }
 });
 test('retry backoff is bounded, uses pagination and recovers',async()=>{

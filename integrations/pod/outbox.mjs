@@ -3,7 +3,7 @@ import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-res
 // Receiver must atomically deduplicate event IDs. Delivery is at least once.
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
- if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
+ if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
  db.active();
  // pg decodes timestamptz to a millisecond Date. Preserve the database's full
  // microsecond value separately or rejected rows can repeat forever on page 2.
