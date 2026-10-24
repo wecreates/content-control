@@ -1,7 +1,9 @@
 // Native parsing owns JSON grammar. After signature verification, walk tokens
-// iteratively to reject ambiguous decoded keys and numbers that would silently
-// become null on reserialization. Mirrors the Money Factory event parser's rules.
-export function parseSignedJSON(text){
+// iteratively to reject ambiguous decoded keys and numeric overflow. Signed
+// envelope callers additionally reject values whose identity or wire spelling
+// would change on native reserialization. Recovery records retain their exact
+// PostgreSQL bigint JSON text and never opt into JavaScript number coercion.
+export function parseSignedJSON(text,{canonicalNumbers=false}={}){
  const value=JSON.parse(text),stack=[];
  for(let i=0;i<text.length;){
   const ch=text[i];
@@ -23,8 +25,16 @@ export function parseSignedJSON(text){
   else{
    const start=i++;
    while(i<text.length&&!/[\s,}\]]/.test(text[i]))i++;
-   if((ch==='-'||(ch>='0'&&ch<='9'))&&!Number.isFinite(Number(text.slice(start,i))))
-    throw new SyntaxError('ENVELOPE_JSON_NONFINITE');
+   if(ch==='-'||(ch>='0'&&ch<='9')){
+    const token=text.slice(start,i),number=Number(token);
+    if(!Number.isFinite(number))throw new SyntaxError('ENVELOPE_JSON_NONFINITE');
+    if(canonicalNumbers){
+     if(Number.isInteger(number)&&!Number.isSafeInteger(number))
+      throw new SyntaxError('ENVELOPE_JSON_UNSAFE_INTEGER');
+     if(JSON.stringify(number)!==token)
+      throw new SyntaxError('ENVELOPE_JSON_NONCANONICAL_NUMBER');
+    }
+   }
   }
  }
  return value;

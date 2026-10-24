@@ -20,12 +20,15 @@ test('invalid default wall clock cannot accept expired evidence',t=>{
 });
 for(const [name,issued,expires,now] of [
  ['fractional issuance',1000.5,2000,1500],['fractional expiry',1000,2000.5,1500],
- ['negative issuance',-1,2000,1500],['negative clock',-2,1,-1],
- ['unsafe issuance',9007199254740992,9007199254740994,9007199254740992]]){
+ ['negative issuance',-1,2000,1500],['negative clock',-2,1,-1]]){
  test('envelope rejects invalid timestamp: '+name,()=>{
   assert.throws(()=>verifyEnvelope(signed(issued,expires),key,audience,now),/ENVELOPE_EXPIRED_OR_INVALID/);
  });
 }
+test('envelope rejects an unsafe timestamp before expiry arithmetic',()=>{
+ assert.throws(()=>verifyEnvelope(signed(9007199254740992,9007199254740994),key,audience,9007199254740992),
+  /ENVELOPE_JSON_UNSAFE_INTEGER/);
+});
 test('integer timestamp boundaries retain exact expiry and lifetime rules',()=>{
  for(const [issued,expires,now] of [[0,900000,0],[0,900000,899999],
   [Number.MAX_SAFE_INTEGER-900000,Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER-1]]){

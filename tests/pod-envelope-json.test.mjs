@@ -18,6 +18,19 @@ test('signed numbers cannot become infinity or silently serialize as null',()=>{
   assert.throws(()=>verify(signed('{'+fields+',"facts":[{"amount":'+number+'}]}')),/ENVELOPE_JSON_NONFINITE/);
  }
 });
+test('signed numbers must preserve exact identity through native serialization',()=>{
+ for(const [number,error] of [
+  ['9007199254740993',/ENVELOPE_JSON_UNSAFE_INTEGER/],
+  ['-9007199254740993',/ENVELOPE_JSON_UNSAFE_INTEGER/],
+  ['-0',/ENVELOPE_JSON_NONCANONICAL_NUMBER/],
+  ['1.0',/ENVELOPE_JSON_NONCANONICAL_NUMBER/],
+  ['1e0',/ENVELOPE_JSON_NONCANONICAL_NUMBER/],
+  ['0.10000000000000001',/ENVELOPE_JSON_NONCANONICAL_NUMBER/],
+  ['1e-400',/ENVELOPE_JSON_NONCANONICAL_NUMBER/],
+ ]){
+  assert.throws(()=>verify(signed('{'+fields+',"facts":[{"amount":'+number+'}]}')),error);
+ }
+});
 test('signature must be an exact primitive lowercase hex string',()=>{
  const e=signed('{'+fields+'}');
  for(const signature of [[e.signature],new String(e.signature),{toString:()=>e.signature},null,0,true,
@@ -47,7 +60,7 @@ test('authentication precedes semantic JSON parsing and does not canonicalize pa
 test('unambiguous JSON preserves Unicode, escaped text, arrays and separate object keys',()=>{
  const value={schema_version:1,audience,issued_at_ms:now,expires_at_ms:2000,
   text:'é e\u0301 😀 "quoted" \\ escaped',items:[{a:1},{a:2}],strings:['1e400','{"a":1,"a":2}'],
-  finite:[-0,1e-300,1.25,Number.MAX_VALUE],empty:{},array:[]};
+  finite:[-0,1e-300,1.25,Number.MIN_VALUE],empty:{},array:[]};
  const payload=JSON.stringify(value);assert.deepEqual(verify(signed(payload)),JSON.parse(payload));
  const deep='{'+fields+',"nested":'+'['.repeat(1000)+'0'+']'.repeat(1000)+'}';
  assert.ok(verify(signed(deep)).nested);

@@ -22,7 +22,7 @@ export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
   !/^[a-f0-9]{64}$/.test(envelope.signature)) throw Error('ENVELOPE_INVALID');
  const expected=crypto.createHmac('sha256',key).update(envelope.payload).digest();
  if(!crypto.timingSafeEqual(expected,Buffer.from(envelope.signature,'hex'))) throw Error('SIGNATURE_INVALID');
- const p=parseSignedJSON(envelope.payload);
+ const p=parseSignedJSON(envelope.payload,{canonicalNumbers:true});
  // Relational comparisons coerce values and are all false for NaN. Validate
  // the clock and signed millisecond integers before making an expiry decision.
  if(!p||typeof p!=='object'||Array.isArray(p)||!Number.isSafeInteger(now)||now<0||p.audience!==audience||p.schema_version!==1||
