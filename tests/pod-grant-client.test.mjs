@@ -19,6 +19,10 @@ test('authority failure never falls back to cached approval',async()=>{
 test('credentials and transport are constrained',()=>{
  assert.throws(()=>createGrantResolver({env:{...env,POD_GRANT_URL:'http://authority.example'}}));
  assert.throws(()=>createGrantResolver({env:{...env,POD_GRANT_AUTH_KEY:env.POD_UPSTREAM_KEY}}));
+ const authKey='\ud800'.repeat(11),signingKey='\ud801'.repeat(11);
+ assert.notEqual(authKey,signingKey);
+ assert.ok(Buffer.from(authKey).equals(Buffer.from(signingKey)));
+ assert.throws(()=>createGrantResolver({env:{...env,POD_GRANT_AUTH_KEY:authKey,POD_UPSTREAM_KEY:signingKey}}),/GRANT_AUTHORITY_INVALID/);
 });
 test('clock becoming invalid after envelope verification cannot authorize a fresh grant',async t=>{
  const now=1800000000000,envelope=responseAt(now);let calls=0;
