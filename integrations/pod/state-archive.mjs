@@ -164,6 +164,10 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
    // fields in JavaScript would round financial amounts and fencing tokens.
    await client.query(`INSERT INTO public.${item.table} SELECT * FROM json_populate_record(NULL::public.${item.table},$1::json)`,[body.toString('utf8')]);
   }
+  // The held descriptor prevents redirecting authenticated reads, but the
+  // requested pathname must still identify that same snapshot at commit time.
+  // Check before safety-state mutations so replacement rolls back every row.
+  await assertArchiveDirectory(directory,opened);
   const accounts=(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'")).rowCount;
   const production=(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
    lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`)).rowCount;

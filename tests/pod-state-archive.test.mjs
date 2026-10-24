@@ -182,6 +182,18 @@ test('state verification rejects a replaced archive root',async t=>{
  try{await assert.rejects(verifyStateArchive({...f,key}),/ARCHIVE_DIRECTORY_INVALID/);}
  finally{mock.mock.restore();}
 });
+test('state restore rolls back when the requested archive root is replaced',async t=>{
+ const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
+ await exportStateArchive(f.db,{...f,key,env});let rolledBack=false;
+ const target={tx:async fn=>{
+  await fs.rename(f.directory,held);await fs.mkdir(replacement,{mode:0o700});
+  await fs.symlink(replacement,f.directory,'dir');
+  try{return await fn(await f.db.pool.connect());}catch(error){rolledBack=true;throw error;}
+ }};
+ await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
+ assert.equal(rolledBack,true);
+ assert.equal(f.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),true);
+});
 test('restore and CLI require disabled workers and explicit empty-target recovery confirmation',async()=>{
  let called=false;const db={tx(){called=true;}};
  for(const flag of Object.keys(env))await assert.rejects(restoreStateArchive(db,{directory:'/unused',key,env:{...env,[flag]:'true'}}),/WORKERS_MUST_BE_DISABLED/);

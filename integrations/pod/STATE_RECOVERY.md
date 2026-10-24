@@ -128,6 +128,8 @@ Verification and restore likewise read the catalog and every row through one hel
 snapshot-directory descriptor rather than resolving the pathname for each file.
 Offline verification also rejects success if the requested root pathname no
 longer names that opened directory after all authenticated reads complete.
+Restore rechecks that device/inode identity inside its database transaction,
+before safety-state mutations, so replacement rolls back the entire snapshot.
 
 A rejected final flush can leave a readable catalog and ciphertext. Offline
 VERIFIED means those bytes currently authenticate; it is not evidence that the
