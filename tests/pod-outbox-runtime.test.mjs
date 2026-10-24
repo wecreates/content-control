@@ -65,6 +65,25 @@ test('non-JSON and unsafe event values cannot be normalized into a delivered eve
   assert.equal(calls,0);assert.deepEqual(db.updated,[]);
  }
 });
+test('malformed durable event shapes cannot be acknowledged and marked delivered',async t=>{
+ const now=1800000000000;t.mock.method(Date,'now',()=>now);
+ const valid={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.shape',
+  payload:{value:'exact'},created_at:new Date(now-1000).toISOString()};
+ const invalid=[
+  {...valid,id:'not-a-uuid'},
+  {...valid,job_id:''},
+  {...valid,kind:'pod.Bad'},
+  {...valid,payload:[]},
+  {...valid,created_at:'2026-01-01T00:00:00Z'},
+  {...valid,unexpected:true}
+ ];
+ for(const event of invalid){
+  const db=dbFixture([event]);let calls=0;
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>{calls++;return jsonResponse({accepted_event_id:event.id});}}),/^Error: OUTBOX_EVENT_SCOPE_INVALID$/);
+  assert.equal(calls,0);assert.deepEqual(db.updated,[]);
+ }
+});
 test('retry backoff is bounded, uses pagination and recovers',async()=>{
  let calls=0;const delays=[],cursors=[];let runtime;
  const completed=new Promise(resolve=>{
