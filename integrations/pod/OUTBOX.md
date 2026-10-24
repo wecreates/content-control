@@ -25,6 +25,15 @@ silently turn a durable value into `null`, omit it, or round it and then accept
 an acknowledgement for different bytes. Failed events remain pending for the
 existing retry path.
 
+Before that payload is signed, the sender also requires the exact five-member
+durable event shape accepted by the Money Factory inbox: UUID event and optional
+job identities, a bounded lowercase `pod.*` kind, a plain-object payload, and an
+exact canonical UTC creation timestamp no more than five minutes ahead of
+issuance. Extra, missing, accessor or non-enumerable event members and malformed
+values fail with `OUTBOX_EVENT_SCOPE_INVALID` before network access. This keeps a
+malformed durable row pending instead of allowing a synthetic acknowledgement to
+mark bytes the receiver would reject as delivered.
+
 The sender also requires its issuance clock to return a nonnegative safe-integer
 millisecond value before serializing or signing an event. NaN, infinity,
 fractions, negative values and overflowing integers fail with

@@ -2,6 +2,9 @@ import crypto from 'node:crypto';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 const MAX_EVENT_PAYLOAD_BYTES=262144;
 const MAX_EVENT_REQUEST_BYTES=524288;
+const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const EVENT_KIND=/^pod\.[a-z0-9]+(?:[._][a-z0-9]+)*$/;
+const EVENT_FIELDS=['created_at','id','job_id','kind','payload'];
 function assertEventJSON(value){
  const pending=[[value,0]];let nodes=0;
  while(pending.length){
@@ -24,6 +27,31 @@ function assertEventJSON(value){
   for(const key of keys)pending.push([item[key],depth+1]);
  }
 }
+function assertEventShape(event,issuedAt){
+ if(event===null||typeof event!=='object'||Array.isArray(event)||Object.getPrototypeOf(event)!==Object.prototype)
+  throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ const keys=Reflect.ownKeys(event),descriptors=Object.getOwnPropertyDescriptors(event);
+ if(keys.length!==EVENT_FIELDS.length||keys.some(key=>typeof key!=='string'||!EVENT_FIELDS.includes(key)||
+  !descriptors[key].enumerable||!Object.hasOwn(descriptors[key],'value')))
+  throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ let createdAt=event.created_at;
+ if(createdAt instanceof Date){
+  const millis=createdAt.getTime();
+  if(Object.getPrototypeOf(createdAt)!==Date.prototype||!Number.isSafeInteger(millis)||millis<0)
+   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+  createdAt=createdAt.toISOString();
+ }
+ if(typeof createdAt!=='string')throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ const createdMillis=Date.parse(createdAt);
+ if(typeof event.id!=='string'||event.id.length!==36||!UUID.test(event.id)||
+  !(event.job_id===null||typeof event.job_id==='string'&&event.job_id.length===36&&UUID.test(event.job_id))||
+  typeof event.kind!=='string'||event.kind.length<5||event.kind.length>128||!EVENT_KIND.test(event.kind)||
+  event.payload===null||typeof event.payload!=='object'||Array.isArray(event.payload)||Object.getPrototypeOf(event.payload)!==Object.prototype||
+  !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt)||
+  !Number.isSafeInteger(createdMillis)||createdMillis<0||new Date(createdMillis).toISOString()!==createdAt||createdMillis-issuedAt>300000)
+  throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ assertEventJSON(event.payload);
+}
 // Receiver must atomically deduplicate event IDs. Delivery is at least once.
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
@@ -43,7 +71,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   if(!Number.isSafeInteger(issuedAt)||issuedAt<0)throw Error('OUTBOX_CLOCK_INVALID');
   // PostgreSQL rows always include payload. Keep transport-only fixtures that
   // intentionally omit it focused on their response boundary.
-  if(Object.hasOwn(event,'payload'))assertEventJSON(event.payload);
+  if(Object.hasOwn(event,'payload'))assertEventShape(event,issuedAt);
   const payload=JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:issuedAt,event});
   if(Buffer.byteLength(payload)>MAX_EVENT_PAYLOAD_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const signature=crypto.createHmac('sha256',key).update(payload).digest('hex');
