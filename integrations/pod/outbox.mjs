@@ -27,7 +27,8 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,headers:{'content-type':'application/json','idempotency-key':event.id},body},{deadline});
   const ack=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:4096,statusError:'OUTBOX_DELIVERY_FAILED',sizeError:'OUTBOX_ACK_TOO_LARGE'});
-  if(ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
+  if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.getPrototypeOf(ack)!==Object.prototype||
+   Object.keys(ack).length!==1||!Object.hasOwn(ack,'accepted_event_id')||ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);
   await db.tx(c=>c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL',[event.id]));delivered++;
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
