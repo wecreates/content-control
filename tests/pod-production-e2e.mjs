@@ -28,7 +28,7 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
  const resolvers=()=>createStoredTaskResolvers(db,{env:{POD_GRANT_URL:'https://authority.invalid/grant',
   POD_GRANT_AUTH_KEY:'fixture-auth-only-'.repeat(4),POD_UPSTREAM_KEY:key},fetchImpl:async(_url,options)=>{
    const scope=approvals.get(JSON.parse(options.body).job_id);
-   return scope?new Response(JSON.stringify(sign(scope))):new Response('',{status:503});
+   return scope?new Response(JSON.stringify(sign(scope)),{headers:{'content-type':'application/json'}}):new Response('',{status:503});
   }});
  try{
   await pool.query("DO $$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='pod_test_runtime') THEN CREATE ROLE pod_test_runtime; END IF; END $$");

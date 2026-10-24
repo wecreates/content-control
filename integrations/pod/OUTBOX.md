@@ -70,6 +70,9 @@ acknowledgement ID cannot select the matching event ID, and a duplicate outer
 grant member cannot select a signed payload. Only the existing exact event
 acknowledgement marks an event delivered; grants still require signature,
 audience, scope, permission and lifetime verification.
+Both success protocols require the exact `application/json` base media type;
+optional parameters are allowed, while HTML, problem JSON and missing labels
+fail closed before body parsing.
 Request deadlines and redirect rejection remain unchanged. Failed events stay
 pending for the existing retry/backoff loop. Stream-fixture tests are not a live
 authority/inbox acceptance or a measured production capacity claim.

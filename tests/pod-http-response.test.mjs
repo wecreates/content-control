@@ -90,6 +90,21 @@ test('acknowledgement requires the receiver JSON media type',async()=>{
   fetchImpl:async()=>new Response(text,{headers:{'content-type':'Application/JSON; charset=utf-8'}})});
  assert.deepEqual(db.updated,['event']);
 });
+test('grant authority response requires the JSON media type',async()=>{
+ const grant=scopedGrant(),text=JSON.stringify(grant.envelope);
+ for(const response of [
+  new Response(text,{headers:{'content-type':'text/html; charset=utf-8'}}),
+  new Response(text,{headers:{'content-type':'application/problem+json'}}),
+  new Response(Buffer.from(text)),
+ ]){
+  const resolve=createGrantResolver({env,fetchImpl:async()=>response});
+  await assert.rejects(resolve({id:'job',brief:grant.brief}),/GRANT_MEDIA_TYPE_INVALID/);
+  assert.equal(response.body.locked,false);
+ }
+ const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(text,
+  {headers:{'content-type':'Application/JSON; charset=utf-8'}})});
+ assert.deepEqual(await resolve({id:'job',brief:grant.brief}),grant.envelope);
+});
 test('a leading UTF-8 BOM cannot acknowledge an event',async()=>{
  const db=dbFixture(),body=Buffer.concat([Buffer.from([0xef,0xbb,0xbf]),Buffer.from('{"accepted_event_id":"event"}')]);
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,
@@ -127,17 +142,17 @@ test('bounded grant transport still checks signature, scope, revocation and life
   job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false};
  for(const [patch,error] of [[{},null],[{revoked:true},/APPROVAL_REVOKED/],[{job_id:'other'},/GRANT_SCOPE_MISMATCH/],[{expires_at_ms:Date.now()+10000},/GRANT_LIFETIME_TOO_SHORT/]]){
   const payload=JSON.stringify({...base,...patch}),envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
-  const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify(envelope))});
+  const resolve=createGrantResolver({env,fetchImpl:async()=>jsonResponse(envelope)});
   if(error)await assert.rejects(resolve({id:brief.id,brief}),error);
   else assert.deepEqual(await resolve({id:brief.id,brief}),envelope);
  }
- const payload=JSON.stringify(base),resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify({payload,signature:'0'.repeat(64)}))});
+ const payload=JSON.stringify(base),resolve=createGrantResolver({env,fetchImpl:async()=>jsonResponse({payload,signature:'0'.repeat(64)})});
  await assert.rejects(resolve({id:brief.id,brief}),/SIGNATURE_INVALID/);
 });
 test('escaped duplicate outer grant keys cannot select a signed payload',async()=>{
  const grant=scopedGrant();
  const response=`{"payload":"invalid","payl\\u006fad":${JSON.stringify(grant.envelope.payload)},"signature":${JSON.stringify(grant.envelope.signature)}}`;
- const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(response)});
+ const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(response,{headers:{'content-type':'application/json'}})});
  await assert.rejects(resolve({id:'job',brief:grant.brief}));
 });
 
@@ -317,7 +332,7 @@ for(const caller of ['grant','outbox'])for(const phase of ['headers','body','par
     if(phase==='headers')now=completion;
     body=new ReadableStream({pull(c){pulls++;if(phase==='body')now=completion;c.enqueue(Buffer.from(text));c.close();},
      cancel(){cancelled++;return new Promise(()=>{});}},{highWaterMark:0});
-    return new Response(body,{headers:caller==='outbox'?{'content-type':'application/json'}:{}});
+    return new Response(body,{headers:{'content-type':'application/json'}});
    };
    const operation=caller==='grant'?createGrantResolver({env,fetchImpl})({id:'job',brief:grant.brief}):
     deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl});
@@ -348,6 +363,6 @@ test('grant validation cannot return an envelope after the shared request deadli
  t.mock.method(performance,'now',()=>now);
  t.mock.method(AbortSignal,'timeout',()=>new AbortController().signal);
  t.mock.method(Date,'now',()=>{if(++clockReads===2)now=10000;return wall;});
- const resolve=createGrantResolver({env,fetchImpl:async()=>new Response(JSON.stringify(grant.envelope))});
+ const resolve=createGrantResolver({env,fetchImpl:async()=>jsonResponse(grant.envelope)});
  await assert.rejects(resolve({id:'job',brief:grant.brief}),{name:'TimeoutError'});
 });
