@@ -172,7 +172,8 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(events.length,1);assert.equal(events[0].kind,'pod.production.qa_passed');
   assert.equal(events[0].payload.publication_enabled,false);
   const delivery=await deliverOutbox(db,{url:'https://authority.example/events',key:'e'.repeat(32),continueOnError:true,
-   fetchImpl:async(_url,options)=>new Response(JSON.stringify({accepted_event_id:options.headers['idempotency-key']}))});
+   fetchImpl:async(_url,options)=>new Response(JSON.stringify({accepted_event_id:options.headers['idempotency-key']}),
+    {headers:{'content-type':'application/json'}})});
   assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
   assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
   // pg's default timestamptz parser drops microseconds. Twenty rejected rows
@@ -189,7 +190,8 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    fetchImpl:async(_url,options)=>{
     const event=JSON.parse(JSON.parse(options.body).payload).event;pageObserved.push(event.id);
     assert.equal(Object.hasOwn(event,'cursor_created_at'),false);
-    return rejected.has(event.id)?new Response('',{status:503}):new Response(JSON.stringify({accepted_event_id:event.id}));
+    return rejected.has(event.id)?new Response('',{status:503}):new Response(JSON.stringify({accepted_event_id:event.id}),
+     {headers:{'content-type':'application/json'}});
    }};
   const firstPage=await deliverOutbox(db,deliveryOptions);
   assert.equal(firstPage.failed,20);assert.equal(firstPage.delivered,0);
