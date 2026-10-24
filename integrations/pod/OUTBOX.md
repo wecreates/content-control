@@ -25,6 +25,13 @@ silently turn a durable value into `null`, omit it, or round it and then accept
 an acknowledgement for different bytes. Failed events remain pending for the
 existing retry path.
 
+Nested objects and arrays must also have the exact inert shapes produced by
+JSON parsing. Proxies, accessors, custom prototypes, sparse arrays, array
+extensions and negative zero are rejected without invoking user-controlled
+property access. Frozen ordinary JSON objects and arrays remain valid. This
+prevents validation and signing from observing different payload values, and
+prevents unsigned array properties from riding beside an authenticated event.
+
 Before that payload is signed, the sender also requires the exact five-member
 durable event shape accepted by the Money Factory inbox: UUID event and optional
 job identities, a bounded lowercase `pod.*` kind, a plain-object payload, and an

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {types as utilTypes} from 'node:util';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 const MAX_EVENT_PAYLOAD_BYTES=262144;
 const MAX_EVENT_REQUEST_BYTES=524288;
@@ -12,23 +13,35 @@ function assertEventJSON(value){
   if(depth>64||++nodes>10000)throw Error('OUTBOX_EVENT_JSON_INVALID');
   if(item===null||type==='string'||type==='boolean')continue;
   if(type==='number'){
-   if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))throw Error('OUTBOX_EVENT_JSON_INVALID');
+   if(!Number.isFinite(item)||Object.is(item,-0)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))
+    throw Error('OUTBOX_EVENT_JSON_INVALID');
    continue;
   }
-  if(type!=='object')throw Error('OUTBOX_EVENT_JSON_INVALID');
+  if(type!=='object'||utilTypes.isProxy(item))throw Error('OUTBOX_EVENT_JSON_INVALID');
+  const prototype=Object.getPrototypeOf(item),keys=Reflect.ownKeys(item);
   if(Array.isArray(item)){
-   if(item.length>10000)throw Error('OUTBOX_EVENT_JSON_INVALID');
-   for(const child of item)pending.push([child,depth+1]);
+   const length=Object.getOwnPropertyDescriptor(item,'length');
+   if(prototype!==Array.prototype||!Object.hasOwn(length||{},'value')||
+    !Number.isInteger(length.value)||length.value<0||length.value>10000||keys.length!==length.value+1)
+    throw Error('OUTBOX_EVENT_JSON_INVALID');
+   for(let index=0;index<length.value;index++){
+    const descriptor=Object.getOwnPropertyDescriptor(item,String(index));
+    if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error('OUTBOX_EVENT_JSON_INVALID');
+    pending.push([descriptor.value,depth+1]);
+   }
    continue;
   }
-  if(Object.getPrototypeOf(item)!==Object.prototype)throw Error('OUTBOX_EVENT_JSON_INVALID');
-  const keys=Reflect.ownKeys(item);
-  if(keys.length>10000||keys.some(key=>typeof key!=='string'||!Object.prototype.propertyIsEnumerable.call(item,key)))throw Error('OUTBOX_EVENT_JSON_INVALID');
-  for(const key of keys)pending.push([item[key],depth+1]);
+  if(prototype!==Object.prototype||keys.length>10000||keys.some(key=>typeof key!=='string'))
+   throw Error('OUTBOX_EVENT_JSON_INVALID');
+  for(const key of keys){
+   const descriptor=Object.getOwnPropertyDescriptor(item,key);
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error('OUTBOX_EVENT_JSON_INVALID');
+   pending.push([descriptor.value,depth+1]);
+  }
  }
 }
 function assertEventShape(event,issuedAt){
- if(event===null||typeof event!=='object'||Array.isArray(event)||Object.getPrototypeOf(event)!==Object.prototype)
+ if(event===null||typeof event!=='object'||Array.isArray(event)||utilTypes.isProxy(event)||Object.getPrototypeOf(event)!==Object.prototype)
   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
  const keys=Reflect.ownKeys(event),descriptors=Object.getOwnPropertyDescriptors(event);
  if(keys.length!==EVENT_FIELDS.length||keys.some(key=>typeof key!=='string'||!EVENT_FIELDS.includes(key)||
@@ -46,7 +59,8 @@ function assertEventShape(event,issuedAt){
  if(typeof event.id!=='string'||event.id.length!==36||!UUID.test(event.id)||
   !(event.job_id===null||typeof event.job_id==='string'&&event.job_id.length===36&&UUID.test(event.job_id))||
   typeof event.kind!=='string'||event.kind.length<5||event.kind.length>128||!EVENT_KIND.test(event.kind)||
-  event.payload===null||typeof event.payload!=='object'||Array.isArray(event.payload)||Object.getPrototypeOf(event.payload)!==Object.prototype||
+  event.payload===null||typeof event.payload!=='object'||Array.isArray(event.payload)||utilTypes.isProxy(event.payload)||
+  Object.getPrototypeOf(event.payload)!==Object.prototype||
   !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt)||
   !Number.isSafeInteger(createdMillis)||createdMillis<0||new Date(createdMillis).toISOString()!==createdAt||createdMillis-issuedAt>300000)
   throw Error('OUTBOX_EVENT_SCOPE_INVALID');

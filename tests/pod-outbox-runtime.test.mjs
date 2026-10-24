@@ -65,6 +65,51 @@ test('non-JSON and unsafe event values cannot be normalized into a delivered eve
   assert.equal(calls,0);assert.deepEqual(db.updated,[]);
  }
 });
+test('dynamic or lossy nested event values fail before property access or network dispatch',async()=>{
+ const event=payload=>({id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.value',
+  payload,created_at:'2026-01-01T00:00:00.000Z'});
+ const reject=async payload=>{
+  const db=dbFixture([event(payload)]);let calls=0;
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>{calls++;return jsonResponse({accepted_event_id:'12b4c678-1234-4321-abcd-123456789abc'});}}),/^Error: OUTBOX_EVENT_JSON_INVALID$/);
+  assert.equal(calls,0);assert.deepEqual(db.updated,[]);
+ };
+
+ let accessorReads=0;
+ const accessor={};
+ Object.defineProperty(accessor,'value',{enumerable:true,get(){accessorReads++;return 'private';}});
+ await reject({nested:accessor});
+ assert.equal(accessorReads,0);
+
+ let proxyTraps=0;
+ const proxy=new Proxy({value:'private'},{
+  get(target,key,receiver){proxyTraps++;return Reflect.get(target,key,receiver);},
+  getPrototypeOf(target){proxyTraps++;return Reflect.getPrototypeOf(target);},
+  ownKeys(target){proxyTraps++;return Reflect.ownKeys(target);},
+  getOwnPropertyDescriptor(target,key){proxyTraps++;return Reflect.getOwnPropertyDescriptor(target,key);}
+ });
+ await reject({nested:proxy});
+ assert.equal(proxyTraps,0);
+
+ let arrayReads=0;
+ const accessorArray=[];
+ Object.defineProperty(accessorArray,'0',{enumerable:true,get(){arrayReads++;return 'private';}});
+ await reject({nested:accessorArray});
+ assert.equal(arrayReads,0);
+
+ const extendedArray=['exact'];extendedArray.private='unsigned';
+ const symbolArray=['exact'];symbolArray[Symbol('private')]='unsigned';
+ const customArray=['exact'];Object.setPrototypeOf(customArray,{...Array.prototype});
+ for(const payload of [{value:-0},{nested:extendedArray},{nested:symbolArray},{nested:customArray}])await reject(payload);
+});
+test('frozen ordinary nested JSON values remain deliverable',async()=>{
+ const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.value',
+  payload:Object.freeze({nested:Object.freeze([Object.freeze({value:'exact'})])}),created_at:'2026-01-01T00:00:00.000Z'};
+ const db=dbFixture([event]);
+ await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+  fetchImpl:async()=>jsonResponse({accepted_event_id:event.id})});
+ assert.deepEqual(db.updated,[event.id]);
+});
 test('malformed durable event shapes cannot be acknowledged and marked delivered',async t=>{
  const now=1800000000000;t.mock.method(Date,'now',()=>now);
  const valid={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.shape',
