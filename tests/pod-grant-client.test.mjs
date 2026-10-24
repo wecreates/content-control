@@ -10,6 +10,21 @@ test('fresh authority grant replaces expired queue envelope',async()=>{
  const resolve=createGrantResolver({env,fetchImpl:async(_url,options)=>{assert.deepEqual(JSON.parse(options.body),{job_id:'job'});assert.equal(options.redirect,'error');return response();}});
  const result=await resolve({id:'job',brief,upstream_envelope:{expired:true}});assert.equal(JSON.parse(result.payload).publication_permission,false);
 });
+test('authority lookup requires an exact primitive durable job scope before dispatch',async()=>{
+ for(const job of [
+  {id:{toJSON:()=>brief.id},brief},
+  {id:new String(brief.id),brief},
+  {id:[brief.id],brief},
+  {id:'other',brief},
+  {id:'bad/id',brief:{...brief,id:'bad/id'}},
+  {id:'x'.repeat(101),brief:{...brief,id:'x'.repeat(101)}},
+ ]){
+  let calls=0;
+  const resolve=createGrantResolver({env,fetchImpl:async()=>{calls++;return response();}});
+  await assert.rejects(resolve(job),/^Error: GRANT_REQUEST_INVALID$/);
+  assert.equal(calls,0);
+ }
+});
 for(const [name,extra] of [['revocation',{revoked:true}],['wrong scope',{account_id:'other'}],['expired',{expires_at_ms:Date.now()-1}],['nearly expired',{expires_at_ms:Date.now()+1000}]])test(name+' blocks production',async()=>{
  await assert.rejects(createGrantResolver({env,fetchImpl:async()=>response(extra)})({id:'job',brief}));
 });

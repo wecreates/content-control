@@ -9,11 +9,14 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
   typeof env.POD_UPSTREAM_KEY!=='string'||Buffer.byteLength(env.POD_UPSTREAM_KEY)<32||
   Buffer.from(env.POD_GRANT_AUTH_KEY).equals(Buffer.from(env.POD_UPSTREAM_KEY)))throw Error('GRANT_AUTHORITY_INVALID');
  return async(job,{signal}={})=>{
+  const jobId=job?.id;
+  if(typeof jobId!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(jobId)||job?.brief?.id!==jobId)
+   throw Error('GRANT_REQUEST_INVALID');
   const deadline=performance.now()+10000;
   const timeout=AbortSignal.timeout(10000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
-   headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:job.id})},{deadline});
+   headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:jobId})},{deadline});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
    sizeError:'GRANT_TOO_LARGE',mediaTypeError:'GRANT_MEDIA_TYPE_INVALID'});
   if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||

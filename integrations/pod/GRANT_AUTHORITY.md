@@ -4,6 +4,13 @@ POD_GRANT_URL selects the Money Factory HTTPS grant endpoint. POD_GRANT_AUTH_KEY
 
 The Money Factory createPodAuthorityHandler export belongs in the existing authoritative HTTP host. Supply a server-owned loadSnapshot(jobId) that loads the job, current readiness, current approval and verified facts from their actual sources. Mount the handler at the configured route behind HTTPS. The handler is code, not a deployed service or a fabricated approval source. Request JSON containing extra fields is rejected.
 
+Before dispatch, the client requires the durable job ID to be one primitive
+1–100 character authority identifier and to match the brief ID exactly. Arrays,
+boxed strings, objects with `toJSON`, unsupported characters and mismatched
+durable/brief scopes fail with `GRANT_REQUEST_INVALID` without contacting the
+authority. JSON serialization cannot normalize a malformed local scope into a
+valid remote lookup.
+
 Successful authority responses must use the `application/json` media type, with
 optional parameters such as `charset=utf-8`. HTML, problem JSON and missing
 media types fail closed before the signed envelope is parsed. A correctly signed
