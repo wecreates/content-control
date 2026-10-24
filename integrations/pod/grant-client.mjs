@@ -14,7 +14,8 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
    headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:job.id})},{deadline});
-  const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',sizeError:'GRANT_TOO_LARGE'});
+  const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
+   sizeError:'GRANT_TOO_LARGE',mediaTypeError:'GRANT_MEDIA_TYPE_INVALID'});
   const grant=verifyEnvelope(envelope,env.POD_UPSTREAM_KEY,'content-control:pod');
   enforceBrief(grant,job.brief);
   // Recheck wall-clock validity after signature/scope work. A nonfinite or
