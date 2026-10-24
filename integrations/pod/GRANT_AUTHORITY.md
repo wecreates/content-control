@@ -67,7 +67,8 @@ never normalized or reserialized to make a signature match.
 Every shared-verifier envelope must itself be an exact ordinary JSON record
 with the two enumerable data members `payload` and `signature`. Extra string,
 symbol or non-enumerable members, arrays, custom/null prototypes and accessors
-fail with `ENVELOPE_INVALID`; accessors are rejected without invocation. This
+or proxies fail with `ENVELOPE_INVALID`; accessors and proxy traps are rejected
+without invocation. This
 keeps private adapter metadata out of stored QA/evidence envelopes and applies
 the same outer contract to direct, database and HTTPS verifier callers. Frozen
 ordinary records remain valid because verification never mutates the envelope.
