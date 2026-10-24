@@ -38,6 +38,21 @@ test('signature must be an exact primitive lowercase hex string',()=>{
   assert.throws(()=>verify({...e,signature}),/^Error: ENVELOPE_INVALID$/);
  }
 });
+test('signed envelope wrapper is an exact plain two-field JSON record',()=>{
+ const valid=signed('{'+fields+'}'),wrappers=[];
+ wrappers.push({...valid,private_token:'must-not-persist'});
+ wrappers.push(Object.assign([],valid));
+ wrappers.push(Object.assign(Object.create(null),valid));
+ wrappers.push(Object.assign(new class Envelope {},valid));
+ wrappers.push(new Proxy({...valid},{}));
+ const symbolic={...valid};symbolic[Symbol('private')]='must-not-persist';wrappers.push(symbolic);
+ const hidden={...valid};Object.defineProperty(hidden,'private_token',{value:'must-not-persist'});wrappers.push(hidden);
+ let reads=0;const accessor={signature:valid.signature};
+ Object.defineProperty(accessor,'payload',{enumerable:true,get(){reads++;return valid.payload;}});wrappers.push(accessor);
+ for(const envelope of wrappers)assert.throws(()=>verify(envelope),/^Error: ENVELOPE_INVALID$/);
+ assert.equal(reads,0,'reject accessors without invoking untrusted code');
+ assert.deepEqual(verify(Object.freeze({...valid})),JSON.parse(valid.payload));
+});
 test('signed payload ceiling counts UTF-8 bytes with an inclusive exact boundary',()=>{
  const prefix='{'+fields+',"text":"',suffix='"}';
  const remaining=262144-Buffer.byteLength(prefix+suffix),fill='😀'.repeat(Math.floor(remaining/4))+'a'.repeat(remaining%4);
