@@ -118,6 +118,10 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
    await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);inserted++;
   }
+  // The held descriptor prevents redirecting authenticated reads, but the
+  // requested pathname must still identify that same archive at commit time.
+  // Keep this inside the transaction so a replacement rolls back all inserts.
+  await assertArchiveDirectory(directory,opened);
   signal?.throwIfAborted();
   if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
