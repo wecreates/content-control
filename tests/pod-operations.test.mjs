@@ -129,6 +129,37 @@ for(const [name,path] of [
   assert.equal(response.headers.get('cache-control'),'no-store');
  }finally{await new Promise(r=>server.close(r));}
 });
+test('authenticated mutations report the exact storage cutoff as unavailable',async()=>{
+ const unavailable=async()=>{throw Error('POD_STORAGE_EXPIRING');};
+ const db={tx:unavailable,requeueRepair:unavailable,acceptReview:unavailable,registerIntake:unavailable,enqueue:unavailable};
+ const env={POD_MARKET_KEY:key,POD_PROVIDER_KEY:key,POD_FINANCE_KEY:key};
+ const app=express();app.use(createPodRouter({db,env,authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const market=sign({audience:'content-control:pod:market',platform:'redbubble',source_url:'https://example.org/fixture',
+  country:'US',category:'shirt',observed_at:'2026-01-01T00:00:00Z',collection_authorized:true,source_sha256:'a'.repeat(64)});
+ const listing=sign({audience:'content-control:pod:listing-observation',account_id:'account',evidence_sha256:'a'.repeat(64),
+  job_id:'job',package_sha256:'b'.repeat(64),platform:'redbubble',provider_event_id:'event',provider_id:'listing',provider_verified:true,status:'LIVE'});
+ const financial=sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'authority',provider_event_id:'event',
+  provider:'redbubble',job_id:'job',amount_minor:1,kind:'royalty',currency:'USD',occurred_at:'2026-01-01T00:00:00Z',evidence_sha256:'a'.repeat(64)});
+ try{
+  const base=`http://127.0.0.1:${server.address().port}`,headers={Authorization:`Bearer ${key}`};
+  const cases=[
+   ['/artifacts','image/png',Buffer.from('fixture')],
+   ['/jobs/fixture-job/retry','application/json',{}],
+   ['/jobs/fixture-job/review','application/json',{}],
+   ['/market','application/json',market],
+   ['/listing-observations','application/json',listing],
+   ['/financial-events','application/json',financial],
+   ['/intake','application/json',{}],
+   ['/jobs','application/json',{}]
+  ];
+  for(const [path,type,body] of cases){
+   const response=await fetch(base+path,{method:'POST',headers:{...headers,'Content-Type':type},body:type==='application/json'?JSON.stringify(body):body});
+   assert.equal(response.status,503,path);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'},path);
+   assert.equal(response.headers.get('cache-control'),'no-store');
+  }
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('financial events cannot fabricate unsigned verified income',async()=>{await assert.rejects(recordFinancialEvent({}, {payload:'{}',signature:'0'.repeat(64)},key),/SIGNATURE_INVALID/);});
 test('refund sign cannot inflate net recorded income',async()=>{await assert.rejects(recordFinancialEvent({},sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'a',provider_event_id:'e',provider:'p',job_id:'j',amount_minor:10,kind:'refund',currency:'USD',occurred_at:new Date().toISOString(),evidence_sha256:'a'.repeat(64)}),key),/FINANCIAL_SIGN_INVALID/);});
 test('templates reject unsupported platforms despite trusted signature',()=>assert.throws(()=>validateTemplate(sign({audience:'pod:template',template:{platform:'etsy'}}),key,{platform:'etsy'}),/TEMPLATE_PROVENANCE_REQUIRED/));
