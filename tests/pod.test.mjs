@@ -25,6 +25,21 @@ for(const [name,change] of [
  ['indirect Etsy',f=>f.job.destination_platform='etsy'],
  ['scope mismatch',f=>f.grant.account_id='other'],
  ['revocation',f=>f.grant.revoked=true]])test(name,()=>{const f=fixture();change(f);assert.throws(()=>enforceBrief(f.grant,f.job,{publishing:true}));});
+test('matching lossy production scope identities are rejected',()=>{
+ for(const field of ['id','account_id','business_id'])for(const value of ['', ' ', 'x'.repeat(257),'unsafe\0identity','unsafe-\ud800']){
+  const f=fixture(),grantField=field==='id'?'job_id':field;
+  f.job[field]=value;f.grant[grantField]=value;
+  assert.throws(()=>enforceBrief(f.grant,f.job),/^Error: GRANT_SCOPE_MISMATCH$/,`${field}: ${JSON.stringify(value)}`);
+ }
+});
+test('valid Unicode production scope identities remain exact',()=>{
+ const f=fixture();
+ f.job.id=f.grant.job_id='job-😀-e\u0301';
+ f.job.account_id=f.grant.account_id=' account-😀-e\u0301 ';
+ f.job.business_id=f.grant.business_id='business-雪-e\u0301';
+ const brief=enforceBrief(f.grant,f.job);
+ assert.equal(brief.id,f.job.id);assert.equal(brief.account_id,f.job.account_id);assert.equal(brief.business_id,f.job.business_id);
+});
 test('claims and price are omitted unless verified upstream',()=>{
  const f=fixture();f.job.claims=['invented'];f.grant.price={verified:false,amount_minor:1};
  f.grant.verified_facts={title:{value:'Allowed title',verified:true,evidence_ids:['e']},shipping:{value:'Tomorrow',verified:true,evidence_ids:['e']}};

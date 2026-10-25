@@ -53,7 +53,7 @@ export function verifyEnvelope(envelope,key,audience,now=Date.now()) {
 }
 export function enforceBrief(grant,job,{publishing=false}={}) {
  if(!PLATFORMS.includes(job?.platform)||job.destination_platform!==job.platform) throw Error('PLATFORM_BLOCKED');
- if(!job.id||!job.account_id||!job.business_id||grant.job_id!==job.id||
+ if(![job.id,job.account_id,job.business_id].every(evidenceId)||grant.job_id!==job.id||
   grant.account_id!==job.account_id||grant.platform!==job.platform||grant.business_id!==job.business_id) throw Error('GRANT_SCOPE_MISMATCH');
  if(grant.revoked!==false) throw Error('APPROVAL_REVOKED');
  if(publishing||job.mode==='LAUNCH'){
