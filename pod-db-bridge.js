@@ -126,6 +126,9 @@ export class PodDB {
  }
  async requeueRepair(jobId,upstream){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
+  // A current grant may authorize only its exact repair target. Reject wrong
+  // or lossy route identities before acquiring or locking database rows.
+  if(!validOpaqueText(jobId)||!validOpaqueText(grant.job_id)||grant.job_id!==jobId)throw Error('GRANT_SCOPE_MISMATCH');
   return this.tx(async c=>{
    // Only an expired internal production lease is recoverable from blocked.
    // Publication ambiguity and other blocked reasons must never become raw.
