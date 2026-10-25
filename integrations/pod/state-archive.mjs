@@ -134,7 +134,14 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encrypted);
   await assertArchiveDirectory(directory,opened);await syncArchiveDirectory(directory,opened);
-  // Late cancellation can leave valid bytes, but must not report EXPORTED.
+  // Re-authenticate every durable record through the pinned directory. A
+  // successful fsync and stable root do not prove that closed files were not
+  // replaced before the success receipt.
+  signal?.throwIfAborted();disabled(env);await assertArchiveDirectory(directory,opened);
+  const verified=await verifyStateArchiveAt({directory,key,signal,budgetBytes:budget,base:opened.base});
+  if(verified.archive_sha256!==hash(encrypted)||verified.snapshot_id!==catalog.snapshot_id||
+   verified.records!==catalog.items.length||verified.bytes!==bytes||verified.artifact_bytes!==artifacts)
+   throw Error('STATE_ARCHIVE_CHANGED');
   signal?.throwIfAborted();disabled(env);await assertArchiveDirectory(directory,opened);
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
