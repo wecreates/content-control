@@ -61,6 +61,11 @@ or preview rendering. Package inspection also binds the stored queue marketplace
 to the manifest marketplace and the five supported platforms before artifact
 access; mismatched or excluded-marketplace records cannot render or export.
 
+The owner job list and the release-ready list apply the storage-lifetime gate
+both before and after their database query. If retention crosses the safety
+cutoff during a wait, neither list returns rows. The aggregate health query is
+the deliberate exception described above so it can still report the expiry.
+
 ## Manual diagnostics when startup is blocked
 
 If preflight prevented service initialization, the HTTP metrics endpoint still

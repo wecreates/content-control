@@ -166,7 +166,10 @@ export class PodDB {
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return r.rows[0];
   });
  }
- async listReady(){this.active();return (await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;}
+ async listReady(){this.active();
+  const rows=(await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;
+  this.active();return rows;
+ }
  async listOperationsJobs(state='review_required'){
   if(!['review_required','raw','processing','qa_failed','qa_passed','blocked','publishing','ambiguous','submitted','published'].includes(state))throw Error('JOB_FILTER_INVALID');
   this.active();
@@ -175,6 +178,7 @@ export class PodDB {
    reason_code,attempt,created_at,manifest IS NOT NULL AS can_preview FROM pod_production_queue
    WHERE CASE WHEN state='qa_failed' AND reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE state END=$1
    ORDER BY created_at DESC,id DESC LIMIT 50`,[state])).rows;
+  this.active();
   return rows.map(row=>({...row,reason_code:row.reason_code===null?null:productionReason(row.reason_code)}));
  }
  async failProduction(job,reason){return this.tx(async c=>{
