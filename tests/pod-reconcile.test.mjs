@@ -45,7 +45,8 @@ test('replays bind all listing identity and proof fields, not only the evidence 
  }
 });
 test('missing package hash and non-string identities fail before any database access',async()=>{
- for(const change of [{package_sha256:undefined},{package_sha256:'bad'},{provider_id:{}},{provider_event_id:[]},{job_id:''}]){
+ for(const change of [{package_sha256:undefined},{package_sha256:'bad'},{provider_id:{}},{provider_event_id:[]},{job_id:''},
+  {provider_id:'listing\0id'},{provider_id:'\ud800'},{provider_event_id:'event\0id'},{provider_event_id:'\ud801'}]){
   await assert.rejects(reconcilePublication({tx(){throw Error('unexpected database access');}},sign({...observation,...change}),key),/LISTING_EVIDENCE_REQUIRED/);
  }
 });

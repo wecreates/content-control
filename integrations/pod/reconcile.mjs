@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import {PLATFORMS,verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
+import {validOpaqueText} from './text-identity.mjs';
 
 const LISTING_FIELDS=Object.freeze(['account_id','evidence_sha256','job_id','package_sha256','platform',
  'provider_event_id','provider_id','provider_verified','status']);
@@ -14,7 +15,7 @@ function exactListingObservation(value){
 export async function reconcilePublication(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
  if(!exactListingObservation(e)||e.status!=='LIVE'||e.provider_verified!==true||!PLATFORMS.includes(e.platform)||
-  !['job_id','account_id','platform','provider_id','provider_event_id'].every(k=>typeof e[k]==='string'&&e[k].trim().length>0&&e[k].length<=256)||
+  !['job_id','account_id','platform','provider_id','provider_event_id'].every(k=>validOpaqueText(e[k]))||
   !/^[a-f0-9]{64}$/.test(e.package_sha256||'')||!/^[a-f0-9]{64}$/.test(e.evidence_sha256||''))throw Error('LISTING_EVIDENCE_REQUIRED');
  const evidence=Object.fromEntries(LISTING_FIELDS.map(field=>[field,e[field]]));
  return db.tx(async c=>{
