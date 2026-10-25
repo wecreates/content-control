@@ -79,10 +79,16 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   if(catalog.length>MAX_CATALOG)throw Error('ARCHIVE_CATALOG_TOO_LARGE');
   await client.query('COMMIT');signal?.throwIfAborted();
   // Written last: an interrupted export without this catalog is not restorable.
-  await writeNew(path.join(opened.base,'catalog.pod'),seal(catalog,key,'pod:artifact-catalog:v1'));
+  const encryptedCatalog=seal(catalog,key,'pod:artifact-catalog:v1');
+  await writeNew(path.join(opened.base,'catalog.pod'),encryptedCatalog);
   await assertArchiveDirectory(directory,opened);await syncArchiveDirectory(directory,opened);
-  // Cancellation may arrive while the catalog or directory entries are
-  // being flushed. Completed writes do not authorize a success receipt.
+  // Re-authenticate the durable bytes through the pinned directory. A flush
+  // can succeed even if another actor replaces a closed object before the
+  // receipt, so directory identity alone cannot authorize EXPORTED.
+  signal?.throwIfAborted();await assertArchiveDirectory(directory,opened);
+  const verified=await readCatalog({directory,key,budgetBytes,signal,base:opened.base});
+  if(verified.archive_sha256!==digest(encryptedCatalog))throw Error('ARCHIVE_CHANGED');
+  await verifyItems(verified.catalog,{directory,key,budgetBytes,signal,base:opened.base});
   signal?.throwIfAborted();await assertArchiveDirectory(directory,opened);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){

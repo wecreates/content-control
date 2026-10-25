@@ -186,6 +186,22 @@ test('state export rejects moving its archive into a replaced parent during flus
   assert.equal(replaced,true);assert.equal((await verifyStateArchive({...f,key})).status,'VERIFIED');
  }finally{mock.mock.restore();}
 });
+test('state export reauthenticates written records after the final flush',async t=>{
+ const f=await fixture(t),parent=path.dirname(f.directory),open=fs.open.bind(fs);let corrupted=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  const handle=await open(file,...args);
+  if(file!==parent)return handle;
+  return {fd:handle.fd,stat:handle.stat.bind(handle),close:handle.close.bind(handle),async sync(){
+   await handle.sync();
+   const record=path.join(f.directory,'00000.pod'),bytes=await fs.readFile(record);
+   bytes[bytes.length-1]^=1;await fs.writeFile(record,bytes);corrupted=true;
+  }};
+ });
+ try{
+  await assert.rejects(exportStateArchive(f.db,{...f,key,env}),/ARCHIVE_AUTH_FAILED/);
+  assert.equal(corrupted,true);
+ }finally{mock.mock.restore();}
+});
 test('state verification rejects a replaced archive root',async t=>{
  const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
  await exportStateArchive(f.db,{...f,key,env});

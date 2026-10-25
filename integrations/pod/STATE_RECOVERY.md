@@ -120,6 +120,11 @@ storage; see the [Linux fsync documentation](https://man7.org/linux/man-pages/ma
 (checked October 16, 2026). A directory open/flush failure rejects the export.
 Opened handles are closed even when a flush fails.
 
+After those flushes, export re-reads the exact encrypted catalog and every record
+through the held snapshot descriptor, authenticates them and compares the catalog
+ciphertext and aggregate counts with the bytes it wrote. Replacement or corruption
+of a closed file during completion rejects the export instead of issuing `EXPORTED`.
+
 Creation, encrypted writes and directory flushes stay bound to held descriptors
 for the original parent and newly created snapshot directory. A concurrent rename,
 symlink or replacement of either pathname cannot redirect archive output; a

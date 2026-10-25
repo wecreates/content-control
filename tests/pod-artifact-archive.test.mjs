@@ -136,6 +136,23 @@ test('artifact export rejects moving its archive into a replaced parent during f
   assert.equal(replaced,true);assert.equal((await verifyArtifactLibrary({directory,key})).status,'VERIFIED');
  }finally{mock.mock.restore();}
 });
+test('artifact export reauthenticates written objects after the final flush',async t=>{
+ const directory=await workspace(t),body=Buffer.from('post-flush artifact fixture'),parent=path.dirname(directory);
+ const open=fs.open.bind(fs);let corrupted=false;
+ const mock=t.mock.method(fs,'open',async(file,...args)=>{
+  const handle=await open(file,...args);
+  if(file!==parent)return handle;
+  return {fd:handle.fd,stat:handle.stat.bind(handle),close:handle.close.bind(handle),async sync(){
+   await handle.sync();
+   const artifact=path.join(directory,sha(body)+'.pod'),bytes=await fs.readFile(artifact);
+   bytes[bytes.length-1]^=1;await fs.writeFile(artifact,bytes);corrupted=true;
+  }};
+ });
+ try{
+  await assert.rejects(exportArtifactLibrary(database([body]),{directory,key}),/ARCHIVE_AUTH_FAILED/);
+  assert.equal(corrupted,true);
+ }finally{mock.mock.restore();}
+});
 test('artifact verification rejects a replaced archive root',async t=>{
  const directory=await workspace(t),held=directory+'-held',replacement=directory+'-replacement';
  await exportArtifactLibrary(database([Buffer.from('verification identity fixture')]),{directory,key});
