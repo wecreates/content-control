@@ -5,6 +5,7 @@ import {validOpaqueText} from './text-identity.mjs';
 export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
 const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
 const evidenceId=validOpaqueText;
+const claimText=value=>validOpaqueText(value,{maxLength:262144});
 function exactEnvelopeRecord(envelope){
  try{
   if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||utilTypes.isProxy(envelope)||
@@ -72,7 +73,7 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  // A verified flag cannot turn missing/malformed references into evidence.
  // Match the existing economics reference bounds without repairing identifiers.
  const approved=Object.fromEntries(Object.entries(facts).filter(([k,v])=>evidenceId(k)&&v?.verified===true&&
-  typeof v.value==='string'&&v.value.trim().length>0&&!forbidden.has(k)&&!forbidden.has(v.value)&&
+  claimText(v.value)&&!forbidden.has(k)&&!forbidden.has(v.value)&&
   Array.isArray(v.evidence_ids)&&v.evidence_ids.length>0&&v.evidence_ids.length<=32&&
   v.evidence_ids.every(evidenceId)&&new Set(v.evidence_ids).size===v.evidence_ids.length));
  for(const [k,v] of Object.entries(approved)) {

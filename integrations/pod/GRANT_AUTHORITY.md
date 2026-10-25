@@ -104,11 +104,13 @@ fact in its brief only when its name is a nonblank string of at most 256
 characters, its value is a nonblank string and its evidence_ids array contains
 1–32 distinct nonblank primitive strings of at most 256 characters each. These
 reference bounds match the existing release-economics convention. Claim names,
-claim evidence references and price evidence references must also round-trip
-through UTF-8 exactly and cannot contain NUL, matching their PostgreSQL text/JSON
-storage boundary. An array in place of the fact collection is not an allowlist.
-Malformed or unsupported claims are omitted; identifiers and claim text are
-never repaired or normalized.
+claim values, claim evidence references and price evidence references must also
+round-trip through UTF-8 exactly and cannot contain NUL, matching their
+PostgreSQL text/JSON storage boundary. Claim values remain governed by the
+overall signed-payload ceiling rather than the 256-character identifier ceiling.
+An array in place of the fact collection is not an allowlist. Malformed or
+unsupported claims are omitted; identifiers and claim text are never repaired
+or normalized.
 
 Provider verification remains required for shipping, safety and warranty claims.
 Money Factory event verification remains required for revenue and profit claims.

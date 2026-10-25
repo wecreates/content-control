@@ -25,7 +25,8 @@ test('signed claim evidence must contain bounded nonblank primitive references',
 });
 test('a fact collection must be an object and empty claims are omitted',()=>{
  assert.deepEqual(brief({verified_facts:[fact()]}).facts,{});
- for(const value of ['', ' \n\t'])assert.deepEqual(brief({verified_facts:{title:{...fact(),value}}}).facts,{});
+ for(const value of ['', ' \n\t','claim\0text','\ud800','\ud801'])
+  assert.deepEqual(brief({verified_facts:{title:{...fact(),value}}}).facts,{});
  for(const name of ['', 'identity\0suffix','\ud800','\ud801'])
   assert.deepEqual(brief({verified_facts:{[name]:fact()}}).facts,{});
 });
@@ -44,7 +45,7 @@ test('verified prices require an exact currency and a valid evidence reference',
 });
 test('valid evidence is preserved exactly while provider and forbidden-claim gates remain active',()=>{
  const refs=['é'.repeat(256),...Array.from({length:31},(_,i)=>'event-'+i)];
- const title={...fact(refs),value:'Café 雪'};
+ const title={...fact(refs),value:' '+ 'Café 雪 '.repeat(64)+'😀 '};
  const shipping={...fact(),provider_verified:true},profit={...fact(),money_factory_event_verified:true};
  const price={verified:true,amount_minor:0,currency:'USD',evidence_id:'é'.repeat(256)};
  const result=brief({verified_facts:{title,shipping,profit,safety:fact(),revenue:fact()},price});
