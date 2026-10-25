@@ -88,7 +88,8 @@ export class PodDB {
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
-  if(intake.concept_id!==id||intake.business_id!==businessId||typeof intake.fingerprint!=='string'||intake.fingerprint.trim().length===0||
+  if(!validOpaqueText(id)||!validOpaqueText(businessId)||intake.concept_id!==id||intake.business_id!==businessId||
+    typeof intake.fingerprint!=='string'||intake.fingerprint.trim().length===0||
     intake.fingerprint.includes('\0')||Buffer.from(intake.fingerprint,'utf8').toString('utf8')!==intake.fingerprint||
     !['PASS','FAIL','UNKNOWN'].includes(intake.rights_state))throw Error('INTAKE_SCOPE_INVALID');
   return this.tx(async c=>{

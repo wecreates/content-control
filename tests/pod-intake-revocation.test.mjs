@@ -72,6 +72,27 @@ test('fingerprint admission still authenticates the original envelope first',asy
  await assert.rejects(f.db.registerIntake(request),/^Error: SIGNATURE_INVALID$/);
 });
 
+test('lossy concept and business identities are rejected before database admission',async()=>{
+ const f=fixture();let calls=0;f.db.tx=async()=>{calls++;throw Error('UNEXPECTED_DATABASE_ACCESS');};
+ for(const field of ['concept_id','business_id'])for(const value of ['', ' ', 'x'.repeat(257),'unsafe\0identity','unsafe-\ud800']){
+  const request=f.request('PASS'),payload={...JSON.parse(request.envelope.payload),[field]:value};
+  if(field==='concept_id')request.id=value;else request.businessId=value;
+  request.envelope={payload:JSON.stringify(payload),signature:''};
+  request.envelope.signature=crypto.createHmac('sha256',key).update(request.envelope.payload).digest('hex');
+  await assert.rejects(f.db.registerIntake(request),/^Error: INTAKE_SCOPE_INVALID$/);
+ }
+ assert.equal(calls,0);assert.equal(f.writes.length,0);
+});
+test('valid Unicode concept and business identities remain exact',async()=>{
+ const f=fixture(),request=f.request('PASS'),conceptId='concept-😀-e\u0301',businessId=' business-😀-e\u0301 ';
+ const payload={...JSON.parse(request.envelope.payload),concept_id:conceptId,business_id:businessId};
+ Object.assign(request,{id:conceptId,businessId,envelope:{payload:JSON.stringify(payload),signature:''}});
+ request.envelope.signature=crypto.createHmac('sha256',key).update(request.envelope.payload).digest('hex');
+ f.concept.business_id=businessId;
+ assert.deepEqual(await f.db.registerIntake(request),{id:f.concept.id});
+ assert.equal(f.writes.length,0);
+});
+
 for(const [name,values] of [
  ['unpaired surrogate',['prefix-\ud800','prefix-\udfff','prefix-\ud800x','prefix-\udfff\ud800']],
  ['NUL',['prefix-\u0000','\u0000prefix']]
