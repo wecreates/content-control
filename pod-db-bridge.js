@@ -149,6 +149,9 @@ export class PodDB {
  async enqueue({job,upstream,conceptId,revision}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   const brief=enforceBrief(grant,job);
+  // Validate queue-only scope before connection acquisition. PostgreSQL uuid
+  // and int4 coercion must not decide whether malformed input is admissible.
+  if(!validOpaqueText(conceptId)||!Number.isInteger(revision)||revision<1||revision>2147483647)throw Error('QUEUE_SCOPE_INVALID');
   return this.tx(async c=>{
    const {rows}=await c.query('SELECT * FROM pod_concepts WHERE id=$1 FOR SHARE',[conceptId]);
    if(rows[0]?.rights_state!=='PASS'||rows[0]?.permanently_unpublished||rows[0]?.business_id!==job.business_id)throw Error('RIGHTS_BLOCKED');
