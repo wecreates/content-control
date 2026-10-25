@@ -65,6 +65,9 @@ The owner job list and the release-ready list apply the storage-lifetime gate
 both before and after their database query. If retention crosses the safety
 cutoff during a wait, neither list returns rows. The aggregate health query is
 the deliberate exception described above so it can still report the expiry.
+Review-package and artifact reads also recheck after the database wait and after
+stored-manifest/artifact validation, so validation that crosses the cutoff
+cannot return a held manifest or bytes.
 
 ## Manual diagnostics when startup is blocked
 

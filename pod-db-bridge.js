@@ -241,6 +241,7 @@ export class PodDB {
   this.active();
   if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
+  this.active();
   return row;
  }
  async reviewArtifact(jobId,sha){this.active();
@@ -265,6 +266,7 @@ export class PodDB {
    crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
   try{for(const [name] of members)assertPackageFormat(name,row.body);}
   catch{throw Error('ARTIFACT_UNAVAILABLE');}
+  this.active();
   return {body:row.body,media_type:row.media_type};
  }
  async completeProduction(job,manifest,qaEnvelope){
