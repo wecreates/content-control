@@ -175,7 +175,7 @@ test('blank and oversized provider receipts are ambiguous after exactly one subm
  }
 });
 test('missing and non-string provider receipts remain ambiguous',async()=>{
- for(const receipt of [null,{}, {id:''},{id:['listing']},{id:42},{id:{}}]){
+ for(const receipt of [null,{}, {id:''},{id:'listing\0id'},{id:'\ud800'},{id:'\ud801'},{id:['listing']},{id:42},{id:{}}]){
   const f=fixture(),finishes=[];let calls=0;
   f.options.adapters.redbubble.submit=async()=>{calls++;return receipt;};
   f.options.db.finish=async(_job,state,value)=>finishes.push({state,value});
@@ -296,7 +296,7 @@ test('stored review artifacts require the exact held job and manifest membership
 });
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});
- for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),['listing'],42,{}])
+ for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),'listing\0id','\ud800','\ud801',['listing'],42,{}])
   await assert.rejects(db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id}),/RECEIPT_INVALID/);
 });
 test('direct submitted transition preserves a valid opaque listing ID',async()=>{

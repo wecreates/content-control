@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import {setTimeout as pause} from 'node:timers/promises';
 import {verifyEnvelope,enforceBrief,enforceQA} from '../integrations/pod/policy.mjs';
 import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/economics.mjs';
+import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
  verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
@@ -39,7 +40,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const receipt=await adapter.submit({brief,manifest,idempotencyKey:job.idempotency_key,signal});
   // Match the observer's opaque listing-ID contract. A malformed receipt is
   // uncertain submission, never a submitted row that readback cannot reconcile.
-  if(typeof receipt?.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256)throw Error('RECEIPT_INVALID');
+  if(!validOpaqueText(receipt?.id))throw Error('RECEIPT_INVALID');
   await db.finish(job,'submitted',{id:receipt.id});
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){

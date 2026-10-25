@@ -6,8 +6,9 @@ of a live listing. Store the observation evidence in ArtifactStore first.
 
 An observation binds job, account, platform, provider listing ID, provider event
 ID, package hash and evidence hash. Status must be LIVE and provider_verified must
-be true. Identities are nonempty strings of at most 256 characters. The existing
-short-lived signature, exact account/package checks and stored proof checks apply.
+be true. Identities are nonempty strings of at most 256 characters, must
+round-trip through UTF-8 exactly and cannot contain NUL. The existing short-lived
+signature, exact account/package checks and stored proof checks apply.
 Never manufacture provider readback, permission or evidence to satisfy this gate.
 
 Schema version 1 accepts only those listing fields plus the required signed-
@@ -70,9 +71,12 @@ authorization, legal clearance, listing truth or verified income.
 
 A successful adapter response must identify the listing with a primitive string
 containing non-whitespace text and at most 256 JavaScript string characters,
-matching the observation identity contract. The publisher and direct submitted
-database transition both enforce this boundary. Valid opaque IDs retain their
-original case, spacing and characters; they are never trimmed or invented.
+matching the observation identity contract. The identifier must be valid UTF-8
+text and cannot contain NUL, because PostgreSQL would otherwise replace or reject
+its JavaScript spelling. The publisher, signed observer and direct submitted
+database transition all enforce this boundary before database access. Valid
+opaque IDs retain their original case, spacing and characters; they are never
+trimmed or invented.
 
 A blank, oversized, missing or non-string receipt cannot mark a job submitted.
 Because the adapter may already have created a listing, the publisher records

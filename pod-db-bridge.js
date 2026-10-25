@@ -4,6 +4,7 @@ import {ARTIFACT_MEDIA_TYPES} from './integrations/pod/artifacts.mjs';
 import {assertPackageFormat,PACKAGE_MEDIA_TYPES} from './integrations/pod/package-artifacts.mjs';
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
+import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -17,7 +18,7 @@ function exactObject(value,keys){
 }
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
-  if(!exactObject(receipt,['id'])||typeof receipt.id!=='string'||receipt.id.trim().length===0||receipt.id.length>256)throw Error('RECEIPT_INVALID');
+  if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
   if(reason!==null)throw Error('SETTLEMENT_INVALID');
   return;
  }
