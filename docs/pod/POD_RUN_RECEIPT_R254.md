@@ -75,6 +75,10 @@ not run, so hosted runtime behavior remains unverified. No manual retry,
 purchase, plan/cache change, replacement service, secret access or network
 widening occurred.
 
+The documentation-only evidence merge carried `[skip render]` in its merge
+title. Render event `evt-dbeu1qcs728c73cu5q6g` verified that exact merge
+`3f3a6798dcff8b2483edcdb481e48e55ecf0cf56` was ignored rather than deployed.
+
 All 24 live acceptance areas remain **OPEN**. This closes one repair-admission
 boundary only; code and hosted CI are not live source authorization, database,
 marketplace or deployment acceptance. Production restricted database/schema/
