@@ -211,6 +211,9 @@ export class PodDB {
  });}
  async acceptReview(jobId,qaEnvelope){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+  // Authenticate first, then reject malformed route identities before a
+  // connection or query parameter. Review artifacts already use this bound.
+  if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('REVIEW_NOT_PENDING');
   return this.tx(async c=>{
    const job=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
    if(!job)throw Error('REVIEW_NOT_PENDING');
@@ -224,6 +227,7 @@ export class PodDB {
   });
  }
  async reviewPackage(jobId){this.active();
+  if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
   const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
