@@ -34,6 +34,13 @@ capacity measurement. Publication remains disabled.
 
 ## Exact fingerprint text admission
 
+The request and signed envelope must identify the same primitive, nonblank
+concept and business strings. Those identities are bounded, contain no NUL and
+must round-trip through UTF-8 unchanged before transaction entry. They are not
+trimmed, normalized or repaired. This keeps PostgreSQL UUID/text parameters,
+business advisory-lock keys and durable event scope bound to the exact signed
+identity.
+
 Signed intake fingerprints must be primitive, nonblank strings before any
 transaction or lock is acquired. Numbers, booleans, arrays and objects are
 rejected with INTAKE_SCOPE_INVALID rather than passed to PostgreSQL text
