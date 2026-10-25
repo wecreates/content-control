@@ -42,6 +42,14 @@ used to select or lock another job while waiting for the later brief check. This
 binding does not make the job repairable; queue state, retry budget, current
 rights and the complete signed brief are still enforced transactionally.
 
+Authenticated package retrieval and signed review acceptance also reject job
+route identities outside the existing 1–100 character ASCII letter, digit,
+underscore and hyphen contract before acquiring PostgreSQL. Review acceptance
+still authenticates its QA envelope first, so target validation cannot mask a
+bad signature. These admission checks prevent out-of-contract route values from
+reaching database parameter binding; they do not prove that a package exists or
+that a review is authorized for its stored bytes.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.
