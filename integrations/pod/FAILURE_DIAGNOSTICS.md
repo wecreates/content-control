@@ -34,6 +34,14 @@ the existing three-attempt bound remain mandatory. A signed QA failure sets
 acceptance remains restricted to `REVIEW_REQUIRED` jobs. No automatic image
 upscaling, renewed approval, publication or additional retry is granted here.
 
+The retry route authenticates the current grant before inspecting its target,
+then requires the requested job identity and signed `job_id` to be the same
+bounded, nonblank, NUL-free, exact UTF-8 text. A wrong or malformed target fails
+before database connection acquisition, so a valid grant for one job cannot be
+used to select or lock another job while waiting for the later brief check. This
+binding does not make the job repairable; queue state, retry budget, current
+rights and the complete signed brief are still enforced transactionally.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.
