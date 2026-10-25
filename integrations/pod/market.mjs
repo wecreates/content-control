@@ -3,20 +3,36 @@ import {isDeepStrictEqual} from 'node:util';
 import {PLATFORMS,verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
+import {validPostgresText} from './text-identity.mjs';
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
+function validObservationJson(value){
+ const pending=[value];
+ while(pending.length){
+  const current=pending.pop();
+  if(typeof current==='string'){if(!validPostgresText(current))return false;continue;}
+  if(Array.isArray(current)){pending.push(...current);continue;}
+  if(current&&typeof current==='object'){
+   for(const [key,nested] of Object.entries(current)){
+    if(!validPostgresText(key))return false;
+    pending.push(nested);
+   }
+  }
+ }
+ return true;
+}
 export async function recordMarketObservation(db,envelope,key){
  const o=verifyEnvelope(envelope,key,'content-control:pod:market');
- if(typeof o.source_url!=='string')throw Error('MARKET_SOURCE_INVALID');
+ if(!validPostgresText(o.source_url))throw Error('MARKET_SOURCE_INVALID');
  let url;try{url=new URL(o.source_url);}catch{throw Error('MARKET_SOURCE_INVALID');}
  if(!PLATFORMS.includes(o.platform)||url.protocol!=='https:'||url.username||url.password||
-  (typeof o.country!=='string'||!/^[A-Z]{2}$/.test(o.country))||typeof o.category!=='string'||!o.category||
+  (typeof o.country!=='string'||!/^[A-Z]{2}$/.test(o.country))||!validPostgresText(o.category)||!o.category||
   !validEvidenceTime(o.observed_at)||
   !hash(o.source_sha256)||o.collection_authorized!==true)throw Error('MARKET_EVIDENCE_INVALID');
  if(o.price_minor!=null&&(!Number.isSafeInteger(o.price_minor)||o.price_minor<0||typeof o.currency!=='string'||!/^[A-Z]{3}$/.test(o.currency)))throw Error('PRICE_EVIDENCE_INVALID');
  if(o.observed_rank!=null&&(!Number.isInteger(o.observed_rank)||o.observed_rank<=0||o.observed_rank>2147483647||!hash(o.rank_evidence_sha256)))throw Error('RANK_EVIDENCE_INVALID');
  if(o.observed_rank==null&&o.rank_evidence_sha256!=null)throw Error('RANK_EVIDENCE_INVALID');
  if((o.image_sha256!=null&&!hash(o.image_sha256))||
-  (o.observations!=null&&(typeof o.observations!=='object'||Array.isArray(o.observations))))throw Error('MARKET_EVIDENCE_INVALID');
+  (o.observations!=null&&(typeof o.observations!=='object'||Array.isArray(o.observations)||!validObservationJson(o.observations))))throw Error('MARKET_EVIDENCE_INVALID');
  if(o.price_minor==null&&o.currency!=null)throw Error('PRICE_EVIDENCE_INVALID');
  const observations=o.observations??{};
  return db.tx(async c=>{
