@@ -107,45 +107,54 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
 }
 
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
- config(directory,key,budgetBytes);signal?.throwIfAborted();
+ const checkpoint=()=>{signal?.throwIfAborted();assertPublicationDisabled(env);};
+ config(directory,key,budgetBytes);checkpoint();
  budgetBytes=Math.min(budgetBytes,artifactBudgetBytes(env));
- assertPublicationDisabled(env);
  const opened=await openArchiveDirectory(directory),options={directory,key,budgetBytes,signal,base:opened.base};
  try{
+ checkpoint();
  const {catalog,bytes}=await readCatalog(options);
+ checkpoint();
  // Reject an already broken backup before acquiring a database connection/lock.
  // Read and authenticate again during insertion to catch intervening changes.
  await verifyItems(catalog,options);
- assertPublicationDisabled(env);
+ checkpoint();
  const restored=await db.tx(async client=>{
+  checkpoint();
   await client.query('SELECT pg_advisory_xact_lock($1)',[543211]);
-  let used=BigInt((await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts')).rows[0].bytes),inserted=0;
+  checkpoint();
+  const usage=await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts');
+  checkpoint();
+  let used=BigInt(usage.rows[0].bytes),inserted=0;
   for(const item of catalog.items){
-   signal?.throwIfAborted();
+   checkpoint();
    const body=await readArtifact(item,options);
+   checkpoint();
    // Compare immutable identity in PostgreSQL without downloading existing
    // bytes. A length mismatch also skips hashing an oversized corrupt row.
-   const existing=(await client.query(`SELECT media_type,octet_length(body) AS bytes,
+   const existingResult=await client.query(`SELECT media_type,octet_length(body) AS bytes,
     CASE WHEN octet_length(body)=$2 THEN encode(sha256(body),'hex') ELSE NULL END AS body_sha256
-    FROM public.pod_artifacts WHERE sha256=$1`,[item.sha256,item.bytes])).rows[0];
+    FROM public.pod_artifacts WHERE sha256=$1`,[item.sha256,item.bytes]);
+   checkpoint();
+   const existing=existingResult.rows[0];
    if(existing){if(existing.media_type!==item.media_type||existing.bytes!==item.bytes||existing.body_sha256!==item.sha256)throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
-   await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);inserted++;
+   await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);
+   checkpoint();inserted++;
   }
   // The held descriptor prevents redirecting authenticated reads, but the
   // requested pathname must still identify that same archive at commit time.
   // Keep this inside the transaction so a replacement rolls back all inserts.
   await assertArchiveDirectory(directory,opened);
-  signal?.throwIfAborted();
-  assertPublicationDisabled(env);
+  checkpoint();
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.
+ checkpoint();
  await assertArchiveDirectory(directory,opened);
- signal?.throwIfAborted();
- assertPublicationDisabled(env);
+ checkpoint();
  return restored;
  }finally{await closeArchiveDirectory(opened);}
 }

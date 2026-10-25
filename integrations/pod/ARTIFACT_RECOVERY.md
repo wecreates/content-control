@@ -112,6 +112,14 @@ and hashes them again inside the transaction. A file changed after the initial
 verification still causes rollback, including any earlier inserts. This adds a
 second bounded read pass; it does not weaken locks, expiry or publication checks.
 
+Cancellation and both publication kill switches are rechecked after every
+asynchronous restore boundary: archive open, catalog and object verification,
+transaction admission and lock, occupied-byte and immutable-row reads, every
+artifact read and insert, archive identity, and transaction completion. A change
+during one artifact insert stops before the next artifact or later transaction
+work and rolls the in-progress transaction back. A change during COMMIT is still
+reported only after completion and requires reconciliation as described below.
+
 A VERIFIED receipt proves only that the referenced artifact bytes were readable
 and authentic at that time. It does not prove independent retention, future
 availability, queue/account/financial recovery, current grants, production role
