@@ -114,6 +114,21 @@ test('review artifact download requires an exact job-scoped hold',async()=>{
   assert.deepEqual(calls,[{id:'fixture-job',digest:sha}]);
  }finally{await new Promise(r=>server.close(r));}
 });
+for(const [name,path] of [
+ ['review package','/jobs/fixture-job/package'],
+ ['review artifact','/jobs/fixture-job/artifacts/'+'a'.repeat(64)],
+ ['owner job list','/jobs']
+])test(name+' reports the storage cutoff as unavailable',async()=>{
+ const unavailable=async()=>{throw Error('POD_STORAGE_EXPIRING');};
+ const db={reviewPackage:unavailable,reviewArtifact:unavailable,listOperationsJobs:unavailable};
+ const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const response=await fetch(`http://127.0.0.1:${server.address().port}`+path,{headers:{Authorization:`Bearer ${key}`}});
+  assert.equal(response.status,503);assert.deepEqual(await response.json(),{error:'POD_STORAGE_UNAVAILABLE'});
+  assert.equal(response.headers.get('cache-control'),'no-store');
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('financial events cannot fabricate unsigned verified income',async()=>{await assert.rejects(recordFinancialEvent({}, {payload:'{}',signature:'0'.repeat(64)},key),/SIGNATURE_INVALID/);});
 test('refund sign cannot inflate net recorded income',async()=>{await assert.rejects(recordFinancialEvent({},sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'a',provider_event_id:'e',provider:'p',job_id:'j',amount_minor:10,kind:'refund',currency:'USD',occurred_at:new Date().toISOString(),evidence_sha256:'a'.repeat(64)}),key),/FINANCIAL_SIGN_INVALID/);});
 test('templates reject unsupported platforms despite trusted signature',()=>assert.throws(()=>validateTemplate(sign({audience:'pod:template',template:{platform:'etsy'}}),key,{platform:'etsy'}),/TEMPLATE_PROVENANCE_REQUIRED/));

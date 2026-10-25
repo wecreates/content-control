@@ -68,6 +68,10 @@ the deliberate exception described above so it can still report the expiry.
 Review-package and artifact reads also recheck after the database wait and after
 stored-manifest/artifact validation, so validation that crosses the cutoff
 cannot return a held manifest or bytes.
+Authenticated review-package, review-artifact and owner job-list endpoints map
+that exact cutoff to sanitized HTTP 503 `POD_STORAGE_UNAVAILABLE`. They retain
+their existing redacted 404/409 responses for unrelated lookup or validation
+failures, so an operations outage is actionable without disclosing record state.
 
 ## Manual diagnostics when startup is blocked
 
