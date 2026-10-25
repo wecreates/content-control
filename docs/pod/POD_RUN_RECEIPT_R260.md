@@ -9,10 +9,12 @@ Content Control started from current main
 `fbeb17a5a4f563dc307f6691529a4628c0ee8dd0`, including its concurrent free
 monitor cadence update. Current POD acceptance, status and free-deployment
 evidence, repository heads, open pull requests, workflow results and the
-authorized Render service were inspected. Neither repository had an open pull
-request. The failed database-administration route had no changed access path and
-was not retried. No resource, credential, account, network rule or marketplace
-state changed.
+authorized Render service were inspected. No open pull request duplicated the
+current POD lane. A final repository-wide inventory enumerated 13 unrelated
+Content Control and 7 unrelated Money Factory legacy/draft pull requests; they
+were left untouched, including excluded Etsy work. The failed
+database-administration route had no changed access path and was not retried. No
+resource, credential, account, network rule or marketplace state changed.
 
 ## Repair and regression evidence
 
