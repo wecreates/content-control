@@ -166,11 +166,15 @@ flag change and use a new destination; failed exports are never overwritten.
 
 ## Transaction completion boundary
 
-Restore rechecks cancellation and all four required disabled flags after the
-transaction and connection release finish. A cancellation or flag change during
-COMMIT rejects the returned result even if the full restore and its audit event
-have committed. This rejection is not evidence of rollback. Likewise, a lost
-COMMIT response can leave the outcome uncertain. Keep workers and publication
+Restore rechecks cancellation and all four required disabled flags after every
+asynchronous archive and transaction boundary: archive open and verification,
+lock acquisition, schema and empty-target inspection, each authenticated record
+read and insert, source identity, every safety-state update, audit insertion, and
+transaction completion. A flag change during an insert stops before the next row
+or safety mutation and rolls the transaction back. A cancellation or flag change
+during COMMIT rejects the returned result even if the full restore and its audit
+event have committed. This rejection is not evidence of rollback. Likewise, a
+lost COMMIT response can leave the outcome uncertain. Keep workers and publication
 disabled, inspect the target and reconcile the recovery audit before deciding
 what to do next. A committed state restore leaves a nonempty target, so another
 restore is rejected; never delete restored rows or bypass that protection to

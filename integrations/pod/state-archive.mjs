@@ -160,44 +160,49 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
 }
 
 export async function restoreStateArchive(db,{directory,key,signal,env=process.env}={}){
- disabled(env,true);signal?.throwIfAborted();const budgetBytes=artifactBudgetBytes(env),opened=await openArchiveDirectory(directory),options={directory,key,signal,base:opened.base};
+ const checkpoint=()=>{signal?.throwIfAborted();disabled(env,true);};
+ checkpoint();const budgetBytes=artifactBudgetBytes(env);let opened;
  try{
- const verified=await verifyStateArchiveAt({...options,budgetBytes});
- const {catalog,archive_sha256}=await catalogFor(options);
+ opened=await openArchiveDirectory(directory);checkpoint();
+ const options={directory,key,signal,base:opened.base};
+ checkpoint();const verified=await verifyStateArchiveAt({...options,budgetBytes});checkpoint();
+ const {catalog,archive_sha256}=await catalogFor(options);checkpoint();
  if(archive_sha256!==verified.archive_sha256)throw Error('STATE_ARCHIVE_CHANGED');
  const restored=await db.tx(async client=>{
   // Locks also protect the empty-target decision from normal writers. No
   // DELETE/TRUNCATE/DDL privileges or immutability-trigger bypass is needed.
-  await client.query(`LOCK TABLE ${NAMES.map(t=>'public.'+t).join(',')} IN SHARE ROW EXCLUSIVE MODE`);
-  disabled(env,true);signal?.throwIfAborted();
-  const structure=await schema(client);
+  checkpoint();await client.query(`LOCK TABLE ${NAMES.map(t=>'public.'+t).join(',')} IN SHARE ROW EXCLUSIVE MODE`);checkpoint();
+  const structure=await schema(client,checkpoint);
   if(JSON.stringify(structure.columns)!==JSON.stringify(catalog.columns))throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
-  for(const table of NAMES)if((await client.query(`SELECT 1 FROM public.${table} LIMIT 1`)).rows.length)throw Error('STATE_ARCHIVE_TARGET_NOT_EMPTY');
+  for(const table of NAMES){checkpoint();const existing=await client.query(`SELECT 1 FROM public.${table} LIMIT 1`);checkpoint();
+   if(existing.rows.length)throw Error('STATE_ARCHIVE_TARGET_NOT_EMPTY');}
   for(const item of catalog.items){
-   const {body}=await recordFor(item,catalog,options);
+   checkpoint();const {body}=await recordFor(item,catalog,options);checkpoint();
    // Send original JSON text to PostgreSQL: parsing/re-serializing bigint
    // fields in JavaScript would round financial amounts and fencing tokens.
    await client.query(`INSERT INTO public.${item.table} SELECT * FROM json_populate_record(NULL::public.${item.table},$1::json)`,[body.toString('utf8')]);
+   checkpoint();
   }
   // The held descriptor prevents redirecting authenticated reads, but the
   // requested pathname must still identify that same snapshot at commit time.
   // Check before safety-state mutations so replacement rolls back every row.
-  await assertArchiveDirectory(directory,opened);
+  checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
   const accounts=(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'")).rowCount;
+  checkpoint();
   const production=(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
    lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`)).rowCount;
+  checkpoint();
   const publishing=(await client.query(`UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
    lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`)).rowCount;
+  checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
   await client.query('INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.recovery.restored',receipt]);
-  disabled(env,true);signal?.throwIfAborted();return receipt;
+  checkpoint();return receipt;
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.
- await assertArchiveDirectory(directory,opened);
- signal?.throwIfAborted();
- disabled(env,true);
+ checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
  return restored;
- }finally{await closeArchiveDirectory(opened);}
+ }finally{if(opened)await closeArchiveDirectory(opened);}
 }

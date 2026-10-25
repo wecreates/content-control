@@ -262,6 +262,19 @@ test('state restore rejects its receipt when the root is replaced after commit',
  await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
  assert.equal(committed,true,'the committed restore requires reconciliation, not a blind retry');
 });
+for(const flag of Object.keys(env))test(`state restore stops after the first insert when ${flag} changes during that insert`,async t=>{
+ const f=await fixture(t),settings={...env};await exportStateArchive(f.db,{...f,key,env:settings});
+ const client=await f.db.pool.connect(),query=client.query.bind(client),calls=[];let changed=false;
+ client.query=async(sql,...args)=>{calls.push(sql);const result=await query(sql,...args);
+  if(!changed&&sql.startsWith('INSERT INTO public.')){changed=true;settings[flag]='true';}
+  return result;
+ };
+ const target={tx:fn=>fn(client)};
+ await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env:settings}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
+ assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO public.')).length,1);
+ assert.equal(calls.some(sql=>sql.startsWith('UPDATE public.')),false);
+ assert.equal(calls.some(sql=>sql.includes("'pod.recovery.restored'")),false);
+});
 test('restore and CLI require disabled workers and explicit empty-target recovery confirmation',async()=>{
  let called=false;const db={tx(){called=true;}};
  for(const flag of Object.keys(env))await assert.rejects(restoreStateArchive(db,{directory:'/unused',key,env:{...env,[flag]:'true'}}),/WORKERS_MUST_BE_DISABLED/);
