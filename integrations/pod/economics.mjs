@@ -1,6 +1,7 @@
 // Versioned with Money Factory integrations/pod/economics.mjs. No forecasts
 // enter the financial ledger here; this is a signed per-unit release budget.
-const id=value=>typeof value==='string'&&value.trim().length>0&&value.length<=256;
+import {validOpaqueText} from './text-identity.mjs';
+const id=validOpaqueText;
 const minor=value=>Number.isSafeInteger(value)&&value>=0;
 export function enforceKdpListPrice(qa,price,platform){
  if(platform!=='kdp')return;

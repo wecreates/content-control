@@ -76,6 +76,21 @@ test('financial identities require nonblank strings and occurrence cannot be fut
   assert.equal(f.rows.length,0);assert.equal(f.outbox.length,0);
  }
 });
+test('financial identities reject NUL and lossy UTF-16 before database access',async()=>{
+ for(const field of ['authority_event_id','provider_event_id','provider','job_id'])
+  for(const value of ['identity\0suffix','\ud800','\ud801']){
+   const db={tx:()=>assert.fail('lossy financial identity reached database')};
+   await assert.rejects(recordFinancialEvent(db,sign({...event(),[field]:value}),key),/FINANCIAL_EVIDENCE_REQUIRED/);
+  }
+});
+test('valid opaque financial identities retain exact case, spacing and Unicode',async()=>{
+ const e={...event(),authority_event_id:' MF-É😀 ',provider_event_id:' Provider-ß😀 ',
+  provider:' RedBubble ',job_id:' Job-É😀 '};
+ const f=fixture(),r=await recordFinancialEvent(f.db,sign(e),key);
+ assert.equal(r.duplicate,false);
+ for(const field of ['authority_event_id','provider_event_id','provider','job_id'])
+  assert.equal(f.rows[0][field],e[field]);
+});
 test('new scoped event is recorded once with one outbox observation',async()=>{
  const f=fixture(),r=await recordFinancialEvent(f.db,sign(event()),key);
  assert.equal(r.duplicate,false);assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);

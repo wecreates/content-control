@@ -20,6 +20,11 @@ and evidence_id) and economics with these required fields:
 | source_evidence_ids | 1–32 unique nonempty IDs, including the price evidence_id |
 | observed_at_ms, valid_until_ms | Integer timestamps: observed by now, still valid |
 
+Every evidence identity must be nonblank, at most 256 JavaScript string
+characters, free of NUL and exactly round-trippable through UTF-8. Valid opaque
+case, spacing and Unicode are preserved. This keeps signed upstream identities
+stable when the release budget crosses Node and PostgreSQL boundaries.
+
 Expected receipts are per sold unit after marketplace deductions, including any
 platform printing/royalty calculation already applied upstream. Variable costs
 include all remaining per-unit costs and allocations under the approved upstream
