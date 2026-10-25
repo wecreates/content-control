@@ -16,7 +16,8 @@ provider event, amount, kind, currency, occurrence time, evidence hash or author
 identity is a conflict. Changing provider IDs must never multiply one upstream
 event into additional recorded income. Refreshed envelope timestamps do not
 change the underlying transaction. Identity strings must be nonblank and at most
-256 characters; occurrence must be a real past/present time, not a forecast.
+256 characters, contain no NUL and round-trip through UTF-8 exactly; occurrence
+must be a real past/present time, not a forecast.
 
 Use upstream-authorized line-level IDs for compound statements. This module does
 not invent allocation IDs or apportion one upstream event among multiple rows.

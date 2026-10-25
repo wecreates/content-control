@@ -2,12 +2,13 @@ import crypto from 'node:crypto';
 import {verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
+import {validOpaqueText} from './text-identity.mjs';
 
 
 
 export async function recordFinancialEvent(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
- if(e.verified!==true||!['authority_event_id','provider_event_id','provider','job_id'].every(k=>typeof e[k]==='string'&&e[k].trim().length>0&&e[k].length<=256)||
+ if(e.verified!==true||!['authority_event_id','provider_event_id','provider','job_id'].every(k=>validOpaqueText(e[k]))||
   !Number.isSafeInteger(e.amount_minor)||!['royalty','refund','fee','production_cost','generation_cost','tax','adjustment'].includes(e.kind)||
   !/^[A-Z]{3}$/.test(e.currency)||!validEvidenceTime(e.occurred_at)||
   typeof e.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(e.evidence_sha256))throw Error('FINANCIAL_EVIDENCE_REQUIRED');
