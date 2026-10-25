@@ -234,6 +234,7 @@ export class PodDB {
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'`,[jobId])).rows[0];
+  this.active();
   if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   return row;
