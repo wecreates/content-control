@@ -77,7 +77,9 @@ so Render also opened documentation-only deploy
 `evt-dbera134qb4c739vbtv0` respectively recorded deploy start, exhausted free
 pipeline minutes and deploy end. No application build ran and no runtime or
 configuration changed. The corrective evidence merge carries `[skip render]`
-in the merge title itself.
+in the merge title itself. Render event `evt-dberairbc2fs738gs280` then verified
+that exact corrective merge `919010ad3a89517ffb301d702ed1f67365cc0e18`
+was ignored rather than deployed.
 
 All 24 live acceptance areas remain **OPEN**. This closes one signed intake-
 identity persistence boundary only; code and hosted CI are not live source
