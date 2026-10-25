@@ -57,6 +57,13 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   const result=await produceOnce({db,...resolvers(),upstreamKey:key,root:process.cwd(),env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}});
   assert.equal(result.status,'REVIEW_REQUIRED');
   const saved=await db.reviewPackage(id);assert.equal(saved.reason_code,'REVIEW_REQUIRED');
+  // A later event may reuse a generic JSON field name, but it is not the
+  // provenance record for this held manifest and must not shadow that record.
+  await pool.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+   [crypto.randomUUID(),id,'pod.fixture.unrelated',{manifest_sha256:'0'.repeat(64)}]);
+  assert.equal((await db.reviewPackage(id)).manifest.package_sha256,saved.manifest.package_sha256);
+  const heldSha=Object.values(saved.manifest.files)[0];
+  assert.equal(hash((await db.reviewArtifact(id,heldSha)).body),heldSha);
   const summary=await metrics(db);assert.equal(summary.incident_count,'0');assert.ok(summary.queues.some(q=>q.state==='review_required')); 
   for(const sha of Object.values(saved.manifest.files))assert.equal(hash((await store.get(sha)).body),sha);
   const qa=sign({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:saved.manifest.package_sha256,template_sha256:saved.manifest.template_sha256,checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
