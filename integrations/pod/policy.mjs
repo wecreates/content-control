@@ -1,9 +1,10 @@
 import crypto from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {parseSignedJSON} from './signed-json.mjs';
+import {validOpaqueText} from './text-identity.mjs';
 export const PLATFORMS = Object.freeze(['kdp','redbubble','teepublic','zazzle','spreadshirt']);
 const modes = Object.freeze({RESEARCH:0,PRELAUNCH:1,LAUNCH:2});
-const evidenceId=value=>typeof value==='string'&&value.trim().length>0&&value.length<=256;
+const evidenceId=validOpaqueText;
 function exactEnvelopeRecord(envelope){
  try{
   if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||utilTypes.isProxy(envelope)||
