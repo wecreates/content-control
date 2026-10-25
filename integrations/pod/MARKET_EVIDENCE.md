@@ -122,3 +122,13 @@ Synthetic signed-envelope regressions cover arrays, nested arrays, objects,
 null and booleans, plus unchanged insert/replay parameters. This validates the
 intake contract only; collection permission, source truth and live acceptance
 still require attributable real evidence.
+
+## Lossless durable text
+
+The signed source URL and category, plus every string key and value nested in
+the observations JSON, must be representable by PostgreSQL UTF-8 text exactly.
+NUL and unpaired UTF-16 surrogates fail before transaction entry instead of
+reaching a text or JSONB parameter that PostgreSQL would reject or replace.
+Valid Unicode, source URL spelling, object keys, array order and JSON values are
+not normalized or repaired. This durability check does not establish source
+authorization, observation truth, market demand, rights clearance or freshness.

@@ -123,3 +123,27 @@ test('validated scalar source identity is passed unchanged for insert and exact 
  const replay=fixture({...o,id:'original-id',price_minor:'1200'});
  assert.deepEqual(await recordMarketObservation(replay.db,sign(o),key),{inserted:false,id:'original-id'});
 });
+test('persisted market text rejects NUL and lossy UTF-16 before database access',async()=>{
+ for(const field of ['source_url','category'])for(const value of [
+  field==='source_url'?'https://example.org/a\0b':'shirt\0sale',
+  field==='source_url'?'https://example.org/\ud800':'shirt-\ud800'
+ ]){
+  const f=fixture();
+  await assert.rejects(recordMarketObservation(f.db,sign({...observation(),[field]:value}),key),
+   /MARKET_(?:SOURCE|EVIDENCE)_INVALID/);
+  assert.equal(f.writes.length,0);
+ }
+});
+test('market observation JSON rejects lossy keys and values before database access',async()=>{
+ for(const observations of [
+  {note:'unsafe\0value'},
+  {note:'unsafe-\ud800'},
+  {'unsafe\0key':'value'},
+  {'unsafe-\ud800':'value'},
+  {nested:[{note:'unsafe\0value'}]}
+ ]){
+  const f=fixture();
+  await assert.rejects(recordMarketObservation(f.db,sign({...observation(),observations}),key),/MARKET_EVIDENCE_INVALID/);
+  assert.equal(f.writes.length,0);
+ }
+});
