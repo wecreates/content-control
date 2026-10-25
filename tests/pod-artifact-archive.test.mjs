@@ -214,6 +214,33 @@ test('restore requires both explicit disabled flags and rejects cancellation',as
  const controller=new AbortController();controller.abort();
  await assert.rejects(restoreArtifactLibrary(database(),{directory,key,env,signal:controller.signal}),e=>e.name==='AbortError');
 });
+for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test(`artifact restore stops after ${flag} changes during an insert`,async t=>{
+ const directory=await workspace(t),source=database([Buffer.from('one'),Buffer.from('two'),Buffer.from('three')]);
+ await exportArtifactLibrary(source,{directory,key});
+ const target=database(),tx=target.tx,settings={...env};let inserts=0;
+ target.tx=fn=>tx(client=>fn({query:async(...args)=>{
+  const result=await client.query(...args);
+  if(args[0].startsWith('INSERT INTO public.pod_artifacts')&&++inserts===1)settings[flag]='true';
+  return result;
+ }}));
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env:settings}),/ARCHIVE_PUBLICATION_MUST_BE_DISABLED/);
+ assert.equal(inserts,1,'no later artifact should be inserted after the flag changes');
+ assert.equal(target.rows.size,0,'the transaction should roll back the first insert');
+});
+test('artifact restore does not insert after cancellation during the existing-row lookup',async t=>{
+ const directory=await workspace(t),source=database([Buffer.from('cancellation boundary')]);
+ await exportArtifactLibrary(source,{directory,key});
+ const target=database(),tx=target.tx,controller=new AbortController();let inserts=0;
+ target.tx=fn=>tx(client=>fn({query:async(...args)=>{
+  const result=await client.query(...args);
+  if(args[0].startsWith('SELECT media_type,octet_length'))controller.abort();
+  if(args[0].startsWith('INSERT INTO public.pod_artifacts'))inserts++;
+  return result;
+ }}));
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env,signal:controller.signal}),error=>error.name==='AbortError');
+ assert.equal(inserts,0);
+ assert.equal(target.rows.size,0);
+});
 test('target budget and conflicting immutable metadata fail without partial writes',async t=>{
  const directory=await workspace(t),body=Buffer.from('source');await exportArtifactLibrary(database([body]),{directory,key});
  const target=database([Buffer.from('already-full')]);
