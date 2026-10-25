@@ -34,22 +34,30 @@ export class ArtifactStore {
   if(!hashes.length)return [];
   return this.db.tx(async c=>{
    await c.query('SELECT pg_advisory_xact_lock($1)',[543211]);
+   this.db.active();
    const existing=new Set();
    // Hash presence alone is insufficient: legacy corrupt bytes or conflicting
    // immutable media metadata must not be reported as a successful replay.
    // Compute existing digests in PostgreSQL to avoid fetching duplicate blobs
    // into the low-memory Node process. No pgcrypto extension is required.
-   for(const row of (await c.query("SELECT sha256,media_type,encode(sha256(body),'hex') AS body_sha256 FROM pod_artifacts WHERE sha256=ANY($1::text[])",[[...unique.keys()]])).rows){
+   const stored=await c.query("SELECT sha256,media_type,encode(sha256(body),'hex') AS body_sha256 FROM pod_artifacts WHERE sha256=ANY($1::text[])",[[...unique.keys()]]);
+   this.db.active();
+   for(const row of stored.rows){
     const expected=unique.get(row.sha256);
     if(!expected||row.media_type!==expected.mediaType||row.body_sha256!==row.sha256)throw Error('ARTIFACT_CONFLICT');
     existing.add(row.sha256);
    }
    const missing=[...unique].filter(([sha])=>!existing.has(sha));
    if(!missing.length)return hashes;
-   const used=BigInt((await c.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts')).rows[0].bytes);
+   const usage=await c.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts');
+   this.db.active();
+   const used=BigInt(usage.rows[0].bytes);
    const needed=missing.reduce((sum,[,artifact])=>sum+BigInt(artifact.body.length),0n);
    if(used+needed>BigInt(this.budgetBytes))throw Error('ARTIFACT_BUDGET_EXHAUSTED');
-   for(const [sha,{body,mediaType}] of missing)await c.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha,body,mediaType]);
+   for(const [sha,{body,mediaType}] of missing){
+    await c.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha,body,mediaType]);
+    this.db.active();
+   }
    return hashes;
   });
  }
