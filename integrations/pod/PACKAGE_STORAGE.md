@@ -69,6 +69,13 @@ storage. A legacy or foreign row cannot become downloadable merely because its
 hash and role-correct media metadata agree. These retrieval checks preserve the
 production media contract; they do not replace full decoding or independent QA.
 
+The manifest identity used by authenticated package and artifact retrieval comes
+only from the immutable `pod.production.review_required` event for that job.
+Another event cannot shadow the hold merely by carrying a field also named
+`manifest_sha256`; the selected identity must still match the current stored
+manifest exactly. This event-kind binding preserves review provenance but does
+not itself establish independent approval or live retention.
+
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.
 If present it must be a positive decimal integer string of at most 134217728;

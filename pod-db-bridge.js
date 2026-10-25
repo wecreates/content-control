@@ -229,7 +229,8 @@ export class PodDB {
  async reviewPackage(jobId){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
   const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
-   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id AND e.payload ? 'manifest_sha256'
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+    AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'`,[jobId])).rows[0];
@@ -242,7 +243,8 @@ export class PodDB {
   // Resolve the hold, manifest and bytes in one database snapshot. A bearer
   // key and a known content hash alone must not expose unrelated stored data.
   const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
-   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id AND e.payload ? 'manifest_sha256'
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+    AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
    a.body,a.media_type
    FROM pod_production_queue q JOIN pod_artifacts a ON a.sha256=$2
