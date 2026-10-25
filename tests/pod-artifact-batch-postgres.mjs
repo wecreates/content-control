@@ -13,7 +13,7 @@ export async function verifyArtifactBatch(pool,db){
 
  // Real transaction rollback after the first INSERT, not a mock commit map.
  const rollbackItems=[item(),item()];let inserts=0;
- const interrupted={tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
+ const interrupted={active:()=>db.active(),tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
   if(sql.startsWith('INSERT INTO pod_artifacts')&&++inserts===2)throw Error('SYNTHETIC_SECOND_INSERT_FAILURE');
   return client.query(sql,args);
  }}))};
@@ -46,7 +46,7 @@ export async function verifyArtifactBatch(pool,db){
  assert.equal(await used(),initial+128);assert.equal(await count(winner),2);
  // Mutate caller-owned bytes while the real transaction awaits its lock query.
  const mutable=item(),original=Buffer.from(mutable.body),originalSha=sha(mutable);
- const racingDB={tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
+ const racingDB={active:()=>db.active(),tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
   const result=await client.query(sql,args);
   if(sql.includes('pg_advisory_xact_lock'))mutable.body.fill(120);
   return result;
