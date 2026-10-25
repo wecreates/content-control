@@ -69,6 +69,16 @@ not run, so hosted runtime behavior remains unverified. No manual retry,
 purchase, plan/cache change, replacement service, secret access or network
 widening occurred.
 
+The first receipt merge title did not carry the skip token from its head commit,
+so Render also opened documentation-only deploy
+`dep-dbera0ss728c73crt6gg` for merge
+`7c5fc1d44fbf4a0a19ccc95205d8ebe68cac2562`. Events
+`evt-dbera0rphbkc739vnem0`, `evt-dbera0ta647c73egiuq0` and
+`evt-dbera134qb4c739vbtv0` respectively recorded deploy start, exhausted free
+pipeline minutes and deploy end. No application build ran and no runtime or
+configuration changed. The corrective evidence merge carries `[skip render]`
+in the merge title itself.
+
 All 24 live acceptance areas remain **OPEN**. This closes one signed intake-
 identity persistence boundary only; code and hosted CI are not live source
 authorization, database, marketplace or deployment acceptance. Production
