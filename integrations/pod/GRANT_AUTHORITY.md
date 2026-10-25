@@ -42,6 +42,22 @@ duplicate consumer check is deliberate defense in depth for authenticated data;
 it does not prove the named job, account or business exists, is owner-authorized
 or is currently eligible. Those live acceptance requirements remain separate.
 
+## Lossless queue scope
+
+After authenticating the current grant and enforcing its production scope, the
+queue admission boundary independently requires the concept identity to satisfy
+the same bounded, nonblank, NUL-free, exact UTF-8 text contract. The revision
+must be an exact positive integer no larger than PostgreSQL `int4` maximum
+2147483647. Invalid queue scope fails before acquiring a database connection;
+PostgreSQL casts, JavaScript JSON coercion and idempotency hashing never repair
+or reinterpret it. Authentication deliberately remains first so malformed
+queue fields cannot mask an invalid signature.
+
+These checks preserve the supplied identity and revision exactly. They do not
+prove that the concept exists, belongs to the business, has current rights or
+can satisfy the UUID schema; those conditions remain transactionally enforced
+by the dedicated production database and live acceptance evidence.
+
 ## Strict verifier time
 
 Content Control requires the current verifier clock and signed issued_at_ms and
