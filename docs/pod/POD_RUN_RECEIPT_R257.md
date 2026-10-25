@@ -62,6 +62,10 @@ Render automatically attempted exact Content Control merge
 Hosted behavior remains unverified. No manual retry, purchase, plan/cache
 change, replacement service, secret access or network widening occurred.
 
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbf0h4mq1p3s73em9s20` verifies that exact merge
+`3ec2a58b133c97c5cb333167b00eb3f034ac24e2` was ignored rather than deployed.
+
 All 24 live acceptance areas remain **OPEN**. This repair closes one
 review-package retention boundary only; code and hosted CI are not live storage,
 database, marketplace or deployment acceptance. Restricted production
