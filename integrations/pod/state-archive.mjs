@@ -34,13 +34,15 @@ async function expectedVersions(){
  if(JSON.stringify(names)!==JSON.stringify(MIGRATIONS))throw Error('STATE_ARCHIVE_SCHEMA_UNSUPPORTED');
  return Promise.all(names.map(async version=>({version,sha256:hash(await fs.readFile(new URL(version,directory)))})));
 }
-async function schema(client){
+async function schema(client,checkpoint=()=>{}){
  const versions=(await client.query('SELECT version,sha256 FROM public.pod_schema_version ORDER BY version')).rows;
- if(JSON.stringify(versions)!==JSON.stringify(await expectedVersions()))throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
+ checkpoint();const expected=await expectedVersions();checkpoint();
+ if(JSON.stringify(versions)!==JSON.stringify(expected))throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
  const columns={};
  for(const table of NAMES){
   columns[table]=(await client.query(`SELECT a.attname AS name,format_type(a.atttypid,a.atttypmod) AS type,
    a.attnotnull AS required FROM pg_attribute a WHERE a.attrelid=$1::regclass AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum`,['public.'+table])).rows;
+  checkpoint();
   if(!columns[table].length)throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
  }
  return {versions,columns};
@@ -104,45 +106,51 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 }
 
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
- config(directory,key);disabled(env);signal?.throwIfAborted();const budget=artifactBudgetBytes(env);
+ const checkpoint=()=>{signal?.throwIfAborted();disabled(env);};
+ config(directory,key);checkpoint();const budget=artifactBudgetBytes(env);
  const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false;
  try{
-  client=await db.pool.connect();
-  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-  await client.query("SET LOCAL statement_timeout='10s'");await client.query("SET LOCAL lock_timeout='2s'");
-  await client.query("SET LOCAL timezone='UTC'");await client.query("SET LOCAL datestyle='ISO, YMD'");await client.query("SET LOCAL bytea_output='hex'");
-  const structure=await schema(client);
+  checkpoint();
+  client=await db.pool.connect();checkpoint();
+  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');checkpoint();
+  await client.query("SET LOCAL statement_timeout='10s'");checkpoint();
+  await client.query("SET LOCAL lock_timeout='2s'");checkpoint();
+  await client.query("SET LOCAL timezone='UTC'");checkpoint();
+  await client.query("SET LOCAL datestyle='ISO, YMD'");checkpoint();
+  await client.query("SET LOCAL bytea_output='hex'");checkpoint();
+  const structure=await schema(client,checkpoint);
   const catalog={schema_version:1,scope:'pod_tables_only',snapshot_id:crypto.randomUUID(),created_at:new Date().toISOString(),
    tables:NAMES,...structure,items:[]};
   for(const table of NAMES){
+   checkpoint();
    await client.query(`DECLARE pod_state_export NO SCROLL CURSOR FOR SELECT CASE WHEN octet_length(row_to_json(t)::text)<=${MAX_ROW}
     THEN row_to_json(t)::text ELSE NULL END AS record FROM public.${table} t ORDER BY ${TABLES[table]}`);
+   checkpoint();
    while(true){
-    signal?.throwIfAborted();const {rows}=await client.query('FETCH FORWARD 1 FROM pod_state_export');if(!rows.length)break;
+    checkpoint();const {rows}=await client.query('FETCH FORWARD 1 FROM pod_state_export');checkpoint();if(!rows.length)break;
     if(typeof rows[0].record!=='string')throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
     const body=Buffer.from(rows[0].record);bytes+=body.length;
     if(body.length>MAX_ROW||bytes>MAX_TOTAL||catalog.items.length>=MAX_ROWS)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
     artifacts+=inspectRecord(body,table,structure.columns[table]);if(artifacts>budget)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
     const item={index:catalog.items.length,table,sha256:hash(body),bytes:body.length};
-    await writeNew(path.join(opened.base,recordFile(item.index)),seal(body,key,aad(catalog.snapshot_id,item)));catalog.items.push(item);
+    await writeNew(path.join(opened.base,recordFile(item.index)),seal(body,key,aad(catalog.snapshot_id,item)));checkpoint();catalog.items.push(item);
    }
-   await client.query('CLOSE pod_state_export');
+   await client.query('CLOSE pod_state_export');checkpoint();
   }
   const body=Buffer.from(JSON.stringify(catalog));if(body.length>MAX_CATALOG)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
-  disabled(env);signal?.throwIfAborted();await client.query('COMMIT');
-  signal?.throwIfAborted();disabled(env);
+  checkpoint();await client.query('COMMIT');checkpoint();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
-  await writeNew(path.join(opened.base,'catalog.pod'),encrypted);
-  await assertArchiveDirectory(directory,opened);await syncArchiveDirectory(directory,opened);
+  await writeNew(path.join(opened.base,'catalog.pod'),encrypted);checkpoint();
+  await assertArchiveDirectory(directory,opened);checkpoint();await syncArchiveDirectory(directory,opened);checkpoint();
   // Re-authenticate every durable record through the pinned directory. A
   // successful fsync and stable root do not prove that closed files were not
   // replaced before the success receipt.
-  signal?.throwIfAborted();disabled(env);await assertArchiveDirectory(directory,opened);
+  checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
   const verified=await verifyStateArchiveAt({directory,key,signal,budgetBytes:budget,base:opened.base});
   if(verified.archive_sha256!==hash(encrypted)||verified.snapshot_id!==catalog.snapshot_id||
    verified.records!==catalog.items.length||verified.bytes!==bytes||verified.artifact_bytes!==artifacts)
    throw Error('STATE_ARCHIVE_CHANGED');
-  signal?.throwIfAborted();disabled(env);await assertArchiveDirectory(directory,opened);
+  checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){

@@ -151,8 +151,12 @@ filesystem that supports directory fsync. This does not synchronize newly create
 ancestors owned by another process, qualify storage hardware against power loss,
 create off-host retention, extend database expiry or complete a live restore drill.
 
-State export also rechecks both explicitly false publication flags after its
-read-only COMMIT and after the final directory flush. A flag change during
+State export also rechecks both explicitly false publication flags after every
+asynchronous database and filesystem boundary: directory creation, connection,
+transaction setup, schema inspection, cursor declaration/fetch/close, encrypted
+record writes, read-only COMMIT, encrypted catalog write, directory identity and
+flush, and final re-authentication. A change during connection or fetch stops
+before database setup or record creation respectively. A flag change during
 COMMIT prevents catalog creation; a change during later file/directory flushing
 rejects EXPORTED even when readable, authenticated ciphertext remains. The
 completed read-only transaction is not undone by this rejection. Offline
