@@ -157,7 +157,8 @@ test('cleanup clears nested generated output without following symlinks',async()
 test('task descriptor blocks traversal and absent roles',()=>{
  assert.throws(()=>validateTask({...task,files:{'../escape':sha}}),/TASK_FILES_INVALID/);
  assert.throws(()=>validateTask({...task,source:'absent'}),/TASK_ROLE_INVALID/);
- for(const templateScope of [undefined,{}, {product:'',country:'US'}, {product:'shirt',country:'us'}]){
+ for(const templateScope of [undefined,{}, {product:'',country:'US'}, {product:'shirt',country:'us'},
+  {product:'shirt\0unsafe',country:'US'},{product:'shirt-\ud800',country:'US'}]){
   assert.throws(()=>validateTask({...task,templateScope}),/TASK_TEMPLATE_SCOPE_REQUIRED/);
  }
 });

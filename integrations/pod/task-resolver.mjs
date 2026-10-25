@@ -5,6 +5,7 @@ import path from 'node:path';
 import {ArtifactStore} from './artifacts.mjs';
 import {createGrantResolver} from './grant-client.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
+import {validOpaqueText} from './text-identity.mjs';
 const hash=/^[a-f0-9]{64}$/;
 const outputNames=new Set(['package','qa.json','qa-signed.json']);
 const interiorRoles=['template','pages','font','fontRights','fontLicense','source','bookDetails','regionalRightsEvidence'];
@@ -79,7 +80,7 @@ export function validateTask(task){
  const entries=Object.entries(task.files);
  if(!entries.length||entries.length>32||entries.some(([name,sha])=>!/^[-a-zA-Z0-9_.]{1,100}$/.test(name)||name==='.'||name==='..'||
   outputNames.has(name.toLowerCase())||typeof sha!=='string'||!hash.test(sha)))throw Error('TASK_FILES_INVALID');
- if(typeof task.templateScope?.product!=='string'||!task.templateScope.product.trim()||task.templateScope.product.length>128||
+ if(!validOpaqueText(task.templateScope?.product,{maxLength:128})||
   typeof task.templateScope?.country!=='string'||!/^[A-Z]{2}$/.test(task.templateScope.country))throw Error('TASK_TEMPLATE_SCOPE_REQUIRED');
  const roles=['source','template','textLayers','assetRights','reference'];
  const has=n=>typeof n==='string'&&Object.hasOwn(task.files,n);
