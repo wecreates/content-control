@@ -35,7 +35,7 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
    target=new PodDB({pool:restricted(pools[1]),bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
   const store=new ArtifactStore(source),contents=[Buffer.from('first exact fixture bytes'),Buffer.from('second exact fixture bytes')];
   const hashes=await Promise.all(contents.map(body=>store.put(body,'application/json')));
-  const receipt=await exportArtifactLibrary(source,{directory,key});assert.equal(receipt.objects,2);
+  const receipt=await exportArtifactLibrary(source,{directory,key,env});assert.equal(receipt.objects,2);
   const verified=await verifyArtifactLibrary({directory,key});assert.equal(verified.objects,2);
   assert.equal(verified.archive_sha256,crypto.createHash('sha256').update(await fs.readFile(path.join(directory,'catalog.pod'))).digest('hex'));
   const broken=path.join(directory,[...hashes].sort().at(-1)+'.pod'),original=await fs.readFile(broken),corrupt=Buffer.from(original);
@@ -109,7 +109,7 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   }};
   const legacyDB=new PodDB({pool:boundedPool,bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
   const rejectedDirectory=path.join(root,'oversized-export');
-  await assert.rejects(exportArtifactLibrary(legacyDB,{directory:rejectedDirectory,key}),/ARCHIVE_ARTIFACT_INVALID/);
+  await assert.rejects(exportArtifactLibrary(legacyDB,{directory:rejectedDirectory,key,env}),/ARCHIVE_ARTIFACT_INVALID/);
   await assert.rejects(fs.stat(path.join(rejectedDirectory,'catalog.pod')),error=>error.code==='ENOENT');
   await assert.rejects(restoreArtifactLibrary(legacyDB,{directory,key,env}),/ARCHIVE_RESTORE_CONFLICT/);
   assert.deepEqual((await legacy.query('SELECT count(*)::int AS n,max(octet_length(body)) AS bytes FROM public.pod_artifacts')).rows[0],{n:1,bytes:16777217});

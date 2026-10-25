@@ -12,6 +12,9 @@ function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
   !Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('ARCHIVE_CONFIG_INVALID');
 }
+function assertPublicationDisabled(env){
+ if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+}
 const aad=item=>`pod:artifact:v1:${item.sha256}:${item.media_type}:${item.bytes}`;
 
 async function readCatalog({directory,key,budgetBytes,signal,base}){
@@ -54,8 +57,8 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
 
 // Reads only the dedicated artifact table, never queue envelopes or the social vault.
 // A repeatable-read snapshot keeps the final catalog tied to the exported bytes.
-export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,signal}={}){
- config(directory,key,budgetBytes);signal?.throwIfAborted();
+export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
+ config(directory,key,budgetBytes);signal?.throwIfAborted();assertPublicationDisabled(env);
  const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
  let client;const items=[];let bytes=0,bad=false;
  try{
@@ -68,7 +71,9 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
    CASE WHEN octet_length(body) BETWEEN 1 AND ${MAX_OBJECT} THEN body ELSE NULL END AS body
    FROM public.pod_artifacts ORDER BY sha256`);
   while(true){
-   signal?.throwIfAborted();const {rows}=await client.query('FETCH FORWARD 1 FROM pod_artifact_export');if(!rows.length)break;
+   signal?.throwIfAborted();assertPublicationDisabled(env);
+   const {rows}=await client.query('FETCH FORWARD 1 FROM pod_artifact_export');
+   signal?.throwIfAborted();assertPublicationDisabled(env);if(!rows.length)break;
    const row=rows[0];
    if(!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>MAX_OBJECT||digest(row.body)!==row.sha256||!TYPES.has(row.media_type))throw Error('ARCHIVE_ARTIFACT_INVALID');
    bytes+=row.body.length;if(bytes>budgetBytes||items.length>=MAX_ITEMS)throw Error('ARCHIVE_BUDGET_EXCEEDED');
@@ -77,11 +82,13 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   }
   const catalog=Buffer.from(JSON.stringify({schema_version:1,scope:'artifacts_only',created_at:new Date().toISOString(),items}));
   if(catalog.length>MAX_CATALOG)throw Error('ARCHIVE_CATALOG_TOO_LARGE');
-  await client.query('COMMIT');signal?.throwIfAborted();
+  assertPublicationDisabled(env);await client.query('COMMIT');signal?.throwIfAborted();assertPublicationDisabled(env);
   // Written last: an interrupted export without this catalog is not restorable.
   const encryptedCatalog=seal(catalog,key,'pod:artifact-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encryptedCatalog);
+  signal?.throwIfAborted();assertPublicationDisabled(env);
   await assertArchiveDirectory(directory,opened);await syncArchiveDirectory(directory,opened);
+  signal?.throwIfAborted();assertPublicationDisabled(env);
   // Re-authenticate the durable bytes through the pinned directory. A flush
   // can succeed even if another actor replaces a closed object before the
   // receipt, so directory identity alone cannot authorize EXPORTED.
@@ -89,7 +96,8 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   const verified=await readCatalog({directory,key,budgetBytes,signal,base:opened.base});
   if(verified.archive_sha256!==digest(encryptedCatalog))throw Error('ARCHIVE_CHANGED');
   await verifyItems(verified.catalog,{directory,key,budgetBytes,signal,base:opened.base});
-  signal?.throwIfAborted();await assertArchiveDirectory(directory,opened);
+  signal?.throwIfAborted();assertPublicationDisabled(env);await assertArchiveDirectory(directory,opened);
+  assertPublicationDisabled(env);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){
   // An unsuccessful rollback leaves transaction state unknown. Never return
@@ -101,14 +109,14 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
  budgetBytes=Math.min(budgetBytes,artifactBudgetBytes(env));
- if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+ assertPublicationDisabled(env);
  const opened=await openArchiveDirectory(directory),options={directory,key,budgetBytes,signal,base:opened.base};
  try{
  const {catalog,bytes}=await readCatalog(options);
  // Reject an already broken backup before acquiring a database connection/lock.
  // Read and authenticate again during insertion to catch intervening changes.
  await verifyItems(catalog,options);
- if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+ assertPublicationDisabled(env);
  const restored=await db.tx(async client=>{
   await client.query('SELECT pg_advisory_xact_lock($1)',[543211]);
   let used=BigInt((await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts')).rows[0].bytes),inserted=0;
@@ -129,7 +137,7 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   // Keep this inside the transaction so a replacement rolls back all inserts.
   await assertArchiveDirectory(directory,opened);
   signal?.throwIfAborted();
-  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+  assertPublicationDisabled(env);
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
@@ -137,7 +145,7 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
  // change without claiming rollback or encouraging a blind retry.
  await assertArchiveDirectory(directory,opened);
  signal?.throwIfAborted();
- if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
+ assertPublicationDisabled(env);
  return restored;
  }finally{await closeArchiveDirectory(opened);}
 }

@@ -6,13 +6,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
-import {exportArtifactLibrary,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
+import {exportArtifactLibrary as exportArtifactLibraryImpl,restoreArtifactLibrary,verifyArtifactLibrary} from '../integrations/pod/artifact-archive.mjs';
 import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
 import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
 import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+const exportArtifactLibrary=(db,options={})=>exportArtifactLibraryImpl(db,{env,...options});
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
 function database(values=[]){
  const rows=new Map(values.map(value=>{
@@ -41,6 +42,44 @@ for(const phase of ['commit','catalog','parent'])test('artifact export rejects c
   run:signal=>exportArtifactLibrary(db,{directory,key,signal}),
   verify:()=>verifyArtifactLibrary({directory,key})});
 });
+test('artifact export requires both publication kill switches before creating an archive',async t=>{
+ const directory=await workspace(t),db=database(),connect=t.mock.method(db.pool,'connect');
+ for(const flags of [{},{...env,PUBLICATION_ENABLED:'true'},{PUBLICATION_ENABLED:'false'}]){
+  await assert.rejects(exportArtifactLibrary(db,{directory,key,env:flags}),/ARCHIVE_PUBLICATION_MUST_BE_DISABLED/);
+  await assert.rejects(fs.stat(directory),{code:'ENOENT'});
+ }
+ assert.equal(connect.mock.callCount(),0);
+});
+for(const phase of ['commit','catalog','archive','parent'])for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+ test(`artifact export rejects ${flag} changing during ${phase} completion`,async t=>{
+  const directory=await workspace(t),db=database([Buffer.from('flag transition fixture')]),settings={...env};
+  const client=await db.pool.connect(),releases=[];
+  t.mock.method(db.pool,'connect',async()=>client);
+  t.mock.method(client,'release',discard=>releases.push(discard));
+  const query=client.query.bind(client);
+  t.mock.method(client,'query',async(...args)=>{
+   const result=await query(...args);
+   if(phase==='commit'&&args[0]==='COMMIT')settings[flag]='true';
+   return result;
+  });
+  const open=fs.open.bind(fs),target=phase==='catalog'?'catalog.pod':
+   phase==='archive'?path.basename(directory):path.dirname(directory);
+  const mock=t.mock.method(fs,'open',async(file,...args)=>{
+   const handle=await open(file,...args);
+   const matched=phase==='catalog'?path.basename(file)===target&&args[0]==='wx':
+    phase==='archive'?typeof file==='string'&&file.startsWith('/proc/self/fd/')&&path.basename(file)===target:file===target;
+   if(phase==='commit'||!matched)return handle;
+   return {fd:handle.fd,stat:handle.stat.bind(handle),writeFile:handle.writeFile?.bind(handle),
+    async sync(){await handle.sync();settings[flag]='true';},close:handle.close.bind(handle)};
+  });
+  try{
+   await assert.rejects(exportArtifactLibrary(db,{directory,key,env:settings}),/ARCHIVE_PUBLICATION_MUST_BE_DISABLED/);
+   assert.deepEqual(releases,[false]);assert.equal(db.queries.includes('COMMIT'),true);
+   if(phase==='commit')await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),{code:'ENOENT'});
+   else assert.equal((await verifyArtifactLibrary({directory,key})).status,'VERIFIED');
+  }finally{mock.mock.restore();}
+ });
+}
 for(const fault of [undefined,'archive:sync','parent:open','parent:sync'])test('artifact export requires complete directory flush: '+(fault||'success'),async t=>{
  const directory=await workspace(t);
  await verifyExportFlush(t,directory,()=>exportArtifactLibrary(database([Buffer.from('flush fixture')]),{directory,key}),{fault});
