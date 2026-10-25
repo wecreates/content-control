@@ -72,6 +72,11 @@ Authenticated review-package, review-artifact and owner job-list endpoints map
 that exact cutoff to sanitized HTTP 503 `POD_STORAGE_UNAVAILABLE`. They retain
 their existing redacted 404/409 responses for unrelated lookup or validation
 failures, so an operations outage is actionable without disclosing record state.
+The same exact-only mapping applies to authenticated artifact upload, repair,
+review acceptance, market/listing/financial evidence, concept intake and queue
+creation routes. `POD_STORAGE_EXPIRING` returns sanitized HTTP 503
+`POD_STORAGE_UNAVAILABLE`; signature, scope, validation, budget and record-state
+failures retain their existing redacted HTTP 409 responses.
 
 ## Manual diagnostics when startup is blocked
 
