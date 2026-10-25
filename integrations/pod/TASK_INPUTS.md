@@ -33,7 +33,10 @@ stored input bytes to make a malformed task run.
 
 The required roles are `source`, `template`, `textLayers`, `assetRights` and
 `reference`; each references a declared input filename. `templateScope` requires
-a nonempty product and uppercase two-letter country. KDP interior tasks additionally
+a nonempty product and uppercase two-letter country. Product text must contain
+no NUL and round-trip through UTF-8 exactly; it is never normalized or repaired.
+Signed template source URLs and KDP archive-member paths follow the same
+lossless-text rule before URL, path or process handling. KDP interior tasks additionally
 provide an object named `interior` containing **exactly** `template`, `pages`,
 `font`, `fontRights`, `fontLicense`, `source`, `bookDetails` and
 `regionalRightsEvidence`, each referencing a declared filename. Omit `interior`

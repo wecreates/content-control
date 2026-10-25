@@ -365,6 +365,25 @@ test('template provenance rejects credential URLs and future observations',()=>{
   assert.throws(()=>validateTemplate(sign({...record(),...change}),key,{platform:'redbubble',...scope}),/TEMPLATE_PROVENANCE_REQUIRED/);
  }
 });
+test('template provenance rejects NUL and lossy UTF-16 text',()=>{
+ for(const unsafe of ['\0','\ud800']){
+  const product=`fixture-${unsafe}-shirt`;
+  assert.throws(()=>validateTemplate(sign({...record(),product}),key,{platform:'redbubble',product,country:'US'}),
+   /TEMPLATE_PROVENANCE_REQUIRED/);
+  assert.throws(()=>validateTemplate(sign({...record(),source_url:`https://example.org/${unsafe}template`}),key,
+   {platform:'redbubble',...scope}),/TEMPLATE_PROVENANCE_REQUIRED/);
+  const interior={...record('kdp'),audience:'pod:interior-template',source_member:`English/template-${unsafe}.docx`};
+  assert.throws(()=>validateInteriorTemplate(sign(interior),key,{platform:'kdp',...scope}),/TEMPLATE_PROVENANCE_REQUIRED/);
+ }
+});
+test('valid Unicode template provenance text remains accepted without normalization',()=>{
+ const product='fixture-😀-e\u0301',source_url='https://example.org/Template%2fExact?b=2&a=1#fragment';
+ assert.deepEqual(validateTemplate(sign({...record(),product,source_url}),key,
+  {platform:'redbubble',product,country:'US'}),record().template);
+ const interior={...record('kdp'),product,audience:'pod:interior-template',
+  source_url,source_member:'English/Édition/6 x 9 😀.docx'};
+ assert.deepEqual(validateInteriorTemplate(sign(interior),key,{platform:'kdp',product,country:'US'}),interior.template);
+});
 test('template scope is explicitly required even when record fields are missing',()=>{
  const r=record();delete r.product;delete r.country;
  assert.throws(()=>validateTemplate(sign(r),key,{platform:'redbubble'}),/TEMPLATE_PROVENANCE_REQUIRED/);

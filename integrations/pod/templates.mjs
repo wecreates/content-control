@@ -1,17 +1,19 @@
 import {verifyEnvelope,PLATFORMS} from './policy.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
 import {requireKdpPaperbackOptions} from './kdp-paperback-options.mjs';
+import {validOpaqueText,validPostgresText} from './text-identity.mjs';
 function provenance(envelope,key,{platform,product,country},audience,now){
  const record=verifyEnvelope(envelope,key,audience,now),t=record.template;
+ if(!validPostgresText(record.source_url))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
  let source;try{source=new URL(record.source_url);}catch{throw Error('TEMPLATE_PROVENANCE_REQUIRED');}
  if(!PLATFORMS.includes(platform)||t?.platform!==platform||
-  typeof product!=='string'||!product.trim()||product.length>128||typeof country!=='string'||!/^[A-Z]{2}$/.test(country)||
+  !validOpaqueText(product,{maxLength:128})||typeof country!=='string'||!/^[A-Z]{2}$/.test(country)||
   record.product!==product||record.country!==country||record.official_source_verified!==true||
   source.protocol!=='https:'||source.username||source.password||
   typeof record.source_sha256!=='string'||!/^[a-f0-9]{64}$/.test(record.source_sha256)||
   !validEvidenceTime(record.observed_at,now))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
  if(audience==='pod:interior-template'&&(
-  typeof record.source_member!=='string'||record.source_member.length<1||record.source_member.length>512||
+  !validOpaqueText(record.source_member,{maxLength:512})||
   record.source_member.startsWith('/')||record.source_member.includes('\\')||
   record.source_member.split('/').some(part=>!part||part==='.'||part==='..')||
   !record.source_member.toLowerCase().endsWith('.docx')))throw Error('TEMPLATE_PROVENANCE_REQUIRED');
