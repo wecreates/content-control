@@ -15,7 +15,7 @@ function brief(fields={}){
 }
 
 test('signed claim evidence must contain bounded nonblank primitive references',()=>{
- for(const ref of [null,false,0,[],{},['event'],'',' \t\n','x'.repeat(257)]){
+ for(const ref of [null,false,0,[],{},['event'],'',' \t\n','identity\0suffix','\ud800','\ud801','x'.repeat(257)]){
   assert.deepEqual(brief({verified_facts:{title:fact([ref])}}).facts,{},JSON.stringify(ref));
   assert.deepEqual(brief({verified_facts:{title:fact(['valid',ref])}}).facts,{});
  }
@@ -26,7 +26,8 @@ test('signed claim evidence must contain bounded nonblank primitive references',
 test('a fact collection must be an object and empty claims are omitted',()=>{
  assert.deepEqual(brief({verified_facts:[fact()]}).facts,{});
  for(const value of ['', ' \n\t'])assert.deepEqual(brief({verified_facts:{title:{...fact(),value}}}).facts,{});
- assert.deepEqual(brief({verified_facts:{'':fact()}}).facts,{});
+ for(const name of ['', 'identity\0suffix','\ud800','\ud801'])
+  assert.deepEqual(brief({verified_facts:{[name]:fact()}}).facts,{});
 });
 test('malformed references cannot support shipping or financial claims even with authority flags',()=>{
  for(const name of ['shipping','safety','warranty','revenue','profit']){
@@ -36,7 +37,7 @@ test('malformed references cannot support shipping or financial claims even with
 });
 test('verified prices require an exact currency and a valid evidence reference',()=>{
  const price={verified:true,amount_minor:100,currency:'USD',evidence_id:'price-event'};
- for(const evidence_id of [null,false,1,[],{},['event'],'',' \n','x'.repeat(257)])
+ for(const evidence_id of [null,false,1,[],{},['event'],'',' \n','identity\0suffix','\ud800','\ud801','x'.repeat(257)])
   assert.equal(brief({price:{...price,evidence_id}}).price,null);
  for(const currency of [['USD'],{},'USD\n','USD\r','usd','US','USDD'])
   assert.equal(brief({price:{...price,currency}}).price,null);
