@@ -28,6 +28,20 @@ The authority re-evaluates approval after loading its snapshot. Revoked or expir
 
 Publication remains separately disabled. Grant renewal does not validate rights, QA, provider eligibility, print templates, storage, or profits and cannot substitute for those gates.
 
+## Lossless production scope identities
+
+The signed grant consumer independently requires the job, account and business
+identities to be bounded, nonblank primitive strings that contain no NUL and
+round-trip through UTF-8 exactly. Matching malformed values on both sides of the
+scope comparison cannot authorize a brief or reach later PostgreSQL, JSON or
+adapter boundaries. Valid Unicode, combining marks and surrounding whitespace
+remain exact; the consumer does not trim, normalize or repair authority scope.
+
+Money Factory applies the same identity contract before issuing a grant. The
+duplicate consumer check is deliberate defense in depth for authenticated data;
+it does not prove the named job, account or business exists, is owner-authorized
+or is currently eligible. Those live acceptance requirements remain separate.
+
 ## Strict verifier time
 
 Content Control requires the current verifier clock and signed issued_at_ms and
