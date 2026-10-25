@@ -40,6 +40,28 @@ for(const phase of ['commit','catalog','parent'])test('state export rejects canc
   run:signal=>exportStateArchive(f.db,{...f,key,env,signal}),
   verify:()=>verifyStateArchive({...f,key})});
 });
+for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+ test(`state export stops before database setup when ${flag} changes during connection`,async t=>{
+  const f=await fixture(t),settings={...env},client=await f.db.pool.connect(),releases=[];
+  client.release=discard=>releases.push(discard);
+  f.db.pool.connect=async()=>{settings[flag]='true';return client;};
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env:settings}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
+  assert.deepEqual(f.queries,['ROLLBACK']);assert.deepEqual(releases,[false]);
+  await assert.rejects(fs.stat(path.join(f.directory,'00000.pod')),{code:'ENOENT'});
+ });
+ test(`state export stops before writing a fetched record when ${flag} changes during fetch`,async t=>{
+  const f=await fixture(t),settings={...env},client=await f.db.pool.connect(),releases=[],calls=[];
+  const query=client.query.bind(client);
+  client.query=async(sql,...args)=>{const result=await query(sql,...args);calls.push(sql);
+   if(sql.startsWith('FETCH')&&result.rows.length)settings[flag]='true';
+   return result;
+  };
+  client.release=discard=>releases.push(discard);f.db.pool.connect=async()=>client;
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env:settings}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
+  assert.equal(calls.filter(sql=>sql.startsWith('FETCH')).length,1);assert.equal(calls.at(-1),'ROLLBACK');
+  assert.deepEqual(releases,[false]);await assert.rejects(fs.stat(path.join(f.directory,'00000.pod')),{code:'ENOENT'});
+ });
+}
 for(const phase of ['commit','catalog','archive','parent'])for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
  test(`state export rejects ${flag} changing during ${phase} completion`,async t=>{
   const f=await fixture(t),settings={...env},client=await f.db.pool.connect(),releases=[];
