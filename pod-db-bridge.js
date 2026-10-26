@@ -92,13 +92,16 @@ export class PodDB {
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
  async read(sql,values){
-  this.active();const c=await this.pool.connect();
+  this.active();const c=await this.pool.connect();let bad=false,began=false;
   try{
-   // Pool acquisition can wait past the retention cutoff. Recheck before the
-   // first SQL statement so expired storage is never read merely because the
-   // request entered the pool while the database was still usable.
-   this.active();const result=await c.query(sql,values);this.active();return result;
-  }finally{c.release();}
+   // Pool acquisition and transaction setup can cross the retention cutoff.
+   // Keep every shared read in a database-enforced read-only transaction so a
+   // mistaken future caller cannot mutate durable state through this helper.
+   this.active();await c.query('BEGIN READ ONLY');began=true;this.active();
+   await c.query("SET LOCAL statement_timeout='10s'");this.active();
+   const result=await c.query(sql,values);this.active();await c.query('COMMIT');return result;
+  }catch(error){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw error;
+  }finally{c.release(bad);}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');

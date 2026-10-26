@@ -200,8 +200,9 @@ for(const phase of ['select','empty-select','response','commit','last-response',
    if(sql.startsWith('UPDATE pod_events'))pending.push(args[0]);
    if(sql==='ROLLBACK')pending.length=0;
    if(sql==='COMMIT'){
+    const acknowledged=pending.length>0;
     committed.push(...pending);pending.length=0;
-    if(phase.endsWith('commit'))expire();
+    if(phase.endsWith('commit')&&acknowledged)expire();
    }
    return {rows:[]};
   }};

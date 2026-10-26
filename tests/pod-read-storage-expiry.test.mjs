@@ -8,6 +8,60 @@ import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 
+test('guarded reads use a database-enforced read-only transaction',async()=>{
+ const queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async(sql,args)=>{
+  queries.push({sql,args});
+  if(sql==='SELECT fixture')return {rows:[{value:1}]};
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ assert.deepEqual(await db.read('SELECT fixture',['bound']),{rows:[{value:1}]});
+ assert.deepEqual(queries,[
+  {sql:'BEGIN READ ONLY',args:undefined},
+  {sql:"SET LOCAL statement_timeout='10s'",args:undefined},
+  {sql:'SELECT fixture',args:['bound']},
+  {sql:'COMMIT',args:undefined},
+ ]);
+ assert.deepEqual(releases,[false]);
+});
+
+for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls back when storage expires during ${expiryStage}`,async()=>{
+ const queries=[],releases=[];let db;
+ const client={release:bad=>releases.push(bad),query:async sql=>{
+  queries.push(sql);
+  if((expiryStage==='begin'&&sql==='BEGIN READ ONLY')||
+   (expiryStage==='timeout'&&sql.startsWith('SET LOCAL'))||
+   (expiryStage==='query'&&sql==='SELECT fixture'))db.expiresAt=Date.now();
+  return {rows:[]};
+ }};
+ db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture'),/^Error: POD_STORAGE_EXPIRING$/);
+ assert.equal(queries.at(-1),'ROLLBACK');assert.equal(queries.includes('COMMIT'),false);
+ if(expiryStage!=='query')assert.equal(queries.includes('SELECT fixture'),false);
+ assert.deepEqual(releases,[false]);
+});
+
+test('guarded read preserves query failure and discards a client whose rollback fails',async()=>{
+ const original=Error('ORIGINAL_READ_FAILURE'),queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async sql=>{
+  queries.push(sql);if(sql==='SELECT fixture')throw original;if(sql==='ROLLBACK')throw Error('ROLLBACK_FAILURE');return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture'),error=>error===original);
+ assert.equal(queries.at(-1),'ROLLBACK');assert.deepEqual(releases,[true]);
+});
+
+test('guarded read does not roll back when opening the transaction fails',async()=>{
+ const original=Error('BEGIN_FAILURE'),queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async sql=>{
+  queries.push(sql);throw original;
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture'),error=>error===original);
+ assert.deepEqual(queries,['BEGIN READ ONLY']);assert.deepEqual(releases,[false]);
+});
+
 test('all production read paths stop before SQL when storage expires during connection acquisition',async()=>{
  const operationsKey='k'.repeat(32),sha='a'.repeat(64);
  for(const [name,read] of [
