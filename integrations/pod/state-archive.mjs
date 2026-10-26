@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {seal,unseal,parseArchiveJSON,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
+import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
@@ -62,7 +62,7 @@ async function catalogFor(options){
  const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:state-catalog:v1'),'STATE_ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='pod_tables_only'||
-  !/^[a-f0-9-]{36}$/.test(catalog.snapshot_id||'')||!Number.isFinite(Date.parse(catalog.created_at))||
+  !/^[a-f0-9-]{36}$/.test(catalog.snapshot_id||'')||!validArchiveTimestamp(catalog.created_at)||
   JSON.stringify(catalog.tables)!==JSON.stringify(NAMES)||
   JSON.stringify(catalog.versions)!==JSON.stringify(await expectedVersions())||
   !catalog.columns||JSON.stringify(Object.keys(catalog.columns))!==JSON.stringify(NAMES)||

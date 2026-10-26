@@ -151,6 +151,17 @@ test('state catalog rejects escaped duplicate decoded keys',async t=>{
  await fs.writeFile(file,seal(Buffer.from(ambiguous),key,'pod:state-catalog:v1'));
  await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
 });
+test('state catalog rejects normalized creation timestamps',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const file=path.join(f.directory,'catalog.pod');
+ const original=JSON.parse(unseal(await fs.readFile(file),key,'pod:state-catalog:v1'));
+ for(const createdAt of ['2026-10-26','2026-10-26 00:00:00Z','2026-10-26T01:00:00+01:00',
+  '2026-10-26T00:00:00.0Z','2026-02-30T00:00:00.000Z','2026-10-26T24:00:00.000Z']){
+  const catalog={...original,created_at:createdAt};
+  await fs.writeFile(file,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:state-catalog:v1'));
+  await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
+ }
+});
 test('state records reject escaped duplicate decoded keys',async t=>{
  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
  const catalogFile=path.join(f.directory,'catalog.pod');

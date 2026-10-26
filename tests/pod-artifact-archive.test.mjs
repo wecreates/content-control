@@ -136,6 +136,17 @@ test('artifact catalog rejects escaped duplicate decoded keys',async t=>{
  await fs.writeFile(file,seal(Buffer.from(ambiguous),key,'pod:artifact-catalog:v1'));
  await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
 });
+test('artifact catalog rejects normalized creation timestamps',async t=>{
+ const directory=await workspace(t);await exportArtifactLibrary(database(),{directory,key});
+ const file=path.join(directory,'catalog.pod');
+ const original=JSON.parse(unseal(await fs.readFile(file),key,'pod:artifact-catalog:v1'));
+ for(const createdAt of ['2026-10-26','2026-10-26 00:00:00Z','2026-10-26T01:00:00+01:00',
+  '2026-10-26T00:00:00.0Z','2026-02-30T00:00:00.000Z','2026-10-26T24:00:00.000Z']){
+  const catalog={...original,created_at:createdAt};
+  await fs.writeFile(file,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:artifact-catalog:v1'));
+  await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
+ }
+});
 test('export never overwrites a directory and incomplete export has no catalog',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('one')]);
  await assert.rejects(exportArtifactLibrary(source,{directory,key,budgetBytes:1}),/ARCHIVE_BUDGET_EXCEEDED/);
