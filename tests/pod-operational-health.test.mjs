@@ -42,6 +42,7 @@ test('expired leases and overdue feedback are observable without inventing accep
 function fixture({fail=false,rollbackFails=false}={}){
  const queries=[];let released,ended=false;
  const client={release:bad=>{released=bad;},query:async sql=>{
+  sql=typeof sql==='string'?sql:sql.text;
   queries.push(sql);if(sql==='ROLLBACK'&&rollbackFails)throw Error('rollback unavailable');
   if(sql.includes('FROM pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
   if(sql.includes('FROM pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};

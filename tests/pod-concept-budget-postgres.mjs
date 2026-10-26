@@ -58,7 +58,7 @@ export async function verifyConceptBudget(pool,bridge){
   let reads=0;
   const rollover=new PodDB({...settings,pool:{connect:async()=>{
    const c=await pool.connect();return {release:bad=>c.release(bad),query:async(sql,args)=>
-    sql.includes('AS budget_day')?{rows:[{budget_day:++reads===1?'2026-10-16':'2026-10-17'}]}:c.query(sql,args)};
+    (typeof sql==='string'?sql:sql.text).includes('AS budget_day')?{rows:[{budget_day:++reads===1?'2026-10-16':'2026-10-17'}]}:c.query(sql,args)};
   }}});
   await assert.rejects(rollover.registerIntake(intake(rolloverBusiness)),/CONCEPT_BUDGET_DAY_CHANGED/);
   for(const table of ['pod_concepts','pod_daily_concept_budget'])assert.equal(
@@ -69,7 +69,7 @@ export async function verifyConceptBudget(pool,bridge){
   const blocker=await pool.connect();let workerPid,pending,clockReads=0;
   const waitingDB=new PodDB({...settings,pool:{connect:async()=>{
    const c=await pool.connect();workerPid=(await c.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
-   return {release:bad=>c.release(bad),query:async(sql,args)=>{if(sql.includes('AS budget_day'))clockReads++;return c.query(sql,args);}};
+   return {release:bad=>c.release(bad),query:async(sql,args)=>{if((typeof sql==='string'?sql:sql.text).includes('AS budget_day'))clockReads++;return c.query(sql,args);}};
   }}});
   try{
    await blocker.query('BEGIN');await blocker.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['pod:concept-budget:'+blockedBusiness]);

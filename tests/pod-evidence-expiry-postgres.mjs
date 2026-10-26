@@ -33,8 +33,9 @@ export async function verifyEvidenceExpiry(pool,bridge,proof){
    const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
    const db=new PodDB({pool:{connect:async()=>{
     const c=await pool.connect();return {release:(...args)=>c.release(...args),query:async(...args)=>{
+     const text=typeof args[0]==='string'?args[0]:args[0].text;
      const result=await c.query(...args);
-     if(args[0].startsWith('INSERT INTO pod_events')||(kind==='market'&&args[0].startsWith('INSERT INTO pod_market_intelligence'))){now=issued+1000;advanced=true;}
+     if(text.startsWith('INSERT INTO pod_events')||(kind==='market'&&text.startsWith('INSERT INTO pod_market_intelligence'))){now=issued+1000;advanced=true;}
      return result;
     }};
    }},bridge,qaKey:key,expiresAt:new Date(issued+7*86400000).toISOString()});

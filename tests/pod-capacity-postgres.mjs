@@ -25,7 +25,7 @@ export async function verifyCapacity(pool){
   await event(jobs[3],'pod.fixture.unrelated',{package_sha256:'e'.repeat(64)});
   const db={active(){throw Error('POD_STORAGE_EXPIRING');},pool:{connect:async()=>{
    const c=await pool.connect();return {release:bad=>c.release(bad),query:async(sql,args)=>{
-    if(sql.startsWith('WITH')){
+    if((typeof sql==='string'?sql:sql.text).startsWith('WITH')){
      checked=true;assert.equal((await c.query('SHOW transaction_read_only')).rows[0].transaction_read_only,'on');
      await c.query('SAVEPOINT capacity_write');
      await assert.rejects(c.query("UPDATE pod_accounts SET state='ACTIVE' WHERE id=$1",[account]),e=>e.code==='25006');

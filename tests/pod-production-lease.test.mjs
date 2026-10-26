@@ -12,7 +12,7 @@ function qa(){const payload=JSON.stringify({schema_version:1,audience:'content-c
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
 function fixture(valid){
  const writes=[],queries=[];
- const client={release(){},query:async sql=>{queries.push(sql);
+ const client={release(){},query:async sql=>{sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
   if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:'PASS',permanently_unpublished:false}]};
   if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}

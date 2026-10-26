@@ -169,13 +169,21 @@ export class PodDB {
   try{
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
-   this.active();began=true;await c.query('BEGIN');this.active();
+   this.active();await c.query('BEGIN');began=true;this.active();
    await c.query("SET LOCAL lock_timeout='2s'");this.active();
    await c.query("SET LOCAL statement_timeout='10s'");this.active();
    // A callback may await non-database work between statements (for example,
    // archive file verification). Check on both sides so crossing the retention
    // cutoff in that wait cannot issue one last business statement.
-   const guardedQuery=async(...args)=>{this.active();const result=await c.query(...args);this.active();return result;};
+   // Force every callback business statement through the extended protocol,
+   // including parameterless statements. The simple-query protocol accepts a
+   // multi-command string that could COMMIT early and run a later command
+   // outside this helper's transaction and retention checks.
+   const guardedQuery=async(query,values)=>{
+    this.active();
+    const config=typeof query==='string'?{text:query,values:values??[],queryMode:'extended'}:{...query,queryMode:'extended'};
+    const result=await c.query(config);this.active();return result;
+   };
    const guarded=new Proxy(c,{get(target,property){
     if(property==='query')return guardedQuery;
     const value=Reflect.get(target,property,target);

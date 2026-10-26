@@ -9,6 +9,7 @@ function fixture(days,{duplicate=false,full=false}={}){
  const queries=[],payload=JSON.stringify({schema_version:1,audience:'content-control:pod:intake',issued_at_ms:Date.now()-1,
   expires_at_ms:Date.now()+60000,concept_id:'concept',business_id:'business',fingerprint:'fingerprint',rights_state:'PASS'});
  const client={release(){},query:async(sql,args=[])=>{
+  if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
   queries.push({sql,args});
   if(sql.includes('AS budget_day'))return {rows:[{budget_day:days.shift()}]};
   if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:duplicate?[{id:'existing',business_id:'business',permanently_unpublished:false}]:[]};

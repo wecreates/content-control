@@ -96,11 +96,12 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
   const boundedPool={connect:async()=>{
    const client=await restricted(legacy).connect();
    return {release:()=>client.release(),query:async(...args)=>{
+    const text=typeof args[0]==='string'?args[0]:args[0].text;
     const result=await client.query(...args);
-    if(args[0].startsWith('FETCH'))for(const row of result.rows){
+    if(text.startsWith('FETCH'))for(const row of result.rows){
      assert.equal(row.body,null,'oversized export bytes must stay inside PostgreSQL');
     }
-    if(args[0].includes('FROM public.pod_artifacts WHERE sha256='))for(const row of result.rows){
+    if(text.includes('FROM public.pod_artifacts WHERE sha256='))for(const row of result.rows){
      assert.equal(Object.hasOwn(row,'body'),false,'restore must not download existing bodies');
      assert.equal(row.bytes,16777217);assert.equal(row.body_sha256,null);
     }

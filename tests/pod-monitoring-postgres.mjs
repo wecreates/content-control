@@ -17,7 +17,7 @@ export async function verifyMonitoring(pool,bridge){
   const db=new PodDB({bridge,expiresAt:new Date(expiresAt).toISOString(),pool:{connect:async()=>{
    const client=await pool.connect();return {release:bad=>client.release(bad),query:async(sql,args)=>{
     const result=await client.query(sql,args);
-    if(sql.startsWith('SELECT platform')&&!checked){
+    if((typeof sql==='string'?sql:sql.text).startsWith('SELECT platform')&&!checked){
      checked=true;
      assert.equal((await client.query('SHOW transaction_read_only')).rows[0].transaction_read_only,'on');
      assert.equal((await client.query('SHOW transaction_isolation')).rows[0].transaction_isolation,'repeatable read');
