@@ -100,8 +100,10 @@ database credentials are printed. It does not alter the archive or destination.
 Catalog JSON is decoded as strict UTF-8 and rejects duplicate decoded keys at
 every nesting level before any referenced object or database is accessed. The
 catalog and every artifact descriptor must also contain exactly the ordered
-fields emitted by this format; authenticated extensions are not accepted as a
-canonical artifact library.
+fields emitted by this format. Artifact descriptors must remain in the
+exporter's strictly increasing SHA-256 order; authenticated extensions, field
+reordering or item-list reordering are not accepted as a canonical artifact
+library.
 
 Root directory symlinks and symlinked catalog/artifact files are rejected. File
 opens are nonblocking, followed by regular-file checks, so a FIFO substituted for

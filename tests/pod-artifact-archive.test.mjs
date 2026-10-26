@@ -163,6 +163,16 @@ test('artifact catalog rejects authenticated fields that canonical exports never
   await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
  }
 });
+test('artifact catalog rejects authenticated item order that canonical exports never emit',async t=>{
+ const directory=await workspace(t);await exportArtifactLibrary(database([
+  Buffer.from('canonical order fixture one'),Buffer.from('canonical order fixture two')
+ ]),{directory,key});
+ const file=path.join(directory,'catalog.pod');
+ const catalog=JSON.parse(unseal(await fs.readFile(file),key,'pod:artifact-catalog:v1'));
+ assert.equal(catalog.items.length,2);catalog.items.reverse();
+ await fs.writeFile(file,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:artifact-catalog:v1'));
+ await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
+});
 test('export never overwrites a directory and incomplete export has no catalog',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('one')]);
  await assert.rejects(exportArtifactLibrary(source,{directory,key,budgetBytes:1}),/ARCHIVE_BUDGET_EXCEEDED/);
