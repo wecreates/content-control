@@ -21,6 +21,7 @@ function fixture(overrides={}){
  const queries=[],releases=[];let released=false,ended=false;
  const client={async query(sql,args){queries.push(sql);
   if((overrides.throwOn&&sql.includes(overrides.throwOn))||(overrides.rollbackFails&&sql==='ROLLBACK'))throw Error('secret password internal-url');
+  if(sql.includes('current_schemas(false)'))return {rows:[{search_path:overrides.searchPath??['pg_catalog','public']}]};
   if(sql.includes('FROM pg_roles r'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,elevated_membership:false,schema_create:false,...overrides.role}]};
   if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
   if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
@@ -112,7 +113,12 @@ test('bridge reader enforces its exact byte ceiling',async t=>{
  await fs.appendFile(filename,' ');
  await assert.rejects(readBridgeFile(filename),/BRIDGE_CONTRACT_INVALID/);
 });
-for(const [name,overrides,code] of [['privileged role',{role:{elevated_membership:true}},'RESTRICTED_RUNTIME_ROLE'],['TLS absent',{tls:false},'DATABASE_TLS'],['vault access',{vault:true},'SOCIAL_VAULT_ISOLATED'],['modified migration',{hash:'bad'},'SCHEMA_CHECKSUMS']]){
+for(const [name,overrides,code] of [
+ ['unsafe database search path',{searchPath:['untrusted','pg_catalog','public']},'DATABASE_SEARCH_PATH'],
+ ['missing public search path',{searchPath:['pg_catalog']},'DATABASE_SEARCH_PATH'],
+ ['privileged role',{role:{elevated_membership:true}},'RESTRICTED_RUNTIME_ROLE'],
+ ['TLS absent',{tls:false},'DATABASE_TLS'],['vault access',{vault:true},'SOCIAL_VAULT_ISOLATED'],
+ ['modified migration',{hash:'bad'},'SCHEMA_CHECKSUMS']]){
  test(name+' fails closed',async()=>{const f=fixture(overrides),r=await preflight(f.options);assert.equal(r.status,'BLOCKED');assert.equal(r.checks.find(c=>c.code===code).status,'BLOCKED');assert.ok(f.closed());});
 }
 test('database errors redact details and always release connection',async()=>{

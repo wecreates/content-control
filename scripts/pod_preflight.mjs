@@ -39,6 +39,9 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
   await client.query('BEGIN READ ONLY');
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
+  const searchPath=(await client.query('SELECT current_schemas(false) AS search_path')).rows[0]?.search_path;
+  check('DATABASE_SEARCH_PATH',Array.isArray(searchPath)&&
+   JSON.stringify(searchPath)===JSON.stringify(['pg_catalog','public']));
   const role=(await client.query(`SELECT r.rolsuper,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
    EXISTS(SELECT 1 FROM pg_roles p WHERE pg_has_role(current_user,p.oid,'MEMBER')
     AND has_database_privilege(p.oid,current_database(),'CREATE')) AS db_create,

@@ -77,7 +77,8 @@ export async function createPodPool(env=process.env) {
   (u.searchParams.has('sslmode')&&!['require','verify-full'].includes(u.searchParams.get('sslmode')))) throw Error('POD_DATABASE_INVALID');
  const pool=new pg.Pool({host:u.hostname,port:Number(u.port||5432),user:decodeURIComponent(u.username),
   password:decodeURIComponent(u.password),database:decodeURIComponent(u.pathname.slice(1)),
-  ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:10000,query_timeout:15000,idleTimeoutMillis:10000});
+  ssl:{rejectUnauthorized:true},options:'-c search_path=pg_catalog,public',
+  max:2,connectionTimeoutMillis:10000,query_timeout:15000,idleTimeoutMillis:10000});
  Object.defineProperty(pool,'podConnectionHealth',{value:monitorPodPool(pool)});
  return pool;
 }
