@@ -41,10 +41,8 @@ export async function recordFinancialEvent(db,envelope,key){
  });
 }
 export async function financialTotals(db){
- db.active();
- const rows=(await db.pool.query(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
+ const rows=(await db.read(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
   FROM pod_financial_events GROUP BY currency ORDER BY currency`)).rows;
- db.active();
  return rows;
 }
 

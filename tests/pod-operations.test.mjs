@@ -97,7 +97,7 @@ const sign=p=>{const payload=JSON.stringify({schema_version:1,issued_at_ms:Date.
 test('unset operational key cannot be authenticated with Bearer undefined',()=>assert.equal(operationalAuth()( {headers:{authorization:'Bearer undefined'}}),false));
 test('operational key requires exact bearer match',()=>{const auth=operationalAuth(key);assert.equal(auth({headers:{authorization:`Bearer ${key}`}}),true);assert.equal(auth({headers:{authorization:`Bearer ${key}x`}}),false);});
 test('artifact rejects oversize before database access',async()=>{const store=new ArtifactStore({}, {maxObjectBytes:1});await assert.rejects(store.put(Buffer.from('xx'),'image/png'),/ARTIFACT_INVALID/);});
-test('artifact reads detect stored byte corruption',async()=>{const db={active(){},pool:{query:async()=>({rows:[{body:Buffer.from('wrong')}]})}};await assert.rejects(new ArtifactStore(db).get('a'.repeat(64)),/ARTIFACT_UNAVAILABLE/);});
+test('artifact reads detect stored byte corruption',async()=>{const db={active(){},read:async()=>({rows:[{body:Buffer.from('wrong')}]})};await assert.rejects(new ArtifactStore(db).get('a'.repeat(64)),/ARTIFACT_UNAVAILABLE/);});
 test('review artifact download requires an exact job-scoped hold',async()=>{
  const body=Buffer.from('scoped artifact'),sha=crypto.createHash('sha256').update(body).digest('hex'),calls=[];
  const db={reviewArtifact:async(id,digest)=>{calls.push({id,digest});return {body,media_type:'image/png'};}};

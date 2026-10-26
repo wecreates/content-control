@@ -34,11 +34,11 @@ export async function verifyArtifactBatch(pool,db){
  assert.equal(await count([extra]),0);assert.equal(await used(),initial+128);
  // The real SQL must exclude an oversized body before pg receives it. The
  // same immutable row remains readable at its exact size and is not altered.
- const readBytes=[],readDB={active:()=>db.active(),pool:{query:async(sql,args)=>{
+ const readBytes=[],readDB={active:()=>db.active(),read:async(sql,args)=>{
   const result=await pool.query(sql,args);
   readBytes.push(result.rows.reduce((n,row)=>n+(row.body?.length||0),0));
   return result;
- }}};
+ }};
  await assert.rejects(new ArtifactStore(readDB,{maxObjectBytes:63}).get(sha(winner[0])),/ARTIFACT_UNAVAILABLE/);
  assert.deepEqual(readBytes,[0]);
  assert.deepEqual((await new ArtifactStore(readDB,{maxObjectBytes:64}).get(sha(winner[0]))).body,winner[0].body);

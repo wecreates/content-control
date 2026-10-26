@@ -216,11 +216,12 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
 });
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
+const readPool=query=>({connect:async()=>({query,release(){}})});
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest:storedManifest('etsy')};
  row.manifest_sha256=storedIdentity(row.manifest);
- const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({bridge,pool:readPool(async()=>({rows:[row]})),expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
  row.manifest=storedManifest();row.manifest_sha256=storedIdentity(row.manifest);
  assert.equal((await db.reviewPackage(row.id)).platform,'redbubble');
@@ -228,7 +229,7 @@ test('stored review package rejects a queue and manifest marketplace mismatch',a
 test('stored review package requires an exact review hold state',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
  row.manifest_sha256=storedIdentity(row.manifest);
- const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({bridge,pool:readPool(async()=>({rows:[row]})),expiresAt:'2099-01-01T00:00:00Z'});
  for(const [state,reason] of [['qa_passed',null],['submitted',null],['qa_failed','QA_FAILED'],['qa_failed',null]]){
   row.state=state;row.reason_code=reason;
   await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
@@ -239,7 +240,7 @@ test('stored review package requires an exact review hold state',async()=>{
 test('stored review package rejects invalid manifest acceptance claims and identity',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest:storedManifest()};
  row.manifest_sha256=storedIdentity(row.manifest);
- const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({bridge,pool:readPool(async()=>({rows:[row]})),expiresAt:'2099-01-01T00:00:00Z'});
  for(const mutate of [
   manifest=>manifest.schema_version=2,
   manifest=>manifest.publication_enabled=true,
@@ -265,7 +266,7 @@ test('stored review artifacts require the exact held job and manifest membership
  const manifest=storedManifest();for(const name of Object.keys(manifest.files))manifest.files[name]=sha;
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest,manifest_sha256:storedIdentity(manifest),body,media_type:'image/png'};
- const db=new PodDB({bridge,pool:{query:async()=>({rows:[row]})},expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({bridge,pool:readPool(async()=>({rows:[row]})),expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.reviewArtifact('other-job',sha),/ARTIFACT_UNAVAILABLE/);
  await assert.rejects(db.reviewArtifact(row.id,'b'.repeat(64)),/ARTIFACT_UNAVAILABLE/);
  assert.deepEqual(await db.reviewArtifact(row.id,sha),{body,media_type:'image/png'});

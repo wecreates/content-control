@@ -17,7 +17,8 @@ function signed(){
 
 function fixture(){
  let txCalls=0,poolQueries=0;
- const pool={query:async()=>{poolQueries+=1;return {rows:[]};}};
+ const client={release(){},query:async()=>{poolQueries+=1;return {rows:[]};}};
+ const pool={connect:async()=>client};
  const db=new PodDB({pool,bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  db.tx=async()=>{txCalls+=1;throw Error('UNEXPECTED_DATABASE_ACCESS');};
  return {db,txCalls:()=>txCalls,poolQueries:()=>poolQueries};
