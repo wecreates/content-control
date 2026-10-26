@@ -16,7 +16,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/bundler",
@@ -30,7 +30,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": true,
       "name": "@remotion/cli",
@@ -46,7 +46,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/codemods",
@@ -60,7 +60,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/media",
@@ -74,7 +74,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/studio",
@@ -91,7 +91,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/studio-protocol",
@@ -105,7 +105,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "@remotion/studio-server",
@@ -122,7 +122,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.277"
       },
       "is_direct": false,
       "name": "zod",
