@@ -7,6 +7,7 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 
 function fixture({expireOnConnect=false,expireOnQuery=null}={}){
  const calls=[];
+ let connects=0;
  let db;
  const client={
   async query(sql){
@@ -16,10 +17,23 @@ function fixture({expireOnConnect=false,expireOnQuery=null}={}){
   },
   release(){}
  };
- const pool={async connect(){if(expireOnConnect)db.expiresAt=0;return client;}};
+ const pool={async connect(){connects++;if(expireOnConnect)db.expiresAt=0;return client;}};
  db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
- return {db,calls};
+ return {db,calls,get connects(){return connects;}};
 }
+
+test('transaction rejects an invalid wall clock before database access',async()=>{
+ const originalNow=Date.now;
+ try{
+  for(const now of [NaN,'0',0.5,-1,8640000000000001,Number.MAX_SAFE_INTEGER+1]){
+   const state=fixture();
+   Date.now=()=>now;
+   await assert.rejects(state.db.tx(()=>assert.fail('transaction callback reached')),/POD_STORAGE_EXPIRING/);
+   assert.equal(state.connects,0);
+   assert.deepEqual(state.calls,[]);
+  }
+ }finally{Date.now=originalNow;}
+});
 
 test('transaction stops before BEGIN when storage expires during connection acquisition',async()=>{
  const {db,calls}=fixture({expireOnConnect:true});
