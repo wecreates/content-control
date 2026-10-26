@@ -181,6 +181,24 @@ test('state catalog requires the exact UUIDv4 snapshot identity emitted by expor
   await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
  }
 });
+test('state catalog rejects authenticated fields that canonical exports never emit',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const file=path.join(f.directory,'catalog.pod');
+ const original=JSON.parse(unseal(await fs.readFile(file),key,'pod:state-catalog:v1'));
+ for(const change of [
+  catalog=>{catalog.unexpected='catalog';},
+  catalog=>{catalog.items[0].unexpected='item';},
+  catalog=>{catalog.columns.pod_artifacts[0].unexpected='column';},
+  catalog=>{const scope=catalog.scope;delete catalog.scope;catalog.scope=scope;},
+  catalog=>{const table=catalog.items[0].table;delete catalog.items[0].table;catalog.items[0].table=table;},
+  catalog=>{const type=catalog.columns.pod_artifacts[0].type;delete catalog.columns.pod_artifacts[0].type;
+   catalog.columns.pod_artifacts[0].type=type;}
+ ]){
+  const catalog=structuredClone(original);change(catalog);
+  await fs.writeFile(file,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:state-catalog:v1'));
+  await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
+ }
+});
 test('state records reject escaped duplicate decoded keys',async t=>{
  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
  const catalogFile=path.join(f.directory,'catalog.pod');
