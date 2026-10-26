@@ -33,6 +33,12 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
    WHERE (p.rolsuper OR p.rolcreatedb OR p.rolcreaterole OR p.rolreplication OR p.rolbypassrls)
    AND pg_has_role($1,p.oid,'MEMBER')) AS elevated`,[runtimeRole])).rows[0];
   if(inherited.elevated)throw Error('RUNTIME_ROLE_PRIVILEGED');
+  // PostgreSQL implicitly searches pg_temp before an explicit search_path.
+  // A dedicated POD database therefore cannot leave the default PUBLIC TEMP
+  // grant in place: otherwise the runtime can shadow unqualified POD tables.
+  const revokeTemp=(await client.query("SELECT format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC',current_database()) AS sql")).rows[0]?.sql;
+  if(typeof revokeTemp!=='string'||!revokeTemp.startsWith('REVOKE TEMPORARY ON DATABASE ')||!revokeTemp.endsWith(' FROM PUBLIC'))throw Error('DATABASE_IDENTITY_INVALID');
+  await client.query(revokeTemp);
   await client.query('CREATE TABLE IF NOT EXISTS pod_schema_version(version text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())');
   for(const name of (await fs.readdir(directory)).filter(n=>/^\d+_pod\.sql$/.test(n)).sort()){
    const sql=await fs.readFile(new URL(name,directory),'utf8');
