@@ -79,6 +79,28 @@ test('transaction business statements use the single-statement extended protocol
  assert.deepEqual(calls[3],{text:'SELECT fixture',values:['bound'],queryMode:'extended'});
 });
 
+test('transaction callback cannot end or replace its managed transaction',async()=>{
+ for(const sql of [
+  'COMMIT',
+  ' -- callback must not own completion\nROLLBACK',
+  '-- carriage-return comment\rABORT',
+  '/* outer /* nested */ comment */ END',
+  '; START TRANSACTION',
+  'PREPARE TRANSACTION \'fixture\'',
+  'SAVEPOINT fixture',
+  'RELEASE SAVEPOINT fixture'
+ ]){
+  const {db,calls}=fixture();
+  await assert.rejects(db.tx(client=>client.query(sql)),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
+  assert.deepEqual(calls,[
+   'BEGIN',
+   "SET LOCAL lock_timeout='2s'",
+   "SET LOCAL statement_timeout='10s'",
+   'ROLLBACK'
+  ]);
+ }
+});
+
 test('transaction does not roll back when opening the transaction fails',async()=>{
  const original=Error('BEGIN_FAILURE'),calls=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{calls.push(sql);throw original;}};
