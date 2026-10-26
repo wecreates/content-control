@@ -6,6 +6,11 @@ import {parseSignedJSON} from './signed-json.mjs';
 const MAGIC=Buffer.from('CYZPOD1\n');
 const DIRECTORY_FLAGS=constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLLOW;
 const identity=stat=>`${stat.dev}:${stat.ino}`;
+export function validArchiveTimestamp(value){
+ if(typeof value!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$/.test(value))return false;
+ const milliseconds=Date.parse(value);
+ return Number.isSafeInteger(milliseconds)&&milliseconds>=0&&new Date(milliseconds).toISOString()===value;
+}
 export function parseArchiveJSON(body,reason='ARCHIVE_INVALID'){
  try{
   if(!Buffer.isBuffer(body)||!body.length)throw Error(reason);

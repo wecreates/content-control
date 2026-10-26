@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import {seal,unseal,parseArchiveJSON,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
+import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
@@ -22,7 +22,7 @@ async function readCatalog({directory,key,budgetBytes,signal,base}){
  const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:artifact-catalog:v1'),'ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
-  typeof catalog.created_at!=='string'||!Number.isFinite(Date.parse(catalog.created_at)))throw Error('ARCHIVE_CATALOG_INVALID');
+  !validArchiveTimestamp(catalog.created_at))throw Error('ARCHIVE_CATALOG_INVALID');
  const seen=new Set();let bytes=0;
  for(const item of catalog.items){
   if(typeof item?.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||seen.has(item.sha256)||!TYPES.has(item.media_type)||
