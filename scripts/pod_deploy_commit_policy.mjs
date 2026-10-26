@@ -12,6 +12,9 @@ export const REPORT_ONLY_PATHS=Object.freeze([
  // Normalized dependency-audit evidence only. Dependency manifest and lockfile
  // changes remain runtime changes and are intentionally not allowlisted.
  'state/runtime-security-audit.json',
+ // Hash manifest receipt only. Every source file that can change the manifest
+ // remains outside this allowlist and therefore still requires deployment.
+ 'state/runtime-integrity-manifest.json',
  // Live-probe receipt only. A later application release carries this metadata;
  // rebuilding identical runtime bytes cannot make a failed probe pass.
  'state/live-deployment-health.json',
