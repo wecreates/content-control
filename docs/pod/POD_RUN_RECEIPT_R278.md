@@ -78,5 +78,6 @@ launch readiness. Both publication flags remain false; Etsy remains excluded. No
 approval, clearance, provider result or continuously running self-hosted worker
 is claimed.
 
-The documentation-only receipt merge uses `[skip render]`; its exact Render
-`commit_ignored` evidence is recorded after merge.
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfjefdg1s2s73ae1bkg` verifies exact merge
+`49e70b3e26ce06e98bc1ace52ec87e278972f623` was ignored rather than deployed.
