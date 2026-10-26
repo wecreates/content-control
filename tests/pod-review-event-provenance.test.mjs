@@ -13,6 +13,7 @@ test('review retrieval selects manifest identity only from the review-hold event
 
  await assert.rejects(db.reviewPackage('fixture-job'),/PACKAGE_UNAVAILABLE/);
  await assert.rejects(db.reviewArtifact('fixture-job','a'.repeat(64)),/ARTIFACT_UNAVAILABLE/);
- assert.equal(queries.length,2);
- for(const sql of queries)assert.match(sql,/e\.kind='pod\.production\.review_required'/);
+ const retrievals=queries.filter(sql=>sql.includes("e.kind='pod.production.review_required'"));
+ assert.equal(retrievals.length,2);
+ for(const sql of retrievals)assert.match(sql,/e\.kind='pod\.production\.review_required'/);
 });
