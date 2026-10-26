@@ -4187,6 +4187,70 @@ mandatory; no publication was attempted. This run used only its actually
 available bounded tools and did not claim a continuously running self-hosted
 worker.
 
+## Run receipt r289 — single-statement guarded transactions (2026-10-26 UTC)
+
+### Scope and repair
+
+- Work began from Content Control `3abff4dcb5db895cca4709481a0a4ea5453d2737`
+  and Money Factory `10ea78b27dc01423b5b05fff928dc1b63bfff801`.
+- Fresh remote-head and open-PR checks found no overlapping POD repair. Existing
+  unrelated drafts were preserved.
+- [Content Control PR 711](https://github.com/wecreates/content-control/pull/711)
+  merged as `fbe6e11aed6cf7e894ec12f9acf5bf111455c553`. Every business
+  statement issued through a shared `PodDB.tx` callback now uses node-postgres
+  extended-query protocol, including parameterless statements. PostgreSQL
+  therefore rejects multiple commands in one callback call instead of allowing
+  a simple-query `COMMIT` followed by a second statement outside the managed
+  transaction and storage-lifetime checks. A transaction is recorded as open
+  only after `BEGIN` succeeds.
+
+### Verification and failure learning
+
+- Regression-first unit tests failed against the prior helper because callback
+  SQL was a plain string and a failed `BEGIN` was followed by `ROLLBACK`.
+- The repaired local serial POD suite passed 875 tests, skipped eight
+  environment-dependent PostgreSQL cases and failed none.
+- Hosted attempts exposed PostgreSQL-only wrappers that inspected only
+  string-form queries. Those test harnesses were normalized to inspect query-
+  config text while passing the exact config through to PostgreSQL.
+- Final integration run `40407467718` passed all 883 Node tests and the
+  Python/review checks on exact head `ae0fcac1`. Its real PostgreSQL regression
+  submits `COMMIT; UPDATE cyzor_social_vault ...`, requires SQLSTATE `42601`,
+  and confirms the protected row remains unchanged.
+- Production-container run `40407467638` passed the exact Dockerfile, real
+  PostgreSQL, print/review and startup-disabled gates before the exact-head
+  squash merge.
+- [Money Factory PR 244](https://github.com/wecreates/Money-factory/pull/244)
+  merged as `9d57e2a1079f213dff629a48315990c1150dbd9d`, pinning Content
+  Control `fbe6e11a`. Local verification passed 116/117 Node integration tests
+  with the real-PostgreSQL case skipped and 81/81 Python tests. Generated KDP
+  fixtures remained `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`. Hosted cross-repository run `40408758920`
+  completed successfully before the exact-head merge.
+
+### Authorized Render verification
+
+- The existing service attempted `fbe6e11a` as deploy
+  `dep-dbfsp9ek1f9s73e4es0g`.
+- Event `evt-dbfsp9801rvs73fd7ci0` records pipeline-minutes exhaustion before
+  build, and `evt-dbfsp9n6a6rc73d72ogg` records the failed deploy end. No
+  redundant manual deploy, paid capacity, plan/cache change, replacement
+  service, secret access or network widening was attempted.
+
+### Acceptance truth
+
+There was no credible changed database-administration access path, so the
+previously failed connector/browser action was not repeated. Live database
+migration, durable live recovery, successful Render deployment, external
+account/grant/rights evidence, authorized live market observations, platform
+previews, independent human review, live remediation, measured live capacity,
+financial reconciliation, end-to-end acceptance and controlled launch remain
+open. All 24 acceptance areas remain OPEN. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; Etsy was excluded and no
+publication was attempted. Existing code and hosted tests are not treated as
+live acceptance. No approval, clearance, marketplace result, revenue,
+completion or continuously running self-hosted worker is claimed.
+
 ## Run receipt r172 — bind KDP interior package admission (2026-10-22 UTC)
 
 ### Scope and reproduced gap
