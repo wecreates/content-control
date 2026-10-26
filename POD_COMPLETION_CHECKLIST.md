@@ -35,4 +35,24 @@ The repository already contains dedicated queue migrations, durable hash-address
 
 ## External blockers
 
-The last database administration attempt failed: the read-only Render connector returned a TLS/connectivity error and the dashboard controls timed out. No production migration or restricted-role provisioning was verified. The inspected database expires October 26, 2026. No network allowlist should be broadened to work around the connector. Free web hosting is not an always-on guarantee. The live authority, rights inputs and authorized marketplace adapters still need actual configuration and acceptance. Do not replace these requirements with mock adapters, synthetic statements, renewed stale approvals, or automatic QA passes.
+On October 26, 2026 the authorized Neon replacement path materially changed the
+database state. A dedicated database, five checksum-matched migrations and a
+non-administrator runtime role were verified live. A manual snapshot was restored
+to an isolated branch and the restored role, 11-table schema and all five migration
+checksums were reverified. The Render worker now holds only that restricted runtime
+URL, with every service/production/outbox/publication activation flag false.
+
+This does **not** close database or storage acceptance. The full production
+preflight has not run with the live bridge, operations and signing authorities;
+the scheduled execution environment could not independently open the public TLS
+socket; the free database is capped at 1 GiB with a six-hour restore window; and
+no separately retained backup exists beyond the provider snapshot. The conservative
+operational cutoff remains November 1, 2026 at 00:00:00 UTC, the end of the current
+verified quota period, not a claim that Neon deletes data then. Render also rejected
+the environment-triggered deploy before build because pipeline minutes remain
+exhausted. No network allowlist should be broadened to work around either limitation.
+Free web hosting is not an always-on guarantee. The live authority, rights inputs
+and authorized marketplace adapters still need actual configuration and acceptance.
+Do not replace these requirements with mock adapters, synthetic statements, renewed
+stale approvals, or automatic QA passes. See
+[the r281 receipt](docs/pod/POD_RUN_RECEIPT_R281.md) for exact evidence and limits.

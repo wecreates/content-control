@@ -83,9 +83,44 @@ Run an authorized internal job and verify durable artifact hashes and review hol
 before treating live production as verified. Test fixtures are not real rights or QA.
 
 Free Render web services sleep during inactivity; this is not a guaranteed 24/7
-worker. The inspected database expires October 26, 2026. Migration does not extend
-that expiry. An approved durable storage/backup arrangement is still required before
+worker. The prior inspected Render database expired October 26, 2026 and is no
+longer the planned POD runtime database. The authorized replacement is the free
+Neon project `damp-base-09108632`, production branch
+`br-orange-sun-arizhns5`, database `content_control_state`. Its verified free-plan
+limits are 1 GiB of logical storage and a six-hour restore window. No provider
+project-deletion date was found. Until a longer-lived arrangement is approved, use
+the current verified quota-period boundary, November 1, 2026 at 00:00:00 UTC, as a
+conservative operational cutoff rather than representing it as a deletion date.
+An approved independently retained backup arrangement is still required before
 relying on this database for ongoing production. No paid resources are created here.
+
+## October 26 Neon replacement and recovery drill
+
+The exact five repository migrations were applied transactionally under the
+database owner and recorded in `pod_schema_version` with their repository SHA-256
+values. The live Render runtime uses `pod_runtime_restricted`: a login with no
+superuser, database-creation, role-management, replication, bypass-RLS, inheritance,
+database-create or schema-create privilege and no elevated memberships. It has only
+SELECT/INSERT/UPDATE on the ten named POD data tables and SELECT on the migration
+version table. It does not own the schema or tables and has no social-vault access.
+Migration-owner credentials are not stored in Render.
+
+Snapshot `snap-broad-rice-arc4u25c` was created from the production branch and
+restored without replacing production to isolated branch
+`br-polished-thunder-ar0d4qka`. The recovered branch reached ready state and the
+restricted role verified 11 public tables, the exact five migration rows and no
+database/schema-create or administrator attributes. The snapshot and recovery
+branch expire or consume the same bounded free resources; this is a provider-local
+recovery drill, not an independently retained backup or proof of long-term durability.
+
+The existing Render service stores the restricted TLS runtime URL and the cutoff
+above. `POD_SERVICE_ENABLED`, `POD_PRODUCTION_ENABLED`, `POD_OUTBOX_ENABLED`,
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` are all false. The environment
+change triggered deploy `dep-dbfls0o473hc73dlmjag`, which ended before build after
+event `evt-dbfls138vfls739d82k0` reported exhausted pipeline minutes. Therefore the
+live application has not consumed the Neon configuration and no hosting acceptance
+is claimed. Full production preflight still requires the real bridge, operations and
+signing authorities and an independently reachable verified-TLS runtime connection.
 
 ## First-time restricted account provisioning
 
