@@ -301,20 +301,24 @@ export class PodDB {
  async claimPublish(accountId,delaySeconds){
   if(!Number.isInteger(delaySeconds)||delaySeconds<45||delaySeconds>180)throw Error('PUBLISH_DELAY_INVALID');
   return this.tx(async c=>{
+  // A transaction rollback prevents an expired store from committing, but it
+  // does not stop later queue/quota mutations from being issued. Recheck the
+  // retention boundary after every awaited SQL statement.
+  const query=async(sql,args)=>{const result=await c.query(sql,args);this.active();return result;};
   // Acquire the account lock first, then evaluate cooldown on the live clock.
   // A predicate in the locking SELECT can be evaluated before its lock wait.
-  const locked=(await c.query('SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE',[accountId])).rows[0];
+  const locked=(await query('SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE',[accountId])).rows[0];
   if(!locked)return null;
-  const a=(await c.query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=clock_timestamp()",[accountId])).rows[0];
+  const a=(await query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=clock_timestamp()",[accountId])).rows[0];
   if(!a)return null;
-  const busy=await c.query("SELECT 1 FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]);
+  const busy=await query("SELECT 1 FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]);
   if(busy.rows.length)return null;
-  const count=(await c.query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId])).rows[0].n;
+  const count=(await query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId])).rows[0].n;
   if(count>=a.daily_cap)return null;
   // Bind the account lock to its configured marketplace before consuming quota
   // or moving a job into publishing. A later release check is not early enough:
   // a mismatched queued row must remain untouched and must not reserve capacity.
-  const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+  const j=(await query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.account_id=$1 AND q.platform=$2 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp()
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId,a.platform])).rows[0];
@@ -324,23 +328,23 @@ export class PodDB {
    // per-format weekly allowance every Sunday at 00:00 UTC. This lane supports
    // paperback only. A retry/update of the same durable job therefore does not
    // consume another weekly title, while a third distinct job fails closed.
-   const prior=(await c.query(`SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
+   const prior=(await query(`SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
     WHERE r.account_id=$1 AND r.job_id=$2 AND (q.provider_id IS NOT NULL OR
      r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC'))
     LIMIT 1`,[accountId,j.id])).rows.length>0;
    if(!prior){
-    const weekly=(await c.query(`SELECT count(DISTINCT r.job_id)::int AS n
+    const weekly=(await query(`SELECT count(DISTINCT r.job_id)::int AS n
      FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
      WHERE r.account_id=$1 AND q.platform='kdp'
      AND r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC')`,[accountId])).rows[0].n;
     if(weekly>=2)return null;
    }
   }
-  const r=await c.query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1 RETURNING *",[j.id]);
+  const r=await query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1 RETURNING *",[j.id]);
   // Override the schema's transaction-time default: reservations must not age
   // while the claimant is waiting for the account lock.
-  await c.query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at) VALUES($1,$2,$3,clock_timestamp())',[j.id,r.rows[0].attempt,accountId]);
-  await c.query("UPDATE pod_accounts SET next_allowed_at=clock_timestamp()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
+  await query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at) VALUES($1,$2,$3,clock_timestamp())',[j.id,r.rows[0].attempt,accountId]);
+  await query("UPDATE pod_accounts SET next_allowed_at=clock_timestamp()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
   return r.rows[0];
  });}
  async assertPublishable(job){return this.tx(async c=>{
