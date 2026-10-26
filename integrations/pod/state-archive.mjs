@@ -16,6 +16,7 @@ const TABLES=Object.freeze({
 const NAMES=Object.keys(TABLES),MIGRATIONS=['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'];
 const MAX_ROW=40*1024*1024,MAX_TOTAL=320*1024*1024,MAX_ROWS=10000,MAX_CATALOG=4*1024*1024;
 const ARTIFACT_TYPES=new Set(ARTIFACT_MEDIA_TYPES);
+const SNAPSHOT_ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const hash=body=>crypto.createHash('sha256').update(body).digest('hex');
 const recordFile=index=>String(index).padStart(5,'0')+'.pod';
 const aad=(id,item)=>`pod:state:v1:${id}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
@@ -62,7 +63,7 @@ async function catalogFor(options){
  const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:state-catalog:v1'),'STATE_ARCHIVE_CATALOG_INVALID');
  if(catalog?.schema_version!==1||catalog.scope!=='pod_tables_only'||
-  !/^[a-f0-9-]{36}$/.test(catalog.snapshot_id||'')||!validArchiveTimestamp(catalog.created_at)||
+  !SNAPSHOT_ID.test(catalog.snapshot_id||'')||!validArchiveTimestamp(catalog.created_at)||
   JSON.stringify(catalog.tables)!==JSON.stringify(NAMES)||
   JSON.stringify(catalog.versions)!==JSON.stringify(await expectedVersions())||
   !catalog.columns||JSON.stringify(Object.keys(catalog.columns))!==JSON.stringify(NAMES)||
