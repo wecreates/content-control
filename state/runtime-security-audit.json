@@ -1,13 +1,13 @@
 {
   "critical_count": 0,
-  "high_count": 9,
+  "high_count": 8,
   "npm_counts": {
     "critical": 0,
-    "high": 9,
+    "high": 8,
     "info": 0,
     "low": 0,
-    "moderate": 1,
-    "total": 10
+    "moderate": 0,
+    "total": 8
   },
   "publication_enabled": false,
   "schema_version": 1,
@@ -16,7 +16,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/bundler",
@@ -30,7 +30,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": true,
       "name": "@remotion/cli",
@@ -46,7 +46,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/codemods",
@@ -60,7 +60,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/media",
@@ -74,7 +74,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/studio",
@@ -91,7 +91,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/studio-protocol",
@@ -105,7 +105,7 @@
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "@remotion/studio-server",
@@ -119,63 +119,10 @@
       ]
     },
     {
-      "fix_available": true,
-      "is_direct": false,
-      "name": "body-parser",
-      "range": "<1.20.9",
-      "severity": "high",
-      "via": [
-        {
-          "name": "body-parser",
-          "range": "<1.20.9",
-          "severity": "high",
-          "source": 1243073,
-          "title": "body-parser vulnerable to Denial of Service via trailing bytes after a compressed request body"
-        }
-      ]
-    },
-    {
-      "fix_available": true,
-      "is_direct": false,
-      "name": "fast-uri",
-      "range": "3.0.0 - 3.1.8",
-      "severity": "moderate",
-      "via": [
-        {
-          "name": "fast-uri",
-          "range": ">=3.0.0 <3.1.9",
-          "severity": "moderate",
-          "source": 1243098,
-          "title": "fast-uri vulnerable to URI scheme spoofing via percent-encoded scheme decoding"
-        },
-        {
-          "name": "fast-uri",
-          "range": ">=3.0.0 <3.1.9",
-          "severity": "low",
-          "source": 1243101,
-          "title": "fast-uri vulnerable to improper path equivalence in relative reference normalization"
-        },
-        {
-          "name": "fast-uri",
-          "range": ">=3.1.3 <3.1.9",
-          "severity": "moderate",
-          "source": 1243104,
-          "title": "fast-uri vulnerable to host confusion via unchecked WHATWG host canonicalization"
-        },
-        {
-          "name": "fast-uri",
-          "range": ">=3.0.0 <3.1.9",
-          "severity": "low",
-          "source": 1243107,
-          "title": "fast-uri vulnerable to scheme injection via an unescaped first-segment colon in suffix references"
-        }
-      ]
-    },
-    {
       "fix_available": {
         "isSemVerMajor": true,
         "name": "@remotion/cli",
-        "version": "4.0.277"
+        "version": "4.0.501"
       },
       "is_direct": false,
       "name": "zod",
