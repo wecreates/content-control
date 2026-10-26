@@ -4187,6 +4187,100 @@ mandatory; no publication was attempted. This run used only its actually
 available bounded tools and did not claim a continuously running self-hosted
 worker.
 
+## Run receipt r290 — keep POD transactions under helper control (2026-10-26 UTC)
+
+### Scope and implementation
+
+Fresh reconstruction began from Content Control
+`3e4770f0ec77a65bd3fcfb5ed89664aa5ce3137d` and Money Factory
+`9d57e2a1079f213dff629a48315990c1150dbd9d`, after reading the current
+completion, implementation and free-deployment records plus open pull requests,
+workflow results and the authorized Render service. No open pull request
+duplicated this repair.
+
+`PodDB.tx` already forced callback statements through PostgreSQL extended
+query protocol, but a callback could issue a standalone `COMMIT`, `ROLLBACK`
+or related transaction-control command. That could end or replace the
+helper-owned transaction and make a later rollback unable to undo prior writes.
+The guarded transaction query now rejects `ABORT`, `BEGIN`, `COMMIT`,
+`END`, `PREPARE`, `RELEASE`, `ROLLBACK`, `SAVEPOINT` and `START`
+before PostgreSQL executes them, including leading-semicolon, line-comment and
+nested-block-comment forms. Normal business SQL remains on extended protocol.
+
+### Content Control verification and merge
+
+- The regression-first focused suite failed against the prior helper with the
+  expected missing rejection, then passed 9/9 after the repair.
+- The complete local serial POD Node suite passed 876 tests, skipped eight
+  environment-dependent PostgreSQL cases and failed zero. `node --check` and
+  `git diff --check` passed.
+- The first hosted integration run `40418384737` exposed overlapping test
+  intent: the existing extended-protocol test began with `COMMIT` and
+  correctly reached the new guard before PostgreSQL SQLSTATE `42601`. The test
+  was corrected to begin with ordinary `SELECT` while retaining the separate
+  real PostgreSQL callback-escape regression; the failed run was not blindly
+  retried.
+- Corrected exact head
+  `857f7b6e19ffd457d3867b3d827998e65433b1be` passed POD integration run
+  `40418592742` and production-container run `40418592750`. The hosted
+  PostgreSQL 18 gate passed all 884 Node tests, including the real write,
+  comment-obscured `COMMIT`, rejection and rollback-preservation proof.
+- Guarded PR #713 merged as
+  `bde3f2c54ce9aa5bc10ab3080fd5ad42ed76a500`.
+
+### Money Factory dependent pin
+
+- The workflow now pins immutable Content Control merge
+  `bde3f2c54ce9aa5bc10ab3080fd5ad42ed76a500`.
+- Local Money Factory integration tests passed 116 tests, skipped one
+  environment-dependent PostgreSQL case and failed zero. The Python
+  production/review suite passed 81 tests with zero failures. Generated KDP
+  fixtures remained `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`.
+- Money Factory main advanced concurrently to
+  `15f79e3bb48bf1ea44db5955a786bbc565b5432c`; its unrelated free-monitor
+  evidence was preserved and PR mergeability was re-read before merge.
+- Exact PR #245 head
+  `6a19269044d6d6e92fd393921ea3930b7c8a2e1e` passed cross-repository run
+  `40419665575`, then merged as
+  `b9bb64ca9294dc69058eb9989472d640aa68acb6`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, `main` branch
+  and commit-triggered deployment path. No manual deploy was requested.
+- Render detected exact Content Control merge
+  `bde3f2c54ce9aa5bc10ab3080fd5ad42ed76a500` and created deployment
+  `dep-dbfu2bbbc2fs739krcm0`.
+- Deploy-started event `evt-dbfu2bdgtmfc73b732r0` recorded the merge at
+  `2026-10-26T23:24:29.894680Z`; event
+  `evt-dbfu2bdgtmfc73b732s0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-26T23:24:29.898762Z`; and
+  deploy-ended event `evt-dbfu2bhlfrss73efl5ig` recorded failed status at
+  `2026-10-26T23:24:30.348787Z`.
+- No build or hosted rollout of r290 was verified. No paid capacity, cache/plan
+  change, replacement service, secret access or network widening was attempted.
+
+### Acceptance truth
+
+This closes one managed-transaction integrity gap only. Existing code, passing
+synthetic/PostgreSQL/container tests and an attempted deployment are not live
+acceptance. The prior database-administration route was not retried; the
+documented free Neon replacement and recovery evidence do not remove the
+remaining live preflight, independent backup and authority/deployment
+requirements. Dedicated database, durable storage/recovery, hybrid hosting,
+Money Factory authority, current grants/revocation, account records, authorized
+market intelligence, concept selection, regional-rights evidence, original
+generation, official templates, KDP interiors/editorial, independent QA,
+remediation, authorized KDP/Redbubble/TeePublic/Zazzle/Spreadshirt adapters,
+publishing safeguards, economics, financial reconciliation, mobile operations,
+monitoring, security, measured capacity, end-to-end acceptance and controlled
+launch readiness all remain OPEN. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r289 — single-statement guarded transactions (2026-10-26 UTC)
 
 ### Scope and repair
