@@ -53,7 +53,7 @@ export async function verifyStoredEvidence(pool,db){
  const source='https://authorized.example/timestamp/'+crypto.randomUUID();
  const observation={platform:'redbubble',country:'US',category:'apparel',source_url:source,
   source_sha256:sha,collection_authorized:true,observed_at:'2026-01-01T00:00:00.123456Z'};
- const inZone=zone=>({tx:fn=>db.tx(async client=>{
+ const inZone=zone=>({active:()=>db.active(),tx:fn=>db.tx(async client=>{
   await client.query("SELECT set_config('TimeZone',$1,true)",[zone]);
   return fn(client);
  })});
