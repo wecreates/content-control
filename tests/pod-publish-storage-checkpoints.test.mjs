@@ -10,6 +10,7 @@ function fixture(expireOn){
  let db;
  const client={
   async query(sql){
+   sql=typeof sql==='string'?sql:sql.text;
    calls.push(sql);
    let rows=[];
    if(sql.startsWith('SELECT id FROM pod_accounts'))rows=[{id:'account'}];

@@ -12,7 +12,7 @@ function fixture({expireOnConnect=false,expireOnQuery=null}={}){
  const client={
   async query(sql){
    calls.push(sql);
-   if(sql===expireOnQuery)db.expiresAt=0;
+   if((typeof sql==='string'?sql:sql.text)===expireOnQuery)db.expiresAt=0;
    return {rows:[]};
   },
   release(){}
@@ -71,4 +71,19 @@ test('transaction client stops before a query when storage expires during non-da
   await client.query('AFTER_CALLBACK_WAIT');
  }),/POD_STORAGE_EXPIRING/);
  assert.equal(calls.includes('AFTER_CALLBACK_WAIT'),false);
+});
+
+test('transaction business statements use the single-statement extended protocol',async()=>{
+ const {db,calls}=fixture();
+ await db.tx(client=>client.query('SELECT fixture',['bound']));
+ assert.deepEqual(calls[3],{text:'SELECT fixture',values:['bound'],queryMode:'extended'});
+});
+
+test('transaction does not roll back when opening the transaction fails',async()=>{
+ const original=Error('BEGIN_FAILURE'),calls=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async sql=>{calls.push(sql);throw original;}};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.tx(()=>assert.fail('transaction callback reached')),error=>error===original);
+ assert.deepEqual(calls,['BEGIN']);
+ assert.deepEqual(releases,[false]);
 });

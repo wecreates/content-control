@@ -24,6 +24,7 @@ async function exercise(kind,duplicate,expired){
   const payload=JSON.stringify(e),envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
   const queries=[],rows=(...rows)=>({rows,rowCount:rows.length});
   const client={release(){},query:async sql=>{
+   sql=typeof sql==='string'?sql:sql.text;
    queries.push(sql);
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
