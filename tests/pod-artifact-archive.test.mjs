@@ -339,6 +339,17 @@ test('offline verification rejects wrong keys, limits, missing bytes and cancell
  await assert.rejects(verifyArtifactLibrary({directory,key}),e=>e.code==='ENOENT');
 });
 
+test('artifact verification and restore reject unreferenced archive entries',async t=>{
+ const directory=await workspace(t),body=Buffer.from('exact archive membership');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ await fs.writeFile(path.join(directory,'unreferenced.pod'),Buffer.from('not in the authenticated catalog'));
+ await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_DIRECTORY_CONTENT_INVALID/);
+ const target=database();
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_DIRECTORY_CONTENT_INVALID/);
+ assert.equal(target.rows.size,0);
+ assert.equal(target.queries.length,0,'non-canonical directories must fail before database access');
+});
+
 test('corrupt archives are rejected before opening a restore transaction',async t=>{
  const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
  const file=path.join(directory,sha(body)+'.pod'),data=await fs.readFile(file);data[data.length-1]^=1;await fs.writeFile(file,data);

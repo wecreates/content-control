@@ -103,7 +103,9 @@ catalog and every artifact descriptor must also contain exactly the ordered
 fields emitted by this format. Artifact descriptors must remain in the
 exporter's strictly increasing SHA-256 order; authenticated extensions, field
 reordering or item-list reordering are not accepted as a canonical artifact
-library.
+library. The archive directory must contain exactly `catalog.pod` and the object
+files named by that catalog. Unreferenced files, directories or other entries
+fail verification and restore instead of being silently ignored.
 
 Root directory symlinks and symlinked catalog/artifact files are rejected. File
 opens are nonblocking, followed by regular-file checks, so a FIFO substituted for
