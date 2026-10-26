@@ -49,6 +49,12 @@ stops before the next query or insert and rolls back. The transaction wrapper
 also retains its final pre-commit cutoff check. This bounds work after expiry;
 it does not extend the provider lifetime or replace retained backups.
 
+Storage-backed market intake, financial intake and listing reconciliation apply
+the same rule inside their transactions. They recheck retention after each
+evidence lookup, conflict/readback query and mutation, so a wait that crosses the
+cutoff cannot issue a later query or acknowledge a result. The transaction's
+pre-commit check remains the final safeguard and rolls back any earlier mutation.
+
 The store copies validated caller buffers before any asynchronous database wait.
 Hashing and insertion use that private snapshot, so callers cannot change stored
 bytes after identity is calculated. Copies are bounded by the existing 64 MiB
