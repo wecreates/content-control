@@ -74,3 +74,25 @@ platform previews, independent human review, measured live capacity,
 reconciliation and controlled-launch acceptance remain open. No approval,
 clearance, marketplace result, revenue, completion or continuously running
 self-hosted worker is claimed.
+
+## Follow-up resolution
+
+The caption/render runner's first attempt ended cancelled before assertions;
+only that job was retried. Retry job `121770527096` completed successfully, so
+PR 702 had three passing hosted workflows: POD integration run `40376877841`,
+production-container run `40376877756`, and caption/render integrity run
+`40376877728`. PR 702 then merged as
+`95dc8013229afad1da3de18f782d7f3b6c280bb8`.
+
+Render attempted that runtime-control merge as deploy
+`dep-dbfps3vb9u1s739ieieg`. Pipeline-minutes event
+`evt-dbfps478gmes73frl18g` occurred before build and deploy-ended event
+`evt-dbfps40vtcns738s2efg` recorded failure; live deployment acceptance
+therefore remains open. The following watchdog commit `8b81fb33` changed the
+watchdog plus operations and completion state, so the fail-closed policy
+correctly did not mark it report-only. Its deploy also stopped before build for
+the same exhausted free pipeline minutes.
+
+[Money Factory PR 240](https://github.com/wecreates/Money-factory/pull/240)
+advanced the cross-repository pin to `95dc8013` after hosted run `40379824239`
+passed, and merged as `6c11ff32f93aa4e38156f7df241eba262b8f33bd`.
