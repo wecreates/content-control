@@ -78,6 +78,15 @@ test('deployment requires identical database target and separate restricted iden
   {POD_PUBLICATION_ENABLED:undefined},{POD_STORAGE_EXPIRES_AT:'2020-01-01'},
  ])assert.throws(()=>deploymentConfig({...env,...patch}));
 });
+test('database deployment rejects normalized or ambiguous storage expiry text',()=>{
+ for(const expiry of ['2099-01-01','2099-01-01 00:00:00Z','2099-01-01T01:00:00+01:00',
+  '2099-01-01T00:00:00.0Z','2099-01-01T00:00:00z','2099-01-01T00:00:00Z '])
+  assert.throws(()=>deploymentConfig({...env,POD_STORAGE_EXPIRES_AT:expiry}),/STORAGE_EXPIRING/);
+});
+test('database deployment rejects invalid wall clocks',()=>{
+ for(const now of [NaN,Infinity,-1,0.5,8640000000000001,Number.MAX_SAFE_INTEGER+1,'0'])
+  assert.throws(()=>deploymentConfig(env,now),/STORAGE_EXPIRING/);
+});
 test('check-only never invokes migration connection and missing evidence blocks',async()=>{
  const result=await deployDatabase({env,connect:()=>{throw Error('must not connect as owner');},
   inspect:async({env:received})=>{assert.equal(received.POD_DATABASE_URL,env.POD_DATABASE_URL);return {checks:[]};}});

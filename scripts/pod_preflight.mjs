@@ -6,6 +6,7 @@ import {assertBridge} from '../integrations/pod/policy.mjs';
 import {parseBridgeJSON,readBridgeFile} from '../integrations/pod/bridge-file.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {isolatedRuntimeKeys,REQUIRED_RUNTIME_KEYS} from '../integrations/pod/key-policy.mjs';
+import {parseStorageExpiry,validDateMs} from '../integrations/pod/storage-expiry.mjs';
 
 const TABLES=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
 export async function preflight({env=process.env,connect,readFile=fs.readFile,readBridge,now=Date.now,directory=new URL('../migrations/',import.meta.url)}={}) {
@@ -14,10 +15,13 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
  // Numeric time remains a fixed test hook; the default clock is sampled again
  // after all asynchronous checks and owned-pool cleanup have completed.
  const clock=typeof now==='function'?now:()=>now;
- const safety=()=>[
-  ['PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true'],
-  ['STORAGE_LIFETIME',Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))&&Date.parse(env.POD_STORAGE_EXPIRES_AT)-clock()>86400000],
- ];
+ const safety=()=>{
+  const observedAt=clock(),expiresAt=parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT);
+  return [
+   ['PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true'],
+   ['STORAGE_LIFETIME',validDateMs(observedAt)&&validDateMs(expiresAt)&&expiresAt-observedAt>86400000],
+  ];
+ };
  try{artifactBudgetBytes(env);check('ARTIFACT_STORAGE_BUDGET',true);}catch{check('ARTIFACT_STORAGE_BUDGET',false);}
  for(const key of REQUIRED_RUNTIME_KEYS)check(key,typeof env[key]==='string'&&Buffer.byteLength(env[key])>=32);
  check('POD_KEY_ISOLATION',isolatedRuntimeKeys(env));

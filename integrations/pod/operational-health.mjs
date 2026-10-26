@@ -1,5 +1,5 @@
 import {artifactBudgetBytes} from './storage-budget.mjs';
-const validDateMs=value=>Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000;
+import {validDateMs} from './storage-expiry.mjs';
 
 // Observations only. This function cannot renew expiry or authorize execution.
 export function operationalHealth({expiresAt,artifactBytes,expiredLeases,pendingEvents,oldestEventSeconds,now=Date.now(),env=process.env}){

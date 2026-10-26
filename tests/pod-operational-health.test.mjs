@@ -75,3 +75,13 @@ test('manual diagnostics close their pool on success and failure without startin
   assert.equal(f.ended,true);
  }
 });
+test('manual diagnostics expose ambiguous storage expiry as unknown',async()=>{
+ for(const expiry of ['2030-01-01','2030-01-01 00:00:00Z','2030-01-01T01:00:00+01:00',
+  '2030-01-01T00:00:00.0Z','2030-01-01T00:00:00z','2030-01-01T00:00:00Z ']){
+  const f=fixture(),result=await operationsSnapshot({connect:async()=>f.db.pool,
+   env:{...healthy.env,POD_STORAGE_EXPIRES_AT:expiry},clock:()=>now});
+  assert.equal(result.health.storage.expires_at,null);
+  assert.equal(result.health.storage.lifetime,'UNKNOWN');
+  assert.ok(result.health.alerts.some(alert=>alert.code==='STORAGE_EXPIRY_UNKNOWN'));
+ }
+});

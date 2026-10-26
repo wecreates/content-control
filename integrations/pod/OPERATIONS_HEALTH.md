@@ -45,6 +45,12 @@ specific thresholds were not reached. Every response carries
 expiry is an input, not a fresh provider API lookup. Worker process heartbeats
 remain available in the existing `/status` response.
 
+`POD_STORAGE_EXPIRES_AT` must use canonical UTC text:
+`YYYY-MM-DDTHH:mm:ssZ` or the exact `Date#toISOString()` millisecond form.
+Date-only values, offsets, alternate separators, normalized fractional precision
+and surrounding whitespace remain unknown or block activation/deployment. This
+prevents permissive `Date.parse` normalization from extending a retention claim.
+
 The production lifecycle rechecks its in-process POD_PRODUCTION_ENABLED flag
 before lease recovery and after each awaited stage. Disabling it drains current
 work and ends the loop as STOPPED; it does not keep recovering leases or record

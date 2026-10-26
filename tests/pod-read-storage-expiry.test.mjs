@@ -6,6 +6,15 @@ import {financialTotals} from '../integrations/pod/finance.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 
+test('database guard rejects normalized or ambiguous storage expiry text before access',()=>{
+ for(const expiresAt of ['2099-01-01','2099-01-01 00:00:00Z','2099-01-01T01:00:00+01:00',
+  '2099-01-01T00:00:00.0Z','2099-01-01T00:00:00z','2099-01-01T00:00:00Z ']){
+  const pool={connect:async()=>assert.fail('invalid expiry reached database')};
+  const db=new PodDB({pool,bridge,expiresAt});
+  assert.throws(()=>db.active(),/POD_STORAGE_EXPIRING/);
+ }
+});
+
 for(const [name,read] of [
  ['release-ready list',db=>db.listReady()],
  ['operations job list',db=>db.listOperationsJobs()]

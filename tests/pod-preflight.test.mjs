@@ -11,7 +11,7 @@ import {MAX_BRIDGE_BYTES,readBridgeFile} from '../integrations/pod/bridge-file.m
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const env={POD_DATABASE_URL:'postgresql://secret:secret@example.invalid/db',POD_BRIDGE_PATH:'bridge',
  POD_UPSTREAM_KEY:'a'.repeat(32),POD_QA_KEY:'b'.repeat(32),INTERNAL_OPERATIONS_KEY:'c'.repeat(32),
- POD_STORAGE_EXPIRES_AT:'2030-01-01',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+ POD_STORAGE_EXPIRES_AT:'2030-01-01T00:00:00Z',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 async function bridgeWorkspace(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-bridge-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));
@@ -121,6 +121,19 @@ test('database errors redact details and always release connection',async()=>{
 test('expiry and enabled publishing block deployment preflight',async()=>{
  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:'invalid',PUBLICATION_ENABLED:'true'}});
  for(const code of ['STORAGE_LIFETIME','PUBLICATION_DISABLED'])assert.equal(r.checks.find(c=>c.code===code).status,'BLOCKED');
+});
+test('preflight rejects normalized or ambiguous storage expiry text',async()=>{
+ for(const expiry of ['2030-01-01','2030-01-01 00:00:00Z','2030-01-01T01:00:00+01:00',
+  '2030-01-01T00:00:00.0Z','2030-01-01T00:00:00z','2030-01-01T00:00:00Z ']){
+  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:expiry}});
+  assert.deepEqual(r.checks.find(c=>c.code==='STORAGE_LIFETIME'),{code:'STORAGE_LIFETIME',status:'BLOCKED'});
+ }
+});
+test('preflight rejects invalid wall clocks',async()=>{
+ for(const now of [NaN,Infinity,-1,0.5,8640000000000001,Number.MAX_SAFE_INTEGER+1,'0']){
+  const f=fixture(),r=await preflight({...f.options,now});
+  assert.deepEqual(r.checks.find(c=>c.code==='STORAGE_LIFETIME'),{code:'STORAGE_LIFETIME',status:'BLOCKED'});
+ }
 });
 test('missing market evidence migration blocks preflight',async()=>{
  const f=fixture({missingMigration:'003_pod.sql'}),r=await preflight(f.options);
