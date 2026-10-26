@@ -2,16 +2,16 @@
   "analysis_status": "COMPLETE",
   "artistic_acceptance": "UNASSESSED",
   "best_reference_similarity_by_candidate": [
-    0.42704087495803833,
-    0.45013362169265747,
-    0.39411085844039917,
-    0.43755924701690674,
-    0.38390159606933594,
-    0.38086435198783875,
-    0.4747011959552765,
-    0.3992650508880615,
-    0.4028263986110687,
-    0.3972346782684326
+    0.4270407557487488,
+    0.4501338303089142,
+    0.39411044120788574,
+    0.4375591278076172,
+    0.38434621691703796,
+    0.3808640241622925,
+    0.4747009873390198,
+    0.39926478266716003,
+    0.402826189994812,
+    0.39877745509147644
   ],
   "checks": {
     "florence_completed": true,
@@ -33,7 +33,7 @@
           "file": "cand-05.jpg"
         },
         {
-          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue circle around them. Above the figures, there is text that reads \"One rule. REAL",
+          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue border around the image. Above the figures, there is text that reads \"One rule.",
           "file": "cand-10.jpg"
         }
       ],
@@ -47,7 +47,7 @@
           "file": "ref-05.jpg"
         },
         {
-          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
           "file": "ref-10.jpg"
         }
       ]
@@ -58,62 +58,62 @@
   "frame_matches": [
     {
       "candidate": "cand-01.jpg",
-      "cosine_similarity": 0.42704087495803833,
+      "cosine_similarity": 0.4270407557487488,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-02.jpg",
-      "cosine_similarity": 0.45013362169265747,
+      "cosine_similarity": 0.4501338303089142,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-03.jpg",
-      "cosine_similarity": 0.39411085844039917,
+      "cosine_similarity": 0.39411044120788574,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-04.jpg",
-      "cosine_similarity": 0.43755924701690674,
+      "cosine_similarity": 0.4375591278076172,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-05.jpg",
-      "cosine_similarity": 0.38390159606933594,
+      "cosine_similarity": 0.38434621691703796,
       "reference": "ref-01.jpg"
     },
     {
       "candidate": "cand-06.jpg",
-      "cosine_similarity": 0.38086435198783875,
+      "cosine_similarity": 0.3808640241622925,
       "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-07.jpg",
-      "cosine_similarity": 0.4747011959552765,
+      "cosine_similarity": 0.4747009873390198,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-08.jpg",
-      "cosine_similarity": 0.3992650508880615,
+      "cosine_similarity": 0.39926478266716003,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-09.jpg",
-      "cosine_similarity": 0.4028263986110687,
+      "cosine_similarity": 0.402826189994812,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-10.jpg",
-      "cosine_similarity": 0.3972346782684326,
+      "cosine_similarity": 0.39877745509147644,
       "reference": "ref-01.jpg"
     }
   ],
-  "global_similarity": 0.631574273109436,
+  "global_similarity": 0.6317602396011353,
   "limitations": [
     "Embedding similarity is descriptive, not calibrated artistic parity.",
     "Sampled frames do not establish timing, animation quality, or full-video parity.",
     "Captions may omit details or hallucinate; they are not visual approval."
   ],
-  "mean_best_frame_similarity": 0.41476383805274963,
+  "mean_best_frame_similarity": 0.41496238112449646,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "openclip_status": "COMPLETE",
   "production_ready": false,
@@ -138,7 +138,7 @@
       },
       {
         "file": "cand-05.jpg",
-        "sha256": "9b747cd809506d7ba05f35680c416f0a97a5d6e654c839e138aacae1b4e5452f"
+        "sha256": "4ef6be313416dd66ec5d4314469ba8abed3b548216aba1049a012ce611e677ba"
       },
       {
         "file": "cand-06.jpg",
@@ -158,7 +158,7 @@
       },
       {
         "file": "cand-10.jpg",
-        "sha256": "36bb40c3c2c6c7fc48239f2cc5a441dc21f52b381385b732b5c8b008a6f29ce6"
+        "sha256": "8b6a8af2862bd7532bcc83b6042d9a6d26342b288839436883a8681dc58ed799"
       }
     ],
     "candidate_frames_video_binding_verified": false,
@@ -204,8 +204,8 @@
         "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
       }
     ],
-    "run_id": "40202088851",
-    "source_revision": "2009ceb212a2c1ace0310ff9651fa2521922a8b6"
+    "run_id": "40362670541",
+    "source_revision": "f5237a8cdcca931718dcf579dd8fa9422bde1268"
   },
   "publication_enabled": false,
   "runtime_versions": {
