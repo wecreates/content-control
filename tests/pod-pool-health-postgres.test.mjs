@@ -4,11 +4,11 @@ import {once} from 'node:events';
 import {monitorPodPool} from '../integrations/pod/pool-health.mjs';
 import {createPodPool} from '../pod-db-bridge.js';
 
-test('runtime pool installs monitoring before any connection and preserves TLS limits',
- {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+test('runtime pool installs monitoring before any connection and preserves TLS/session limits',async()=>{
  const pool=await createPodPool({POD_DATABASE_URL:'postgresql://fixture:fixture@127.0.0.1:5432/fixture'});
  try{
   assert.equal(pool.options.ssl.rejectUnauthorized,true);assert.equal(pool.options.max,2);
+  assert.equal(pool.options.options,'-c search_path=pg_catalog,public');
   assert.equal(pool.options.connectionTimeoutMillis,10000);assert.equal(pool.options.query_timeout,15000);
   assert.equal(pool.listenerCount('error'),1);
   assert.doesNotThrow(()=>pool.emit('error',Error('private connection details')));
