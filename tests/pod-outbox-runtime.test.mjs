@@ -146,7 +146,7 @@ test('shutdown aborts in-flight delivery and drains before returning',async()=>{
   started();await new Promise(resolve=>signal.addEventListener('abort',resolve,{once:true}));finished=true;throw Error('aborted');
  }});await entered;await r.stop();assert.equal(finished,true);assert.equal(r.status().failures,0);
 });
-function dbFixture(events){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:events})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+function dbFixture(events){const updated=[];return {updated,active(){},read:async()=>({rows:events}),tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
 test('disabling the outbox during polling stops before the next batch',async()=>{
  const config={...env};let calls=0;
  const runtime=startOutboxRuntime({db:{},env:config,
@@ -191,7 +191,12 @@ for(const phase of ['select','empty-select','response','commit','last-response',
   t.mock.method(Date,'now',()=>now);
   const sent=[],committed=[],pending=[];
   const expire=()=>{now=start+1000;};
+  const selected=()=>phase==='empty-select'?[]:phase.startsWith('last-')?[{id:'a'}]:[{id:'a'},{id:'b'}];
   const client={release(){},query:async(sql,args)=>{
+   if(sql.startsWith('SELECT id,job_id,kind,payload')){
+    if(phase.endsWith('select'))expire();
+    return {rows:selected()};
+   }
    if(sql.startsWith('UPDATE pod_events'))pending.push(args[0]);
    if(sql==='ROLLBACK')pending.length=0;
    if(sql==='COMMIT'){
@@ -201,10 +206,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
    return {rows:[]};
   }};
   const db=new PodDB({bridge:{producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}},
-   expiresAt:new Date(start+86400000+1000).toISOString(),pool:{connect:async()=>client,query:async()=>{
-    if(phase.endsWith('select'))expire();
-    return {rows:phase==='empty-select'?[]:phase.startsWith('last-')?[{id:'a'}]:[{id:'a'},{id:'b'}]};
-   }}});
+   expiresAt:new Date(start+86400000+1000).toISOString(),pool:{connect:async()=>client}});
   await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
    fetchImpl:async(_url,options)=>{
     const id=options.headers['idempotency-key'];sent.push(id);

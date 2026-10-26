@@ -36,31 +36,31 @@ test('artifact reads require an actual hash string before database access',async
 });
 test('artifact read accepts the exact object ceiling and preserves bytes',async()=>{
  const body=Buffer.from('1234');let checks=0;
- const store=new ArtifactStore({active(){checks++;},pool:{query:async()=>({rows:[{body,media_type:'image/png'}]})}},{maxObjectBytes:4});
+ const store=new ArtifactStore({active(){checks++;},async read(){const result={rows:[{body,media_type:'image/png'}]};this.active();return result;}},{maxObjectBytes:4});
  assert.deepEqual(await store.get(hash(body)),{body,media_type:'image/png'});
  assert.equal(checks,2);
 });
 test('artifact read rejects an oversized returned body even from an alternate pool',async()=>{
  const body=Buffer.from('12345');
- const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:[{body,media_type:'image/png'}]})}},{maxObjectBytes:4});
+ const store=new ArtifactStore({active(){},read:async()=>({rows:[{body,media_type:'image/png'}]})},{maxObjectBytes:4});
  await assert.rejects(store.get(hash(body)),/ARTIFACT_UNAVAILABLE/);
 });
 test('artifact read rejects unsupported stored media even from an alternate pool',async()=>{
  const body=Buffer.from('valid bytes with unapproved metadata');
- const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:[{body,media_type:'text/html'}]})}});
+ const store=new ArtifactStore({active(){},read:async()=>({rows:[{body,media_type:'text/html'}]})});
  await assert.rejects(store.get(hash(body)),/^Error: ARTIFACT_UNAVAILABLE$/);
 });
 test('artifact read fails closed for absent, empty, nonbinary or corrupt rows',async()=>{
  for(const row of [undefined,{body:Buffer.alloc(0)},{body:'bytes'},{body:null},{body:Buffer.from('wrong')}]){
-  const store=new ArtifactStore({active(){},pool:{query:async()=>({rows:row?[row]:[]})}});
+  const store=new ArtifactStore({active(){},read:async()=>({rows:row?[row]:[]})});
   await assert.rejects(store.get(hash(Buffer.from('expected'))),/^Error: ARTIFACT_UNAVAILABLE$/);
  }
 });
 test('artifact read rechecks database lifetime after an asynchronous query',async()=>{
  const body=Buffer.from('valid');let expired=false;
- const store=new ArtifactStore({active(){if(expired)throw Error('STORAGE_EXPIRED');},pool:{query:async()=>{
-  expired=true;return {rows:[{body,media_type:'image/png'}]};
- }}});
+ const store=new ArtifactStore({active(){if(expired)throw Error('STORAGE_EXPIRED');},async read(){
+  expired=true;const result={rows:[{body,media_type:'image/png'}]};this.active();return result;
+ }});
  await assert.rejects(store.get(hash(body)),/STORAGE_EXPIRED/);
 });
 test('inactive artifact storage never starts a read query',async()=>{

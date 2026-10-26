@@ -14,7 +14,7 @@ function streamResponse({status=200,headers={},chunks=[]}={}){
  const body=new ReadableStream({start(c){for(const chunk of chunks)c.enqueue(Buffer.from(chunk));},cancel(){cancelled++;}});
  return {response:new Response(body,{status,headers:{'content-type':'application/json',...headers}}),cancelled:()=>cancelled};
 }
-function dbFixture(){const updated=[];return {updated,active(){},pool:{query:async()=>({rows:[{id:'event'}]})},tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+function dbFixture(){const updated=[];return {updated,active(){},read:async()=>({rows:[{id:'event'}]}),tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
 const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
 const grantJob=()=>({id:'job',brief:scopedGrant().brief});
 test('rejected authority response is cancelled without consuming its body',async()=>{
@@ -139,7 +139,7 @@ test('aborted response read releases its reader and never acknowledges delivery'
  assert.equal(response.body.locked,false);assert.deepEqual(db.updated,[]);
 });
 test('failed event response is released before processing the next event',async()=>{
- const f=streamResponse({status:503}),db=dbFixture();db.pool.query=async()=>({rows:[{id:'failed'},{id:'ok'}]});
+ const f=streamResponse({status:503}),db=dbFixture();db.read=async()=>({rows:[{id:'failed'},{id:'ok'}]});
  let calls=0;
  const result=await deliverOutbox(db,{url:'https://authority.example/events',key,continueOnError:true,fetchImpl:async()=>{
   if(calls++===0)return f.response;

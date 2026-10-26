@@ -91,6 +91,15 @@ export class PodDB {
   if(!validDateMs(now)||!validDateMs(this.expiresAt)||
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
+ async read(sql,values){
+  this.active();const c=await this.pool.connect();
+  try{
+   // Pool acquisition can wait past the retention cutoff. Recheck before the
+   // first SQL statement so expired storage is never read merely because the
+   // request entered the pool while the database was still usable.
+   this.active();const result=await c.query(sql,values);this.active();return result;
+  }finally{c.release();}
+ }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
@@ -187,18 +196,16 @@ export class PodDB {
   });
  }
  async listReady(){this.active();
-  const rows=(await this.pool.query("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;
-  this.active();return rows;
+  return (await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;
  }
  async listOperationsJobs(state='review_required'){
   if(!['review_required','raw','processing','qa_failed','qa_passed','blocked','publishing','ambiguous','submitted','published'].includes(state))throw Error('JOB_FILTER_INVALID');
   this.active();
-  const rows=(await this.pool.query(`SELECT id,platform,
+  const rows=(await this.read(`SELECT id,platform,
    CASE WHEN state='qa_failed' AND reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE state END AS state,
    reason_code,attempt,created_at,manifest IS NOT NULL AS can_preview FROM pod_production_queue
    WHERE CASE WHEN state='qa_failed' AND reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE state END=$1
    ORDER BY created_at DESC,id DESC LIMIT 50`,[state])).rows;
-  this.active();
   return rows.map(row=>({...row,reason_code:row.reason_code===null?null:productionReason(row.reason_code)}));
  }
  async failProduction(job,reason){return this.tx(async c=>{
@@ -252,13 +259,12 @@ export class PodDB {
  }
  async reviewPackage(jobId){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
-  const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+  const row=(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'`,[jobId])).rows[0];
-  this.active();
   if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   this.active();
@@ -268,7 +274,7 @@ export class PodDB {
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId)||typeof sha!=='string'||!SHA256.test(sha))throw Error('ARTIFACT_UNAVAILABLE');
   // Resolve the hold, manifest and bytes in one database snapshot. A bearer
   // key and a known content hash alone must not expose unrelated stored data.
-  const row=(await this.pool.query(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+  const row=(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
@@ -277,7 +283,6 @@ export class PodDB {
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
    AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
    [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES])).rows[0];
-  this.active();
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
    !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
