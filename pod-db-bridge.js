@@ -13,6 +13,7 @@ const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
 const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 const RELEASE_REASONS=Object.freeze({ambiguous:'SUBMISSION_UNCERTAIN',blocked:'RELEASE_BLOCKED'});
+const TRANSACTION_COMMANDS=new Set(['ABORT','BEGIN','COMMIT','END','PREPARE','RELEASE','ROLLBACK','SAVEPOINT','START']);
 function exactObject(value,keys){
  return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype&&
   JSON.stringify(Object.keys(value).sort())===JSON.stringify(keys);
@@ -29,6 +30,30 @@ function canonical(value){
  return Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
   value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
   JSON.stringify(value);
+}
+function firstSqlCommand(text){
+ let offset=0;
+ while(offset<text.length){
+  while(offset<text.length&&/[\s;]/.test(text[offset]))offset++;
+  if(text.startsWith('--',offset)){
+   const newline=text.slice(offset+2).search(/[\r\n]/);offset=newline<0?text.length:offset+newline+3;continue;
+  }
+  if(text.startsWith('/*',offset)){
+   let depth=1;offset+=2;
+   while(offset<text.length&&depth){
+    if(text.startsWith('/*',offset)){depth++;offset+=2;}
+    else if(text.startsWith('*/',offset)){depth--;offset+=2;}
+    else offset++;
+   }
+   if(depth) return '';
+   continue;
+  }
+  break;
+ }
+ return /^[a-z]+/i.exec(text.slice(offset))?.[0].toUpperCase()||'';
+}
+function assertManagedTransactionStatement(text){
+ if(typeof text==='string'&&TRANSACTION_COMMANDS.has(firstSqlCommand(text)))throw Error('POD_TRANSACTION_CONTROL_FORBIDDEN');
 }
 function assertStoredManifest(manifest,platform,manifestSha256,state={nodes:0},depth=0){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
@@ -182,6 +207,12 @@ export class PodDB {
    const guardedQuery=async(query,values)=>{
     this.active();
     const config=typeof query==='string'?{text:query,values:values??[],queryMode:'extended'}:{...query,queryMode:'extended'};
+    // The callback owns business SQL, not the transaction. Extended protocol
+    // rejects multi-command strings, but a standalone COMMIT/ROLLBACK would
+    // still end this managed transaction and could make an eventual rollback
+    // unable to undo earlier writes. Reject transaction-control commands before
+    // PostgreSQL can execute them, including comment-obscured forms.
+    assertManagedTransactionStatement(config.text);
     const result=await c.query(config);this.active();return result;
    };
    const guarded=new Proxy(c,{get(target,property){
