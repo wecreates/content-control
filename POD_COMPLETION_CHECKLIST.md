@@ -56,3 +56,12 @@ and authorized marketplace adapters still need actual configuration and acceptan
 Do not replace these requirements with mock adapters, synthetic statements, renewed
 stale approvals, or automatic QA passes. See
 [the r281 receipt](docs/pod/POD_RUN_RECEIPT_R281.md) for exact evidence and limits.
+
+The follow-up r282 drill wrote a uniquely named runtime canary only to the isolated
+r281 recovery branch, cloned that branch at HEAD, and reverified the exact canary,
+schema checksums and restricted-role boundaries on the child. A separate production
+query returned zero matching rows. Neon rejected a second manual snapshot with
+`snapshots limit exceeded`; the existing r281 snapshot was preserved rather than
+deleted. This strengthens data-clone evidence but does not create an independent
+backup or close storage acceptance. See
+[the r282 receipt](docs/pod/POD_RUN_RECEIPT_R282.md).

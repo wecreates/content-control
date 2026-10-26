@@ -113,6 +113,20 @@ database/schema-create or administrator attributes. The snapshot and recovery
 branch expire or consume the same bounded free resources; this is a provider-local
 recovery drill, not an independently retained backup or proof of long-term durability.
 
+The r282 follow-up inserted canary
+`recovery-drill-r282-20261026T1443Z` with day `2026-10-26` and value `17`
+through `pod_runtime_restricted` on the isolated recovery branch only. Neon rejected
+a second manual snapshot with `snapshots limit exceeded`, confirming the current
+free project cannot retain two manual snapshots concurrently. The existing r281
+snapshot was preserved. A non-destructive HEAD clone was therefore created as
+branch `br-jolly-pond-ar5yo4f8` (`pod-r282-runtime-canary-clone`) from
+`br-polished-thunder-ar0d4qka`. The restricted role on the child returned the exact
+canary, 11 tables and all five repository migration hashes with no database/schema
+create or administrator privilege. Production returned zero matching canaries.
+This is live data-clone evidence, not another snapshot restore, point-in-time recovery
+or independently retained backup. The extra branch consumes one of the provider's
+bounded branch slots and must not be mistaken for durable archival storage.
+
 The existing Render service stores the restricted TLS runtime URL and the cutoff
 above. `POD_SERVICE_ENABLED`, `POD_PRODUCTION_ENABLED`, `POD_OUTBOX_ENABLED`,
 `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` are all false. The environment
