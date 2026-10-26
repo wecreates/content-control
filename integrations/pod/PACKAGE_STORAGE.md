@@ -94,6 +94,13 @@ after their database wait. Crossing the safety cutoff while a query is pending
 therefore returns `POD_STORAGE_EXPIRING` instead of releasing a manifest or
 artifact from storage whose remaining retention is no longer acceptable.
 
+Publication claims recheck that same retention boundary after every awaited SQL
+statement while locking an account, checking quota, selecting a reviewed job,
+moving it to `publishing`, reserving quota and setting account cooldown. The
+transaction still rolls back if retention expires, and the prompt checkpoints
+also prevent later queue, reservation or account mutations from being issued
+after the cutoff.
+
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.
 If present it must be a positive decimal integer string of at most 134217728;
