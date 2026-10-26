@@ -193,6 +193,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
   const expire=()=>{now=start+1000;};
   const selected=()=>phase==='empty-select'?[]:phase.startsWith('last-')?[{id:'a'}]:[{id:'a'},{id:'b'}];
   const client={release(){},query:async(sql,args)=>{
+   if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    if(sql.startsWith('SELECT id,job_id,kind,payload')){
     if(phase.endsWith('select'))expire();
     return {rows:selected()};

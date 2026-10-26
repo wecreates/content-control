@@ -12,7 +12,7 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  const queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async(sql,args)=>{
   queries.push({sql,args});
-  if(sql==='SELECT fixture')return {rows:[{value:1}]};
+  if((typeof sql==='string'?sql:sql.text)==='SELECT fixture')return {rows:[{value:1}]};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -20,7 +20,7 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  assert.deepEqual(queries,[
   {sql:'BEGIN READ ONLY',args:undefined},
   {sql:"SET LOCAL statement_timeout='10s'",args:undefined},
-  {sql:'SELECT fixture',args:['bound']},
+  {sql:{text:'SELECT fixture',values:['bound'],queryMode:'extended'},args:undefined},
   {sql:'COMMIT',args:undefined},
  ]);
  assert.deepEqual(releases,[false]);
@@ -29,10 +29,10 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
 for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls back when storage expires during ${expiryStage}`,async()=>{
  const queries=[],releases=[];let db;
  const client={release:bad=>releases.push(bad),query:async sql=>{
-  queries.push(sql);
-  if((expiryStage==='begin'&&sql==='BEGIN READ ONLY')||
-   (expiryStage==='timeout'&&sql.startsWith('SET LOCAL'))||
-   (expiryStage==='query'&&sql==='SELECT fixture'))db.expiresAt=Date.now();
+  const text=typeof sql==='string'?sql:sql.text;queries.push(text);
+  if((expiryStage==='begin'&&text==='BEGIN READ ONLY')||
+   (expiryStage==='timeout'&&text.startsWith('SET LOCAL'))||
+   (expiryStage==='query'&&text==='SELECT fixture'))db.expiresAt=Date.now();
   return {rows:[]};
  }};
  db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -45,7 +45,7 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
 test('guarded read preserves query failure and discards a client whose rollback fails',async()=>{
  const original=Error('ORIGINAL_READ_FAILURE'),queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{
-  queries.push(sql);if(sql==='SELECT fixture')throw original;if(sql==='ROLLBACK')throw Error('ROLLBACK_FAILURE');return {rows:[]};
+  const text=typeof sql==='string'?sql:sql.text;queries.push(text);if(text==='SELECT fixture')throw original;if(text==='ROLLBACK')throw Error('ROLLBACK_FAILURE');return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read('SELECT fixture'),error=>error===original);

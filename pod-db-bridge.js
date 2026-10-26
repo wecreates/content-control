@@ -99,7 +99,10 @@ export class PodDB {
    // mistaken future caller cannot mutate durable state through this helper.
    this.active();await c.query('BEGIN READ ONLY');began=true;this.active();
    await c.query("SET LOCAL statement_timeout='10s'");this.active();
-   const result=await c.query(sql,values);this.active();await c.query('COMMIT');return result;
+   // Force the extended protocol even for parameterless reads. PostgreSQL's
+   // simple-query protocol accepts multiple statements, which could otherwise
+   // end this read-only transaction before a later statement in the same call.
+   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');return result;
   }catch(error){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw error;
   }finally{c.release(bad);}
  }
