@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
 import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
@@ -40,9 +41,16 @@ async function readArtifact(item,{base,key,signal}){
  if(body.length!==item.bytes||digest(body)!==item.sha256)throw Error('ARCHIVE_ARTIFACT_INVALID');
  return body;
 }
+async function assertCatalogEntries(catalog,{base,signal}){
+ signal?.throwIfAborted();
+ const actual=(await fs.readdir(base)).sort();
+ signal?.throwIfAborted();
+ const expected=['catalog.pod',...catalog.items.map(item=>item.sha256+'.pod')].sort();
+ if(actual.length!==expected.length||actual.some((name,index)=>name!==expected[index]))throw Error('ARCHIVE_DIRECTORY_CONTENT_INVALID');
+}
 async function verifyItems(catalog,options){
  for(const item of catalog.items)await readArtifact(item,options);
- options.signal?.throwIfAborted();
+ options.signal?.throwIfAborted();await assertCatalogEntries(catalog,options);
 }
 
 // Offline and read-only: no database, credentials, authority renewal or uploads.
@@ -145,6 +153,8 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
    await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);
    checkpoint();inserted++;
   }
+  await assertCatalogEntries(catalog,options);
+  checkpoint();
   // The held descriptor prevents redirecting authenticated reads, but the
   // requested pathname must still identify that same archive at commit time.
   // Keep this inside the transaction so a replacement rolls back all inserts.
@@ -155,6 +165,8 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.
+ checkpoint();
+ await assertCatalogEntries(catalog,options);
  checkpoint();
  await assertArchiveDirectory(directory,opened);
  checkpoint();
