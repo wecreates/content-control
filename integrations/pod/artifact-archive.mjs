@@ -8,6 +8,7 @@ import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 const MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
 const TYPES=new Set(ARTIFACT_MEDIA_TYPES);
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
+const exactKeys=(value,keys)=>value&&!Array.isArray(value)&&JSON.stringify(Object.keys(value))===JSON.stringify(keys);
 function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
   !Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('ARCHIVE_CONFIG_INVALID');
@@ -21,11 +22,13 @@ async function readCatalog({directory,key,budgetBytes,signal,base}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();
  const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:artifact-catalog:v1'),'ARCHIVE_CATALOG_INVALID');
- if(catalog?.schema_version!==1||catalog.scope!=='artifacts_only'||!Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
+ if(!exactKeys(catalog,['schema_version','scope','created_at','items'])||catalog.schema_version!==1||catalog.scope!=='artifacts_only'||
+  !Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
   !validArchiveTimestamp(catalog.created_at))throw Error('ARCHIVE_CATALOG_INVALID');
  const seen=new Set();let bytes=0;
  for(const item of catalog.items){
-  if(typeof item?.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||seen.has(item.sha256)||!TYPES.has(item.media_type)||
+  if(!exactKeys(item,['sha256','media_type','bytes'])||typeof item.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||
+   seen.has(item.sha256)||!TYPES.has(item.media_type)||
    !Number.isSafeInteger(item.bytes)||item.bytes<1||item.bytes>MAX_OBJECT)throw Error('ARCHIVE_CATALOG_INVALID');
   seen.add(item.sha256);bytes+=item.bytes;
  }

@@ -147,6 +147,22 @@ test('artifact catalog rejects normalized creation timestamps',async t=>{
   await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
  }
 });
+test('artifact catalog rejects authenticated fields that canonical exports never emit',async t=>{
+ const directory=await workspace(t);await exportArtifactLibrary(database([Buffer.from('canonical fixture')]),{directory,key});
+ const file=path.join(directory,'catalog.pod');
+ const original=JSON.parse(unseal(await fs.readFile(file),key,'pod:artifact-catalog:v1'));
+ for(const change of [
+  catalog=>{catalog.unexpected='catalog';},
+  catalog=>{catalog.items[0].unexpected='item';},
+  catalog=>{const scope=catalog.scope;delete catalog.scope;catalog.scope=scope;},
+  catalog=>{const mediaType=catalog.items[0].media_type;delete catalog.items[0].media_type;
+   catalog.items[0].media_type=mediaType;}
+ ]){
+  const catalog=structuredClone(original);change(catalog);
+  await fs.writeFile(file,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:artifact-catalog:v1'));
+  await assert.rejects(verifyArtifactLibrary({directory,key}),/ARCHIVE_CATALOG_INVALID/);
+ }
+});
 test('export never overwrites a directory and incomplete export has no catalog',async t=>{
  const directory=await workspace(t),source=database([Buffer.from('one')]);
  await assert.rejects(exportArtifactLibrary(source,{directory,key,budgetBytes:1}),/ARCHIVE_BUDGET_EXCEEDED/);
