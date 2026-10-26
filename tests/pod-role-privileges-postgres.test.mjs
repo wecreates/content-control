@@ -39,6 +39,12 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
    for(const code of ['DATABASE_READABLE','RESTRICTED_RUNTIME_ROLE','POD_TABLE_PRIVILEGES','SOCIAL_VAULT_ISOLATED','SCHEMA_CHECKSUMS'])assert.equal(status(report,code),'PASS',code);
    assert.equal(status(report,'DATABASE_TLS'),'BLOCKED'); // Local fixture does not establish production TLS.
   };
+  assert.equal((await pool.query("SELECT has_database_privilege($1,current_database(),'TEMP') AS granted",[runtime])).rows[0].granted,false);
+  const runtimeClient=await pool.connect();
+  try{
+   await runtimeClient.query(`SET ROLE "${runtime}"`);
+   await assert.rejects(runtimeClient.query('CREATE TEMP TABLE pod_events(id text)'),/permission denied/i);
+  }finally{await runtimeClient.query('RESET ROLE');runtimeClient.release();}
   await clean();
   // A harmless member role remains allowed; membership alone is not a failure.
   await pool.query(`GRANT SELECT ON public.pod_events TO "${group}"`);await clean();
@@ -47,6 +53,7 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
    ['REFERENCES (id) ON public.pod_events','POD_TABLE_PRIVILEGES',"has_any_column_privilege($1,'public.pod_events','REFERENCES')"],
    ['UPDATE (sha256) ON public.pod_schema_version','POD_TABLE_PRIVILEGES',"has_any_column_privilege($1,'public.pod_schema_version','UPDATE')"],
    [`CREATE ON DATABASE "${name}"`,'RESTRICTED_RUNTIME_ROLE',"has_database_privilege($1,current_database(),'CREATE')"],
+   [`TEMPORARY ON DATABASE "${name}"`,'RESTRICTED_RUNTIME_ROLE',"has_database_privilege($1,current_database(),'TEMP')"],
    ['CREATE ON SCHEMA public','RESTRICTED_RUNTIME_ROLE',"has_schema_privilege($1,'public','CREATE')"],
    ['SELECT ON public.cyzor_social_vault','SOCIAL_VAULT_ISOLATED',"has_table_privilege($1,'public.cyzor_social_vault','SELECT')"],
    ['UPDATE (id) ON public.cyzor_social_vault','SOCIAL_VAULT_ISOLATED',"has_any_column_privilege($1,'public.cyzor_social_vault','UPDATE')"],
