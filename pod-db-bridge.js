@@ -144,10 +144,21 @@ export class PodDB {
   });
  }
  async tx(fn){
-  this.active();const c=await this.pool.connect();let bad=false;
-  try{await c.query('BEGIN');await c.query("SET LOCAL lock_timeout='2s'");
-   await c.query("SET LOCAL statement_timeout='10s'");const r=await fn(c);this.active();await c.query('COMMIT');return r;
-  }catch(e){try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
+  this.active();const c=await this.pool.connect();let bad=false,began=false;
+  try{
+   // Connection acquisition and transaction setup are asynchronous too. Do
+   // not let a retention cutoff crossed in those waits reach business SQL.
+   this.active();began=true;await c.query('BEGIN');this.active();
+   await c.query("SET LOCAL lock_timeout='2s'");this.active();
+   await c.query("SET LOCAL statement_timeout='10s'");this.active();
+   const guardedQuery=async(...args)=>{const result=await c.query(...args);this.active();return result;};
+   const guarded=new Proxy(c,{get(target,property){
+    if(property==='query')return guardedQuery;
+    const value=Reflect.get(target,property,target);
+    return typeof value==='function'?value.bind(target):value;
+   }});
+   const r=await fn(guarded);this.active();await c.query('COMMIT');return r;
+  }catch(e){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
  }
  async enqueue({job,upstream,conceptId,revision}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');

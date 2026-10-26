@@ -101,6 +101,13 @@ transaction still rolls back if retention expires, and the prompt checkpoints
 also prevent later queue, reservation or account mutations from being issued
 after the cutoff.
 
+The shared `PodDB.tx` boundary applies this rule to every transactional POD
+operation. It rechecks after connection acquisition, `BEGIN`, both local timeout
+statements and every query exposed to the transaction callback. Expiry during an
+earlier wait therefore cannot reach a later concept, queue, review, settlement,
+recovery, evidence or archive statement. An opened transaction is rolled back;
+a connection that expires before `BEGIN` is released without issuing SQL.
+
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.
 If present it must be a positive decimal integer string of at most 134217728;
