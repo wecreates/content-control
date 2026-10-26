@@ -84,3 +84,12 @@ capacity and a real controlled launch remain unverified.
 `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain false. Etsy remains
 excluded. No approval, clearance, marketplace result, revenue, completion or
 continuously running self-hosted worker is claimed.
+
+## Durable merge evidence
+
+[Content Control PR 693](https://github.com/wecreates/content-control/pull/693)
+merged exact tested tree `5622aecc026ca530739af104036c96036465fd80` as
+`3df22d5a504333d20008d64b46f5389cf74f91b4`. Render event
+`evt-dbfmgag473hc73a9ena0` records that exact `[skip render]` merge as
+`commit_ignored`; the evidence-only update did not consume another blocked build
+attempt or change runtime activation.
