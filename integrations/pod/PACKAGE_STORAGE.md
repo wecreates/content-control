@@ -42,6 +42,13 @@ the whole batch may already exist, and hash-addressed replay is idempotent. Two
 writers cannot both reserve the same remaining capacity. Exact replay does not
 consume additional durable bytes.
 
+The store rechecks the configured storage-retention cutoff after acquiring the
+write lock, after immutable-row and occupied-byte queries, and after every blob
+insert. If an asynchronous database wait crosses the cutoff, the transaction
+stops before the next query or insert and rolls back. The transaction wrapper
+also retains its final pre-commit cutoff check. This bounds work after expiry;
+it does not extend the provider lifetime or replace retained backups.
+
 The store copies validated caller buffers before any asynchronous database wait.
 Hashing and insertion use that private snapshot, so callers cannot change stored
 bytes after identity is calculated. Copies are bounded by the existing 64 MiB

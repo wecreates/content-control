@@ -70,7 +70,7 @@ test('inactive artifact storage never starts a read query',async()=>{
 
 test('artifact bytes are snapshotted before database waits',async()=>{
  const a=entry('original'),original=Buffer.from(a.body);let inserted;
- const db={tx:async fn=>{
+ const db={active(){},tx:async fn=>{
   a.body.fill(120);a.mediaType='image/png';
   return fn({query:async(sql,args)=>{
    if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
@@ -85,7 +85,7 @@ test('artifact bytes are snapshotted before database waits',async()=>{
 
 test('regional-rights evidence accepts text/plain and rejects unapproved media before storage',async()=>{
  const writes=[];
- const db={tx:fn=>fn({query:async(sql,args)=>{
+ const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
   if(sql.startsWith('INSERT'))writes.push(args);
   return {rows:[]};
@@ -98,7 +98,7 @@ test('regional-rights evidence accepts text/plain and rejects unapproved media b
 
 test('KDP template archives accept application/zip and preserve immutable identity metadata',async()=>{
  const writes=[];
- const db={tx:fn=>fn({query:async(sql,args)=>{
+ const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
   if(sql.startsWith('INSERT'))writes.push(args);
   return {rows:[]};
@@ -127,7 +127,7 @@ test('invalid batches fail before acquiring a database connection',async()=>{
 
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
- const db={tx:fn=>fn({query:async(sql,args)=>{
+ const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('ANY('))return {rows:[{sha256:hash(a.body),body_sha256:hash(a.body),media_type:a.mediaType}]};
   if(sql.includes('sum('))return {rows:[{bytes:'4'}]};
   if(sql.startsWith('INSERT'))writes.push(args);
@@ -139,6 +139,29 @@ test('batch budget is checked before any insert and counts distinct missing byte
  writes.length=0;
  await assert.rejects(new ArtifactStore(db,{budgetBytes:5}).putMany([a,b]),/ARTIFACT_BUDGET_EXHAUSTED/);
  assert.equal(writes.length,0);
+});
+
+test('artifact batch stops before budget and inserts when storage expires during immutable-row lookup',async()=>{
+ const a=entry('expiry lookup boundary');let expired=false,budgetReads=0,writes=0;
+ const db={active(){if(expired)throw Error('STORAGE_EXPIRED');},tx:fn=>fn({query:async sql=>{
+  if(sql.includes('ANY(')){expired=true;return {rows:[]};}
+  if(sql.includes('sum(')){budgetReads++;return {rows:[{bytes:'0'}]};}
+  if(sql.startsWith('INSERT'))writes++;
+  return {rows:[]};
+ }})};
+ await assert.rejects(new ArtifactStore(db).putMany([a]),/STORAGE_EXPIRED/);
+ assert.equal(budgetReads,0);assert.equal(writes,0);
+});
+
+test('artifact batch stops after storage expires during the first insert',async()=>{
+ const a=entry('expiry first insert'),b=entry('expiry second insert');let expired=false,writes=0;
+ const db={active(){if(expired)throw Error('STORAGE_EXPIRED');},tx:fn=>fn({query:async sql=>{
+  if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('INSERT')){writes++;expired=true;}
+  return {rows:[]};
+ }})};
+ await assert.rejects(new ArtifactStore(db).putMany([a,b]),/STORAGE_EXPIRED/);
+ assert.equal(writes,1,'no later artifact should be inserted after the storage cutoff');
 });
 
 async function fixture(fn){
@@ -290,7 +313,7 @@ test('existing corrupt bytes or media conflicts reject the whole batch before in
   {sha256:hash(a.body),body_sha256:hash('corrupted'),media_type:a.mediaType}
  ]){
   let inserts=0;
-  const db={tx:fn=>fn({query:async(sql)=>{
+  const db={active(){},tx:fn=>fn({query:async(sql)=>{
    if(sql.includes('ANY('))return {rows:[existing]};
    if(sql.startsWith('INSERT'))inserts++;
    return {rows:[]};

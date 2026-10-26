@@ -78,7 +78,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(interiorGuideFailure)env.FIXTURE_INTERIOR_GUIDE_FAILURE=interiorGuideFailure;
   const controller=new AbortController();
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
-   db:{claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
+   db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
     completeProduction:async()=>{completed++;return {pass:true};},
     assertProducible:async()=>{localChecks++;await localPolicy?.({env,controller,originalNow});},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},

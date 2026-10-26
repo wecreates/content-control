@@ -41,7 +41,7 @@ test('authenticated parser failures return sanitized JSON before any database op
 });
 test('authenticated uploads share the bounded deployment storage policy',async()=>{
  const env={POD_ARTIFACT_BUDGET_BYTES:'3'};let inserts=0,transactions=0;
- const db={tx:async fn=>{transactions++;return fn({query:async(sql)=>{
+ const db={active(){},tx:async fn=>{transactions++;return fn({query:async(sql)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
   if(sql.startsWith('INSERT'))inserts++;
   return {rows:[]};
@@ -58,7 +58,7 @@ test('authenticated uploads share the bounded deployment storage policy',async()
  }finally{await new Promise(r=>server.close(r));}
 });
 test('authenticated regional-rights evidence upload accepts and preserves text/plain',async()=>{
- const inserts=[],db={tx:fn=>fn({query:async(sql,args)=>{
+ const inserts=[],db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
   if(sql.startsWith('INSERT'))inserts.push(args);
   return {rows:[]};
@@ -76,7 +76,7 @@ test('authenticated regional-rights evidence upload accepts and preserves text/p
  }finally{await new Promise(r=>server.close(r));}
 });
 test('authenticated KDP template archive upload accepts and preserves application/zip',async()=>{
- const inserts=[],db={tx:fn=>fn({query:async(sql,args)=>{
+ const inserts=[],db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
   if(sql.startsWith('INSERT'))inserts.push(args);
   return {rows:[]};
