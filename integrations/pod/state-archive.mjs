@@ -18,6 +18,7 @@ const MAX_ROW=40*1024*1024,MAX_TOTAL=320*1024*1024,MAX_ROWS=10000,MAX_CATALOG=4*
 const ARTIFACT_TYPES=new Set(ARTIFACT_MEDIA_TYPES);
 const SNAPSHOT_ID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const hash=body=>crypto.createHash('sha256').update(body).digest('hex');
+const exactKeys=(value,keys)=>value&&!Array.isArray(value)&&JSON.stringify(Object.keys(value))===JSON.stringify(keys);
 const recordFile=index=>String(index).padStart(5,'0')+'.pod';
 const aad=(id,item)=>`pod:state:v1:${id}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
 function disabled(env,restoring=false){
@@ -62,7 +63,8 @@ async function catalogFor(options){
  const {directory,key,signal,base}=options;config(directory,key);signal?.throwIfAborted();
  const encrypted=await readBounded(path.join(base,'catalog.pod'),MAX_CATALOG+36,signal);
  const catalog=parseArchiveJSON(unseal(encrypted,key,'pod:state-catalog:v1'),'STATE_ARCHIVE_CATALOG_INVALID');
- if(catalog?.schema_version!==1||catalog.scope!=='pod_tables_only'||
+ if(!exactKeys(catalog,['schema_version','scope','snapshot_id','created_at','tables','versions','columns','items'])||
+  catalog.schema_version!==1||catalog.scope!=='pod_tables_only'||
   !SNAPSHOT_ID.test(catalog.snapshot_id||'')||!validArchiveTimestamp(catalog.created_at)||
   JSON.stringify(catalog.tables)!==JSON.stringify(NAMES)||
   JSON.stringify(catalog.versions)!==JSON.stringify(await expectedVersions())||
@@ -71,12 +73,14 @@ async function catalogFor(options){
  for(const table of NAMES){
   const cols=catalog.columns[table];
   if(!Array.isArray(cols)||!cols.length||cols.length>64||new Set(cols.map(c=>c.name)).size!==cols.length||
-   cols.some(c=>!c||typeof c.name!=='string'||typeof c.type!=='string'||typeof c.required!=='boolean'))throw Error('STATE_ARCHIVE_CATALOG_INVALID');
+   cols.some(c=>!exactKeys(c,['name','type','required'])||typeof c.name!=='string'||typeof c.type!=='string'||typeof c.required!=='boolean'))
+   throw Error('STATE_ARCHIVE_CATALOG_INVALID');
  }
  let bytes=0,lastTable=-1;
  for(const [i,item] of catalog.items.entries()){
   const order=NAMES.indexOf(item?.table);
-  if(item?.index!==i||order<lastTable||order<0||!Number.isSafeInteger(item.bytes)||item.bytes<2||item.bytes>MAX_ROW||
+  if(!exactKeys(item,['index','table','sha256','bytes'])||item.index!==i||order<lastTable||order<0||
+   !Number.isSafeInteger(item.bytes)||item.bytes<2||item.bytes>MAX_ROW||
    !/^[a-f0-9]{64}$/.test(item.sha256||''))throw Error('STATE_ARCHIVE_CATALOG_INVALID');
   lastTable=order;bytes+=item.bytes;
  }
