@@ -28,6 +28,24 @@ test('watchdog observations alone skip Render but every mixed runtime change dep
   assert.equal(renderCommitMessage('Update watchdog',[report,other]),'Update watchdog');
  }
 });
+test('runtime security audit workflow skips only its normalized report commit',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-security-audit-commit-'));
+ const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'});
+ try{
+  git('init','--quiet');git('config','user.name','Synthetic Test');git('config','user.email','fixture@example.invalid');
+  await fs.mkdir(path.join(root,'state'));await fs.mkdir(path.join(root,'scripts'));
+  await fs.copyFile(new URL('../scripts/pod_deploy_commit_policy.mjs',import.meta.url),path.join(root,'scripts/pod_deploy_commit_policy.mjs'));
+  await fs.writeFile(path.join(root,'state/runtime-security-audit.json'),'{}\n');
+  git('add','.');git('commit','--quiet','-m','Fixture baseline');
+  const workflow=await fs.readFile(new URL('../.github/workflows/runtime-security-audit.yml',import.meta.url),'utf8');
+  const line=workflow.split('\n').find(line=>line.includes('git diff --cached --quiet || git commit -m'));
+  assert.ok(line?.includes('pod_deploy_commit_policy.mjs'));
+  await fs.writeFile(path.join(root,'state/runtime-security-audit.json'),'{"high_count":0}\n');
+  git('add','state/runtime-security-audit.json');
+  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
+  assert.equal(git('log','-1','--format=%s').trim(),'Update runtime dependency security audit [skip render]');
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('live deployment receipts skip identical runtime rebuilds but mixed changes deploy',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-live-health-commit-'));
  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'});

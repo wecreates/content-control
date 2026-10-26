@@ -39,6 +39,8 @@
     "remotion": "4.0.529"
   },
   "overrides": {
+    "body-parser": "1.20.9",
+    "fast-uri": "3.1.9",
     "qs": "6.16.0"
   }
 }
