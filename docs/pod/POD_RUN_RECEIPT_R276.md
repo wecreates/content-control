@@ -78,3 +78,7 @@ acceptance, live alert delivery/recovery drills, measured capacity, publication,
 revenue or launch readiness. Both publication flags remain false; Etsy remains
 excluded. No approval, clearance, provider result or continuously running
 self-hosted worker is claimed.
+
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfhlcuk1f9s7389nuh0` verifies exact merge
+`b697156f8140a00fa2ea7b8e0d64162eff52eca5` was ignored rather than deployed.
