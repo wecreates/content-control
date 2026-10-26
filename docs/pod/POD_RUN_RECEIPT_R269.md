@@ -69,3 +69,7 @@ marketplace accounts or adapters, real rights/templates/review, actual economics
 measured capacity, publication, revenue or launch readiness. Both publication
 flags remain false; Etsy remains excluded. No approval, clearance, provider
 result or continuously running self-hosted worker is claimed.
+
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfbpkuk1f9s7384ecng` verifies that exact merge
+`17d1e187e2626d1b5058467ceff66bd5da39f10c` was ignored rather than deployed.
