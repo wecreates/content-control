@@ -118,3 +118,13 @@ authorized end-to-end launch also remain unverified.
 Both publication flags remain false; Etsy remains excluded. No approval, clearance,
 marketplace result, revenue, completion or continuously running self-hosted worker
 is claimed.
+
+## Durable merge evidence
+
+[Content Control PR 690](https://github.com/wecreates/content-control/pull/690)
+merged the exact documented tree
+`d0c71556c09a27f4888c263f3249360a01b3877b` as
+`2eb805a787aad81a6d769a8bfe8823d49310652f`. Render event
+`evt-dbflv8cs728c73do3m40` records that exact `[skip render]` merge as
+`commit_ignored`; the evidence-only update therefore did not consume another build
+attempt or change the failed deployment result above.
