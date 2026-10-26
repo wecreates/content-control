@@ -76,3 +76,7 @@ submission, actual economics/reconciliation, owner-phone acceptance, measured
 capacity, publication, revenue or launch readiness. Both publication flags
 remain false; Etsy remains excluded. No approval, clearance, provider result or
 continuously running self-hosted worker is claimed.
+
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfd165g1s2s73a7hlk0` verifies exact merge
+`f6f2b135507c33ce0145c50563603f58a8e91c02` was ignored rather than deployed.
