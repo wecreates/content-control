@@ -116,3 +116,13 @@ controlled launch readiness remain unverified.
 `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain false. Etsy remains
 excluded. No approval, clearance, marketplace result, revenue, completion or
 continuously running self-hosted worker is claimed.
+
+## Durable receipt merge evidence
+
+[Content Control PR 699](https://github.com/wecreates/content-control/pull/699)
+merged the exact receipt tree
+`a14f0d4bae6f8158ec46eb3862f202925a623cac` as
+`466c8f93dd3ac7c0f94a748391f0dd5421d696e9`. Render event
+`evt-dbfp1k6417fc73demnk0` records that exact `[skip render]` commit as
+`commit_ignored` at `2026-10-26T17:41:36.302823Z`; this evidence-only merge
+did not consume another blocked build attempt or alter runtime activation.
