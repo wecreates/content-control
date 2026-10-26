@@ -22,6 +22,7 @@ for(const boundary of ['connect','lock','commit'])for(const change of ['storage'
    if(sql.startsWith('SELECT rolsuper'))return {rows:[{}]};
    if(sql==='SELECT current_user AS name')return {rows:[{name:'owner'}]};
    if(sql.includes('AS elevated'))return {rows:[{elevated:false}]};
+   if(sql.startsWith("SELECT format('REVOKE TEMPORARY"))return {rows:[{sql:'REVOKE TEMPORARY ON DATABASE pod FROM PUBLIC'}]};
    if(sql.startsWith('SELECT sha256')){
     const bytes=await fs.readFile(new URL('../migrations/'+params[0],import.meta.url));
     return {rows:[{sha256:crypto.createHash('sha256').update(bytes).digest('hex')}]};
@@ -34,7 +35,10 @@ for(const boundary of ['connect','lock','commit'])for(const change of ['storage'
   assert.equal(statements.at(-1),'ROLLBACK');assert.equal(statements.includes('COMMIT'),false);
   assert.equal(released,1);assert.equal(closed,1);
   if(boundary!=='commit')assert.equal(statements.some(sql=>/^(CREATE|GRANT|INSERT)/.test(sql)),false);
-  else assert.equal(statements.some(sql=>sql.startsWith('GRANT SELECT ON pod_schema_version')),true);
+  else{
+   assert.equal(statements.includes('REVOKE TEMPORARY ON DATABASE pod FROM PUBLIC'),true);
+   assert.equal(statements.some(sql=>sql.startsWith('GRANT SELECT ON pod_schema_version')),true);
+  }
  });
 }
 test('check-only cannot report database verification after storage crosses its safety cutoff',async t=>{
