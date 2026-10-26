@@ -162,6 +162,25 @@ test('state catalog rejects normalized creation timestamps',async t=>{
   await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
  }
 });
+test('state catalog requires the exact UUIDv4 snapshot identity emitted by exports',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const catalogFile=path.join(f.directory,'catalog.pod');
+ const catalog=JSON.parse(unseal(await fs.readFile(catalogFile),key,'pod:state-catalog:v1'));
+ let currentId=catalog.snapshot_id;
+ for(const snapshotId of ['a'.repeat(36),'aaaaaaaa-aaaa-1aaa-8aaa-aaaaaaaaaaaa',
+  'aaaaaaaa-aaaa-4aaa-7aaa-aaaaaaaaaaaa']){
+  for(const item of catalog.items){
+   const recordFile=path.join(f.directory,String(item.index).padStart(5,'0')+'.pod');
+   const oldAad=`pod:state:v1:${currentId}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
+   const body=unseal(await fs.readFile(recordFile),key,oldAad);
+   const newAad=`pod:state:v1:${snapshotId}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
+   await fs.writeFile(recordFile,seal(body,key,newAad));
+  }
+  catalog.snapshot_id=snapshotId;currentId=snapshotId;
+  await fs.writeFile(catalogFile,seal(Buffer.from(JSON.stringify(catalog)),key,'pod:state-catalog:v1'));
+  await assert.rejects(verifyStateArchive({...f,key}),/STATE_ARCHIVE_CATALOG_INVALID/);
+ }
+});
 test('state records reject escaped duplicate decoded keys',async t=>{
  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
  const catalogFile=path.join(f.directory,'catalog.pod');
