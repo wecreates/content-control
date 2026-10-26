@@ -22,7 +22,7 @@ function fixture(overrides={}){
  const client={async query(sql,args){queries.push(sql);
   if((overrides.throwOn&&sql.includes(overrides.throwOn))||(overrides.rollbackFails&&sql==='ROLLBACK'))throw Error('secret password internal-url');
   if(sql.includes('current_schemas(false)'))return {rows:[{search_path:overrides.searchPath??['pg_catalog','public']}]};
-  if(sql.includes('FROM pg_roles r'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,elevated_membership:false,schema_create:false,...overrides.role}]};
+  if(sql.includes('FROM pg_roles r'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,db_temp:false,elevated_membership:false,schema_create:false,...overrides.role}]};
   if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
   if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
   if(sql.includes("relname='cyzor_social_vault'"))return {rows:[{access:overrides.vault??false,column_access:false,owns:false}]};
@@ -116,6 +116,7 @@ test('bridge reader enforces its exact byte ceiling',async t=>{
 for(const [name,overrides,code] of [
  ['unsafe database search path',{searchPath:['untrusted','pg_catalog','public']},'DATABASE_SEARCH_PATH'],
  ['missing public search path',{searchPath:['pg_catalog']},'DATABASE_SEARCH_PATH'],
+ ['temporary relation privilege',{role:{db_temp:true}},'RESTRICTED_RUNTIME_ROLE'],
  ['privileged role',{role:{elevated_membership:true}},'RESTRICTED_RUNTIME_ROLE'],
  ['TLS absent',{tls:false},'DATABASE_TLS'],['vault access',{vault:true},'SOCIAL_VAULT_ISOLATED'],
  ['modified migration',{hash:'bad'},'SCHEMA_CHECKSUMS']]){
