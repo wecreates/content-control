@@ -7,7 +7,7 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 
 test('review retrieval selects manifest identity only from the review-hold event',async()=>{
  const queries=[];
- const client={release(){},query:async sql=>{queries.push(sql);return {rows:[]};}};
+ const client={release(){},query:async sql=>{queries.push(typeof sql==='string'?sql:sql.text);return {rows:[]};}};
  const pool={connect:async()=>client};
  const db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
 

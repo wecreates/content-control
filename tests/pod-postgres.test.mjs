@@ -64,6 +64,8 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal(report.checks.find(c=>c.code==='DATABASE_TLS').status,'BLOCKED');
   await assert.rejects(db.read("UPDATE cyzor_social_vault SET envelope='{}' WHERE id='owner'"),error=>error.code==='25006');
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
+  await assert.rejects(db.read("COMMIT; UPDATE cyzor_social_vault SET envelope='{}' WHERE id='owner'"),error=>error.code==='42601');
+  assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
   await verifyConceptBudget(pool,bridge);
