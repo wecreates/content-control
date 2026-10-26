@@ -74,3 +74,7 @@ capacity and authorized end-to-end launch evidence remain unverified.
 `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
 mandatory; Etsy remains excluded. No approval, clearance, revenue, publication
 or continuously running self-hosted worker is claimed.
+
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfaccss728c73dbiiq0` verifies that exact merge
+`f121a516b0fc309a7f40bc30f82a76f750d1c0b9` was ignored rather than deployed.
