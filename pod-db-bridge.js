@@ -151,7 +151,10 @@ export class PodDB {
    this.active();began=true;await c.query('BEGIN');this.active();
    await c.query("SET LOCAL lock_timeout='2s'");this.active();
    await c.query("SET LOCAL statement_timeout='10s'");this.active();
-   const guardedQuery=async(...args)=>{const result=await c.query(...args);this.active();return result;};
+   // A callback may await non-database work between statements (for example,
+   // archive file verification). Check on both sides so crossing the retention
+   // cutoff in that wait cannot issue one last business statement.
+   const guardedQuery=async(...args)=>{this.active();const result=await c.query(...args);this.active();return result;};
    const guarded=new Proxy(c,{get(target,property){
     if(property==='query')return guardedQuery;
     const value=Reflect.get(target,property,target);

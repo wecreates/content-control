@@ -48,3 +48,13 @@ test('transaction client stops before a later query after storage expires',async
  }),/POD_STORAGE_EXPIRING/);
  assert.equal(calls.includes('SECOND'),false);
 });
+
+test('transaction client stops before a query when storage expires during non-database callback work',async()=>{
+ const {db,calls}=fixture();
+ await assert.rejects(db.tx(async client=>{
+  await Promise.resolve();
+  db.expiresAt=0;
+  await client.query('AFTER_CALLBACK_WAIT');
+ }),/POD_STORAGE_EXPIRING/);
+ assert.equal(calls.includes('AFTER_CALLBACK_WAIT'),false);
+});
