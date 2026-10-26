@@ -215,11 +215,16 @@ export class PodDB {
     assertManagedTransactionStatement(config.text);
     const result=await c.query(config);this.active();return result;
    };
-   const guarded=new Proxy(c,{get(target,property){
-    if(property==='query')return guardedQuery;
-    const value=Reflect.get(target,property,target);
-    return typeof value==='function'?value.bind(target):value;
-   }});
+   // Expose a query-only capability, never the pooled client. In particular,
+   // release() could return this still-open transaction to the pool before the
+   // helper commits or rolls it back, while connection internals could bypass
+   // the guarded query path entirely.
+   const facade=Object.freeze(Object.assign(Object.create(null),{query:guardedQuery}));
+   const forbidden=()=>{throw Error('POD_TRANSACTION_CLIENT_CONTROL_FORBIDDEN');};
+   const guarded=new Proxy(facade,{
+    get:(_,property)=>property==='query'?guardedQuery:forbidden(),
+    set:forbidden,defineProperty:forbidden,deleteProperty:forbidden,
+   });
    const r=await fn(guarded);this.active();await c.query('COMMIT');return r;
   }catch(e){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
  }

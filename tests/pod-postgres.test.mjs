@@ -73,6 +73,11 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    await client.query('/* callback transaction escape */ COMMIT');
   }),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
+  await assert.rejects(db.tx(async client=>{
+   await client.query("UPDATE cyzor_social_vault SET envelope='{}' WHERE id='owner'");
+   client.release();
+  }),/POD_TRANSACTION_CLIENT_CONTROL_FORBIDDEN/);
+  assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
   await verifyConceptBudget(pool,bridge);
