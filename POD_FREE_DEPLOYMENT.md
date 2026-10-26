@@ -52,7 +52,9 @@ Environment secrets:
 
 Environment variables:
 - POD_RUNTIME_USER: that role's exact username.
-- POD_STORAGE_EXPIRES_AT: actual provider expiry, never a fictitious future date.
+- POD_STORAGE_EXPIRES_AT: actual provider expiry as canonical UTC
+  `YYYY-MM-DDTHH:mm:ssZ` or exact millisecond ISO text, never a fictitious future
+  date. Date-only, offset or otherwise normalized text is rejected.
 
 Default dispatch is check-only. Selecting apply runs the existing checksum-guarded,
 advisory-locked, transactional migration and then verifies access using the runtime

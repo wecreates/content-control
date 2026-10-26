@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url';
 import {createPodPool} from '../pod-db-bridge.js';
 import {migrate} from './pod_storage_init.mjs';
 import {preflight} from './pod_preflight.mjs';
+import {parseStorageExpiry,validDateMs} from '../integrations/pod/storage-expiry.mjs';
 
 // Never serialize raw database errors: messages can contain credentials or SQL.
 export function deploymentFailure(error) {
@@ -20,7 +21,8 @@ export function deploymentFailure(error) {
 
 export function deploymentConfig(env, now=Date.now()) {
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('PUBLICATION_MUST_BE_DISABLED');
- if(!Number.isFinite(Date.parse(env.POD_STORAGE_EXPIRES_AT))||Date.parse(env.POD_STORAGE_EXPIRES_AT)-now<=86400000)throw Error('STORAGE_EXPIRING');
+ const expiresAt=parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT);
+ if(!validDateMs(now)||!validDateMs(expiresAt)||expiresAt-now<=86400000)throw Error('STORAGE_EXPIRING');
  let admin,runtime;
  try{admin=new URL(env.DATABASE_MIGRATION_URL);runtime=new URL(env.POD_DATABASE_URL);}catch{throw Error('DATABASE_CONFIG_REQUIRED');}
  for(const url of [admin,runtime]){

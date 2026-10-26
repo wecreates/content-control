@@ -5,6 +5,7 @@ import {assertPackageFormat,PACKAGE_MEDIA_TYPES} from './integrations/pod/packag
 import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
+import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -82,12 +83,11 @@ export async function createPodPool(env=process.env) {
 }
 export class PodDB {
  constructor({pool,bridge,upstreamKey,qaKey,expiresAt}) {
-  assertBridge(bridge);Object.assign(this,{pool,upstreamKey,qaKey,expiresAt:Date.parse(expiresAt)});
+  assertBridge(bridge);Object.assign(this,{pool,upstreamKey,qaKey,expiresAt:parseStorageExpiry(expiresAt)});
  }
  active(){
   const now=Date.now();
-  if(!Number.isSafeInteger(now)||now<0||now>8640000000000000||
-   !Number.isSafeInteger(this.expiresAt)||this.expiresAt<0||this.expiresAt>8640000000000000||
+  if(!validDateMs(now)||!validDateMs(this.expiresAt)||
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
