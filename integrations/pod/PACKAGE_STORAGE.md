@@ -108,6 +108,11 @@ Expiry during an earlier database wait or non-database callback wait therefore
 cannot reach a later concept, queue, review, settlement, recovery, evidence or
 archive statement. An opened transaction is rolled back;
 a connection that expires before `BEGIN` is released without issuing SQL.
+The cutoff also requires the process wall clock and configured expiry to be exact,
+nonnegative safe integers inside JavaScript's supported date range. A missing,
+non-numeric, fractional, negative or out-of-range clock fails with
+`POD_STORAGE_EXPIRING` before database access instead of bypassing the retention
+comparison.
 
 Default store capacity remains 128 MiB. `POD_ARTIFACT_BUDGET_BYTES` sets a lower
 deployment-wide write limit shared by uploads, production and artifact restore.

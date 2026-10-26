@@ -84,7 +84,12 @@ export class PodDB {
  constructor({pool,bridge,upstreamKey,qaKey,expiresAt}) {
   assertBridge(bridge);Object.assign(this,{pool,upstreamKey,qaKey,expiresAt:Date.parse(expiresAt)});
  }
- active(){if(!Number.isFinite(this.expiresAt)||this.expiresAt-Date.now()<=86400000)throw Error('POD_STORAGE_EXPIRING');}
+ active(){
+  const now=Date.now();
+  if(!Number.isSafeInteger(now)||now<0||now>8640000000000000||
+   !Number.isSafeInteger(this.expiresAt)||this.expiresAt<0||this.expiresAt>8640000000000000||
+   this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
+ }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
