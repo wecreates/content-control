@@ -25,12 +25,12 @@ async function readCatalog({directory,key,budgetBytes,signal,base}){
  if(!exactKeys(catalog,['schema_version','scope','created_at','items'])||catalog.schema_version!==1||catalog.scope!=='artifacts_only'||
   !Array.isArray(catalog.items)||catalog.items.length>MAX_ITEMS||
   !validArchiveTimestamp(catalog.created_at))throw Error('ARCHIVE_CATALOG_INVALID');
- const seen=new Set();let bytes=0;
+ const seen=new Set();let bytes=0,lastSha;
  for(const item of catalog.items){
   if(!exactKeys(item,['sha256','media_type','bytes'])||typeof item.sha256!=='string'||!/^[a-f0-9]{64}$/.test(item.sha256)||
-   seen.has(item.sha256)||!TYPES.has(item.media_type)||
+   seen.has(item.sha256)||(lastSha!==undefined&&item.sha256<=lastSha)||!TYPES.has(item.media_type)||
    !Number.isSafeInteger(item.bytes)||item.bytes<1||item.bytes>MAX_OBJECT)throw Error('ARCHIVE_CATALOG_INVALID');
-  seen.add(item.sha256);bytes+=item.bytes;
+  seen.add(item.sha256);lastSha=item.sha256;bytes+=item.bytes;
  }
  if(bytes>budgetBytes)throw Error('ARCHIVE_BUDGET_EXCEEDED');
  return {catalog,bytes,archive_sha256:digest(encrypted)};
