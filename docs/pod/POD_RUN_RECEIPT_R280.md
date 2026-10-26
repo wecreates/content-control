@@ -76,6 +76,10 @@ Render automatically attempted executable merge
 `evt-dbfla7j8vfls739clkug` records the failed deploy. The failure occurred before
 an application build; no manual retry or quota workaround was attempted.
 
+The documentation-only receipt merge carried `[skip render]`. Render event
+`evt-dbfldg67bikc73ccjecg` verifies exact merge
+`99ac5c53ff8dc769f51c860c882fa94979355bd6` was ignored rather than deployed.
+
 All 24 live acceptance areas remain **OPEN**. This format repair is merged code
 plus hosted test evidence, not a live retained backup or restoration drill,
 deployment, real account/source/rights/template/reviewer evidence, authorized
