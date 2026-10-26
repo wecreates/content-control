@@ -7,7 +7,8 @@ export function offlineBridgeStatus(registry) {
   if(!Array.isArray(entries)||entries.length>tools.size)throw Error('INVALID_BRIDGE_REGISTRY');
   const seen=new Set();
   return entries.map(entry=>{
-    if(!entry||!tools.has(entry.id)||seen.has(entry.id)||!/^([a-f0-9]{40})$/.test(entry.revision)||
+    if(!entry||!tools.has(entry.id)||seen.has(entry.id)||typeof entry.revision!=='string'||
+        !/^([a-f0-9]{40})$/.test(entry.revision)||
         !Array.isArray(entry.operations)||entry.operations.length<1||entry.operations.length>8||
         !entry.operations.every(op=>typeof op==='string'&&/^[a-z][a-z-]{1,50}$/.test(op))||
         new Set(entry.operations).size!==entry.operations.length)throw Error('INVALID_BRIDGE_REGISTRY');

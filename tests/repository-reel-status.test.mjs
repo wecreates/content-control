@@ -28,6 +28,14 @@ test('duplicate IDs, malformed pins and unbounded operations fail closed',()=>{
   }
 });
 
+test('array-valued revision cannot impersonate a source pin',()=>{
+  assert.throws(()=>offlineBridgeStatus({external_bridges:[{...entry,revision:[entry.revision]}]}),
+    /INVALID_BRIDGE_REGISTRY/);
+  const [status]=offlineBridgeStatus({external_bridges:[entry]});
+  assert.equal(status.revision,entry.revision);
+  assert.equal(typeof status.revision,'string');
+});
+
 test('existing ContentControl status route exposes bridge without altering aggregate evidence',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'reel-status-'));
   const app=express();
