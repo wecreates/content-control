@@ -11,7 +11,7 @@ const sign=value=>{const payload=JSON.stringify({schema_version:1,audience:'cont
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
 function fixture(previous=[],corrupt=false){
  const rows=previous.map(x=>({...x})),outbox=[];
- const db={tx:async fn=>{
+ const db={active(){},tx:async fn=>{
   const size=rows.length,events=outbox.length;
   try{return await fn({query:async(sql,args)=>{
    if(sql.includes('FROM pod_artifacts'))return {rows:args[0].map(sha=>({sha256:sha,media_type:'application/json',body_sha256:corrupt?'0'.repeat(64):sha}))};
@@ -101,7 +101,7 @@ test('new scoped event is recorded once with one outbox observation',async()=>{
 test('database timestamp mismatch cannot be hidden by millisecond Date decoding',async()=>{
  for(const occurred_at_matches of [false,null,undefined]){
   const e={...event(),occurred_at:'2026-01-01T00:00:00.123457Z'};
-  const db={tx:async fn=>fn({query:async sql=>{
+  const db={active(){},tx:async fn=>fn({query:async sql=>{
    if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
    if(sql.startsWith('INSERT INTO pod_financial_events'))return {rowCount:0};
    if(sql.includes('FROM pod_financial_events'))return {rows:[{...e,id:'original',occurred_at:new Date('2026-01-01T00:00:00.123456Z'),occurred_at_matches}]};

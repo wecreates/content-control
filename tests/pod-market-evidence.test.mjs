@@ -13,7 +13,7 @@ const observation=()=>({platform:'redbubble',source_url:'https://example.org/per
  price_minor:1200,currency:'USD',observed_rank:2,observations:{tags:['fixture'],layout:{color:'blue'}}});
 function fixture(previous=null,missing=[],corrupt=[]){
  const writes=[];
- const db={tx:async fn=>fn({query:async(sql,args)=>{
+ const db={active(){},tx:async fn=>fn({query:async(sql,args)=>{
   if(sql.includes('FROM pod_artifacts'))return {rows:args[0].filter(sha=>!missing.includes(sha)).map(sha=>({sha256:sha,media_type:'application/json',body_sha256:corrupt.includes(sha)?'0'.repeat(64):sha}))};
   if(sql.startsWith('INSERT INTO pod_market_intelligence')){writes.push(args);return {rowCount:previous?0:1,rows:previous?[]:[{id:'stored-id'}]};}
   if(sql.includes('FROM pod_market_intelligence'))return {rows:previous?[previous]:[]};

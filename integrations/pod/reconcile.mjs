@@ -20,11 +20,14 @@ export async function reconcilePublication(db,envelope,key){
  const evidence=Object.fromEntries(LISTING_FIELDS.map(field=>[field,e[field]]));
  return db.tx(async c=>{
   const job=(await c.query('SELECT * FROM pod_production_queue WHERE id=$1 FOR UPDATE',[e.job_id])).rows[0];
+  db.active();
   if(!job||job.account_id!==e.account_id||job.platform!==e.platform||job.manifest?.package_sha256!==e.package_sha256||
    !['submitted','ambiguous','published'].includes(job.state)||
    (job.state==='published'?job.provider_id!==e.provider_id:job.provider_id!=null&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
   await assertStoredEvidence(c,[e.evidence_sha256],'LISTING_EVIDENCE_MISSING');
+  db.active();
   const seen=await c.query('SELECT evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]);
+  db.active();
   if(seen.rowCount){
    const previous=seen.rows[0];
    // Refreshed envelope times may differ, but the observed listing and its proof
@@ -34,11 +37,14 @@ export async function reconcilePublication(db,envelope,key){
    return {duplicate:true};
   }
   await c.query('INSERT INTO pod_provider_inbox(provider,account_id,provider_event_id,evidence_sha256,payload) VALUES($1,$2,$3,$4,$5)',[e.platform,e.account_id,e.provider_event_id,e.evidence_sha256,evidence]);
+  db.active();
   // A fresh observation is new evidence, not another publication transition.
   // The job row lock serializes concurrent observations with different event IDs.
   if(job.state==='published'){verifyEnvelope(envelope,key,'content-control:pod:listing-observation');return {published:true,already_published:true};}
   await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
+  db.active();
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.published',{provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]);
+  db.active();
   verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
   return {published:true};
  });
