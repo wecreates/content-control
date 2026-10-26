@@ -5,6 +5,10 @@ import {metrics} from '../integrations/pod/metrics.mjs';
 import {operationsSnapshot} from '../scripts/pod_operations_snapshot.mjs';
 const now=Date.parse('2026-01-01T00:00:00Z');
 const healthy={now,expiresAt:now+8*86400000,artifactBytes:'0',expiredLeases:'0',pendingEvents:'0',oldestEventSeconds:'0',env:{POD_ARTIFACT_BUDGET_BYTES:'100'}};
+test('operational snapshots reject invalid wall clocks with a fixed error',()=>{
+ for(const clock of [NaN,Infinity,-1,0.5,8640000000000001,Number.MAX_SAFE_INTEGER+1,'0'])
+  assert.throws(()=>operationalHealth({...healthy,now:clock}),/OPERATIONAL_CLOCK_INVALID/);
+});
 for(const [delta,lifetime,code] of [[0,'EXPIRED','STORAGE_EXPIRED'],[-1,'EXPIRED','STORAGE_EXPIRED'],
  [86400000,'BLOCKED','STORAGE_EXPIRING'],[86400001,'WARNING','STORAGE_EXPIRING_SOON'],[7*86400000,'WARNING','STORAGE_EXPIRING_SOON'],
  [7*86400000+1,'OK',null]])test('storage lifetime boundary '+delta,()=>{
@@ -13,7 +17,7 @@ for(const [delta,lifetime,code] of [[0,'EXPIRED','STORAGE_EXPIRED'],[-1,'EXPIRED
  assert.equal(report.acceptance_verified,false);assert.equal(report.publication_enabled,false);
 });
 test('unknown expiry or budget produces explicit critical alerts instead of healthy defaults',()=>{
- for(const expiresAt of [NaN,undefined,Infinity,'2030-01-01']){
+ for(const expiresAt of [NaN,undefined,Infinity,'2030-01-01',-1,0.5,8640000000000001,Number.MAX_SAFE_INTEGER+1]){
   const report=operationalHealth({...healthy,expiresAt});assert.equal(report.storage.expires_at,null);assert.equal(report.status,'CRITICAL');
  }
  const report=operationalHealth({...healthy,env:{POD_ARTIFACT_BUDGET_BYTES:'invalid'}});

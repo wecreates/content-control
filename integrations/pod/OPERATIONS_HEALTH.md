@@ -12,6 +12,11 @@ already-initialized service can therefore report approaching/elapsed storage
 expiry while production and other writes remain blocked. The runtime preflight,
 production leases, grants and publication checks are unchanged. This endpoint
 cannot extend expiry, enable workers, clear failures, approve content or publish.
+The observation clock must be an exact, nonnegative safe integer within
+JavaScript's supported date range; malformed clock state fails with the fixed
+`OPERATIONAL_CLOCK_INVALID` error. The configured expiry has the same exact
+timestamp contract. Invalid expiry remains observable as critical
+`STORAGE_EXPIRY_UNKNOWN` rather than being normalized into a plausible date.
 
 | Observation | Threshold / meaning |
 |---|---|

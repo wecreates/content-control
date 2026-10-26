@@ -1,13 +1,14 @@
 import {artifactBudgetBytes} from './storage-budget.mjs';
+const validDateMs=value=>Number.isSafeInteger(value)&&value>=0&&value<=8640000000000000;
 
 // Observations only. This function cannot renew expiry or authorize execution.
 export function operationalHealth({expiresAt,artifactBytes,expiredLeases,pendingEvents,oldestEventSeconds,now=Date.now(),env=process.env}){
- if(!Number.isFinite(now))throw Error('OPERATIONAL_CLOCK_INVALID');
+ if(!validDateMs(now))throw Error('OPERATIONAL_CLOCK_INVALID');
  const count=value=>{if(typeof value!=='string'||!/^\d+$/.test(value))throw Error('OPERATIONAL_METRIC_INVALID');return BigInt(value);};
  const used=count(artifactBytes),leases=count(expiredLeases),pending=count(pendingEvents),age=count(oldestEventSeconds);
  const alerts=[];let budget=null;
  try{budget=artifactBudgetBytes(env);}catch{alerts.push({code:'ARTIFACT_BUDGET_UNKNOWN',severity:'critical'});}
- const finite=Number.isFinite(expiresAt)&&Math.abs(expiresAt)<=8640000000000000;
+ const finite=validDateMs(expiresAt);
  const seconds=finite?Math.max(0,Math.floor((expiresAt-now)/1000)):null;
  let lifetime='OK';
  if(!finite){lifetime='UNKNOWN';alerts.push({code:'STORAGE_EXPIRY_UNKNOWN',severity:'critical'});}
