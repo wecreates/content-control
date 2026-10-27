@@ -192,6 +192,17 @@ test('valid opaque receipt IDs retain exact case, spacing and 256-character boun
   assert.deepEqual(finishes,[{state:'submitted',value:{id}}]);
  }
 });
+test('failed submitted settlement stops without a second transition or private database error',async()=>{
+ const f=fixture(),finishes=[],privateError=Error('postgres://private:secret@host/database');
+ f.options.db.finish=async(_job,state,receipt,reason)=>{
+  finishes.push({state,receipt,reason});
+  if(state==='submitted')throw privateError;
+  assert.fail('uncertain submitted settlement attempted a second transition');
+ };
+ await assert.rejects(publishOnce(f.options),error=>
+  error?.message==='SUBMISSION_SETTLEMENT_UNCERTAIN'&&!String(error).includes('private'));
+ assert.deepEqual(finishes,[{state:'submitted',receipt:{id:'fixture-receipt'},reason:undefined}]);
+});
 test('malformed receipt can reconcile from synthetic signed readback without submitting again',async()=>{
  const f=fixture(),proof='c'.repeat(64),providerId='verified-readback-listing';let calls=0,state='publishing',savedId=null;
  f.options.adapters.redbubble.submit=async()=>{calls++;return {id:' '};};
