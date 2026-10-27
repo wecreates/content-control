@@ -131,12 +131,12 @@ export class PodDB {
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
  async read(sql,values){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,ended=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,ended=false;
   try{
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
    // mistaken future caller cannot mutate durable state through this helper.
-   this.active();await c.query('BEGIN READ ONLY');began=true;this.active();
+   this.active();beginAttempted=true;await c.query('BEGIN READ ONLY');began=true;this.active();
    await c.query("SET LOCAL statement_timeout='10s'");this.active();
    // Force the extended protocol even for parameterless reads. PostgreSQL's
    // simple-query protocol accepts multiple statements, which could otherwise
@@ -147,7 +147,7 @@ export class PodDB {
    // end the managed read transaction early.
    assertManagedTransactionStatement(sql);
    const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');ended=true;return result;
-  }catch(error){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}throw error;
+  }catch(error){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw error;
   }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
@@ -209,11 +209,11 @@ export class PodDB {
   });
  }
  async tx(fn){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,ended=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,ended=false;
   try{
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
-   this.active();await c.query('BEGIN');began=true;this.active();
+   this.active();beginAttempted=true;await c.query('BEGIN');began=true;this.active();
    await c.query("SET LOCAL lock_timeout='2s'");this.active();
    await c.query("SET LOCAL statement_timeout='10s'");this.active();
    // A callback may await non-database work between statements (for example,
@@ -271,7 +271,7 @@ export class PodDB {
    while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
    if(queryFailure)throw queryFailure;
    this.active();await c.query('COMMIT');ended=true;return r;
-  }catch(e){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}throw e;
+  }catch(e){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw e;
   }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async enqueue({job,upstream,conceptId,revision}) {
