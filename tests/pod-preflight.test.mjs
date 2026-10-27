@@ -125,6 +125,14 @@ for(const [name,overrides,code] of [
 test('database errors redact details and always release connection',async()=>{
  const f=fixture({throwOn:'pg_roles'}),r=await preflight(f.options);assert.equal(r.status,'BLOCKED');assert.ok(!JSON.stringify(r).includes('secret'));assert.ok(f.closed());assert.equal(f.queries.at(-1),'ROLLBACK');
 });
+test('failed preflight transaction open destroys its client without follow-up SQL',async()=>{
+ const f=fixture({throwOn:'BEGIN READ ONLY'}),r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code==='DATABASE_READABLE'),[{code:'DATABASE_READABLE',status:'BLOCKED'}]);
+ assert.deepEqual(f.queries,['BEGIN READ ONLY']);
+ assert.deepEqual(f.releases,[true]);
+ assert.ok(f.closed());
+});
 test('expiry and enabled publishing block deployment preflight',async()=>{
  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:'invalid',PUBLICATION_ENABLED:'true'}});
  for(const code of ['STORAGE_LIFETIME','PUBLICATION_DISABLED'])assert.equal(r.checks.find(c=>c.code===code).status,'BLOCKED');
