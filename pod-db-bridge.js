@@ -127,6 +127,11 @@ export class PodDB {
    // Force the extended protocol even for parameterless reads. PostgreSQL's
    // simple-query protocol accepts multiple statements, which could otherwise
    // end this read-only transaction before a later statement in the same call.
+   // The caller owns only the read statement, not this helper's transaction.
+   // Extended protocol rejects multiple statements but still accepts a lone
+   // COMMIT or ROLLBACK, so reject transaction control before PostgreSQL can
+   // end the managed read transaction early.
+   assertManagedTransactionStatement(sql);
    const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');return result;
   }catch(error){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw error;
   }finally{c.release(bad);}
