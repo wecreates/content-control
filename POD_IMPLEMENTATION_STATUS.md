@@ -69,6 +69,69 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r312 — stop disabled post-claim work before artifact verification (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`2cd266b53d46d130f75fa884784545347bea7527` and Money Factory
+`84ce49096569ad19257a30bdec12fa425e938d49` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open pull request overlapped this repair.
+The failed database-administration route had no credible access-path change and
+was not retried.
+
+If either publication kill switch changed to false while `claimPublish()` was in
+flight, a returned lease previously entered artifact verification before the
+existing pre-submit switch check, while an empty claim reported healthy `IDLE`.
+The publisher now observes both switches immediately after the claim resolves.
+A returned lease is settled through the existing fenced blocked path before
+artifact, grant or provider work; an empty claim reports `STOPPED`. The existing
+immediate pre-submit switch check remains in place.
+
+### Verification and merge
+
+- Both regressions failed against prior `main`: artifact verification ran once
+  after a switch was disabled during a returned claim, and an empty post-disable
+  claim returned `IDLE`. The focused publisher, worker and policy set passed
+  76/76 after repair.
+- The complete local Content Control POD Node suite ran 920 tests: 911 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Exact [CC PR 756](https://github.com/wecreates/content-control/pull/756) head
+  `6175f9539733a0ecdf77e8df832d1d37aac7a686` passed integration run
+  `40574025280` and production-container run `40574025327`. It merged under its
+  exact-head lease as `4aba2e9224e4c79b73ba734c8c862cc51a3a4404`.
+- Exact [MF PR 267](https://github.com/wecreates/Money-factory/pull/267) head
+  `a98971098c66a31996cddf047b50388cb5efbcbf` changed only the immutable Content
+  Control checkout pin, passed cross-repository run `40575358558`, and merged
+  under its exact-head lease as `2b46ffd39d52df3b0bf1716bebb4d97e3ed2c51e`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`4aba2e9224e4c79b73ba734c8c862cc51a3a4404` and started deploy
+`dep-dbgg953ncjis73c5l5vg`, but event `evt-dbgg950kv17s73alhev0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the post-claim publication-switch race. Existing code and
+passing tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and current grants and
+revocation, real accounts and authorized sources, rights, official templates,
+substantive KDP editorial and preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r311 — stop cancelled dry-run scans from reporting success (2026-10-27 UTC)
 
 ### Scope and repair
