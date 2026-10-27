@@ -35,6 +35,13 @@ the observation before its inbox insert. Readback may fill a missing identity on
 while resolving submitted or ambiguous work; it cannot retroactively legitimize a
 malformed published row or attach fresh evidence to one.
 
+When authenticated readback resolves submitted or ambiguous work to published,
+the same atomic queue update clears its prior failure reason. A live listing must
+not retain `SUBMISSION_UNCERTAIN`, `LEASE_EXPIRED` or another stale remediation
+code that contradicts its durable state. The prior reason remains available in
+immutable events; clearing the queue field does not fabricate provider evidence
+or imply that publication acceptance has passed.
+
 Migration 005 makes (platform, account_id, provider_id) unique when provider_id is
 present, including submitted receipts and reconciled ambiguous jobs. A provider
 listing cannot be attributed to another job in the same account by changing its
