@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createRepositoryIntegrationRouter} from '../repository-integrations.js';
+import {createHostedWorkerStatus} from '../repository-worker-status.js';
 
 async function request(root,options={}){
   const app=express();
@@ -23,6 +24,20 @@ test('missing hosted worker cannot become production ready',async()=>{
   assert.equal(body.status,'WORKER_NOT_CONFIGURED');
   assert.equal(body.production_ready,false);
   assert.equal(body.publication_enabled,false);
+});
+
+test('hosted evidence diagnostic remains HTTP 503 and exposes no upstream details',async()=>{
+  const hostedStatus=createHostedWorkerStatus({fetchImpl:async()=>{
+    throw Object.assign(new Error('private upstream URL and credentials'),{name:'TimeoutError'});
+  }});
+  const {status,body}=await request('',{backend:'github-actions',hostedStatus});
+  assert.equal(status,503);
+  assert.equal(body.status,'HOSTED_EVIDENCE_UNAVAILABLE');
+  assert.equal(body.evidence_error_code,'UPSTREAM_TIMEOUT');
+  assert.equal(body.production_ready,false);
+  assert.equal(body.publication_enabled,false);
+  assert.equal(body.paid_generation_enabled,false);
+  assert.ok(!JSON.stringify(body).includes('private'));
 });
 
 test('hosted HTTP preserves original status while exposing independent aggregate verification',async()=>{
