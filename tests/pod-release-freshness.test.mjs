@@ -45,6 +45,17 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   adapters:{[platform]:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
  return {options,events,release,manifest,qa};
 }
+test('an already-aborted publisher performs no dry-run read or enabled claim',async()=>{
+ for(const enabled of [false,true]){
+  const controller=new AbortController();controller.abort();let touched=0;
+  const result=await publishOnce({signal:controller.signal,
+   env:{PUBLICATION_ENABLED:String(enabled),POD_PUBLICATION_ENABLED:String(enabled)},
+   db:{listReady:async()=>{touched++;return [];},claimPublish:async()=>{touched++;return null;}},
+   resolveGrant:async()=>assert.fail('grant resolver reached'),
+   verifyArtifacts:async()=>assert.fail('artifact verifier reached'),log:()=>{}});
+  assert.deepEqual(result,{status:'STOPPED'});assert.equal(touched,0);
+ }
+});
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);
