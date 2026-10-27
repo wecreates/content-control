@@ -437,6 +437,9 @@ for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false
   if(phase==='BEGIN'){
    assert.deepEqual(calls,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
    assert.deepEqual(releases,[true]);
+  }else if(phase==='COMMIT'){
+   assert.equal(calls.at(-1),'COMMIT');assert.equal(calls.includes('ROLLBACK'),false);
+   assert.deepEqual(releases,[true]);
   }else{
    assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
   }
