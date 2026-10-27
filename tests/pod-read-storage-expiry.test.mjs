@@ -23,7 +23,6 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
   {sql:{text:'SELECT fixture',values:['bound'],queryMode:'extended'},args:undefined},
   {sql:'COMMIT',args:undefined},
   {sql:'DISCARD ALL',args:undefined},
-  {sql:'SET search_path=pg_catalog,public',args:undefined},
  ]);
  assert.deepEqual(releases,[false]);
 });
@@ -39,7 +38,7 @@ test('guarded reads scrub committed session state before returning the pooled cl
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await db.read("SELECT set_config('application_name','read-poison',false)");
  assert.equal(applicationName,'pool-default');
- assert.deepEqual(queries.slice(-2),['DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(queries.slice(-1),['DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -50,7 +49,7 @@ for(const sql of ['COMMIT',' -- reader must not own completion\nROLLBACK'])test(
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read(sql),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
- assert.deepEqual(queries,['BEGIN READ ONLY',"SET LOCAL statement_timeout='10s'",'ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(queries,['BEGIN READ ONLY',"SET LOCAL statement_timeout='10s'",'ROLLBACK','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -65,7 +64,7 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
  }};
  db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read('SELECT fixture'),/^Error: POD_STORAGE_EXPIRING$/);
- assert.deepEqual(queries.slice(-3),['ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);assert.equal(queries.includes('COMMIT'),false);
+ assert.deepEqual(queries.slice(-2),['ROLLBACK','DISCARD ALL']);assert.equal(queries.includes('COMMIT'),false);
  if(expiryStage!=='query')assert.equal(queries.includes('SELECT fixture'),false);
  assert.deepEqual(releases,[false]);
 });

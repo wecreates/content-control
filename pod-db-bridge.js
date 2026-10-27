@@ -60,11 +60,12 @@ async function sanitizePooledClient(client){
  // SELECT expressions (for example set_config(..., false)), acquire session
  // advisory locks or register listeners. A successful COMMIT/ROLLBACK does not
  // clear those capabilities. Scrub the server session before this connection
- // can serve unrelated pooled work, then restore the explicit search path used
- // by createPodPool. Any cleanup failure makes the client unsafe to reuse.
+ // can serve unrelated pooled work. DISCARD ALL restores the connection's own
+ // startup defaults (including createPodPool's explicit search_path); forcing
+ // a different fixed path here would contaminate caller-supplied pools. Any
+ // cleanup failure makes the client unsafe to reuse.
  try{
   await client.query('DISCARD ALL');
-  await client.query('SET search_path=pg_catalog,public');
   return false;
  }catch{return true;}
 }

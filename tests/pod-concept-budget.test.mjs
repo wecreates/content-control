@@ -31,15 +31,15 @@ test('budget day is selected after the business lock and passed explicitly to bo
  assert.deepEqual(insert.args,['business','2026-10-17']);assert.deepEqual(update.args,['business','2026-10-17',100]);
  assert.ok(!insert.sql.includes('now()')&&!update.sql.includes('now()'));
  assert.match(f.queries.find(q=>q.sql.startsWith('INSERT INTO pod_concepts')).sql,/clock_timestamp\(\)/);
- assert.equal(f.queries.at(-3).sql,'COMMIT');
+ assert.equal(f.queries.at(-2).sql,'COMMIT');
 });
 test('UTC rollover during registration rolls back instead of charging a stale day',async()=>{
  const f=fixture(['2026-10-16','2026-10-17']);await assert.rejects(f.run(),/CONCEPT_BUDGET_DAY_CHANGED/);
- assert.equal(f.queries.at(-3).sql,'ROLLBACK');assert.ok(!f.queries.some(q=>q.sql==='COMMIT'));
+ assert.equal(f.queries.at(-2).sql,'ROLLBACK');assert.ok(!f.queries.some(q=>q.sql==='COMMIT'));
 });
 test('missing database clock and exhausted budget fail closed',async()=>{
  for(const [days,options,reason] of [[[],{},/CONCEPT_BUDGET_CLOCK_INVALID/],[['2026-10-16'],{full:true},/DAILY_CONCEPT_LIMIT/]]){
-  const f=fixture(days,options);await assert.rejects(f.run(),reason);assert.equal(f.queries.at(-3).sql,'ROLLBACK');
+  const f=fixture(days,options);await assert.rejects(f.run(),reason);assert.equal(f.queries.at(-2).sql,'ROLLBACK');
   assert.ok(!f.queries.some(q=>q.sql.startsWith('INSERT INTO pod_concepts')));
  }
 });

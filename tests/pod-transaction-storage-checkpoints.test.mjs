@@ -98,7 +98,6 @@ test('transaction callback cannot end or replace its managed transaction',async(
    "SET LOCAL statement_timeout='10s'",
    'ROLLBACK',
    'DISCARD ALL',
-   'SET search_path=pg_catalog,public'
   ]);
  }
 });
@@ -118,7 +117,6 @@ test('transaction callback cannot release its helper-owned pooled client',async(
   {text:'WRITE',values:[],queryMode:'extended'},
   'ROLLBACK',
   'DISCARD ALL',
-  'SET search_path=pg_catalog,public'
  ]);
  assert.deepEqual(releases,[false]);
 });
@@ -140,7 +138,7 @@ test('transaction waits for a callback query even when the callback does not awa
  try{assert.equal(calls.includes('COMMIT'),false);}
  finally{complete({rows:[]});}
  assert.equal(await transaction,'complete');
- assert.deepEqual(calls.slice(-3),['COMMIT','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -157,7 +155,7 @@ test('transaction propagates an unawaited query failure even when callback code 
   return 'must not commit';
  }),error=>error===original);
  assert.equal(calls.includes('COMMIT'),false);
- assert.deepEqual(calls.slice(-3),['ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -166,7 +164,7 @@ test('transaction query capability closes before the pooled client is released',
  await db.tx(client=>{retainedQuery=client.query;});
  assert.throws(()=>retainedQuery('AFTER_TRANSACTION'),/POD_TRANSACTION_CLIENT_CLOSED/);
  assert.equal(calls.includes('AFTER_TRANSACTION'),false);
- assert.deepEqual(calls.slice(-3),['COMMIT','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -181,7 +179,7 @@ test('transaction scrubs committed session state before returning the pooled cli
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await db.tx(client=>client.query("SELECT set_config('application_name','transaction-poison',false)"));
  assert.equal(applicationName,'pool-default');
- assert.deepEqual(calls.slice(-2),['DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-1),['DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -199,7 +197,7 @@ test('transaction scrubs session state after rollback before returning the poole
   throw original;
  }),error=>error===original);
  assert.equal(applicationName,'pool-default');
- assert.deepEqual(calls.slice(-3),['ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -207,7 +205,7 @@ test('transaction rejects named queries before they can outlive the server state
  const {db,calls,releases}=fixture();
  await assert.rejects(db.tx(client=>client.query({name:'retained-plan',text:'SELECT 1'})),/POD_NAMED_QUERY_FORBIDDEN/);
  assert.equal(calls.some(call=>typeof call==='object'&&call.name==='retained-plan'),false);
- assert.deepEqual(calls.slice(-3),['ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 

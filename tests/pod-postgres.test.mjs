@@ -88,10 +88,12 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const sessionPool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:1});
   const sessionDB=new PodDB({pool:sessionPool,bridge,qaKey,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
   try{
+   const baselineSearchPath=(await sessionPool.query('SHOW search_path')).rows[0].search_path;
    await sessionDB.tx(client=>client.query("SELECT set_config('application_name','pod_transaction_poison',false)"));
    assert.notEqual((await sessionPool.query("SELECT current_setting('application_name') AS value")).rows[0].value,'pod_transaction_poison');
    await sessionDB.read("SELECT set_config('application_name','pod_read_poison',false)");
    assert.notEqual((await sessionPool.query("SELECT current_setting('application_name') AS value")).rows[0].value,'pod_read_poison');
+   assert.equal((await sessionPool.query('SHOW search_path')).rows[0].search_path,baselineSearchPath);
   }finally{await sessionPool.end();}
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
