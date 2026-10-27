@@ -89,6 +89,20 @@ test('guarded read discards an uncertain client when opening the transaction fai
  assert.deepEqual(queries,['BEGIN READ ONLY']);assert.deepEqual(releases,[true]);
 });
 
+for(const rollbackFails of [false,true])test(`guarded read discards without cleanup when commit fails: ${rollbackFails}`,async()=>{
+ const original=Error('COMMIT_FAILURE'),queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;queries.push(text);
+  if(text==='COMMIT')throw original;
+  if(text==='ROLLBACK'&&rollbackFails)throw Error('ROLLBACK_FAILURE');
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture'),error=>error===original);
+ assert.equal(queries.at(-1),'COMMIT');assert.equal(queries.includes('ROLLBACK'),false);
+ assert.equal(queries.includes('DISCARD ALL'),false);assert.deepEqual(releases,[true]);
+});
+
 test('all production read paths stop before SQL when storage expires during connection acquisition',async()=>{
  const operationsKey='k'.repeat(32),sha='a'.repeat(64);
  for(const [name,read] of [

@@ -131,7 +131,7 @@ export class PodDB {
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
  async read(sql,values){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,ended=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
   try{
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
@@ -146,8 +146,9 @@ export class PodDB {
    // COMMIT or ROLLBACK, so reject transaction control before PostgreSQL can
    // end the managed read transaction early.
    assertManagedTransactionStatement(sql);
-   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');ended=true;return result;
-  }catch(error){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw error;
+   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();
+   commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;return result;
+  }catch(error){if(commitPending)bad=true;else if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw error;
   }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
@@ -209,7 +210,7 @@ export class PodDB {
   });
  }
  async tx(fn){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,ended=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
   try{
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
@@ -270,8 +271,8 @@ export class PodDB {
    }
    while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
    if(queryFailure)throw queryFailure;
-   this.active();await c.query('COMMIT');ended=true;return r;
-  }catch(e){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw e;
+   this.active();commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;return r;
+  }catch(e){if(commitPending)bad=true;else if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw e;
   }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async enqueue({job,upstream,conceptId,revision}) {

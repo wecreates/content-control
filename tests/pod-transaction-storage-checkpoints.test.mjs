@@ -231,3 +231,17 @@ test('transaction discards an uncertain client when opening the transaction fail
  assert.deepEqual(calls,['BEGIN']);
  assert.deepEqual(releases,[true]);
 });
+
+for(const rollbackFails of [false,true])test(`transaction discards without cleanup when commit fails: ${rollbackFails}`,async()=>{
+ const original=Error('COMMIT_FAILURE'),calls=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='COMMIT')throw original;
+  if(text==='ROLLBACK'&&rollbackFails)throw Error('ROLLBACK_FAILURE');
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.tx(()=> 'must not return'),error=>error===original);
+ assert.equal(calls.at(-1),'COMMIT');assert.equal(calls.includes('ROLLBACK'),false);
+ assert.equal(calls.includes('DISCARD ALL'),false);assert.deepEqual(releases,[true]);
+});
