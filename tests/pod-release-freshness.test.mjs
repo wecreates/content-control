@@ -144,6 +144,26 @@ test('cancellation during artifact verification never fetches a release grant or
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('publication disable during artifact verification never fetches a release grant',async()=>{
+ for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+  const f=fixture();
+  f.options.verifyArtifacts=async()=>{f.options.env[flag]='false';return f.manifest;};
+  f.options.resolveGrant=async()=>{f.events.push('grant');return sign(f.release);};
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.deepEqual(f.events,['blocked']);
+ }
+});
+
+test('publication disable during grant resolution never enters local eligibility',async()=>{
+ for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+  const f=fixture();
+  f.options.resolveGrant=async()=>{f.events.push('grant');f.options.env[flag]='false';return sign(f.release);};
+  f.options.db.assertPublishable=async()=>{f.events.push('eligibility');return true;};
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.deepEqual(f.events,['grant','blocked']);
+ }
+});
+
 test('expired lease or revoked local eligibility during grant fetch cannot submit',async()=>{
  for(const reason of ['LEASE_EXPIRED','ACCOUNT_DISABLED','RIGHTS_BLOCKED','FENCING_CHANGED']){
   const f=fixture();let eligible=true;
