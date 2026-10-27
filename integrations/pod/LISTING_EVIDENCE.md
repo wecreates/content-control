@@ -120,7 +120,10 @@ An already-aborted publisher returns `STOPPED` before a dry-run queue read or an
 enabled publishing claim. This prevents shutdown from acquiring a release lease,
 reserving quota or applying account cooldown before cancellation is observed.
 Cancellation after a claim continues through the existing fail-closed settlement
-path so a claimed lease is never silently abandoned as if no work began.
+path so a claimed lease is never silently abandoned as if no work began. If the
+signal changes while the claim itself is in flight, the publisher settles that
+lease as blocked before starting artifact verification or adapter work. If the
+claim returns no job after cancellation, it reports `STOPPED` rather than `IDLE`.
 
 ## Release lease settlement
 
