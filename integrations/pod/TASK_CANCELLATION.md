@@ -12,9 +12,10 @@ including an arbitrary abort reason. The coordinator also rechecks its stop
 signal and production switch after a delayed claim or initial grant lookup and
 after task resolution, before reading templates or invoking Python.
 If a delayed production claim returns no job after cancellation, the direct
-worker result is `STOPPED`, not a healthy `IDLE` cycle. A claim that did acquire
-a lease continues through the existing fenced `PRODUCTION_STOPPED` settlement;
-it is never silently abandoned.
+worker result is `STOPPED`, not a healthy `IDLE` cycle. The same result applies
+when the production switch changes to false while an empty claim is in flight.
+A claim that did acquire a lease continues through the existing fenced
+`PRODUCTION_STOPPED` settlement; it is never silently abandoned.
 
 In-flight database reads and filesystem writes are awaited before cleanup. This
 does not cancel PostgreSQL queries, impose a pool-acquisition deadline, or promise
