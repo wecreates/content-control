@@ -26,6 +26,17 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  assert.deepEqual(releases,[false]);
 });
 
+for(const sql of ['COMMIT',' -- reader must not own completion\nROLLBACK'])test(`guarded read rejects managed transaction control: ${sql.trim()}`,async()=>{
+ const queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  queries.push(typeof query==='string'?query:query.text);return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read(sql),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
+ assert.deepEqual(queries,['BEGIN READ ONLY',"SET LOCAL statement_timeout='10s'",'ROLLBACK']);
+ assert.deepEqual(releases,[false]);
+});
+
 for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls back when storage expires during ${expiryStage}`,async()=>{
  const queries=[],releases=[];let db;
  const client={release:bad=>releases.push(bad),query:async sql=>{

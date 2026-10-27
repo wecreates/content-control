@@ -66,6 +66,8 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await assert.rejects(db.read("COMMIT; UPDATE cyzor_social_vault SET envelope='{}' WHERE id='owner'"),error=>error.code==='42601');
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
+  await assert.rejects(db.read('/* guarded read transaction escape */ COMMIT'),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
+  assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await assert.rejects(db.tx(client=>client.query("SELECT 1; UPDATE cyzor_social_vault SET envelope='{}' WHERE id='owner'")),error=>error.code==='42601');
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await assert.rejects(db.tx(async client=>{
