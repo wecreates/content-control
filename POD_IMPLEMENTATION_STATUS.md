@@ -77,10 +77,10 @@ Fresh reconstruction began from Content Control
 `ae7a33d7a05c009e8eaa51a3dc903eb890907914` and Money Factory
 `a7255d006f7ea75c89cbf2e74c97178df4c7ab51`, after reading the current
 completion, implementation and free-deployment records, open pull requests,
-workflow results and the authorized Render service. Neither repository had an
-open pull request, so this repair did not duplicate concurrent POD work. A
-concurrent Money Factory monitor-only commit was preserved as the dependent
-pin's base.
+workflow results and the authorized Render service. No open pull request was
+already implementing this pooled-session repair, so this work did not duplicate
+concurrent POD work. A concurrent Money Factory monitor-only commit was
+preserved as the dependent pin's base.
 
 `PodDB.read` and `PodDB.tx` returned successfully committed or rolled-back
 connections to the shared PostgreSQL pool without clearing session-scoped
