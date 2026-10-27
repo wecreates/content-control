@@ -41,3 +41,14 @@ test('capacity reporting discards an uncertain connection when transaction open 
  assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
  assert.deepEqual(releases,[true]);
 });
+test('capacity reporting discards an uncertain connection when commit fails',async()=>{
+ const original=Error('COMMIT_FAILURE'),queries=[],releases=[];
+ const row={window_start:'2026-10-15T00:00:00Z',window_end:'2026-10-16T00:00:00Z',
+  registered_concept_records:'1',generated_concept_records:'1',generated_jobs:'1',generated_package_hashes:'1',
+  jobs_with_pass_event:'1',jobs_with_fail_event:'0'};
+ const db={pool:{connect:async()=>({query:async sql=>{queries.push(sql);if(sql==='COMMIT')throw original;
+  return {rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>releases.push(bad)})}};
+ await assert.rejects(productionActivity(db),error=>error===original);
+ assert.equal(queries.at(-1),'COMMIT');assert.equal(queries.includes('ROLLBACK'),false);
+ assert.deepEqual(releases,[true]);
+});
