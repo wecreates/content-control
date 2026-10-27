@@ -69,6 +69,76 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r306 — clear stale listing-reconciliation reasons (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`d1dcc0939354d53546d2badb419ba6aecb21f5be` and Money Factory
+`135bd3a26fb93d6d3fe108dc501d0ceb038565a3`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+Authenticated provider readback could resolve a submitted or ambiguous queue row
+to `published` while retaining a stale failure `reason_code`, leaving contradictory
+durable state such as `published` plus `SUBMISSION_UNCERTAIN`. The reconciliation
+transaction now clears `reason_code` in the same locked update that records the
+provider identity, clears the lease and sets `published`. Immutable events retain
+the prior remediation history. The change does not relax evidence, identity,
+authorization, fencing or publication gates.
+
+### Verification and merge
+
+- Regression-first verification passed 10/11 reconciliation checks and failed
+  exactly the new assertion against the prior code because the published update
+  omitted `reason_code=NULL`. The repaired focused publication, reconciliation,
+  lease, identity and storage-writer set passed 37/37.
+- The complete local Content Control POD Node suite ran 911 tests: 902 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Review covered submitted and ambiguous reconciliation, queue/event consistency,
+  immutable history, provider identity and repeat observations. It found no
+  unresolved material correctness, security or publication-safety issue in the
+  final three-file patch.
+- Exact [CC PR 744](https://github.com/wecreates/content-control/pull/744) head
+  `9a98a94af551b522019341ac9b371409af732e17` passed PostgreSQL integration
+  run `40518786002` and production-container run `40518786041`. It merged under
+  its exact-head lease as
+  `371bb43d00b09b158750b9671048b5b622a898d3`.
+- Money Factory's consumer workflow was advanced only to that immutable merged
+  Content Control revision, while preserving the later monitoring commit. Exact
+  [MF PR 261](https://github.com/wecreates/Money-factory/pull/261) head
+  `47d711fe04d9160e846181ab17dfdc7f9abbc42b` changed only the checkout pin,
+  passed cross-repository run `40520052133`, and merged under its exact-head
+  lease as `ac5e90ce61e8043392a08f751808397b6fb38c7f`.
+
+### Deployment and acceptance truth
+
+Render detected functional Content Control commit
+`371bb43d00b09b158750b9671048b5b622a898d3` and started deploy
+`dep-dbgb5drrjlhs73d1s84g`, but event `evt-dbgb5e5t17gc738has1g` reported
+exhausted pipeline minutes and the deploy ended build-failed. No manual retry,
+paid capacity, cache/plan change, replacement service, secret access or network
+widening was attempted. No production migration or provider action was run.
+
+This closes only contradictory stale reason cleanup during authenticated listing
+reconciliation. Existing code and passing local/hosted tests are not live
+acceptance. All 24 acceptance areas remain OPEN. Production preflight with the
+real authorities, independently retained recovery, deployed availability,
+mounted Money Factory authority and current grants/revocation, real accounts and
+authorized sources, rights, official templates, substantive KDP editorial/preview
+acceptance, independent review and remediation, all five provider adapters,
+actual economics and reconciliation, owner-phone operations, monitoring drills,
+measured capacity, a real end-to-end job and controlled launch remain unverified.
+Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred. The
+checked-in Render definition also keeps the POD service and production loop
+false. This run used only its actually available bounded tools and did not claim
+a continuously running self-hosted worker.
+
 ## Run receipt r305 — isolate failed publisher fallback settlements (2026-10-27 UTC)
 
 ### Scope and repair
