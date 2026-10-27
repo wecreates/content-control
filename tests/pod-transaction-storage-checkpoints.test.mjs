@@ -6,7 +6,7 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 
 function fixture({expireOnConnect=false,expireOnQuery=null}={}){
- const calls=[];
+ const calls=[],releases=[];
  let connects=0;
  let db;
  const client={
@@ -15,11 +15,11 @@ function fixture({expireOnConnect=false,expireOnQuery=null}={}){
    if((typeof sql==='string'?sql:sql.text)===expireOnQuery)db.expiresAt=0;
    return {rows:[]};
   },
-  release(){}
+  release(bad){releases.push(bad);}
  };
  const pool={async connect(){connects++;if(expireOnConnect)db.expiresAt=0;return client;}};
  db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
- return {db,calls,get connects(){return connects;}};
+ return {db,calls,releases,get connects(){return connects;}};
 }
 
 test('transaction rejects an invalid wall clock before database access',async()=>{
@@ -99,6 +99,24 @@ test('transaction callback cannot end or replace its managed transaction',async(
    'ROLLBACK'
   ]);
  }
+});
+
+test('transaction callback cannot release its helper-owned pooled client',async()=>{
+ const {db,calls,releases}=fixture();
+ await assert.rejects(db.tx(async client=>{
+  assert.equal(Object.isFrozen(client),true);
+  assert.deepEqual(Reflect.ownKeys(client),['query']);
+  await client.query('WRITE');
+  client.release();
+ }),/POD_TRANSACTION_CLIENT_CONTROL_FORBIDDEN/);
+ assert.deepEqual(calls,[
+  'BEGIN',
+  "SET LOCAL lock_timeout='2s'",
+  "SET LOCAL statement_timeout='10s'",
+  {text:'WRITE',values:[],queryMode:'extended'},
+  'ROLLBACK'
+ ]);
+ assert.deepEqual(releases,[false]);
 });
 
 test('transaction does not roll back when opening the transaction fails',async()=>{
