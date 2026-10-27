@@ -69,6 +69,80 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r304 — stop after uncertain publication settlement (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`bc258ee4b6e5427711b1573f0df004b52b1c3d42` and Money Factory
+`fe6c0e100336e3c82baa250489f7832f9ceea2b5`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+After an authorized provider returned a validated submission receipt, the
+publisher could receive an indeterminate result while settling the final
+`submitted` state. Its catch path then issued a second `ambiguous` transition,
+which could not determine whether the first transaction committed and could
+replace the authoritative settlement uncertainty with another transition error.
+The publisher now records that submitted settlement has begun and, if its result
+is unknown, stops immediately with the fixed non-secret
+`SUBMISSION_SETTLEMENT_UNCERTAIN` error. It sends no second state transition.
+Durable lease recovery and authenticated provider readback remain responsible
+for resolving the actual state. Pre-settlement malformed receipts and adapter
+uncertainty retain their existing immediate ambiguous transition.
+
+### Verification and merge
+
+- Regression-first verification failed exactly the new assertion against the
+  prior code because it attempted a second transition after rejected submitted
+  settlement. The repaired focused publishing and lease suites passed 46/46.
+- The complete local Content Control POD Node suite ran 909 tests: 900 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Review covered the final settlement boundary, malformed-receipt and adapter
+  uncertainty, error disclosure, durable recovery and existing fencing behavior.
+  It found no unresolved material correctness, security or publication-safety
+  issue in the final three-file patch.
+- Exact [CC PR 740](https://github.com/wecreates/content-control/pull/740) head
+  `d7eddad30da7f2a82addf627243cb4285c0842d0` passed PostgreSQL integration
+  run `40499014956` and production-container run `40499014935`. It merged under
+  its exact-head lease as
+  `3107819adc9dd46dc170f6465ef792f9bcd9cb42`.
+- Money Factory's consumer workflow was advanced only to that immutable merged
+  Content Control revision. Exact [MF PR 259](https://github.com/wecreates/Money-factory/pull/259)
+  head `76ed190a6d0ae032b61cbdc6800369c4c15ba21c` changed only the checkout pin,
+  passed cross-repository run `40499952218`, and merged under its exact-head
+  lease as `611c4215aeb290051d1ccb263481f137dd550698`.
+
+### Deployment and acceptance truth
+
+Render detected functional Content Control commit
+`3107819adc9dd46dc170f6465ef792f9bcd9cb42` and started deploy
+`dep-dbg92mq9lscs7393serg`, but event `evt-dbg92n5gtmfc73beels0` reported
+exhausted pipeline minutes and the deploy ended build-failed. The authorized
+service remained active on the free plan with auto-deploy enabled and no
+suspender. No manual retry, paid capacity, cache/plan change, replacement
+service, secret access or network widening was attempted. No production
+migration or provider action was run.
+
+This closes only duplicate settlement after an indeterminate submitted-state
+transaction. Existing code and passing local/hosted tests are not live
+acceptance. All 24 acceptance areas remain OPEN. Production preflight with the
+real authorities, independently retained recovery, deployed availability,
+mounted Money Factory authority and current grants/revocation, real accounts and
+authorized sources, rights, official templates, substantive KDP
+editorial/preview acceptance, independent review and remediation, all five
+provider adapters, actual economics and reconciliation, owner-phone operations,
+monitoring drills, measured capacity, a real end-to-end job and controlled
+launch remain unverified. Etsy remained excluded. `PUBLICATION_ENABLED=false`
+and `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred.
+The checked-in Render definition also keeps the POD service and production loop
+false. This run used only its actually available bounded tools and did not claim
+a continuously running self-hosted worker.
+
 ## Run receipt r303 — isolate successful privileged migration sessions (2026-10-27 UTC)
 
 ### Scope and repair
