@@ -69,6 +69,71 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r307 — reject inconsistent listing replays (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`e61beefde846fb4baa62efa0dd394059d4759b04` and Money Factory
+`ac5e90ce61e8043392a08f751808397b6fb38c7f`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+An exact provider-event replay could previously return `duplicate:true` even if
+the locked queue row was still `submitted` or `ambiguous`. Because the inbox
+insert and publication transition commit atomically, that combination is an
+invalid durable state and must not be acknowledged. Reconciliation now fails
+closed with `LISTING_REPLAY_STATE_INVALID`. A row already marked `published`
+must also have neither a failure reason nor an active lease before fresh evidence
+can be attached. The expiry recheck remains after all database waits.
+
+### Verification and merge
+
+- Regression-first verification failed exactly the two new assertions on the
+  prior code. The repaired focused reconciliation/expiry set passed 27/27.
+- The complete local Content Control POD Node suite ran 913 tests: 904 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Exact [CC PR 746](https://github.com/wecreates/content-control/pull/746) head
+  `6c5c3b9e069d089dd7ccb54a86ac649eec227764` passed integration run
+  `40526838094` and production-container run `40526838082`. It merged under its
+  exact-head lease as `866f52c06fbc369bbbbfd7bda01d51f1f496b08e`.
+- Exact [MF PR 262](https://github.com/wecreates/Money-factory/pull/262) head
+  `88aa7bdb536071fec6a2470a5821860ff32080eb` changed only the immutable
+  Content Control checkout pin, passed cross-repository run `40528124521`, and
+  merged under its exact-head lease as
+  `5eff45a0ca2a992c9e795d1bb770adc044d511be`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`866f52c06fbc369bbbbfd7bda01d51f1f496b08e` and started deploy
+`dep-dbgbsh4s728c73f6v07g`, but event `evt-dbgbshb5h48c73ej17t0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No manual retry, paid capacity, plan change, replacement
+service, secret access or network widening was attempted. No production migration
+or provider action was run.
+
+This closes only fail-closed replay and contradictory published-row validation.
+Existing code and passing local/hosted tests are not live acceptance. All 24
+acceptance areas remain OPEN. Production preflight with the real authorities,
+independently retained recovery, deployed availability, mounted Money Factory
+authority and current grants/revocation, real accounts and authorized sources,
+rights, official templates, substantive KDP editorial/preview acceptance,
+independent review and remediation, all five provider adapters, actual economics
+and reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. The checked-in Render definition also keeps
+the POD service and production loop false. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
+
 ## Run receipt r306 — clear stale listing-reconciliation reasons (2026-10-27 UTC)
 
 ### Scope and repair
