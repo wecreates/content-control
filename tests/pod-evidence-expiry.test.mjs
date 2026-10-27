@@ -32,7 +32,7 @@ async function exercise(kind,duplicate,expired){
    if(sql.startsWith('SELECT * FROM pod_market_intelligence'))return rows({...e,id:'record-fixture'});
    if(sql.includes('FROM pod_financial_events'))return rows({...e,id:'record-fixture',occurred_at:new Date(e.occurred_at),occurred_at_matches:true});
    if(sql.startsWith('SELECT * FROM pod_production_queue'))return rows({id:e.job_id,account_id:e.account_id,platform:e.platform,
-    state:kind==='listing-published'?'published':'submitted',provider_id:e.provider_id,manifest:{package_sha256:hash}});
+    state:kind==='listing-published'||(kind==='listing'&&duplicate)?'published':'submitted',provider_id:e.provider_id,manifest:{package_sha256:hash}});
    if(sql.startsWith('SELECT evidence_sha256,payload FROM pod_provider_inbox'))return duplicate?rows({evidence_sha256:hash,payload:e}):rows();
    return rows();
   }};

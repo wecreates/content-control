@@ -33,8 +33,14 @@ test('corrupt listing evidence cannot publish, replay or add a published observa
  }
 });
 test('exact replay ignores refreshed envelope times and never mutates state',async()=>{
- const db=database(observation,{evidence_sha256:observation.evidence_sha256,payload:{...observation,issued_at_ms:1,expires_at_ms:2}});
+ const db=database(observation,{evidence_sha256:observation.evidence_sha256,payload:{...observation,issued_at_ms:1,expires_at_ms:2}},'published');
  assert.deepEqual(await reconcilePublication(db,sign(observation),key),{duplicate:true});assert.equal(db.writes.length,0);
+});
+test('exact replay cannot acknowledge an event whose queue row is not published',async()=>{
+ const seen={evidence_sha256:observation.evidence_sha256,payload:observation};
+ const db=database(observation,seen,'ambiguous',false,null,'SUBMISSION_UNCERTAIN');
+ await assert.rejects(reconcilePublication(db,sign(observation),key),/LISTING_REPLAY_STATE_INVALID/);
+ assert.equal(db.writes.length,0);
 });
 test('replays bind all listing identity and proof fields, not only the evidence hash',async()=>{
  for(const field of ['job_id','account_id','platform','package_sha256','provider_id','provider_event_id','status','provider_verified']){
@@ -81,6 +87,12 @@ test('a new readback event for a published listing retains proof without publish
 test('published rows require their durable provider identity before accepting more evidence',async()=>{
  const next={...observation,provider_event_id:'later-event',evidence_sha256:'c'.repeat(64)};
  const db=database(next,null,'published',false,null);
+ await assert.rejects(reconcilePublication(db,sign(next),key),/LISTING_SCOPE_INVALID/);
+ assert.equal(db.writes.length,0);
+});
+test('published rows with stale failure metadata cannot accept more evidence',async()=>{
+ const next={...observation,provider_event_id:'later-event',evidence_sha256:'c'.repeat(64)};
+ const db=database(next,null,'published',false,next.provider_id,'SUBMISSION_UNCERTAIN');
  await assert.rejects(reconcilePublication(db,sign(next),key),/LISTING_SCOPE_INVALID/);
  assert.equal(db.writes.length,0);
 });

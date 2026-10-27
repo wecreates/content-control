@@ -23,7 +23,8 @@ export async function reconcilePublication(db,envelope,key){
   db.active();
   if(!job||job.account_id!==e.account_id||job.platform!==e.platform||job.manifest?.package_sha256!==e.package_sha256||
    !['submitted','ambiguous','published'].includes(job.state)||
-   (job.state==='published'?job.provider_id!==e.provider_id:job.provider_id!=null&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
+   (job.state==='published'?(job.provider_id!==e.provider_id||job.reason_code!=null||job.lease_until!=null):
+    job.provider_id!=null&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
   await assertStoredEvidence(c,[e.evidence_sha256],'LISTING_EVIDENCE_MISSING');
   db.active();
   const seen=await c.query('SELECT evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]);
@@ -33,6 +34,9 @@ export async function reconcilePublication(db,envelope,key){
    // Refreshed envelope times may differ, but the observed listing and its proof
    // must remain identical. A shared evidence file does not identify one job.
    if(previous.evidence_sha256!==e.evidence_sha256||!LISTING_FIELDS.every(k=>previous.payload?.[k]===e[k]))throw Error('LISTING_REPLAY_CONFLICT');
+   // The inbox insert and published transition commit atomically. A retained
+   // event attached to any other queue state is corruption, not a safe retry.
+   if(job.state!=='published')throw Error('LISTING_REPLAY_STATE_INVALID');
    verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
    return {duplicate:true};
   }

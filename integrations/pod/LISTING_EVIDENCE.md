@@ -20,8 +20,11 @@ change rather than silently widening retained evidence.
 
 Replaying the same provider event must preserve every observed field, including
 its evidence hash. Only envelope issue/expiry times can differ. Exact retries
-return duplicate:true and emit no additional event. Changed content under the
-same provider event ID is a conflict, not a correction mechanism.
+return duplicate:true and emit no additional event only while the locked queue
+row remains published. The inbox write and publication transition are one
+transaction, so a retained event attached to a submitted or ambiguous row is an
+invalid durable state and fails closed rather than being acknowledged. Changed
+content under the same provider event ID is a conflict, not a correction mechanism.
 
 A genuinely new observation of an already published listing may carry a new
 provider event ID and a new stored proof. It is retained in the provider inbox,
@@ -31,9 +34,11 @@ Concurrent observations are serialized by the existing job row lock.
 
 A row already marked published must retain the exact nonempty provider identity
 that the new observation names. A missing or different durable identity rejects
-the observation before its inbox insert. Readback may fill a missing identity only
-while resolving submitted or ambiguous work; it cannot retroactively legitimize a
-malformed published row or attach fresh evidence to one.
+the observation before its inbox insert. It must also have no failure reason or
+active lease; a contradictory terminal row cannot collect more evidence as if it
+were healthy. Readback may fill a missing identity only while resolving submitted
+or ambiguous work; it cannot retroactively legitimize a malformed published row
+or attach fresh evidence to one.
 
 When authenticated readback resolves submitted or ambiguous work to published,
 the same atomic queue update clears its prior failure reason. A live listing must
