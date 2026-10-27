@@ -34,6 +34,21 @@ test('migration connection failure does not attempt transaction cleanup',async()
  assert.equal(queries,0);assert.equal(releases,0);
 });
 
+test('successful privileged migration destroys its pooled owner client after commit',async()=>{
+ const queries=[],releases=[];
+ const client={query:async sql=>{
+  queries.push(sql);
+  if(sql.startsWith('SELECT rolsuper'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false}]};
+  if(sql==='SELECT current_user AS name')return {rows:[{name:'migration_owner'}]};
+  if(sql.startsWith('SELECT EXISTS'))return {rows:[{elevated:false}]};
+  if(sql.startsWith("SELECT format('REVOKE TEMPORARY"))return {rows:[{sql:'REVOKE TEMPORARY ON DATABASE "fixture" FROM PUBLIC'}]};
+  return {rows:[]};
+ },release:destroy=>releases.push(Boolean(destroy))};
+ await migrate({connect:async()=>client},'pod_runtime',new URL('./pricewatch_core/fixtures/',import.meta.url));
+ assert.equal(queries.at(-1),'COMMIT');
+ assert.deepEqual(releases,[true]);
+});
+
 for(const rollbackFails of [false,true])test(`migration discards an ambiguous commit client without ${rollbackFails?'attempting a failing':'attempting'} rollback`,async()=>{
  const original=Error('synthetic commit response loss');
  const queries=[],releases=[];
