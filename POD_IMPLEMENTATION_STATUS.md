@@ -69,6 +69,83 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r295 — discard uncertain failed-open clients (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`0a96e55628690ebf26dec0a9a9ecb1c89bdc67bb` and Money Factory
+`8c92e377220740e668e76e2812bc3ddb9eda8bb3`, after reading the current
+completion, implementation and free-deployment records, workflow results,
+relevant open pull requests and the authorized Render service. No open pull
+request was already implementing this failed-open repair.
+
+When the initial `BEGIN READ ONLY` or `BEGIN` request rejected, the managed
+read and transaction helpers correctly avoided a rollback because PostgreSQL had
+not confirmed an open transaction. They nevertheless returned the same pooled
+client as reusable. An opening error can represent an uncertain transport or
+protocol state, and neither rollback nor `DISCARD ALL` is a reliable recovery
+when the transaction never opened. Both paths now destroy that client after a
+failed begin attempt. Expiry detected after pool acquisition but before any begin
+attempt still returns the known-clean client normally.
+
+### Content Control verification and merge
+
+- Regression-first focused tests passed 29/31 and failed exactly the two
+  failed-open reuse assertions against the prior helper. After the repair, the
+  focused read/transaction suite passed 31/31.
+- The complete local serial POD Node suite passed 887 tests, skipped eight
+  environment-dependent PostgreSQL cases and failed zero. Syntax and whitespace
+  checks were clean.
+- Exact PR #724 head
+  `2fd8eca421851ff2d202aef803ed15d92f1acb5d` passed POD integration run
+  `40442783990` and production-container run `40442783994`. The hosted
+  PostgreSQL suite and exact production image passed without relaxing
+  publication or production startup gates.
+- PR #724 merged as
+  `3810f7286480f62cc0f8a750442f8a28f6ce99c6`.
+
+### Money Factory dependent pin
+
+- The cross-repository workflow now pins immutable Content Control merge
+  `3810f7286480f62cc0f8a750442f8a28f6ce99c6`.
+- Local Money Factory integration tests passed 116 tests, skipped one
+  environment-dependent PostgreSQL case and failed zero. The Python
+  production/review suite passed 81 tests with zero failures. Generated KDP
+  fixtures remained `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`.
+- Exact PR #250 head
+  `c6aa6fb85ebda239eb164034d6a705e913873eb8` passed cross-repository run
+  `40443458327`, then merged as
+  `38f2043b6669dc24efa0eacbb880c66d5ecaf93d`.
+
+### Authorized Render verification
+
+- Render detected exact Content Control merge
+  `3810f7286480f62cc0f8a750442f8a28f6ce99c6` and created deployment
+  `dep-dbg1fpgae00c73fl56t0`.
+- Deploy-started event `evt-dbg1fpnbhrrc73cn5a5g` recorded the merge at
+  `2026-10-27T03:17:58.560737Z`; event
+  `evt-dbg1fpl9ljac73818g40` recorded
+  `pipeline_minutes_exhausted` at `2026-10-27T03:17:58.498311Z`; and
+  deploy-ended event `evt-dbg1fpigu0ic73b49nb0` recorded failed status at
+  `2026-10-27T03:17:58.850246Z`.
+- No build or hosted rollout of r295 was verified. No manual retry, paid
+  capacity, cache/plan change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes one pooled-client failure-path gap only. Existing code, passing
+synthetic/PostgreSQL/container tests and an attempted deployment are not live
+acceptance. The prior database-administration route was not retried because no
+credible access-path change was observed. All 24 acceptance areas remain OPEN,
+including the authorized adapters and controlled launch. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication was attempted. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r294 — scrub pooled PostgreSQL sessions (2026-10-27 UTC)
 
 ### Scope and repair
