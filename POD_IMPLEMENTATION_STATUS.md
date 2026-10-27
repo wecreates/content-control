@@ -69,6 +69,95 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r297 — isolate privileged transaction opens (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`caca2b690dde701dbb6ec56c6cf3ec8a5af7ce45` and Money Factory
+`7167d57674ef524e014688b18a1551f94b9004a2`, after reading the current
+completion, implementation and free-deployment records, open pull requests,
+workflow results and the authorized existing Render service. No open pull
+request overlapped this repair. The failed database-administration route had no
+credible access-path change and was not retried.
+
+The earlier failed-open isolation covered ordinary managed and direct read
+transactions, but the privileged migration and startup-preflight paths still
+attempted `ROLLBACK` and could return a client as reusable after their initial
+`BEGIN` or `BEGIN READ ONLY` request rejected. Both paths now issue no
+follow-up SQL and destroy that uncertain client. Failures after a confirmed
+transaction open retain rollback cleanup, and rollback failure still destroys
+the client while preserving the original diagnostic boundary.
+
+### Content Control verification and merge
+
+- Regression-first verification passed 40 of 43 focused checks and failed
+  exactly the three new failed-open assertions against the prior
+  implementation. The repaired migration/preflight suite passed 43/43.
+- The complete local serial POD Node suite ran 898 tests: 890 passed, eight
+  environment-dependent PostgreSQL cases skipped and zero failed. Syntax and
+  whitespace checks passed. A broad local Python discovery was not counted as
+  acceptance evidence because that executor lacked `cv2`; the hosted gates
+  below installed the locked dependencies and exercised the Python suites.
+- Review of the exact published diff found no material correctness, security or
+  lifecycle issue.
+- Exact [CC PR 728](https://github.com/wecreates/content-control/pull/728) head
+  `6a61effbb083b60720e82f090e549d5d12fc18cc` passed POD integration run
+  `40450677688` and production-container run `40450677690`. The disposable
+  PostgreSQL suite, locked Python QA/rendering dependencies, exact Docker build,
+  non-root runtime, durable review and publication-disabled startup stages
+  passed.
+- PR 728 merged under an exact-head lease as
+  `db1a61f9ae3c7739d70f4ad841e35a3045d9411b`.
+
+### Money Factory dependent pin
+
+- The cross-repository workflow now pins immutable Content Control merge
+  `db1a61f9ae3c7739d70f4ad841e35a3045d9411b`, with both publication flags
+  explicitly false.
+- Local Money Factory verification passed 116 Node tests, skipped one
+  environment-dependent PostgreSQL case and failed zero; the Python
+  production/review suite passed 81/81. Generated KDP fixtures remained
+  `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`.
+- Exact [MF PR 252](https://github.com/wecreates/Money-factory/pull/252) head
+  `db0368b5c523687060f972ea6c34d0e941e5b648` passed cross-repository run
+  `40451363630`, including pinned review, recovery, rights, template, KDP
+  pairing, editorial-bound and bridge stages. It merged under an exact-head
+  lease as `9da45e99d64d58e72f0c5be593570608c355b40b`.
+
+### Authorized Render verification
+
+- Render automatically attempted exact Content Control merge
+  `db1a61f9ae3c7739d70f4ad841e35a3045d9411b` as deployment
+  `dep-dbg2nkq9lscs738su7q0`.
+- Deploy-start event `evt-dbg2nkprholc73fb2jl0` bound the merge at
+  `2026-10-27T04:42:59.652674Z`; event
+  `evt-dbg2nktgtmfc73ba2ae0` recorded `pipeline_minutes_exhausted` at
+  `2026-10-27T04:42:59.697018Z`; and deploy-ended event
+  `evt-dbg2nkr5h48c73ec18s0` recorded failed status at
+  `2026-10-27T04:42:59.931024Z`.
+- No application build or hosted rollout was verified. No manual retry, paid
+  capacity, cache/plan change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes two privileged failed-open client-reuse paths only. Existing code,
+passing synthetic/PostgreSQL/container tests and an attempted deployment are
+not live acceptance. All 24 acceptance areas remain OPEN. Production database
+role and migrations, independently retained recovery, hosted availability,
+Money Factory authority, current grants and revocation, real accounts,
+authorized market sources, rights, official templates, independent review, all
+five provider adapters, actual economics and reconciliation, owner-phone
+operations, monitoring drills, measured capacity, a real end-to-end job and
+controlled launch remain unverified. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. The checked-in Render definition also keeps
+the POD service and production loop false. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r296 — isolate direct pooled transaction opens (2026-10-27 UTC)
 
 ### Scope and repair
