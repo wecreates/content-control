@@ -119,6 +119,53 @@ test('transaction callback cannot release its helper-owned pooled client',async(
  assert.deepEqual(releases,[false]);
 });
 
+test('transaction waits for a callback query even when the callback does not await it',async()=>{
+ const calls=[],releases=[];let complete;
+ const pending=new Promise(resolve=>{complete=resolve;});
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='UNAWAITED_WRITE')return pending;
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const transaction=db.tx(transactionClient=>{
+  void transactionClient.query('UNAWAITED_WRITE');
+  return 'complete';
+ });
+ await new Promise(resolve=>setImmediate(resolve));
+ try{assert.equal(calls.includes('COMMIT'),false);}
+ finally{complete({rows:[]});}
+ assert.equal(await transaction,'complete');
+ assert.equal(calls.at(-1),'COMMIT');
+ assert.deepEqual(releases,[false]);
+});
+
+test('transaction propagates an unawaited query failure even when callback code observes it',async()=>{
+ const original=Error('UNAWAITED_QUERY_FAILURE'),calls=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='UNAWAITED_FAILURE')throw original;
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.tx(transactionClient=>{
+  void transactionClient.query('UNAWAITED_FAILURE').catch(()=>{});
+  return 'must not commit';
+ }),error=>error===original);
+ assert.equal(calls.includes('COMMIT'),false);
+ assert.equal(calls.at(-1),'ROLLBACK');
+ assert.deepEqual(releases,[false]);
+});
+
+test('transaction query capability closes before the pooled client is released',async()=>{
+ const {db,calls,releases}=fixture();let retainedQuery;
+ await db.tx(client=>{retainedQuery=client.query;});
+ assert.throws(()=>retainedQuery('AFTER_TRANSACTION'),/POD_TRANSACTION_CLIENT_CLOSED/);
+ assert.equal(calls.includes('AFTER_TRANSACTION'),false);
+ assert.equal(calls.at(-1),'COMMIT');
+ assert.deepEqual(releases,[false]);
+});
+
 test('transaction does not roll back when opening the transaction fails',async()=>{
  const original=Error('BEGIN_FAILURE'),calls=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{calls.push(sql);throw original;}};

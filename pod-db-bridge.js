@@ -209,7 +209,9 @@ export class PodDB {
    // including parameterless statements. The simple-query protocol accepts a
    // multi-command string that could COMMIT early and run a later command
    // outside this helper's transaction and retention checks.
-   const guardedQuery=async(query,values)=>{
+   const pendingQueries=new Set();let queryFailure=null,acceptingQueries=true;
+   const guardedQuery=(query,values)=>{
+    if(!acceptingQueries)throw Error('POD_TRANSACTION_CLIENT_CLOSED');
     this.active();
     const config=typeof query==='string'?{text:query,values:values??[],queryMode:'extended'}:{...query,queryMode:'extended'};
     // The callback owns business SQL, not the transaction. Extended protocol
@@ -218,7 +220,17 @@ export class PodDB {
     // unable to undo earlier writes. Reject transaction-control commands before
     // PostgreSQL can execute them, including comment-obscured forms.
     assertManagedTransactionStatement(config.text);
-    const result=await c.query(config);this.active();return result;
+    const operation=(async()=>{const result=await c.query(config);this.active();return result;})();
+    // A callback must not be able to report success by starting a database
+    // operation and returning without awaiting it. Track every issued query,
+    // consume its rejection immediately and preserve the first failure so the
+    // managed transaction always rolls back.
+    pendingQueries.add(operation);
+    operation.then(
+     ()=>pendingQueries.delete(operation),
+     error=>{pendingQueries.delete(operation);queryFailure??=error;}
+    );
+    return operation;
    };
    // Expose a query-only capability, never the pooled client. In particular,
    // release() could return this still-open transaction to the pool before the
@@ -230,7 +242,17 @@ export class PodDB {
     get:(_,property)=>property==='query'?guardedQuery:forbidden(),
     set:forbidden,defineProperty:forbidden,deleteProperty:forbidden,
    });
-   const r=await fn(guarded);this.active();await c.query('COMMIT');return r;
+   let r;
+   try{r=await fn(guarded);}
+   finally{
+    // The query capability belongs only to the callback lifetime. A retained
+    // reference must never reach this pooled client during commit or after
+    // release into another transaction.
+    acceptingQueries=false;
+   }
+   while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
+   if(queryFailure)throw queryFailure;
+   this.active();await c.query('COMMIT');return r;
   }catch(e){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
  }
  async enqueue({job,upstream,conceptId,revision}) {
