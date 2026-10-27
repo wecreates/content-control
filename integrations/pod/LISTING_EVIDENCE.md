@@ -84,7 +84,12 @@ ambiguous with SUBMISSION_UNCERTAIN and no malformed provider ID. It makes only
 one submission attempt. Existing authenticated, evidence-backed readback may
 resolve that ambiguous job to its actual listing ID without resubmission.
 A database failure still requires the existing ambiguity/recovery investigation;
-no successful state write or live listing is inferred from an exception.
+no successful state write or live listing is inferred from an exception. Once a
+valid provider receipt reaches the submitted transition, a rejected settlement
+response emits only `SUBMISSION_SETTLEMENT_UNCERTAIN` and stops that publisher.
+It never starts a second settlement transaction because the first commit outcome
+may be unknown. Durable lease recovery and authenticated readback determine the
+actual state without resubmission.
 
 Synthetic adapter and signed-readback tests cover both malformed and valid
 receipt boundaries, plus direct database-transition admission. Test publication
