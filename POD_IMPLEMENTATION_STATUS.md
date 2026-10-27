@@ -69,6 +69,88 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r296 — isolate direct pooled transaction opens (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`32cac8875570586a560ccc8ccea4419256f8affa` and Money Factory
+`38f2043b6669dc24efa0eacbb880c66d5ecaf93d`, after reading the current
+completion, implementation and free-deployment records, open pull requests,
+workflow results and the authorized existing Render service. No open pull
+request overlapped this repair. The failed database-administration route had no
+credible access-path change and was not retried.
+
+The prior failed-open isolation covered `PodDB.read` and `PodDB.tx`, but four
+direct pooled read transactions still attempted `ROLLBACK` and could return a
+client as reusable after their initial `BEGIN ISOLATION LEVEL REPEATABLE READ
+READ ONLY` request rejected. Operational metrics, capacity reporting, artifact
+export and state export now destroy that uncertain client without issuing
+cleanup SQL on it. Failures after a confirmed begin retain rollback semantics.
+A state-export safety flag change after connection but before any begin attempt
+now releases the known-clean client without sending a spurious rollback.
+
+### Content Control verification and merge
+
+- Regression-first verification passed 116 of 122 focused checks and failed
+  exactly the six new failed-open assertions against the prior implementation.
+  The repaired focused suite passed 122/122.
+- The complete local POD Node suite ran 897 tests: 889 passed, eight
+  environment-dependent PostgreSQL cases skipped and zero failed. Syntax and
+  whitespace checks passed. Review of the exact diff found no material issue.
+- Exact [CC PR 726](https://github.com/wecreates/content-control/pull/726) head
+  `e2a890405fe3758a29b2bf9fe75e12437271e4ba` passed POD integration run
+  `40448341268` and production-container run `40448341392`. The hosted
+  PostgreSQL gate, exact Docker build, Python QA/rendering, durable review and
+  publication-disabled startup stages passed.
+- PR 726 merged under an exact-head lease as
+  `b5be3e3d5da7f234b7a027bd1e67527ca71ea040`.
+
+### Money Factory dependent pin
+
+- The cross-repository workflow now pins immutable Content Control merge
+  `b5be3e3d5da7f234b7a027bd1e67527ca71ea040`, with both publication flags
+  explicitly false.
+- Local Money Factory verification passed 116 Node tests, skipped one
+  environment-dependent PostgreSQL case and failed zero; the Python
+  production/review suite passed 81/81. KDP fixtures remained
+  `REVIEW_REQUIRED`, `production_ready=false` and `publication_enabled=false`.
+- Exact [MF PR 251](https://github.com/wecreates/Money-factory/pull/251) head
+  `9238084d7c09f6a724df0893426079f75c015079` passed cross-repository run
+  `40449214228`, including review, recovery, rights, template, KDP pairing and
+  editorial-bound stages. It merged under an exact-head lease as
+  `7167d57674ef524e014688b18a1551f94b9004a2`.
+
+### Authorized Render verification
+
+- Render automatically attempted exact Content Control merge
+  `b5be3e3d5da7f234b7a027bd1e67527ca71ea040` as deployment
+  `dep-dbg2cb4s728c73er6a4g`.
+- Deploy-start event `evt-dbg2cb59ljac7381q69g` bound the merge at
+  `2026-10-27T04:18:52.411064Z`; event `evt-dbg2cb7bhrrc73cnmfo0`
+  recorded `pipeline_minutes_exhausted` at
+  `2026-10-27T04:18:52.614681Z`; and deploy-ended event
+  `evt-dbg2cb7b4ihs73b20tlg` recorded failed status at
+  `2026-10-27T04:18:52.839203Z`.
+- No application build or hosted rollout was verified. No manual retry, paid
+  capacity, cache/plan change, replacement service, secret access or network
+  widening was attempted.
+
+### Acceptance truth
+
+This closes four failed-open client-reuse paths only. Existing code, passing
+synthetic/PostgreSQL/container tests and an attempted deployment are not live
+acceptance. All 24 acceptance areas remain OPEN. Production database role and
+migrations, durable retained recovery, hosted availability, Money Factory
+authority, current grants and revocation, real accounts, authorized market
+sources, rights, official templates, independent review, all five provider
+adapters, actual economics and reconciliation, owner-phone operations,
+monitoring drills, measured capacity, a real end-to-end job and controlled
+launch remain unverified. Etsy remained excluded. `PUBLICATION_ENABLED=false`
+and `POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred.
+This run used only its actually available bounded tools and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r295 — discard uncertain failed-open clients (2026-10-27 UTC)
 
 ### Scope and repair
