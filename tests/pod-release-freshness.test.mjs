@@ -56,6 +56,24 @@ test('an already-aborted publisher performs no dry-run read or enabled claim',as
   assert.deepEqual(result,{status:'STOPPED'});assert.equal(touched,0);
  }
 });
+test('cancellation during a publishing claim settles without artifact work',async()=>{
+ const f=fixture(),controller=new AbortController();let artifactChecks=0;
+ f.options.signal=controller.signal;
+ const claim=f.options.db.claimPublish;
+ f.options.db.claimPublish=async()=>{controller.abort();return claim();};
+ f.options.verifyArtifacts=async()=>{artifactChecks++;return f.manifest;};
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+ assert.equal(artifactChecks,0);assert.deepEqual(f.events,['blocked']);
+});
+test('cancellation during an empty publishing claim reports stopped',async()=>{
+ const controller=new AbortController();let settled=0;
+ const result=await publishOnce({signal:controller.signal,
+  env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},accountId:'fixture-account',
+  db:{claimPublish:async()=>{controller.abort();return null;},finish:async()=>{settled++;}},
+  resolveGrant:async()=>assert.fail('grant resolver reached'),
+  verifyArtifacts:async()=>assert.fail('artifact verifier reached')});
+ assert.deepEqual(result,{status:'STOPPED'});assert.equal(settled,0);
+});
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);
