@@ -130,6 +130,12 @@ test('cancellation during an empty production claim reports stopped',async()=>{
   db:{claimProduction:async()=>{controller.abort();return null;}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
+test('production disable during an empty claim reports stopped',async()=>{
+ const env={POD_PRODUCTION_ENABLED:'true'};
+ const result=await produceOnce({env,
+  db:{claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;}}});
+ assert.deepEqual(result,{status:'STOPPED'});
+});
 test('missing Python dependencies block before queue access',async()=>{
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true'},pythonReady:false,
   db:{recover(){throw Error('must not claim');}}});
