@@ -78,6 +78,12 @@ test('metrics discard an uncertain connection when transaction open fails',async
  assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
  assert.deepEqual(releases,[true]);
 });
+test('metrics discard an uncertain connection when commit fails',async()=>{
+ const f=fixture(),original=Error('COMMIT_FAILURE'),client=await f.db.pool.connect(),query=client.query.bind(client);
+ client.query=async sql=>{if(sql==='COMMIT'){f.queries.push(sql);throw original;}return query(sql);};
+ await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now}),error=>error===original);
+ assert.equal(f.queries.at(-1),'COMMIT');assert.equal(f.queries.includes('ROLLBACK'),false);assert.equal(f.released,true);
+});
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){
   const f=fixture({fail}),invoke=()=>operationsSnapshot({connect:async()=>f.db.pool,
