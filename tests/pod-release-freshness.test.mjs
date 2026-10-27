@@ -82,6 +82,26 @@ test('cancellation during an empty publishing claim reports stopped',async()=>{
   verifyArtifacts:async()=>assert.fail('artifact verifier reached')});
  assert.deepEqual(result,{status:'STOPPED'});assert.equal(settled,0);
 });
+test('publication disable during a publishing claim settles before artifact work',async()=>{
+ for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+  const f=fixture(),artifactChecks=[];
+  const claim=f.options.db.claimPublish;
+  f.options.db.claimPublish=async()=>{f.options.env[flag]='false';return claim();};
+  f.options.verifyArtifacts=async()=>{artifactChecks.push(flag);return f.manifest;};
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.deepEqual(artifactChecks,[]);assert.deepEqual(f.events,['blocked']);
+ }
+});
+test('publication disable during an empty publishing claim reports stopped',async()=>{
+ for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
+  const env={PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'};
+  const result=await publishOnce({env,accountId:'fixture-account',
+   db:{claimPublish:async()=>{env[flag]='false';return null;}},
+   resolveGrant:async()=>assert.fail('grant resolver reached'),
+   verifyArtifacts:async()=>assert.fail('artifact verifier reached')});
+  assert.deepEqual(result,{status:'STOPPED'});
+ }
+});
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);

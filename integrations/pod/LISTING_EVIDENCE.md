@@ -127,6 +127,10 @@ path so a claimed lease is never silently abandoned as if no work began. If the
 signal changes while the claim itself is in flight, the publisher settles that
 lease as blocked before starting artifact verification or adapter work. If the
 claim returns no job after cancellation, it reports `STOPPED` rather than `IDLE`.
+The same post-claim boundary observes either publication kill switch changing to
+false. A returned lease is settled as blocked before artifact or authority work;
+an empty claim reports `STOPPED`. The switches are still checked again immediately
+before the external side effect, so a later disable also remains fail-closed.
 
 ## Release lease settlement
 
