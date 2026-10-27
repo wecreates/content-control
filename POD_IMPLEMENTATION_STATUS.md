@@ -69,6 +69,92 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r291 — isolate managed transactions from pooled clients (2026-10-26 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`e5602324cdbce58cadd3872ec166c484a6a7a9b6` and Money Factory
+`b9bb64ca9294dc69058eb9989472d640aa68acb6`, after reading the current
+completion, implementation and free-deployment records, open pull requests,
+workflow results and the authorized Render service. Neither repository had an
+open pull request, so this repair did not duplicate concurrent POD work.
+
+The previous `PodDB.tx` proxy guarded `query` but exposed every other member
+of the underlying pooled PostgreSQL client. A callback could call `release()`
+while the helper-owned transaction was open, returning that transaction to the
+pool before the helper committed or rolled it back; exposed connection internals
+could also bypass the guarded query path. The callback now receives a frozen,
+null-prototype capability containing only the guarded `query` function.
+Reading or mutating any other client control fails closed with
+`POD_TRANSACTION_CLIENT_CONTROL_FORBIDDEN`.
+
+### Content Control verification and merge
+
+- The regression-first focused suite failed 9/10 against the prior helper
+  because callback `client.release()` completed without rejection.
+- After the repair, the focused transaction suite passed 10/10. The complete
+  local serial POD Node suite passed 877 tests, skipped eight
+  environment-dependent PostgreSQL cases and failed zero. `node --check` and
+  `git diff --check` passed.
+- Exact PR #715 head
+  `d0e3f36f8bec02a6928d78451aa2324320a763e4` passed POD integration run
+  `40422778246` and production-container run `40422778267`. The hosted
+  PostgreSQL regression wrote to the protected fixture, attempted callback
+  `release()`, and preserved the original row through rollback. The exact
+  production image also passed non-root, Python QA/rendering, Node/PostgreSQL,
+  real review-generation and disabled-startup gates.
+- Guarded PR #715 merged as
+  `1e952aa2c4d53cc746f4db6b5d9aa458ae2eeccf`.
+
+### Money Factory dependent pin
+
+- The cross-repository workflow now pins immutable Content Control merge
+  `1e952aa2c4d53cc746f4db6b5d9aa458ae2eeccf`.
+- Local Money Factory integration tests passed 116 tests, skipped one
+  environment-dependent PostgreSQL case and failed zero. The Python
+  production/review suite passed 81 tests with zero failures. Generated KDP
+  fixtures remained `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`.
+- Exact PR #246 head
+  `271fa90d4ee57e3f8d0100d459656935385debfa` passed cross-repository run
+  `40423651693`, then merged as
+  `3f178780641d280454705d8056015e51f814a302`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, `main` branch
+  and commit-triggered deployment path. No manual deploy was requested.
+- Render detected exact Content Control merge
+  `1e952aa2c4d53cc746f4db6b5d9aa458ae2eeccf` and created deployment
+  `dep-dbfuj129lscs738ogldg`.
+- Deploy-started event `evt-dbfuj1dgtmfc73b7ehj0` recorded the merge at
+  `2026-10-27T00:00:05.296909Z`; event
+  `evt-dbfuj1dt17gc738881h0` recorded
+  `pipeline_minutes_exhausted` at `2026-10-27T00:00:05.386929Z`; and
+  deploy-ended event `evt-dbfuj1fbhrrc73cla1p0` recorded failed status at
+  `2026-10-27T00:00:05.863046Z`.
+- No build or hosted rollout of r291 was verified. No paid capacity, cache/plan
+  change, replacement service, secret access or network widening was attempted.
+
+### Acceptance truth
+
+This closes one transaction-client isolation gap only. Existing code, passing
+synthetic/PostgreSQL/container tests and an attempted deployment are not live
+acceptance. The prior database-administration route was not retried because no
+credible access-path change was observed. Dedicated database, durable
+storage/recovery, hybrid hosting, Money Factory authority, current
+grants/revocation, account records, authorized market intelligence, concept
+selection, regional-rights evidence, original generation, official templates,
+KDP interiors/editorial, independent QA, remediation, authorized
+KDP/Redbubble/TeePublic/Zazzle/Spreadshirt adapters, publishing safeguards,
+economics, financial reconciliation, mobile operations, monitoring, security,
+measured capacity, end-to-end acceptance and controlled launch readiness all
+remain OPEN. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
+attempted. This run used only its actually available bounded tools and did not
+claim a continuously running self-hosted worker.
+
 
 ### 2026-10-22 — r190 verified receipt: review artifact media roles
 
