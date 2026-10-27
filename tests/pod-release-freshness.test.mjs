@@ -56,6 +56,14 @@ test('an already-aborted publisher performs no dry-run read or enabled claim',as
   assert.deepEqual(result,{status:'STOPPED'});assert.equal(touched,0);
  }
 });
+test('cancellation during a dry-run queue read reports stopped without logging success',async()=>{
+ const controller=new AbortController(),logs=[];
+ const result=await publishOnce({signal:controller.signal,
+  env:{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
+  db:{listReady:async()=>{controller.abort();return [{id:'cancelled-fixture'}];}},
+  log:value=>logs.push(value)});
+ assert.deepEqual(result,{status:'STOPPED'});assert.deepEqual(logs,[]);
+});
 test('cancellation during a publishing claim settles without artifact work',async()=>{
  const f=fixture(),controller=new AbortController();let artifactChecks=0;
  f.options.signal=controller.signal;
