@@ -69,6 +69,71 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r308 — stop cancelled publishers before claims (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`463e474c8a78a84fb3f2b2346105c16ff09775a3` and Money Factory
+`5eff45a0ca2a992c9e795d1bb770adc044d511be`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+An already-aborted publisher could previously enter the dry-run queue read or,
+with both synthetic publication switches true, reach publishing claim setup
+before observing cancellation. The enabled path could therefore acquire a
+release lease, reserve quota and apply account cooldown for work that was already
+cancelled. `publishOnce` now returns the deterministic non-mutating status
+`STOPPED` before any database access when its signal is already aborted. A
+cancellation after a claim still follows the existing fail-closed durable
+settlement path rather than silently abandoning the lease.
+
+### Verification and merge
+
+- The regression failed against the prior code: the cancelled dry-run case read
+  the queue and returned `DRY_RUN` instead of `STOPPED`. After the repair, the
+  focused publishing, worker-lifecycle and policy set passed 70/70.
+- The complete local Content Control POD Node suite ran 914 tests: 905 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Exact [CC PR 748](https://github.com/wecreates/content-control/pull/748) head
+  `8e56d244a21265aa829d5b3299c8ebea0be92972` passed integration run
+  `40533423527` and production-container run `40533423448`. It merged under its
+  exact-head lease as `ed27847198fb754c3ad7cddf7a2515b38864a972`.
+- Exact [MF PR 263](https://github.com/wecreates/Money-factory/pull/263) head
+  `bfc65745e1c870215fa3740eb7539d42e8d6b4f8` changed only the immutable
+  Content Control checkout pin, passed cross-repository run `40534734551`, and
+  merged under its exact-head lease as
+  `4d0eccc208d899cb8549269a377e7a286a4f08bb`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`ed27847198fb754c3ad7cddf7a2515b38864a972` and started deploy
+`dep-dbgcfacs728c73f7vjp0`, but event `evt-dbgcfadgtmfc73bhqmig` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No manual retry, paid capacity, plan change, replacement
+service, secret access or network widening was attempted. No production migration
+or provider action was run.
+
+This closes only already-cancelled pre-claim mutation. Existing code and passing
+local/hosted tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with the real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and current
+grants/revocation, real accounts and authorized sources, rights, official
+templates, substantive KDP editorial/preview acceptance, independent review and
+remediation, all five provider adapters, actual economics and reconciliation,
+owner-phone operations, monitoring drills, measured capacity, a real end-to-end
+job and controlled launch remain unverified. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain mandatory;
+no publication occurred. The checked-in Render definition also keeps the POD
+service and production loop false. This run used only its actually available
+bounded tools and did not claim a continuously running self-hosted worker.
+
 ## Run receipt r307 — reject inconsistent listing replays (2026-10-27 UTC)
 
 ### Scope and repair
