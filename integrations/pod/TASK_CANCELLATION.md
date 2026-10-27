@@ -10,7 +10,8 @@ write. It starts no later input read after observing cancellation, removes any
 partial workspace, and returns the fixed `PRODUCTION_STOPPED` reason without
 including an arbitrary abort reason. The coordinator also rechecks its stop
 signal and production switch after a delayed claim or initial grant lookup and
-after task resolution, before reading templates or invoking Python.
+after task resolution, then again after authenticating the source, rights and
+text-layer snapshot, before reading templates or invoking Python.
 If a delayed production claim returns no job after cancellation, the direct
 worker result is `STOPPED`, not a healthy `IDLE` cycle. The same result applies
 when the production switch changes to false while an empty claim is in flight.

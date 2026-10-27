@@ -39,6 +39,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const runStage=(script,args)=>python(script,args,{root,signal,env,workspace:task.stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    task.source,task.assetRights,task.textLayers,env.POD_RIGHTS_KEY,{signal});
+  enabled();
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
