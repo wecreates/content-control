@@ -68,6 +68,16 @@ test('metrics errors roll back and discard a connection if rollback itself fails
   assert.equal(f.queries.at(-1),'ROLLBACK');assert.equal(f.released,rollbackFails);assert.ok(!f.queries.includes('COMMIT'));
  }
 });
+test('metrics discard an uncertain connection when transaction open fails',async()=>{
+ const original=Error('BEGIN_FAILURE'),queries=[],releases=[];
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);throw original;},
+  release:bad=>releases.push(bad),
+ })}};
+ await assert.rejects(metrics(db),error=>error===original);
+ assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+ assert.deepEqual(releases,[true]);
+});
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){
   const f=fixture({fail}),invoke=()=>operationsSnapshot({connect:async()=>f.db.pool,

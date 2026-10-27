@@ -3,9 +3,9 @@ import {operationalHealth} from './operational-health.mjs';
 export async function metrics(db,{env=process.env,clock=Date.now}={}){
  // Unlike writes, authenticated diagnostics must remain available while the
  // database approaches expiry. PostgreSQL enforces this transaction read-only.
- const client=await db.pool.connect();let bad=false;
+ const client=await db.pool.connect();let bad=false,began=false,beginAttempted=false;
  try{
-  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
   await client.query("SET LOCAL lock_timeout='2s'");await client.query("SET LOCAL statement_timeout='5s'");
   const states=await client.query("SELECT platform,CASE WHEN state='qa_failed' AND reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE state END AS state,count(*)::text AS count FROM pod_production_queue GROUP BY platform,2 ORDER BY platform,2");
   const failures=await client.query("SELECT count(*)::text AS count FROM pod_production_queue WHERE state IN ('blocked','qa_failed','ambiguous') AND NOT (state='qa_failed' AND reason_code IS NOT DISTINCT FROM 'REVIEW_REQUIRED')");
@@ -21,5 +21,12 @@ export async function metrics(db,{env=process.env,clock=Date.now}={}){
   await client.query('COMMIT');
   return {queues:states.rows,incident_count:failures.rows[0].count,artifact_bytes:storage.rows[0].bytes,
    financials:financials.rows,health,publication_enabled:false};
- }catch(error){try{await client.query('ROLLBACK');}catch{bad=true;}throw error;}finally{client.release(bad);}
+ }catch(error){
+  // A rejected BEGIN leaves transport/protocol state uncertain and there is
+  // no confirmed transaction to roll back. Destroy that pooled client rather
+  // than issuing cleanup SQL on it or returning it for unrelated work.
+  if(began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  else if(beginAttempted)bad=true;
+  throw error;
+ }finally{client.release(bad);}
 }

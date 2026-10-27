@@ -71,10 +71,10 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
 export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();assertPublicationDisabled(env);
  const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
- let client;const items=[];let bytes=0,bad=false;
+ let client;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false;
  try{
   client=await db.pool.connect();
-  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
   await client.query("SET LOCAL statement_timeout='10s'");
   // Keep invalid rows visible so export fails, but do not transfer an oversized
   // legacy body into the low-memory process before checking its bound.
@@ -113,7 +113,9 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
  }catch(error){
   // An unsuccessful rollback leaves transaction state unknown. Never return
   // that connection to the pool, and preserve the original export failure.
-  if(client)try{await client.query('ROLLBACK');}catch{bad=true;}throw error;
+  if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  else if(client&&beginAttempted)bad=true;
+  throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}
 }
 
