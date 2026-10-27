@@ -6,18 +6,20 @@ import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/e
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
  verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
+ const publicationEnabled=()=>env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true';
  if(signal?.aborted)return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
- if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true') {
+ if(!publicationEnabled()) {
   const jobs=await db.listReady();if(signal?.aborted)return {status:'STOPPED'};
   log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
  const job=await db.claimPublish(accountId,crypto.randomInt(45,181));
- if(!job)return {status:signal?.aborted?'STOPPED':'IDLE'};
+ if(!job)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  let submitted=false,submittedSettlementAttempted=false;
  try{
+  if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
@@ -39,7 +41,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   brief.economics=enforceReleaseEconomics(release,brief);
   signal?.throwIfAborted();
   // Recheck local kill switches immediately before external side effect.
-  if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true')throw Error('PUBLICATION_DISABLED');
+  if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   submitted=true;
   const receipt=await adapter.submit({brief,manifest,idempotencyKey:job.idempotency_key,signal});
   // Match the observer's opaque listing-ID contract. A malformed receipt is
