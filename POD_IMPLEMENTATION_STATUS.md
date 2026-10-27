@@ -69,6 +69,74 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r302 — isolate ambiguous core transaction commits (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`94030ce4897a030de2def9d2605520964878f205` and Money Factory
+`557876b92528659c99741b29bcff40444c2fcca3`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+The central `PodDB.read()` and `PodDB.tx()` pooled-client helpers still treated a
+rejected `COMMIT` as an ordinary pre-commit failure. They attempted `ROLLBACK`
+and, when that failed, `DISCARD ALL`, then could return an indeterminate
+connection to the pool. Both helpers now mark commit as pending before sending
+it, send no cleanup SQL when its result is unknown and destroy the client. The
+existing pre-commit rollback path and post-commit sanitizer behavior remain
+unchanged, and the original commit error remains authoritative.
+
+### Verification and merge
+
+- The focused regression-first run passed 31/35 checks and failed exactly the
+  four new rejected-commit assertions against the prior code because cleanup SQL
+  followed `COMMIT`. The final focused suites passed 35/35.
+- The complete local Content Control POD Node suite ran 906 tests: 898 passed,
+  eight environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Review covered both central helpers, normal success, pre-commit rollback,
+  rejected commit, post-commit sanitization, original-error identity and
+  destructive client release. It found no unresolved material correctness,
+  security or lifecycle issue in the final three-file patch.
+- Exact [CC PR 736](https://github.com/wecreates/content-control/pull/736) head
+  `9c88662e777d78b9d161dc26bbf034050e270d02` passed PostgreSQL integration
+  run `40484146816` and production-container run `40484146717`. It merged
+  under its exact-head lease as
+  `bac672207b5961c0a38100123b0f43959ca3d3dc`.
+- Money Factory's consumer workflow was advanced only to that immutable merged
+  Content Control revision. Exact [MF PR 257](https://github.com/wecreates/Money-factory/pull/257)
+  head `17099b07106ac18c857c9e3ed0be79fb85d05317` changed only the checkout pin,
+  passed cross-repository run `40485177377`, and merged under its exact-head
+  lease as `49b3f2a97200ec2857debba3912cbb2848573d5c`.
+
+### Deployment and acceptance truth
+
+Render detected functional Content Control commit
+`bac672207b5961c0a38100123b0f43959ca3d3dc` and started deploy
+`dep-dbg7bmjrjlhs73cse4qg`, but event `evt-dbg7bmvb4ihs73b57ml0` reported
+exhausted pipeline minutes and the deploy ended build-failed. No manual retry,
+paid capacity, cache/plan change, replacement service, secret access or network
+widening was attempted. No production migration or provider action was run.
+
+This closes the ambiguous-commit path in the two central pooled-client helpers
+found in the reviewed POD integration. Existing code and passing local/hosted
+tests are not live acceptance. All 24 acceptance areas remain OPEN. Production
+database role and migrations, independently retained recovery, hosted
+availability, deployed Money Factory authority, current grants and revocation,
+real accounts, authorized market sources, rights, official templates,
+independent review, all five provider adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. The checked-in Render definition
+also keeps the POD service and production loop false. This run used only its
+actually available bounded tools and did not claim a continuously running
+self-hosted worker.
+
 ## Run receipt r301 — isolate ambiguous direct-reader commits (2026-10-27 UTC)
 
 ### Scope and repair
