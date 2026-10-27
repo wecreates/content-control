@@ -119,6 +119,9 @@ actual adapters/readback still require separate acceptance.
 An already-aborted publisher returns `STOPPED` before a dry-run queue read or an
 enabled publishing claim. This prevents shutdown from acquiring a release lease,
 reserving quota or applying account cooldown before cancellation is observed.
+If cancellation arrives while the dry-run queue read is in flight, its completed
+read is discarded and the publisher reports `STOPPED` without emitting a healthy
+dry-run log. The read-only scan still acquires no lease and performs no write.
 Cancellation after a claim continues through the existing fail-closed settlement
 path so a claimed lease is never silently abandoned as if no work began. If the
 signal changes while the claim itself is in flight, the publisher settles that
