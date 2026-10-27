@@ -69,6 +69,67 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r314 — stop empty production claims after disable (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`2b5c7e9ec3790745ef304848caa5b93b7ad90bfa` and Money Factory
+`d0eb13a8a1d29e89d1fed8619895b8d1443a31e3` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open pull request overlapped this repair.
+The failed database-administration route had no credible access-path change and
+was not retried.
+
+If `POD_PRODUCTION_ENABLED` changed to false while an empty
+`claimProduction()` call was in flight, direct `produceOnce()` previously
+reported healthy `IDLE` after the switch changed. It now reports `STOPPED`.
+A claim that acquired a lease still uses the existing fenced
+`PRODUCTION_STOPPED` settlement, so no lease is abandoned and no production or
+publication boundary is weakened.
+
+### Verification and merge
+
+- The regression failed against prior `main`: the empty post-disable claim
+  returned `IDLE`. The focused worker, publisher, lease and deployment-policy
+  set passed 78/78 after repair.
+- The complete local Content Control POD Node suite ran 923 tests: 914 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Exact [CC PR 760](https://github.com/wecreates/content-control/pull/760) head
+  `b4d815bce4e8198b4e647fa52bd3b0c57809b238` passed integration run
+  `40588168523` and production-container run `40588168666`. It merged under its
+  exact-head lease as `e5f90bd0b3fc05eb7377daaa9545c9e01a060a51`.
+- Exact [MF PR 269](https://github.com/wecreates/Money-factory/pull/269) head
+  `7992e5cf889b18b89a2334150afbb71050d00e61` changed only the immutable Content
+  Control checkout pin, passed cross-repository run `40589248203`, and merged
+  under its exact-head lease as `ccefc51b54b5e63b203bb0f16a1ebfd574cb51db`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`e5f90bd0b3fc05eb7377daaa9545c9e01a060a51` and started deploy
+`dep-dbghlurbc2fs73fbecig`, but event `evt-dbghlusujklc73fmjbr0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the empty post-disable production-claim status defect. Existing
+code and passing tests are not live acceptance. All 24 acceptance areas remain
+OPEN. Production preflight with real authorities, independently retained
+recovery, deployed availability, mounted Money Factory authority and current
+grants and revocation, real accounts and authorized sources, rights, official
+templates, substantive KDP editorial and preview acceptance, independent review
+and remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r313 — stop disabled work after awaited release boundaries (2026-10-27 UTC)
 
 ### Scope and repair
