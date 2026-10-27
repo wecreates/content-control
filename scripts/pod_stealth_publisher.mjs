@@ -24,11 +24,13 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
   const manifest=await verifyArtifacts(job); // Must hash all files and validate current template/rights/budget.
+  if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   if(!manifest||manifest.package_sha256!==job.manifest?.package_sha256||manifest.release_checks_passed!==true)throw Error('ARTIFACT_VERIFICATION_FAILED');
   signal?.throwIfAborted();
   // Artifact checks may outlive a grant or overlap revocation. Fetch authority
   // afterward, then recheck local lease/account/rights after that network wait.
   const releaseEnvelope=await resolveGrant(job,{signal});
+  if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   if(typeof db.assertPublishable!=='function'||await db.assertPublishable(job)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   // Database contention can itself outlive signed evidence. Verify time-sensitive
