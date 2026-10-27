@@ -55,6 +55,10 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   // Any safety change during migration must roll back the entire transaction.
   assertActive();
   commitAttempted=true;await client.query('COMMIT');
+  // Migration SQL is intentionally extensible and runs with the owner role.
+  // Even a confirmed transaction may have changed session-scoped state, so a
+  // privileged migration client is never returned for unrelated pooled work.
+  discard=true;
  }catch(error){
   // Rejected transaction boundaries leave transport/protocol state uncertain.
   // Do not send follow-up SQL after BEGIN or COMMIT rejects; destroy that
