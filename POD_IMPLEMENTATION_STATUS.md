@@ -69,6 +69,69 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r309 — stop post-claim work after cancellation (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`60233bf95f12acf296d7d361d9e98443c9eceb6b` and Money Factory
+`4d0eccc208d899cb8549269a377e7a286a4f08bb` after reading the current completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and authorized Render service. No open pull request overlapped this repair. The
+failed database-administration route had no credible access-path change and was
+not retried.
+
+If worker cancellation arrived while `claimPublish` was in flight, a returned
+publishing lease previously entered artifact verification before the signal was
+observed. This delayed shutdown and could perform unnecessary bounded artifact
+work for a cancelled release. The publisher now checks cancellation immediately
+after a nonempty claim inside the existing fail-closed settlement boundary, so
+the lease is durably blocked before artifact or adapter work. An empty claim that
+returns after cancellation now reports `STOPPED` rather than `IDLE`.
+
+### Verification and merge
+
+- The regression failed against the prior code because artifact verification ran
+  once after cancellation; the required count was zero. Both claimed and empty
+  post-cancellation paths pass after the repair.
+- The complete local Content Control POD Node suite ran 916 tests: 907 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Exact [CC PR 750](https://github.com/wecreates/content-control/pull/750) head
+  `86abfc1f3c0469c09ab0637a476d19724c05d5b4` passed integration run
+  `40544068819` and production-container run `40544068422`. It merged under its
+  exact-head lease as `4c4f7e5f28f152e948afa2bd1eac44eac619cf3a`.
+- Exact [MF PR 264](https://github.com/wecreates/Money-factory/pull/264) head
+  `b32eb56eabf3d64a21db03c776ea952efe573517` changed only the immutable Content
+  Control checkout pin, passed cross-repository run `40545316052`, and merged
+  under its exact-head lease as `decc009592a63261751ca9da8a7be9db27698363`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`4c4f7e5f28f152e948afa2bd1eac44eac619cf3a` and started deploy
+`dep-dbgddktg1s2s73c4a9o0`, but event `evt-dbgddl5e23hs73bju650` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No manual retry, paid capacity, plan change, replacement
+service, secret access or network widening was attempted. No production migration
+or provider action was run.
+
+This closes only post-claim cancellation work. Existing code and passing
+local/hosted tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with the real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and current
+grants/revocation, real accounts and authorized sources, rights, official
+templates, substantive KDP editorial/preview acceptance, independent review and
+remediation, all five provider adapters, actual economics and reconciliation,
+owner-phone operations, monitoring drills, measured capacity, a real end-to-end
+job and controlled launch remain unverified. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain mandatory;
+no publication occurred. The checked-in Render definition also keeps the POD
+service and production loop false. This run used only its actually available
+bounded tools and did not claim a continuously running self-hosted worker.
+
 ## Run receipt r308 — stop cancelled publishers before claims (2026-10-27 UTC)
 
 ### Scope and repair
