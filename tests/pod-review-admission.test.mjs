@@ -54,5 +54,5 @@ test('an exact safe review target reaches each database boundary unchanged',asyn
 
  const packaged=fixture();
  await assert.rejects(packaged.db.reviewPackage(jobId),/PACKAGE_UNAVAILABLE/);
- assert.equal(packaged.poolQueries(),4);
+ assert.equal(packaged.poolQueries(),6);
 });

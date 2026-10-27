@@ -38,8 +38,8 @@ async function exercise(kind,duplicate,expired){
   }};
   const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
   const run=()=>kind==='market'?recordMarketObservation(db,envelope,key):kind==='finance'?recordFinancialEvent(db,envelope,key):reconcilePublication(db,envelope,key);
-  if(expired){await assert.rejects(run(),/ENVELOPE_EXPIRED_OR_INVALID/);assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.at(-1),'ROLLBACK');}
-  else{await run();assert.equal(queries.at(-1),'COMMIT');}
+  if(expired){await assert.rejects(run(),/ENVELOPE_EXPIRED_OR_INVALID/);assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.at(-3),'ROLLBACK');}
+  else{await run();assert.equal(queries.at(-3),'COMMIT');}
  }finally{Date.now=originalNow;}
 }
 for(const [kind,duplicate] of cases){

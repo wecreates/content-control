@@ -310,6 +310,6 @@ test('direct submitted transition preserves a valid opaque listing ID',async()=>
  })}});
  await db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id});
  assert.equal(queries.find(q=>q.sql.startsWith('UPDATE')).args[1],id);
- assert.equal(queries.at(-1).sql,'COMMIT');
+ assert.equal(queries.at(-3).sql,'COMMIT');
 });
 

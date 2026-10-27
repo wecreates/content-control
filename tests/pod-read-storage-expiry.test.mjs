@@ -22,7 +22,24 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
   {sql:"SET LOCAL statement_timeout='10s'",args:undefined},
   {sql:{text:'SELECT fixture',values:['bound'],queryMode:'extended'},args:undefined},
   {sql:'COMMIT',args:undefined},
+  {sql:'DISCARD ALL',args:undefined},
+  {sql:'SET search_path=pg_catalog,public',args:undefined},
  ]);
+ assert.deepEqual(releases,[false]);
+});
+
+test('guarded reads scrub committed session state before returning the pooled client',async()=>{
+ const queries=[],releases=[];let applicationName='pool-default';
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;queries.push(text);
+  if(text.startsWith('SELECT set_config'))applicationName='read-poison';
+  if(text==='DISCARD ALL')applicationName='pool-default';
+  return {rows:[{application_name:applicationName}]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await db.read("SELECT set_config('application_name','read-poison',false)");
+ assert.equal(applicationName,'pool-default');
+ assert.deepEqual(queries.slice(-2),['DISCARD ALL','SET search_path=pg_catalog,public']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -33,7 +50,7 @@ for(const sql of ['COMMIT',' -- reader must not own completion\nROLLBACK'])test(
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read(sql),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
- assert.deepEqual(queries,['BEGIN READ ONLY',"SET LOCAL statement_timeout='10s'",'ROLLBACK']);
+ assert.deepEqual(queries,['BEGIN READ ONLY',"SET LOCAL statement_timeout='10s'",'ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -48,7 +65,7 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
  }};
  db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read('SELECT fixture'),/^Error: POD_STORAGE_EXPIRING$/);
- assert.equal(queries.at(-1),'ROLLBACK');assert.equal(queries.includes('COMMIT'),false);
+ assert.deepEqual(queries.slice(-3),['ROLLBACK','DISCARD ALL','SET search_path=pg_catalog,public']);assert.equal(queries.includes('COMMIT'),false);
  if(expiryStage!=='query')assert.equal(queries.includes('SELECT fixture'),false);
  assert.deepEqual(releases,[false]);
 });

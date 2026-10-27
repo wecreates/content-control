@@ -28,7 +28,7 @@ for(const valid of [true,false])test('production stage guard checks live lease a
  const lock=f.queries.findIndex(q=>q.includes('FOR SHARE OF q,p'));
  const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
  assert.ok(lock>=0&&clock>lock);
- assert.equal(f.queries.at(-1),valid?'COMMIT':'ROLLBACK');
+ assert.equal(f.queries.at(-3),valid?'COMMIT':'ROLLBACK');
 });
 for(const [label,run] of [
  ['failure',(db)=>db.failProduction(job,'QA_FAILED')],
@@ -37,13 +37,13 @@ for(const [label,run] of [
 ]){
  test('expired production lease blocks '+label+' without writes',async()=>{
   const f=fixture(false);await assert.rejects(run(f.db),/LEASE_LOST/);
-  assert.equal(f.writes.length,0);assert.equal(f.queries.at(-1),'ROLLBACK');
+  assert.equal(f.writes.length,0);assert.equal(f.queries.at(-3),'ROLLBACK');
  });
  test('valid production lease permits '+label,async()=>{
   const f=fixture(true);await run(f.db);assert.ok(f.writes.length>0);
   const lock=f.queries.findIndex(q=>q.includes('FOR UPDATE'));
   const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
-  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'COMMIT');
+  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-3),'COMMIT');
  });
 }
 for(const [label,state,receipt,reason] of [
@@ -56,14 +56,14 @@ for(const [label,state,receipt,reason] of [
   assert.equal(f.writes.length,0);
   const lock=f.queries.findIndex(q=>q.includes("state='publishing' FOR UPDATE"));
   const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
-  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'ROLLBACK');
+  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-3),'ROLLBACK');
  });
  test('valid publication lease permits '+label,async()=>{
   const f=fixture(true);await f.db.finish(job,state,receipt,reason);
   assert.ok(f.writes.length>0);
   const lock=f.queries.findIndex(q=>q.includes("state='publishing' FOR UPDATE"));
   const clock=f.queries.findIndex(q=>q.startsWith('SELECT')&&q.includes('clock_timestamp()'));
-  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-1),'COMMIT');
+  assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-3),'COMMIT');
  });
 }
 test('publication settlement rejects extra payload and arbitrary reasons before database access',async()=>{
