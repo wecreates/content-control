@@ -48,13 +48,20 @@ def repair(ccsd,report,assembly,audio,samples,observe):
   return None
  for n,bounds in enumerate(ranges):
   lo,hi=map(mapped_boundary,bounds)
-  issue=timing_issue(report['words'][lo:hi])
+  words=report['words'][lo:hi]
+  issue=timing_issue(words)
   if issue:affected.add(n);reasons.setdefault(n,[]).append(issue)
+  window_start=scenes[n]['start']
+  window_end=scenes[n+1]['start'] if n+1<len(scenes) else assembly['duration']
+  if any(word['start']<window_start or word['end']>window_end for word in words):
+   affected.add(n);reasons.setdefault(n,[]).append('observed_words_leave_dialogue_window')
  if not affected:return copy.deepcopy(report)
  replacements=[];proof=[]
  for n in sorted(affected):
   scene,w=scenes[n],windows[n];line=scene['audio']['dialogue'][0]
-  first,last=round(w['start']*16000),round(w['end']*16000)
+  # Choose actual samples wholly inside the source window. Nearest rounding
+  # can put a crop's first sample before a fractional-frame scene boundary.
+  first,last=math.ceil(w['start']*16000),math.floor(w['end']*16000)
   if not 0<=first<last<=len(samples):raise ValueError('Invalid crop sample bounds')
   crop=samples[first:last];local=list(observe(crop))
   if norm(' '.join(x['word'] for x in local))!=norm(line['text']):raise ValueError('Independent crop still differs: '+scene['id'])

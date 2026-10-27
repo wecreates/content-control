@@ -3,7 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from scripts.v2_execution import StageRunner, job_lock, video_render_command
+from scripts.v2_execution import StageRunner, job_lock, video_render_command, mark_review_candidate
 
 
 class RenderCommandTests(unittest.TestCase):
@@ -237,3 +237,30 @@ class ProductionCacheTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CompletionStatusTests(unittest.TestCase):
+    def test_resolved_error_is_history_not_current_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            candidate = Path(directory) / 'candidate.mp4'
+            candidate.write_bytes(b'actual-test-bytes')
+            state = {'stages': {'qa': {'status': 'PASS'}}, 'reason': 'old captions failure',
+                     'error': 'old stage error', 'publication_enabled': False, 'production_approved': False}
+            mark_review_candidate(state, candidate)
+            self.assertNotIn('reason', state)
+            self.assertNotIn('error', state)
+            self.assertEqual(state['resolved_failures'][0]['details']['reason'], 'old captions failure')
+            self.assertEqual(state['resolved_failures'][0]['resolved_candidate_sha256'], state['candidate_sha256'])
+            self.assertEqual(state['status'], 'REVIEW_CANDIDATE')
+            self.assertEqual(state['creative_review'], 'PENDING')
+            self.assertEqual(state['audio_listening_review'], 'PENDING')
+            self.assertIs(state['publication_enabled'], False)
+            self.assertIs(state['production_approved'], False)
+            mark_review_candidate(state, candidate)
+            self.assertEqual(len(state['resolved_failures']), 1)
+
+    def test_failed_stage_cannot_clear_current_error(self):
+        state = {'stages': {'qa': {'status': 'FAILED'}}, 'reason': 'actual failure'}
+        with self.assertRaises(ValueError):
+            mark_review_candidate(state, Path('missing.mp4'))
+        self.assertEqual(state['reason'], 'actual failure')

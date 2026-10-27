@@ -1,0 +1,80 @@
+name: Long repaired visual candidate
+on:
+  push:
+    branches: [codex/long-caption-diagnostic-20261023]
+    paths: ['.github/workflows/long-caption-diagnostic.yml', 'scripts/render_long_storyboard_previews.py', 'remotion/Long*', 'remotion/StudioLongComposition.jsx', 'tests/long-*-motion.test.mjs', 'tests/studio-long-layout.test.mjs']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  preview:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: npm ci
+      - name: Verify retained review source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path]))
+          preview=api('actions/runs/40017320008')
+          assert preview['head_sha']=='0689e8feb3fad0a715b5c2a6aa55a96e7236268b' and preview['conclusion']=='success'
+          run=api('actions/runs/40003210434')
+          assert run['head_sha']=='8af9738a6523f2efe623b7249d556cdfe94f3a6a' and run['conclusion']=='success'
+          for aid,name in [(12522178951,'long-review-video'),(12522912674,'long-review-evidence')]:
+              a=api('actions/artifacts/'+str(aid))
+              assert a['workflow_run']['id']==40003210434 and a['name']==name and not a['expired']
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: '12522178951,12522912674'
+          run-id: '40003210434'
+          github-token: ${{ github.token }}
+          path: retained
+          merge-multiple: true
+      - name: Stage verified observed caption fixture
+        run: |
+          mkdir -p evidence/actual-long/receipts
+          python - <<'PY'
+          import hashlib,pathlib,shutil
+          p=pathlib.Path('retained/captions.json')
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='380ac054c17bbe8d5709a313cbe51817918452f84658aad5feb4f27403546c02'
+          shutil.copyfile(p,'evidence/actual-long/receipts/captions.json')
+          PY
+      - name: Test exact cue-driven motion and all scene integrations
+        run: node --test tests/long-*-motion.test.mjs tests/studio-long-layout.test.mjs
+      - name: Install pinned image-analysis runtime
+        timeout-minutes: 3
+        run: |
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 --require-hashes --only-binary=:all: -r requirements-media-runtime.txt
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy==2.2.6 opencv-python-headless==4.12.0.88
+          python scripts/setup_pinned_media_runtime.py --bin-dir "$RUNNER_TEMP/content-control-media-bin" --github-path
+      - name: Test full media capabilities and unchanged QA guards
+        run: python -m unittest tests.test_setup_pinned_media_runtime tests.test_production_reality_media_qa tests.test_long_storyboard_previews -v
+      - name: Verify repository system and workflow registration
+        run: npm run test:system
+      - name: Recheck every encoded preview after headline-clearance fix
+        run: python scripts/render_long_storyboard_previews.py
+      - name: Render full repaired visuals and verify unchanged encoded audio
+        run: python scripts/render_long_visual_candidate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: long-repaired-review
+          path: |
+            long-visual-candidate/candidate.mp4
+            long-visual-candidate/caption-frames.json
+            long-visual-candidate/media-qa.json
+            long-visual-candidate/review-receipt.json
+            storyboard-preview/preview-receipt.json
+          retention-days: 14
+          if-no-files-found: error

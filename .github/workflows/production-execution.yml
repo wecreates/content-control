@@ -36,6 +36,9 @@ on:
       - 'tests/test_historical_runtime_regressions.py'
       - 'integrations/watch-video/**'
       - '.github/workflows/production-execution.yml'
+      - 'requirements-media-runtime.txt'
+      - 'scripts/setup_pinned_media_runtime.py'
+      - 'tests/test_setup_pinned_media_runtime.py'
 permissions:
   contents: read
   actions: read
@@ -45,6 +48,7 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -53,12 +57,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install test media dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq ffmpeg
-          python -m pip install --disable-pip-version-check numpy
       - run: npm ci
+      - name: Install hash-pinned full media runtime
+        timeout-minutes: 3
+        run: |
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 --require-hashes --only-binary=:all: -r requirements-media-runtime.txt
+          python -m pip install --disable-pip-version-check --timeout 30 --retries 1 numpy
+          python scripts/setup_pinned_media_runtime.py --bin-dir "$RUNNER_TEMP/content-control-media-bin" --github-path
+          python -m unittest tests.test_setup_pinned_media_runtime -v
       - run: python -m unittest tests.test_record_production_execution -v
       - run: node --test tests/production-status.test.mjs
       - run: npm run test:system
