@@ -133,7 +133,6 @@ the POD service and production loop false. This run used only its actually
 available bounded tools and did not claim a continuously running self-hosted
 worker.
 
-
 ## Run receipt r306 — clear stale listing-reconciliation reasons (2026-10-27 UTC)
 
 ### Scope and repair
