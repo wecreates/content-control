@@ -71,7 +71,7 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
 export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();assertPublicationDisabled(env);
  const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
- let client;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false;
+ let client;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
   client=await db.pool.connect();
   beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
@@ -93,7 +93,8 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   }
   const catalog=Buffer.from(JSON.stringify({schema_version:1,scope:'artifacts_only',created_at:new Date().toISOString(),items}));
   if(catalog.length>MAX_CATALOG)throw Error('ARCHIVE_CATALOG_TOO_LARGE');
-  assertPublicationDisabled(env);await client.query('COMMIT');signal?.throwIfAborted();assertPublicationDisabled(env);
+  assertPublicationDisabled(env);commitPending=true;await client.query('COMMIT');commitPending=false;began=false;beginAttempted=false;
+  signal?.throwIfAborted();assertPublicationDisabled(env);
   // Written last: an interrupted export without this catalog is not restorable.
   const encryptedCatalog=seal(catalog,key,'pod:artifact-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encryptedCatalog);
@@ -111,9 +112,10 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   assertPublicationDisabled(env);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){
-  // An unsuccessful rollback leaves transaction state unknown. Never return
-  // that connection to the pool, and preserve the original export failure.
-  if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  // COMMIT rejection has an indeterminate outcome: never issue later SQL or
+  // return that connection to the pool. Preserve the original export failure.
+  if(client&&commitPending)bad=true;
+  else if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}

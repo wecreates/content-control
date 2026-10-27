@@ -113,7 +113,7 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
  const checkpoint=()=>{signal?.throwIfAborted();disabled(env);};
  config(directory,key);checkpoint();const budget=artifactBudgetBytes(env);
- const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false;
+ const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
   checkpoint();
   client=await db.pool.connect();checkpoint();
@@ -143,7 +143,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
    await client.query('CLOSE pod_state_export');checkpoint();
   }
   const body=Buffer.from(JSON.stringify(catalog));if(body.length>MAX_CATALOG)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
-  checkpoint();await client.query('COMMIT');checkpoint();
+  checkpoint();commitPending=true;await client.query('COMMIT');commitPending=false;began=false;beginAttempted=false;checkpoint();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encrypted);checkpoint();
   await assertArchiveDirectory(directory,opened);checkpoint();await syncArchiveDirectory(directory,opened);checkpoint();
@@ -159,8 +159,10 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){
-  // Failed rollback makes the connection unsafe for subsequent pooled work.
-  if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  // COMMIT rejection has an indeterminate outcome: never issue later SQL or
+  // return that connection to the pool. Preserve the original export failure.
+  if(client&&commitPending)bad=true;
+  else if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}
