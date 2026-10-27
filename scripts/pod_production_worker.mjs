@@ -13,7 +13,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
  const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});
- const job=await db.claimProduction();if(!job)return {status:'IDLE'};
+ const job=await db.claimProduction();if(!job)return {status:signal?.aborted?'STOPPED':'IDLE'};
  let task;
  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
