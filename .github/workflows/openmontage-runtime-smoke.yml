@@ -1,0 +1,102 @@
+name: OpenMontage actual renderer smoke
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/openmontage-runtime-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: openmontage-runtime-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free media tools
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+      - name: Fetch exact reviewed upstream source
+        env:
+          UPSTREAM_PIN: 9327439db69021ab4b0e2776729bf3b58fdb5a87
+        run: |
+          git clone --filter=blob:none https://github.com/calesthio/OpenMontage.git "$RUNNER_TEMP/OpenMontage"
+          git -C "$RUNNER_TEMP/OpenMontage" checkout --detach "$UPSTREAM_PIN"
+          test "$(git -C "$RUNNER_TEMP/OpenMontage" rev-parse HEAD)" = "$UPSTREAM_PIN"
+          test -z "$(git -C "$RUNNER_TEMP/OpenMontage" status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/openmontage-evidence"
+          cp "$RUNNER_TEMP/OpenMontage/LICENSE" "$RUNNER_TEMP/openmontage-evidence/UPSTREAM-LICENSE"
+      - name: Install locked composer without lifecycle scripts
+        run: |
+          cd "$RUNNER_TEMP/OpenMontage/remotion-composer"
+          npm ci --ignore-scripts --no-audit --no-fund
+      - name: Create original synthetic runtime fixture
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "openmontage-evidence"
+          fixture = {
+              "theme": "flat-motion-graphics",
+              "cuts": [
+                  {"id":"test-one","source":"","type":"hero_title","in_seconds":0,"out_seconds":3,
+                   "text":"CYZOR runtime check","subtitle":"Original synthetic test • no provider generation",
+                   "backgroundColor":"#10203A"},
+                  {"id":"test-two","source":"","type":"callout","in_seconds":3,"out_seconds":6,
+                   "title":"Local composition","text":"Two scenes. Animated typography. Verified export.",
+                   "callout_type":"tip","accentColor":"#39D6B0","backgroundColor":"#10203A","color":"#FFFFFF"}
+              ],
+              "overlays": [], "captions": [], "audio": {}
+          }
+          (root / "fixture.json").write_text(json.dumps(fixture, indent=2))
+          PY
+      - name: Render through actual upstream OpenMontage composer
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP/OpenMontage/remotion-composer"
+          ./node_modules/.bin/remotion render src/index.tsx Explainer "$RUNNER_TEMP/openmontage-evidence/visual.mp4" --props "$RUNNER_TEMP/openmontage-evidence/fixture.json" --codec h264 --scale 0.5 --concurrency 2 2>&1 | tee "$RUNNER_TEMP/openmontage-evidence/render.log"
+      - name: Mix original synthetic audio and independently decode output
+        run: |
+          ffmpeg -v error -y -i "$RUNNER_TEMP/openmontage-evidence/visual.mp4" -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=7" -map 0:v:0 -map 1:a:0 -c:v copy -c:a aac -af volume=0.04 -shortest "$RUNNER_TEMP/openmontage-evidence/runtime-smoke.mp4"
+          ffmpeg -v error -i "$RUNNER_TEMP/openmontage-evidence/runtime-smoke.mp4" -f null -
+          ffprobe -v error -show_format -show_streams -of json "$RUNNER_TEMP/openmontage-evidence/runtime-smoke.mp4" > "$RUNNER_TEMP/openmontage-evidence/ffprobe.json"
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "openmontage-evidence"
+          probe = json.loads((root / "ffprobe.json").read_text())
+          video = next(s for s in probe["streams"] if s["codec_type"] == "video")
+          audio = next(s for s in probe["streams"] if s["codec_type"] == "audio")
+          assert video["codec_name"] == "h264"
+          assert (video["width"], video["height"]) == (960, 540)
+          assert audio["codec_name"] == "aac"
+          assert 6.9 <= float(probe["format"]["duration"]) <= 7.2
+          receipt = {
+              "status":"PASS", "scope":"Actual upstream Remotion composition and synthetic audio mux; no AI model generation",
+              "upstream":"calesthio/OpenMontage", "upstream_commit":"9327439db69021ab4b0e2776729bf3b58fdb5a87",
+              "sha256":hashlib.sha256((root / "runtime-smoke.mp4").read_bytes()).hexdigest(),
+              "duration_seconds":float(probe["format"]["duration"]), "video_codec":"h264", "audio_codec":"aac",
+              "width":960, "height":540, "full_decode_passed":True,
+              "paid_provider_calls":False, "publication_enabled":False,
+              "full_pipeline_accepted":False, "voice_narration_tested":False
+          }
+          (root / "receipt.json").write_text(json.dumps(receipt, indent=2))
+          print(json.dumps(receipt, indent=2))
+          PY
+      - name: Retain bounded test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openmontage-runtime-smoke
+          path: ${{ runner.temp }}/openmontage-evidence/
+          if-no-files-found: warn
+          retention-days: 3
