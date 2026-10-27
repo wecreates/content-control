@@ -49,7 +49,8 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // response. Never issue a second settlement transaction or expose private
   // database diagnostics; durable recovery/readback owns this uncertainty.
   if(submittedSettlementAttempted)throw Error('SUBMISSION_SETTLEMENT_UNCERTAIN');
-  await db.finish(job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED');
+  try{await db.finish(job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED');}
+  catch{throw Error(submitted?'SUBMISSION_SETTLEMENT_UNCERTAIN':'RELEASE_SETTLEMENT_UNCERTAIN');}
   return {status:submitted?'AMBIGUOUS':'BLOCKED',job_id:job.id};
  }
 }
