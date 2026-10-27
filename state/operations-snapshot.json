@@ -50,8 +50,8 @@
     "high": 8,
     "info": 0,
     "low": 0,
-    "moderate": 0,
-    "total": 8
+    "moderate": 3,
+    "total": 11
   },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
