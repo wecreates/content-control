@@ -41,7 +41,7 @@ export async function reconcilePublication(db,envelope,key){
   // A fresh observation is new evidence, not another publication transition.
   // The job row lock serializes concurrent observations with different event IDs.
   if(job.state==='published'){verifyEnvelope(envelope,key,'content-control:pod:listing-observation');return {published:true,already_published:true};}
-  await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
+  await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,reason_code=NULL,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
   db.active();
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.published',{provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]);
   db.active();
