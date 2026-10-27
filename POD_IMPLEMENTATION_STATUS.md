@@ -69,6 +69,69 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r298 — discard uncertain Money Factory inbox clients (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`bd3fe4ac69874d70cc46596d190d69ea266d95ed` and Money Factory
+`9da45e99d64d58e72f0c5be593570608c355b40b`, after reading the current
+completion, implementation and free-deployment records, open pull requests,
+workflow results and the authorized existing Render service. No open pull
+request overlapped this repair. The failed database-administration route had no
+credible access-path change and was not retried.
+
+Money Factory's signed POD event inbox still attempted `ROLLBACK` after its
+initial `BEGIN` rejected. That could send additional SQL on a client whose
+protocol state was uncertain and then return it to the pool if rollback happened
+to succeed. The inbox now sends no follow-up SQL and destroys the client after a
+failed transaction open. Failures after a confirmed `BEGIN` retain normal
+rollback cleanup, and failed rollback still destroys the client while preserving
+the original failure.
+
+### Verification and merge
+
+- Regression-first verification passed four of six focused transaction checks
+  and failed exactly the two new failed-open assertions against the prior
+  implementation. The repaired focused suite passed 6/6.
+- The complete local Money Factory POD Node suite ran 119 tests: 118 passed,
+  one environment-dependent PostgreSQL case skipped and zero failed. The local
+  Python production/review suite passed 81/81. Syntax and whitespace checks
+  passed.
+- Review of the exact published two-file diff found no material correctness,
+  security or connection-lifecycle issue.
+- Exact [MF PR 253](https://github.com/wecreates/Money-factory/pull/253) head
+  `4309de1e403e5b84e9ba8fc10fbab30e6972970d` passed cross-repository run
+  `40458307916`. Every hosted stage passed, including the disposable PostgreSQL
+  service-container checks, pinned Content Control contracts, locked Python
+  review/rendering suites, official-template, rights, KDP pairing and
+  editorial-bound checks, and the complete Money Factory Node and Python suites.
+- PR 253 merged under an exact-head lease as
+  `8e7b501d5644ce562de2a5ddbebb9796f592bf61`.
+
+### Deployment and acceptance truth
+
+This is a Money Factory authority/inbox repair; it does not change the Content
+Control runtime image. The durable receipt is published with `[skip render]` and
+must not consume deployment capacity. The previously inspected authorized
+Render service remains quota-blocked at the last functional Content Control
+merge; no manual retry, paid capacity, cache/plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes one failed-open inbox client-reuse path only. Existing code and
+passing local/hosted tests are not live acceptance. All 24 acceptance areas
+remain OPEN. Production database role and migrations, independently retained
+recovery, hosted availability, deployed Money Factory authority, current grants
+and revocation, real accounts, authorized market sources, rights, official
+templates, independent review, all five provider adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity, a
+real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. The checked-in Render definition also
+keeps the POD service and production loop false. This run used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r297 — isolate privileged transaction opens (2026-10-27 UTC)
 
 ### Scope and repair
