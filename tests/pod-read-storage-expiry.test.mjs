@@ -79,14 +79,14 @@ test('guarded read preserves query failure and discards a client whose rollback 
  assert.equal(queries.at(-1),'ROLLBACK');assert.deepEqual(releases,[true]);
 });
 
-test('guarded read does not roll back when opening the transaction fails',async()=>{
+test('guarded read discards an uncertain client when opening the transaction fails',async()=>{
  const original=Error('BEGIN_FAILURE'),queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{
   queries.push(sql);throw original;
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read('SELECT fixture'),error=>error===original);
- assert.deepEqual(queries,['BEGIN READ ONLY']);assert.deepEqual(releases,[false]);
+ assert.deepEqual(queries,['BEGIN READ ONLY']);assert.deepEqual(releases,[true]);
 });
 
 test('all production read paths stop before SQL when storage expires during connection acquisition',async()=>{

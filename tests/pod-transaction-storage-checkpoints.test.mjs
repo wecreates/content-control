@@ -36,9 +36,10 @@ test('transaction rejects an invalid wall clock before database access',async()=
 });
 
 test('transaction stops before BEGIN when storage expires during connection acquisition',async()=>{
- const {db,calls}=fixture({expireOnConnect:true});
+ const {db,calls,releases}=fixture({expireOnConnect:true});
  await assert.rejects(db.tx(()=>assert.fail('transaction callback reached')),/POD_STORAGE_EXPIRING/);
  assert.deepEqual(calls,[]);
+ assert.deepEqual(releases,[false]);
 });
 
 test('transaction stops before setup when storage expires during BEGIN',async()=>{
@@ -222,11 +223,11 @@ test('transaction preserves a committed result but discards a client when sessio
  assert.deepEqual(releases,[true]);
 });
 
-test('transaction does not roll back when opening the transaction fails',async()=>{
+test('transaction discards an uncertain client when opening the transaction fails',async()=>{
  const original=Error('BEGIN_FAILURE'),calls=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{calls.push(sql);throw original;}};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.tx(()=>assert.fail('transaction callback reached')),error=>error===original);
  assert.deepEqual(calls,['BEGIN']);
- assert.deepEqual(releases,[false]);
+ assert.deepEqual(releases,[true]);
 });
