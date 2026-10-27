@@ -6,6 +6,7 @@ import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/e
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
  verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
+ if(signal?.aborted)return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
  if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true') {
   const jobs=await db.listReady();log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));

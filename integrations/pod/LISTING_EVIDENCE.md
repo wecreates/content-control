@@ -116,6 +116,12 @@ receipt boundaries, plus direct database-transition admission. Test publication
 flags enable in-memory doubles only; live publication flags remain false and
 actual adapters/readback still require separate acceptance.
 
+An already-aborted publisher returns `STOPPED` before a dry-run queue read or an
+enabled publishing claim. This prevents shutdown from acquiring a release lease,
+reserving quota or applying account cooldown before cancellation is observed.
+Cancellation after a claim continues through the existing fail-closed settlement
+path so a claimed lease is never silently abandoned as if no work began.
+
 ## Release lease settlement
 
 The final submitted, ambiguous or blocked transition locks the publishing row
