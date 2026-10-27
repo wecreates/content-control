@@ -80,6 +80,11 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    client.release();
   }),/POD_TRANSACTION_CLIENT_CONTROL_FORBIDDEN/);
   assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
+  await assert.rejects(db.tx(client=>{
+   void client.query('SELECT * FROM pod_missing_unawaited_fixture').catch(()=>{});
+   return 'must not commit';
+  }),error=>error.code==='42P01');
+  assert.deepEqual((await pool.query("SELECT envelope FROM cyzor_social_vault WHERE id='owner'")).rows[0].envelope,{preserve:true});
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
   await verifyConceptBudget(pool,bridge);
