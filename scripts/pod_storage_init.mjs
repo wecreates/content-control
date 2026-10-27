@@ -8,9 +8,9 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
  if(provisionPassword!==undefined&&(!/^pod_[a-z0-9_]+$/.test(runtimeRole)||typeof provisionPassword!=='string'||Buffer.byteLength(provisionPassword)<32||provisionPassword.includes('\0')))throw Error('PROVISION_CONFIG_INVALID');
  const client=await pool.connect();
- let discard=false;
+ let discard=false,began=false,beginAttempted=false;
  try {
-  await client.query('BEGIN');
+  beginAttempted=true;await client.query('BEGIN');began=true;
   await client.query("SET LOCAL lock_timeout='10s'");
   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
   // Recheck deployment safety after connection and lock waits, before DDL.
@@ -56,9 +56,11 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   assertActive();
   await client.query('COMMIT');
  }catch(error){
-  // A failed rollback leaves transaction state unknown. Never return that
-  // connection to the pool, and keep the original error for safe diagnostics.
-  try{await client.query('ROLLBACK');}catch{discard=true;}
+  // A rejected BEGIN leaves transport/protocol state uncertain. Do not send
+  // follow-up SQL on that client; destroy it instead. Once BEGIN succeeds,
+  // rollback remains the safe cleanup path and its failure also destroys it.
+  if(began)try{await client.query('ROLLBACK');}catch{discard=true;}
+  else if(beginAttempted)discard=true;
   throw error;
  }finally{client.release(discard);}
 }

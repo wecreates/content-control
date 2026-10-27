@@ -4,7 +4,7 @@ import {migrate} from '../scripts/pod_storage_init.mjs';
 import {deploymentFailure} from '../scripts/pod_deploy_database.mjs';
 
 for(const stage of ['BEGIN','lock','safety'])for(const rollbackFails of [false,true]){
- test(`migration preserves ${stage} failure and ${rollbackFails?'discards':'reuses'} its client after rollback`,async()=>{
+ test(`migration preserves ${stage} failure and safely ${stage==='BEGIN'||rollbackFails?'discards':'reuses'} its client`,async()=>{
   const original=Error('STORAGE_EXPIRING');
   const cleanup=Error('fixture-secret-password in rollback diagnostic');
   const queries=[],releases=[];
@@ -16,9 +16,10 @@ for(const stage of ['BEGIN','lock','safety'])for(const rollbackFails of [false,t
   },release:destroy=>releases.push(Boolean(destroy))};
   await assert.rejects(migrate({connect:async()=>client},'pod_runtime',undefined,
    {assertActive:()=>{throw original;}}),error=>error===original);
-  assert.deepEqual(releases,[rollbackFails]);
-  assert.equal(queries.filter(sql=>sql==='ROLLBACK').length,1);
-  assert.equal(queries.at(-1),'ROLLBACK');
+  const beginRejected=stage==='BEGIN';
+  assert.deepEqual(releases,[beginRejected||rollbackFails]);
+  assert.equal(queries.filter(sql=>sql==='ROLLBACK').length,beginRejected?0:1);
+  assert.equal(queries.at(-1),beginRejected?'BEGIN':'ROLLBACK');
   assert.equal(queries.includes('COMMIT'),false);
   assert.equal(queries.some(sql=>/^(CREATE|GRANT|INSERT)/.test(sql)),false);
   assert.deepEqual(deploymentFailure(original),{status:'BLOCKED',reason:'STORAGE_EXPIRING',publication_enabled:false});

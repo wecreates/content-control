@@ -32,11 +32,11 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
   assertBridge(bridge);check('BRIDGE_CONTRACT',true);
  }catch{check('BRIDGE_CONTRACT',false);}
  check('DEDICATED_DATABASE_CONFIGURED',!!env.POD_DATABASE_URL);
- let pool,client,readable=false,bad=false;
+ let pool,client,readable=false,bad=false,began=false,beginAttempted=false;
  if(env.POD_DATABASE_URL)try{
   const factory=connect|| (async e=>(await import('../pod-db-bridge.js')).createPodPool(e));
   pool=await factory(env);client=await pool.connect();
-  await client.query('BEGIN READ ONLY');
+  beginAttempted=true;await client.query('BEGIN READ ONLY');began=true;
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
   const searchPath=(await client.query('SELECT current_schemas(false) AS search_path')).rows[0]?.search_path;
@@ -102,9 +102,11 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
  }catch{readable=false;}
  finally{
   if(client){
-   // Startup borrows a service-owned pool. A failed rollback must invalidate
-   // the report as well as discard the connection with unknown transaction state.
-   try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
+   // Startup may borrow a service-owned pool. Never probe a client again after
+   // BEGIN rejects; its protocol state is uncertain. A confirmed transaction
+   // still uses rollback, whose failure also invalidates and destroys it.
+   if(began)try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
+   else if(beginAttempted)bad=true;
    client.release(bad);
   }
   if(pool)await pool.end().catch(()=>{});
