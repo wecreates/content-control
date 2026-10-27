@@ -44,6 +44,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
   const coverEnvelope=await readSignedJSONFile(task.template,{signal});
+  enabled();
   const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
   let interiorTemplate;
   if(job.brief.platform==='kdp'){
