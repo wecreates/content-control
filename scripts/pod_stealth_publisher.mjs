@@ -9,7 +9,8 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  if(signal?.aborted)return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
  if(env.PUBLICATION_ENABLED!=='true'||env.POD_PUBLICATION_ENABLED!=='true') {
-  const jobs=await db.listReady();log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
+  const jobs=await db.listReady();if(signal?.aborted)return {status:'STOPPED'};
+  log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
