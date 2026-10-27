@@ -8,7 +8,7 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(runtimeRole||''))throw Error('RUNTIME_ROLE_REQUIRED');
  if(provisionPassword!==undefined&&(!/^pod_[a-z0-9_]+$/.test(runtimeRole)||typeof provisionPassword!=='string'||Buffer.byteLength(provisionPassword)<32||provisionPassword.includes('\0')))throw Error('PROVISION_CONFIG_INVALID');
  const client=await pool.connect();
- let discard=false,began=false,beginAttempted=false;
+ let discard=false,began=false,beginAttempted=false,commitAttempted=false;
  try {
   beginAttempted=true;await client.query('BEGIN');began=true;
   await client.query("SET LOCAL lock_timeout='10s'");
@@ -54,12 +54,13 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   await client.query(`GRANT SELECT ON pod_schema_version TO "${runtimeRole}"`);
   // Any safety change during migration must roll back the entire transaction.
   assertActive();
-  await client.query('COMMIT');
+  commitAttempted=true;await client.query('COMMIT');
  }catch(error){
-  // A rejected BEGIN leaves transport/protocol state uncertain. Do not send
-  // follow-up SQL on that client; destroy it instead. Once BEGIN succeeds,
-  // rollback remains the safe cleanup path and its failure also destroys it.
-  if(began)try{await client.query('ROLLBACK');}catch{discard=true;}
+  // Rejected transaction boundaries leave transport/protocol state uncertain.
+  // Do not send follow-up SQL after BEGIN or COMMIT rejects; destroy that
+  // client. Before COMMIT is attempted, normal rollback remains safe cleanup.
+  if(commitAttempted)discard=true;
+  else if(began)try{await client.query('ROLLBACK');}catch{discard=true;}
   else if(beginAttempted)discard=true;
   throw error;
  }finally{client.release(discard);}
