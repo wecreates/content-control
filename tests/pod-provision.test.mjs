@@ -42,6 +42,23 @@ for(const rollbackFails of [false,true])test(`migration ${rollbackFails?'discard
  }finally{await pool.end();}
 });
 
+test('confirmed privileged migration destroys its backend before pool reuse',
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+ const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:1});
+ const role='pod_success_'+crypto.randomBytes(5).toString('hex');
+ try{
+  const before=(await pool.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  await migrate(pool,role,undefined,{provisionPassword:'fixture-success-password-'.repeat(3)});
+  assert.equal(pool.totalCount,0);
+  const after=(await pool.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+  assert.notEqual(after,before);
+ }finally{
+  await pool.query(`DROP OWNED BY "${role}"`).catch(()=>{});
+  await pool.query(`DROP ROLE IF EXISTS "${role}"`).catch(()=>{});
+  await pool.end();
+ }
+});
+
 test('invalid provision identity and short secrets fail before database access',async()=>{
  const pool={connect:()=>{throw Error('must not connect');}};
  await assert.rejects(migrate(pool,'unrelated_user',undefined,{provisionPassword:'a'.repeat(40)}),/PROVISION_CONFIG_INVALID/);
