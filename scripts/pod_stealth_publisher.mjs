@@ -13,7 +13,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
  const job=await db.claimPublish(accountId,crypto.randomInt(45,181));if(!job)return {status:'IDLE'};
- let submitted=false;
+ let submitted=false,submittedSettlementAttempted=false;
  try{
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
@@ -41,9 +41,14 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // Match the observer's opaque listing-ID contract. A malformed receipt is
   // uncertain submission, never a submitted row that readback cannot reconcile.
   if(!validOpaqueText(receipt?.id))throw Error('RECEIPT_INVALID');
+  submittedSettlementAttempted=true;
   await db.finish(job,'submitted',{id:receipt.id});
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){
+  // A failed submitted transition may have committed despite its rejected
+  // response. Never issue a second settlement transaction or expose private
+  // database diagnostics; durable recovery/readback owns this uncertainty.
+  if(submittedSettlementAttempted)throw Error('SUBMISSION_SETTLEMENT_UNCERTAIN');
   await db.finish(job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED');
   return {status:submitted?'AMBIGUOUS':'BLOCKED',job_id:job.id};
  }
