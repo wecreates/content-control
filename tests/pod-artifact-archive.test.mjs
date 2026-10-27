@@ -434,7 +434,12 @@ for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false
   };
   client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
   await assert.rejects(exportArtifactLibrary(db,{directory,key}),error=>error===failure);
-  assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+  if(phase==='BEGIN'){
+   assert.deepEqual(calls,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+   assert.deepEqual(releases,[true]);
+  }else{
+   assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+  }
   await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),error=>error.code==='ENOENT');
  });
 }

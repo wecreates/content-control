@@ -113,11 +113,11 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
  const checkpoint=()=>{signal?.throwIfAborted();disabled(env);};
  config(directory,key);checkpoint();const budget=artifactBudgetBytes(env);
- const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false;
+ const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false;
  try{
   checkpoint();
   client=await db.pool.connect();checkpoint();
-  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');checkpoint();
+  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;checkpoint();
   await client.query("SET LOCAL statement_timeout='10s'");checkpoint();
   await client.query("SET LOCAL lock_timeout='2s'");checkpoint();
   await client.query("SET LOCAL timezone='UTC'");checkpoint();
@@ -160,7 +160,9 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){
   // Failed rollback makes the connection unsafe for subsequent pooled work.
-  if(client)try{await client.query('ROLLBACK');}catch{bad=true;}throw error;
+  if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  else if(client&&beginAttempted)bad=true;
+  throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}
 }
 

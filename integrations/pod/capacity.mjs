@@ -1,9 +1,9 @@
 // Historical activity is not proof of unique artwork, sustained throughput,
 // current QA readiness, publication permission or production acceptance.
 export async function productionActivity(db){
- const client=await db.pool.connect();let bad=false;
+ const client=await db.pool.connect();let bad=false,began=false,beginAttempted=false;
  try{
-  await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
   await client.query("SET LOCAL lock_timeout='2s'");
   await client.query("SET LOCAL statement_timeout='5s'");
   const {rows}=await client.query(`WITH observation_window AS (
@@ -40,5 +40,9 @@ export async function productionActivity(db){
    evidence_limitations:['concept_records_do_not_prove_unique_artwork','jobs_include_variants_and_revisions',
     'history_does_not_prove_continuous_observation','qa_events_are_not_current_readiness'],
    capacity_verified:false,acceptance_verified:false,publication_enabled:false};
- }catch(error){try{await client.query('ROLLBACK');}catch{bad=true;}throw error;}finally{client.release(bad);}
+ }catch(error){
+  if(began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  else if(beginAttempted)bad=true;
+  throw error;
+ }finally{client.release(bad);}
 }

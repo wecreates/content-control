@@ -46,7 +46,7 @@ for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
   client.release=discard=>releases.push(discard);
   f.db.pool.connect=async()=>{settings[flag]='true';return client;};
   await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env:settings}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
-  assert.deepEqual(f.queries,['ROLLBACK']);assert.deepEqual(releases,[false]);
+  assert.deepEqual(f.queries,[]);assert.deepEqual(releases,[false]);
   await assert.rejects(fs.stat(path.join(f.directory,'00000.pod')),{code:'ENOENT'});
  });
  test(`state export stops before writing a fetched record when ${flag} changes during fetch`,async t=>{
@@ -343,7 +343,12 @@ for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false
   };
   client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
   await assert.rejects(exportStateArchive(db,{directory,key,env}),error=>error===failure);
-  assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+  if(phase==='BEGIN'){
+   assert.deepEqual(calls,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+   assert.deepEqual(releases,[true]);
+  }else{
+   assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+  }
   await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),error=>error.code==='ENOENT');
  });
 }

@@ -31,3 +31,13 @@ test('failed rollback discards the connection and preserves the original failure
  const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK')throw Error('rollback');return {rows:[]};},release:bad=>releases.push(bad)})}};
  await assert.rejects(productionActivity(db),/^Error: original$/);assert.deepEqual(releases,[true]);
 });
+test('capacity reporting discards an uncertain connection when transaction open fails',async()=>{
+ const original=Error('BEGIN_FAILURE'),queries=[],releases=[];
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);throw original;},
+  release:bad=>releases.push(bad),
+ })}};
+ await assert.rejects(productionActivity(db),error=>error===original);
+ assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+ assert.deepEqual(releases,[true]);
+});
