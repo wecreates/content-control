@@ -69,6 +69,78 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r303 — isolate successful privileged migration sessions (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh inspection began from Content Control
+`7b3f95f0fcd35879c9a2b4ee0ba64cabf55c664a` and Money Factory
+`49b3f2a97200ec2857debba3912cbb2848573d5c`. The current completion,
+implementation and free-deployment records, open pull requests, hosted workflow
+results and the authorized Render service were re-read. No open pull request
+overlapped this repair. The failed database-administration route had no credible
+access-path change and was not retried.
+
+The privileged migration helper already destroyed clients after rejected
+transaction boundaries, but returned a client to the shared owner pool after a
+confirmed `COMMIT`. Migration SQL is intentionally extensible and can alter
+session-scoped state even when its transaction commits. A successful migration
+now destroys that privileged connection before it can serve unrelated pooled
+work. Failures before commit still retain reusable-client behavior only after a
+confirmed rollback.
+
+### Verification and merge
+
+- Regression-first verification passed 9/10 focused cleanup checks and failed
+  exactly the new successful-migration assertion against the prior code because
+  `release(false)` returned the owner client to the pool. The repaired focused
+  cleanup/provisioning suite passed all 11 runnable checks; four PostgreSQL cases
+  were correctly skipped without a local disposable database.
+- The complete local Content Control POD Node suite ran 908 tests: 899 passed,
+  nine environment-dependent PostgreSQL cases skipped and zero failed. The
+  complete local POD Python suite passed 385/385. Syntax and whitespace checks
+  passed.
+- Review covered confirmed commit, rejected commit, rejected begin, successful
+  and failed rollback, connection acquisition, transactional provisioning,
+  backend identity replacement and cleanup. It found no unresolved material
+  correctness, security, migration or pooled-client lifecycle issue in the
+  final three-file patch.
+- Exact [CC PR 738](https://github.com/wecreates/content-control/pull/738) head
+  `13d77e8a0ebb626a2d0483f685de12d95431d9aa` passed PostgreSQL integration
+  run `40491150970` and production-container run `40491150969`. Hosted
+  PostgreSQL verified that the confirmed migration removed the old backend
+  before pool reuse. The PR merged under its exact-head lease as
+  `7aaf4ab0817e1f7fde65a498700726d2befafb27`.
+- Money Factory's consumer workflow was advanced only to that immutable merged
+  Content Control revision. Exact [MF PR 258](https://github.com/wecreates/Money-factory/pull/258)
+  head `d7692645e2ead21587b52ab4790689e9523c00fb` changed only the checkout pin,
+  passed cross-repository run `40492115533`, and merged under its exact-head
+  lease as `fe6c0e100336e3c82baa250489f7832f9ceea2b5`.
+
+### Deployment and acceptance truth
+
+Render detected functional Content Control commit
+`7aaf4ab0817e1f7fde65a498700726d2befafb27` and started deploy
+`dep-dbg85g8ae00c73fs4rh0`, but event `evt-dbg85gfb4ihs73b5r10g` reported
+exhausted pipeline minutes and the deploy ended build-failed. No manual retry,
+paid capacity, cache/plan change, replacement service, secret access or network
+widening was attempted. No production migration or provider action was run.
+
+This closes successful privileged-migration session reuse only. Existing code
+and passing local/hosted tests are not live acceptance. All 24 acceptance areas
+remain OPEN. Production preflight with the real authorities, independently
+retained recovery, deployed availability, mounted Money Factory authority and
+current grants/revocation, real accounts and authorized sources, rights,
+official templates, substantive KDP editorial/preview acceptance, independent
+review and remediation, all five provider adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. The checked-in Render definition
+also keeps the POD service and production loop false. This run used only its
+actually available bounded tools and did not claim a continuously running
+self-hosted worker.
+
 ## Run receipt r302 — isolate ambiguous core transaction commits (2026-10-27 UTC)
 
 ### Scope and repair
