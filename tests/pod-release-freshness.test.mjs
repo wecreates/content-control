@@ -203,6 +203,23 @@ test('failed submitted settlement stops without a second transition or private d
   error?.message==='SUBMISSION_SETTLEMENT_UNCERTAIN'&&!String(error).includes('private'));
  assert.deepEqual(finishes,[{state:'submitted',receipt:{id:'fixture-receipt'},reason:undefined}]);
 });
+test('failed fallback settlement exposes only a fixed recovery code',async()=>{
+ for(const submitted of [false,true]){
+  const f=fixture(),finishes=[],privateError=Error('postgres://private:secret@host/database');
+  if(submitted)f.options.adapters.redbubble.submit=async()=>{throw Error('provider timeout');};
+  else f.options.adapters={};
+  f.options.db.finish=async(_job,state,receipt,reason)=>{
+   finishes.push({state,receipt,reason});
+   throw privateError;
+  };
+  const code=submitted?'SUBMISSION_SETTLEMENT_UNCERTAIN':'RELEASE_SETTLEMENT_UNCERTAIN';
+  await assert.rejects(publishOnce(f.options),error=>
+   error?.message===code&&!String(error).includes('private'));
+  assert.deepEqual(finishes,[submitted?
+   {state:'ambiguous',receipt:{},reason:'SUBMISSION_UNCERTAIN'}:
+   {state:'blocked',receipt:{},reason:'RELEASE_BLOCKED'}]);
+ }
+});
 test('malformed receipt can reconcile from synthetic signed readback without submitting again',async()=>{
  const f=fixture(),proof='c'.repeat(64),providerId='verified-readback-listing';let calls=0,state='publishing',savedId=null;
  f.options.adapters.redbubble.submit=async()=>{calls++;return {id:' '};};

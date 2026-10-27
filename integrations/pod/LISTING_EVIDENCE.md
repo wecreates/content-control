@@ -91,6 +91,14 @@ It never starts a second settlement transaction because the first commit outcome
 may be unknown. Durable lease recovery and authenticated readback determine the
 actual state without resubmission.
 
+The same diagnostic boundary applies to the first and only fallback settlement.
+If recording an ambiguous provider outcome fails, the publisher emits only
+`SUBMISSION_SETTLEMENT_UNCERTAIN`; if recording a pre-submission release block
+fails, it emits only `RELEASE_SETTLEMENT_UNCERTAIN`. Provider, database and
+credential-bearing exception text is never returned. These fixed errors do not
+claim that a state transition committed; they stop the publisher so durable lease
+recovery can determine the stored state. No second settlement is attempted.
+
 Synthetic adapter and signed-readback tests cover both malformed and valid
 receipt boundaries, plus direct database-transition admission. Test publication
 flags enable in-memory doubles only; live publication flags remain false and
