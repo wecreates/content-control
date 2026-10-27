@@ -69,6 +69,113 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r294 — scrub pooled PostgreSQL sessions (2026-10-27 UTC)
+
+### Scope and repair
+
+Fresh reconstruction began from Content Control
+`ae7a33d7a05c009e8eaa51a3dc903eb890907914` and Money Factory
+`a7255d006f7ea75c89cbf2e74c97178df4c7ab51`, after reading the current
+completion, implementation and free-deployment records, open pull requests,
+workflow results and the authorized Render service. Neither repository had an
+open pull request, so this repair did not duplicate concurrent POD work. A
+concurrent Money Factory monitor-only commit was preserved as the dependent
+pin's base.
+
+`PodDB.read` and `PodDB.tx` returned successfully committed or rolled-back
+connections to the shared PostgreSQL pool without clearing session-scoped
+configuration, advisory locks, listeners or prepared statements. A callback
+could therefore use an ordinary `SELECT set_config(..., false)` to contaminate
+unrelated later work. Both helpers now execute `DISCARD ALL` after a confirmed
+commit or rollback and before release. Cleanup failure destroys the unsafe
+client without changing a transaction result that PostgreSQL already committed.
+Named callback queries fail closed with `POD_NAMED_QUERY_FORBIDDEN` so clearing
+server-side prepared statements cannot desynchronize node-postgres' local
+statement cache.
+
+The first hosted implementation also forced `search_path=pg_catalog,public`
+after cleanup. Real PostgreSQL integration correctly caught that a later
+caller-supplied-pool migration then attempted unqualified DDL in
+`pg_catalog`. That head was not merged. The corrected scrub relies on
+`DISCARD ALL` to restore each connection's own startup defaults, and the
+hosted regression verifies that the baseline `search_path` is preserved.
+
+### Content Control verification and merge
+
+- Regression-first focused tests against the prior helper reproduced both read
+  and write session poisoning: 26 tests passed and the two new isolation tests
+  failed. After the repair and startup-default correction, the focused
+  read/transaction suite passed 31/31.
+- The complete local serial POD Node suite passed 887 tests, skipped eight
+  environment-dependent PostgreSQL cases and failed zero. Syntax and whitespace
+  checks were clean. The local Python runner passed 264 runnable tests but lacked
+  its existing `cv2` dependency for two modules; no package was downloaded.
+  The pinned production container supplied that dependency and is the hosted
+  Python evidence below.
+- Initial PR #721 head
+  `ac1ff5cc5dc3912c406b2ea93bad3b36459fad61` failed integration run
+  `40440478285` because its fixed search path caused
+  `permission denied to create "pg_catalog.pod_schema_version"`. That
+  regression was isolated from job `121979366588`, repaired and not retried
+  unchanged.
+- Exact corrected PR #721 head
+  `d5b6395bb437de4f722cf68daf86365666a36dac` passed POD integration run
+  `40441022598` and production-container run `40441022590`. The former
+  exercised the complete 895-test Node/PostgreSQL suite and the Python gates.
+  The latter built the production image and passed non-root/dependency,
+  Python QA/rendering, Node/PostgreSQL, durable-review and
+  publication-disabled startup gates.
+- PR #721 merged as
+  `818df61d3041c3862d227c09e01bb623eedc4dc4`.
+
+### Money Factory dependent pin
+
+- The cross-repository workflow now pins immutable Content Control merge
+  `818df61d3041c3862d227c09e01bb623eedc4dc4`.
+- Local Money Factory integration tests passed 116 tests, skipped one
+  environment-dependent PostgreSQL case and failed zero. The Python
+  production/review suite passed 81 tests with zero failures. Generated KDP
+  fixtures remained `REVIEW_REQUIRED`, `production_ready=false` and
+  `publication_enabled=false`.
+- Exact PR #249 head
+  `71c6a412195d73822f586af2e698712d30272f73` passed cross-repository run
+  `40441752922`, then merged as
+  `8c92e377220740e668e76e2812bc3ddb9eda8bb3`.
+
+### Authorized Render verification
+
+- The authorized service remained on its existing free plan, `main` branch
+  and commit-triggered deployment path. No manual deploy was requested.
+- Render detected exact Content Control merge
+  `818df61d3041c3862d227c09e01bb623eedc4dc4` and created deployment
+  `dep-dbg177q9lscs738rdqu0`.
+- Deploy-started event `evt-dbg177prholc73fa64fg` recorded the merge at
+  `2026-10-27T02:59:43.894522Z`; event
+  `evt-dbg177tgtmfc73b94j70` recorded
+  `pipeline_minutes_exhausted` at `2026-10-27T02:59:43.973225Z`; and
+  deploy-ended event `evt-dbg1787b4ihs73b1at9g` recorded failed status at
+  `2026-10-27T02:59:44.245292Z`.
+- No build or hosted rollout of r294 was verified. No paid capacity, cache/plan
+  change, replacement service, secret access or network widening was attempted.
+
+### Acceptance truth
+
+This closes one pooled-session isolation gap only. Existing code, passing
+synthetic/PostgreSQL/container tests and an attempted deployment are not live
+acceptance. The prior database-administration route was not retried because no
+credible access-path change was observed. Dedicated database, durable
+storage/recovery, hybrid hosting, Money Factory authority, current
+grants/revocation, account records, authorized market intelligence, concept
+selection, regional-rights evidence, original generation, official templates,
+KDP interiors/editorial, independent QA, remediation, authorized
+KDP/Redbubble/TeePublic/Zazzle/Spreadshirt adapters, publishing safeguards,
+economics, financial reconciliation, mobile operations, monitoring, security,
+measured capacity, end-to-end acceptance and controlled launch readiness all
+remain OPEN. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was
+attempted. This run used only its actually available bounded tools and did not
+claim a continuously running self-hosted worker.
+
 ## Run receipt r293 — close transaction query capabilities (2026-10-27 UTC)
 
 ### Scope and repair
