@@ -44,9 +44,9 @@ async function exercise(spec,stage,expired){
    spec.repair?db.requeueRepair(job.id,envelope):db.enqueue({job,upstream:envelope,conceptId:'fixture-concept',revision:1});
   if(expired){
    await assert.rejects(run(),/ENVELOPE_EXPIRED_OR_INVALID/);
-   assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.at(-1),'ROLLBACK');
+   assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.at(-2),'ROLLBACK');
   }else{
-   await run();assert.equal(queries.at(-1),'COMMIT');
+   await run();assert.equal(queries.at(-2),'COMMIT');
    if(spec.repair)assert.match(queries.find(q=>q.includes('SELECT q.*')),/FOR SHARE OF p/);
   }
  }finally{Date.now=originalNow;}

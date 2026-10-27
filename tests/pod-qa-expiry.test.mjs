@@ -35,9 +35,9 @@ async function exercise(stage,verdict,run,expired){
    bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
   if(expired){
    await assert.rejects(run(db,qa),/ENVELOPE_EXPIRED_OR_INVALID/);
-   assert.equal(writes.length,stage==='event'?2:0);assert.equal(queries.at(-1),'ROLLBACK');
+   assert.equal(writes.length,stage==='event'?2:0);assert.equal(queries.at(-2),'ROLLBACK');
   }else{
-   await run(db,qa);assert.equal(writes.length,2);assert.equal(queries.at(-1),'COMMIT');
+   await run(db,qa);assert.equal(writes.length,2);assert.equal(queries.at(-2),'COMMIT');
   }
  }finally{Date.now=originalNow;}
 }

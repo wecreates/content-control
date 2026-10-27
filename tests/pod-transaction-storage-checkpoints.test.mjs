@@ -96,7 +96,8 @@ test('transaction callback cannot end or replace its managed transaction',async(
    'BEGIN',
    "SET LOCAL lock_timeout='2s'",
    "SET LOCAL statement_timeout='10s'",
-   'ROLLBACK'
+   'ROLLBACK',
+   'DISCARD ALL',
   ]);
  }
 });
@@ -114,7 +115,8 @@ test('transaction callback cannot release its helper-owned pooled client',async(
   "SET LOCAL lock_timeout='2s'",
   "SET LOCAL statement_timeout='10s'",
   {text:'WRITE',values:[],queryMode:'extended'},
-  'ROLLBACK'
+  'ROLLBACK',
+  'DISCARD ALL',
  ]);
  assert.deepEqual(releases,[false]);
 });
@@ -136,7 +138,7 @@ test('transaction waits for a callback query even when the callback does not awa
  try{assert.equal(calls.includes('COMMIT'),false);}
  finally{complete({rows:[]});}
  assert.equal(await transaction,'complete');
- assert.equal(calls.at(-1),'COMMIT');
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -153,7 +155,7 @@ test('transaction propagates an unawaited query failure even when callback code 
   return 'must not commit';
  }),error=>error===original);
  assert.equal(calls.includes('COMMIT'),false);
- assert.equal(calls.at(-1),'ROLLBACK');
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
 });
 
@@ -162,8 +164,62 @@ test('transaction query capability closes before the pooled client is released',
  await db.tx(client=>{retainedQuery=client.query;});
  assert.throws(()=>retainedQuery('AFTER_TRANSACTION'),/POD_TRANSACTION_CLIENT_CLOSED/);
  assert.equal(calls.includes('AFTER_TRANSACTION'),false);
- assert.equal(calls.at(-1),'COMMIT');
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);
  assert.deepEqual(releases,[false]);
+});
+
+test('transaction scrubs committed session state before returning the pooled client',async()=>{
+ const calls=[],releases=[];let applicationName='pool-default';
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text.startsWith('SELECT set_config'))applicationName='transaction-poison';
+  if(text==='DISCARD ALL')applicationName='pool-default';
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await db.tx(client=>client.query("SELECT set_config('application_name','transaction-poison',false)"));
+ assert.equal(applicationName,'pool-default');
+ assert.deepEqual(calls.slice(-1),['DISCARD ALL']);
+ assert.deepEqual(releases,[false]);
+});
+
+test('transaction scrubs session state after rollback before returning the pooled client',async()=>{
+ const original=Error('CALLBACK_FAILED'),calls=[],releases=[];let applicationName='pool-default';
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text.startsWith('SELECT set_config'))applicationName='transaction-poison';
+  if(text==='DISCARD ALL')applicationName='pool-default';
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.tx(async client=>{
+  await client.query("SELECT set_config('application_name','transaction-poison',false)");
+  throw original;
+ }),error=>error===original);
+ assert.equal(applicationName,'pool-default');
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
+ assert.deepEqual(releases,[false]);
+});
+
+test('transaction rejects named queries before they can outlive the server statement cache',async()=>{
+ const {db,calls,releases}=fixture();
+ await assert.rejects(db.tx(client=>client.query({name:'retained-plan',text:'SELECT 1'})),/POD_NAMED_QUERY_FORBIDDEN/);
+ assert.equal(calls.some(call=>typeof call==='object'&&call.name==='retained-plan'),false);
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
+ assert.deepEqual(releases,[false]);
+});
+
+test('transaction preserves a committed result but discards a client when session cleanup fails',async()=>{
+ const calls=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='DISCARD ALL')throw Error('SESSION_CLEANUP_FAILED');
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ assert.equal(await db.tx(()=> 'committed'),'committed');
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);
+ assert.deepEqual(releases,[true]);
 });
 
 test('transaction does not roll back when opening the transaction fails',async()=>{

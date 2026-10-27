@@ -55,6 +55,20 @@ function firstSqlCommand(text){
 function assertManagedTransactionStatement(text){
  if(typeof text==='string'&&TRANSACTION_COMMANDS.has(firstSqlCommand(text)))throw Error('POD_TRANSACTION_CONTROL_FORBIDDEN');
 }
+async function sanitizePooledClient(client){
+ // Callback SQL can change session-scoped settings through otherwise ordinary
+ // SELECT expressions (for example set_config(..., false)), acquire session
+ // advisory locks or register listeners. A successful COMMIT/ROLLBACK does not
+ // clear those capabilities. Scrub the server session before this connection
+ // can serve unrelated pooled work. DISCARD ALL restores the connection's own
+ // startup defaults (including createPodPool's explicit search_path); forcing
+ // a different fixed path here would contaminate caller-supplied pools. Any
+ // cleanup failure makes the client unsafe to reuse.
+ try{
+  await client.query('DISCARD ALL');
+  return false;
+ }catch{return true;}
+}
 function assertStoredManifest(manifest,platform,manifestSha256,state={nodes:0},depth=0){
  if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
   manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||'')||
@@ -117,7 +131,7 @@ export class PodDB {
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
  async read(sql,values){
-  this.active();const c=await this.pool.connect();let bad=false,began=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,ended=false;
   try{
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
@@ -132,9 +146,9 @@ export class PodDB {
    // COMMIT or ROLLBACK, so reject transaction control before PostgreSQL can
    // end the managed read transaction early.
    assertManagedTransactionStatement(sql);
-   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');return result;
-  }catch(error){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw error;
-  }finally{c.release(bad);}
+   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();await c.query('COMMIT');ended=true;return result;
+  }catch(error){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}throw error;
+  }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
@@ -195,7 +209,7 @@ export class PodDB {
   });
  }
  async tx(fn){
-  this.active();const c=await this.pool.connect();let bad=false,began=false;
+  this.active();const c=await this.pool.connect();let bad=false,began=false,ended=false;
   try{
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
@@ -214,6 +228,10 @@ export class PodDB {
     if(!acceptingQueries)throw Error('POD_TRANSACTION_CLIENT_CLOSED');
     this.active();
     const config=typeof query==='string'?{text:query,values:values??[],queryMode:'extended'}:{...query,queryMode:'extended'};
+    // DISCARD ALL deliberately clears server-side prepared statements. Do not
+    // let a callback create a named statement that node-postgres would still
+    // cache locally after the server session is scrubbed.
+    if(config.name!==undefined)throw Error('POD_NAMED_QUERY_FORBIDDEN');
     // The callback owns business SQL, not the transaction. Extended protocol
     // rejects multi-command strings, but a standalone COMMIT/ROLLBACK would
     // still end this managed transaction and could make an eventual rollback
@@ -252,8 +270,9 @@ export class PodDB {
    }
    while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
    if(queryFailure)throw queryFailure;
-   this.active();await c.query('COMMIT');return r;
-  }catch(e){if(began)try{await c.query('ROLLBACK');}catch{bad=true;}throw e;}finally{c.release(bad);}
+   this.active();await c.query('COMMIT');ended=true;return r;
+  }catch(e){if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}throw e;
+  }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
  }
  async enqueue({job,upstream,conceptId,revision}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
