@@ -8,7 +8,9 @@ export async function verifyFailureReasons(pool,bridge){
  const db=new PodDB({pool,bridge,upstreamKey,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
  const brief={id,account_id:account,business_id:business,platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
  const job={id,platform:'redbubble',fencing_token:1};
- const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
+ const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
  const sign=(audience,key,fields)=>{
   const payload=JSON.stringify({schema_version:1,audience,issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...fields});
   return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};

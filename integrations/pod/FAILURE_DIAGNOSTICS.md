@@ -59,6 +59,15 @@ when the QA envelope itself is authentic and names the package hash. This binds
 acceptance to the same retrievable package contract as owner review; it does not
 substitute for an authorized, calibrated independent reviewer.
 
+The two durable package-write boundaries now enforce that same bounded manifest
+shape, a supported non-Etsy marketplace, an exact marketplace match, a complete
+marketplace file set, a valid template identity and
+`publication_enabled=false` before acquiring PostgreSQL. A caller therefore
+cannot create an unreadable review hold or QA result and rely on later read or
+release checks to contain it. This validates package structure and provenance
+identity only; it does not establish live rights, editorial quality, account
+authorization or marketplace acceptance.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.

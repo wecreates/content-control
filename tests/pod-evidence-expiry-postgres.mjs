@@ -49,7 +49,7 @@ export async function verifyEvidenceExpiry(pool,bridge,proof){
     }};
    }},bridge,qaKey:key,expiresAt:new Date(issued+7*86400000).toISOString()});
    await assert.rejects(()=>kind==='market'?recordMarketObservation(db,envelope,key):kind==='finance'?recordFinancialEvent(db,envelope,key):
-    kind==='listing'?reconcilePublication(db,envelope,key):kind==='review'?db.acceptReview(job,envelope):db.completeProduction({id:job,fencing_token:1},manifest,envelope),
+    kind==='listing'?reconcilePublication(db,envelope,key):kind==='review'?db.acceptReview(job,envelope):db.completeProduction({id:job,fencing_token:1,platform:'redbubble'},manifest,envelope),
     /ENVELOPE_EXPIRED_OR_INVALID/,kind);
    assert.equal(advanced,true,kind+' clock advanced after actual SQL');
    assert.deepEqual((await pool.query('SELECT state,reason_code,manifest,qa_envelope,provider_id FROM pod_production_queue WHERE id=$1',[job])).rows,

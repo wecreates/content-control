@@ -4,8 +4,10 @@ import crypto from 'node:crypto';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
-const key='synthetic-review-key-'.repeat(3),job={id:'fixture-job',fencing_token:1};
-const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
+const key='synthetic-review-key-'.repeat(3),job={id:'fixture-job',fencing_token:1,platform:'redbubble'};
+const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+ package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+  'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
 function qa(){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
  expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
