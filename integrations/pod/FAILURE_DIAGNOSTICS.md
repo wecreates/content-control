@@ -77,6 +77,14 @@ cooldown advances. A valid QA decision is therefore necessary but cannot make
 different or unreadable stored package bytes releasable. This gate performs no
 provider call and does not imply marketplace acceptance.
 
+The same claim boundary authenticates the stored QA envelope and re-enforces its
+PASS, package, template, marketplace and mandatory-check bindings after the row
+locks. Missing, malformed, expired, failed or mismatched QA evidence fails with
+the fixed `QA_EVIDENCE_UNAVAILABLE` code before publishing state, quota or
+cooldown mutation. The publisher still revalidates that evidence immediately
+before submission because a successful claim is not permission to reuse an
+expired decision later.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.

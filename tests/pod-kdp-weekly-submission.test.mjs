@@ -5,6 +5,7 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
+const qaKey='q'.repeat(48);
 const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
  value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
  JSON.stringify(value);
@@ -12,12 +13,21 @@ const releaseManifest=platform=>({schema_version:1,platform,publication_enabled:
  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:Object.fromEntries(
   (platform==='kdp'?['art-mask.png','cover.pdf','interior.pdf','interior.receipt.json','print.png','text-mask.png']:
    ['art-mask.png','print.png','text-mask.png']).map((name,index)=>[name,(index+1).toString(16).repeat(64)]))});
+const signedQA=manifest=>{
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-100,
+  expires_at_ms:Date.now()+60000,verdict:'PASS',package_sha256:manifest.package_sha256,
+  template_sha256:manifest.template_sha256,checks:Object.fromEntries([
+   'text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance',
+   'editorial','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights'
+  ].map(key=>[key,true]))});
+ return {payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
+};
 
 function fixture({platform='kdp',prior=false,weekly=0}={}){
  const manifest=releaseManifest(platform);
  const job={id:'00000000-0000-4000-8000-000000000001',account_id:'00000000-0000-4000-8000-000000000002',
   platform,state:'qa_passed',attempt:0,fencing_token:'0',manifest,
-  manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex')};
+  manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),qa_envelope:signedQA(manifest)};
  const queries=[];
  const client={
   async query(sql,params=[]){
@@ -37,7 +47,7 @@ function fixture({platform='kdp',prior=false,weekly=0}={}){
   },
   release(){}
  };
- const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>client}});
+ const db=new PodDB({bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>client}});
  return {db,job,queries};
 }
 

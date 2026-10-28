@@ -9,25 +9,33 @@ const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
 const manifestSha256=crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
-async function insertQaPassed(pool,job,concept,account,revision){
+function signedQA(key){
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-100,
+  expires_at_ms:Date.now()+899000,verdict:'PASS',package_sha256:manifest.package_sha256,
+  template_sha256:manifest.template_sha256,checks:Object.fromEntries(
+   ['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance'].map(name=>[name,true]))});
+ return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+}
+async function insertQaPassed(pool,job,concept,account,revision,qaEnvelope){
  await pool.query(`INSERT INTO pod_production_queue
-  (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
-  VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'qa_passed',$6)`,[job,concept,account,revision,crypto.randomUUID(),manifest]);
+  (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest,qa_envelope)
+  VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'qa_passed',$6,$7)`,[job,concept,account,revision,crypto.randomUUID(),manifest,qaEnvelope]);
  await pool.query("INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,'pod.production.qa_passed',$3)",
   [crypto.randomUUID(),job,{manifest_sha256:manifestSha256,publication_enabled:false}]);
 }
 
 // Disposable PostgreSQL fixtures only. No provider call or publication switch.
-export async function verifyPublishClock(pool,bridge){
+export async function verifyPublishClock(pool,bridge,qaKey){
+ const qaEnvelope=signedQA(qaKey);
  for(const kind of ['timestamps','elapsed-cooldown','disabled','future-cooldown','elapsed-quota']){
   const concept=crypto.randomUUID(),account=crypto.randomUUID(),job=crypto.randomUUID();
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'clock-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[account]);
-  await insertQaPassed(pool,job,concept,account,1);
+  await insertQaPassed(pool,job,concept,account,1,qaEnvelope);
   if(kind==='elapsed-quota')await pool.query(`INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at)
    VALUES($1,0,$2,clock_timestamp()-interval '24 hours'+interval '1 hour')`,[job,account]);
   const blocker=await pool.connect();let pending,workerPid;
-  const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>{
+  const db=new PodDB({bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>{
    const client=await pool.connect();workerPid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
    return client;
   }}});
@@ -81,11 +89,11 @@ export async function verifyPublishClock(pool,bridge){
  // Account locking preserves single-claim and daily-quota guarantees under
  // contention even when multiple ready jobs exist.
  const concept=crypto.randomUUID(),account=crypto.randomUUID(),jobs=[crypto.randomUUID(),crypto.randomUUID()];
- const db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({pool,bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
  try{
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'quota-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[account]);
-  for(const [i,job] of jobs.entries())await insertQaPassed(pool,job,concept,account,i+1);
+  for(const [i,job] of jobs.entries())await insertQaPassed(pool,job,concept,account,i+1,qaEnvelope);
   const claims=await Promise.all([db.claimPublish(account,45),db.claimPublish(account,180)]);
   assert.equal(claims.filter(Boolean).length,1);
   await pool.query("UPDATE pod_production_queue SET state='blocked' WHERE id=$1",[claims.find(Boolean).id]);

@@ -95,6 +95,11 @@ function assertStoredManifest(manifest,platform,manifestSha256){
  if(!SHA256.test(manifestSha256||'')||
   durableManifestIdentity(manifest,platform)!==manifestSha256)throw Error('PACKAGE_UNAVAILABLE');
 }
+function assertStoredQA(envelope,key,manifest,platform){
+ try{
+  enforceQA(verifyEnvelope(envelope,key,'content-control:pod:qa'),manifest.package_sha256,manifest.template_sha256,platform);
+ }catch{throw Error('QA_EVIDENCE_UNAVAILABLE');}
+}
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
  if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
@@ -514,6 +519,10 @@ export class PodDB {
   // exact durable QA-passed manifest. Validate provenance while the queue row
   // is locked and before the first release-side mutation.
   assertStoredManifest(j.manifest,j.platform,j.manifest_sha256);
+  // Readiness state alone is not QA evidence. Missing, expired, malformed or
+  // package-mismatched decisions must not consume marketplace quota/cooldown
+  // before the publisher's final pre-submit evidence check rejects them.
+  assertStoredQA(j.qa_envelope,this.qaKey,j.manifest,j.platform);
   if(a.platform==='kdp'){
    // KDP currently counts a title only on its first submission and resets its
    // per-format weekly allowance every Sunday at 00:00 UTC. This lane supports
