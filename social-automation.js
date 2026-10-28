@@ -1,3 +1,4 @@
+import {parseStorageRetention} from './integrations/social-automation/storage-retention.mjs';
 import {parseVaultKey} from './integrations/social-automation/vault-key.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -58,4 +59,9 @@ export class SocialAutomation {
    return {publication_enabled:false,counts:d.jobs.reduce((a,j)=>(a[j.status]=(a[j.status]||0)+1,a),{})};});}
  async status(){const d=await this.store.read();return {publication_enabled:false,external_writes_enabled:false,connections:Object.entries(d.connections).map(([platform,c])=>({platform,status:c.expires_at<=this.now()?'expired':c.status,expires_at:c.expires_at,last_verified_at:c.verified_at})),jobs:d.jobs.map(j=>({id:j.id,platform:j.platform,operation:j.operation,status:j.status,attempts:j.attempts,reason:j.reason}))};}
 }
-export function socialRuntimeReadiness(env=process.env){const required=env.SOCIAL_STORAGE_MODE==='postgres_encrypted'?['SOCIAL_VAULT_KEY','SOCIAL_DATABASE_URL','SOCIAL_STORAGE_EXPIRES_AT']:['SOCIAL_VAULT_KEY','SOCIAL_VAULT_FILE'];return {status:'NOT_ACTIVATED',publication_enabled:false,external_writes_enabled:false,missing_configuration:required.filter(k=>!env[k]),durable_storage_verified:false,oauth_routes_enabled:false,worker_running:false,provider_adapters_registered:[],implemented_read_adapters:['instagram','facebook','youtube','tiktok','threads','pinterest','linkedin'],worker_implemented:true,reason:'Private durable storage and platform OAuth applications must be configured and verified before activation'};}
+export function socialRuntimeReadiness(env=process.env){
+ const postgres=env.SOCIAL_STORAGE_MODE==='postgres_encrypted';
+ const required=postgres?['SOCIAL_VAULT_KEY','SOCIAL_DATABASE_URL','SOCIAL_STORAGE_RETENTION_POLICY',...(env.SOCIAL_STORAGE_RETENTION_POLICY==='fixed_expiry'?['SOCIAL_STORAGE_EXPIRES_AT']:[])]:['SOCIAL_VAULT_KEY','SOCIAL_VAULT_FILE'];
+ let policy=null,policyError=null;
+ if(postgres)try{policy=parseStorageRetention({retentionPolicy:env.SOCIAL_STORAGE_RETENTION_POLICY,expiresAt:env.SOCIAL_STORAGE_EXPIRES_AT}).retentionPolicy;}catch(error){policyError=error.message;}
+ return {storage_retention_policy:policy,storage_policy_reason_code:policyError,status:'NOT_ACTIVATED',publication_enabled:false,external_writes_enabled:false,missing_configuration:required.filter(k=>!env[k]),durable_storage_verified:false,oauth_routes_enabled:false,worker_running:false,provider_adapters_registered:[],implemented_read_adapters:['instagram','facebook','youtube','tiktok','threads','pinterest','linkedin'],worker_implemented:true,reason:'Private durable storage and platform OAuth applications must be configured and verified before activation'};}
