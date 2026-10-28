@@ -12,8 +12,8 @@ including an arbitrary abort reason. The coordinator also rechecks its stop
 signal and production switch after a delayed claim or initial grant lookup and
 after task resolution, then again after authenticating the source, rights and
 text-layer snapshot and after reading each cover or KDP interior-template
-envelope. A late stop there cannot continue into retained template-source access
-or Python.
+envelope, then after cover-template guide inspection. A late stop there cannot
+continue into retained template-source access or another Python process.
 If a delayed production claim returns no job after cancellation, the direct
 worker result is `STOPPED`, not a healthy `IDLE` cycle. The same result applies
 when the production switch changes to false while an empty claim is in flight.

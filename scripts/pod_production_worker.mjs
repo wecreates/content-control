@@ -63,6 +63,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    // members and guide against the authenticated profile before rendering.
    await runStage('pod_kdp_template_import.py',['--archive',task.templateSource,
     '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash]);
+   enabled();
    const interiorRecord=verifyEnvelope(interiorEnvelope,env.POD_TEMPLATE_KEY,'pod:interior-template');
    await verifyTemplateSource(task.interior.source,interiorRecord.source_sha256,{signal});
    await authorizeProduction();
