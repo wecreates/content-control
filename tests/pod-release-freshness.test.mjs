@@ -35,7 +35,7 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   platform:brief.platform,max_mode:'LAUNCH',launch_content_allowed:true,publication_permission:true,revoked:false,package_sha256:manifest.package_sha256,...economicsFixture(brief,now)};
  const qa=sign({...common,expires_at_ms:now+899000,audience:'content-control:pod:qa',verdict:'PASS',...manifest,
   list_price:{marketplace:'amazon.com',currency:'USD',amount_minor:2000},checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights'].map(k=>[k,true])),editorial}});
- const job={id:brief.id,platform:brief.platform,brief,manifest,qa_envelope:qa,idempotency_key:'fixture-idempotency'};
+ const job={id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:'1',brief,manifest,qa_envelope:qa,idempotency_key:'fixture-idempotency'};
  const events=[];
  // These enabled flags exercise an in-memory fake adapter only; no live env,
  // marketplace calls, credentials, listings or revenue are involved.
@@ -137,7 +137,7 @@ test('current grant is fetched after verified artifacts and submission uses same
 });
 
 test('submission preserves claimed idempotency identity across resolver mutation',async()=>{
- const f=fixture(),claimed=f.options.db.claimPublish,original=f.options.idempotencyKey??'fixture-idempotency';
+ const f=fixture(),claimed=f.options.db.claimPublish,original='fixture-idempotency';
  let claimedJob;
  f.options.db.claimPublish=async(...args)=>{claimedJob=await claimed(...args);return claimedJob;};
  f.options.resolveGrant=async job=>{
