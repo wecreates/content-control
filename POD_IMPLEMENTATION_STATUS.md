@@ -69,6 +69,76 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r316 — stop post-cover disable before KDP interior access (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`18d0db57575615091bc903f2f171841382911d0c` and Money Factory
+`841b4ebcf7d7edf4289667305bdf6c2f9aa43ecc` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open pull request overlapped this repair.
+The failed database-administration route had no credible access-path change and
+was not retried.
+
+If `POD_PRODUCTION_ENABLED` changed to false while the signed cover-template
+envelope was being read, KDP production previously continued into interior-task
+property access before the next switch check. The coordinator now rechecks the
+switch and cancellation immediately after that awaited cover read. A stopped
+claimed job still uses the existing fixed `PRODUCTION_STOPPED` settlement and
+never reaches KDP interior-template access or Python. Publication behavior is
+unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` with three forbidden
+  KDP interior-property reads after the switch changed. After repair it observed
+  zero reads and no renderer or guide launch. The focused production, lease,
+  release, deployment-policy and template set passed 145/145.
+- The complete local POD Node glob ran 900 tests: 891 passed, nine
+  environment-dependent cases skipped and zero failed. The complete local POD
+  Python suite passed 385/385. Syntax and whitespace checks passed. A separate
+  repository-wide Python discovery retained unrelated missing Instagram/studio
+  contract failures, and unrestricted `node --test` was stopped after more than
+  ten minutes in unrelated `pricewatch-wiring`; neither was represented as a
+  passing POD gate.
+- Exact [CC PR 764](https://github.com/wecreates/content-control/pull/764) head
+  `441694775595a1e41383c28260478c82b4ddcb56` changed only the three reviewed
+  files, passed integration run `40605331966` and production-container run
+  `40605331988`, and merged under its exact-head lease as
+  `d22e6240eba97363b3549d28bccc9a4fd76adb0e`.
+- Exact [MF PR 271](https://github.com/wecreates/Money-factory/pull/271) head
+  `6da073bce7ccdc130ab21e3310934a785df73abf` changed only the immutable Content
+  Control checkout pin, retained both publication flags as false, passed local
+  cross-repository sets of 121 Node tests (120 passed, one intentional skip) and
+  81 Python tests, passed hosted cross-repository run `40606253453`, and merged
+  under its exact-head lease as
+  `68f05c2acff5b0a540ea842b10c71f8a616a4cb6`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`d22e6240eba97363b3549d28bccc9a4fd76adb0e` and started deploy
+`dep-dbgjmvrrjlhs73b3soig`, but event `evt-dbgjn05kkh9s738o1810` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the post-cover-verification production-switch gap. Existing
+code and passing tests are not live acceptance. All 24 acceptance areas remain
+OPEN. Production preflight with real authorities, independently retained
+recovery, deployed availability, mounted Money Factory authority and current
+grants and revocation, real accounts and authorized sources, rights, official
+templates, substantive KDP editorial and preview acceptance, independent review
+and remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r315 — stop post-source disable before template access (2026-10-27 UTC)
 
 ### Scope and repair
