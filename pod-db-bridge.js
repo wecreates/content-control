@@ -300,13 +300,22 @@ export class PodDB {
   this.active();
   const rows=(await this.read(`SELECT q.id,q.platform,
    CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END AS state,
-   q.reason_code,q.attempt,q.created_at,
+   q.reason_code,q.attempt,q.created_at,q.manifest,
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+    AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
+    ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
    q.manifest IS NOT NULL AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
     AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END=$1
    ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state])).rows;
-  return rows.map(row=>({...row,reason_code:row.reason_code===null?null:productionReason(row.reason_code)}));
+  return rows.map(row=>{
+   const {manifest,manifest_sha256,...listed}=row;
+   let canPreview=listed.can_preview===true;
+   if(canPreview)try{assertStoredManifest(manifest,row.platform,manifest_sha256);}catch{canPreview=false;}
+   return {...listed,can_preview:canPreview,
+    reason_code:row.reason_code===null?null:productionReason(row.reason_code)};
+  });
  }
  async failProduction(job,reason){return this.tx(async c=>{
   await lockProductionLease(c,job);

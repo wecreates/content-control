@@ -18,7 +18,8 @@ hold therefore removes both manifest and preview-byte access on the next request
 authentication and knowledge of a prior job ID or digest do not bypass that
 check. Retained history is preserved and the operations list may still expose a
 sanitized record for investigation, but it reports `can_preview=true` only for
-the exact `qa_failed` / `REVIEW_REQUIRED` hold and current PASS rights. Other
+the exact `qa_failed` / `REVIEW_REQUIRED` hold, current PASS rights and a valid
+stored package whose identity matches the latest durable review event. Other
 states and revoked or permanently unpublished concepts therefore do not advertise
 a preview the package and artifact routes will reject.
 
