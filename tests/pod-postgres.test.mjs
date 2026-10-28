@@ -192,7 +192,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   // even when the worker lease remains valid. Advance only the application clock
   // once PostgreSQL confirms the wait; do not depend on short real-time sleeps.
   for(const [index,review] of [true,false].entries()){
-   const qaJob={id:crypto.randomUUID(),fencing_token:1};
+   const qaJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble'};
    const state=review?'qa_failed':'processing',reason=review?'REVIEW_REQUIRED':null;
    await pool.query(`INSERT INTO pod_production_queue
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until,manifest,reason_code)
