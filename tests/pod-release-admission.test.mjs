@@ -12,6 +12,14 @@ const validManifest={schema_version:1,platform:'redbubble',publication_enabled:f
  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
 const validIdentity=crypto.createHash('sha256').update(canonical(validManifest)).digest('hex');
+const qaKey='q'.repeat(48);
+const signedQA=({package_sha256=validManifest.package_sha256,verdict='PASS',issued_at_ms=Date.now()-100,
+ expires_at_ms=Date.now()+60000}={})=>{
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms,expires_at_ms,
+  verdict,package_sha256,template_sha256:validManifest.template_sha256,
+  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance'].map(key=>[key,true]))});
+ return {payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
+};
 
 for(const [name,manifest,manifest_sha256] of [
  ['missing QA-passed identity',validManifest,null],
@@ -37,6 +45,37 @@ for(const [name,manifest,manifest_sha256] of [
  };
  const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey:'q'.repeat(48),expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.claimPublish('account',45),/PACKAGE_UNAVAILABLE/);
+ assert.equal(calls.some(sql=>sql.startsWith('UPDATE pod_production_queue SET state=')),false);
+ assert.equal(calls.some(sql=>sql.startsWith('INSERT INTO pod_quota_reservations')),false);
+ assert.equal(calls.some(sql=>sql.startsWith('UPDATE pod_accounts SET next_allowed_at=')),false);
+});
+
+for(const [name,qa_envelope] of [
+ ['missing QA evidence',null],
+ ['malformed QA evidence',{payload:'{}',signature:'0'.repeat(64)}],
+ ['expired QA evidence',signedQA({issued_at_ms:0,expires_at_ms:1})],
+ ['package-mismatched QA evidence',signedQA({package_sha256:'f'.repeat(64)})],
+ ['failed QA evidence',signedQA({verdict:'FAIL'})]
+])test(`release claim rejects ${name} before quota or cooldown writes`,async()=>{
+ const calls=[];
+ const client={
+  async query(query){
+   const sql=typeof query==='string'?query:query.text;calls.push(sql);
+   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
+   if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',state:'ACTIVE',daily_cap:10}]};
+   if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
+   if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
+   if(sql.startsWith('SELECT q.*,'))return {rows:[{id:'job',account_id:'account',platform:'redbubble',
+    state:'qa_passed',manifest:validManifest,manifest_sha256:validIdentity,qa_envelope}]};
+   if(sql.startsWith('UPDATE pod_production_queue SET state='))return {rows:[{id:'job',attempt:1}]};
+   if(sql.startsWith('INSERT INTO pod_quota_reservations')||sql.startsWith('UPDATE pod_accounts SET next_allowed_at='))return {rows:[]};
+   throw Error('UNEXPECTED_QUERY: '+sql);
+  },
+  release(){}
+ };
+ const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.claimPublish('account',45),/QA_EVIDENCE_UNAVAILABLE/);
  assert.equal(calls.some(sql=>sql.startsWith('UPDATE pod_production_queue SET state=')),false);
  assert.equal(calls.some(sql=>sql.startsWith('INSERT INTO pod_quota_reservations')),false);
  assert.equal(calls.some(sql=>sql.startsWith('UPDATE pod_accounts SET next_allowed_at=')),false);
