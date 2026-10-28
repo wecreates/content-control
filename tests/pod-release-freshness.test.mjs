@@ -145,6 +145,17 @@ test('release grant snapshot rejects resolver-owned mutation during local databa
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('submission uses the exact local eligibility guard captured before caller-owned waits',async()=>{
+ const f=fixture();
+ f.options.db.assertPublishable=async()=>false;
+ f.options.resolveGrant=async()=>{
+  f.options.db.assertPublishable=async()=>true;
+  return sign(f.release);
+ };
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+ assert.deepEqual(f.events,['blocked']);
+});
+
 test('submission uses the exact adapter endpoint authorized before caller-owned waits',async()=>{
  const f=fixture(),adapter=f.options.adapters.redbubble;
  f.options.db.assertPublishable=async()=>{
