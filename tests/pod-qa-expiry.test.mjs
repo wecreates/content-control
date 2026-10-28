@@ -6,7 +6,13 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const key='synthetic-expiry-key-'.repeat(3),job={id:'expiry-job',fencing_token:1};
-const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
+ JSON.stringify(value);
+const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+ package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+  'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
+const manifestSha256=crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
 const actions=[
  ['review','PASS',(db,qa)=>db.acceptReview(job.id,qa)],
  ['passing completion','PASS',(db,qa)=>db.completeProduction(job,manifest,qa)],
@@ -27,7 +33,8 @@ async function exercise(stage,verdict,run,expired){
    queries.push(sql);
    if(stage==='rights'&&sql.includes('FOR SHARE OF p'))advance();
    if(stage==='event'&&sql.startsWith('INSERT INTO pod_events'))advance();
-   if(sql.startsWith('SELECT'))return {rows:[{...job,manifest,valid:true,rights_state:'PASS',permanently_unpublished:false}]};
+   if(sql.startsWith('SELECT'))return {rows:[{...job,platform:'redbubble',manifest,manifest_sha256:manifestSha256,
+    valid:true,rights_state:'PASS',permanently_unpublished:false}]};
    if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}
    return {rows:[]};
   }};

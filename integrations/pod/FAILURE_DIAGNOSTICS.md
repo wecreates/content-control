@@ -50,6 +50,15 @@ bad signature. These admission checks prevent out-of-contract route values from
 reaching database parameter binding; they do not prove that a package exists or
 that a review is authorized for its stored bytes.
 
+After locking the current review hold and rights row, signed review acceptance
+also validates the complete stored package against the latest durable
+`pod.production.review_required` manifest identity before any queue or event
+write. A missing event, mismatched identity, malformed package, marketplace
+mismatch or publication-enabled claim therefore cannot become `qa_passed`, even
+when the QA envelope itself is authentic and names the package hash. This binds
+acceptance to the same retrievable package contract as owner review; it does not
+substitute for an authorized, calibrated independent reviewer.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.
