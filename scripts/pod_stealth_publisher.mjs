@@ -91,6 +91,10 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // Bind the exact endpoint that passed authorization before any caller-owned
   // verifier, authority or database callback can replace adapter.submit.
   const adapterSubmit=adapter.submit;
+  // Bind the exact local guard before caller-owned artifact or authority
+  // callbacks can replace the lease/account/rights/fencing check.
+  const assertPublishable=db.assertPublishable;
+  if(typeof assertPublishable!=='function')throw Error('LOCAL_RELEASE_BLOCKED');
   const verifiedManifest=await verifyArtifacts(claimedJob); // Must hash all files and validate current template/rights/budget.
   // Carry one bounded JSON data snapshot across the remaining network/database
   // waits. A resolver-owned object must not change after artifact verification.
@@ -111,8 +115,8 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // implementation must not be able to rewrite the publisher's claimed
   // platform, fencing or idempotency identity before adapter submission.
   const eligibilitySnapshot=snapshotClaimedRelease(job);
-  if(!eligibilitySnapshot||typeof db.assertPublishable!=='function'||
-   await db.assertPublishable(eligibilitySnapshot)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
+  if(!eligibilitySnapshot||
+   await Reflect.apply(assertPublishable,db,[eligibilitySnapshot])!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   // Database contention can itself outlive signed evidence. Verify time-sensitive
   // authority/QA only after the last awaited check, immediately before submit.
   const release=verifyEnvelope(releaseEnvelope,upstreamKey,'content-control:pod');
