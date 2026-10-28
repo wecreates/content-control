@@ -69,6 +69,73 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r317 — stop post-interior disable before retained-source access (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`c57f23041782a17dae9b6269ffce0d7d6e692496` and Money Factory
+`68f05c2acff5b0a540ea842b10c71f8a616a4cb6` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open pull request overlapped this repair.
+The failed database-administration route had no credible access-path change and
+was not retried.
+
+If `POD_PRODUCTION_ENABLED` changed to false while the signed KDP
+interior-template envelope was being read, production previously continued into
+interior validation and retained cover-template source access before the next
+authority check. The coordinator now rechecks the production switch and
+cancellation immediately after that awaited read. A stopped claimed job retains
+the fixed `PRODUCTION_STOPPED` settlement and does not reach retained source or
+Python. Publication behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` with one forbidden
+  retained cover-source access after the switch changed. After repair it observed
+  zero reads and no renderer or guide launch. The template suite passed 67/67 and
+  the focused production, lease, release, deployment-policy and template set
+  passed 146/146.
+- The complete local POD Node glob ran 901 tests: 892 passed, nine
+  environment-dependent cases skipped and zero failed. The complete local POD
+  Python suite passed 385/385. Syntax and whitespace checks passed.
+- Exact [CC PR 766](https://github.com/wecreates/content-control/pull/766) head
+  `001abd73eb7d9040c6739318665f06b5b16e2856` changed only the three reviewed
+  files, passed integration run `40607977511` and production-container run
+  `40607977484`, and merged under its exact-head lease as
+  `a70c27a66c5e494a6d497ad7f3e1d268acfc79b4`.
+- Exact [MF PR 272](https://github.com/wecreates/Money-factory/pull/272) head
+  `1b3c196bd5723ad7155d7c0da15d086ee5005b89` changed only the immutable Content
+  Control checkout pin, retained both publication flags as false, passed local
+  cross-repository sets of 121 Node tests (120 passed, one intentional skip) and
+  81 Python tests, passed hosted cross-repository run `40608834005`, and merged
+  under its exact-head lease as
+  `1df0938054d300da3758f9ad059eef24c8072214`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`a70c27a66c5e494a6d497ad7f3e1d268acfc79b4` and started deploy
+`dep-dbgk25fb9u1s73ctjtn0`, but event `evt-dbgk25cmudes738kb940` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the post-interior-template-verification production-switch gap.
+Existing code and passing tests are not live acceptance. All 24 acceptance areas
+remain OPEN. Production preflight with real authorities, independently retained
+recovery, deployed availability, mounted Money Factory authority and current
+grants and revocation, real accounts and authorized sources, rights, official
+templates, substantive KDP editorial and preview acceptance, independent review
+and remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity,
+a real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r316 — stop post-cover disable before KDP interior access (2026-10-28 UTC)
 
 ### Scope and repair
