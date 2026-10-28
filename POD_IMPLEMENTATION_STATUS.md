@@ -69,6 +69,75 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r320 — stop late-disabled QA before signed-output access (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`9bfe7d1fc32a473d51a53fc319ac404d813f51b7` and Money Factory
+`10ac3e40ea005c0db0754c2e8ec5f9334e5c0dfd` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. The only open search result was unrelated
+draft PR 378; no open POD/KDP pull request overlapped this repair. Three
+concurrent Content Control commits already on `main` were preserved. The failed
+database-administration route had no credible access-path change and was not
+retried.
+
+If `POD_PRODUCTION_ENABLED` changed to false while the independent QA child was
+running, production previously dereferenced the signed QA-output path after the
+child settled and before the next authority check. The coordinator now rechecks
+the production switch and cancellation immediately after that child settles.
+A stopped claimed job retains the fixed `PRODUCTION_STOPPED` settlement and does
+not access or read the signed QA output, validate a late result, or complete
+production. Publication behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main`: the signed QA-output
+  path was read twice instead of only once to construct the QA child arguments.
+  After repair, the path had exactly that one required argument read; the child
+  started, the job stopped, completion was not called and cleanup ran. The full
+  template-production suite passed 70/70.
+- The complete local POD Node matrix ran 929 tests: 920 passed, nine
+  environment-dependent cases skipped and zero failed. The complete local POD
+  Python suite passed 385/385. Syntax and whitespace checks passed.
+- Exact [CC PR 772](https://github.com/wecreates/content-control/pull/772) head
+  `3a5233358423a5af626f15118fd13cfc2949e53d` changed only the three reviewed
+  files, passed integration run `40623715380` and production-container run
+  `40623715389`, and merged under its exact-head lease as
+  `2178bd25e4854c8a598049dc8f30e9937b704504`.
+- Exact [MF PR 275](https://github.com/wecreates/Money-factory/pull/275) head
+  `df22c9f76487b97f8d9b1973102ee3aeea796d09` changed only the immutable Content
+  Control checkout pin, retained both publication flags as false, passed local
+  cross-repository sets of 121 Node tests (120 passed, one intentional skip) and
+  81 Python tests, and passed hosted cross-repository run `40624505577`. It
+  merged under its exact-head lease as
+  `a4e7e9663cd9b9fa507b64ff332f9c1e5f56e43b`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`2178bd25e4854c8a598049dc8f30e9937b704504` and started deploy
+`dep-dbgmbeqjnfac739ff4c0`, but event `evt-dbgmbervvlss73b2m1j0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the post-QA-child production-switch gap. Existing code and
+passing tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and current grants and
+revocation, real accounts and authorized sources, rights, official templates,
+substantive KDP editorial and preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity, a
+real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r319 — stop late-disabled generators before package access (2026-10-28 UTC)
 
 ### Scope and repair
