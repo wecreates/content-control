@@ -69,6 +69,81 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r330 — reject malformed manifests before durable review and QA writes (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`5780e6c80b04058046bd33e289cd70453b7e6f1b` and Money Factory
+`abb7e97318546f8b55fa016fc71c27633272d6a7` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. The database-administration route had no credible access-path change and
+was not retried.
+
+`holdProduction` and `completeProduction` could persist an out-of-contract
+package manifest even though later review reads and release checks rejected the
+same package. Durable manifest admission now runs before database access and
+requires a supported non-Etsy marketplace, exact job/manifest platform binding,
+`publication_enabled:false`, the exact bounded marketplace file set, valid
+package and template identities, and a bounded canonical manifest identity.
+Review-hold and QA-completion events reuse that admitted identity. This closes
+the malformed-package durable-write gap without enabling publication or
+weakening downstream release checks.
+
+### Verification and merge
+
+- The deterministic regression failed against prior code because malformed
+  manifests reached durable writes, then passed after admission enforcement.
+  Focused review, lease and expiry coverage passed 32/32. The complete local POD
+  Node matrix ran 944 tests: 935 passed, nine environment-dependent PostgreSQL
+  cases skipped and zero failed.
+- Hosted integration runs `40690787239` (job `122824729085`),
+  `40691225348` (job `122826240687`) and `40691421752` (job
+  `122826914741`) exposed only legacy PostgreSQL fixtures that omitted authentic
+  manifest or platform identity while testing lease/expiry behavior. Those
+  fixtures were repaired to reach the original invariants; product admission was
+  not weakened. Exact [CC PR 792](https://github.com/wecreates/content-control/pull/792)
+  head `9dd0fb44bc01995f6238b82b595ca77bfb8a8039` then passed hosted POD
+  integration run `40691782564` (job `122828150741`) and production-container
+  run `40691782730` (job `122828763830`), including disposable PostgreSQL,
+  pinned Python/OpenCV, non-root image, real print generation, durable review and
+  disabled-startup checks. It merged under its exact-head lease as
+  `e8fc86c9b2800ac4c23580fadd253152319b5df4`.
+- Exact [MF PR 285](https://github.com/wecreates/Money-factory/pull/285) head
+  `06b8ca6838c48cf3c9f2449e2f065541ed761278` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40693153432` (job `122832884920`) passed every step,
+  and the PR merged under its exact-head lease as
+  `c9a0e77933d80d1ec8b9bd9f0331204e5299183d`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`e8fc86c9b2800ac4c23580fadd253152319b5df4` and started deploy
+`dep-dbgv536i0phs73cu1r80` at event `evt-dbgv531g952c73c9v9a0`, but event
+`evt-dbgv53ev5hfc73dhgk6g` reported exhausted pipeline minutes before build and
+the deploy ended failed at event `evt-dbgv53egkaas73c77ic0`. The authorized
+service remained active, unsuspended, free-tier and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the malformed-manifest durable-write gap. Existing code and
+passing tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and live revocation, real
+accounts and authorized sources, regional rights, official templates,
+substantive KDP editorial and platform preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+financial reconciliation, owner-phone operations, monitoring drills, measured
+capacity, a real end-to-end job and controlled launch remain unverified. Etsy
+remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred.
+This execution used only its actually available bounded tools and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r329 — bind review acceptance to exact durable package provenance (2026-10-28 UTC)
 
 ### Scope and repair
