@@ -69,6 +69,78 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r326 — hide revoked preview availability (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`9682e4043a4110b67946e6d5b7afc32f2ec064d8` and Money Factory
+`d9a1f9281560c9b2243797882ac9c13af7a09372` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. Concurrent unrelated Content Control commits
+were retained. No open POD/KDP pull request overlapped this repair. The
+database-administration route had no credible access-path change and was not
+retried.
+
+Held package and artifact reads already removed access after current concept
+rights failed or became permanently unpublished. The sanitized mobile-operations
+list, however, derived `can_preview` only from manifest presence and could still
+advertise a preview that those reads would reject. The list now joins the current
+concept record and reports preview availability only while rights remain `PASS`
+and the concept is not permanently unpublished. The historical operations row
+remains available for bounded investigation. Publication behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` with
+  `can_preview=true` after revocation, then passed after the current-rights join.
+  The affected dashboard, operations, storage-expiry and review suites passed
+  98/98. The complete local POD Node matrix ran 939 tests: 930 passed, nine
+  environment-dependent PostgreSQL cases skipped and zero failed. The default
+  local Python runner executed 266 tests but could not collect two
+  OpenCV-dependent modules because `cv2` was unavailable; that incomplete run is
+  not counted as a pass and no dependency or network exception was introduced.
+- Exact [CC PR 784](https://github.com/wecreates/content-control/pull/784) head
+  `156e2428b2f2bcb2f6adede62d33f2435daaf47c` matched the reviewed local tree. It
+  passed hosted POD integration run `40662261424` (job `122727921704`) and
+  production-container run `40662261437` (job `122727921608`), including pinned
+  Python/OpenCV, disposable PostgreSQL, non-root image, durable review and
+  disabled-startup checks, then merged under its exact-head lease as
+  `dad9b711b819b4127aab5953b4bc879c0d41dbdf`.
+- Exact [MF PR 281](https://github.com/wecreates/Money-factory/pull/281) head
+  `8c078279fe655666ea954b8b9662e6779ce29f03` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40663374834` (job `122731674157`) passed every step, and
+  the PR merged under its exact-head lease as
+  `a62a66121099043575339ff387a4b5c0419e6fdc`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`dad9b711b819b4127aab5953b4bc879c0d41dbdf` and started deploy
+`dep-dbgrrqqvcj2c73dot3r0` at event `evt-dbgrrqopiisc73894u10`, but event
+`evt-dbgrrqr4ou5c738vj27g` reported exhausted pipeline minutes before build and
+the deploy ended failed at event `evt-dbgrrqugkaas73c4aaf0`. The authorized
+service remained active, unsuspended, free-tier and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the revoked-preview availability inconsistency in mobile
+operations. Existing code and passing tests are not live acceptance. All 24
+acceptance areas remain OPEN. Production preflight with real authorities,
+independently retained recovery, deployed availability, mounted Money Factory
+authority and live revocation, real accounts and authorized sources, rights,
+official templates, substantive KDP editorial and preview acceptance,
+independent review and remediation, all five permitted marketplace adapters,
+actual economics and reconciliation, owner-phone operations, monitoring drills,
+measured capacity, a real end-to-end job and controlled launch remain
+unverified. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred. This
+execution used only its actually available bounded tools and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r325 — hide held review packages after rights revocation (2026-10-28 UTC)
 
 ### Scope and repair
