@@ -100,6 +100,15 @@ function assertStoredQA(envelope,key,manifest,platform){
   enforceQA(verifyEnvelope(envelope,key,'content-control:pod:qa'),manifest.package_sha256,manifest.template_sha256,platform);
  }catch{throw Error('QA_EVIDENCE_UNAVAILABLE');}
 }
+function assertCurrentReleaseSnapshot(current,claimed,key){
+ try{
+  assertStoredManifest(current.manifest,current.platform,current.manifest_sha256);
+  assertStoredQA(current.qa_envelope,key,current.manifest,current.platform);
+  if(durableManifestIdentity(claimed.manifest,claimed.platform)!==current.manifest_sha256||
+   current.qa_envelope.payload!==claimed.qa_envelope?.payload||
+   current.qa_envelope.signature!==claimed.qa_envelope?.signature)throw Error('RELEASE_SNAPSHOT_CHANGED');
+ }catch{throw Error('LOCAL_RELEASE_BLOCKED');}
+}
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
  if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
@@ -548,12 +557,21 @@ export class PodDB {
   return r.rows[0];
  });}
  async assertPublishable(job){return this.tx(async c=>{
-  const current=(await c.query(`SELECT q.id FROM pod_production_queue q
+  const current=(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+    AND e.kind='pod.production.qa_passed' AND e.payload ? 'manifest_sha256'
+    ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
+   FROM pod_production_queue q
    JOIN pod_concepts p ON p.id=q.concept_id JOIN pod_accounts a ON a.id=q.account_id AND a.platform=q.platform
    WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
    AND q.state='publishing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished AND a.state='ACTIVE'
    FOR SHARE OF q,p,a`,[job.id,job.fencing_token,job.account_id,job.platform])).rows[0];
   if(!current)throw Error('LOCAL_RELEASE_BLOCKED');
+  // The claim transaction releases its locks before artifact/grant resolution.
+  // Rebind the final local guard to the exact durable manifest and signed QA
+  // snapshot that was claimed so a restored or altered publishing row cannot
+  // submit stale in-memory evidence after those waits.
+  assertCurrentReleaseSnapshot(current,job,this.qaKey);
   // Evaluate the live clock after row-lock waits, not transaction-start now().
   const lease=(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
   if(lease?.valid!==true)throw Error('LOCAL_RELEASE_BLOCKED');
