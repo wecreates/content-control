@@ -80,3 +80,30 @@ for(const [name,qa_envelope] of [
  assert.equal(calls.some(sql=>sql.startsWith('INSERT INTO pod_quota_reservations')),false);
  assert.equal(calls.some(sql=>sql.startsWith('UPDATE pod_accounts SET next_allowed_at=')),false);
 });
+
+test('final local release guard rejects a changed durable manifest or QA snapshot',async()=>{
+ const now=Date.now(),originalQA=signedQA({issued_at_ms:now-200,expires_at_ms:now+60000});
+ const changedManifest={...validManifest,files:{...validManifest.files,'print.png':'f'.repeat(64)}};
+ const changedIdentity=crypto.createHash('sha256').update(canonical(changedManifest)).digest('hex');
+ const changedQA=signedQA({issued_at_ms:now-100,expires_at_ms:now+60000});
+ const job={id:'job',account_id:'account',platform:'redbubble',fencing_token:'1',
+  manifest:validManifest,qa_envelope:originalQA};
+ let current={id:'job',platform:'redbubble',manifest:validManifest,
+  manifest_sha256:validIdentity,qa_envelope:originalQA};
+ const client={
+  async query(query){
+   const sql=typeof query==='string'?query:query.text;
+   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))return {rows:[current]};
+   if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+   throw Error('UNEXPECTED_QUERY: '+sql);
+  },
+  release(){}
+ };
+ const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
+ assert.equal(await db.assertPublishable(job),true);
+ current={...current,manifest:changedManifest,manifest_sha256:changedIdentity};
+ await assert.rejects(db.assertPublishable(job),/^Error: LOCAL_RELEASE_BLOCKED$/);
+ current={...current,manifest:validManifest,manifest_sha256:validIdentity,qa_envelope:changedQA};
+ await assert.rejects(db.assertPublishable(job),/^Error: LOCAL_RELEASE_BLOCKED$/);
+});
