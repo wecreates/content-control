@@ -330,8 +330,20 @@ export class PodDB {
   if(lease?.valid!==true)throw Error('LOCAL_PRODUCTION_BLOCKED');
   return true;
  });}
- async holdProduction(job,manifest){return this.tx(async c=>{
+ async holdProduction(job,manifest,{beforeStateChange}={}){
+  if(beforeStateChange!==undefined&&typeof beforeStateChange!=='function')throw Error('HOLD_GUARD_INVALID');
+  return this.tx(async c=>{
   await lockProductionLease(c,job);
+  // The earlier stage check releases its locks before this transaction. Bind
+  // the durable review hold to current concept rights after acquiring the live
+  // production lease, then run the caller's synchronous authority/stop guard.
+  const current=(await c.query(`SELECT p.rights_state,p.permanently_unpublished
+   FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   WHERE q.id=$1 AND q.fencing_token=$2 AND q.state='processing'
+   FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token])).rows[0];
+  if(!current)throw Error('LEASE_LOST');
+  if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
+  beforeStateChange?.();
   const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[manifest,job.id,job.fencing_token]);
   if(!r.rows.length)throw Error('LEASE_LOST');
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',
