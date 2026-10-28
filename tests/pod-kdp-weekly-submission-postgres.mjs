@@ -10,20 +10,29 @@ const manifest={schema_version:1,platform:'kdp',publication_enabled:false,
   'art-mask.png':'c'.repeat(64),'cover.pdf':'d'.repeat(64),'interior.pdf':'e'.repeat(64),
   'interior.receipt.json':'f'.repeat(64),'print.png':'1'.repeat(64),'text-mask.png':'2'.repeat(64)}};
 const manifestSha256=crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
+function signedQA(key){
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-100,
+  expires_at_ms:Date.now()+899000,verdict:'PASS',package_sha256:manifest.package_sha256,
+  template_sha256:manifest.template_sha256,checks:Object.fromEntries([
+   'text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance',
+   'editorial','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights'
+  ].map(name=>[name,true]))});
+ return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+}
 
 // Disposable PostgreSQL fixtures only. No provider call or publication switch.
-export async function verifyKdpWeeklySubmission(pool,bridge){
+export async function verifyKdpWeeklySubmission(pool,bridge,qaKey){
  const concept=crypto.randomUUID(),account=crypto.randomUUID();
  const jobs=[crypto.randomUUID(),crypto.randomUUID(),crypto.randomUUID()];
- const db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const db=new PodDB({pool,bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'}),qaEnvelope=signedQA(qaKey);
  try{
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'kdp-week-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'kdp','ACTIVE',10)",[account]);
   for(const [index,job] of jobs.entries()){
    await pool.query(`INSERT INTO pod_production_queue
-    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest,created_at)
-    VALUES($1,$2,$3,'kdp',$4::integer,'{}','{}',$5,'qa_passed',$6,clock_timestamp()+($4::integer*interval '1 millisecond'))`,
-    [job,concept,account,index+1,crypto.randomUUID(),manifest]);
+    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest,qa_envelope,created_at)
+    VALUES($1,$2,$3,'kdp',$4::integer,'{}','{}',$5,'qa_passed',$6,$7,clock_timestamp()+($4::integer*interval '1 millisecond'))`,
+    [job,concept,account,index+1,crypto.randomUUID(),manifest,qaEnvelope]);
    await pool.query("INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,'pod.production.qa_passed',$3)",
     [crypto.randomUUID(),job,{manifest_sha256:manifestSha256,publication_enabled:false}]);
   }
