@@ -2,15 +2,28 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {PodDB} from '../pod-db-bridge.js';
 
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`:
+ JSON.stringify(value);
+const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+ package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+  'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
+const manifestSha256=crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
+async function insertQaPassed(pool,job,concept,account,revision){
+ await pool.query(`INSERT INTO pod_production_queue
+  (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest)
+  VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'qa_passed',$6)`,[job,concept,account,revision,crypto.randomUUID(),manifest]);
+ await pool.query("INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,'pod.production.qa_passed',$3)",
+  [crypto.randomUUID(),job,{manifest_sha256:manifestSha256,publication_enabled:false}]);
+}
+
 // Disposable PostgreSQL fixtures only. No provider call or publication switch.
 export async function verifyPublishClock(pool,bridge){
  for(const kind of ['timestamps','elapsed-cooldown','disabled','future-cooldown','elapsed-quota']){
   const concept=crypto.randomUUID(),account=crypto.randomUUID(),job=crypto.randomUUID();
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'clock-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[account]);
-  await pool.query(`INSERT INTO pod_production_queue
-   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state)
-   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'qa_passed')`,[job,concept,account,crypto.randomUUID()]);
+  await insertQaPassed(pool,job,concept,account,1);
   if(kind==='elapsed-quota')await pool.query(`INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at)
    VALUES($1,0,$2,clock_timestamp()-interval '24 hours'+interval '1 hour')`,[job,account]);
   const blocker=await pool.connect();let pending,workerPid;
@@ -59,6 +72,7 @@ export async function verifyPublishClock(pool,bridge){
   }finally{
    await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;
    await pool.query('DELETE FROM pod_quota_reservations WHERE account_id=$1',[account]);
+   await pool.query('DELETE FROM pod_events WHERE job_id=$1',[job]);
    await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[job]);
    await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
    await pool.query('DELETE FROM pod_concepts WHERE id=$1',[concept]);
@@ -71,9 +85,7 @@ export async function verifyPublishClock(pool,bridge){
  try{
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'quota-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[account]);
-  for(const [i,job] of jobs.entries())await pool.query(`INSERT INTO pod_production_queue
-   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state)
-   VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'qa_passed')`,[job,concept,account,i+1,crypto.randomUUID()]);
+  for(const [i,job] of jobs.entries())await insertQaPassed(pool,job,concept,account,i+1);
   const claims=await Promise.all([db.claimPublish(account,45),db.claimPublish(account,180)]);
   assert.equal(claims.filter(Boolean).length,1);
   await pool.query("UPDATE pod_production_queue SET state='blocked' WHERE id=$1",[claims.find(Boolean).id]);
@@ -82,6 +94,7 @@ export async function verifyPublishClock(pool,bridge){
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1',[account])).rows[0].n,1);
  }finally{
   await pool.query('DELETE FROM pod_quota_reservations WHERE account_id=$1',[account]);
+  await pool.query('DELETE FROM pod_events WHERE job_id=ANY($1::uuid[])',[jobs]);
   await pool.query('DELETE FROM pod_production_queue WHERE account_id=$1',[account]);
   await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
   await pool.query('DELETE FROM pod_concepts WHERE id=$1',[concept]);
