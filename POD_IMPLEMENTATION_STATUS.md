@@ -69,6 +69,77 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r323 — revalidate grant before durable QA completion (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`5ba286c074d2761efbe167467fbb56576bca8147` and Money Factory
+`7ca5f0517c6d33dcfb122e35379f0dbf1dd8e3b0` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. The only open search result was unrelated
+draft PR 378; no open POD/KDP pull request overlapped this repair. The failed
+database-administration route had no credible access-path change and was not
+retried.
+
+The production worker refreshed and authenticated upstream authority immediately
+before database completion, but the completion transaction could then wait on
+its lease and applicable-rights locks. The exact signed grant could expire during
+those waits and still permit durable `qa_passed` or `qa_failed` state. The worker
+now retains that exact verified envelope and synchronously revalidates its
+current lifetime and scope, together with the local production stop, at the
+transaction's final pre-write boundary. No external authority call is made while
+database locks are held. This closes expiry during those waits; it does not claim
+that an unexpired cached grant proves live revocation status. Publication
+behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` by completing QA
+  after the grant expired during the mocked completion wait. After repair it
+  returned `ENVELOPE_EXPIRED_OR_INVALID`, issued zero completion writes and
+  cleaned the workspace. The full template-production suite passed 73/73.
+- The complete local POD Node matrix ran 933 tests: 924 passed, nine
+  environment-dependent cases skipped and zero failed. Syntax, whitespace and
+  diff checks passed.
+- Exact [CC PR 778](https://github.com/wecreates/content-control/pull/778) head
+  `fcf49a22e1c1ec32bf887a39e9712affb80ad83a` changed only the worker, its
+  cancellation-boundary documentation and regression test. It passed integration
+  run `40638912487` and production-container run `40638912488`, then merged under
+  its exact-head lease as `d53814c49e6cd4b719c033befa17a064c5c70bd5`.
+- Exact [MF PR 278](https://github.com/wecreates/Money-factory/pull/278) head
+  `a114f1d5320e8984c14cc3f1cc8e94519d705480` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40639506701` passed, and the PR merged under its exact-head
+  lease as `b8fd6b33de70c85b4a3c766a577a9ae4396c3902`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`d53814c49e6cd4b719c033befa17a064c5c70bd5` and started deploy
+`dep-dbgolup42hec7395i7v0`, but event `evt-dbgolur4ou5c738tcpu0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed at event
+`evt-dbgolv1g952c73c4u220`. The authorized service remained active, unsuspended,
+free-tier and configured for automatic `main` deployment. No retry, paid
+capacity, plan change, replacement service, secret access or network widening
+was attempted.
+
+This closes only grant expiry during the final database-completion waits.
+Existing code and passing tests are not live acceptance. All 24 acceptance areas
+remain OPEN. Production preflight with real authorities, independently retained
+recovery, deployed availability, mounted Money Factory authority and live
+revocation, real accounts and authorized sources, rights, official templates,
+substantive KDP editorial and preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity, a
+real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r322 — stop before durable QA completion (2026-10-28 UTC)
 
 ### Scope and repair
