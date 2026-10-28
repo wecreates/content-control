@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -109,6 +109,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
     completeProduction:async(_job,_manifest,_qa,{beforeStateChange}={})=>{
      if(disableDuringCompletion)env.POD_PRODUCTION_ENABLED='false';
+     if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();completed++;return {pass:true};
     },
     assertProducible:async()=>{localChecks++;if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
@@ -195,6 +196,11 @@ test('production disable during signed QA-output read wins over a conflicting la
 test('production disable during completion stops before the durable QA state change',async()=>{
  const result=await exercise({review:true,disableDuringCompletion:true,detailed:true});
  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.qaStarted,true);
+ assert.equal(result.completed,0);assert.equal(result.cleaned,1);
+});
+test('grant expiring during completion stops before the durable QA state change',async()=>{
+ const result=await exercise({review:true,expireGrantDuringCompletion:true,detailed:true});
+ assert.equal(result.reason,'ENVELOPE_EXPIRED_OR_INVALID');assert.equal(result.qaStarted,true);
  assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
 test('all platform QA stages receive original art and original asset rights',async()=>{
