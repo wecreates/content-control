@@ -24,6 +24,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Local lock waits must not extend upstream authority or ignore cancellation.
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
   enabled();
+  return envelope;
  };
  let result,primaryError;
  try{result=await (async()=>{
@@ -134,11 +135,17 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    try{verdict=parseSignedJSON(qa.payload)?.verdict;}catch{}
    if(verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
   }
-  await authorizeProduction();
+  const completionGrant=await authorizeProduction();
   // Database locking and live-rights checks can wait after the last grant
-  // lookup. Recheck the local stop boundary inside the completion transaction,
-  // immediately before it changes durable QA state.
-  const result=await db.completeProduction(job,manifest,qa,{beforeStateChange:enabled});
+  // lookup. Recheck the local stop boundary and that exact signed grant's
+  // current lifetime and scope inside the completion transaction, immediately
+  // before it changes durable QA state. Do not perform external authority I/O
+  // while holding the production lease and rights locks.
+  const beforeStateChange=()=>{
+   enabled();
+   enforceBrief(verifyEnvelope(completionGrant,upstreamKey,'content-control:pod'),job.brief);
+  };
+  const result=await db.completeProduction(job,manifest,qa,{beforeStateChange});
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch(error){
   const reason=productionFailure(error);
