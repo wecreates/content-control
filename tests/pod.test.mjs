@@ -56,14 +56,14 @@ test('dry run never claims or invokes publishing dependencies',async()=>{
 });
 test('missing environment fails to dry run',async()=>{assert.equal((await publishOnce({db:{listReady:async()=>[]},env:{},log:()=>{}})).status,'DRY_RUN');});
 test('unregistered adapter blocks without submission',async()=>{
- const f=fixture();let state;const db={claimPublish:async()=>({...f.job,brief:f.job}),finish:async(_j,s)=>{state=s;}};
+ const f=fixture();let state;const db={claimPublish:async()=>({...f.job,brief:f.job,fencing_token:'1',manifest:{},qa_envelope:{},idempotency_key:'fixture-idempotency'}),finish:async(_j,s)=>{state=s;}};
  await publishOnce({db,env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},resolveGrant:async()=>signed(f.grant),verifyArtifacts:async()=>({}),upstreamKey:key,qaKey:key});assert.equal(state,'blocked');
 });
 test('timeout after submission is ambiguous and never retried',async()=>{
  const f=fixture();const template='b'.repeat(64);let calls=0,state;
  const qa=signed({audience:'content-control:pod:qa',verdict:'PASS',package_sha256:f.job.package_sha256,template_sha256:template,
   list_price:{marketplace:'amazon.com',currency:'USD',amount_minor:2000},checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights','editorial'].map(k=>[k,true]))});
- const db={claimPublish:async()=>({...f.job,brief:f.job,manifest:{package_sha256:f.job.package_sha256},qa_envelope:qa}),assertPublishable:async()=>true,finish:async(_j,s)=>{state=s;}};
+ const db={claimPublish:async()=>({...f.job,brief:f.job,fencing_token:'1',manifest:{package_sha256:f.job.package_sha256},qa_envelope:qa,idempotency_key:'fixture-idempotency'}),assertPublishable:async()=>true,finish:async(_j,s)=>{state=s;}};
  await publishOnce({db,env:{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'true'},
   adapters:{kdp:{authorized:true,submit:async()=>{calls++;throw Error('timeout');}}},
   resolveGrant:async()=>signed(f.grant),verifyArtifacts:async()=>({package_sha256:f.job.package_sha256,template_sha256:template,release_checks_passed:true}),upstreamKey:key,qaKey:key});
