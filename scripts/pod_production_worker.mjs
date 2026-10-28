@@ -135,7 +135,10 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(verdict!=='FAIL')throw Error('QA_PROCESS_RESULT_CONFLICT');
   }
   await authorizeProduction();
-  const result=await db.completeProduction(job,manifest,qa);
+  // Database locking and live-rights checks can wait after the last grant
+  // lookup. Recheck the local stop boundary inside the completion transaction,
+  // immediately before it changes durable QA state.
+  const result=await db.completeProduction(job,manifest,qa,{beforeStateChange:enabled});
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch(error){
   const reason=productionFailure(error);
