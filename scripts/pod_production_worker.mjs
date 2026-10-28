@@ -77,10 +77,12 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   await authorizeProduction();
   await runStage('pod_asset_generator.py',['--source',task.source,'--template',task.template,
    '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])]);
+  enabled();
   if(job.brief.platform==='kdp'){
    await authorizeProduction();
    await runStage('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
     '--pages',task.interior.pages,'--font',task.interior.font]);
+   enabled();
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
   const {manifest,artifacts}=await readPackageSnapshot(task.output,
