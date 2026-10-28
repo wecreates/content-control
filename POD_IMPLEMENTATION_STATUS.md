@@ -69,6 +69,83 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r329 — bind review acceptance to exact durable package provenance (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`4793dd6a857e8335dfc1ad325bb3e859569276bf` and Money Factory
+`06c187d9516c60cf1d582f44acb83aa2912ba08c` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. The database-administration route had no credible access-path change and
+was not retried.
+
+A valid signed QA envelope could promote a `REVIEW_REQUIRED` row even when its
+stored package was malformed or its latest durable
+`pod.production.review_required` event was missing or named different manifest
+bytes. Package and artifact reads correctly rejected that same row. Review
+acceptance now locks the current hold and rights row, retrieves the latest durable
+review-hold identity, and validates the complete stored package with the existing
+retrieval contract before any QA state or event write. Missing, malformed or
+mismatched package provenance therefore fails closed. Publication behavior is
+unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` because invalid held
+  packages were accepted, then passed after the provenance check. Focused
+  review/expiry/release coverage passed 73/73. The complete local POD Node matrix
+  ran 942 tests: 933 passed, nine environment-dependent PostgreSQL cases skipped
+  and zero failed. The default local Python runner executed 266 tests but could
+  not collect two OpenCV-dependent modules because `cv2` was unavailable; that
+  incomplete run is not counted as a pass.
+- The first three hosted integration attempts exposed only legacy fixtures that
+  manually fabricated review state instead of creating an authentic durable hold:
+  runs `40685058728` (job `122805164862`), `40685378779` (job
+  `122806270176`) and `40685652693` (job `122807203086`). Those fixtures
+  were repaired through the real hold contract; the product invariant was not
+  weakened. Exact [CC PR 790](https://github.com/wecreates/content-control/pull/790)
+  head `78b9c837659a4baf3496e0f443bc8c638f4d4b1c` then passed hosted POD
+  integration run `40685907733` (job `122808073522`) and production-container
+  run `40685907854` (job `122808338975`), including pinned Python/OpenCV,
+  disposable PostgreSQL, non-root image, real print generation, durable review and
+  disabled-startup checks. It merged under its exact-head lease as
+  `19b8fe445514de100121f05db8def62682e933d1`.
+- Exact [MF PR 284](https://github.com/wecreates/Money-factory/pull/284) head
+  `91091b0d730ffdc80edfe969d0663b24ea897c25` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40687081576` (job `122812098948`) passed every step,
+  and the PR merged under its exact-head lease as
+  `abb7e97318546f8b55fa016fc71c27633272d6a7`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`19b8fe445514de100121f05db8def62682e933d1` and started deploy
+`dep-dbgugq142hec739c7cg0` at event `evt-dbgugq34ou5c7391t430`, but event
+`evt-dbgugq7cv52s73a4p240` reported exhausted pipeline minutes before build and
+the deploy ended failed at event `evt-dbgugq8piisc738be0bg`. The authorized
+service remained active, unsuspended, free-tier and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the review-acceptance package-provenance gap. Existing code and
+passing tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and live revocation, real
+accounts and authorized sources, rights, official templates, substantive KDP
+editorial and preview acceptance, independent review and remediation, all five
+permitted marketplace adapters, actual economics and reconciliation, owner-phone
+operations, monitoring drills, measured capacity, a real end-to-end job and
+controlled launch remain unverified. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r328 — bind preview listings to valid durable package provenance (2026-10-28 UTC)
 
 ### Scope and repair
