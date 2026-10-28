@@ -1,13 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
+ JSON.stringify(value);
+const releaseManifest=platform=>({schema_version:1,platform,publication_enabled:false,
+ package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:Object.fromEntries(
+  (platform==='kdp'?['art-mask.png','cover.pdf','interior.pdf','interior.receipt.json','print.png','text-mask.png']:
+   ['art-mask.png','print.png','text-mask.png']).map((name,index)=>[name,(index+1).toString(16).repeat(64)]))});
 
 function fixture({platform='kdp',prior=false,weekly=0}={}){
+ const manifest=releaseManifest(platform);
  const job={id:'00000000-0000-4000-8000-000000000001',account_id:'00000000-0000-4000-8000-000000000002',
-  platform,state:'qa_passed',attempt:0,fencing_token:'0'};
+  platform,state:'qa_passed',attempt:0,fencing_token:'0',manifest,
+  manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex')};
  const queries=[];
  const client={
   async query(sql,params=[]){
@@ -18,7 +28,7 @@ function fixture({platform='kdp',prior=false,weekly=0}={}){
    if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:job.account_id,platform,state:'ACTIVE',daily_cap:10}]};
    if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.* FROM pod_production_queue'))return {rows:[job]};
+   if(sql.startsWith('SELECT q.*,'))return {rows:[job]};
    if(sql.startsWith('SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue'))return {rows:prior?[{}]:[]};
    if(sql.startsWith('SELECT count(DISTINCT r.job_id)::int AS n'))return {rows:[{n:weekly}]};
    if(sql.startsWith('UPDATE pod_production_queue SET state='))return {rows:[{...job,state:'publishing',attempt:1,fencing_token:'1'}]};
