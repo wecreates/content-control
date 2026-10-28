@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -106,7 +106,11 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    if(interiorTask)resolvedTask.interior=interiorTask;
   }
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
-   db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
+   db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},
+    holdProduction:async(_job,_manifest,{beforeStateChange}={})=>{
+     if(expireGrantDuringHold)Date.now=()=>originalNow()+120000;
+     beforeStateChange?.();held++;
+    },
     completeProduction:async(_job,_manifest,_qa,{beforeStateChange}={})=>{
      if(disableDuringCompletion)env.POD_PRODUCTION_ENABLED='false';
      if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
@@ -277,6 +281,11 @@ test('production rejects missing scope instead of accepting matching undefined v
 });
 test('production accepts current scope-bound official template only into review hold',async()=>{
  assert.deepEqual(await exercise(),{status:'REVIEW_REQUIRED',blocked:0,held:1,cleaned:1,started:true});
+});
+test('grant expiring during review hold stops before the durable state change',async()=>{
+ const result=await exercise({expireGrantDuringHold:true,detailed:true});
+ assert.equal(result.status,'BLOCKED');assert.equal(result.reason,'ENVELOPE_EXPIRED_OR_INVALID');
+ assert.equal(result.held,0);assert.equal(result.cleaned,1);
 });
 test('production rejects a hash-unbound package before durable artifact storage or review hold',async()=>{
  const result=await exercise({invalidManifestHash:true,detailed:true});

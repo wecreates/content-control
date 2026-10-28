@@ -92,9 +92,16 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
   await authorizeProduction();
   await store.putMany(artifacts);
-  await authorizeProduction();
+  const reviewGrant=await authorizeProduction();
   if(typeof task.reviewPackage!=='function'){
-   await db.holdProduction(job,manifest);
+   // A review hold is durable package exposure. Database lease and rights locks
+   // can wait after the grant lookup, so revalidate that exact grant and the
+   // local stop boundary at the final pre-write hook without external I/O.
+   const beforeStateChange=()=>{
+    enabled();
+    enforceBrief(verifyEnvelope(reviewGrant,upstreamKey,'content-control:pod'),job.brief);
+   };
+   await db.holdProduction(job,manifest,{beforeStateChange});
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   let attestation;
