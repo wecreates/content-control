@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -53,7 +53,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    "const fs=require('node:fs');fs.writeFileSync('guide-started','yes');if(process.env.FIXTURE_GUIDE_DELAY_MS)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,Number(process.env.FIXTURE_GUIDE_DELAY_MS));fs.writeFileSync('guide-profile.json',process.argv[process.argv.indexOf('--profile-json')+1]);if(process.env.FIXTURE_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_GUIDE_FAILURE}));process.exit(2);}");
   await fs.writeFile(path.join(root,'scripts/pod_kdp_interior_template_import.py'),
    "const fs=require('node:fs');fs.writeFileSync('interior-guide-started','yes');if(process.env.FIXTURE_INTERIOR_GUIDE_FAILURE){console.log(JSON.stringify({status:'BLOCKED',reason_code:process.env.FIXTURE_INTERIOR_GUIDE_FAILURE}));process.exit(2);}");
-  await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"const fs=require('node:fs');fs.writeFileSync('qa-started','yes');if(process.env.FIXTURE_QA_DELAY_MS)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,Number(process.env.FIXTURE_QA_DELAY_MS));fs.writeFileSync('qa-args.json',JSON.stringify(process.argv));fs.writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));");
+  await fs.writeFile(path.join(root,'scripts/pod_vision_qa.py'),"const fs=require('node:fs');fs.writeFileSync('qa-started','yes');if(process.env.FIXTURE_QA_DELAY_MS)Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,Number(process.env.FIXTURE_QA_DELAY_MS));fs.writeFileSync('qa-args.json',JSON.stringify(process.argv));fs.writeFileSync('qa-signed.json',JSON.stringify({payload:JSON.stringify({verdict:'PASS'})}));if(process.env.FIXTURE_QA_FAILURE)process.exit(2);");
   const templatePath=path.join(root,'template.json');
   if(templateLink){
    const target=path.join(root,'template-target.json');
@@ -78,6 +78,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(disableDuringCoverGuide)env.FIXTURE_GUIDE_DELAY_MS='75';
   if(disableDuringFinalStage)env[platform==='kdp'?'FIXTURE_BOOK_DELAY_MS':'FIXTURE_ASSET_DELAY_MS']='75';
   if(disableDuringQaStage)env.FIXTURE_QA_DELAY_MS='75';
+  if(disableDuringQaOutputRead)env.FIXTURE_QA_FAILURE='yes';
   if(interiorGuideFailure)env.FIXTURE_INTERIOR_GUIDE_FAILURE=interiorGuideFailure;
   const controller=new AbortController();
   const interiorTask=interior?{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',
@@ -89,7 +90,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
    cleanup:async()=>{cleaned++;}};
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
-  if(disableDuringQaStage)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;return path.join(root,'qa-signed.json');}});
+  if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
   if(disableAfterInteriorRead){
    Object.defineProperty(interiorTask,'template',{enumerable:true,get(){env.POD_PRODUCTION_ENABLED='false';return interiorPath;}});
    Object.defineProperty(resolvedTask,'templateSource',{enumerable:true,get(){coverSourceReads++;return sourcePath;}});
@@ -120,7 +121,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   const interiorGuideStarted=await fs.stat(path.join(root,'interior-guide-started')).then(()=>true,()=>false);
   const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
   const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
-  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(disableAfterCoverRead?{interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage?{qaOutputReads}:{})}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(disableAfterCoverRead?{interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -181,6 +182,12 @@ test('production disable during QA stops before signed QA-output access',async()
  assert.equal(result.qaOutputReads,1);
  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.started,true);
  assert.equal(result.qaStarted,true);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
+});
+test('production disable during signed QA-output read wins over a conflicting late result',async()=>{
+ const result=await exercise({review:true,disableDuringQaOutputRead:true,detailed:true});
+ assert.equal(result.qaOutputReads,2);
+ assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.qaStarted,true);
+ assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
 test('all platform QA stages receive original art and original asset rights',async()=>{
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
