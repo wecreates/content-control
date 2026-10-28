@@ -104,4 +104,14 @@ test('publication settlement rejects extra payload and arbitrary reasons before 
  }
  assert.equal(f.queries.length,0);assert.equal(f.writes.length,0);
 });
+test('publication settlement rejects accessor and Proxy receipts without reading them',async()=>{
+ for(const makeReceipt of [
+  reads=>{const receipt={};Object.defineProperty(receipt,'id',{enumerable:true,get(){reads.count++;return 'provider-listing';}});return receipt;},
+  reads=>new Proxy({id:'provider-listing'},{get(target,key,receiver){if(key==='id')reads.count++;return Reflect.get(target,key,receiver);}})
+ ]){
+  const f=fixture(true),reads={count:0};
+  await assert.rejects(f.db.finish(job,'submitted',makeReceipt(reads)),/RECEIPT_INVALID/);
+  assert.equal(reads.count,0);assert.equal(f.queries.length,0);assert.equal(f.writes.length,0);
+ }
+});
 

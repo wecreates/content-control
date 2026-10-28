@@ -1,9 +1,18 @@
 // Compatibility filename requested by the owner. No stealth or detection bypass.
 import crypto from 'node:crypto';
 import {setTimeout as pause} from 'node:timers/promises';
+import {types as utilTypes} from 'node:util';
 import {verifyEnvelope,enforceBrief,enforceQA} from '../integrations/pod/policy.mjs';
 import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/economics.mjs';
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
+function providerReceiptId(receipt){
+ try{
+  if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
+  const descriptor=Object.getOwnPropertyDescriptor(receipt,'id');
+  if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||!validOpaqueText(descriptor.value))return null;
+  return descriptor.value;
+ }catch{return null;}
+}
 export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
  verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
  const publicationEnabled=()=>env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true';
@@ -48,9 +57,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const receipt=await adapter.submit({brief,manifest,idempotencyKey:job.idempotency_key,signal});
   // Match the observer's opaque listing-ID contract. A malformed receipt is
   // uncertain submission, never a submitted row that readback cannot reconcile.
-  if(!validOpaqueText(receipt?.id))throw Error('RECEIPT_INVALID');
+  // Snapshot one own enumerable data property without invoking an untrusted
+  // accessor or Proxy. Validation and durable settlement must use the same ID.
+  const providerId=providerReceiptId(receipt);
+  if(providerId===null)throw Error('RECEIPT_INVALID');
   submittedSettlementAttempted=true;
-  await db.finish(job,'submitted',{id:receipt.id});
+  await db.finish(job,'submitted',{id:providerId});
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){
   // A failed submitted transition may have committed despite its rejected

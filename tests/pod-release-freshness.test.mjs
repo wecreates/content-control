@@ -260,6 +260,19 @@ test('missing and non-string provider receipts remain ambiguous',async()=>{
   assert.deepEqual(finishes,[{state:'ambiguous',value:{}}]);
  }
 });
+test('provider receipt identity cannot change between validation and settlement',async()=>{
+ for(const makeReceipt of [
+  reads=>{const receipt={};Object.defineProperty(receipt,'id',{enumerable:true,get(){reads.count++;return reads.count===1?'validated-listing':'changed-listing';}});return receipt;},
+  reads=>new Proxy({id:'validated-listing'},{get(target,key,receiver){if(key==='id')reads.count++;return Reflect.get(target,key,receiver);}})
+ ]){
+  const f=fixture(),finishes=[],reads={count:0};
+  f.options.adapters.redbubble.submit=async()=>makeReceipt(reads);
+  f.options.db.finish=async(_job,state,value,reason)=>finishes.push({state,value,reason});
+  assert.equal((await publishOnce(f.options)).status,'AMBIGUOUS');
+  assert.equal(reads.count,0);
+  assert.deepEqual(finishes,[{state:'ambiguous',value:{},reason:'SUBMISSION_UNCERTAIN'}]);
+ }
+});
 test('valid opaque receipt IDs retain exact case, spacing and 256-character boundary',async()=>{
  for(const id of ['Provider/Case-A?part=1',' leading-and-trailing ', 'é'.repeat(256)]){
   const f=fixture(),finishes=[];

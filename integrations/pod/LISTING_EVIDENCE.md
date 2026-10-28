@@ -91,6 +91,10 @@ opaque IDs retain their original case, spacing and characters; they are never
 trimmed or invented.
 
 A blank, oversized, missing or non-string receipt cannot mark a job submitted.
+The publisher snapshots exactly one own enumerable provider-ID data property
+after submission. Accessor and Proxy receipts are treated as uncertain without
+invoking their traps, so the identity validated in memory cannot change before
+the durable submitted transition.
 Because the adapter may already have created a listing, the publisher records
 ambiguous with SUBMISSION_UNCERTAIN and no malformed provider ID. It makes only
 one submission attempt. Existing authenticated, evidence-backed readback may
