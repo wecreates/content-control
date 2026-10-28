@@ -69,6 +69,96 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r335 — snapshot verified manifest before release waits (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`58a9f4580808552760a3d229f68250d619919c56` and Money Factory
+`1b416b0843ef74bdf1645b960751f403cda83ba3` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. The database-administration route had no credible access-path change and
+was not retried.
+
+The publisher accepted the object returned by artifact verification, then awaited
+the current Money Factory grant and local database eligibility before passing that
+same mutable object to the adapter. A resolver-owned nested file digest could
+therefore change after verification but before submission. The pre-fix regression
+mutated `manifest.files['print.png']` during grant resolution; current main passed
+the changed value to the adapter and returned `AMBIGUOUS` when the exact verified
+digest assertion failed. The publisher now copies one bounded plain JSON data
+snapshot immediately after artifact verification and carries only that snapshot
+through the remaining waits. Accessors, Proxies, sparse/decorated arrays,
+non-plain objects, unsupported values and excessive graphs fail closed before
+authority lookup or adapter submission. This repair does not authorize any
+marketplace adapter or establish a live provider result.
+
+### Content Control verification and merge
+
+- The focused publisher, release, lease and policy suites passed 86 tests with
+  zero failures/skips after the repair. The complete local Node POD matrix passed
+  948 of 957 tests with nine existing environment-only skips and zero failures.
+  `node --check` and `git diff --check` passed.
+- Local Python discovery ran 266 tests; 264 completed successfully and two modules
+  could not import because this runtime lacked `cv2`. No Python code changed and
+  the dependency-backed hosted gates below installed pinned OpenCV and passed the
+  complete Python coverage.
+- PR #802 exact tested head:
+  `1c258c4131cbf1f7d4b4371fcd1cb9b497c687f2`. All three remote blob hashes
+  exactly matched the locally tested files.
+- POD integration gates run `40736930040`, job `122987879394`: success,
+  including pinned OpenCV/Python and disposable PostgreSQL coverage.
+- POD container runtime gates run `40736930167`, job `122987880121`: success,
+  including nonroot dependencies, Python QA/rendering, Node/PostgreSQL tests,
+  real print/review generation and disabled startup checks.
+- Guarded Content Control squash merge:
+  `7bc96b17743c87b5a9ad4b8f907ce663ad699e0b`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #290 exact head `353589df66dbacaf300f4ca559cf7747961b82aa`
+  pinned the verified Content Control merge while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- Local Money Factory contracts passed 120 of 121 Node tests with one expected
+  database-only skip, plus 81 of 81 Python tests.
+- POD cross-repository review verification run `40738125686`, job
+  `122992093724`: success, including the pinned publisher regression,
+  KDP editorial/rendering suites and PostgreSQL-backed contracts.
+- Guarded Money Factory squash merge:
+  `4b17031c820239048e7b835dd619021695cab941`.
+
+### Authorized Render verification
+
+- The authorized `content-control-render-worker` remained active and unsuspended
+  on its existing free plan, `main` branch and commit-triggered deployment path.
+- Render detected the functional Content Control merge and created deploy
+  `dep-dbh36op5efls73aojfgg`.
+- Deploy-started event `evt-dbh36p1qpdlc73fkcu80` recorded the exact merge at
+  `2026-10-28T17:39:48.306376Z`; event `evt-dbh36p29bbkc73b290f0`
+  recorded `pipeline_minutes_exhausted` at `2026-10-28T17:39:48.492945Z`;
+  deploy-ended event `evt-dbh36pmvq37c73bmq50g` recorded failed status at
+  `2026-10-28T17:39:50.062252Z`.
+- No build or hosted rollout of r335 was verified. No manual retry, paid
+  capacity, secret access, network widening or service replacement was attempted.
+
+### Acceptance truth
+
+This closes one release-manifest time-of-check/time-of-use gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production database/schema preflight, independently retained recovery, deployed
+hybrid dependencies, mounted current Money Factory authority and real
+grants/revocation, authorized accounts and market sources, current regional
+rights and official-template evidence, substantive KDP editorial/preview
+acceptance, calibrated independent QA/remediation, permitted live adapters for
+KDP, Redbubble, TeePublic, Zazzle and Spreadshirt, actual economics and financial
+reconciliation, owner-phone operations, monitoring/recovery drills, measured
+capacity, real end-to-end acceptance and controlled launch readiness remain
+unverified. All 24 acceptance areas remain OPEN. Etsy remained excluded.
+`PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain mandatory;
+no publication was attempted. This run used only its actually available bounded
+tools and did not claim a continuously running self-hosted worker.
+
 ## Run receipt r334 — snapshot provider identity before durable settlement (2026-10-28 UTC)
 
 ### Scope and repair
