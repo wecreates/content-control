@@ -124,6 +124,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(error.message!=='PYTHON_STAGE_FAILED')throw error;
    qaProcessFailed=true;
   }
+  enabled();
   const qa=await readSignedJSONFile(task.qaSignedOutput,{signal});
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
