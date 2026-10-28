@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -72,11 +72,28 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(interior)await fs.writeFile(interiorPath,interiorText??JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
    platform,destination_platform:platform,mode:'PRELAUNCH'};
-  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,completed=0;
+  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,completed=0,interiorReads=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
   if(guideFailure)env.FIXTURE_GUIDE_FAILURE=guideFailure;
   if(interiorGuideFailure)env.FIXTURE_INTERIOR_GUIDE_FAILURE=interiorGuideFailure;
   const controller=new AbortController();
+  const interiorTask=interior?{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',
+   ...(bookDetails?{bookDetails:'unused'}:{}),...(interiorTemplateSource?{source:interiorSourcePath}:{})}:undefined;
+  const resolvedTask={rights_verified:true,templateScope,source:assetSourcePath,textLayers:path.join(root,'unused'),assetRights:assetRightsPath,
+   ...(assetRoot?{assetRoot:root}:{}),
+   ...(templateSource?{templateSource:sourcePath}:{}),
+   output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),
+   ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
+   cleanup:async()=>{cleaned++;}};
+  if(disableAfterCoverRead){
+   Object.defineProperties(resolvedTask,{
+    template:{enumerable:true,get(){env.POD_PRODUCTION_ENABLED='false';return templatePath;}},
+    interior:{enumerable:true,get(){interiorReads++;return interiorTask;}}
+   });
+  }else{
+   resolvedTask.template=templatePath;
+   if(interiorTask)resolvedTask.interior=interiorTask;
+  }
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
    db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},holdProduction:async()=>{held++;},
     completeProduction:async()=>{completed++;return {pass:true};},
@@ -85,12 +102,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    resolveGrant:async()=>{grantCalls++;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
-   resolveTask:async()=>({rights_verified:true,templateScope,template:templatePath,source:assetSourcePath,textLayers:path.join(root,'unused'),assetRights:assetRightsPath,
-    ...(assetRoot?{assetRoot:root}:{}),
-    ...(templateSource?{templateSource:sourcePath}:{}),
-    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),...(interior?{interior:{template:interiorPath,pages:'unused',font:'unused',fontRights:'unused',fontLicense:'unused',...(bookDetails?{bookDetails:'unused'}:{}),...(interiorTemplateSource?{source:interiorSourcePath}:{})}}:{}),
-    ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
-    cleanup:async()=>{cleaned++;}})});
+   resolveTask:async()=>resolvedTask});
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
   const bookStarted=await fs.stat(path.join(root,'book-started')).then(()=>true,()=>false);
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
@@ -98,7 +110,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   const interiorGuideStarted=await fs.stat(path.join(root,'interior-guide-started')).then(()=>true,()=>false);
   const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
   const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
-  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(disableAfterCoverRead?{interiorReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -118,6 +130,14 @@ test('production rejects ambiguous or linked signed templates before launching a
   assert.equal(result.started,false);assert.equal(result.bookStarted,false);
   assert.equal(result.qaStarted,false);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
  }
+});
+test('production disable during cover verification stops before KDP interior access',async()=>{
+ const result=await exercise({platform:'kdp',template:record('kdp'),
+  interior:{...record('kdp'),audience:'pod:interior-template'},disableAfterCoverRead:true,detailed:true});
+ assert.equal(result.interiorReads,0);
+ assert.equal(result.reason,'PRODUCTION_STOPPED');
+ assert.equal(result.started,false);assert.equal(result.guideStarted,false);
+ assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
 test('all platform QA stages receive original art and original asset rights',async()=>{
  for(const platform of ['kdp','redbubble','teepublic','zazzle','spreadshirt']){
