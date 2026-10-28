@@ -51,6 +51,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
    const interiorEnvelope=await readSignedJSONFile(task.interior.template,{signal});
+   enabled();
    const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
    interiorTemplate=interior;
    const profile=kdpCalculatorProfile(cover,interior);
