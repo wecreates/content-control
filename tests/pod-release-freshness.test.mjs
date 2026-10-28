@@ -136,6 +136,23 @@ test('current grant is fetched after verified artifacts and submission uses same
  assert.deepEqual(f.events,['artifacts','grant','submit','submitted']);
 });
 
+test('submission preserves claimed idempotency identity across resolver mutation',async()=>{
+ const f=fixture(),claimed=f.options.db.claimPublish,original=f.options.idempotencyKey??'fixture-idempotency';
+ let claimedJob;
+ f.options.db.claimPublish=async(...args)=>{claimedJob=await claimed(...args);return claimedJob;};
+ f.options.resolveGrant=async job=>{
+  assert.equal(job,claimedJob);
+  job.idempotency_key='resolver-mutated-idempotency';
+  return sign(f.release);
+ };
+ f.options.adapters.redbubble.submit=async({idempotencyKey})=>{
+  assert.equal(idempotencyKey,original);
+  return {id:'fixture-receipt'};
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.deepEqual(f.events,['submitted']);
+});
+
 test('submission uses the exact manifest snapshot returned by artifact verification',async()=>{
  const f=fixture(),verifiedFileHash='d'.repeat(64),changedFileHash='e'.repeat(64);
  f.manifest.files={'print.png':verifiedFileHash};
