@@ -301,7 +301,8 @@ export class PodDB {
   const rows=(await this.read(`SELECT q.id,q.platform,
    CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END AS state,
    q.reason_code,q.attempt,q.created_at,
-   q.manifest IS NOT NULL AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
+   q.manifest IS NOT NULL AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
+    AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END=$1
    ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state])).rows;

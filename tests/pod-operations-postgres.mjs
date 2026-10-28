@@ -22,6 +22,9 @@ export async function verifyOperationsListing(pool,db){
   await pool.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest='{}' WHERE id=$1",[ids[0]]);
   assert.equal((await db.listOperationsJobs()).find(row=>row.id===ids[0]).can_preview,true);
   assert.equal((await db.listOperationsJobs('qa_failed')).some(row=>row.id===ids[0]),false);
+  await pool.query("UPDATE pod_production_queue SET state='qa_passed',reason_code=NULL WHERE id=$1",[ids[0]]);
+  assert.equal((await db.listOperationsJobs('qa_passed')).find(row=>row.id===ids[0]).can_preview,false);
+  await pool.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED' WHERE id=$1",[ids[0]]);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
   const revoked=(await db.listOperationsJobs()).find(row=>row.id===ids[0]);
   assert.ok(revoked);assert.equal(revoked.can_preview,false);
