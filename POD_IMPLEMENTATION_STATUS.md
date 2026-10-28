@@ -69,6 +69,82 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r322 — stop before durable QA completion (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`96734fdabd9d3a7d3dd89d0bbc3cd07654d0b5ec` and Money Factory
+`85ff72ee055efb7e75e019b3d0861f28525df50e` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. The only open search result was unrelated
+draft PR 378; no open POD/KDP pull request overlapped this repair. The failed
+database-administration route had no credible access-path change and was not
+retried.
+
+The coordinator refreshed upstream and local authority immediately before final
+QA completion, but the database completion transaction could then wait for its
+lease and rights locks. A production stop arriving during those waits could be
+missed before the durable `qa_passed` or `qa_failed` update. Completion now invokes
+a synchronous stop assertion inside the transaction after the lease, applicable
+rights and signed-QA checks and immediately before the first state-changing SQL.
+A stop rolls the transaction back and uses the existing fenced
+`PRODUCTION_STOPPED` settlement; it cannot create a completed-then-failed race.
+Publication behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic completion-boundary regression failed against prior `main`
+  by returning successful QA completion after the test disabled production.
+  After repair it returned `PRODUCTION_STOPPED`, issued zero completion writes
+  and cleaned the workspace. A database regression separately proved the guard
+  runs once after lease validation and rolls back with zero state-changing SQL.
+  The full template-production suite passed 72/72 and the focused lease suite
+  passed 16/16.
+- The complete local POD Node matrix ran 932 tests: 923 passed, nine
+  environment-dependent cases skipped and zero failed. Local Python discovery
+  passed 264 tests but could not import two market-intake modules because this
+  execution environment lacked `cv2`; it did not fabricate a full local pass.
+  The hosted integration installed the pinned OpenCV dependency and completed
+  its full Python and PostgreSQL path successfully. Syntax, whitespace and diff
+  checks passed.
+- Exact [CC PR 776](https://github.com/wecreates/content-control/pull/776) head
+  `8569f09b75f9972c99115f379fc70411c99ae5a5` changed only the five reviewed
+  files, passed integration run `40636178645` and production-container run
+  `40636178594`, and merged under its exact-head lease as
+  `6f14561870318523b3a1d23ff88fc4c188d5e0a9`.
+- Exact [MF PR 277](https://github.com/wecreates/Money-factory/pull/277) head
+  `08794046bc9d020be7d0f85948946b25da8409bd` changed only the immutable Content
+  Control checkout pin, retained both publication flags as false, passed local
+  cross-repository sets of 121 Node tests (120 passed, one intentional skip) and
+  81 Python tests, and passed hosted cross-repository run `40636895968`. It
+  merged under its exact-head lease as
+  `7ca5f0517c6d33dcfb122e35379f0dbf1dd8e3b0`.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`6f14561870318523b3a1d23ff88fc4c188d5e0a9` and started deploy
+`dep-dbgo9e7b9u1s7394sbv0`, but event `evt-dbgo9eebidqs73dbgp90` reported
+exhausted pipeline minutes before build and the deploy ended build-failed. The
+authorized free service remained active, unsuspended and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the final pre-completion production-switch gap. Existing code
+and passing tests are not live acceptance. All 24 acceptance areas remain OPEN.
+Production preflight with real authorities, independently retained recovery,
+deployed availability, mounted Money Factory authority and current grants and
+revocation, real accounts and authorized sources, rights, official templates,
+substantive KDP editorial and preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity, a
+real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`
+remain mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r321 — discard late signed QA output after disable (2026-10-28 UTC)
 
 ### Scope and repair
