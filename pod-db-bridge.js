@@ -391,7 +391,8 @@ export class PodDB {
   this.active();
   return {body:row.body,media_type:row.media_type};
  }
- async completeProduction(job,manifest,qaEnvelope){
+ async completeProduction(job,manifest,qaEnvelope,{beforeStateChange}={}){
+  if(beforeStateChange!==undefined&&typeof beforeStateChange!=='function')throw Error('COMPLETION_GUARD_INVALID');
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256,job.platform);return true;}catch{return false;}})();
   return this.tx(async c=>{
@@ -408,6 +409,10 @@ export class PodDB {
    }
    const currentQA=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    if(pass)enforceQA(currentQA,manifest.package_sha256,manifest.template_sha256,job.platform);
+   // This synchronous hook runs after every awaited lock/validation query and
+   // before the first state-changing statement. A stop throws, rolls back the
+   // transaction and leaves the fenced failure path free to settle the lease.
+   beforeStateChange?.();
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,reason_code=CASE WHEN $1='qa_passed' THEN NULL ELSE 'QA_FAILED' END,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
     WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id`,
     [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);

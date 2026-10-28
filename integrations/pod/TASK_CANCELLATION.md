@@ -19,6 +19,12 @@ package-output access, another Python process, package persistence, signed
 QA-output processing, or production completion. If the production switch changes
 during the signed-output read, the in-flight read settles but its late result is
 discarded before payload inspection.
+The completion transaction also invokes a synchronous stop assertion after its
+lease, applicable rights and signed-QA checks and immediately before its first durable state
+change. A stop observed after those database waits rolls back completion, then
+uses the existing fenced failure settlement. It cannot commit QA completion and
+subsequently overwrite it as stopped. This is a final pre-write boundary, not a
+claim that an already-issued PostgreSQL statement can be canceled.
 If a delayed production claim returns no job after cancellation, the direct
 worker result is `STOPPED`, not a healthy `IDLE` cycle. The same result applies
 when the production switch changes to false while an empty claim is in flight.
