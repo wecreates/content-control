@@ -10,11 +10,11 @@ function qa(){const payload=JSON.stringify({schema_version:1,audience:'content-c
  expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
-function fixture(valid){
+function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
  const writes=[],queries=[];
  const client={release(){},query:async sql=>{sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
-  if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:'PASS',permanently_unpublished:false}]};
+  if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
   if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}
   return {rows:[]};}};
  const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
@@ -53,6 +53,19 @@ test('completion stop guard rolls back before the durable QA state change',async
  }),/PRODUCTION_STOPPED/);
  assert.equal(calls,1);assert.equal(f.writes.length,0);
  assert.equal(f.queries.at(-2),'ROLLBACK');
+});
+test('review hold stop guard rolls back before the durable state change',async()=>{
+ const f=fixture(true);let calls=0;
+ await assert.rejects(f.db.holdProduction(job,manifest,{
+  beforeStateChange(){calls++;throw Error('PRODUCTION_STOPPED');}
+ }),/PRODUCTION_STOPPED/);
+ assert.equal(calls,1);assert.equal(f.writes.length,0);
+ assert.equal(f.queries.at(-2),'ROLLBACK');
+});
+for(const state of [{rightsState:'FAIL'},{permanentlyUnpublished:true}])test('review hold rechecks current rights after lease: '+JSON.stringify(state),async()=>{
+ const f=fixture(true,state);
+ await assert.rejects(f.db.holdProduction(job,manifest),/RIGHTS_BLOCKED/);
+ assert.equal(f.writes.length,0);assert.equal(f.queries.at(-2),'ROLLBACK');
 });
 for(const [label,state,receipt,reason] of [
  ['successful submission','submitted',{id:'provider-listing'},null],
