@@ -345,6 +345,23 @@ test('operations list advertises previews only for the exact durable review hold
  const rows=await db.listOperationsJobs('qa_passed');
  assert.equal(rows.length,1);assert.equal(rows[0].id,'fixture-job');assert.equal(rows[0].can_preview,false);
 });
+test('operations list does not advertise an invalid stored review package',async()=>{
+ const manifest=storedManifest();manifest.package_sha256='invalid';
+ const pool=readPool(async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;
+  const row={id:'fixture-job',platform:'redbubble',state:'review_required',reason_code:'REVIEW_REQUIRED',
+   attempt:1,created_at:new Date(0),can_preview:true};
+  if(text.includes('q.reason_code,q.attempt,q.created_at,q.manifest,')){
+   row.manifest=manifest;row.manifest_sha256=storedIdentity(manifest);
+  }
+  return {rows:[row]};
+ });
+ const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
+ const rows=await db.listOperationsJobs();
+ assert.equal(rows.length,1);assert.equal(rows[0].can_preview,false);
+ assert.deepEqual(Object.keys(rows[0]).sort(),
+  ['id','platform','state','reason_code','attempt','created_at','can_preview'].sort());
+});
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest:storedManifest('etsy')};
