@@ -89,6 +89,15 @@ Another event cannot shadow the hold merely by carrying a field also named
 manifest exactly. This event-kind binding preserves review provenance but does
 not itself establish independent approval or live retention.
 
+Both review retrieval queries also join the held job to its current concept and
+require `rights_state='PASS'` with no permanent-unpublication tombstone in the
+same database statement that selects the manifest or bytes. A later adverse
+rights record therefore makes an existing hold unavailable; the historical
+manifest and hash-addressed bytes remain retained for audit/recovery and are not
+silently deleted or relabeled. This is current local rights-state enforcement,
+not proof that the rights registry is complete, live authority is mounted, or a
+real marketplace has accepted the asset.
+
 Package and artifact retrieval both recheck the configured storage lifetime
 after their database wait. Crossing the safety cutoff while a query is pending
 therefore returns `POD_STORAGE_EXPIRING` instead of releasing a manifest or

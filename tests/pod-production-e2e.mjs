@@ -138,6 +138,24 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   assert.deepEqual(await storageSnapshot(),beforeRevocation);
   assert.deepEqual((await pool.query('SELECT state,manifest,reason_code FROM pod_production_queue WHERE id=$1',[revokedId])).rows[0],
    {state:'qa_failed',manifest:null,reason_code:'APPROVAL_REVOKED'});
+  // A review hold is not a durable rights grant. Exercise the real retrieval
+  // joins with a second held row so its irreversible tombstone cannot disturb
+  // the successful-review and production cases above.
+  const heldConcept=crypto.randomUUID(),heldId=crypto.randomUUID();
+  const manifestIdentity=(await pool.query(`SELECT payload->>'manifest_sha256' AS value FROM pod_events
+   WHERE job_id=$1 AND kind='pod.production.review_required' ORDER BY created_at DESC,id DESC LIMIT 1`,[id])).rows[0].value;
+  await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'fixture',$2,'PASS')",
+   [heldConcept,crypto.randomUUID()]);
+  await pool.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,state,brief,
+   upstream_envelope,idempotency_key,manifest,reason_code) VALUES($1,$2,$3,'redbubble',1,'qa_failed',$4,$5,$6,$7,'REVIEW_REQUIRED')`,
+   [heldId,heldConcept,account,job,grant,crypto.randomUUID(),saved.manifest]);
+  await pool.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+   [crypto.randomUUID(),heldId,'pod.production.review_required',{manifest_sha256:manifestIdentity,publication_enabled:false}]);
+  assert.equal((await db.reviewPackage(heldId)).manifest.package_sha256,saved.manifest.package_sha256);
+  assert.equal(hash((await db.reviewArtifact(heldId,heldSha)).body),heldSha);
+  await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[heldConcept]);
+  await assert.rejects(db.reviewPackage(heldId),/PACKAGE_UNAVAILABLE/);
+  await assert.rejects(db.reviewArtifact(heldId,heldSha),/ARTIFACT_UNAVAILABLE/);
  }finally{await pool.end();await fs.rm(tmp,{recursive:true,force:true});}
 });
 
