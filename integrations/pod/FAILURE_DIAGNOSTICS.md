@@ -85,6 +85,15 @@ cooldown mutation. The publisher still revalidates that evidence immediately
 before submission because a successful claim is not permission to reuse an
 expired decision later.
 
+After artifact and authority resolution, the final local release guard locks the
+publishing row again and requires its current manifest provenance and signed QA
+envelope to be byte-for-byte the same snapshot returned by the claim. A restored,
+rewritten or otherwise changed row fails with `LOCAL_RELEASE_BLOCKED` before any
+adapter call, even when the replacement package and QA are independently valid.
+The publisher then rechecks evidence time and kill switches immediately before
+submission. This guards durable/in-memory consistency; it does not authorize an
+adapter or prove a provider accepted the product.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.
