@@ -5,7 +5,7 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
-const key='synthetic-expiry-key-'.repeat(3),job={id:'expiry-job',fencing_token:1};
+const key='synthetic-expiry-key-'.repeat(3),job={id:'expiry-job',fencing_token:1,platform:'redbubble'};
 const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
  value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
  JSON.stringify(value);
