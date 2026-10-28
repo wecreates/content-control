@@ -28,6 +28,10 @@ import {verifyCapacity} from './pod-capacity-postgres.mjs';
 import {verifyConceptBudget} from './pod-concept-budget-postgres.mjs';
 import {verifyKdpWeeklySubmission} from './pod-kdp-weekly-submission-postgres.mjs';
 
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
+ JSON.stringify(value);
+
 test('PostgreSQL migration isolation, artifact durability and concurrent claims',{skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:4});
  const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
@@ -109,7 +113,9 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await pool.query("INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key) VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4)",[job,concept,account,crypto.randomUUID()]);
   const claims=await Promise.all([db.claimProduction(),db.claimProduction()]);
   assert.equal(claims.filter(Boolean).length,1);assert.equal(claims.find(Boolean).id,job);
-  const claimed=claims.find(Boolean),manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
+  const claimed=claims.find(Boolean),manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+   package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+    'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
    checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
@@ -124,6 +130,24 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const leaseConcept=crypto.randomUUID(),leaseAccount=crypto.randomUUID();
   await pool.query("INSERT INTO pod_concepts VALUES($1,'lease-fixture',$2,'PASS',false,now())",[leaseConcept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[leaseAccount]);
+  // A signed QA decision must not promote a review row whose durable hold
+  // event is absent or names different manifest bytes.
+  for(const [index,eventIdentity] of [null,'f'.repeat(64)].entries()){
+   const reviewJob=crypto.randomUUID();
+   await pool.query(`INSERT INTO pod_production_queue
+    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,manifest,reason_code)
+    VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'qa_failed',$6,'REVIEW_REQUIRED')`,
+    [reviewJob,leaseConcept,leaseAccount,index+20,crypto.randomUUID(),manifest]);
+   if(eventIdentity)await pool.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+    [crypto.randomUUID(),reviewJob,'pod.production.review_required',
+     {package_sha256:manifest.package_sha256,manifest_sha256:eventIdentity,publication_enabled:false}]);
+   await assert.rejects(db.acceptReview(reviewJob,qa),/PACKAGE_UNAVAILABLE/);
+   assert.deepEqual((await pool.query('SELECT state,reason_code,qa_envelope FROM pod_production_queue WHERE id=$1',[reviewJob])).rows[0],
+    {state:'qa_failed',reason_code:'REVIEW_REQUIRED',qa_envelope:null});
+   assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.production.qa_passed'",[reviewJob])).rows[0].n,0);
+   await pool.query('DELETE FROM pod_events WHERE job_id=$1',[reviewJob]);
+   await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[reviewJob]);
+  }
   const failedPayload=JSON.stringify({...JSON.parse(payload),verdict:'FAIL'});
   const failedQA={payload:failedPayload,signature:crypto.createHmac('sha256',qaKey).update(failedPayload).digest('hex')};
   for(const [index,action] of [
@@ -174,6 +198,10 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until,manifest,reason_code)
     VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,$6,1,clock_timestamp()+interval '1 minute',$7,$8)`,
     [qaJob.id,leaseConcept,leaseAccount,index+5,crypto.randomUUID(),state,manifest,reason]);
+   if(review)await pool.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+    [crypto.randomUUID(),qaJob.id,'pod.production.review_required',
+     {package_sha256:manifest.package_sha256,
+      manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),publication_enabled:false}]);
    const blocker=await pool.connect(),originalNow=Date.now,issued=originalNow();let now=issued,pending,workerPid;
    Date.now=()=>now;
    const shortPayload=JSON.stringify({...JSON.parse(payload),issued_at_ms:issued-1,expires_at_ms:issued+1000});
@@ -195,7 +223,8 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     assert.equal((await pending).error?.message,'ENVELOPE_EXPIRED_OR_INVALID');
     const unchanged=(await pool.query('SELECT state,manifest,qa_envelope,reason_code FROM pod_production_queue WHERE id=$1',[qaJob.id])).rows[0];
     assert.deepEqual(unchanged,{state,manifest,qa_envelope:null,reason_code:reason});
-    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[qaJob.id])).rows[0].n,0);
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[qaJob.id])).rows[0].n,review?1:0);
+    await pool.query('DELETE FROM pod_events WHERE job_id=$1',[qaJob.id]);
     await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[qaJob.id]);
    }finally{Date.now=originalNow;await blocker.query('ROLLBACK');blocker.release();if(pending)await pending;}
   }

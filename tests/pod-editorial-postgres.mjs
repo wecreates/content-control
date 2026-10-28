@@ -8,12 +8,19 @@ export async function verifyEditorialGate(pool,bridge){
  const key='synthetic-editorial-db-key-'.repeat(2);
  const db=new PodDB({pool,bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  const job={id,platform:'kdp',fencing_token:1};
- const manifest={package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64)};
+ const manifest={schema_version:1,platform:'kdp',publication_enabled:false,
+  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64),
+   'cover.pdf':'f'.repeat(64),'interior.pdf':'1'.repeat(64),'interior.receipt.json':'2'.repeat(64)}};
  const qa=(editorial,manuscript_provenance=true)=>{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
    checks:{...Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details','regional_rights'].map(k=>[k,true])),editorial,manuscript_provenance}});
   return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ };
+ const placeOnReview=async()=>{
+  await pool.query("UPDATE pod_production_queue SET state='processing',reason_code=NULL,lease_until=clock_timestamp()+interval '5 minutes' WHERE id=$1",[id]);
+  await db.holdProduction(job,manifest);
  };
  try{
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,$2,$3,'PASS')",[concept,crypto.randomUUID(),crypto.randomUUID()]);
@@ -23,8 +30,9 @@ export async function verifyEditorialGate(pool,bridge){
   const result=await db.completeProduction(job,manifest,qa());
   assert.equal(result.pass,false);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_failed');
-  // Place the disposable fixture into the external review path.
-  await pool.query("UPDATE pod_production_queue SET reason_code='REVIEW_REQUIRED' WHERE id=$1",[id]);
+  // Enter the external review path through the real hold transaction so the
+  // package and its durable manifest identity remain exact.
+  await placeOnReview();
   await assert.rejects(db.acceptReview(id,qa()),/QA_BLOCKED/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_failed');
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.production.qa_passed'",[id])).rows[0].n,0);
@@ -34,7 +42,7 @@ export async function verifyEditorialGate(pool,bridge){
    const text=JSON.stringify(payload),envelope={payload:text,signature:crypto.createHmac('sha256',key).update(text).digest('hex')};
    await pool.query("UPDATE pod_production_queue SET state='processing',lease_until=clock_timestamp()+interval '5 minutes' WHERE id=$1",[id]);
    assert.equal((await db.completeProduction(job,manifest,envelope)).pass,false);
-   await pool.query("UPDATE pod_production_queue SET reason_code='REVIEW_REQUIRED' WHERE id=$1",[id]);
+   await placeOnReview();
    await assert.rejects(db.acceptReview(id,envelope),/QA_BLOCKED/);
    assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_failed');
   }

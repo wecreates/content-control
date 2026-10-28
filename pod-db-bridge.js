@@ -367,8 +367,19 @@ export class PodDB {
   // connection or query parameter. Review artifacts already use this bound.
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('REVIEW_NOT_PENDING');
   return this.tx(async c=>{
-   const job=(await c.query("SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' AND p.rights_state='PASS' AND NOT p.permanently_unpublished FOR UPDATE OF q FOR SHARE OF p",[jobId])).rows[0];
+   const job=(await c.query(`SELECT q.*,
+    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
+     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
+    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
+    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
+    FOR UPDATE OF q FOR SHARE OF p`,[jobId])).rows[0];
    if(!job)throw Error('REVIEW_NOT_PENDING');
+   // A signed QA decision can only promote the same package that the owner
+   // could retrieve from this durable review hold. Missing, malformed or
+   // mismatched event provenance fails before any queue or event write.
+   assertStoredManifest(job.manifest,job.platform,job.manifest_sha256);
    // Authentication before connection acquisition cannot authorize an expired
    // review after pool or row-lock waits. Revalidate at the state transition.
    enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256,job.platform);

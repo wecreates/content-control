@@ -5,6 +5,10 @@ import {recordMarketObservation} from '../integrations/pod/market.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 
+const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
+ value&&typeof value==='object'?`{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`:
+ JSON.stringify(value);
+
 // Advance the application clock after real SQL writes have completed but before
 // the callback resumes. Verify rollback in the disposable integration database.
 export async function verifyEvidenceExpiry(pool,bridge,proof){
@@ -12,13 +16,18 @@ export async function verifyEvidenceExpiry(pool,bridge,proof){
  for(const kind of ['market','finance','listing','review','complete-pass','complete-fail']){
   const concept=crypto.randomUUID(),account=crypto.randomUUID(),job=crypto.randomUUID(),event=crypto.randomUUID();
   const state=kind==='review'?'qa_failed':kind.startsWith('complete')?'processing':'submitted';
-  const reason=kind==='review'?'REVIEW_REQUIRED':null,manifest={package_sha256:proof,template_sha256:proof};
+  const reason=kind==='review'?'REVIEW_REQUIRED':null,manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+   package_sha256:proof,template_sha256:proof,files:{'art-mask.png':proof,'print.png':proof,'text-mask.png':proof}};
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,$2,$3,'PASS')",[concept,crypto.randomUUID(),crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[account]);
   await pool.query(`INSERT INTO pod_production_queue
    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,reason_code,manifest,fencing_token,lease_until)
    VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,$5,$6,$7,1,clock_timestamp()+interval '1 minute')`,
    [job,concept,account,crypto.randomUUID(),state,reason,manifest]);
+  if(kind==='review')await pool.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
+   [crypto.randomUUID(),job,'pod.production.review_required',
+    {package_sha256:manifest.package_sha256,
+     manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),publication_enabled:false}]);
   const originalNow=Date.now,issued=originalNow();let now=issued,advanced=false;
   Date.now=()=>now;
   try{
@@ -45,10 +54,11 @@ export async function verifyEvidenceExpiry(pool,bridge,proof){
    assert.equal(advanced,true,kind+' clock advanced after actual SQL');
    assert.deepEqual((await pool.query('SELECT state,reason_code,manifest,qa_envelope,provider_id FROM pod_production_queue WHERE id=$1',[job])).rows,
     [{state,reason_code:reason,manifest,qa_envelope:null,provider_id:null}],kind+' queue rollback');
-   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[job])).rows[0].n,0);
+   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1',[job])).rows[0].n,kind==='review'?1:0);
    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_market_intelligence WHERE source_url=$1',[source])).rows[0].n,0);
    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_financial_events WHERE authority_event_id=$1',[event])).rows[0].n,0);
    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE account_id=$1',[account])).rows[0].n,0);
+   await pool.query('DELETE FROM pod_events WHERE job_id=$1',[job]);
    await pool.query('DELETE FROM pod_production_queue WHERE id=$1',[job]);
    await pool.query('DELETE FROM pod_concepts WHERE id=$1',[concept]);
    await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
