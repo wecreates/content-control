@@ -69,10 +69,10 @@ async function sanitizePooledClient(client){
   return false;
  }catch{return true;}
 }
-function assertStoredManifest(manifest,platform,manifestSha256,state={nodes:0},depth=0){
- if(!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
-  manifest.platform!==platform||manifest.publication_enabled!==false||!SHA256.test(manifest.package_sha256||'')||
-  !SHA256.test(manifestSha256||''))throw Error('PACKAGE_UNAVAILABLE');
+function durableManifestIdentity(manifest,platform,state={nodes:0},depth=0){
+ if(!PLATFORMS.includes(platform)||!manifest||typeof manifest!=='object'||Array.isArray(manifest)||manifest.schema_version!==1||
+  manifest.platform!==platform||manifest.publication_enabled!==false||
+  !SHA256.test(manifest.package_sha256||''))throw Error('PACKAGE_UNAVAILABLE');
  const files=manifest.files;
  if(!files||typeof files!=='object'||Array.isArray(files)||Object.keys(files).length<1||Object.keys(files).length>64)throw Error('PACKAGE_UNAVAILABLE');
  const expected=platform==='kdp'?KDP_REVIEW_FILES:BASE_REVIEW_FILES;
@@ -85,7 +85,15 @@ function assertStoredManifest(manifest,platform,manifestSha256,state={nodes:0},d
   else if(value&&typeof value==='object'){const keys=Object.keys(value);if(keys.length>10000)throw Error('PACKAGE_UNAVAILABLE');for(const key of keys)inspect(value[key],level+1);}
  };
  inspect(manifest,depth);
- if(crypto.createHash('sha256').update(canonical(manifest)).digest('hex')!==manifestSha256)throw Error('PACKAGE_UNAVAILABLE');
+ return crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
+}
+function admitDurableManifest(manifest,platform){
+ if(!SHA256.test(manifest?.template_sha256||''))throw Error('PACKAGE_UNAVAILABLE');
+ return durableManifestIdentity(manifest,platform);
+}
+function assertStoredManifest(manifest,platform,manifestSha256){
+ if(!SHA256.test(manifestSha256||'')||
+  durableManifestIdentity(manifest,platform)!==manifestSha256)throw Error('PACKAGE_UNAVAILABLE');
 }
 async function conceptBudgetDay(client){
  const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
@@ -344,6 +352,10 @@ export class PodDB {
  });}
  async holdProduction(job,manifest,{beforeStateChange}={}){
   if(beforeStateChange!==undefined&&typeof beforeStateChange!=='function')throw Error('HOLD_GUARD_INVALID');
+  // Invalid package metadata must never become durable review state. Review
+  // reads rejecting it later is not enough because the queue/event write would
+  // already have advertised a package that cannot be independently retrieved.
+  const manifestSha256=admitDurableManifest(manifest,job.platform);
   return this.tx(async c=>{
   await lockProductionLease(c,job);
   // The earlier stage check releases its locks before this transaction. Bind
@@ -359,7 +371,7 @@ export class PodDB {
   const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[manifest,job.id,job.fencing_token]);
   if(!r.rows.length)throw Error('LEASE_LOST');
   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',
-   {package_sha256:manifest.package_sha256,manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),publication_enabled:false}]);
+   {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,publication_enabled:false}]);
  });}
  async acceptReview(jobId,qaEnvelope){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
@@ -432,6 +444,10 @@ export class PodDB {
  async completeProduction(job,manifest,qaEnvelope,{beforeStateChange}={}){
   if(beforeStateChange!==undefined&&typeof beforeStateChange!=='function')throw Error('COMPLETION_GUARD_INVALID');
   const qa=verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
+  // QA hash binding does not prove that the durable manifest is complete,
+  // platform-matched or publication-disabled. Enforce the stored-package
+  // contract before any database access on both pass and fail outcomes.
+  const manifestSha256=admitDurableManifest(manifest,job.platform);
   const pass=(()=>{try{enforceQA(qa,manifest.package_sha256,manifest.template_sha256,job.platform);return true;}catch{return false;}})();
   return this.tx(async c=>{
    await lockProductionLease(c,job);
@@ -457,7 +473,7 @@ export class PodDB {
    if(!r.rows.length)throw Error('LEASE_LOST');
    await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
     [crypto.randomUUID(),job.id,pass?'pod.production.qa_passed':'pod.production.qa_failed',
-     {package_sha256:manifest.package_sha256,manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),
+     {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,
       fencing_token:job.fencing_token,publication_enabled:false}]);
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {pass};
