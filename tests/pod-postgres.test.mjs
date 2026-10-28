@@ -156,7 +156,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    (target,j)=>target.completeProduction(j,manifest,qa),
    (target,j)=>target.completeProduction(j,manifest,failedQA)
   ].entries()){
-   const leaseJob={id:crypto.randomUUID(),fencing_token:1};
+   const leaseJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble'};
    await pool.query(`INSERT INTO pod_production_queue
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until)
     VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'processing',1,clock_timestamp()+interval '1 minute')`,
