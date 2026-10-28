@@ -136,6 +136,40 @@ test('current grant is fetched after verified artifacts and submission uses same
  assert.deepEqual(f.events,['artifacts','grant','submit','submitted']);
 });
 
+test('submission uses the exact manifest snapshot returned by artifact verification',async()=>{
+ const f=fixture(),verifiedFileHash='d'.repeat(64),changedFileHash='e'.repeat(64);
+ f.manifest.files={'print.png':verifiedFileHash};
+ f.options.verifyArtifacts=async()=>f.manifest;
+ f.options.resolveGrant=async()=>{
+  f.manifest.files['print.png']=changedFileHash;
+  return sign(f.release);
+ };
+ f.options.adapters.redbubble.submit=async({manifest})=>{
+  assert.equal(manifest.files['print.png'],verifiedFileHash);
+  return {id:'fixture-receipt'};
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+});
+
+test('manifest snapshot rejects accessors and proxies without invoking traps',async()=>{
+ for(const {name,wrap} of [
+  {name:'accessor',wrap:(manifest,reads)=>{const value={...manifest};Object.defineProperty(value,'package_sha256',{
+   enumerable:true,get(){reads.count++;return manifest.package_sha256;}});return value;}},
+  {name:'proxy',wrap:(manifest,reads)=>new Proxy(manifest,{get(target,key,receiver){
+   if(key!=='then')reads.count++;
+   return Reflect.get(target,key,receiver);
+  }})}
+ ]){
+  const f=fixture(),reads={count:0};
+  f.options.verifyArtifacts=async()=>wrap(f.manifest,reads);
+  f.options.resolveGrant=async()=>assert.fail('grant resolver reached');
+  f.options.adapters.redbubble.submit=async()=>assert.fail('adapter reached');
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+  assert.equal(reads.count,0,name);
+  assert.deepEqual(f.events,['blocked']);
+ }
+});
+
 test('cancellation during artifact verification never fetches a release grant or submits',async()=>{
  const f=fixture(),controller=new AbortController();f.options.signal=controller.signal;
  f.options.verifyArtifacts=async()=>{controller.abort();return f.manifest;};

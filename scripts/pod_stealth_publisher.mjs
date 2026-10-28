@@ -5,6 +5,42 @@ import {types as utilTypes} from 'node:util';
 import {verifyEnvelope,enforceBrief,enforceQA} from '../integrations/pod/policy.mjs';
 import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/economics.mjs';
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
+function snapshotManifest(value){
+ try{
+  const state={nodes:0};
+  const copy=(item,depth)=>{
+   if(depth>64||++state.nodes>10000)throw Error();
+   if(item===null||typeof item==='string'||typeof item==='boolean')return item;
+   if(typeof item==='number'){
+    if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))throw Error();
+    return item;
+   }
+   if(typeof item!=='object'||utilTypes.isProxy(item))throw Error();
+   const prototype=Object.getPrototypeOf(item),keys=Reflect.ownKeys(item);
+   if(Array.isArray(item)){
+    const length=Object.getOwnPropertyDescriptor(item,'length');
+    if(prototype!==Array.prototype||!Object.hasOwn(length||{},'value')||
+     !Number.isInteger(length.value)||length.value<0||length.value>10000||keys.length!==length.value+1)throw Error();
+    const result=[];
+    for(let index=0;index<length.value;index++){
+     const descriptor=Object.getOwnPropertyDescriptor(item,String(index));
+     if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+     result.push(copy(descriptor.value,depth+1));
+    }
+    return result;
+   }
+   if(prototype!==Object.prototype||keys.length>10000||keys.some(key=>typeof key!=='string'))throw Error();
+   const result={};
+   for(const key of keys){
+    const descriptor=Object.getOwnPropertyDescriptor(item,key);
+    if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+    Object.defineProperty(result,key,{value:copy(descriptor.value,depth+1),enumerable:true,writable:true,configurable:true});
+   }
+   return result;
+  };
+  return copy(value,0);
+ }catch{return null;}
+}
 function providerReceiptId(receipt){
  try{
   if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
@@ -32,7 +68,10 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   signal?.throwIfAborted();
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
-  const manifest=await verifyArtifacts(job); // Must hash all files and validate current template/rights/budget.
+  const verifiedManifest=await verifyArtifacts(job); // Must hash all files and validate current template/rights/budget.
+  // Carry one bounded JSON data snapshot across the remaining network/database
+  // waits. A resolver-owned object must not change after artifact verification.
+  const manifest=snapshotManifest(verifiedManifest);
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   if(!manifest||manifest.package_sha256!==job.manifest?.package_sha256||manifest.release_checks_passed!==true)throw Error('ARTIFACT_VERIFICATION_FAILED');
   signal?.throwIfAborted();
