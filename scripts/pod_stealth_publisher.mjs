@@ -97,7 +97,11 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   signal?.throwIfAborted();
   // Artifact checks may outlive a grant or overlap revocation. Fetch authority
   // afterward, then recheck local lease/account/rights after that network wait.
-  const releaseEnvelope=await resolveGrant(claimedJob,{signal});
+  const resolvedReleaseEnvelope=await resolveGrant(claimedJob,{signal});
+  // Bind the exact authority bytes at resolver completion. Caller-owned state
+  // must not drift during the unrelated local database validation wait.
+  const releaseEnvelope=snapshotManifest(resolvedReleaseEnvelope);
+  if(!releaseEnvelope)throw Error('GRANT_ENVELOPE_INVALID');
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   if(typeof db.assertPublishable!=='function'||await db.assertPublishable(job)!==true)throw Error('LOCAL_RELEASE_BLOCKED');

@@ -136,6 +136,15 @@ test('current grant is fetched after verified artifacts and submission uses same
  assert.deepEqual(f.events,['artifacts','grant','submit','submitted']);
 });
 
+test('release grant snapshot rejects resolver-owned mutation during local database validation',async()=>{
+ const f=fixture(),envelope=sign({...f.release,revoked:true}),authorized=sign(f.release);
+ f.options.resolveGrant=async()=>envelope;
+ f.options.db.assertPublishable=async()=>{Object.assign(envelope,authorized);return true;};
+ f.options.adapters.redbubble.submit=async()=>assert.fail('adapter reached');
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+ assert.deepEqual(f.events,['blocked']);
+});
+
 test('submission preserves claimed idempotency identity across resolver mutation',async()=>{
  const f=fixture(),claimed=f.options.db.claimPublish,original='fixture-idempotency';
  let claimedJob;
