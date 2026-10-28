@@ -102,7 +102,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await verifyMonitoring(pool,bridge);
   await verifyCapacity(pool);
   await verifyConceptBudget(pool,bridge);
-  await verifyKdpWeeklySubmission(pool,bridge);
+  await verifyKdpWeeklySubmission(pool,bridge,qaKey);
   const store=new ArtifactStore(db,{budgetBytes:100});const content=Buffer.from('durable bytes');
   const hash=await store.put(content,'application/json');assert.deepEqual((await store.get(hash)).body,content);
   assert.equal(await store.put(content,'application/json'),hash);
@@ -123,7 +123,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
   await verifyProductionRecovery(pool,bridge);
   await verifyOperationsListing(pool,db);
-  await verifyPublishClock(pool,bridge);
+  await verifyPublishClock(pool,bridge,qaKey);
   await verifyProductionClock(pool,bridge);
   // Real row-lock waits must not let a transaction-start clock authorize a
   // production write after expiry. A database barrier avoids timing guesses.
