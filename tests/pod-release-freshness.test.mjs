@@ -145,6 +145,17 @@ test('release grant snapshot rejects resolver-owned mutation during local databa
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('submission preserves claimed idempotency identity across local eligibility mutation',async()=>{
+ const f=fixture(),original='fixture-idempotency';
+ f.options.db.assertPublishable=async job=>{job.idempotency_key='eligibility-mutated-idempotency';return true;};
+ f.options.adapters.redbubble.submit=async({idempotencyKey})=>{
+  assert.equal(idempotencyKey,original);
+  return {id:'fixture-receipt'};
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.deepEqual(f.events,['submitted']);
+});
+
 test('submission preserves claimed idempotency identity across resolver mutation',async()=>{
  const f=fixture(),claimed=f.options.db.claimPublish,original='fixture-idempotency';
  let claimedJob;
