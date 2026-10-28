@@ -41,7 +41,7 @@ function snapshotManifest(value){
   return copy(value,0);
  }catch{return null;}
 }
-const CLAIMED_RELEASE_FIELDS=Object.freeze(['id','platform','account_id','brief','manifest','qa_envelope','idempotency_key']);
+const CLAIMED_RELEASE_FIELDS=Object.freeze(['id','platform','account_id','fencing_token','brief','manifest','qa_envelope','idempotency_key']);
 function snapshotClaimedRelease(value){
  try{
   if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
@@ -51,13 +51,6 @@ function snapshotClaimedRelease(value){
    const descriptor=Object.getOwnPropertyDescriptor(value,key);
    if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))return null;
    Object.defineProperty(result,key,{value:descriptor.value,enumerable:true,writable:true,configurable:true});
-  }
-  // PostgreSQL claims always carry fencing_token. Keep dependency-free test
-  // doubles compatible while snapshotting it whenever the claim supplies it.
-  const fencing=Object.getOwnPropertyDescriptor(value,'fencing_token');
-  if(fencing){
-   if(!fencing.enumerable||!Object.hasOwn(fencing,'value'))return null;
-   Object.defineProperty(result,'fencing_token',{value:fencing.value,enumerable:true,writable:true,configurable:true});
   }
   return snapshotManifest(result);
  }catch{return null;}
