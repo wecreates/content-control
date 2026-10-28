@@ -17,9 +17,10 @@ to remain PASS and not permanently unpublished. Revoking rights after a review
 hold therefore removes both manifest and preview-byte access on the next request;
 authentication and knowledge of a prior job ID or digest do not bypass that
 check. Retained history is preserved and the operations list may still expose a
-sanitized record for investigation, but it reports `can_preview=false` from the
-same current-rights join and therefore does not advertise a preview the package
-and artifact routes will reject.
+sanitized record for investigation, but it reports `can_preview=true` only for
+the exact `qa_failed` / `REVIEW_REQUIRED` hold and current PASS rights. Other
+states and revoked or permanently unpublished concepts therefore do not advertise
+a preview the package and artifact routes will reject.
 
 The hash check proves that displayed bytes match the stored manifest entry. The
 database rights predicate blocks known current adverse rights, but does not prove

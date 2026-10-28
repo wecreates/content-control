@@ -334,6 +334,17 @@ test('operations list retains revoked review records without advertising preview
  const rows=await db.listOperationsJobs();
  assert.equal(rows.length,1);assert.equal(rows[0].id,'fixture-job');assert.equal(rows[0].can_preview,false);
 });
+test('operations list advertises previews only for the exact durable review hold',async()=>{
+ const pool=readPool(async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;
+  const exactHold=text.includes("q.manifest IS NOT NULL AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'");
+  return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_passed',reason_code:null,
+   attempt:1,created_at:new Date(0),can_preview:exactHold?false:true}]};
+ });
+ const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
+ const rows=await db.listOperationsJobs('qa_passed');
+ assert.equal(rows.length,1);assert.equal(rows[0].id,'fixture-job');assert.equal(rows[0].can_preview,false);
+});
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest:storedManifest('etsy')};
