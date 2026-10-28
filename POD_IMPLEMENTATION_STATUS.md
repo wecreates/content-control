@@ -69,6 +69,77 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r333 — bind final release guard to the exact claimed snapshot (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`96188c1211690be7c3a98a8749565ea2ccc359d0` and Money Factory
+`737261a4aa9f86da02259551e62567172510be5f` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. Concurrent report-only Content Control commits were preserved while the
+functional pull request was open. The database-administration route had no
+credible access-path change and was not retried.
+
+After a release claim unlocked its transaction to resolve artifacts and current
+authority, the final local guard rechecked lease, account, rights and fencing but
+did not prove that the locked publishing row still contained the exact manifest
+provenance and signed QA envelope returned by that claim. A restored or rewritten
+row could therefore replace the durable evidence with a different independently
+valid snapshot while the publisher retained stale in-memory evidence. The final
+`assertPublishable` transaction now locks and validates the current manifest,
+latest QA-passed manifest identity and signed QA envelope, then requires their
+canonical manifest identity and exact QA payload/signature to match the claimed
+snapshot. Any change fails with the fixed `LOCAL_RELEASE_BLOCKED` diagnostic
+before adapter submission. This repair performs no provider call and does not
+establish live marketplace acceptance.
+
+### Verification and integration evidence
+
+The baseline regression failed against the prior implementation with a missing
+expected rejection. After the repair, the focused release, lease and publisher
+matrix passed 66/66. The complete local Content Control POD suite ran 953 tests:
+944 passed, nine environment-gated cases skipped and zero failed. A hosted
+PostgreSQL fixture initially exposed an obsolete assertion that expected zero POD
+events after the new test deliberately inserted three QA provenance events; the
+fixture was corrected to require no *additional* events across rejected
+settlements. Exact Content Control PR
+[#798](https://github.com/wecreates/content-control/pull/798) head
+`9c0794893e37468576906c5deb59276eed29b65d` then passed integration workflow
+`40726123228` (run 756) and production-container workflow
+`40726123198` (run 333), including disposable PostgreSQL 18 and the production
+image, and merged under the exact-head lease as
+`343f2faa44421bd0ef68dacf1d6c94e1c1c9cf7b`.
+
+Paired Money Factory checks passed 120 of 121 Node tests with one intentional
+disposable-PostgreSQL skip and all 81 Python tests. Exact Money Factory PR
+[#288](https://github.com/wecreates/Money-factory/pull/288) head
+`ff80189aa1ae9fda6d76eeeb6feb07dd35e11cae` changed only the immutable
+Content Control checkout pin, passed cross-repository workflow
+`40727649858` (run 290), and merged as
+`52cc9e9cff38c82562799f1eb2fd4cf917f479b7`.
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remained explicitly
+`false`; Etsy remained excluded.
+
+### Deployment and remaining acceptance
+
+The authorized Render service `content-control-render-worker`
+(`srv-darsdb8u01pc73dn4i2g`) remained on `main`, free-plan, auto-deploy
+enabled and not suspended. Functional merge
+`343f2faa44421bd0ef68dacf1d6c94e1c1c9cf7b` created deploy
+`dep-dbh28sqjnfac73b49kug`, which failed before build with the explicit
+`pipeline_minutes_exhausted` event at 2026-10-28T16:36:03Z. The unchanged
+free-capacity failure was not retried and is not deployment proof. This receipt
+uses `[skip render]` because it changes evidence only.
+
+All 24 live acceptance areas remain OPEN. No dedicated live database, deployed
+durable runtime, official template proof, independently calibrated QA,
+authorized marketplace submission/readback, financial reconciliation, measured
+capacity or end-to-end controlled-launch evidence was invented or inferred from
+code and CI. Publication remains held for explicit approval after those
+requirements are actually verified.
+
 ## Run receipt r332 — require authentic QA evidence before release mutation (2026-10-28 UTC)
 
 ### Scope and repair
