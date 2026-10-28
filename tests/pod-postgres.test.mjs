@@ -397,10 +397,28 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   const releaseConcept=crypto.randomUUID(),releaseAccount=crypto.randomUUID(),releaseJob=crypto.randomUUID();
   await pool.query("INSERT INTO pod_concepts VALUES($1,'release-fixture',$2,'PASS',false,now())",[releaseConcept,crypto.randomUUID()]);
   await pool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',1)",[releaseAccount]);
+  const releaseManifestIdentity=crypto.createHash('sha256').update(canonical(manifest)).digest('hex');
   const releaseClaim=(await pool.query(`INSERT INTO pod_production_queue
-   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until)
-   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'publishing',1,now()+interval '5 minutes') RETURNING *`,
-   [releaseJob,releaseConcept,releaseAccount,crypto.randomUUID()])).rows[0];
+   (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until,manifest,qa_envelope)
+   VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'publishing',1,now()+interval '5 minutes',$5,$6) RETURNING *`,
+   [releaseJob,releaseConcept,releaseAccount,crypto.randomUUID(),manifest,qa])).rows[0];
+  await pool.query("INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,'pod.production.qa_passed',$3)",
+   [crypto.randomUUID(),releaseJob,{manifest_sha256:releaseManifestIdentity,publication_enabled:false}]);
+  assert.equal(await db.assertPublishable(releaseClaim),true);
+  const changedQaPayload=JSON.stringify({...JSON.parse(qa.payload),issued_at_ms:Date.now()-2});
+  const changedQa={payload:changedQaPayload,signature:crypto.createHmac('sha256',qaKey).update(changedQaPayload).digest('hex')};
+  await pool.query('UPDATE pod_production_queue SET qa_envelope=$2 WHERE id=$1',[releaseJob,changedQa]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query('UPDATE pod_production_queue SET qa_envelope=$2 WHERE id=$1',[releaseJob,qa]);
+  const changedReleaseManifest={...manifest,files:{...manifest.files,'print.png':'f'.repeat(64)}};
+  const changedReleaseIdentity=crypto.createHash('sha256').update(canonical(changedReleaseManifest)).digest('hex');
+  await pool.query('UPDATE pod_production_queue SET manifest=$2 WHERE id=$1',[releaseJob,changedReleaseManifest]);
+  await pool.query("INSERT INTO pod_events(id,job_id,kind,payload,created_at) VALUES($1,$2,'pod.production.qa_passed',$3,clock_timestamp()+interval '1 second')",
+   [crypto.randomUUID(),releaseJob,{manifest_sha256:changedReleaseIdentity,publication_enabled:false}]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query('UPDATE pod_production_queue SET manifest=$2 WHERE id=$1',[releaseJob,manifest]);
+  await pool.query("INSERT INTO pod_events(id,job_id,kind,payload,created_at) VALUES($1,$2,'pod.production.qa_passed',$3,clock_timestamp()+interval '2 seconds')",
+   [crypto.randomUUID(),releaseJob,{manifest_sha256:releaseManifestIdentity,publication_enabled:false}]);
   assert.equal(await db.assertPublishable(releaseClaim),true);
   for(const change of [{fencing_token:'2'},{account_id:account},{platform:'kdp'}]){
    await assert.rejects(db.assertPublishable({...releaseClaim,...change}),/LOCAL_RELEASE_BLOCKED/);
