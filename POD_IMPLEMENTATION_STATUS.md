@@ -69,6 +69,101 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r337 — snapshot current grant envelope before local validation (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`e508588dfa26463ce1737838b63042a2d0f18bd7` and Money Factory
+`8aa432641892636fc2b3fb05d53c51985d7a1ea8` after re-reading the completion,
+implementation and free-deployment records, current heads, open pull requests,
+hosted workflows and the authorized Render service. The only open Content Control
+POD search result was draft PR #378, whose scope explicitly excludes POD changes;
+Money Factory had no open POD/KDP pull request. The failed database-administration
+route had no credible access-path change and was not retried.
+
+The authority resolver returned a mutable signed release envelope, but the
+publisher did not authenticate it until after awaiting the unrelated local
+database validation. Caller-owned state could therefore change the exact signed
+authority bytes during that wait. The regression returned a valid signed revoked
+grant and changed the same object to a separately signed authorized grant from
+inside the database wait; prior main reached the adapter. The publisher now takes
+one bounded plain-data snapshot immediately when the resolver returns, retains
+signature and expiry verification after the final database wait, and blocks
+accessor, Proxy, malformed or excessive envelope graphs before submission. This
+repair does not authorize an adapter or establish live authority acceptance.
+
+This scheduled environment had no local repository checkout, so no local test
+result is claimed. Exact remote heads were verified through the existing
+GitHub-hosted dependency-backed workflows.
+
+### Content Control verification and merge
+
+- Regression-only head `cb986d43774f8b9fe8aa6e5d2dfc71ff3e743108`
+  failed integration run `40757766235` (run 767), job `123061184813`, exactly at
+  `release grant snapshot rejects resolver-owned mutation during local database validation`:
+  expected `BLOCKED`, actual `AMBIGUOUS`, proving the adapter was reached.
+- PR #806 exact repaired head:
+  `63b7204b24a81e5e1e49bdb41422b5d3b5e0b7fd`.
+- POD integration gates run `40757988477` (run 768), job `123061947512`:
+  success, including all 959 Node tests, 385 pinned Python/OpenCV tests,
+  disposable PostgreSQL, production end-to-end checks, syntax, workflow control
+  and review guards.
+- POD container runtime gates run `40757988330` (run 341), job
+  `123062679083`: success, including image build, nonroot dependencies, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review generation and disabled
+  hosted startup.
+- Final diff review covered the two changed files (14 additions, one deletion)
+  and found no material correctness, security or missing-regression issue.
+- Guarded Content Control squash merge:
+  `44f478fa59d66513e54d4f37cfc83ff92c61ab15`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #292 exact head `b034c2bf4ea4a790cb7b0c6da1e5b1a3f8d05a07`
+  pinned the verified Content Control merge while preserving the concurrent
+  monitor tick and retaining `PUBLICATION_ENABLED=false` and
+  `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `40759087050` (run 294), job
+  `123065821343`: success, including pinned authority/contracts, strict evidence,
+  bounded JSON, review recovery, art/interior safety, originality and layout,
+  independent KDP PDF/cover pairing, font rights, retained official template
+  source, metadata/editorial-bound QA, and final Node/Python suites.
+- Guarded Money Factory squash merge:
+  `a8e1ac44242ef59c99b86ddfb3640732dc67ca2d`.
+
+### Authorized Render verification
+
+- The authorized `content-control-render-worker` remained active and unsuspended
+  on its existing free plan, `main` branch and commit-triggered deployment path.
+- Render detected the functional Content Control merge and created deploy
+  `dep-dbh57k6q1p3s73asmfug`.
+- Deploy-started event `evt-dbh57k509sns738gtuc0` recorded exact merge
+  `44f478fa59d66513e54d4f37cfc83ff92c61ab15` at
+  `2026-10-28T19:58:08.894509Z`; event `evt-dbh57k0cuclc73ctuq90`
+  recorded `pipeline_minutes_exhausted` at `2026-10-28T19:58:08.982736Z`;
+  deploy-ended event `evt-dbh57k8cul1c739atcpg` recorded failed status at
+  `2026-10-28T19:58:09.460329Z`.
+- No build or hosted rollout of r337 was verified. No manual retry, paid
+  capacity, secret access, network widening or service replacement was attempted.
+
+### Acceptance truth
+
+This closes one current-grant time-of-check/time-of-use gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production preflight, independently retained recovery, deployed hybrid
+availability, mounted current Money Factory authority and real grants/revocation,
+authorized accounts and market sources, current regional rights and official
+print-template evidence, substantive KDP editorial/preview acceptance, calibrated
+independent QA/remediation, permitted live adapters for KDP, Redbubble, TeePublic,
+Zazzle and Spreadshirt, actual economics and financial reconciliation, owner-phone
+operations, monitoring/recovery drills, measured capacity, real end-to-end
+acceptance and controlled launch readiness remain unverified. All 24 acceptance
+areas remain OPEN. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+This run used only its actually available bounded connectors and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r336 — snapshot claimed release identity before resolver waits (2026-10-28 UTC)
 
 ### Scope and repair
