@@ -1,4 +1,5 @@
 import {additionalToolStatus} from './repository-additional-status.js';
+import {offlineBridgeStatus} from './repository-reel-status.js';
 // Read only public execution evidence from the existing Money Factory repository.
 const repository = 'wecreates/Money-factory';
 const workflow = '.github/workflows/repository-integrations.yml';
@@ -39,12 +40,14 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
       persistent_worker_configured:false,
       status_scope:'Hosted CPU verification only; GPU generation, provider workflows and persistent project state remain unverified',
       additional_tools:await additionalToolStatus(registry,{json,now,rawBase:raw}),
+      external_bridges:offlineBridgeStatus(registry),
       repositories:registry.repositories.map(e=>({id:e.id,order:e.order,revision:e.revision,capability:e.capability,
         required_for_production:e.required_for_production!==false,
         runtime_status:e.id==='wan21'?(e.required_for_production===false?'OPTIONAL_DISABLED':'BLOCKED_CUDA_AND_MODEL_REQUIRED'):'HOSTED_EXECUTION_NOT_VERIFIED',
         verified_operations:[]}))};
     // Preserve only independently validated scope if original-suite validation throws.
     independentEvidence.additional_tools=result.additional_tools;
+    independentEvidence.external_bridges=result.external_bridges;
     independentEvidence.evidence_snapshot_revision=snapshot;
     if(!latest)return result;
     if(latest.path!==workflow || latest.head_branch!=='main' || !Number.isSafeInteger(latest.id))throw Error('INVALID_WORKFLOW');
