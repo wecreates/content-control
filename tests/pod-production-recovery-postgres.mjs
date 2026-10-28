@@ -9,6 +9,9 @@ export async function verifyProductionRecovery(pool,bridge){
  const db=new PodDB({pool,bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  const brief={id,account_id:account,business_id:business,platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
  const old={...brief,fencing_token:'1'};
+ const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
+  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
+   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
  const grant=(changes={})=>{
   const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-100,
    expires_at_ms:Date.now()+60000,job_id:id,account_id:account,business_id:business,platform:'redbubble',
@@ -27,7 +30,7 @@ export async function verifyProductionRecovery(pool,bridge){
    [id,concept,account,brief,crypto.randomUUID()]);
   await db.recover();
   assert.equal((await row()).state,'blocked');assert.equal((await row()).reason_code,'PRODUCTION_LEASE_EXPIRED');
-  await assert.rejects(db.holdProduction(old,{}),/LEASE_LOST/);
+  await assert.rejects(db.holdProduction(old,manifest),/LEASE_LOST/);
   for(const change of [{expires_at_ms:Date.now()-1},{revoked:true},{production_permission:false},{job_id:crypto.randomUUID()}]){
    await assert.rejects(db.requeueRepair(id,grant(change)));
    assert.equal((await row()).state,'blocked');assert.equal(await eventCount(),0);
@@ -41,7 +44,7 @@ export async function verifyProductionRecovery(pool,bridge){
   await assert.rejects(db.failProduction(old,'QA_FAILED'),/LEASE_LOST/);
   // Invoke before other queue fixtures so the real claim API selects this sole raw job.
   const retry=await db.claimProduction();assert.equal(retry.id,id);assert.equal(retry.attempt,2);assert.equal(retry.fencing_token,'2');
-  await assert.rejects(db.holdProduction(old,{}),/LEASE_LOST/);
+  await assert.rejects(db.holdProduction(old,manifest),/LEASE_LOST/);
   assert.equal(await db.assertProducible(retry),true);
   await expire();await db.recover();
   // Never reset the retry budget, even across repeated crashes.
