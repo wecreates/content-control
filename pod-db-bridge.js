@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {types as utilTypes} from 'node:util';
 import {assertBridge,enforceBrief,verifyEnvelope,enforceQA,PLATFORMS} from './integrations/pod/policy.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './integrations/pod/artifacts.mjs';
 import {assertPackageFormat,PACKAGE_MEDIA_TYPES} from './integrations/pod/package-artifacts.mjs';
@@ -15,8 +16,12 @@ const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior
 const RELEASE_REASONS=Object.freeze({ambiguous:'SUBMISSION_UNCERTAIN',blocked:'RELEASE_BLOCKED'});
 const TRANSACTION_COMMANDS=new Set(['ABORT','BEGIN','COMMIT','END','PREPARE','RELEASE','ROLLBACK','SAVEPOINT','START']);
 function exactObject(value,keys){
- return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype&&
-  JSON.stringify(Object.keys(value).sort())===JSON.stringify(keys);
+ if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
+  Object.getPrototypeOf(value)!==Object.prototype)return false;
+ const descriptors=Object.getOwnPropertyDescriptors(value),ownKeys=Reflect.ownKeys(value);
+ return ownKeys.length===keys.length&&ownKeys.every(key=>typeof key==='string')&&
+  JSON.stringify(ownKeys.sort())===JSON.stringify(keys)&&
+  keys.every(key=>descriptors[key]?.enumerable&&Object.hasOwn(descriptors[key],'value'));
 }
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
