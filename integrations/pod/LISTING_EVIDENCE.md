@@ -79,6 +79,18 @@ queue state, ledger, inbox or outbox on rejection. Existing evidence is preserve
 for recovery investigation. Integrity establishes byte identity only, not source
 authorization, legal clearance, listing truth or verified income.
 
+## Verified release manifest snapshot
+
+Artifact verification returns the manifest identity and file map that an
+authorized adapter may receive. The publisher copies that result immediately as
+one bounded JSON data graph before fetching the current grant or waiting on the
+database. Later mutation of the resolver-owned object cannot replace nested file
+digests after verification. Accessors, Proxies, sparse or decorated arrays,
+non-plain objects, unsupported values, excessive depth and excessive node counts
+fail closed before authority lookup or adapter submission; property traps are not
+invoked. This snapshot preserves verified bytes across release waits but does not
+substitute for actual marketplace authorization or readback acceptance.
+
 ## Submission receipt identity
 
 A successful adapter response must identify the listing with a primitive string
