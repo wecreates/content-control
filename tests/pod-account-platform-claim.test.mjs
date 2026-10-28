@@ -20,7 +20,7 @@ test('publish claim leaves a cross-platform queued job untouched',async()=>{
    }]};
    if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.* FROM pod_production_queue')){
+   if(sql.startsWith('SELECT q.*,')){
     assert.deepEqual(params,[accountId,'kdp']);
     return {rows:[]};
    }

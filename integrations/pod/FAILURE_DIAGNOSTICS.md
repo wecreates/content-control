@@ -68,6 +68,15 @@ release checks to contain it. This validates package structure and provenance
 identity only; it does not establish live rights, editorial quality, account
 authorization or marketplace acceptance.
 
+The release claim independently revalidates the complete stored manifest against
+the latest durable `pod.production.qa_passed` manifest identity while the queue
+and account rows are locked. Missing, malformed or mismatched package provenance
+fails the transaction with `PACKAGE_UNAVAILABLE` before the queue can enter
+`publishing`, before a quota reservation is written and before the account
+cooldown advances. A valid QA decision is therefore necessary but cannot make
+different or unreadable stored package bytes releasable. This gate performs no
+provider call and does not imply marketplace acceptance.
+
 These diagnostics support monitoring and failure-specific repair implementations.
 Actual remediation outcomes, production alerts and all live acceptance checks
 still require attributable operational evidence.

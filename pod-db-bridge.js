@@ -396,7 +396,8 @@ export class PodDB {
    // review after pool or row-lock waits. Revalidate at the state transition.
    enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256,job.platform);
    await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',{package_sha256:job.manifest.package_sha256,publication_enabled:false}]);
+   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',
+    {package_sha256:job.manifest.package_sha256,manifest_sha256:job.manifest_sha256,publication_enabled:false}]);
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {status:'QA_PASSED',publication_enabled:false};
   });
@@ -499,11 +500,20 @@ export class PodDB {
   // Bind the account lock to its configured marketplace before consuming quota
   // or moving a job into publishing. A later release check is not early enough:
   // a mismatched queued row must remain untouched and must not reserve capacity.
-  const j=(await query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+  const j=(await query(`SELECT q.*,
+   (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
+    AND e.kind='pod.production.qa_passed' AND e.payload ? 'manifest_sha256'
+    ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
+   FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.account_id=$1 AND q.platform=$2 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp()
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId,a.platform])).rows[0];
   if(!j)return null;
+  // A legacy, restored or corrupted readiness row must not consume account
+  // quota/cooldown before the publisher discovers that its package is not the
+  // exact durable QA-passed manifest. Validate provenance while the queue row
+  // is locked and before the first release-side mutation.
+  assertStoredManifest(j.manifest,j.platform,j.manifest_sha256);
   if(a.platform==='kdp'){
    // KDP currently counts a title only on its first submission and resets its
    // per-format weekly allowance every Sunday at 00:00 UTC. This lane supports
