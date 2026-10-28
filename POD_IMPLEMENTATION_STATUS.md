@@ -69,6 +69,71 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r334 — snapshot provider identity before durable settlement (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`6ecf1286b74fa70c76dcd1b1d57d4176bc3adedb` and Money Factory
+`52cc9e9cff38c82562799f1eb2fd4cf917f479b7` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. The only POD search result was unrelated draft
+PR 378, whose scope explicitly excludes POD changes; no open POD/KDP pull request
+overlapped this repair. The database-administration route had no credible
+access-path change and was not retried.
+
+After a provider submission, the publisher validated `receipt.id` and then read
+the property a second time when building the durable settlement. An accessor or
+Proxy receipt could therefore return a valid opaque ID during validation and a
+different still-valid ID for storage, breaking the exact listing identity needed
+for authenticated readback and reconciliation. The publisher now accepts exactly
+one own enumerable provider-ID data property, snapshots its value once, and uses
+that same value for validation and settlement. Accessor and Proxy receipts are
+rejected without invoking their ID traps and enter the existing ambiguous outcome
+path because the external submission may already have occurred. Direct database
+settlement applies the same data-only object contract before database access.
+This repair does not authorize an adapter or establish a live provider result.
+
+### Verification and integration evidence
+
+The baseline regression failed on current main because the changing accessor
+receipt was marked `SUBMITTED`. After the repair, the focused publisher and lease
+suites passed 59/59. The complete local Content Control POD suite ran 955 tests:
+946 passed, nine environment-gated cases skipped and zero failed. Exact Content
+Control PR [#800](https://github.com/wecreates/content-control/pull/800) head
+`480bfc9d85033a4393e98bc379a978d6e982fc20` passed integration workflow
+`40733430061` (run 758) and production-container workflow
+`40733430141` (run 334), including disposable PostgreSQL 18 and the production
+image, and merged under the exact-head lease as
+`d1603ee5c0fb9726fce687708c180957edd3d2cf`.
+
+Paired Money Factory checks passed 120 of 121 Node tests with one intentional
+disposable-PostgreSQL skip and all 81 Python tests. Exact Money Factory PR
+[#289](https://github.com/wecreates/Money-factory/pull/289) head
+`9127456ed0dca658f02861907514209c9f45b673` changed only the immutable
+Content Control checkout pin, passed cross-repository workflow
+`40734797127` (run 291), and merged as
+`1b416b0843ef74bdf1645b960751f403cda83ba3`.
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remained explicitly
+`false`; Etsy remained excluded.
+
+### Deployment and remaining acceptance
+
+The authorized Render service `content-control-render-worker`
+(`srv-darsdb8u01pc73dn4i2g`) remained on `main`, free-plan, auto-deploy
+enabled and not suspended. Functional merge
+`d1603ee5c0fb9726fce687708c180957edd3d2cf` created deploy
+`dep-dbh2tm15efls73ao2ubg`, which failed before build with the explicit
+`pipeline_minutes_exhausted` event at 2026-10-28T17:20:25Z. The unchanged
+free-capacity failure was not retried and is not deployment proof. This receipt
+uses `[skip render]` because it changes evidence only.
+
+All 24 live acceptance areas remain OPEN. No deployed durable runtime, official
+template proof, independently calibrated QA, authorized marketplace
+submission/readback, financial reconciliation, measured capacity or end-to-end
+controlled-launch evidence was invented or inferred from code and CI. Publication
+remains held for explicit approval after those requirements are actually verified.
+
 ## Run receipt r333 — bind final release guard to the exact claimed snapshot (2026-10-28 UTC)
 
 ### Scope and repair
