@@ -145,6 +145,17 @@ test('release grant snapshot rejects resolver-owned mutation during local databa
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('submission uses the exact adapter endpoint authorized before caller-owned waits',async()=>{
+ const f=fixture(),adapter=f.options.adapters.redbubble;
+ f.options.db.assertPublishable=async()=>{
+  adapter.submit=async()=>assert.fail('replacement adapter endpoint reached');
+  return true;
+ };
+ adapter.submit=async()=>({id:'fixture-receipt'});
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.deepEqual(f.events,['submitted']);
+});
+
 test('submission preserves claimed idempotency identity across local eligibility mutation',async()=>{
  const f=fixture(),original='fixture-idempotency';
  f.options.db.assertPublishable=async job=>{job.idempotency_key='eligibility-mutated-idempotency';return true;};
