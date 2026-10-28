@@ -69,6 +69,79 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r324 — guard durable review holds (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`826cfc407ba3d92341c899373c146bc54b3735c2` and Money Factory
+`b8fd6b33de70c85b4a3c766a577a9ae4396c3902` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. The database-administration route had no credible access-path change and
+was not retried.
+
+The production coordinator refreshed authority before choosing between an
+independent review and a durable `REVIEW_REQUIRED` hold, but the hold transaction
+could then wait on its production-lease lock. The exact signed grant could expire
+during that wait, and concept rights could change after the earlier stage check,
+while the hold still persisted and exposed the package for review. The worker now
+retains the exact signed envelope and synchronously revalidates its lifetime,
+scope and local stop boundary at the hold transaction's final pre-write hook. The
+database also locks and rechecks current concept rights after acquiring the live
+lease. No external authority call occurs while locks are held. This does not
+claim that an unexpired cached grant proves live revocation status. Publication
+behavior is unchanged.
+
+### Verification and merge
+
+- The grant-expiry regression failed against prior `main` by returning
+  `REVIEW_REQUIRED`; the transaction-hook and two current-rights regressions also
+  failed by issuing the durable hold. After repair all four returned the expected
+  fail-closed results with zero hold writes. The complete affected set passed
+  93/93.
+- The complete local POD Node matrix ran 937 tests: 928 passed, nine
+  environment-dependent cases skipped and zero failed. Syntax, whitespace and
+  diff checks passed.
+- Exact [CC PR 780](https://github.com/wecreates/content-control/pull/780) head
+  `8a9086ab477e2872a41a90ecde5b2e89c1e34baa` changed only the worker, database
+  boundary, cancellation documentation and their regressions. It passed hosted
+  integration run `40649294192` and production-container run `40649294239`, then
+  merged under its exact-head lease as
+  `6466e71da1aa48baa1d24db4926cb006d301bbad`.
+- Exact [MF PR 279](https://github.com/wecreates/Money-factory/pull/279) head
+  `24b5c21e2c043fd6cfcbb580de30ab3c991e19ba` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40650151868` passed, and the PR merged under its exact-head
+  lease as `e606a9913cd050390c84db8a75e44a68c935f088`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`6466e71da1aa48baa1d24db4926cb006d301bbad` and started deploy
+`dep-dbgq74p5efls73atj36g`, but event `evt-dbgq757cv52s73a1anh0` reported
+exhausted pipeline minutes before build and the deploy ended build-failed at event
+`evt-dbgq753vvlss73b57rhg`. The authorized service remained active, unsuspended,
+free-tier and configured for automatic `main` deployment. No retry, paid
+capacity, plan change, replacement service, secret access or network widening
+was attempted.
+
+This closes only the durable review-hold lease/authority/rights race. Existing
+code and passing tests are not live acceptance. All 24 acceptance areas remain
+OPEN. Production preflight with real authorities, independently retained
+recovery, deployed availability, mounted Money Factory authority and live
+revocation, real accounts and authorized sources, rights, official templates,
+substantive KDP editorial and preview acceptance, independent review and
+remediation, all five permitted marketplace adapters, actual economics and
+reconciliation, owner-phone operations, monitoring drills, measured capacity, a
+real end-to-end job and controlled launch remain unverified. Etsy remained
+excluded. `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false` remain
+mandatory; no publication occurred. This execution used only its actually
+available bounded tools and did not claim a continuously running self-hosted
+worker.
+
 ## Run receipt r323 — revalidate grant before durable QA completion (2026-10-28 UTC)
 
 ### Scope and repair
