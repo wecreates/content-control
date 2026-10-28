@@ -69,6 +69,75 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r332 — require authentic QA evidence before release mutation (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`40b40eece26bfd953bef5697ba5dcb6c6053a618` and Money Factory
+`ddd5375a2fa72d58904167a6a7aa7dd0515135d1` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. Money Factory main advanced independently to
+`ffd042b519904d2ef41e4fccbb90a491a98fa55f` before the pin PR opened; the
+one-file pin remained conflict-free and the concurrent work was preserved. The
+database-administration route had no credible access-path change and was not
+retried.
+
+A stored row labeled `qa_passed` could previously enter `publishing`, reserve
+account quota and advance account cooldown even when its QA envelope was missing,
+malformed, expired, failed or bound to another package. The publisher rejected
+that evidence later, after release-side state had already changed. `claimPublish`
+now authenticates the stored QA envelope and enforces its PASS verdict, package,
+template, marketplace and mandatory-check bindings after the account and queue
+locks and before the first publishing, quota or cooldown mutation. Invalid
+evidence throws the fixed `QA_EVIDENCE_UNAVAILABLE` code and the transaction
+rolls back. The publisher still revalidates QA immediately before any provider
+submission. This repair performs no provider call and does not establish live
+marketplace acceptance.
+
+### Verification and integration evidence
+
+The baseline regression failed against the prior implementation because the
+invalid-QA job was claimed instead of rejected. After the repair, the focused
+release-admission matrix passed 19/19. The complete local Content Control POD
+suite ran 952 tests: 943 passed, nine environment-gated cases skipped and zero
+failed. Exact Content Control PR
+[#796](https://github.com/wecreates/content-control/pull/796) head
+`7abbf8571a451e069de0954fb6979ab6c1493103` passed integration workflow
+`40706049878` (run 753) and production-container workflow
+`40706050044` (run 331), including disposable PostgreSQL 18 and the production
+image, then merged under the exact-head lease as
+`a64756afaf739815ffae25646a3f0ffe86f64b8c`.
+
+Paired Money Factory checks passed 120 of 121 Node tests with one intentional
+disposable-PostgreSQL skip and all 81 Python tests. Exact Money Factory PR
+[#287](https://github.com/wecreates/Money-factory/pull/287) head
+`1f97b1049589e11acd4b24694fbdb03481f96938` changed only the immutable
+Content Control checkout pin, passed cross-repository workflow
+`40707228589` (run 289), and merged as
+`737261a4aa9f86da02259551e62567172510be5f`.
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remained explicitly
+`false`; Etsy remained excluded.
+
+### Deployment and remaining acceptance
+
+The authorized Render service `content-control-render-worker`
+(`srv-darsdb8u01pc73dn4i2g`) remained on `main`, free-plan, auto-deploy
+enabled and not suspended. Functional merge
+`a64756afaf739815ffae25646a3f0ffe86f64b8c` created deploy
+`dep-dbh0f7142hec739fdip0`, which failed before build with the explicit
+`pipeline_minutes_exhausted` event at 2026-10-28T14:33:01Z. The unchanged
+free-capacity failure was not retried and is not deployment proof. This receipt
+uses `[skip render]` because it changes evidence only.
+
+All 24 live acceptance areas remain OPEN. No dedicated live database, deployed
+durable runtime, official template proof, independently calibrated QA,
+authorized marketplace submission/readback, financial reconciliation, measured
+capacity or end-to-end controlled-launch evidence was invented or inferred from
+code and CI. Publication remains held for explicit approval after those
+requirements are actually verified.
+
 ## Run receipt r331 — bind release claims to durable QA-passed manifest provenance (2026-10-28 UTC)
 
 ### Scope and repair
