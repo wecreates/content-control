@@ -88,6 +88,9 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   signal?.throwIfAborted();
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
+  // Bind the exact endpoint that passed authorization before any caller-owned
+  // verifier, authority or database callback can replace adapter.submit.
+  const adapterSubmit=adapter.submit;
   const verifiedManifest=await verifyArtifacts(claimedJob); // Must hash all files and validate current template/rights/budget.
   // Carry one bounded JSON data snapshot across the remaining network/database
   // waits. A resolver-owned object must not change after artifact verification.
@@ -122,7 +125,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // Recheck local kill switches immediately before external side effect.
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   submitted=true;
-  const receipt=await adapter.submit({brief,manifest,idempotencyKey:job.idempotency_key,signal});
+  const receipt=await Reflect.apply(adapterSubmit,adapter,[{brief,manifest,idempotencyKey:job.idempotency_key,signal}]);
   // Match the observer's opaque listing-ID contract. A malformed receipt is
   // uncertain submission, never a submitted row that readback cannot reconcile.
   // Snapshot one own enumerable data property without invoking an untrusted
