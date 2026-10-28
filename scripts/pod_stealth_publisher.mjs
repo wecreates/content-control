@@ -41,6 +41,27 @@ function snapshotManifest(value){
   return copy(value,0);
  }catch{return null;}
 }
+const CLAIMED_RELEASE_FIELDS=Object.freeze(['id','platform','account_id','brief','manifest','qa_envelope','idempotency_key']);
+function snapshotClaimedRelease(value){
+ try{
+  if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
+   Object.getPrototypeOf(value)!==Object.prototype)return null;
+  const result={};
+  for(const key of CLAIMED_RELEASE_FIELDS){
+   const descriptor=Object.getOwnPropertyDescriptor(value,key);
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))return null;
+   Object.defineProperty(result,key,{value:descriptor.value,enumerable:true,writable:true,configurable:true});
+  }
+  // PostgreSQL claims always carry fencing_token. Keep dependency-free test
+  // doubles compatible while snapshotting it whenever the claim supplies it.
+  const fencing=Object.getOwnPropertyDescriptor(value,'fencing_token');
+  if(fencing){
+   if(!fencing.enumerable||!Object.hasOwn(fencing,'value'))return null;
+   Object.defineProperty(result,'fencing_token',{value:fencing.value,enumerable:true,writable:true,configurable:true});
+  }
+  return snapshotManifest(result);
+ }catch{return null;}
+}
 function providerReceiptId(receipt){
  try{
   if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
@@ -60,15 +81,21 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
- const job=await db.claimPublish(accountId,crypto.randomInt(45,181));
- if(!job)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
+ const claimedJob=await db.claimPublish(accountId,crypto.randomInt(45,181));
+ if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
+ // Preserve the exact release-critical queue identity before any caller-owned
+ // verifier or authority resolver can retain and mutate the claimed row.
+ let job=claimedJob;
  let submitted=false,submittedSettlementAttempted=false;
  try{
+  const releaseSnapshot=snapshotClaimedRelease(claimedJob);
+  if(!releaseSnapshot)throw Error('CLAIM_SNAPSHOT_INVALID');
+  job=releaseSnapshot;
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   const adapter=adapters[job.platform];
   if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
-  const verifiedManifest=await verifyArtifacts(job); // Must hash all files and validate current template/rights/budget.
+  const verifiedManifest=await verifyArtifacts(claimedJob); // Must hash all files and validate current template/rights/budget.
   // Carry one bounded JSON data snapshot across the remaining network/database
   // waits. A resolver-owned object must not change after artifact verification.
   const manifest=snapshotManifest(verifiedManifest);
@@ -77,7 +104,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   signal?.throwIfAborted();
   // Artifact checks may outlive a grant or overlap revocation. Fetch authority
   // afterward, then recheck local lease/account/rights after that network wait.
-  const releaseEnvelope=await resolveGrant(job,{signal});
+  const releaseEnvelope=await resolveGrant(claimedJob,{signal});
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   if(typeof db.assertPublishable!=='function'||await db.assertPublishable(job)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
