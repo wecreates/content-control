@@ -69,6 +69,69 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r331 — bind release claims to durable QA-passed manifest provenance (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`79ab7cfad1c3524e6410d9f7668b64dd02b678ad` and Money Factory
+`c9a0e77933d80d1ec8b9bd9f0331204e5299183d` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. No open POD/KDP pull request overlapped this
+repair. The database-administration route had no credible access-path change and
+was not retried.
+
+A malformed or unproven `qa_passed` queue row could previously enter
+`publishing`, reserve account quota and advance the account cooldown before a
+later artifact read rejected its stored package. `claimPublish` now validates the
+complete stored manifest against the latest durable `pod.production.qa_passed`
+manifest identity while the account and queue rows are locked and before the
+first release-side mutation. Missing, mismatched or malformed provenance throws
+`PACKAGE_UNAVAILABLE` and rolls back without changing queue state, quota or
+cooldown. Manual review acceptance now records the same manifest identity, and
+the disposable PostgreSQL fixtures enter readiness through authentic manifest
+and event records. This is a local release-safety gate; it makes no provider call
+and does not establish live marketplace acceptance.
+
+### Verification and integration evidence
+
+The baseline regression failed before the repair because the malformed package
+was claimed instead of rejected. After the repair, the focused release, account,
+KDP and storage matrix passed 12/12. The complete local Content Control POD suite
+passed 936 of 945 tests with nine environment-gated skips and zero failures.
+Paired Money Factory checks passed 120 of 121 Node tests with one disposable
+PostgreSQL skip and all 81 Python tests.
+
+Content Control PR
+[#794](https://github.com/wecreates/content-control/pull/794) at exact head
+`107a98b7a7ebc99f654100d19f615d59e522e2e4` passed POD integration workflow
+run `40700374006` (run 751) and production-container workflow run `40700373770`
+(run 330), including PostgreSQL 18, and was squash-merged as
+`2f5d7a2818a12060b8e673b24bd27465cfefd0dc`. Money Factory PR
+[#286](https://github.com/wecreates/Money-factory/pull/286) at exact head
+`f23b4a737ca45e00c316e85081f8ed722cc699bd` pinned that immutable Content
+Control merge, passed cross-repository workflow run `40701560170` (run 288), and
+was squash-merged as `ddd5375a2fa72d58904167a6a7aa7dd0515135d1`.
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remained explicitly `false`;
+Etsy remained excluded.
+
+### Deployment and remaining acceptance
+
+The authorized Render service `content-control-render-worker`
+(`srv-darsdb8u01pc73dn4i2g`) remained on `main`, free-plan, auto-deploy enabled
+and not suspended. Functional merge `2f5d7a2818a12060b8e673b24bd27465cfefd0dc`
+created deploy `dep-dbgvv4mi0phs73cvdj20`, which failed before build because the
+workspace had exhausted free pipeline minutes. The unchanged capacity failure
+was not retried and is not deployment proof. This receipt uses `[skip render]`
+because it changes evidence only.
+
+All 24 live acceptance areas remain OPEN. No dedicated live database, deployed
+durable runtime, official template proof, independently calibrated QA, authorized
+marketplace submission/readback, financial reconciliation, measured capacity or
+end-to-end controlled-launch evidence was invented or inferred from code and CI.
+Publication remains held for explicit approval after those requirements are
+actually verified.
+
 ## Run receipt r330 — reject malformed manifests before durable review and QA writes (2026-10-28 UTC)
 
 ### Scope and repair
