@@ -322,6 +322,18 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const readPool=query=>({connect:async()=>({query,release(){}})});
+test('operations list retains revoked review records without advertising preview access',async()=>{
+ const pool=readPool(async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;
+  const rightsBound=text.includes('JOIN pod_concepts p ON p.id=q.concept_id')&&
+   text.includes("p.rights_state='PASS'")&&text.includes('NOT p.permanently_unpublished');
+  return {rows:[{id:'fixture-job',platform:'redbubble',state:'review_required',reason_code:null,
+   attempt:1,created_at:new Date(0),can_preview:rightsBound?false:true}]};
+ });
+ const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
+ const rows=await db.listOperationsJobs();
+ assert.equal(rows.length,1);assert.equal(rows[0].id,'fixture-job');assert.equal(rows[0].can_preview,false);
+});
 test('stored review package rejects a queue and manifest marketplace mismatch',async()=>{
  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
   manifest:storedManifest('etsy')};
