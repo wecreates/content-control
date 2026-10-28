@@ -69,6 +69,99 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r339 — bind the exact authorized adapter endpoint (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`3dd3b67214d2c424cb9449ca90ab605d7f9e7eda` and Money Factory
+`aa8592debe49729461f4ef5a5a2bc3f9ddf8635f` after re-reading the completion,
+implementation and free-deployment records, current heads, open pull requests,
+hosted workflows and the authorized Render service. Existing open pull requests
+were unrelated to this POD repair; Money Factory had no open POD/KDP repair. The
+failed database-administration route had no credible access-path change and was
+not retried.
+
+The publisher validated an adapter object before awaiting artifact, authority and
+local eligibility callbacks, then read `adapter.submit` again after those waits.
+A caller-owned callback could therefore replace the already-authorized endpoint
+before the external side effect. The publisher now captures the exact submit
+function that passed authorization and invokes that same function with the
+original adapter receiver after all checks. This does not authorize an adapter or
+establish live marketplace acceptance.
+
+This scheduled environment had no local repository checkout, so no local test
+result is claimed. Exact remote heads were verified through the existing
+GitHub-hosted dependency-backed workflows.
+
+### Content Control verification and merge
+
+- Regression-only head `d9505a13728ad28c015dd45943b26c88a71e5919`
+  failed integration run `40775421951` (run 773), job `123123356994`, exactly
+  at `submission uses the exact adapter endpoint authorized before caller-owned waits`:
+  expected `SUBMITTED`, actual `AMBIGUOUS`; 960 tests passed and only this
+  new regression failed.
+- PR #810 exact repaired head:
+  `3815b2eee14004ab260ec684630348e5b0265dde`.
+- POD integration gates run `40775626718` (run 774), job `123124066439`:
+  success, including all 961 Node tests, 385 pinned Python/OpenCV tests,
+  disposable PostgreSQL, production end-to-end checks, syntax, workflow control
+  and review guards.
+- POD container runtime gates run `40775626579` (run 345), job
+  `123124184284`: success, including image build, nonroot dependencies, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review generation and disabled
+  hosted startup.
+- Final diff review covered the two changed files (15 additions, one deletion)
+  and found no material correctness, security or missing-regression issue.
+- Guarded Content Control squash merge:
+  `8ac9c7fb48b8ba82c10a4a8b28697c1256cf6adf`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #294 exact head `ce4ebcd444bba067025acfba806e305e1b29a024`
+  pinned the verified Content Control merge while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `40776650305` (run 296), job
+  `123127571877`: success, including pinned authority/contracts, strict evidence,
+  bounded JSON, review recovery, art/interior safety, originality and layout,
+  independent KDP PDF/cover pairing, font rights, retained official template
+  source, metadata/editorial-bound QA, and final Node/Python suites.
+- Guarded Money Factory squash merge:
+  `5fc77b2f7b9646b1b8b3ead49851f4aea4fa7709`.
+
+### Authorized Render verification
+
+- The authorized `content-control-render-worker` remained active and unsuspended
+  on its existing free plan, `main` branch and commit-triggered deployment path.
+- Render detected exact functional merge
+  `8ac9c7fb48b8ba82c10a4a8b28697c1256cf6adf` and created deploy
+  `dep-dbh715bm8hqs738l7l0g`.
+- Deploy-started event `evt-dbh715nc3qjs73avdm2g` recorded the exact merge at
+  `2026-10-28T22:00:54.558734Z`; event
+  `evt-dbh715mhds7s73dtkc0g` recorded `pipeline_minutes_exhausted` at
+  `2026-10-28T22:00:54.517881Z`; deploy-ended event
+  `evt-dbh715ti6l5s73am4570` recorded failed status at
+  `2026-10-28T22:00:55.370975Z`.
+- No build or hosted rollout of r339 was verified. No manual retry, paid
+  capacity, secret access, network widening or service replacement was attempted.
+
+### Acceptance truth
+
+This closes one adapter-endpoint time-of-check/time-of-use gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production preflight, independently retained recovery, deployed hybrid
+availability, mounted current Money Factory authority and real grants/revocation,
+authorized accounts and market sources, current regional rights and official
+print-template evidence, substantive KDP editorial/preview acceptance, calibrated
+independent QA/remediation, permitted live adapters for KDP, Redbubble, TeePublic,
+Zazzle and Spreadshirt, actual economics and financial reconciliation, owner-phone
+operations, monitoring/recovery drills, measured capacity, real end-to-end
+acceptance and controlled launch readiness remain unverified. All 24 acceptance
+areas remain OPEN. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+This run used only its actually available bounded connectors and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r338 — isolate claimed release from local eligibility callback (2026-10-28 UTC)
 
 ### Scope and repair
