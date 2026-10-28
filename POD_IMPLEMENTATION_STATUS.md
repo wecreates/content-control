@@ -69,6 +69,84 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r328 — bind preview listings to valid durable package provenance (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`d429df8180e2f69b21fbca491c671309f1367465` and Money Factory
+`5b0b635104fff3133f82bc9cf749cf8025284d2a` after re-reading the completion,
+implementation and free-deployment records, open pull requests, hosted workflows
+and the authorized Render service. The sole open Content Control PR 378 was an
+unrelated draft that explicitly excluded POD work; no open Money Factory POD/KDP
+PR overlapped this repair. The database-administration route had no credible
+access-path change and was not retried.
+
+The exact-review-hold repair still let the mobile operations list advertise
+`can_preview=true` when a non-null stored manifest was malformed or its latest
+durable `pod.production.review_required` event was missing or named a different
+manifest identity. The review-package and artifact routes correctly rejected
+those records, so the list could advertise a preview that could not be read. The
+operations query now retrieves the hidden stored package and latest durable event
+identity, validates them with the same stored-manifest contract used by the read
+routes, and reports preview availability only when the package is valid and its
+SHA-256 identity matches current durable provenance. Hidden validation fields are
+removed from the response. Publication behavior is unchanged.
+
+### Verification and merge
+
+- The deterministic regression failed against prior `main` because an invalid
+  stored review package advertised `can_preview=true`, then passed after the
+  provenance validation. The affected dashboard, operations, review and expiry
+  suites passed 102/102. The complete local POD Node matrix ran 941 tests: 932
+  passed, nine environment-dependent PostgreSQL cases skipped and zero failed.
+  The default local Python runner executed 266 tests but could not collect two
+  OpenCV-dependent modules because `cv2` was unavailable; that incomplete run is
+  not counted as a pass and no dependency or network exception was introduced.
+- The first hosted integration attempt, run `40673800454` (job
+  `122766943795`), exposed only a fixture-cleanup foreign-key error after the new
+  PostgreSQL behavior passed. The fixture was amended to delete its durable event
+  before the queue row. Exact [CC PR 788](https://github.com/wecreates/content-control/pull/788)
+  head `8476901cbd6a9138cceb84908ffb83ae968b3b17` then passed hosted POD
+  integration run `40673973238` (job `122767537771`) and production-container
+  run `40673973229` (job `122768213964`), including pinned Python/OpenCV,
+  disposable PostgreSQL, non-root image, durable review and disabled-startup
+  checks. It merged under its exact-head lease as
+  `aa99931941d2e4d30eefc0171d090d96b0adc727`.
+- Exact [MF PR 283](https://github.com/wecreates/Money-factory/pull/283) head
+  `6a99e5d3808379580b48bc239d9d260f20259727` changed only the immutable Content
+  Control checkout pin. Local paired verification passed 121 Node tests (120
+  passed, one intentional PostgreSQL skip) and 81/81 Python tests. Hosted
+  cross-repository run `40675365680` (job `122772277498`) passed every step, and
+  the PR merged under its exact-head lease as
+  `06c187d9516c60cf1d582f44acb83aa2912ba08c`. Both publication flags remain
+  explicitly false.
+
+### Deployment and acceptance truth
+
+Render detected exact functional merge
+`aa99931941d2e4d30eefc0171d090d96b0adc727` and started deploy
+`dep-dbgt66vb9u1s739a49sg` at event `evt-dbgt678bfpgs73c36cqg`, but event
+`evt-dbgt67egkaas73c5c4b0` reported exhausted pipeline minutes before build and
+the deploy ended failed at event `evt-dbgt67mgkaas73c5c4mg`. The authorized
+service remained active, unsuspended, free-tier and configured for automatic
+`main` deployment. No retry, paid capacity, plan change, replacement service,
+secret access or network widening was attempted.
+
+This closes only the invalid-or-unproven review-package preview advertisement
+inconsistency in mobile operations. Existing code and passing tests are not live
+acceptance. All 24 acceptance areas remain OPEN. Production preflight with real
+authorities, independently retained recovery, deployed availability, mounted
+Money Factory authority and live revocation, real accounts and authorized
+sources, rights, official templates, substantive KDP editorial and preview
+acceptance, independent review and remediation, all five permitted marketplace
+adapters, actual economics and reconciliation, owner-phone operations,
+monitoring drills, measured capacity, a real end-to-end job and controlled launch
+remain unverified. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication occurred. This
+execution used only its actually available bounded tools and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r327 — bind previews to exact durable review holds (2026-10-28 UTC)
 
 ### Scope and repair
