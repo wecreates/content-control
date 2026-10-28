@@ -400,6 +400,26 @@ test('stored review artifacts require the exact held job and manifest membership
  row.state='qa_passed';row.reason_code=null;
  await assert.rejects(db.reviewArtifact(row.id,malformedSha),/ARTIFACT_UNAVAILABLE/);
 });
+test('current rights revocation hides held review packages and artifacts',async()=>{
+ const body=validPng(),sha=crypto.createHash('sha256').update(body).digest('hex');
+ const manifest=storedManifest();for(const name of Object.keys(manifest.files))manifest.files[name]=sha;
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+  manifest,manifest_sha256:storedIdentity(manifest),body,media_type:'image/png'};
+ for(const rights of [{rights_state:'UNKNOWN',permanently_unpublished:true},
+  {rights_state:'FAIL',permanently_unpublished:false},{rights_state:'PASS',permanently_unpublished:true}]){
+  const pool=readPool(async sql=>{
+   const text=typeof sql==='string'?sql:sql.text;
+   if(text.includes('FROM pod_production_queue q')){
+    const rightsBound=text.includes("p.rights_state='PASS'")&&text.includes('NOT p.permanently_unpublished');
+    return {rows:rightsBound?[]:[{...row,...rights}]};
+   }
+   return {rows:[]};
+  });
+  const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
+  await assert.rejects(db.reviewPackage(row.id),/PACKAGE_UNAVAILABLE/);
+  await assert.rejects(db.reviewArtifact(row.id,sha),/ARTIFACT_UNAVAILABLE/);
+ }
+});
 test('direct submitted transition rejects malformed listing IDs before database access',async()=>{
  const db=new PodDB({bridge,pool:{connect:async()=>assert.fail('malformed receipt reached database')},expiresAt:'2099-01-01T00:00:00Z'});
  for(const id of [undefined,null,'',' ', '\t\n','x'.repeat(257),'listing\0id','\ud800','\ud801',['listing'],42,{}])

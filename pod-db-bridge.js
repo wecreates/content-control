@@ -372,8 +372,9 @@ export class PodDB {
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
-   FROM pod_production_queue q
-   WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'`,[jobId])).rows[0];
+   FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId])).rows[0];
   if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   this.active();
@@ -388,8 +389,10 @@ export class PodDB {
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
    a.body,a.media_type
-   FROM pod_production_queue q JOIN pod_artifacts a ON a.sha256=$2
+   FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   JOIN pod_artifacts a ON a.sha256=$2
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
    [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES])).rows[0];
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||

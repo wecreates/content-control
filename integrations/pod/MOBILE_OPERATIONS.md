@@ -12,7 +12,19 @@ appropriate for the manifest filename. This prevents a legacy or foreign row
 with matching hash and media metadata from bypassing the production storage
 contract. It is not full decoding or substantive review.
 
-The hash check proves that displayed bytes match the stored manifest entry. It does not approve the manifest, establish current rights, attest superiority, replace KDP interior PDF review, or prove that a stale QA receipt is still valid. Publication remains disabled. The dashboard preserves the independent signed-review and controlled release paths.
+The package and artifact reads also require the held job's current concept rights
+to remain PASS and not permanently unpublished. Revoking rights after a review
+hold therefore removes both manifest and preview-byte access on the next request;
+authentication and knowledge of a prior job ID or digest do not bypass that
+check. Retained history is preserved and the operations list may still expose a
+sanitized record for investigation.
+
+The hash check proves that displayed bytes match the stored manifest entry. The
+database rights predicate blocks known current adverse rights, but does not prove
+registry completeness or legal clearance, approve the manifest, attest
+superiority, replace KDP interior PDF review, or prove that a stale QA receipt is
+still valid. Publication remains disabled. The dashboard preserves the
+independent signed-review and controlled release paths.
 
 Automated coverage includes request authentication, filter allowlisting, PostgreSQL limits and field redaction, text-node rendering, corrupted bytes, oversized responses/images, cancellation and session cleanup. A deployed phone-browser acceptance test and real owner authentication remain required; DOM simulations and HTTP tests do not establish those live criteria.
 
