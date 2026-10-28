@@ -126,6 +126,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   }
   enabled();
   const qa=await readSignedJSONFile(task.qaSignedOutput,{signal});
+  enabled();
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
   if(qaProcessFailed){
