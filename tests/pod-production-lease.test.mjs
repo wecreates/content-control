@@ -46,6 +46,14 @@ for(const [label,run] of [
   assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-2),'COMMIT');
  });
 }
+test('completion stop guard rolls back before the durable QA state change',async()=>{
+ const f=fixture(true);let calls=0;
+ await assert.rejects(f.db.completeProduction(job,manifest,qa(),{
+  beforeStateChange(){calls++;throw Error('PRODUCTION_STOPPED');}
+ }),/PRODUCTION_STOPPED/);
+ assert.equal(calls,1);assert.equal(f.writes.length,0);
+ assert.equal(f.queries.at(-2),'ROLLBACK');
+});
 for(const [label,state,receipt,reason] of [
  ['successful submission','submitted',{id:'provider-listing'},null],
  ['uncertain submission','ambiguous',{},'SUBMISSION_UNCERTAIN'],
