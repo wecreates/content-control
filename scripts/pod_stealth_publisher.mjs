@@ -104,7 +104,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   if(!releaseEnvelope)throw Error('GRANT_ENVELOPE_INVALID');
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
-  if(typeof db.assertPublishable!=='function'||await db.assertPublishable(job)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
+  // The database guard receives an isolated plain-data snapshot. Its awaited
+  // implementation must not be able to rewrite the publisher's claimed
+  // platform, fencing or idempotency identity before adapter submission.
+  const eligibilitySnapshot=snapshotClaimedRelease(job);
+  if(!eligibilitySnapshot||typeof db.assertPublishable!=='function'||
+   await db.assertPublishable(eligibilitySnapshot)!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   // Database contention can itself outlive signed evidence. Verify time-sensitive
   // authority/QA only after the last awaited check, immediately before submit.
   const release=verifyEnvelope(releaseEnvelope,upstreamKey,'content-control:pod');
