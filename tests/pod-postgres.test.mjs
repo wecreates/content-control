@@ -435,10 +435,11 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.submitted'",[releaseJob])).rows[0].n,0);
   await pool.query("UPDATE pod_production_queue SET lease_until=now()+interval '5 minutes' WHERE id=$1",[releaseJob]);
   assert.equal(await db.assertPublishable(releaseClaim),true);
+  const releaseEventCount=(await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind LIKE 'pod.%'",[releaseJob])).rows[0].n;
   await assert.rejects(db.finish(releaseClaim,'submitted',{id:'provider-listing',private_token:'must-not-persist'}),/RECEIPT_INVALID/);
   await assert.rejects(db.finish(releaseClaim,'blocked',{},'postgres://private:secret@host/db'),/SETTLEMENT_INVALID/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[releaseJob])).rows[0].state,'publishing');
-  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind LIKE 'pod.%'",[releaseJob])).rows[0].n,0);
+  assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind LIKE 'pod.%'",[releaseJob])).rows[0].n,releaseEventCount);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[releaseConcept]);
   await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
   // Synthetic ledger evidence verifies replay accounting only, never real income.
