@@ -69,6 +69,98 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r340 — bind the exact local eligibility guard (2026-10-28 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`de3092fb44466cca8108333f557084adc406f06b` and Money Factory
+`5fc77b2f7b9646b1b8b3ead49851f4aea4fa7709` after re-reading the completion,
+implementation and free-deployment records, current heads, open pull requests,
+hosted workflows and the authorized Render service. Existing open pull requests
+were unrelated to this POD repair; Money Factory had no open POD/KDP repair. The
+failed database-administration route had no credible access-path change and was
+not retried.
+
+The publisher looked up `db.assertPublishable` only after caller-owned artifact
+and authority waits. Either callback could therefore replace the local database
+guard and bypass the current lease, account, rights and fencing decision. The
+publisher now captures the exact guard function before those waits and later
+invokes it with the original database receiver and an isolated claimed-release
+snapshot. This does not establish live eligibility or marketplace acceptance.
+
+This scheduled environment had no local repository checkout, so no local test
+result is claimed. Exact remote heads were verified through the existing
+GitHub-hosted dependency-backed workflows.
+
+### Content Control verification and merge
+
+- Regression-only head `1a7b633a5f8fb8d4d9c238cfd095d16393c4ff38`
+  failed integration run `40784962241` (run 776), job `123155720974`, exactly
+  at `submission uses the exact local eligibility guard captured before caller-owned waits`:
+  expected `BLOCKED`, actual `SUBMITTED`; 961 tests passed and only this new
+  regression failed.
+- PR #812 exact repaired head:
+  `2ffd9e859d350676dbbfdeebc55fa430996895dc`.
+- POD integration gates run `40785117528` (run 777), job `123156246077`:
+  success, including all 962 Node tests, 385 pinned Python/OpenCV tests,
+  disposable PostgreSQL, production end-to-end checks, syntax, workflow control
+  and review guards.
+- POD container runtime gates run `40785117598` (run 347), job
+  `123156328117`: success, including image build, nonroot dependencies, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review generation and disabled
+  hosted startup.
+- Final diff review covered the two changed files (17 additions, two deletions)
+  and found no material correctness, security or missing-regression issue.
+- Guarded Content Control squash merge:
+  `23723f8c6ed212c4a06b2cd4ffb06fcb4ed86c41`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #295 exact head `ab86348fbe838c62fc8f188a4d7d3c556c18e51c`
+  pinned the verified Content Control merge while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `40785951407` (run 297), job
+  `123159060284`: success, including pinned authority/contracts, strict evidence,
+  bounded JSON, review recovery, art/interior safety, originality and layout,
+  independent KDP PDF/cover pairing, font rights, retained official template
+  source, metadata/editorial-bound QA, and final Node/Python suites.
+- Guarded Money Factory squash merge:
+  `b60fe124a8541da864e5e56faf7e737bcb38d4cf`.
+
+### Authorized Render verification
+
+- The authorized `content-control-render-worker` remained active and unsuspended
+  on its existing free plan, `main` branch and commit-triggered deployment path.
+- Render detected exact functional merge
+  `23723f8c6ed212c4a06b2cd4ffb06fcb4ed86c41` and created deploy
+  `dep-dbh83jfavr4c73arpd7g`.
+- Deploy-started event `evt-dbh83jliortc7399jpfg` recorded the exact merge at
+  `2026-10-28T23:14:22.089898Z`; event
+  `evt-dbh83ji9bars73aus8d0` recorded `pipeline_minutes_exhausted` at
+  `2026-10-28T23:14:22.259879Z`; deploy-ended event
+  `evt-dbh83jmu8ecs73c3tjd0` recorded failed status at
+  `2026-10-28T23:14:22.516635Z`.
+- No build or hosted rollout of r340 was verified. No manual retry, paid
+  capacity, secret access, network widening or service replacement was attempted.
+
+### Acceptance truth
+
+This closes one local-guard endpoint time-of-check/time-of-use gap only. Passing
+synthetic, PostgreSQL and container tests are not live acceptance. Restricted
+production preflight, independently retained recovery, deployed hybrid
+availability, mounted current Money Factory authority and real grants/revocation,
+authorized accounts and market sources, current regional rights and official
+print-template evidence, substantive KDP editorial/preview acceptance, calibrated
+independent QA/remediation, permitted live adapters for KDP, Redbubble, TeePublic,
+Zazzle and Spreadshirt, actual economics and financial reconciliation, owner-phone
+operations, monitoring/recovery drills, measured capacity, real end-to-end
+acceptance and controlled launch readiness remain unverified. All 24 acceptance
+areas remain OPEN. Etsy remained excluded. `PUBLICATION_ENABLED=false` and
+`POD_PUBLICATION_ENABLED=false` remain mandatory; no publication was attempted.
+This run used only its actually available bounded connectors and did not claim a
+continuously running self-hosted worker.
+
 ## Run receipt r339 — bind the exact authorized adapter endpoint (2026-10-28 UTC)
 
 ### Scope and repair
