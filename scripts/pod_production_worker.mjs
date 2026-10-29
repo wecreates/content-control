@@ -93,6 +93,17 @@ function taskEvaluatorIds(task,key){
   snapshot.some(id=>!validOpaqueText(id)))return null;
  return Object.freeze(snapshot);
 }
+function snapshotReviewAttestation(value){
+ const snapshot=snapshotData(value);
+ if(!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot))return null;
+ const keys=Object.keys(snapshot),allowed=new Set(['rights','competitive','editorial']);
+ if(keys.length<2||keys.length>3||keys.some(key=>!allowed.has(key))||
+  !Object.hasOwn(snapshot,'rights')||!Object.hasOwn(snapshot,'competitive')||
+  !validOpaqueText(snapshot.rights,{maxLength:4096})||
+  !validOpaqueText(snapshot.competitive,{maxLength:4096})||
+  (Object.hasOwn(snapshot,'editorial')&&!validOpaqueText(snapshot.editorial,{maxLength:4096})))return null;
+ return Object.freeze(snapshot);
+}
 function snapshotStageEnvironment(env){
  try{
   if(env===null||typeof env!=='object'||utilTypes.isProxy(env))return null;
@@ -273,13 +284,15 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    template:task.template,templateSource:task.templateSource,stageWorkspace:task.stageWorkspace,
    interior:qaInterior
   });
-  let attestation;
-  try{attestation=await Reflect.apply(reviewPackage,task,[manifest,{signal,
+  let reviewResult;
+  try{reviewResult=await Reflect.apply(reviewPackage,task,[manifest,{signal,
    ...(job.brief.platform==='kdp'?{manuscript:qaInterior.pages,bookDetails:qaInterior.bookDetails}:{})}]);}
   catch(error){enabled();throw error;}
   // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
-  // and reject late results before reading attestation paths or launching QA.
+  // and reject late results before inspecting or snapshotting its response.
   enabled();
+  const attestation=snapshotReviewAttestation(reviewResult);
+  if(!attestation)throw Error('REVIEW_ATTESTATION_INVALID');
   const args=['--package-dir',qaTask.output,'--reference',qaTask.reference,'--rights',attestation.rights,
    '--competitive-review',attestation.competitive,'--output',qaTask.qaOutput,'--signed-output',qaTask.qaSignedOutput,
    '--source',qaTask.source,'--asset-rights',qaTask.assetRights,'--text-layers',qaTask.textLayers];
