@@ -271,3 +271,34 @@ test('resolver restores stored bytes into isolated disposable workspace',async()
  try{assert.deepEqual(approved.approvedEditorialEvaluators,['host-fixture']);}finally{await approved.cleanup();}
 });
 
+
+
+test('task resolver snapshots evaluator authorization before caller mutation',async()=>{
+ const descriptor=Buffer.from(JSON.stringify(task));
+ const store={get:async id=>id===hashes.descriptor?{body:descriptor,media_type:'application/json'}:artifact(id,'payload')};
+ const approvedEvaluators=['trusted-layout'];
+ const approvedEditorialEvaluators=['trusted-editor'];
+ const resolver=createStoredTaskResolvers({}, {store,approvedEvaluators,approvedEditorialEvaluators});
+ approvedEvaluators.push('late-layout');
+ approvedEditorialEvaluators.push('late-editor');
+ const resolved=await resolver.resolveTask({brief:{task_sha256:hashes.descriptor}});
+ try{
+  assert.deepEqual(resolved.approvedEvaluators,['trusted-layout']);
+  assert.deepEqual(resolved.approvedEditorialEvaluators,['trusted-editor']);
+  assert.throws(()=>resolved.approvedEvaluators.push('task-injected-layout'),TypeError);
+  assert.throws(()=>resolved.approvedEditorialEvaluators.push('task-injected-editor'),TypeError);
+ }finally{await resolved.cleanup();}
+});
+
+
+test('task resolver rejects executable evaluator lists without invoking traps',()=>{
+ let reads=0;
+ const proxy=new Proxy(['trusted-layout'],{
+  get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}
+ });
+ assert.throws(()=>createStoredTaskResolvers({}, {store:{},approvedEvaluators:proxy}),/TASK_EVALUATORS_INVALID/);
+ const accessor=['trusted-editor'];
+ Object.defineProperty(accessor,'0',{enumerable:true,get(){reads++;return 'trusted-editor';}});
+ assert.throws(()=>createStoredTaskResolvers({}, {store:{},approvedEditorialEvaluators:accessor}),/TASK_EVALUATORS_INVALID/);
+ assert.equal(reads,0);
+});
