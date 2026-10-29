@@ -45,6 +45,23 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   adapters:{[platform]:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
  return {options,events,release,manifest,qa};
 }
+test('publication gates reject executable descriptors without invoking them',async()=>{
+ for(const kind of ['proxy','accessor']){
+  const f=fixture();let invoked=0;
+  f.options.db.listReady=async()=>[];f.options.log=()=>{};
+  if(kind==='proxy'){
+   f.options.env=new Proxy({PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},{
+    get(target,key,receiver){invoked++;return key==='PUBLICATION_ENABLED'||key==='POD_PUBLICATION_ENABLED'?'true':Reflect.get(target,key,receiver);}
+   });
+  }else{
+   f.options.env={};
+   for(const key of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])
+    Object.defineProperty(f.options.env,key,{enumerable:true,get(){invoked++;return 'true';}});
+  }
+  assert.deepEqual(await publishOnce(f.options),{status:'DRY_RUN',count:0});
+  assert.equal(invoked,0);assert.deepEqual(f.events,[]);
+ }
+});
 test('an already-aborted publisher performs no dry-run read or enabled claim',async()=>{
  for(const enabled of [false,true]){
   const controller=new AbortController();controller.abort();let touched=0;
