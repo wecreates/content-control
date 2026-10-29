@@ -235,10 +235,12 @@ test('production database settlement is bound before the claim callback',async()
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
- let originalSettlements=0,replacementSettlements=0;
+ let originalSettlements=0,replacementSettlements=0,originalTransactions=0,replacementTransactions=0;
  const db={
-  failProduction:async()=>{originalSettlements++;},
+  tx:async fn=>{originalTransactions++;return fn({});},
+  failProduction:async function(){originalSettlements++;return this.tx(async()=>{});},
   claimProduction:async()=>{
+   db.tx=async fn=>{replacementTransactions++;return fn({});};
    db.failProduction=async()=>{replacementSettlements++;};
    return productionClaim(brief);
   }
@@ -248,4 +250,6 @@ test('production database settlement is bound before the claim callback',async()
  assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED'});
  assert.equal(originalSettlements,1);
  assert.equal(replacementSettlements,0);
+ assert.equal(originalTransactions,1);
+ assert.equal(replacementTransactions,0);
 });
