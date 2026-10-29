@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,executableReviewCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,executableReviewCapability=false,executableCleanupCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -72,7 +72,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(interior)await fs.writeFile(interiorPath,interiorText??JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
    platform,destination_platform:platform,mode:'PRELAUNCH'};
-  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,completed=0,interiorReads=0,coverSourceReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
+  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,cleanupCapabilityAccessed=0,completed=0,interiorReads=0,coverSourceReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
   const interpreterMarker=path.join(root,'replacement-interpreter-used');
   let replacementInterpreter;
@@ -111,6 +111,9 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    cleanup:async()=>{cleaned++;}};
   if(executableReviewCapability)Object.defineProperty(resolvedTask,'reviewPackage',{enumerable:true,get(){
    reviewCapabilityAccessed++;return async()=>({rights:'unused',competitive:'unused'});
+  }});
+  if(executableCleanupCapability)Object.defineProperty(resolvedTask,'cleanup',{enumerable:true,get(){
+   cleanupCapabilityAccessed++;return async()=>{cleaned++;};
   }});
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
   if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
@@ -153,7 +156,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   const guideProfile=await fs.readFile(path.join(root,'guide-profile.json'),'utf8').then(JSON.parse,()=>null);
   const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
   const replacementInterpreterUsed=replaceInterpreter?await fs.stat(interpreterMarker).then(()=>true,()=>false):undefined;
-  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(disableAfterCoverRead?{interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(disableAfterCoverRead?{interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -687,6 +690,12 @@ test('ordinary reviewer errors remain redacted and do not complete production',a
  const r=await exercise({review:true,detailed:true,reviewPolicy:async()=>{throw Error('private reviewer failure');}});
  assert.equal(r.reason,'PRODUCTION_BLOCKED');assert.equal(r.cleaned,1);
  assert.equal(r.qaStarted,false);assert.equal(r.completed,0);
+});
+
+test('executable cleanup capability is rejected without invoking accessors',async()=>{
+ const r=await exercise({executableCleanupCapability:true,detailed:true});
+ assert.equal(r.cleanupCapabilityAccessed,0);assert.equal(r.reason,'PRODUCTION_BLOCKED');
+ assert.equal(r.started,false);assert.equal(r.cleaned,0);assert.equal(r.held,0);assert.equal(r.completed,0);
 });
 
 test('executable reviewer capability is rejected without invoking accessors',async()=>{

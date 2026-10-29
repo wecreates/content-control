@@ -174,7 +174,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  const job=snapshotClaimedProduction(claimedJob);
  if(!job)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
  const jobCopy=()=>snapshotClaimedProduction(job)??(()=>{throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');})();
- let task;
+ let task,cleanupTask;
  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
   enabled();
@@ -196,7 +196,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
   task=await resolveTask(jobCopy(),{signal});
   enabled();
-  if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  if(!task)throw Error('RIGHTS_BLOCKED');
+  // Cleanup is a resolver-authorized lifecycle capability. Bind its data
+  // descriptor before validation or production callbacks can replace the task
+  // member, while preserving cleanup for later rights-validation failures.
+  const cleanupCapability=dataProperty(task,'cleanup');
+  if(!cleanupCapability.valid)throw Error('TASK_CLEANUP_INVALID');
+  cleanupTask=cleanupCapability.value;
+  if(task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   // Bind the resolver-authorized reviewer identities before grant, database or
   // independent-review callbacks can replace the task's allowlists.
   const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
@@ -350,7 +357,10 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  }
  })();}catch(error){primaryError=error;}
  let cleanupFailed=false;
- if(task?.cleanup)try{await task.cleanup();}catch{cleanupFailed=true;}
+ if(cleanupTask)try{
+  if(typeof cleanupTask!=='function')throw Error('TASK_CLEANUP_INVALID');
+  await Reflect.apply(cleanupTask,task,[]);
+ }catch{cleanupFailed=true;}
  if(primaryError)throw primaryError;
  return cleanupFailed?{...result,cleanup_failed:true}:result;
 }
