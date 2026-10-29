@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import {constants} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {types as utilTypes} from 'node:util';
 import {ArtifactStore} from './artifacts.mjs';
 import {createGrantResolver} from './grant-client.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
@@ -63,6 +64,21 @@ function createWorkspaceCleanup(directory,handle,owned){
   try{await fs.rmdir(directory);}catch(error){if(!replacedDirectoryCodes.has(error.code))throw error;}
  })();
 }
+function snapshotEvaluatorIds(value){
+ try{
+  if(!Array.isArray(value)||utilTypes.isProxy(value)||Object.getPrototypeOf(value)!==Array.prototype)throw Error();
+  const length=Object.getOwnPropertyDescriptor(value,'length'),keys=Reflect.ownKeys(value);
+  if(!Object.hasOwn(length||{},'value')||!Number.isInteger(length.value)||length.value<0||
+   length.value>100||keys.length!==length.value+1||keys.some(key=>typeof key!=='string'))throw Error();
+  const result=[];
+  for(let index=0;index<length.value;index++){
+   const descriptor=Object.getOwnPropertyDescriptor(value,String(index));
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||!validOpaqueText(descriptor.value))throw Error();
+   result.push(descriptor.value);
+  }
+  return Object.freeze(result);
+ }catch{throw Error('TASK_EVALUATORS_INVALID');}
+}
 function requiredMediaTypes(task){
  const expected=new Map();
  const bind=(name,mediaType)=>{
@@ -93,6 +109,8 @@ export function validateTask(task){
  return task;
 }
 export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env,fetchImpl=fetch}={}){
+ const evaluatorIds=snapshotEvaluatorIds(approvedEvaluators);
+ const editorialEvaluatorIds=snapshotEvaluatorIds(approvedEditorialEvaluators);
  // A signed queue envelope records intake authority, not current revocation.
  // Missing configuration must never silently switch to cached approvals.
  let resolveGrant,authorityReady=false;
@@ -146,7 +164,8 @@ export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approv
     const resolved={rights_verified:true,assetRoot:workspaceRoot,output:path.join(workspaceRoot,'package'),
      qaOutput:path.join(workspaceRoot,'qa.json'),qaSignedOutput:path.join(workspaceRoot,'qa-signed.json'),
      stageWorkspace:Object.freeze({fd:workspace.fd,root:workspaceRoot}),
-     approvedEvaluators,approvedEditorialEvaluators,cleanup,templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
+     approvedEvaluators:evaluatorIds,approvedEditorialEvaluators:editorialEvaluatorIds,cleanup,
+     templateScope:{product:task.templateScope.product,country:task.templateScope.country}};
     for(const role of ['source','template','textLayers','assetRights','reference'])resolved[role]=path.join(workspaceRoot,task[role]);
     if(Object.hasOwn(task,'templateSource'))resolved.templateSource=path.join(workspaceRoot,task.templateSource);
     if(task.interior)resolved.interior=Object.fromEntries(interiorRoles.map(role=>[role,path.join(workspaceRoot,task.interior[role])]));
