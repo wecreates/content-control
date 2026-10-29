@@ -130,6 +130,25 @@ test('submission uses the local eligibility guard captured before the publishing
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('captured database endpoints retain their original transaction dependency',async()=>{
+ const f=fixture(),durableTxCalls=[];
+ f.options.db.tx=async callback=>{
+  durableTxCalls.push('tx');
+  return callback(Object.freeze({}));
+ };
+ f.options.db.assertPublishable=async function(){return this.tx(async()=>true);};
+ f.options.db.finish=async function(_job,state){return this.tx(async()=>f.events.push(state));};
+ f.options.resolveGrant=async()=>{
+  // A caller-owned wait must not redirect either captured database endpoint
+  // through a replacement transaction implementation.
+  f.options.db.tx=async()=>true;
+  return sign(f.release);
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.deepEqual(durableTxCalls,['tx','tx']);
+ assert.deepEqual(f.events,['submit','submitted']);
+});
+
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);
