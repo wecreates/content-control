@@ -228,3 +228,28 @@ test('production callbacks cannot redirect fenced settlement identity',async()=>
  assert.deepEqual(settlements,[['j','a','redbubble','7','j']]);
  assert.deepEqual([claimed.id,claimed.account_id,claimed.platform,claimed.fencing_token,claimed.brief.id],['j','a','redbubble','7','j']);
 });
+
+
+test('production database settlement is bound before the claim callback',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ let originalSettlements=0,replacementSettlements=0,originalTransactions=0,replacementTransactions=0;
+ const db={
+  tx:async fn=>{originalTransactions++;return fn({});},
+  failProduction:async function(){originalSettlements++;return this.tx(async()=>{});},
+  claimProduction:async()=>{
+   db.tx=async fn=>{replacementTransactions++;return fn({});};
+   db.failProduction=async()=>{replacementSettlements++;};
+   return productionClaim(brief);
+  }
+ };
+ const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,db,
+  resolveGrant:async()=>envelope,resolveTask:async()=>({rights_verified:false})});
+ assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED'});
+ assert.equal(originalSettlements,1);
+ assert.equal(replacementSettlements,0);
+ assert.equal(originalTransactions,1);
+ assert.equal(replacementTransactions,0);
+});
