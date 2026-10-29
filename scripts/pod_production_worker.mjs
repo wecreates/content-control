@@ -221,8 +221,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    task.source,task.assetRights,task.textLayers,rightsKey,{signal});
   enabled();
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
-  // official provenance or authorize a different product/country/platform.
-  const scope={...task.templateScope,platform:job.brief.platform};
+  // official provenance or authorize a different product/country/platform. Reject
+  // executable or Proxy-backed resolver values before reading any scope fields.
+  const templateScopeCapability=dataProperty(task,'templateScope');
+  if(!templateScopeCapability.valid)throw Error('TASK_TEMPLATE_SCOPE_INVALID');
+  const templateScope=snapshotData(templateScopeCapability.value);
+  if(!templateScope||typeof templateScope!=='object'||Array.isArray(templateScope))
+   throw Error('TASK_TEMPLATE_SCOPE_INVALID');
+  const scope={...templateScope,platform:job.brief.platform};
   const coverEnvelope=await readSignedJSONFile(task.template,{signal});
   enabled();
   const cover=validateTemplate(coverEnvelope,templateKey,scope);
