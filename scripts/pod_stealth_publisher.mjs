@@ -74,11 +74,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
- // Bind the durable settlement endpoint before the caller-owned claim wait can
- // replace db.finish. A missing endpoint is enforced only after a job exists so
- // the established empty-claim IDLE contract remains unchanged.
- let finish;
+ // Bind durable settlement and eligibility endpoints before the caller-owned
+ // claim wait can replace either database capability. Missing endpoints are
+ // enforced only after a job exists so empty-claim IDLE remains unchanged.
+ let finish,assertPublishable;
  try{finish=db.finish;}catch{}
+ try{assertPublishable=db.assertPublishable;}catch{}
  const claimedJob=await db.claimPublish(accountId,crypto.randomInt(45,181));
  if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
@@ -97,9 +98,6 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // Bind the exact endpoint that passed authorization before any caller-owned
   // verifier, authority or database callback can replace adapter.submit.
   const adapterSubmit=adapter.submit;
-  // Bind the exact local guard before caller-owned artifact or authority
-  // callbacks can replace the lease/account/rights/fencing check.
-  const assertPublishable=db.assertPublishable;
   if(typeof assertPublishable!=='function')throw Error('LOCAL_RELEASE_BLOCKED');
   const verifiedManifest=await verifyArtifacts(claimedJob); // Must hash all files and validate current template/rights/budget.
   // Carry one bounded JSON data snapshot across the remaining network/database
