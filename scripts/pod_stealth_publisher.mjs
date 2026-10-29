@@ -69,6 +69,32 @@ function authorizedAdapter(registry,platform){
   return {adapter,submit:submit.value};
  }catch{return null;}
 }
+function publisherDatabaseReceiver(db){
+ try{
+  if(db===null||(typeof db!=='object'&&typeof db!=='function')||utilTypes.isProxy(db))return db;
+  let transaction,active,pool,poolConnect,qaKey,expiresAt;
+  try{transaction=db.tx;}catch{}
+  try{active=db.active;}catch{}
+  try{pool=db.pool;}catch{}
+  try{poolConnect=pool?.connect;}catch{}
+  try{qaKey=db.qaKey;}catch{}
+  try{expiresAt=db.expiresAt;}catch{}
+  const receiver=Object.create(db);
+  const poolCapability=typeof poolConnect==='function'?
+   Object.freeze(Object.assign(Object.create(null),{
+    connect:(...args)=>Reflect.apply(poolConnect,pool,args)
+   })):pool;
+  const boundTransaction=typeof transaction==='function'?
+   (...args)=>Reflect.apply(transaction,receiver,args):transaction;
+  const boundActive=typeof active==='function'?
+   (...args)=>Reflect.apply(active,receiver,args):active;
+  Object.defineProperties(receiver,{
+   tx:{value:boundTransaction},active:{value:boundActive},pool:{value:poolCapability},
+   qaKey:{value:qaKey},expiresAt:{value:expiresAt}
+  });
+  return Object.freeze(receiver);
+ }catch{return db;}
+}
 function providerReceiptId(receipt){
  try{
   if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
@@ -88,9 +114,11 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
- // Bind durable settlement and eligibility endpoints before the caller-owned
- // claim wait can replace either database capability. Missing endpoints are
- // enforced only after a job exists so empty-claim IDLE remains unchanged.
+ // Bind durable settlement, eligibility and their database receiver dependencies
+ // before caller-owned waits can redirect any part of the transaction chain.
+ // Missing endpoints remain enforced only after a job exists so empty-claim IDLE
+ // is unchanged.
+ const databaseReceiver=publisherDatabaseReceiver(db);
  let finish,assertPublishable;
  try{finish=db.finish;}catch{}
  try{assertPublishable=db.assertPublishable;}catch{}
@@ -136,7 +164,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // platform, fencing or idempotency identity before adapter submission.
   const eligibilitySnapshot=snapshotClaimedRelease(job);
   if(!eligibilitySnapshot||
-   await Reflect.apply(assertPublishable,db,[eligibilitySnapshot])!==true)throw Error('LOCAL_RELEASE_BLOCKED');
+   await Reflect.apply(assertPublishable,databaseReceiver,[eligibilitySnapshot])!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   // Database contention can itself outlive signed evidence. Verify time-sensitive
   // authority/QA only after the last awaited check, immediately before submit.
   const release=verifyEnvelope(releaseEnvelope,upstreamKey,'content-control:pod');
@@ -161,14 +189,14 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const providerId=providerReceiptId(receipt);
   if(providerId===null)throw Error('RECEIPT_INVALID');
   submittedSettlementAttempted=true;
-  await Reflect.apply(finish,db,[job,'submitted',{id:providerId}]);
+  await Reflect.apply(finish,databaseReceiver,[job,'submitted',{id:providerId}]);
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){
   // A failed submitted transition may have committed despite its rejected
   // response. Never issue a second settlement transaction or expose private
   // database diagnostics; durable recovery/readback owns this uncertainty.
   if(submittedSettlementAttempted)throw Error('SUBMISSION_SETTLEMENT_UNCERTAIN');
-  try{await Reflect.apply(finish,db,[job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED']);}
+  try{await Reflect.apply(finish,databaseReceiver,[job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED']);}
   catch{throw Error(submitted?'SUBMISSION_SETTLEMENT_UNCERTAIN':'RELEASE_SETTLEMENT_UNCERTAIN');}
   return {status:submitted?'AMBIGUOUS':'BLOCKED',job_id:job.id};
  }
