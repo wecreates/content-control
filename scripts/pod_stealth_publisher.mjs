@@ -95,6 +95,16 @@ function publisherDatabaseReceiver(db){
   return Object.freeze(receiver);
  }catch{return db;}
 }
+const PUBLICATION_GATE_FIELDS=Object.freeze(['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']);
+function publicationGatesEnabled(env){
+ try{
+  if(env===null||typeof env!=='object'||Array.isArray(env)||utilTypes.isProxy(env))return false;
+  return PUBLICATION_GATE_FIELDS.every(key=>{
+   const descriptor=Object.getOwnPropertyDescriptor(env,key);
+   return !!descriptor&&Object.hasOwn(descriptor,'value')&&descriptor.value==='true';
+  });
+ }catch{return false;}
+}
 function providerReceiptId(receipt){
  try{
   if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
@@ -105,7 +115,7 @@ function providerReceiptId(receipt){
 }
 export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
  verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
- const publicationEnabled=()=>env.PUBLICATION_ENABLED==='true'&&env.POD_PUBLICATION_ENABLED==='true';
+ const publicationEnabled=()=>publicationGatesEnabled(env);
  if(signal?.aborted)return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
  if(!publicationEnabled()) {
