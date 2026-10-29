@@ -196,13 +196,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
   task=await resolveTask(jobCopy(),{signal});
   enabled();
-  if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  if(!task)throw Error('RIGHTS_BLOCKED');
   // Cleanup is a resolver-authorized lifecycle capability. Bind its data
-  // descriptor before production callbacks can replace the task member, and
-  // never execute accessor code while settling or releasing a job.
+  // descriptor before validation or production callbacks can replace the task
+  // member, while preserving cleanup for later rights-validation failures.
   const cleanupCapability=dataProperty(task,'cleanup');
   if(!cleanupCapability.valid)throw Error('TASK_CLEANUP_INVALID');
   cleanupTask=cleanupCapability.value;
+  if(task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   // Bind the resolver-authorized reviewer identities before grant, database or
   // independent-review callbacks can replace the task's allowlists.
   const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
