@@ -48,6 +48,11 @@ function snapshotData(value){
  }catch{return null;}
 }
 const CLAIMED_PRODUCTION_FIELDS=Object.freeze(['id','account_id','platform','fencing_token','brief']);
+function validFencingToken(value){
+ if(Number.isSafeInteger(value))return value>0;
+ if(typeof value!=='string'||!/^[1-9][0-9]{0,18}$/.test(value))return false;
+ return value.length<19||value<='9223372036854775807';
+}
 function snapshotClaimedProduction(value){
  try{
   if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
@@ -60,8 +65,8 @@ function snapshotClaimedProduction(value){
   }
   const snapshot=snapshotData(result);
   if(!snapshot||typeof snapshot.id!=='string'||typeof snapshot.account_id!=='string'||
-   typeof snapshot.platform!=='string'||!Number.isSafeInteger(snapshot.fencing_token)||
-   snapshot.fencing_token<1||snapshot.brief===null||typeof snapshot.brief!=='object'||
+   typeof snapshot.platform!=='string'||!validFencingToken(snapshot.fencing_token)||
+   snapshot.brief===null||typeof snapshot.brief!=='object'||
    Array.isArray(snapshot.brief))return null;
   return snapshot;
  }catch{return null;}
