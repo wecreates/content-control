@@ -69,6 +69,70 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r347 — reject executable publication gate descriptors (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`2d5dabe96825cbfd6ce8b6429712008c508d6acb` and Money Factory
+`c3c01e92b98d834929784977f33c322176597b9a`. No open POD/KDP pull
+request or duplicate r347 job existed. The publisher read
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` through ordinary
+property access. A Proxy or accessor-backed environment could therefore execute code
+during a safety check and report literal `"true"` even though both underlying flags
+were false, allowing a release to reach the external submission path.
+
+Regression-only head `81d1d422825e9966bb4860da9db1ecdb4455dc83`
+reproduced the defect on hosted integration run `40827669087` (run 797), job
+`123294329268`: 969 Node tests ran, 968 passed and only the new
+publication-gate regression failed. It expected `DRY_RUN` but observed
+`SUBMITTED`. Companion container run `40827669061` (run 360) was
+cancelled after the repaired commit superseded it and is not counted as acceptance.
+
+Content Control PR 826 accepts only own data descriptors whose values are literal
+`"true"`, rejects Proxy/accessor-backed or malformed environments without invoking
+their traps, and preserves repeated runtime kill-switch checks before each release
+boundary. Repaired exact head
+`429048a111081074cf69adcde8047520c28d386b` passed integration run
+`40827851859` (run 798), job `123294912604`: all 969 Node tests, all
+385 Python/OpenCV tests, PostgreSQL 18, production end-to-end, syntax,
+workflow-control and review-guard stages succeeded. Container run `40827851842`
+(run 361), job `123294997325`, passed image build, non-root/dependency probes,
+385 Python QA/rendering tests, all 969 Node/PostgreSQL tests, print/review and
+disabled-startup stages; its final smoke result recorded
+`publication_enabled=false`, `production_status=DISABLED` and
+`outbox_status=DISABLED`. Review of the focused two-file diff found no material
+correctness, security, compatibility or missing-test issue. PR 826 merged as
+`f1b6b69e19a9c6b13c483032a4ea47a48fe43ac8`.
+
+Money Factory PR 302 changed only the pinned Content Control SHA to that exact
+merge; `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal
+`false`. Exact pin head `118a00c782c47b637ebad17e0b4a5eb7df73f381`
+passed cross-repository run `40828624977` (run 304), job
+`123297387688`: all 625 pinned Node tests, the eight Python groups
+(34, 23, 40, 28, 28, 93, 5 and 6 cases), 23 editorial-bound KDP cases,
+121 bridge Node tests and 81 bridge Python tests passed. Review found only the
+intended one-line pin. PR 302 merged as
+`7842cbad03abdd201e1b13a9e7c0fa720a6eaf7e`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge
+`f1b6b69e19a9c6b13c483032a4ea47a48fe43ac8` and created deploy
+`dep-dbheb995efls738nfafg`. Deploy-started event
+`evt-dbheb999q7ns73ct3u20` was followed by pipeline-minutes-exhausted event
+`evt-dbheb9h40j4s73famie0` and failed deploy-ended event
+`evt-dbheb9hiimcc73ebo3rg` on 2026-10-29 UTC. The failure occurred before build
+or startup, so it is not live acceptance and the service was not verified with this
+repair. No manual redeploy was triggered because auto-deploy is enabled and free
+pipeline capacity is the unchanged limiting condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or
+live publication-gate configuration. All 24 live acceptance areas remain OPEN.
+Publication remains disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r346 — bind publisher database receiver dependencies (2026-10-29 UTC)
 
 ### Confirmed defect and repair
