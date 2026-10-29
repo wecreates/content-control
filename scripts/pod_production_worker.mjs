@@ -174,7 +174,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  const job=snapshotClaimedProduction(claimedJob);
  if(!job)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
  const jobCopy=()=>snapshotClaimedProduction(job)??(()=>{throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');})();
- let task;
+ let task,cleanupTask;
  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
   enabled();
@@ -197,6 +197,12 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   task=await resolveTask(jobCopy(),{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  // Cleanup is a resolver-authorized lifecycle capability. Bind its data
+  // descriptor before production callbacks can replace the task member, and
+  // never execute accessor code while settling or releasing a job.
+  const cleanupCapability=dataProperty(task,'cleanup');
+  if(!cleanupCapability.valid)throw Error('TASK_CLEANUP_INVALID');
+  cleanupTask=cleanupCapability.value;
   // Bind the resolver-authorized reviewer identities before grant, database or
   // independent-review callbacks can replace the task's allowlists.
   const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
@@ -350,7 +356,10 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  }
  })();}catch(error){primaryError=error;}
  let cleanupFailed=false;
- if(task?.cleanup)try{await task.cleanup();}catch{cleanupFailed=true;}
+ if(cleanupTask)try{
+  if(typeof cleanupTask!=='function')throw Error('TASK_CLEANUP_INVALID');
+  await Reflect.apply(cleanupTask,task,[]);
+ }catch{cleanupFailed=true;}
  if(primaryError)throw primaryError;
  return cleanupFailed?{...result,cleanup_failed:true}:result;
 }
