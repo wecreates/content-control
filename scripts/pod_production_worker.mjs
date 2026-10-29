@@ -9,6 +9,7 @@ import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
 import {verifyProductionSourceEvidence} from '../integrations/pod/source-evidence.mjs';
 import {parseSignedJSON} from '../integrations/pod/signed-json.mjs';
+import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 import {types as utilTypes} from 'node:util';
 
 function snapshotData(value){
@@ -83,6 +84,14 @@ function dataProperty(target,key){
   }
   return {valid:true,value:undefined};
  }catch{return {valid:false};}
+}
+function taskEvaluatorIds(task,key){
+ const capability=dataProperty(task,key);
+ if(!capability.valid)return null;
+ const snapshot=snapshotData(capability.value===undefined?[]:capability.value);
+ if(!Array.isArray(snapshot)||snapshot.length>100||
+  snapshot.some(id=>!validOpaqueText(id)))return null;
+ return Object.freeze(snapshot);
 }
 function snapshotStageEnvironment(env){
  try{
@@ -177,6 +186,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   task=await resolveTask(jobCopy(),{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  // Bind the resolver-authorized reviewer identities before grant, database or
+  // independent-review callbacks can replace the task's allowlists.
+  const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
+  const approvedEditorialEvaluators=taskEvaluatorIds(task,'approvedEditorialEvaluators');
+  if(!approvedEvaluators||!approvedEditorialEvaluators)throw Error('TASK_EVALUATORS_INVALID');
   const runStage=(script,args)=>python(script,args,{root,signal,env:stageEnv,workspace:task.stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    task.source,task.assetRights,task.textLayers,rightsKey,{signal});
@@ -262,9 +276,9 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense,
    '--book-details',task.interior.bookDetails,
    '--regional-rights-evidence',task.interior.regionalRightsEvidence);
-  for(const id of task.approvedEvaluators||[])args.push('--approved-evaluator',id);
+  for(const id of approvedEvaluators)args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
-  for(const id of task.approvedEditorialEvaluators||[])args.push('--approved-editorial-evaluator',id);
+  for(const id of approvedEditorialEvaluators)args.push('--approved-editorial-evaluator',id);
   // A failed QA process still emits a signed FAIL when signing is available.
   await authorizeProduction();
   let qaProcessFailed=false;
