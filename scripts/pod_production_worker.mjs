@@ -71,11 +71,62 @@ function snapshotClaimedProduction(value){
   return snapshot;
  }catch{return null;}
 }
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
+function productionDatabaseReceiver(db){
+ try{
+  const transaction=dataProperty(db,'tx'),active=dataProperty(db,'active'),pool=dataProperty(db,'pool'),
+   qaKey=dataProperty(db,'qaKey'),expiresAt=dataProperty(db,'expiresAt');
+  if([transaction,active,pool,qaKey,expiresAt].some(capability=>!capability.valid))return null;
+  const poolConnect=pool.value===undefined||pool.value===null?
+   {valid:true,value:undefined}:dataProperty(pool.value,'connect');
+  if(!poolConnect.valid)return null;
+  const receiver=Object.create(db);
+  const poolCapability=typeof poolConnect.value==='function'?
+   Object.freeze(Object.assign(Object.create(null),{
+    connect:(...args)=>Reflect.apply(poolConnect.value,pool.value,args)
+   })):pool.value;
+  const boundTransaction=typeof transaction.value==='function'?
+   (...args)=>Reflect.apply(transaction.value,receiver,args):transaction.value;
+  const boundActive=typeof active.value==='function'?
+   (...args)=>Reflect.apply(active.value,receiver,args):active.value;
+  Object.defineProperties(receiver,{
+   tx:{value:boundTransaction},active:{value:boundActive},pool:{value:poolCapability},
+   qaKey:{value:qaKey.value},expiresAt:{value:expiresAt.value}
+  });
+  return Object.freeze(receiver);
+ }catch{return null;}
+}
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
- const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});
- const claimedJob=await db.claimProduction();if(!claimedJob)return {status:signal?.aborted||env.POD_PRODUCTION_ENABLED!=='true'?'STOPPED':'IDLE'};
+ const budgetBytes=artifactBudgetBytes(env);
+ // Bind every production database endpoint and its receiver dependencies before
+ // the caller-owned claim wait can replace any durable guard or settlement path.
+ const databaseReceiver=productionDatabaseReceiver(db);
+ const claimCapability=dataProperty(db,'claimProduction'),assertCapability=dataProperty(db,'assertProducible'),
+  failCapability=dataProperty(db,'failProduction'),holdCapability=dataProperty(db,'holdProduction'),
+  completeCapability=dataProperty(db,'completeProduction');
+ if(!databaseReceiver||[claimCapability,assertCapability,failCapability,holdCapability,completeCapability]
+  .some(capability=>!capability.valid)||typeof claimCapability.value!=='function')
+  throw Error('PRODUCTION_DATABASE_UNVERIFIED');
+ const claimProduction=claimCapability.value,assertProducible=assertCapability.value,
+  failProduction=failCapability.value,holdProduction=holdCapability.value,
+  completeProduction=completeCapability.value;
+ const store=new ArtifactStore(databaseReceiver,{budgetBytes});
+ const claimedJob=await Reflect.apply(claimProduction,databaseReceiver,[]);
+ if(!claimedJob)return {status:signal?.aborted||env.POD_PRODUCTION_ENABLED!=='true'?'STOPPED':'IDLE'};
  // Preserve the exact fenced identity before authority, task or database callbacks
  // can retain and mutate caller-visible objects.
  const job=snapshotClaimedProduction(claimedJob);
@@ -87,7 +138,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   enabled();
   const envelope=await resolveGrant(jobCopy(),{signal});
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
-  await db.assertProducible(jobCopy());
+  await Reflect.apply(assertProducible,databaseReceiver,[jobCopy()]);
   // Local lock waits must not extend upstream authority or ignore cancellation.
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
   enabled();
@@ -168,7 +219,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     enabled();
     enforceBrief(verifyEnvelope(reviewGrant,upstreamKey,'content-control:pod'),job.brief);
    };
-   await db.holdProduction(jobCopy(),manifest,{beforeStateChange});
+   await Reflect.apply(holdProduction,databaseReceiver,[jobCopy(),manifest,{beforeStateChange}]);
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   let attestation;
@@ -219,11 +270,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    enabled();
    enforceBrief(verifyEnvelope(completionGrant,upstreamKey,'content-control:pod'),job.brief);
   };
-  const result=await db.completeProduction(jobCopy(),manifest,qa,{beforeStateChange});
+  const result=await Reflect.apply(completeProduction,databaseReceiver,[jobCopy(),manifest,qa,{beforeStateChange}]);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch(error){
   const reason=productionFailure(error);
-  await db.failProduction(jobCopy(),reason);
+  await Reflect.apply(failProduction,databaseReceiver,[jobCopy(),reason]);
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
  }
  })();}catch(error){primaryError=error;}
