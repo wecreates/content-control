@@ -55,6 +55,20 @@ function snapshotClaimedRelease(value){
   return snapshotManifest(result);
  }catch{return null;}
 }
+function authorizedAdapter(registry,platform){
+ try{
+  if(registry===null||typeof registry!=='object'||Array.isArray(registry)||utilTypes.isProxy(registry))return null;
+  const entry=Object.getOwnPropertyDescriptor(registry,platform);
+  if(!entry||!Object.hasOwn(entry,'value'))return null;
+  const adapter=entry.value;
+  if(adapter===null||typeof adapter!=='object'||Array.isArray(adapter)||utilTypes.isProxy(adapter))return null;
+  const authorization=Object.getOwnPropertyDescriptor(adapter,'authorized');
+  const submit=Object.getOwnPropertyDescriptor(adapter,'submit');
+  if(!authorization||!Object.hasOwn(authorization,'value')||authorization.value!==true||
+   !submit||!Object.hasOwn(submit,'value')||typeof submit.value!=='function')return null;
+  return {adapter,submit:submit.value};
+ }catch{return null;}
+}
 function providerReceiptId(receipt){
  try{
   if(receipt===null||typeof receipt!=='object'||Array.isArray(receipt)||utilTypes.isProxy(receipt))return null;
@@ -93,11 +107,13 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   job=releaseSnapshot;
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
-  const adapter=adapters[job.platform];
-  if(adapter?.authorized!==true||typeof adapter.submit!=='function')throw Error('ADAPTER_UNVERIFIED');
+  // Inspect only own data descriptors. Proxy/accessor-backed authorization or
+  // submit capabilities can execute code during policy checks and fail closed.
+  const adapterAuthorization=authorizedAdapter(adapters,job.platform);
+  if(!adapterAuthorization)throw Error('ADAPTER_UNVERIFIED');
+  const {adapter,submit:adapterSubmit}=adapterAuthorization;
   // Bind the exact endpoint that passed authorization before any caller-owned
   // verifier, authority or database callback can replace adapter.submit.
-  const adapterSubmit=adapter.submit;
   if(typeof assertPublishable!=='function')throw Error('LOCAL_RELEASE_BLOCKED');
   const verifiedManifest=await verifyArtifacts(claimedJob); // Must hash all files and validate current template/rights/budget.
   // Carry one bounded JSON data snapshot across the remaining network/database
@@ -134,7 +150,8 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   // authorization immediately before the external side effect. No await may
   // separate these checks from submission.
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
-  if(adapters[job.platform]!==adapter||adapter.authorized!==true)throw Error('ADAPTER_UNVERIFIED');
+  const currentAdapter=authorizedAdapter(adapters,job.platform);
+  if(!currentAdapter||currentAdapter.adapter!==adapter)throw Error('ADAPTER_UNVERIFIED');
   submitted=true;
   const receipt=await Reflect.apply(adapterSubmit,adapter,[{brief,manifest,idempotencyKey:job.idempotency_key,signal}]);
   // Match the observer's opaque listing-ID contract. A malformed receipt is
