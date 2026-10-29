@@ -258,7 +258,9 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   await authorizeProduction();
   await store.putMany(artifacts);
   const reviewGrant=await authorizeProduction();
-  const reviewPackage=task.reviewPackage;
+  const reviewCapability=dataProperty(task,'reviewPackage');
+  if(!reviewCapability.valid)throw Error('TASK_REVIEWER_INVALID');
+  const reviewPackage=reviewCapability.value;
   if(typeof reviewPackage!=='function'){
    // A review hold is durable package exposure. Database lease and rights locks
    // can wait after the grant lookup, so revalidate that exact grant and the
