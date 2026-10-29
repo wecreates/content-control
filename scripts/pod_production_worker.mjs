@@ -88,7 +88,7 @@ function dataProperty(target,key){
 function taskEvaluatorIds(task,key){
  const capability=dataProperty(task,key);
  if(!capability.valid)return null;
- const snapshot=snapshotData(capability.value??[]);
+ const snapshot=snapshotData(capability.value===undefined?[]:capability.value);
  if(!Array.isArray(snapshot)||snapshot.length>100||
   snapshot.some(id=>!validOpaqueText(id)))return null;
  return Object.freeze(snapshot);
