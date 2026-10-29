@@ -9,18 +9,80 @@ import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
 import {verifyTemplateSource} from '../integrations/pod/template-source.mjs';
 import {verifyProductionSourceEvidence} from '../integrations/pod/source-evidence.mjs';
 import {parseSignedJSON} from '../integrations/pod/signed-json.mjs';
+import {types as utilTypes} from 'node:util';
+
+function snapshotData(value){
+ try{
+  const state={nodes:0};
+  const copy=(item,depth)=>{
+   if(depth>64||++state.nodes>10000)throw Error();
+   if(item===null||typeof item==='string'||typeof item==='boolean')return item;
+   if(typeof item==='number'){
+    if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))throw Error();
+    return item;
+   }
+   if(typeof item!=='object'||utilTypes.isProxy(item))throw Error();
+   const prototype=Object.getPrototypeOf(item),keys=Reflect.ownKeys(item);
+   if(Array.isArray(item)){
+    const length=Object.getOwnPropertyDescriptor(item,'length');
+    if(prototype!==Array.prototype||!Object.hasOwn(length||{},'value')||
+     !Number.isInteger(length.value)||length.value<0||length.value>10000||keys.length!==length.value+1)throw Error();
+    const result=[];
+    for(let index=0;index<length.value;index++){
+     const descriptor=Object.getOwnPropertyDescriptor(item,String(index));
+     if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+     result.push(copy(descriptor.value,depth+1));
+    }
+    return result;
+   }
+   if(prototype!==Object.prototype||keys.length>10000||keys.some(key=>typeof key!=='string'))throw Error();
+   const result={};
+   for(const key of keys){
+    const descriptor=Object.getOwnPropertyDescriptor(item,key);
+    if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+    Object.defineProperty(result,key,{value:copy(descriptor.value,depth+1),enumerable:true,writable:true,configurable:true});
+   }
+   return result;
+  };
+  return copy(value,0);
+ }catch{return null;}
+}
+const CLAIMED_PRODUCTION_FIELDS=Object.freeze(['id','account_id','platform','fencing_token','brief']);
+function snapshotClaimedProduction(value){
+ try{
+  if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
+   Object.getPrototypeOf(value)!==Object.prototype)return null;
+  const result={};
+  for(const key of CLAIMED_PRODUCTION_FIELDS){
+   const descriptor=Object.getOwnPropertyDescriptor(value,key);
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))return null;
+   Object.defineProperty(result,key,{value:descriptor.value,enumerable:true,writable:true,configurable:true});
+  }
+  const snapshot=snapshotData(result);
+  if(!snapshot||typeof snapshot.id!=='string'||typeof snapshot.account_id!=='string'||
+   typeof snapshot.platform!=='string'||!Number.isSafeInteger(snapshot.fencing_token)||
+   snapshot.fencing_token<1||snapshot.brief===null||typeof snapshot.brief!=='object'||
+   Array.isArray(snapshot.brief))return null;
+  return snapshot;
+ }catch{return null;}
+}
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
  const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});
- const job=await db.claimProduction();if(!job)return {status:signal?.aborted||env.POD_PRODUCTION_ENABLED!=='true'?'STOPPED':'IDLE'};
+ const claimedJob=await db.claimProduction();if(!claimedJob)return {status:signal?.aborted||env.POD_PRODUCTION_ENABLED!=='true'?'STOPPED':'IDLE'};
+ // Preserve the exact fenced identity before authority, task or database callbacks
+ // can retain and mutate caller-visible objects.
+ const job=snapshotClaimedProduction(claimedJob);
+ if(!job)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
+ const jobCopy=()=>snapshotClaimedProduction(job)??(()=>{throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');})();
  let task;
  const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
   enabled();
-  const envelope=await resolveGrant(job,{signal});
+  const envelope=await resolveGrant(jobCopy(),{signal});
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
-  await db.assertProducible(job);
+  await db.assertProducible(jobCopy());
   // Local lock waits must not extend upstream authority or ignore cancellation.
   enforceBrief(verifyEnvelope(envelope,upstreamKey,'content-control:pod'),job.brief);
   enabled();
@@ -30,11 +92,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  try{result=await (async()=>{
  try{
   enabled();
-  const grant=verifyEnvelope(await resolveGrant(job,{signal}),upstreamKey,'content-control:pod');
+  const grant=verifyEnvelope(await resolveGrant(jobCopy(),{signal}),upstreamKey,'content-control:pod');
   enabled();
   enforceBrief(grant,job.brief);
   // Resolver owns paths/templates/rights. Never construct command arguments from arbitrary request fields.
-  task=await resolveTask(job,{signal});
+  task=await resolveTask(jobCopy(),{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   const runStage=(script,args)=>python(script,args,{root,signal,env,workspace:task.stageWorkspace});
@@ -101,7 +163,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     enabled();
     enforceBrief(verifyEnvelope(reviewGrant,upstreamKey,'content-control:pod'),job.brief);
    };
-   await db.holdProduction(job,manifest,{beforeStateChange});
+   await db.holdProduction(jobCopy(),manifest,{beforeStateChange});
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   let attestation;
@@ -152,11 +214,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    enabled();
    enforceBrief(verifyEnvelope(completionGrant,upstreamKey,'content-control:pod'),job.brief);
   };
-  const result=await db.completeProduction(job,manifest,qa,{beforeStateChange});
+  const result=await db.completeProduction(jobCopy(),manifest,qa,{beforeStateChange});
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch(error){
   const reason=productionFailure(error);
-  await db.failProduction(job,reason);
+  await db.failProduction(jobCopy(),reason);
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
  }
  })();}catch(error){primaryError=error;}
