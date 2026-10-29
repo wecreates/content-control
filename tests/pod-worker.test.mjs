@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+const productionClaim=brief=>({id:'j',account_id:'a',platform:brief.platform,fencing_token:1,brief});
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
@@ -20,7 +21,7 @@ test('production-only grant reaches task resolution without publishing',async()=
   job_id:'j',account_id:'a',business_id:'b',platform:'kdp',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  let resolved=false,failed=false;
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{failed=true;}},
+  db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{failed=true;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>{resolved=true;return {rights_verified:false};}});
  assert.equal(resolved,true);assert.equal(failed,true);assert.equal(result.status,'BLOCKED');
@@ -30,7 +31,7 @@ test('workspace cleanup failure preserves the durable job result and exposes onl
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const options={env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:key},upstreamKey:key,
-  db:{recover:async()=>{},claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{}},
+  db:{recover:async()=>{},claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('private workspace path');}})};
  const result=await produceOnce(options);
@@ -53,7 +54,7 @@ test('workspace cleanup failure cannot mask an earlier persistence failure',asyn
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const persistenceFailure=Error('primary persistence failure');
  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{throw persistenceFailure;}},
+  db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{throw persistenceFailure;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('secondary cleanup failure');}})}),
  error=>error===persistenceFailure);
@@ -162,7 +163,7 @@ test('production disable during source verification stops before template access
    template:{get(){templateReads++;return path.join(root,'missing-template.json');}}
   });
   const result=await produceOnce({env,upstreamKey:key,
-   db:{claimProduction:async()=>({id:'j',brief}),failProduction:async()=>{}},
+   db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
    resolveGrant:async()=>({payload:grantPayload,signature:crypto.createHmac('sha256',key).update(grantPayload).digest('hex')}),
    resolveTask:async()=>task});
   assert.equal(templateReads,0);
@@ -188,4 +189,42 @@ test('idle cycle records completion without claiming successful production',asyn
   db:{recover:async()=>{},claimProduction:async()=>null},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
  await new Promise(r=>setImmediate(r));const h=runtime.health();assert.equal(h.cycles,1);assert.equal(h.last_result,'IDLE');
  assert.ok(h.last_completed_at);await runtime.stop();
+});
+
+test('unsnapshotable production claims never reach callbacks or settlement',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ for(const kind of ['proxy','accessor']){
+  const original={id:'j',account_id:'a',platform:'redbubble',fencing_token:7,brief};
+  let reads=0,callbacks=0,settlements=0,outcome,error;
+  const claimed=kind==='proxy'?new Proxy(original,{
+   get(target,property,receiver){if(property==='id'||property==='fencing_token')reads++;return Reflect.get(target,property,receiver);}
+  }):Object.defineProperty({...original},'id',{enumerable:true,get(){reads++;return original.id;}});
+  try{
+   outcome=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
+    db:{claimProduction:async()=>claimed,failProduction:async job=>{settlements++;void job.id;void job.fencing_token;}},
+    resolveGrant:async()=>{callbacks++;return envelope;},
+    resolveTask:async()=>{callbacks++;return {rights_verified:false};}});
+  }catch(value){error=value;}
+  assert.equal(callbacks,0,kind);assert.equal(settlements,0,kind);assert.equal(reads,0,kind);
+  assert.equal(outcome,undefined,kind);assert.equal(error?.message,'PRODUCTION_SETTLEMENT_UNCERTAIN',kind);
+ }
+});
+
+test('production callbacks cannot redirect fenced settlement identity',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ const claimed={id:'j',account_id:'a',platform:'redbubble',fencing_token:'7',brief},settlements=[];
+ const mutate=job=>{job.id='redirected';job.account_id='redirected';job.platform='kdp';job.fencing_token=99;job.brief.id='redirected';};
+ const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
+  db:{claimProduction:async()=>claimed,failProduction:async job=>settlements.push([job.id,job.account_id,job.platform,job.fencing_token,job.brief.id])},
+  resolveGrant:async job=>{mutate(job);return envelope;},
+  resolveTask:async job=>{mutate(job);return {rights_verified:false};}});
+ assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED'});
+ assert.deepEqual(settlements,[['j','a','redbubble','7','j']]);
+ assert.deepEqual([claimed.id,claimed.account_id,claimed.platform,claimed.fencing_token,claimed.brief.id],['j','a','redbubble','7','j']);
 });

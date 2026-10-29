@@ -106,7 +106,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    if(interiorTask)resolvedTask.interior=interiorTask;
   }
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
-   db:{active(){},claimProduction:async()=>({id:brief.id,brief}),failProduction:async()=>{blocked++;},
+   db:{active(){},claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async()=>{blocked++;},
     holdProduction:async(_job,_manifest,{beforeStateChange}={})=>{
      if(expireGrantDuringHold)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();held++;

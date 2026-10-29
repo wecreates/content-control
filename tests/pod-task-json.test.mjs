@@ -70,7 +70,7 @@ test('production records TASK_INVALID and stops before authorization or Python o
   production_permission:true,publication_permission:false,revoked:false,task_sha256:f.hash});
  let reason,authorizations=0;
  const result=await produceOnce({upstreamKey:key,env:{POD_PRODUCTION_ENABLED:'true',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
-  db:{claimProduction:async()=>({id:'j',brief}),failProduction:async(_job,r)=>reason=r,
+  db:{claimProduction:async()=>({id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async(_job,r)=>reason=r,
    assertProducible:async()=>{authorizations++;throw Error('must not authorize');}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:f.resolver.resolveTask});
