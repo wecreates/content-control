@@ -69,6 +69,73 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r346 — bind publisher database receiver dependencies (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`ae3171ce08f5bce33264634b1f73bf291def8d33` and Money Factory
+`34b3edee8f8569d8eeac019d03b707ec20beef0a`. No open POD/KDP pull
+request or duplicate r346 job existed. The publisher captured the original
+`db.assertPublishable` and `db.finish` functions before caller-owned waits, but
+invoked them with the mutable caller-owned database object as their receiver. Both
+methods depend on receiver properties including the transaction endpoint; a wait
+callback could replace `db.tx`, redirect both eligibility and settlement, and reach a
+reported submission without any call through the original durable transaction
+dependency.
+
+Regression-only head `358f5126ad9bd5da33463730b5232af70af2e243`
+reproduced the defect on hosted integration run `40819465692` (run 794), job
+`123268278850`: 968 Node tests ran, 967 passed and only the new regression
+failed. It expected two calls through the original transaction dependency but
+observed none. Its companion container run `40819465778` (run 358) was
+cancelled after the repaired commit superseded it and is not counted as acceptance.
+
+Content Control PR 824 builds a frozen publisher receiver before the caller-owned
+claim wait, binding the original transaction and active checks plus the original pool
+connection, QA key and expiry dependencies. The captured eligibility and settlement
+methods now use only that receiver, while the empty-claim `IDLE` contract remains
+unchanged. Repaired exact head
+`749f8d688f07f2e8ab294f53ad91559e63a4f061` passed integration run
+`40819597996` (run 795), job `123268701181`: all 968 Node tests, all
+385 Python/OpenCV tests, PostgreSQL 18, production end-to-end, syntax,
+workflow-control and review-guard stages succeeded. Container run `40819597901`
+(run 359), job `123269118066`, passed image build, non-root/dependency probes,
+Python QA/rendering, Node/PostgreSQL, print/review and disabled-startup stages; its
+final smoke result recorded `publication_enabled=false`,
+`production_status=DISABLED` and `outbox_status=DISABLED`. Review of the
+complete focused diff found no material correctness, security, compatibility or
+missing-test issue. PR 824 merged as
+`d142a140a1d841d9be1f785a2ff47362c9c41853`.
+
+Money Factory PR 301 changed only the pinned Content Control SHA to that exact
+merge; `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal
+`false`. Exact pin head `cdf21bd10bb63c35e140f9aebd653f9007ebb06b`
+passed cross-repository run `40820412762` (run 303), job
+`123271317989`: all 624 pinned Node tests, the eight Python groups
+(34, 23, 40, 28, 28, 93, 5 and 6 cases), 23 editorial-bound KDP cases,
+121 bridge Node tests and 81 bridge Python tests passed. Review found only the
+intended one-line pin. PR 301 merged as
+`c3c01e92b98d834929784977f33c322176597b9a`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge
+`d142a140a1d841d9be1f785a2ff47362c9c41853` and created deploy
+`dep-dbhd387b9u1s739nn3tg`. Deploy-started event
+`evt-dbhd389iimcc73eaub4g` was followed by pipeline-minutes-exhausted event
+`evt-dbhd389iimcc73eaub60` and failed deploy-ended event
+`evt-dbhd38f1f1fs73dnor40` on 2026-10-29 UTC. The failure occurred before build
+or startup, so it is not live acceptance and the service was not verified with this
+repair. No manual redeploy was triggered because auto-deploy is enabled and free
+pipeline capacity is the unchanged limiting condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or live
+database eligibility/settlement. All 24 live acceptance areas remain OPEN.
+Publication remains disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r345 — reject executable adapter authorization descriptors (2026-10-29 UTC)
 
 ### Confirmed defect and repair
