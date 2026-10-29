@@ -2,12 +2,18 @@ import {verifyEnvelope,enforceBrief} from './policy.mjs';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 
 export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
- let endpoint;
- try{endpoint=new URL(env.POD_GRANT_URL);}catch{throw Error('GRANT_AUTHORITY_REQUIRED');}
+ let endpoint,authKey,upstreamKey;
+ try{
+  endpoint=new URL(env.POD_GRANT_URL);
+  authKey=env.POD_GRANT_AUTH_KEY;
+  upstreamKey=env.POD_UPSTREAM_KEY;
+ }catch{throw Error('GRANT_AUTHORITY_REQUIRED');}
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||endpoint.search||
-  typeof env.POD_GRANT_AUTH_KEY!=='string'||Buffer.byteLength(env.POD_GRANT_AUTH_KEY)<32||
-  typeof env.POD_UPSTREAM_KEY!=='string'||Buffer.byteLength(env.POD_UPSTREAM_KEY)<32||
-  Buffer.from(env.POD_GRANT_AUTH_KEY).equals(Buffer.from(env.POD_UPSTREAM_KEY)))throw Error('GRANT_AUTHORITY_INVALID');
+  typeof authKey!=='string'||Buffer.byteLength(authKey)<32||
+  typeof upstreamKey!=='string'||Buffer.byteLength(upstreamKey)<32||
+  Buffer.from(authKey).equals(Buffer.from(upstreamKey)))throw Error('GRANT_AUTHORITY_INVALID');
+ // Bind the validated authority identity at construction. A caller-owned env
+ // object must not replace either credential after this resolver is trusted.
  return async(job,{signal}={})=>{
   const jobId=job?.id;
   if(typeof jobId!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(jobId)||job?.brief?.id!==jobId)
@@ -16,13 +22,13 @@ export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
   const timeout=AbortSignal.timeout(10000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
-   headers:{'content-type':'application/json',authorization:'Bearer '+env.POD_GRANT_AUTH_KEY},body:JSON.stringify({job_id:jobId})},{deadline});
+   headers:{'content-type':'application/json',authorization:'Bearer '+authKey},body:JSON.stringify({job_id:jobId})},{deadline});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
    sizeError:'GRANT_TOO_LARGE',mediaTypeError:'GRANT_MEDIA_TYPE_INVALID'});
   if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||
    Object.getPrototypeOf(envelope)!==Object.prototype||Object.keys(envelope).length!==2||
    !Object.hasOwn(envelope,'payload')||!Object.hasOwn(envelope,'signature'))throw Error('GRANT_RESPONSE_INVALID');
-  const grant=verifyEnvelope(envelope,env.POD_UPSTREAM_KEY,'content-control:pod');
+  const grant=verifyEnvelope(envelope,upstreamKey,'content-control:pod');
   enforceBrief(grant,job.brief);
   // Recheck wall-clock validity after signature/scope work. A nonfinite or
   // rolled-back second clock read must not turn the lifetime comparison into
