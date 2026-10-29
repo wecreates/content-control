@@ -156,6 +156,21 @@ test('submission uses the exact local eligibility guard captured before caller-o
  assert.deepEqual(f.events,['blocked']);
 });
 
+test('submission uses the exact durable settlement endpoint captured before caller-owned waits',async()=>{
+ const f=fixture(),durableFinish=f.options.db.finish;let durableSettlements=0;
+ f.options.db.finish=async(...args)=>{
+  durableSettlements++;
+  return Reflect.apply(durableFinish,f.options.db,args);
+ };
+ f.options.resolveGrant=async()=>{
+  f.options.db.finish=async()=>{};
+  return sign(f.release);
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.equal(durableSettlements,1);
+ assert.deepEqual(f.events,['submit','submitted']);
+});
+
 test('submission uses the exact adapter endpoint authorized before caller-owned waits',async()=>{
  const f=fixture(),adapter=f.options.adapters.redbubble;
  f.options.db.assertPublishable=async()=>{
