@@ -247,7 +247,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   await authorizeProduction();
   await store.putMany(artifacts);
   const reviewGrant=await authorizeProduction();
-  if(typeof task.reviewPackage!=='function'){
+  const reviewPackage=task.reviewPackage;
+  if(typeof reviewPackage!=='function'){
    // A review hold is durable package exposure. Database lease and rights locks
    // can wait after the grant lookup, so revalidate that exact grant and the
    // local stop boundary at the final pre-write hook without external I/O.
@@ -258,36 +259,55 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    await Reflect.apply(holdProduction,databaseReceiver,[jobCopy(),manifest,{beforeStateChange}]);
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
+  // Bind every resolver-authorized QA input before the caller-owned reviewer can
+  // retain and mutate the task object. The live publication and cancellation
+  // controls remain outside this snapshot and are rechecked at each boundary.
+  const qaInterior=job.brief.platform==='kdp'?Object.freeze({
+   template:task.interior.template,source:task.interior.source,pages:task.interior.pages,
+   font:task.interior.font,fontRights:task.interior.fontRights,fontLicense:task.interior.fontLicense,
+   bookDetails:task.interior.bookDetails,regionalRightsEvidence:task.interior.regionalRightsEvidence
+  }):undefined;
+  const qaTask=Object.freeze({
+   output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
+   source:task.source,assetRights:task.assetRights,textLayers:task.textLayers,assetRoot:task.assetRoot,
+   template:task.template,templateSource:task.templateSource,stageWorkspace:task.stageWorkspace,
+   interior:qaInterior
+  });
   let attestation;
-  try{attestation=await task.reviewPackage(manifest,{signal,
-   ...(job.brief.platform==='kdp'?{manuscript:task.interior.pages,bookDetails:task.interior.bookDetails}:{})});}
+  try{attestation=await Reflect.apply(reviewPackage,task,[manifest,{signal,
+   ...(job.brief.platform==='kdp'?{manuscript:qaInterior.pages,bookDetails:qaInterior.bookDetails}:{})}]);}
   catch(error){enabled();throw error;}
   // A cooperative reviewer can stop its own I/O. Await settlement before cleanup
   // and reject late results before reading attestation paths or launching QA.
   enabled();
-  const args=['--package-dir',task.output,'--reference',task.reference,'--rights',attestation.rights,
-   '--competitive-review',attestation.competitive,'--output',task.qaOutput,'--signed-output',task.qaSignedOutput,
-   '--source',task.source,'--asset-rights',task.assetRights,'--text-layers',task.textLayers];
-  if(task.assetRoot)args.push('--asset-root',task.assetRoot);
+  const args=['--package-dir',qaTask.output,'--reference',qaTask.reference,'--rights',attestation.rights,
+   '--competitive-review',attestation.competitive,'--output',qaTask.qaOutput,'--signed-output',qaTask.qaSignedOutput,
+   '--source',qaTask.source,'--asset-rights',qaTask.assetRights,'--text-layers',qaTask.textLayers];
+  if(qaTask.assetRoot)args.push('--asset-root',qaTask.assetRoot);
   if(job.brief.platform==='kdp')args.push('--country',scope.country,'--product',scope.product,
-   '--cover-template',task.template,'--interior-template',task.interior.template,'--template-source',task.templateSource,
-   '--interior-template-source',task.interior.source,
-   '--manuscript',task.interior.pages,'--font',task.interior.font,
-   '--font-rights',task.interior.fontRights,'--font-license',task.interior.fontLicense,
-   '--book-details',task.interior.bookDetails,
-   '--regional-rights-evidence',task.interior.regionalRightsEvidence);
+   '--cover-template',qaTask.template,'--interior-template',qaInterior.template,'--template-source',qaTask.templateSource,
+   '--interior-template-source',qaInterior.source,
+   '--manuscript',qaInterior.pages,'--font',qaInterior.font,
+   '--font-rights',qaInterior.fontRights,'--font-license',qaInterior.fontLicense,
+   '--book-details',qaInterior.bookDetails,
+   '--regional-rights-evidence',qaInterior.regionalRightsEvidence);
   for(const id of approvedEvaluators)args.push('--approved-evaluator',id);
   if(attestation.editorial)args.push('--editorial-review',attestation.editorial);
   for(const id of approvedEditorialEvaluators)args.push('--approved-editorial-evaluator',id);
   // A failed QA process still emits a signed FAIL when signing is available.
   await authorizeProduction();
   let qaProcessFailed=false;
-  try{await runStage('pod_vision_qa.py',args);}catch(error){
+  try{await python('pod_vision_qa.py',args,{root,signal,env:stageEnv,workspace:qaTask.stageWorkspace});}catch(error){
    if(error.message!=='PYTHON_STAGE_FAILED')throw error;
    qaProcessFailed=true;
   }
   enabled();
-  const qa=await readSignedJSONFile(task.qaSignedOutput,{signal});
+  // Re-reading the live descriptor preserves the stop/mutation boundary while
+  // refusing to consume a reviewer-replaced output path.
+  const currentQaSignedOutput=task.qaSignedOutput;
+  enabled();
+  if(currentQaSignedOutput!==qaTask.qaSignedOutput)throw Error('TASK_QA_INPUTS_CHANGED');
+  const qa=await readSignedJSONFile(qaTask.qaSignedOutput,{signal});
   enabled();
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.
   // completeProduction still authenticates the envelope before persisting it.
