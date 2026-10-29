@@ -81,7 +81,7 @@ test('unsnapshotable claimed rows never reach settlement or execute identity tra
  for(const kind of ['proxy','accessor']){
   const f=fixture(),original=await f.options.db.claimPublish();let reads=0,settlements=0,outcome,error;
   const claimed=kind==='proxy'?new Proxy(original,{
-   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+   get(target,key,receiver){if(key==='id'||key==='fencing_token')reads++;return Reflect.get(target,key,receiver);}
   }):Object.defineProperty({...original},'id',{enumerable:true,get(){reads++;return original.id;}});
   f.options.db.claimPublish=async()=>claimed;
   f.options.db.finish=async job=>{settlements++;void job.id;void job.fencing_token;};
