@@ -217,8 +217,16 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const approvedEditorialEvaluators=taskEvaluatorIds(task,'approvedEditorialEvaluators');
   if(!approvedEvaluators||!approvedEditorialEvaluators)throw Error('TASK_EVALUATORS_INVALID');
   const runStage=(script,args)=>python(script,args,{root,signal,env:stageEnv,workspace:stageWorkspace});
+  // Bind the exact resolver-authorized inputs before evidence verification. Grant
+  // and database callbacks must not replace verified paths before generation or QA.
+  const sourceCapability=dataProperty(task,'source'),assetRightsCapability=dataProperty(task,'assetRights'),
+   textLayersCapability=dataProperty(task,'textLayers'),assetRootCapability=dataProperty(task,'assetRoot');
+  if([sourceCapability,assetRightsCapability,textLayersCapability,assetRootCapability]
+   .some(capability=>!capability.valid))throw Error('TASK_GENERATION_INPUTS_INVALID');
+  const source=sourceCapability.value,assetRights=assetRightsCapability.value,
+   textLayersPath=textLayersCapability.value,assetRoot=assetRootCapability.value;
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
-   task.source,task.assetRights,task.textLayers,rightsKey,{signal});
+   source,assetRights,textLayersPath,rightsKey,{signal});
   enabled();
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform. Reject
@@ -261,8 +269,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--source-member',interiorRecord.source_member]);
   }
   await authorizeProduction();
-  await runStage('pod_asset_generator.py',['--source',task.source,'--template',task.template,
-   '--text-layers',task.textLayers,'--rights',task.assetRights,'--output-dir',task.output,...(task.assetRoot?['--asset-root',task.assetRoot]:[])]);
+  await runStage('pod_asset_generator.py',['--source',source,'--template',task.template,
+   '--text-layers',textLayersPath,'--rights',assetRights,'--output-dir',task.output,...(assetRoot?['--asset-root',assetRoot]:[])]);
   enabled();
   if(job.brief.platform==='kdp'){
    await authorizeProduction();
@@ -302,7 +310,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   }):undefined;
   const qaTask=Object.freeze({
    output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
-   source:task.source,assetRights:task.assetRights,textLayers:task.textLayers,assetRoot:task.assetRoot,
+   source,assetRights,textLayers:textLayersPath,assetRoot,
    template:task.template,templateSource:task.templateSource,stageWorkspace,
    interior:qaInterior
   });
