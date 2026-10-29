@@ -686,6 +686,15 @@ test('ordinary reviewer errors remain redacted and do not complete production',a
  assert.equal(r.qaStarted,false);assert.equal(r.completed,0);
 });
 
+test('executable reviewer attestation is rejected without invoking accessors',async()=>{
+ let accessed=false;
+ const r=await exercise({review:true,detailed:true,reviewPolicy:async()=>({
+  get rights(){accessed=true;return 'unused';},competitive:'unused'
+ })});
+ assert.equal(accessed,false);assert.equal(r.reason,'PRODUCTION_BLOCKED');
+ assert.equal(r.qaStarted,false);assert.equal(r.completed,0);assert.equal(r.cleaned,1);
+});
+
 for(const action of ['abort','disable'])test(`late review result after ${action} is discarded before reading paths`,async()=>{
  let accessed=false;
  const r=await exercise({review:true,detailed:true,reviewPolicy:async({controller,env})=>{
