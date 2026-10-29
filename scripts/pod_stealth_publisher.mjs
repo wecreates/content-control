@@ -79,8 +79,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
  let job=claimedJob;
- let submitted=false,submittedSettlementAttempted=false;
+ let submitted=false,submittedSettlementAttempted=false,finish;
  try{
+  // Bind the exact durable settlement endpoint before caller-owned verifier,
+  // authority, eligibility or adapter waits can replace db.finish.
+  finish=db.finish;
+  if(typeof finish!=='function')throw Error('SETTLEMENT_REQUIRED');
   const releaseSnapshot=snapshotClaimedRelease(claimedJob);
   if(!releaseSnapshot)throw Error('CLAIM_SNAPSHOT_INVALID');
   job=releaseSnapshot;
@@ -137,14 +141,14 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const providerId=providerReceiptId(receipt);
   if(providerId===null)throw Error('RECEIPT_INVALID');
   submittedSettlementAttempted=true;
-  await db.finish(job,'submitted',{id:providerId});
+  await Reflect.apply(finish,db,[job,'submitted',{id:providerId}]);
   return {status:'SUBMITTED',job_id:job.id};
  }catch(error){
   // A failed submitted transition may have committed despite its rejected
   // response. Never issue a second settlement transaction or expose private
   // database diagnostics; durable recovery/readback owns this uncertainty.
   if(submittedSettlementAttempted)throw Error('SUBMISSION_SETTLEMENT_UNCERTAIN');
-  try{await db.finish(job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED');}
+  try{await Reflect.apply(finish,db,[job,submitted?'ambiguous':'blocked',{},submitted?'SUBMISSION_UNCERTAIN':'RELEASE_BLOCKED']);}
   catch{throw Error(submitted?'SUBMISSION_SETTLEMENT_UNCERTAIN':'RELEASE_SETTLEMENT_UNCERTAIN');}
   return {status:submitted?'AMBIGUOUS':'BLOCKED',job_id:job.id};
  }
