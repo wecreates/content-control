@@ -77,6 +77,19 @@ test('publisher rejects executable database capabilities without invoking them',
   assert.equal(invoked,0);assert.deepEqual(f.events,[]);
  }
 });
+test('unsnapshotable claimed rows never reach settlement or execute identity traps',async()=>{
+ for(const kind of ['proxy','accessor']){
+  const f=fixture(),original=await f.options.db.claimPublish();let reads=0,settlements=0,outcome,error;
+  const claimed=kind==='proxy'?new Proxy(original,{
+   get(target,key,receiver){if(key==='id'||key==='fencing_token')reads++;return Reflect.get(target,key,receiver);}
+  }):Object.defineProperty({...original},'id',{enumerable:true,get(){reads++;return original.id;}});
+  f.options.db.claimPublish=async()=>claimed;
+  f.options.db.finish=async job=>{settlements++;void job.id;void job.fencing_token;};
+  try{outcome=await publishOnce(f.options);}catch(value){error=value;}
+  assert.equal(settlements,0,kind);assert.equal(reads,0,kind);assert.equal(outcome,undefined,kind);
+  assert.equal(error?.message,'RELEASE_SETTLEMENT_UNCERTAIN',kind);
+ }
+});
 test('an already-aborted publisher performs no dry-run read or enabled claim',async()=>{
  for(const enabled of [false,true]){
   const controller=new AbortController();controller.abort();let touched=0;

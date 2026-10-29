@@ -151,13 +151,15 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
- let job=claimedJob;
+ const releaseSnapshot=snapshotClaimedRelease(claimedJob);
+ // A claimed lease whose identity cannot be snapshotted must never be passed to
+ // settlement. Durable recovery owns the uncertainty because no safe row identity
+ // exists for an immediate blocked transition.
+ if(!releaseSnapshot)throw Error('RELEASE_SETTLEMENT_UNCERTAIN');
+ const job=releaseSnapshot;
  let submitted=false,submittedSettlementAttempted=false;
  try{
   if(typeof finish!=='function')throw Error('SETTLEMENT_REQUIRED');
-  const releaseSnapshot=snapshotClaimedRelease(claimedJob);
-  if(!releaseSnapshot)throw Error('CLAIM_SNAPSHOT_INVALID');
-  job=releaseSnapshot;
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   signal?.throwIfAborted();
   // Inspect only own data descriptors. Proxy/accessor-backed authorization or
