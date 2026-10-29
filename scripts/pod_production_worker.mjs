@@ -206,12 +206,17 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const rightsCapability=dataProperty(task,'rights_verified');
   if(!rightsCapability.valid)throw Error('TASK_RIGHTS_INVALID');
   if(rightsCapability.value!==true)throw Error('RIGHTS_BLOCKED');
+  // A child-process workspace controls filesystem confinement. Bind only a data
+  // descriptor before authority or stage callbacks can invoke or replace it.
+  const stageWorkspaceCapability=dataProperty(task,'stageWorkspace');
+  if(!stageWorkspaceCapability.valid)throw Error('TASK_STAGE_WORKSPACE_INVALID');
+  const stageWorkspace=stageWorkspaceCapability.value;
   // Bind the resolver-authorized reviewer identities before grant, database or
   // independent-review callbacks can replace the task's allowlists.
   const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
   const approvedEditorialEvaluators=taskEvaluatorIds(task,'approvedEditorialEvaluators');
   if(!approvedEvaluators||!approvedEditorialEvaluators)throw Error('TASK_EVALUATORS_INVALID');
-  const runStage=(script,args)=>python(script,args,{root,signal,env:stageEnv,workspace:task.stageWorkspace});
+  const runStage=(script,args)=>python(script,args,{root,signal,env:stageEnv,workspace:stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    task.source,task.assetRights,task.textLayers,rightsKey,{signal});
   enabled();
@@ -292,7 +297,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const qaTask=Object.freeze({
    output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
    source:task.source,assetRights:task.assetRights,textLayers:task.textLayers,assetRoot:task.assetRoot,
-   template:task.template,templateSource:task.templateSource,stageWorkspace:task.stageWorkspace,
+   template:task.template,templateSource:task.templateSource,stageWorkspace,
    interior:qaInterior
   });
   let reviewResult;
