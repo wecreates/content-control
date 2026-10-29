@@ -69,6 +69,75 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r348 — reject executable database capabilities (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`178f3884e3698439dedb1260022d21e2ca805e1d` and Money Factory
+`7842cbad03abdd201e1b13a9e7c0fa720a6eaf7e`. No open POD/KDP pull
+request or duplicate r348 job existed. The publisher read database capabilities
+(`listReady`, `claimPublish`, `assertPublishable`, `finish` and receiver
+dependencies) through ordinary property access. Proxy/accessor-backed database
+objects could therefore execute traps during a release-critical safety check; the
+receiver helper also returned the original database object after inspection failure,
+making that boundary fail open.
+
+Regression-only head `75eca05a526ac7da794df8ce4232f857ba0c7a92`
+reproduced the defect on hosted integration run `40830212245` (run 800), job
+`123302435138`: 970 Node tests ran, 969 passed and only the new
+database-capability regression failed with `Missing expected rejection`. The
+publisher had invoked the executable capability path instead of rejecting it with
+`PUBLISH_DATABASE_UNVERIFIED`. Companion container run `40830212235`
+(run 362) was cancelled after the repaired commit superseded it and is not counted
+as acceptance.
+
+Content Control PR 828 resolves database endpoints only through non-executable data
+descriptors across the class prototype chain, rejects Proxy/accessor-backed
+capabilities without invoking traps, and makes receiver inspection fail closed while
+preserving the empty-claim `IDLE` contract. Repaired exact head
+`2ab525d208be457e149302ef57b1e655adf83bfd` passed integration run
+`40830354833` (run 801), job `123302887997`: all 970 Node tests,
+all 385 Python/OpenCV tests, PostgreSQL 18, stored-task production end-to-end,
+syntax, workflow-control and review-guard stages succeeded. Container run
+`40830354726` (run 363), job `123302978214`, passed image build,
+non-root/dependency probes, all 970 Node/PostgreSQL tests, stored-task production
+end-to-end, print/review and disabled-startup stages; its final smoke result recorded
+`publication_enabled=false`, `production_status=DISABLED` and
+`outbox_status=DISABLED`. Review of the focused two-file diff found no material
+correctness, security, compatibility or missing-test issue. PR 828 merged as
+`ace76130d2364458646ceb42e01ddcc9b87b9f8e`.
+
+Money Factory PR 303 changed only the pinned Content Control SHA to that exact
+merge; `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal
+`false`. Exact pin head `d642950173d898d5da4e5b9435b032466e95a16a`
+passed cross-repository run `40831039986` (run 305), job
+`123305075261`: all 626 pinned Node tests, the eight Python groups
+(34, 23, 40, 28, 28, 93, 5 and 6 cases), 23 editorial-bound KDP cases,
+121 bridge Node tests and 81 bridge Python tests passed. Review found only the
+intended one-line pin. PR 303 merged as
+`f70500e73f04d3227ce7fefc7f3e5b6b4b6c1c64`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge
+`ace76130d2364458646ceb42e01ddcc9b87b9f8e` and created deploy
+`dep-dbhemd7avr4c739o51bg`. Deploy-started event
+`evt-dbhemd9bgsac73b7u88g` was followed by pipeline-minutes-exhausted event
+`evt-dbhemd9rl4tc739etnr0` and failed deploy-ended event
+`evt-dbhemdh9q7ns73ctc360` on 2026-10-29 UTC. The failure occurred before
+build or startup, so it is not live acceptance and the service was not verified with
+this repair. The authorized service remained active, auto-deploying, unsuspended,
+one-instance Docker on the free plan. No manual redeploy was triggered because
+auto-deploy is enabled and free pipeline capacity is the unchanged limiting
+condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or live
+publication configuration. All 24 live acceptance areas remain OPEN. Publication
+remains disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r347 — reject executable publication gate descriptors (2026-10-29 UTC)
 
 ### Confirmed defect and repair
