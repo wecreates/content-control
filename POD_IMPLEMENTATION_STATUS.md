@@ -69,6 +69,88 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r349 — isolate unsnapshotable claims from settlement (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`5281afeaf9669cd2d14f2b72a91343f218370a0c` and Money Factory
+`f70500e73f04d3227ce7fefc7f3e5b6b4b6c1c64`. Three concurrent
+post-r348 Content Control commits updated only runtime-security audit, zero-credit QA
+proof and accepted-candidate ledger state; they were preserved in the exact base. No
+open POD/KDP pull request or duplicate r349 job existed.
+
+The publisher correctly rejected a Proxy/accessor-backed or otherwise unsnapshotable
+claimed row, but did so inside the fallback-settlement `try` boundary while retaining
+the original caller-owned row in `job`. The catch path then passed that untrusted row
+to the durable settlement endpoint. A claimed-row getter or Proxy trap could therefore
+execute during settlement or redirect the durable job identity after snapshot
+validation had already failed.
+
+Regression-only head `0656c4f2ff255d4c9afac96994e03262f9e34c5c`
+reproduced the defect on hosted integration run `40837715911` (run 803), job
+`123326332293`: 971 Node tests ran, 970 passed and only the new regression
+failed because settlement was reached once (actual 1, expected 0). Companion
+container run `40837715933` (run 364) was cancelled after a repaired commit
+superseded it and is not counted as acceptance.
+
+The first repaired head `2ae414ee6ffd0cf859f1785f24ad243728cf3307`
+moved snapshot rejection outside the settlement-capable handler. Integration run
+`40837857908` (run 804), job `123326795354`, confirmed settlement was no
+longer reached but exposed a regression-fixture artifact: async Promise assimilation
+read the Proxy's `then` key once. The test was narrowed to the release-critical
+`id` and `fencing_token` reads; its container run `40837857943` (run 365)
+was cancelled after the corrected test commit and is not counted as acceptance.
+
+Content Control PR 830 now snapshots the claimed release before entering any
+settlement-capable error path. If that bounded identity cannot be established, it
+throws the fixed `RELEASE_SETTLEMENT_UNCERTAIN` code without invoking identity
+traps or attempting a blocked transition; existing durable publishing-lease recovery
+owns the uncertainty. Empty claims and all valid claim/settlement behavior remain
+unchanged. Corrected exact head
+`e803a7c622dae36526f85428a24cdf67414f68ab` passed integration run
+`40838054911` (run 805), job `123327435157`: all 971 Node tests,
+all 385 Python/OpenCV tests, PostgreSQL 18, stored-task production end-to-end,
+syntax, workflow-control and review-guard stages succeeded. Container run
+`40838054920` (run 366), job `123327864519`, passed image build,
+non-root/dependency probes, all 385 Python QA/rendering tests, all 971
+Node/PostgreSQL tests, stored-task production end-to-end, print/review and
+disabled-startup stages; its final smoke result recorded
+`publication_enabled=false`, `production_status=DISABLED` and
+`outbox_status=DISABLED`. Review of the focused two-file diff found no material
+correctness, security, compatibility or missing-test issue. PR 830 merged as
+`a1302c215eec290ec1ece3670c58112eca3c5571`.
+
+Money Factory PR 304 changed only the pinned Content Control SHA to that exact
+merge; `PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal
+`false`. Exact pin head `2b835ca6edb22292e1084a86710524bb412ec8f6`
+passed cross-repository run `40839037424` (run 306), job
+`123330676927`: all 627 pinned Node tests, the eight Python groups
+(34, 23, 40, 28, 28, 93, 5 and 6 cases), 23 editorial-bound KDP cases,
+121 bridge Node tests and 81 bridge Python tests passed. Review found only the
+intended one-line pin. PR 304 merged as
+`8f90d0936c08a55da3991e169075e5a752b5d65c`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge
+`a1302c215eec290ec1ece3670c58112eca3c5571` and created deploy
+`dep-dbhfppi9lscs739l8l2g`. Deploy-started event
+`evt-dbhfpppbgsac73b8m5sg` was accompanied by pipeline-minutes-exhausted event
+`evt-dbhfppp9q7ns73cu3n90` and failed deploy-ended event
+`evt-dbhfppp40j4s73fbl0m0` on 2026-10-29 UTC. The failure occurred before
+build or startup, so it is not live acceptance and the service was not verified with
+this repair. The authorized service remained active, auto-deploying, unsuspended,
+one-instance Docker on the free plan. No manual redeploy was triggered because
+auto-deploy is enabled and free pipeline capacity is the unchanged limiting
+condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or live
+publication configuration. All 24 live acceptance areas remain OPEN. Publication
+remains disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r348 — reject executable database capabilities (2026-10-29 UTC)
 
 ### Confirmed defect and repair
