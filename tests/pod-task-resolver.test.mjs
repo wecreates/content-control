@@ -289,3 +289,16 @@ test('task resolver snapshots evaluator authorization before caller mutation',as
   assert.throws(()=>resolved.approvedEditorialEvaluators.push('task-injected-editor'),TypeError);
  }finally{await resolved.cleanup();}
 });
+
+
+test('task resolver rejects executable evaluator lists without invoking traps',()=>{
+ let reads=0;
+ const proxy=new Proxy(['trusted-layout'],{
+  get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}
+ });
+ assert.throws(()=>createStoredTaskResolvers({}, {store:{},approvedEvaluators:proxy}),/TASK_EVALUATORS_INVALID/);
+ const accessor=['trusted-editor'];
+ Object.defineProperty(accessor,'0',{enumerable:true,get(){reads++;return 'trusted-editor';}});
+ assert.throws(()=>createStoredTaskResolvers({}, {store:{},approvedEditorialEvaluators:accessor}),/TASK_EVALUATORS_INVALID/);
+ assert.equal(reads,0);
+});
