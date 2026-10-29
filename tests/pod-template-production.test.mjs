@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -93,7 +93,16 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    ...(assetRoot?{assetRoot:root}:{}),
    ...(templateSource?{templateSource:sourcePath}:{}),
    output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa-signed.json'),
-   ...(review?{reviewPackage:async(manifest,options)=>{reviewCalls++;return await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};}}:{}),
+   ...(mutateEvaluatorAuthority?{approvedEvaluators:['trusted-visual'],approvedEditorialEvaluators:['trusted-editorial']}:{}),
+   ...(review?{reviewPackage:async(manifest,options)=>{
+    reviewCalls++;
+    const attestation=await reviewPolicy?.({manifest,options,env,controller})??{rights:'unused',competitive:'unused'};
+    if(mutateEvaluatorAuthority){
+     resolvedTask.approvedEvaluators=['replacement-visual'];
+     resolvedTask.approvedEditorialEvaluators=['replacement-editorial'];
+    }
+    return attestation;
+   }}:{}),
    cleanup:async()=>{cleaned++;}};
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
   if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
@@ -144,6 +153,18 @@ test('production snapshots child-stage environment before authority callbacks',a
  const result=await exercise({replaceInterpreter:true,detailed:true});
  assert.equal(result.status,'REVIEW_REQUIRED');assert.equal(result.started,true);
  assert.equal(result.replacementInterpreterUsed,false);
+});
+
+test('production snapshots evaluator authority before the reviewer callback',async()=>{
+ const result=await exercise({review:true,mutateEvaluatorAuthority:true,captureQaArgs:true,detailed:true});
+ assert.equal(result.status,'QA_PASSED');assert.equal(result.qaStarted,true);
+ for(const [flag,id] of [['--approved-evaluator','trusted-visual'],
+  ['--approved-editorial-evaluator','trusted-editorial']]){
+  assert.equal(result.qaArgs.filter(value=>value===flag).length,1);
+  assert.equal(result.qaArgs[result.qaArgs.indexOf(flag)+1],id);
+ }
+ assert.equal(result.qaArgs.includes('replacement-visual'),false);
+ assert.equal(result.qaArgs.includes('replacement-editorial'),false);
 });
 
 test('production rejects unverified template before launching any stage',async()=>{
