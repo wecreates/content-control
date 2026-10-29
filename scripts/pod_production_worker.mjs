@@ -111,6 +111,9 @@ function productionDatabaseReceiver(db){
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
+ // Bind signature authorities before claim, grant and task callbacks can mutate
+ // the caller-owned environment. The enabled flag remains a live stop control.
+ const rightsKey=env.POD_RIGHTS_KEY,templateKey=env.POD_TEMPLATE_KEY;
  const budgetBytes=artifactBudgetBytes(env);
  // Bind every production database endpoint and its receiver dependencies before
  // the caller-owned claim wait can replace any durable guard or settlement path.
@@ -157,24 +160,24 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
   const runStage=(script,args)=>python(script,args,{root,signal,env,workspace:task.stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
-   task.source,task.assetRights,task.textLayers,env.POD_RIGHTS_KEY,{signal});
+   task.source,task.assetRights,task.textLayers,rightsKey,{signal});
   enabled();
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform.
   const scope={...task.templateScope,platform:job.brief.platform};
   const coverEnvelope=await readSignedJSONFile(task.template,{signal});
   enabled();
-  const cover=validateTemplate(coverEnvelope,env.POD_TEMPLATE_KEY,scope);
+  const cover=validateTemplate(coverEnvelope,templateKey,scope);
   let interiorTemplate;
   if(job.brief.platform==='kdp'){
    if(!task.interior)throw Error('INTERIOR_REQUIRED');
    if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
    const interiorEnvelope=await readSignedJSONFile(task.interior.template,{signal});
    enabled();
-   const interior=validateInteriorTemplate(interiorEnvelope,env.POD_TEMPLATE_KEY,scope);
+   const interior=validateInteriorTemplate(interiorEnvelope,templateKey,scope);
    interiorTemplate=interior;
    const profile=kdpCalculatorProfile(cover,interior);
-   const sourceHash=verifyEnvelope(coverEnvelope,env.POD_TEMPLATE_KEY,'pod:template').source_sha256;
+   const sourceHash=verifyEnvelope(coverEnvelope,templateKey,'pod:template').source_sha256;
    await verifyTemplateSource(task.templateSource,
     sourceHash,{signal});
    await authorizeProduction();
@@ -183,7 +186,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    await runStage('pod_kdp_template_import.py',['--archive',task.templateSource,
     '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash]);
    enabled();
-   const interiorRecord=verifyEnvelope(interiorEnvelope,env.POD_TEMPLATE_KEY,'pod:interior-template');
+   const interiorRecord=verifyEnvelope(interiorEnvelope,templateKey,'pod:interior-template');
    await verifyTemplateSource(task.interior.source,interiorRecord.source_sha256,{signal});
    await authorizeProduction();
    await runStage('pod_kdp_interior_template_import.py',[
