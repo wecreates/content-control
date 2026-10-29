@@ -74,16 +74,18 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   return {status:'DRY_RUN',count:jobs.length};
  }
  if(typeof resolveGrant!=='function'||typeof verifyArtifacts!=='function')throw Error('PUBLISH_RESOLVERS_REQUIRED');
+ // Bind the durable settlement endpoint before the caller-owned claim wait can
+ // replace db.finish. A missing endpoint is enforced only after a job exists so
+ // the established empty-claim IDLE contract remains unchanged.
+ let finish;
+ try{finish=db.finish;}catch{}
  const claimedJob=await db.claimPublish(accountId,crypto.randomInt(45,181));
  if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
  let job=claimedJob;
- let submitted=false,submittedSettlementAttempted=false,finish;
+ let submitted=false,submittedSettlementAttempted=false;
  try{
-  // Bind the exact durable settlement endpoint before caller-owned verifier,
-  // authority, eligibility or adapter waits can replace db.finish.
-  finish=db.finish;
   if(typeof finish!=='function')throw Error('SETTLEMENT_REQUIRED');
   const releaseSnapshot=snapshotClaimedRelease(claimedJob);
   if(!releaseSnapshot)throw Error('CLAIM_SNAPSHOT_INVALID');
