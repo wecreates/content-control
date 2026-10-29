@@ -171,6 +171,23 @@ test('submission uses the exact durable settlement endpoint captured before call
  assert.deepEqual(f.events,['submit','submitted']);
 });
 
+test('adapter revocation or registry replacement during caller-owned waits blocks the captured endpoint',async()=>{
+ const results=[];
+ for(const mode of ['revoke','replace']){
+  const f=fixture(),adapter=f.options.adapters.redbubble;
+  f.options.resolveGrant=async()=>{
+   if(mode==='revoke')adapter.authorized=false;
+   else f.options.adapters.redbubble={authorized:true,submit:async()=>assert.fail('replacement endpoint reached')};
+   return sign(f.release);
+  };
+  results.push([mode,(await publishOnce(f.options)).status,[...f.events]]);
+ }
+ assert.deepEqual(results,[
+  ['revoke','BLOCKED',['blocked']],
+  ['replace','BLOCKED',['blocked']]
+ ]);
+});
+
 test('submission uses the exact adapter endpoint authorized before caller-owned waits',async()=>{
  const f=fixture(),adapter=f.options.adapters.redbubble;
  f.options.db.assertPublishable=async()=>{

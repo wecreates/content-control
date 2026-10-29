@@ -130,8 +130,11 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   enforceKdpListPrice(qa,brief.price,job.platform);
   brief.economics=enforceReleaseEconomics(release,brief);
   signal?.throwIfAborted();
-  // Recheck local kill switches immediately before external side effect.
+  // Recheck local kill switches and the exact adapter's current registry
+  // authorization immediately before the external side effect. No await may
+  // separate these checks from submission.
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
+  if(adapters[job.platform]!==adapter||adapter.authorized!==true)throw Error('ADAPTER_UNVERIFIED');
   submitted=true;
   const receipt=await Reflect.apply(adapterSubmit,adapter,[{brief,manifest,idempotencyKey:job.idempotency_key,signal}]);
   // Match the observer's opaque listing-ID contract. A malformed receipt is
