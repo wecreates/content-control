@@ -302,3 +302,49 @@ test('task resolver rejects executable evaluator lists without invoking traps',(
  assert.throws(()=>createStoredTaskResolvers({}, {store:{},approvedEditorialEvaluators:accessor}),/TASK_EVALUATORS_INVALID/);
  assert.equal(reads,0);
 });
+
+
+test('production snapshots rights and template authority keys before callbacks',async()=>{
+ const directory=await fs.mkdtemp(path.join(os.tmpdir(),'pod-authority-snapshot-'));
+ const source=Buffer.from('fixture-source');
+ const textLayers=Buffer.from('[]');
+ const initialRightsKey='initial-rights-key-'.repeat(2);
+ const replacementRightsKey='replacement-rights-key-'.repeat(2);
+ const templateKey='template-authority-key-'.repeat(2);
+ const upstreamKey='upstream-authority-key-'.repeat(2);
+ const sign=(payload,key)=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')});
+ const sourcePath=path.join(directory,'source.bin');
+ const layersPath=path.join(directory,'layers.json');
+ const rightsPath=path.join(directory,'rights.json');
+ const rightsPayload=JSON.stringify({schema_version:1,audience:'pod:asset-rights',
+  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,status:'PASS',
+  source_sha256:crypto.createHash('sha256').update(source).digest('hex'),
+  text_layers_sha256:crypto.createHash('sha256').update(textLayers).digest('hex')});
+ await fs.writeFile(sourcePath,source);
+ await fs.writeFile(layersPath,textLayers);
+ await fs.writeFile(rightsPath,JSON.stringify(sign(rightsPayload,replacementRightsKey)));
+ const brief={id:'authority-job',account_id:'account',business_id:'business',platform:'redbubble',
+  destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const grantPayload=JSON.stringify({schema_version:1,audience:'content-control:pod',
+  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,job_id:brief.id,
+  account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,
+  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const env={POD_PRODUCTION_ENABLED:'true',PUBLICATION_ENABLED:'false',
+  POD_PUBLICATION_ENABLED:'false',POD_RIGHTS_KEY:initialRightsKey,POD_TEMPLATE_KEY:templateKey};
+ let templateReads=0,storedReason;
+ const task={rights_verified:true,source:sourcePath,assetRights:rightsPath,textLayers:layersPath,
+  templateScope:{product:'fixture-shirt',country:'US'}};
+ Object.defineProperty(task,'template',{enumerable:true,get(){templateReads++;throw Error('UNEXPECTED_TEMPLATE_READ');}});
+ try{
+  const result=await produceOnce({upstreamKey,env,
+   db:{claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,
+      fencing_token:1,brief}),
+    assertProducible:async()=>true,failProduction:async(_job,reason)=>{storedReason=reason;},
+    holdProduction:async()=>{},completeProduction:async()=>({pass:false})},
+   resolveGrant:async()=>{env.POD_RIGHTS_KEY=replacementRightsKey;return sign(grantPayload,upstreamKey);},
+   resolveTask:async()=>task});
+  assert.deepEqual(result,{status:'BLOCKED',job_id:brief.id,reason_code:'SOURCE_RIGHTS_INVALID'});
+  assert.equal(storedReason,'SOURCE_RIGHTS_INVALID');
+  assert.equal(templateReads,0);
+ }finally{await fs.rm(directory,{recursive:true,force:true});}
+});
