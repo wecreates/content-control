@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -101,6 +101,11 @@ async function exercise({template=record(),templateText,templateLink=false,templ
      resolvedTask.approvedEvaluators=['replacement-visual'];
      resolvedTask.approvedEditorialEvaluators=['replacement-editorial'];
     }
+    if(mutateQaInputs)Object.assign(resolvedTask,{
+     output:'replacement-package-dir',reference:'replacement-reference',
+     source:'replacement-source',assetRights:'replacement-rights',
+     textLayers:'replacement-text-layers',qaOutput:'replacement-qa-output'
+    });
     return attestation;
    }}:{}),
    cleanup:async()=>{cleaned++;}};
@@ -165,6 +170,17 @@ test('production snapshots evaluator authority before the reviewer callback',asy
  }
  assert.equal(result.qaArgs.includes('replacement-visual'),false);
  assert.equal(result.qaArgs.includes('replacement-editorial'),false);
+});
+
+test('production snapshots QA task inputs before the reviewer callback',async()=>{
+ const result=await exercise({review:true,mutateQaInputs:true,captureQaArgs:true,detailed:true});
+ assert.equal(result.status,'QA_PASSED');assert.equal(result.qaStarted,true);
+ for(const replacement of ['replacement-package-dir','replacement-reference','replacement-source',
+  'replacement-rights','replacement-text-layers','replacement-qa-output'])
+  assert.equal(result.qaArgs.includes(replacement),false,replacement);
+ assert.equal(result.qaArgs[result.qaArgs.indexOf('--reference')+1],'unused');
+ assert.equal(result.qaArgs[result.qaArgs.indexOf('--output')+1],'unused');
+ assert.match(result.qaArgs[result.qaArgs.indexOf('--package-dir')+1],/[/\\]output$/);
 });
 
 test('production rejects unverified template before launching any stage',async()=>{
