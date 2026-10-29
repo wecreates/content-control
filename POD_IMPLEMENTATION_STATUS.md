@@ -69,6 +69,65 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r344 — bind local eligibility before the claim wait (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`f8b362acff3bab9be205f85ced5370af8a8e1aec` and Money Factory
+`0b6fd2e62ed4a9e21dff93230684667796900e10`; the Money Factory head's
+newer change was an unrelated monitor tick. No open POD/KDP pull request or duplicate
+r344 branch existed. The publisher captured `db.assertPublishable` only after
+awaiting the caller-owned `claimPublish` endpoint. A claim callback could replace
+the original fail-closed lease/account/rights/fencing guard with an allow-all function,
+causing a release the original guard rejected to reach external submission.
+
+The regression-only head
+`1a9bfe044bb427720830c2895fa83993c5bbb343` reproduced this on hosted
+integration run `40811715465` (run 788), job `123243310373`: 966 Node tests
+ran, 965 passed and only the new regression failed. It expected `BLOCKED` but
+observed `SUBMITTED`. This is executable pre-fix evidence of the authorization
+bypass, not a hypothetical finding.
+
+Content Control PR 820 independently captures the original settlement and local
+eligibility endpoints before the publishing claim wait. Missing capabilities remain
+enforced only after a job is claimed, preserving the existing empty-claim `IDLE`
+contract. Repaired exact head `13d770dea397ba48e30c781748fa9fc806beffa2`
+passed integration run `40811830436` (run 789), job `123243685969`: all 966
+Node tests, all 385 Python/OpenCV tests, PostgreSQL 18, production end-to-end,
+syntax, workflow-control and review-guard stages succeeded. Container run
+`40811830450` (run 355), job `123243743253`, passed image build,
+non-root/dependency probes, Python QA/rendering, Node/PostgreSQL, print/review and
+disabled-startup stages. Review of the full two-file diff found no material
+correctness, security, compatibility or missing-test issue. PR 820 merged as
+`791fdfe15394a38400061bfdd495d3f3f0635c64`.
+
+Money Factory PR 299 changed only the pinned Content Control SHA to that exact merge;
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal `false`.
+Exact pin head `f16967f6265089977885a5345e5a672baa183c2e` passed cross-repository
+run `40812592943` (run 301), job `123246162507`, including POD contracts,
+strict evidence, recovery, binary safety, raster/layout, PDF pairing, font rights,
+retained KDP template, manuscript/editorial metadata and bridge suites. Review found
+only the intended one-line pin. PR 299 merged as
+`62c28f4bfcda16685205412cf7d35e679ef89762`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge `791fdfe15394a38400061bfdd495d3f3f0635c64`
+and created deploy `dep-dbhbrr8473hc73cd6hbg`. Deploy-started event
+`evt-dbhbrr9bgsac73b65360` was followed by pipeline-minutes-exhausted event
+`evt-dbhbrrel5iis738brcj0` and failed deploy-ended event
+`evt-dbhbrrml5iis738brcng` on 2026-10-29 UTC. The failure occurred before build
+or startup, so it is not live acceptance and the service was not verified with this
+repair. No manual redeploy was triggered because auto-deploy is enabled and free
+pipeline capacity is the unchanged limiting condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or live
+database authorization check. All 24 live acceptance areas remain OPEN. Publication
+remains disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r343 — bind durable settlement before the claim wait (2026-10-29 UTC)
 
 ### Confirmed defect and repair
