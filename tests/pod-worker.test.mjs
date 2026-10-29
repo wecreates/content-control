@@ -140,7 +140,7 @@ test('production disable during an empty claim reports stopped',async()=>{
   db:{claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
-test('production disable during source verification stops before template access',async()=>{
+test('executable source capability is rejected without invocation before template access',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-worker-source-stop-'));
  try{
   const key='k'.repeat(48),env={POD_PRODUCTION_ENABLED:'true',POD_RIGHTS_KEY:key};
@@ -156,18 +156,18 @@ test('production disable during source verification stops before template access
   const grantPayload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,
    expires_at_ms:Date.now()+60000,job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',
    production_permission:true,publication_permission:false,revoked:false});
-  let templateReads=0;
+  let templateReads=0,sourceReads=0;
   const task={rights_verified:true,templateScope:{product:'fixture-shirt',country:'US'},assetRights:rightsPath};
   Object.defineProperties(task,{
-   source:{get(){env.POD_PRODUCTION_ENABLED='false';return sourcePath;}},
+   source:{get(){sourceReads++;env.POD_PRODUCTION_ENABLED='false';return sourcePath;}},
    template:{get(){templateReads++;return path.join(root,'missing-template.json');}}
   });
   const result=await produceOnce({env,upstreamKey:key,
    db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
    resolveGrant:async()=>({payload:grantPayload,signature:crypto.createHmac('sha256',key).update(grantPayload).digest('hex')}),
    resolveTask:async()=>task});
-  assert.equal(templateReads,0);
-  assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'PRODUCTION_STOPPED'});
+  assert.equal(sourceReads,0);assert.equal(templateReads,0);
+  assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'PRODUCTION_BLOCKED'});
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 test('missing Python dependencies block before queue access',async()=>{
