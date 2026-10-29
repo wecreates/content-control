@@ -53,3 +53,24 @@ test('clock rollback before signed issuance cannot authorize a fresh grant',asyn
  await assert.rejects(resolve({id:'job',brief}),/^Error: GRANT_CLOCK_INVALID$/);
  assert.equal(calls,2);
 });
+
+
+test('grant resolver snapshots authority credentials before caller mutation',async()=>{
+ const mutableEnv={...env};
+ const initialAuthKey=mutableEnv.POD_GRANT_AUTH_KEY;
+ const replacementSigningKey='t'.repeat(32);
+ let authorization;
+ const resolve=createGrantResolver({env:mutableEnv,fetchImpl:async(_url,options)=>{
+  authorization=options.headers.authorization;
+  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',
+   issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,job_id:'job',
+   business_id:'business',account_id:'account',platform:'kdp',max_mode:'PRELAUNCH',
+   production_permission:true,publication_permission:false,revoked:false});
+  const signature=crypto.createHmac('sha256',replacementSigningKey).update(payload).digest('hex');
+  return new Response(JSON.stringify({payload,signature}),{headers:{'content-type':'application/json'}});
+ }});
+ mutableEnv.POD_GRANT_AUTH_KEY='b'.repeat(32);
+ mutableEnv.POD_UPSTREAM_KEY=replacementSigningKey;
+ await assert.rejects(resolve({id:'job',brief}),/^Error: SIGNATURE_INVALID$/);
+ assert.equal(authorization,'Bearer '+initialAuthKey);
+});
