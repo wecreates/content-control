@@ -69,6 +69,68 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r345 — reject executable adapter authorization descriptors (2026-10-29 UTC)
+
+### Confirmed defect and repair
+
+Fresh inspection resumed from Content Control
+`b7d31621ce5935336cc83690c7bd2855995d74bc` and Money Factory
+`62c28f4bfcda16685205412cf7d35e679ef89762`. No open POD/KDP pull
+request or duplicate r345 job existed. The publisher read adapter authorization and
+submission through ordinary property access. A Proxy or accessor-backed adapter could
+therefore execute code during the authorization check and still reach the external
+submission path, unlike the existing fail-closed manifest, grant, claim and receipt
+data contracts.
+
+Regression-only head `cfde68fdbec28302da72ea05f121bb3866414b00`
+reproduced the defect on hosted integration run `40816333465` (run 791), job
+`123258150758`: 967 Node tests ran, 966 passed and only the new regression
+failed. It expected `BLOCKED` but observed `SUBMITTED`. This is executable
+pre-fix evidence, not a hypothetical finding.
+
+Content Control PR 822 inspects only own data descriptors in the adapter registry and
+adapter object, rejects Proxy/accessor-backed authorization or submit capabilities
+without invoking their traps, preserves the already-bound exact submit endpoint, and
+repeats the same descriptor-safe authorization/registry check immediately before the
+external side effect. Repaired exact head
+`235b908856cdbc7740640cc2fa8a0b7f6f787a5a` passed integration run
+`40816460182` (run 792), job `123258561228`: all 967 Node tests, all
+385 Python/OpenCV tests, PostgreSQL 18, production end-to-end, syntax,
+workflow-control and review-guard stages succeeded. Container run `40816460192`
+(run 357), job `123258620104`, passed image build, non-root/dependency probes,
+Python QA/rendering, Node/PostgreSQL, print/review and disabled-startup stages. Review
+of the focused two-file diff found no material correctness, security, compatibility or
+missing-test issue. PR 822 merged as
+`84f098d678f2db105dba7caeb36e324f20da9c75`.
+
+Money Factory PR 300 changed only the pinned Content Control SHA to that exact merge;
+`PUBLICATION_ENABLED` and `POD_PUBLICATION_ENABLED` remain literal `false`.
+Exact pin head `d58351b5280e32506ab2fb6b08b99a709d83e347` passed
+cross-repository run `40817238283` (run 302), job `123261068974`, including
+623 pinned Node tests, strict evidence, review/recovery, binary safety, raster/layout,
+PDF pairing, font rights, retained KDP template, 23 manuscript/editorial metadata
+cases, 121 bridge Node tests and 81 bridge Python tests. Review found only the intended
+one-line pin. PR 300 merged as
+`34b3edee8f8569d8eeac019d03b707ec20beef0a`.
+
+### Hosted observation and remaining acceptance
+
+Render auto-deploy detected functional merge
+`84f098d678f2db105dba7caeb36e324f20da9c75` and created deploy
+`dep-dbhcj2q9lscs739i647g`. Deploy-started event
+`evt-dbhcj36l5iis738caatg` was followed by pipeline-minutes-exhausted event
+`evt-dbhcj31bgsac73b6j280` and failed deploy-ended event
+`evt-dbhcj30g45ic73bpqrqg` on 2026-10-29 UTC. The failure occurred before build
+or startup, so it is not live acceptance and the service was not verified with this
+repair. No manual redeploy was triggered because auto-deploy is enabled and free
+pipeline capacity is the unchanged limiting condition.
+
+This run did not retry the unchanged database-administration path, use credentials,
+contact a marketplace, create paid resources or include Etsy. The regression and CI
+are code acceptance only: they do not prove a live marketplace submission or live
+adapter authorization. All 24 live acceptance areas remain OPEN. Publication remains
+disabled pending explicit approval after the full criteria are met.
+
 ## Run receipt r344 — bind local eligibility before the claim wait (2026-10-29 UTC)
 
 ### Confirmed defect and repair
