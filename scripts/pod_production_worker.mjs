@@ -203,7 +203,9 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const cleanupCapability=dataProperty(task,'cleanup');
   if(!cleanupCapability.valid)throw Error('TASK_CLEANUP_INVALID');
   cleanupTask=cleanupCapability.value;
-  if(task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
+  const rightsCapability=dataProperty(task,'rights_verified');
+  if(!rightsCapability.valid)throw Error('TASK_RIGHTS_INVALID');
+  if(rightsCapability.value!==true)throw Error('RIGHTS_BLOCKED');
   // Bind the resolver-authorized reviewer identities before grant, database or
   // independent-review callbacks can replace the task's allowlists.
   const approvedEvaluators=taskEvaluatorIds(task,'approvedEvaluators');
