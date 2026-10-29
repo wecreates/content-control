@@ -102,6 +102,20 @@ test('publication disable during an empty publishing claim reports stopped',asyn
   assert.deepEqual(result,{status:'STOPPED'});
  }
 });
+test('submission uses the durable settlement endpoint captured before the publishing claim wait',async()=>{
+ const f=fixture(),durableFinish=f.options.db.finish;let durableSettlements=0;
+ f.options.db.finish=async(...args)=>{durableSettlements++;return Reflect.apply(durableFinish,f.options.db,args);};
+ const claim=f.options.db.claimPublish;
+ f.options.db.claimPublish=async(...args)=>{
+  const job=await Reflect.apply(claim,f.options.db,args);
+  f.options.db.finish=async()=>{};
+  return job;
+ };
+ assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+ assert.equal(durableSettlements,1);
+ assert.deepEqual(f.events,['submit','submitted']);
+});
+
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);
