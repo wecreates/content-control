@@ -62,6 +62,21 @@ test('publication gates reject executable descriptors without invoking them',asy
   assert.equal(invoked,0);assert.deepEqual(f.events,[]);
  }
 });
+test('publisher rejects executable database capabilities without invoking them',async()=>{
+ for(const kind of ['proxy','accessor']){
+  const f=fixture(),original=f.options.db;let invoked=0;
+  if(kind==='proxy'){
+   f.options.db=new Proxy(original,{
+    get(target,key,receiver){invoked++;return Reflect.get(target,key,receiver);}
+   });
+  }else{
+   f.options.db={...original};
+   Object.defineProperty(f.options.db,'finish',{enumerable:true,get(){invoked++;return original.finish;}});
+  }
+  await assert.rejects(publishOnce(f.options),/PUBLISH_DATABASE_UNVERIFIED/);
+  assert.equal(invoked,0);assert.deepEqual(f.events,[]);
+ }
+});
 test('an already-aborted publisher performs no dry-run read or enabled claim',async()=>{
  for(const enabled of [false,true]){
   const controller=new AbortController();controller.abort();let touched=0;

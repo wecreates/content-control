@@ -69,31 +69,42 @@ function authorizedAdapter(registry,platform){
   return {adapter,submit:submit.value};
  }catch{return null;}
 }
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
 function publisherDatabaseReceiver(db){
  try{
-  if(db===null||(typeof db!=='object'&&typeof db!=='function')||utilTypes.isProxy(db))return db;
-  let transaction,active,pool,poolConnect,qaKey,expiresAt;
-  try{transaction=db.tx;}catch{}
-  try{active=db.active;}catch{}
-  try{pool=db.pool;}catch{}
-  try{poolConnect=pool?.connect;}catch{}
-  try{qaKey=db.qaKey;}catch{}
-  try{expiresAt=db.expiresAt;}catch{}
+  const transaction=dataProperty(db,'tx'),active=dataProperty(db,'active'),pool=dataProperty(db,'pool'),
+   qaKey=dataProperty(db,'qaKey'),expiresAt=dataProperty(db,'expiresAt');
+  if([transaction,active,pool,qaKey,expiresAt].some(capability=>!capability.valid))return null;
+  const poolConnect=pool.value===undefined||pool.value===null?
+   {valid:true,value:undefined}:dataProperty(pool.value,'connect');
+  if(!poolConnect.valid)return null;
   const receiver=Object.create(db);
-  const poolCapability=typeof poolConnect==='function'?
+  const poolCapability=typeof poolConnect.value==='function'?
    Object.freeze(Object.assign(Object.create(null),{
-    connect:(...args)=>Reflect.apply(poolConnect,pool,args)
-   })):pool;
-  const boundTransaction=typeof transaction==='function'?
-   (...args)=>Reflect.apply(transaction,receiver,args):transaction;
-  const boundActive=typeof active==='function'?
-   (...args)=>Reflect.apply(active,receiver,args):active;
+    connect:(...args)=>Reflect.apply(poolConnect.value,pool.value,args)
+   })):pool.value;
+  const boundTransaction=typeof transaction.value==='function'?
+   (...args)=>Reflect.apply(transaction.value,receiver,args):transaction.value;
+  const boundActive=typeof active.value==='function'?
+   (...args)=>Reflect.apply(active.value,receiver,args):active.value;
   Object.defineProperties(receiver,{
    tx:{value:boundTransaction},active:{value:boundActive},pool:{value:poolCapability},
-   qaKey:{value:qaKey},expiresAt:{value:expiresAt}
+   qaKey:{value:qaKey.value},expiresAt:{value:expiresAt.value}
   });
   return Object.freeze(receiver);
- }catch{return db;}
+ }catch{return null;}
 }
 const PUBLICATION_GATE_FIELDS=Object.freeze(['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']);
 function publicationGatesEnabled(env){
@@ -119,7 +130,9 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  if(signal?.aborted)return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
  if(!publicationEnabled()) {
-  const jobs=await db.listReady();if(signal?.aborted)return {status:'STOPPED'};
+  const listReady=dataProperty(db,'listReady');
+  if(!listReady.valid||typeof listReady.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
+  const jobs=await Reflect.apply(listReady.value,db,[]);if(signal?.aborted)return {status:'STOPPED'};
   log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
   return {status:'DRY_RUN',count:jobs.length};
  }
@@ -129,10 +142,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  // Missing endpoints remain enforced only after a job exists so empty-claim IDLE
  // is unchanged.
  const databaseReceiver=publisherDatabaseReceiver(db);
- let finish,assertPublishable;
- try{finish=db.finish;}catch{}
- try{assertPublishable=db.assertPublishable;}catch{}
- const claimedJob=await db.claimPublish(accountId,crypto.randomInt(45,181));
+ const finishCapability=dataProperty(db,'finish'),assertCapability=dataProperty(db,'assertPublishable'),
+  claimCapability=dataProperty(db,'claimPublish');
+ if(!databaseReceiver||!finishCapability.valid||!assertCapability.valid||!claimCapability.valid||
+  typeof claimCapability.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
+ const finish=finishCapability.value,assertPublishable=assertCapability.value;
+ const claimedJob=await Reflect.apply(claimCapability.value,db,[accountId,crypto.randomInt(45,181)]);
  if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
