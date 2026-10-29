@@ -116,6 +116,20 @@ test('submission uses the durable settlement endpoint captured before the publis
  assert.deepEqual(f.events,['submit','submitted']);
 });
 
+test('submission uses the local eligibility guard captured before the publishing claim wait',async()=>{
+ const f=fixture();let originalGuardCalls=0;
+ f.options.db.assertPublishable=async()=>{originalGuardCalls++;return false;};
+ const claim=f.options.db.claimPublish;
+ f.options.db.claimPublish=async(...args)=>{
+  const job=await Reflect.apply(claim,f.options.db,args);
+  f.options.db.assertPublishable=async()=>true;
+  return job;
+ };
+ assert.equal((await publishOnce(f.options)).status,'BLOCKED');
+ assert.equal(originalGuardCalls,1);
+ assert.deepEqual(f.events,['blocked']);
+});
+
 test('KDP release rejects legacy technical-only QA before any adapter call',async()=>{
  for(const editorial of [undefined,false,1,'true']){
   const f=fixture(Date.now(),'kdp',editorial);
