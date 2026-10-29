@@ -212,3 +212,19 @@ test('unsnapshotable production claims never reach callbacks or settlement',asyn
   assert.equal(outcome,undefined,kind);assert.equal(error?.message,'PRODUCTION_SETTLEMENT_UNCERTAIN',kind);
  }
 });
+
+test('production callbacks cannot redirect fenced settlement identity',async()=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ const claimed={id:'j',account_id:'a',platform:'redbubble',fencing_token:7,brief},settlements=[];
+ const mutate=job=>{job.id='redirected';job.account_id='redirected';job.platform='kdp';job.fencing_token=99;job.brief.id='redirected';};
+ const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
+  db:{claimProduction:async()=>claimed,failProduction:async job=>settlements.push([job.id,job.account_id,job.platform,job.fencing_token,job.brief.id])},
+  resolveGrant:async job=>{mutate(job);return envelope;},
+  resolveTask:async job=>{mutate(job);return {rights_verified:false};}});
+ assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED'});
+ assert.deepEqual(settlements,[['j','a','redbubble',7,'j']]);
+ assert.deepEqual([claimed.id,claimed.account_id,claimed.platform,claimed.fencing_token,claimed.brief.id],['j','a','redbubble',7,'j']);
+});
