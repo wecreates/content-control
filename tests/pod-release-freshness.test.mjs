@@ -216,6 +216,28 @@ test('adapter revocation or registry replacement during caller-owned waits block
  ]);
 });
 
+test('adapter authorization contract rejects accessors and proxies without invoking traps',async()=>{
+ for(const {name,wrap} of [
+  {name:'accessor',wrap:(submit,reads)=>{
+   const adapter={};
+   Object.defineProperties(adapter,{
+    authorized:{enumerable:true,get(){reads.count++;return true;}},
+    submit:{enumerable:true,get(){reads.count++;return submit;}}
+   });
+   return adapter;
+  }},
+  {name:'proxy',wrap:(submit,reads)=>new Proxy({authorized:true,submit},{
+   get(target,key,receiver){reads.count++;return Reflect.get(target,key,receiver);}
+  })}
+ ]){
+  const f=fixture(),reads={count:0},submit=async()=>{f.events.push('submit');return {id:'fixture-receipt'};};
+  f.options.adapters.redbubble=wrap(submit,reads);
+  assert.equal((await publishOnce(f.options)).status,'BLOCKED',name);
+  assert.equal(reads.count,0,name);
+  assert.deepEqual(f.events,['blocked'],name);
+ }
+});
+
 test('submission uses the exact adapter endpoint authorized before caller-owned waits',async()=>{
  const f=fixture(),adapter=f.options.adapters.redbubble;
  f.options.db.assertPublishable=async()=>{
