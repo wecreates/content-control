@@ -84,6 +84,22 @@ function dataProperty(target,key){
   return {valid:true,value:undefined};
  }catch{return {valid:false};}
 }
+function snapshotStageEnvironment(env){
+ try{
+  if(env===null||typeof env!=='object'||utilTypes.isProxy(env))return null;
+  const keys=Reflect.ownKeys(env);
+  if(keys.length>10000||keys.some(key=>typeof key!=='string'))return null;
+  const result=Object.create(null);
+  for(const key of keys){
+   const descriptor=Object.getOwnPropertyDescriptor(env,key);
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))return null;
+   if(descriptor.value===undefined)continue;
+   if(typeof descriptor.value!=='string')return null;
+   Object.defineProperty(result,key,{value:descriptor.value,enumerable:true});
+  }
+  return Object.freeze(result);
+ }catch{return null;}
+}
 function productionDatabaseReceiver(db){
  try{
   const transaction=dataProperty(db,'tx'),active=dataProperty(db,'active'),pool=dataProperty(db,'pool'),
@@ -111,10 +127,13 @@ function productionDatabaseReceiver(db){
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
  if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
- // Bind signature authorities before claim, grant and task callbacks can mutate
- // the caller-owned environment. The enabled flag remains a live stop control.
- const rightsKey=env.POD_RIGHTS_KEY,templateKey=env.POD_TEMPLATE_KEY;
- const budgetBytes=artifactBudgetBytes(env);
+ // Bind the complete data-only child environment before claim, grant and task
+ // callbacks can replace an interpreter, signing key or stage configuration.
+ // The enabled flag below remains a live stop control on the caller-owned object.
+ const stageEnv=snapshotStageEnvironment(env);
+ if(!stageEnv)throw Error('PRODUCTION_ENVIRONMENT_UNVERIFIED');
+ const rightsKey=stageEnv.POD_RIGHTS_KEY,templateKey=stageEnv.POD_TEMPLATE_KEY;
+ const budgetBytes=artifactBudgetBytes(stageEnv);
  // Bind every production database endpoint and its receiver dependencies before
  // the caller-owned claim wait can replace any durable guard or settlement path.
  const databaseReceiver=productionDatabaseReceiver(db);
@@ -158,7 +177,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   task=await resolveTask(jobCopy(),{signal});
   enabled();
   if(!task||task.rights_verified!==true)throw Error('RIGHTS_BLOCKED');
-  const runStage=(script,args)=>python(script,args,{root,signal,env,workspace:task.stageWorkspace});
+  const runStage=(script,args)=>python(script,args,{root,signal,env:stageEnv,workspace:task.stageWorkspace});
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    task.source,task.assetRights,task.textLayers,rightsKey,{signal});
   enabled();
