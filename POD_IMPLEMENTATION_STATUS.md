@@ -69,6 +69,85 @@ The complete, unedited report through PR 180 is preserved in
 This split keeps the active status readable without discarding evidence or
 changing any acceptance claim. Recent receipts are retained below.
 
+## Run receipt r342 — recheck current adapter authorization (2026-10-29 UTC)
+
+### Scope and repair
+
+Fresh inspection resumed from Content Control
+`5911db5fcf07ab43107e2242f60e6da839c1ead1` and Money Factory
+`490a44200d8875220707891fd1732d2062c17490` after re-reading the completion,
+implementation and free-deployment records, current heads, open pull requests,
+hosted workflows and the authorized Render service. No existing POD/KDP repair
+was open. The failed database-administration route had no credible access-path
+change and was not retried.
+
+The publisher correctly captured the exact endpoint originally authorized, but it
+never rechecked that adapter's authorization or registry identity after awaited
+artifact, authority and eligibility work. Revocation or registry replacement during
+those waits therefore still reached the stale endpoint. The publisher now rechecks
+both the exact registry identity and `authorized===true` immediately before the
+external side effect, with no intervening await. This does not configure or verify
+any live marketplace adapter.
+
+This scheduled environment had no local repository checkout, so no local test
+result is claimed. Exact remote heads were verified through the existing
+GitHub-hosted dependency-backed workflows.
+
+### Content Control verification and merge
+
+- Regression-only head `cc6f9e961bbc9990edaf32fb893846117f93131b`
+  failed integration run `40794968545` (run 782), job `123189102690`, exactly
+  at `adapter revocation or registry replacement during caller-owned waits blocks the captured endpoint`:
+  both cases expected `BLOCKED` with only a blocked settlement but actually
+  returned `SUBMITTED` with submit/submitted events; 963 tests passed and only
+  this new regression failed.
+- PR #816 exact repaired head:
+  `505f057b82e39ad57532d9566b9ee8c6568a5b4e`.
+- POD integration gates run `40795109704` (run 783), job `123189572169`:
+  success, including all 964 Node tests, 385 pinned Python/OpenCV tests,
+  disposable PostgreSQL, production end-to-end checks, syntax, workflow control
+  and review guards.
+- POD container runtime gates run `40795109835` (run 351), job
+  `123189629846`: success, including image build, nonroot dependencies, Python
+  QA/rendering, Node/PostgreSQL tests, real print/review generation and disabled
+  hosted startup.
+- Final diff review covered two changed files (21 additions, one deletion) and
+  found no material correctness, security or missing-regression issue.
+- Guarded Content Control squash merge:
+  `ae4e615bf3610a1526b342f4675fcdabccf74752`.
+
+### Money Factory dependent pin and hosted verification
+
+- PR #297 exact head `d8b19313182340bb0db70312fd3b2d22d176d807`
+  pinned the verified Content Control merge while retaining
+  `PUBLICATION_ENABLED=false` and `POD_PUBLICATION_ENABLED=false`.
+- POD cross-repository review verification run `40795824819` (run 299), job
+  `123191945876`: success across every pinned review, evidence, KDP interior,
+  editorial, PostgreSQL, Node and Python step.
+- Final diff review confirmed the only change was the exact Content Control ref.
+- Guarded Money Factory squash merge:
+  `7bc0d53d2eafa50486781a7e277194bb78f0b2ad`.
+
+### Authorized Render observation
+
+Render detected the functional Content Control merge and created deploy
+`dep-dbh9ct29lscs739f5e60`. It started at
+`2026-10-29T00:42:28.881069Z`, emitted pipeline-minutes-exhausted event
+`evt-dbh9ct0g45ic73bnq3rg` at `2026-10-29T00:42:28.858608Z`, and ended failed
+before build in event `evt-dbh9ct99q7ns73cpuvpg` at
+`2026-10-29T00:42:29.319525Z`. Event ingestion timestamps are not assumed to be
+strict execution order. No deploy, startup or live acceptance is claimed. The
+service remains active, unsuspended, on the free plan, tracking `main`, with one
+configured instance and automatic commit deploys.
+
+### Acceptance boundary
+
+All 24 live acceptance areas remain **OPEN**. Publication remains disabled and
+Etsy remains excluded. This run used no paid resource, sent no external message,
+made no marketplace submission and changed no database administration. Hosted
+workflow evidence proves the tested code path only; it is not proof of live adapter
+authorization, marketplace acceptance, capacity, revenue or controlled launch.
+
 ## Run receipt r341 — bind the exact durable settlement endpoint (2026-10-29 UTC)
 
 ### Scope and repair
