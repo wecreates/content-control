@@ -220,11 +220,13 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Bind the exact resolver-authorized inputs before evidence verification. Grant
   // and database callbacks must not replace verified paths before generation or QA.
   const sourceCapability=dataProperty(task,'source'),assetRightsCapability=dataProperty(task,'assetRights'),
-   textLayersCapability=dataProperty(task,'textLayers'),assetRootCapability=dataProperty(task,'assetRoot');
-  if([sourceCapability,assetRightsCapability,textLayersCapability,assetRootCapability]
+   textLayersCapability=dataProperty(task,'textLayers'),assetRootCapability=dataProperty(task,'assetRoot'),
+   templateCapability=dataProperty(task,'template');
+  if([sourceCapability,assetRightsCapability,textLayersCapability,assetRootCapability,templateCapability]
    .some(capability=>!capability.valid))throw Error('TASK_GENERATION_INPUTS_INVALID');
   const source=sourceCapability.value,assetRights=assetRightsCapability.value,
-   textLayersPath=textLayersCapability.value,assetRoot=assetRootCapability.value;
+   textLayersPath=textLayersCapability.value,assetRoot=assetRootCapability.value,
+   templatePath=templateCapability.value;
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    source,assetRights,textLayersPath,rightsKey,{signal});
   enabled();
@@ -237,7 +239,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(!templateScope||typeof templateScope!=='object'||Array.isArray(templateScope))
    throw Error('TASK_TEMPLATE_SCOPE_INVALID');
   const scope={...templateScope,platform:job.brief.platform};
-  const coverEnvelope=await readSignedJSONFile(task.template,{signal});
+  const coverEnvelope=await readSignedJSONFile(templatePath,{signal});
   enabled();
   const cover=validateTemplate(coverEnvelope,templateKey,scope);
   let interiorTemplate;
@@ -269,7 +271,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--source-member',interiorRecord.source_member]);
   }
   await authorizeProduction();
-  await runStage('pod_asset_generator.py',['--source',source,'--template',task.template,
+  await runStage('pod_asset_generator.py',['--source',source,'--template',templatePath,
    '--text-layers',textLayersPath,'--rights',assetRights,'--output-dir',task.output,...(assetRoot?['--asset-root',assetRoot]:[])]);
   enabled();
   if(job.brief.platform==='kdp'){
@@ -311,7 +313,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const qaTask=Object.freeze({
    output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
    source,assetRights,textLayers:textLayersPath,assetRoot,
-   template:task.template,templateSource:task.templateSource,stageWorkspace,
+   template:templatePath,templateSource:task.templateSource,stageWorkspace,
    interior:qaInterior
   });
   let reviewResult;
