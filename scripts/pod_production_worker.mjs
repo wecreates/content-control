@@ -250,6 +250,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const outputCapability=dataProperty(task,'output');
   if(!outputCapability.valid)throw Error('TASK_OUTPUT_INVALID');
   const outputPath=outputCapability.value;
+  // Bind every resolver-authorized QA path before authority, database, storage
+  // or reviewer callbacks can redirect the independently reviewed bytes.
+  const referenceCapability=dataProperty(task,'reference'),qaOutputCapability=dataProperty(task,'qaOutput'),
+   qaSignedOutputCapability=dataProperty(task,'qaSignedOutput');
+  if([referenceCapability,qaOutputCapability,qaSignedOutputCapability]
+   .some(capability=>!capability.valid))throw Error('TASK_QA_INPUTS_INVALID');
+  const qaPaths=Object.freeze({reference:referenceCapability.value,qaOutput:qaOutputCapability.value,
+   qaSignedOutput:qaSignedOutputCapability.value});
   let kdpInputs;
   if(job.brief.platform==='kdp'){
    // Bind the complete resolver-authorized KDP input set after cover validation
@@ -339,7 +347,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // controls remain outside this snapshot and are rechecked at each boundary.
   const qaInterior=job.brief.platform==='kdp'?kdpInputs.interior:undefined;
   const qaTask=Object.freeze({
-   output:outputPath,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
+   output:outputPath,reference:qaPaths.reference,qaOutput:qaPaths.qaOutput,qaSignedOutput:qaPaths.qaSignedOutput,
    source,assetRights,textLayers:textLayersPath,assetRoot,
    template:templatePath,templateSource:kdpInputs?.templateSource,stageWorkspace,
    interior:qaInterior
@@ -375,11 +383,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
    qaProcessFailed=true;
   }
   enabled();
-  // Re-reading the live descriptor preserves the stop/mutation boundary while
-  // refusing to consume a reviewer-replaced output path.
-  const currentQaSignedOutput=task.qaSignedOutput;
-  enabled();
-  if(currentQaSignedOutput!==qaTask.qaSignedOutput)throw Error('TASK_QA_INPUTS_CHANGED');
+  // Consume only the path bound before caller-owned callbacks; the live stop
+  // boundary was rechecked above and again by the bounded file reader.
   const qa=await readSignedJSONFile(qaTask.qaSignedOutput,{signal});
   enabled();
   // Nonzero exits may preserve a signed FAIL for diagnosis, never a PASS.

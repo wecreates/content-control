@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,mutateOutputInput=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateQaInputsDuringAuthority=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,mutateOutputInput=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -133,7 +133,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    templateScopeCapabilityAccessed++;return scope;
   }});
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
-  if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
+  if(disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
   if(disableAfterInteriorRead){
    Object.defineProperty(interiorTask,'template',{enumerable:true,get(){interiorTemplateReads++;env.POD_PRODUCTION_ENABLED='false';return interiorPath;}});
    Object.defineProperty(resolvedTask,'templateSource',{enumerable:true,get(){coverSourceReads++;return sourcePath;}});
@@ -159,7 +159,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
      if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();completed++;return {pass:true};
     },
-    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if(mutateOutputInput&&localChecks===1)resolvedTask.output='replacement-output';if(mutateKdpInputs&&localChecks===1){resolvedTask.templateSource=replacementCoverSourcePath;Object.assign(resolvedTask.interior,{template:replacementInteriorPath,source:replacementInteriorSourcePath,pages:'replacement-pages',font:'replacement-font',fontRights:'replacement-font-rights',fontLicense:'replacement-font-license',bookDetails:'replacement-book-details',regionalRightsEvidence:'replacement-regional-rights'});}if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
+    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if(mutateQaInputsDuringAuthority&&localChecks===1)Object.assign(resolvedTask,{reference:'replacement-reference',qaOutput:'replacement-qa-output',qaSignedOutput:'replacement-qa-signed-output'});if(mutateOutputInput&&localChecks===1)resolvedTask.output='replacement-output';if(mutateKdpInputs&&localChecks===1){resolvedTask.templateSource=replacementCoverSourcePath;Object.assign(resolvedTask.interior,{template:replacementInteriorPath,source:replacementInteriorSourcePath,pages:'replacement-pages',font:'replacement-font',fontRights:'replacement-font-rights',fontLicense:'replacement-font-license',bookDetails:'replacement-book-details',regionalRightsEvidence:'replacement-regional-rights'});}if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>{grantCalls++;if(replaceInterpreter)env.POD_PYTHON=replacementInterpreter;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
@@ -246,6 +246,15 @@ test('production snapshots QA task inputs before the reviewer callback',async()=
  assert.match(result.qaArgs[result.qaArgs.indexOf('--package-dir')+1],/[/\\]output$/);
 });
 
+test('production binds QA paths before authority callbacks',async()=>{
+ const result=await exercise({review:true,mutateQaInputsDuringAuthority:true,captureQaArgs:true,detailed:true});
+ assert.equal(result.status,'QA_PASSED');assert.equal(result.qaStarted,true);
+ for(const replacement of ['replacement-reference','replacement-qa-output','replacement-qa-signed-output'])
+  assert.equal(result.qaArgs.includes(replacement),false,replacement);
+ assert.equal(result.qaArgs[result.qaArgs.indexOf('--reference')+1],'unused');
+ assert.equal(result.qaArgs[result.qaArgs.indexOf('--output')+1],'unused');
+});
+
 test('production rejects unverified template before launching any stage',async()=>{
  assert.deepEqual(await exercise({template:{...record(),official_source_verified:false}}),
   {status:'BLOCKED',blocked:1,held:0,cleaned:1,started:false});
@@ -300,15 +309,15 @@ test('executable output capability is rejected without invocation',async()=>{
 });
 test('production disable during QA stops before signed QA-output access',async()=>{
  const result=await exercise({review:true,disableDuringQaStage:true,detailed:true});
- assert.equal(result.qaOutputReads,1);
+ assert.equal(result.qaOutputReads,0);
  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.started,true);
  assert.equal(result.qaStarted,true);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
-test('production disable during signed QA-output read wins over a conflicting late result',async()=>{
+test('executable signed QA-output capability is rejected without invocation',async()=>{
  const result=await exercise({review:true,disableDuringQaOutputRead:true,detailed:true});
- assert.equal(result.qaOutputReads,2);
- assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.qaStarted,true);
- assert.equal(result.completed,0);assert.equal(result.cleaned,1);
+ assert.equal(result.qaOutputReads,0);
+ assert.equal(result.reason,'PRODUCTION_BLOCKED');assert.equal(result.started,false);
+ assert.equal(result.qaStarted,false);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
 test('production disable during completion stops before the durable QA state change',async()=>{
  const result=await exercise({review:true,disableDuringCompletion:true,detailed:true});
