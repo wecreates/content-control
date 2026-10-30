@@ -287,14 +287,14 @@ test('executable KDP interior source capability is rejected without invocation',
  assert.equal(result.guideStarted,false);assert.equal(result.started,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
-test('production disable during the final generator stops before package-output access',async()=>{
+test('executable output capability is rejected without invocation',async()=>{
  for(const platform of ['redbubble','kdp']){
   const result=await exercise({platform,template:record(platform),
    ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
    disableDuringFinalStage:true,detailed:true});
-  assert.equal(result.outputReads,platform==='kdp'?2:1);
-  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.started,true);
-  assert.equal(result.bookStarted,platform==='kdp');assert.equal(result.qaStarted,false);
+  assert.equal(result.outputReads,0);
+  assert.equal(result.reason,'PRODUCTION_BLOCKED');assert.equal(result.started,false);
+  assert.equal(result.bookStarted,false);assert.equal(result.qaStarted,false);
   assert.equal(result.completed,0);assert.equal(result.cleaned,1);
  }
 });
