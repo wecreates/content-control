@@ -19,6 +19,19 @@ const directoryFlags=constants.O_RDONLY|constants.O_DIRECTORY|constants.O_NOFOLL
 const missingCodes=new Set(['ENOENT']);
 const replacedDirectoryCodes=new Set(['ENOENT','ENOTEMPTY','EEXIST']);
 const identity=stat=>`${stat.dev}:${stat.ino}`;
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
 async function clearHeldDirectory(handle){
  const heldPath=`/proc/self/fd/${handle.fd}`;
  let names;
@@ -108,7 +121,17 @@ export function validateTask(task){
  requiredMediaTypes(task);
  return task;
 }
-export function createStoredTaskResolvers(db,{store=new ArtifactStore(db),approvedEvaluators=[],approvedEditorialEvaluators=[],env=process.env,fetchImpl=fetch}={}){
+export function createStoredTaskResolvers(db,options={}){
+ const storeCapability=dataProperty(options,'store'),evaluatorCapability=dataProperty(options,'approvedEvaluators'),
+  editorialCapability=dataProperty(options,'approvedEditorialEvaluators'),envCapability=dataProperty(options,'env'),
+  fetchCapability=dataProperty(options,'fetchImpl');
+ if([storeCapability,evaluatorCapability,editorialCapability,envCapability,fetchCapability]
+  .some(capability=>!capability.valid))throw Error('TASK_RESOLVER_OPTIONS_UNVERIFIED');
+ const store=storeCapability.value===undefined?new ArtifactStore(db):storeCapability.value,
+  approvedEvaluators=evaluatorCapability.value===undefined?[]:evaluatorCapability.value,
+  approvedEditorialEvaluators=editorialCapability.value===undefined?[]:editorialCapability.value,
+  env=envCapability.value===undefined?process.env:envCapability.value,
+  fetchImpl=fetchCapability.value===undefined?fetch:fetchCapability.value;
  const evaluatorIds=snapshotEvaluatorIds(approvedEvaluators);
  const editorialEvaluatorIds=snapshotEvaluatorIds(approvedEditorialEvaluators);
  // A signed queue envelope records intake authority, not current revocation.
