@@ -9,6 +9,17 @@ const durableProductionEndpoints=Object.freeze({
  assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false})
 });
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
+test('production options reject accessors and proxies without invocation',async()=>{
+ let reads=0;
+ for(const key of ['db','resolveTask','resolveGrant','upstreamKey','root','env','signal']){
+  const options={};
+  Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('option getter executed');}});
+  await assert.rejects(produceOnce(options),/PRODUCTION_OPTIONS_UNVERIFIED/,key);
+ }
+ const options=new Proxy({},{get(){reads++;throw Error('option proxy executed');}});
+ await assert.rejects(produceOnce(options),/PRODUCTION_OPTIONS_UNVERIFIED/);
+ assert.equal(reads,0);
+});
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
 });
