@@ -245,29 +245,53 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const coverEnvelope=await readSignedJSONFile(templatePath,{signal});
   enabled();
   const cover=validateTemplate(coverEnvelope,templateKey,scope);
+  let kdpInputs;
+  if(job.brief.platform==='kdp'){
+   // Bind the complete resolver-authorized KDP input set after cover validation
+   // and before authority or database callbacks can replace archive, interior or
+   // package paths that later stages consume.
+   const interiorCapability=dataProperty(task,'interior');
+   const templateSourceCapability=dataProperty(task,'templateSource');
+   if(!interiorCapability.valid||!templateSourceCapability.valid)
+    throw Error('TASK_KDP_INPUTS_INVALID');
+   if(!interiorCapability.value)throw Error('INTERIOR_REQUIRED');
+   const interiorTask=interiorCapability.value;
+   const template=dataProperty(interiorTask,'template'),source=dataProperty(interiorTask,'source'),
+    pages=dataProperty(interiorTask,'pages'),font=dataProperty(interiorTask,'font'),
+    fontRights=dataProperty(interiorTask,'fontRights'),fontLicense=dataProperty(interiorTask,'fontLicense'),
+    bookDetails=dataProperty(interiorTask,'bookDetails'),
+    regionalRightsEvidence=dataProperty(interiorTask,'regionalRightsEvidence');
+   if([template,source,pages,font,fontRights,fontLicense,bookDetails,regionalRightsEvidence]
+    .some(capability=>!capability.valid))throw Error('TASK_KDP_INPUTS_INVALID');
+   if(!bookDetails.value)throw Error('KDP_BOOK_DETAILS_REQUIRED');
+   kdpInputs=Object.freeze({
+    templateSource:templateSourceCapability.value,
+    interior:Object.freeze({template:template.value,source:source.value,pages:pages.value,font:font.value,
+     fontRights:fontRights.value,fontLicense:fontLicense.value,bookDetails:bookDetails.value,
+     regionalRightsEvidence:regionalRightsEvidence.value})
+   });
+  }
   let interiorTemplate;
   if(job.brief.platform==='kdp'){
-   if(!task.interior)throw Error('INTERIOR_REQUIRED');
-   if(!task.interior.bookDetails)throw Error('KDP_BOOK_DETAILS_REQUIRED');
-   const interiorEnvelope=await readSignedJSONFile(task.interior.template,{signal});
+   const interiorEnvelope=await readSignedJSONFile(kdpInputs.interior.template,{signal});
    enabled();
    const interior=validateInteriorTemplate(interiorEnvelope,templateKey,scope);
    interiorTemplate=interior;
    const profile=kdpCalculatorProfile(cover,interior);
    const sourceHash=verifyEnvelope(coverEnvelope,templateKey,'pod:template').source_sha256;
-   await verifyTemplateSource(task.templateSource,
+   await verifyTemplateSource(kdpInputs.templateSource,
     sourceHash,{signal});
    await authorizeProduction();
    // Re-read/hash the retained ZIP inside the bounded child, then check its
    // members and guide against the authenticated profile before rendering.
-   await runStage('pod_kdp_template_import.py',['--archive',task.templateSource,
+   await runStage('pod_kdp_template_import.py',['--archive',kdpInputs.templateSource,
     '--profile-json',JSON.stringify(profile),'--expected-sha256',sourceHash]);
    enabled();
    const interiorRecord=verifyEnvelope(interiorEnvelope,templateKey,'pod:interior-template');
-   await verifyTemplateSource(task.interior.source,interiorRecord.source_sha256,{signal});
+   await verifyTemplateSource(kdpInputs.interior.source,interiorRecord.source_sha256,{signal});
    await authorizeProduction();
    await runStage('pod_kdp_interior_template_import.py',[
-    '--archive',task.interior.source,
+    '--archive',kdpInputs.interior.source,
     '--trim-width',String(interior.trim_inches[0]),
     '--trim-height',String(interior.trim_inches[1]),
     '--expected-sha256',interiorRecord.source_sha256,
@@ -279,8 +303,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   enabled();
   if(job.brief.platform==='kdp'){
    await authorizeProduction();
-   await runStage('pod_book_package.py',['--package-dir',task.output,'--template',task.interior.template,
-    '--pages',task.interior.pages,'--font',task.interior.font]);
+   await runStage('pod_book_package.py',['--package-dir',task.output,'--template',kdpInputs.interior.template,
+    '--pages',kdpInputs.interior.pages,'--font',kdpInputs.interior.font]);
    enabled();
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
@@ -308,15 +332,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Bind every resolver-authorized QA input before the caller-owned reviewer can
   // retain and mutate the task object. The live publication and cancellation
   // controls remain outside this snapshot and are rechecked at each boundary.
-  const qaInterior=job.brief.platform==='kdp'?Object.freeze({
-   template:task.interior.template,source:task.interior.source,pages:task.interior.pages,
-   font:task.interior.font,fontRights:task.interior.fontRights,fontLicense:task.interior.fontLicense,
-   bookDetails:task.interior.bookDetails,regionalRightsEvidence:task.interior.regionalRightsEvidence
-  }):undefined;
+  const qaInterior=job.brief.platform==='kdp'?kdpInputs.interior:undefined;
   const qaTask=Object.freeze({
    output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
    source,assetRights,textLayers:textLayersPath,assetRoot,
-   template:templatePath,templateSource:task.templateSource,stageWorkspace,
+   template:templatePath,templateSource:kdpInputs?.templateSource,stageWorkspace,
    interior:qaInterior
   });
   let reviewResult;
