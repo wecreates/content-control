@@ -228,6 +228,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    source,assetRights,textLayersPath,rightsKey,{signal});
   enabled();
+  // Rights evidence keeps diagnostic precedence, but the verified template path
+  // is still bound before any authority callback can replace it.
+  const templateCapability=dataProperty(task,'template');
+  if(!templateCapability.valid)throw Error('TASK_GENERATION_INPUTS_INVALID');
+  const templatePath=templateCapability.value;
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform. Reject
   // executable or Proxy-backed resolver values before reading any scope fields.
@@ -237,7 +242,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   if(!templateScope||typeof templateScope!=='object'||Array.isArray(templateScope))
    throw Error('TASK_TEMPLATE_SCOPE_INVALID');
   const scope={...templateScope,platform:job.brief.platform};
-  const coverEnvelope=await readSignedJSONFile(task.template,{signal});
+  const coverEnvelope=await readSignedJSONFile(templatePath,{signal});
   enabled();
   const cover=validateTemplate(coverEnvelope,templateKey,scope);
   let interiorTemplate;
@@ -269,7 +274,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
     '--source-member',interiorRecord.source_member]);
   }
   await authorizeProduction();
-  await runStage('pod_asset_generator.py',['--source',source,'--template',task.template,
+  await runStage('pod_asset_generator.py',['--source',source,'--template',templatePath,
    '--text-layers',textLayersPath,'--rights',assetRights,'--output-dir',task.output,...(assetRoot?['--asset-root',assetRoot]:[])]);
   enabled();
   if(job.brief.platform==='kdp'){
@@ -311,7 +316,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const qaTask=Object.freeze({
    output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
    source,assetRights,textLayers:textLayersPath,assetRoot,
-   template:task.template,templateSource:task.templateSource,stageWorkspace,
+   template:templatePath,templateSource:task.templateSource,stageWorkspace,
    interior:qaInterior
   });
   let reviewResult;
