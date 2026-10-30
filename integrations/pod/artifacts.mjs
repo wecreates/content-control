@@ -44,6 +44,20 @@ function snapshotArtifactInputs(artifacts){
  }
  return Object.freeze(result);
 }
+function snapshotArtifactRow(result){
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('ARTIFACT_ROW_UNVERIFIED');
+ let descriptor;
+ try{descriptor=Object.getOwnPropertyDescriptor(rows.value,'0');}
+ catch{throw Error('ARTIFACT_ROW_UNVERIFIED');}
+ if(!descriptor)return null;
+ if(!Object.hasOwn(descriptor,'value'))throw Error('ARTIFACT_ROW_UNVERIFIED');
+ const row=descriptor.value;
+ if(row===null||(typeof row!=='object'&&typeof row!=='function'))return Object.freeze({body:undefined,media_type:undefined});
+ const body=dataProperty(row,'body'),mediaType=dataProperty(row,'media_type');
+ if(!body.valid||!mediaType.valid||utilTypes.isProxy(body.value))throw Error('ARTIFACT_ROW_UNVERIFIED');
+ return Object.freeze({body:body.value,media_type:mediaType.value});
+}
 
 // Bounded PostgreSQL backend for the initial free-tier lane. Large libraries must
 // use an independently verified durable object-store implementation of this contract.
@@ -104,12 +118,13 @@ export class ArtifactStore {
   this.db.active();if(typeof sha!=='string'||!/^[a-f0-9]{64}$/.test(sha))throw Error('ARTIFACT_HASH_INVALID');
   // Reject oversized legacy/foreign rows in PostgreSQL before their bodies
   // cross into the low-memory process. Apply the same per-object read/write cap.
-  const row=(await this.db.read(`SELECT body,media_type FROM pod_artifacts
+  const row=snapshotArtifactRow(await this.db.read(`SELECT body,media_type FROM pod_artifacts
    WHERE sha256=$1 AND octet_length(body) BETWEEN 1 AND $2 AND media_type=ANY($3::text[])`,
-   [sha,this.maxObjectBytes,ARTIFACT_MEDIA_TYPES])).rows[0];
+   [sha,this.maxObjectBytes,ARTIFACT_MEDIA_TYPES]));
   if(!row||!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>this.maxObjectBytes||
-   !artifactMediaTypes.has(row.media_type)||
-   crypto.createHash('sha256').update(row.body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
-  return row;
+   !artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
+  const body=Buffer.from(row.body);
+  if(crypto.createHash('sha256').update(body).digest('hex')!==sha)throw Error('ARTIFACT_UNAVAILABLE');
+  return Object.freeze({body,media_type:row.media_type});
  }
 }
