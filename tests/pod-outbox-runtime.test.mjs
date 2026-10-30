@@ -6,6 +6,24 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const env={POD_OUTBOX_ENABLED:'true',POD_OUTBOX_URL:'https://authority.example/events',POD_OUTBOX_KEY:'k'.repeat(32)};
 const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
+test('outbox runtime rejects executable configuration without invocation',async()=>{
+ let reads=0;
+ for(const key of ['db','env','deliver','wait','clock']){
+  const options={};Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('outbox option getter executed');}});
+  assert.throws(()=>startOutboxRuntime(options),/OUTBOX_RUNTIME_OPTIONS_UNVERIFIED/,key);
+ }
+ const options=new Proxy({},{get(){reads++;throw Error('outbox option proxy executed');}});
+ assert.throws(()=>startOutboxRuntime(options),/OUTBOX_RUNTIME_OPTIONS_UNVERIFIED/);
+ for(const key of ['POD_OUTBOX_ENABLED','POD_OUTBOX_URL','POD_OUTBOX_KEY','POD_OUTBOX_POLL_MS']){
+  const config={...env};Object.defineProperty(config,key,{enumerable:true,get(){reads++;throw Error('outbox environment getter executed');}});
+  const runtime=startOutboxRuntime({db:{},env:config});
+  assert.equal(runtime.status().status,'BLOCKED_OUTBOX_CONFIGURATION',key);await runtime.stop();
+ }
+ const proxyEnv=new Proxy({...env},{get(){reads++;throw Error('outbox environment proxy executed');}});
+ const proxyRuntime=startOutboxRuntime({db:{},env:proxyEnv});
+ assert.equal(proxyRuntime.status().status,'BLOCKED_OUTBOX_CONFIGURATION');await proxyRuntime.stop();
+ assert.equal(reads,0);
+});
 test('disabled and incomplete configurations never deliver',async()=>{
  for(const config of [{},{...env,POD_OUTBOX_KEY:''},{...env,POD_OUTBOX_URL:'http://example.com'},
   {...env,POD_OUTBOX_URL:'https://authority.example/events?route=other'},
