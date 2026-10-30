@@ -1,10 +1,37 @@
 import {runPodWorker} from './orchestrator.mjs';
 import {produceOnce} from '../../scripts/pod_production_worker.mjs';
 import {productionReason} from './failure-reasons.mjs';
+import {types as utilTypes} from 'node:util';
+
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
 
 // The host supplies authoritative resolvers, never request-supplied executable code.
 // Publication is deliberately absent from this internal production lifecycle.
-export function startProductionRuntime({db,production,env=process.env,pythonReady=true,onError=()=>{}}){
+export function startProductionRuntime(options={}){
+ // Parameter destructuring would invoke caller-owned accessors before the
+ // disabled-state configuration boundary. Read runtime options only from data
+ // descriptors and reject Proxy-backed configuration without invoking traps.
+ const dbCapability=dataProperty(options,'db'),productionCapability=dataProperty(options,'production'),
+  envCapability=dataProperty(options,'env'),pythonCapability=dataProperty(options,'pythonReady'),
+  errorCapability=dataProperty(options,'onError');
+ if([dbCapability,productionCapability,envCapability,pythonCapability,errorCapability]
+  .some(capability=>!capability.valid))throw Error('PRODUCTION_RUNTIME_OPTIONS_UNVERIFIED');
+ const db=dbCapability.value,production=productionCapability.value,
+  env=envCapability.value===undefined?process.env:envCapability.value,
+  pythonReady=pythonCapability.value===undefined?true:pythonCapability.value,
+  onError=errorCapability.value===undefined?()=>{}:errorCapability.value;
  let status='DISABLED',loop=Promise.resolve();
  let cycles=0,consecutiveFailures=0,lastStartedAt=null,lastCompletedAt=null,lastErrorCode=null,lastResult=null;
  const reportError=error=>{consecutiveFailures++;status='RETRYING';lastErrorCode=error.code;try{onError(error);}catch{}};
