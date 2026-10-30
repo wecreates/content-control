@@ -20,7 +20,7 @@ rule, credential, or paid resource changed.
 ## Regression and repair evidence
 
 - Regression commit: `30c022fc97058cb2648a279d295ba65becf23b43`
-- Expected-red integration run/job: `41014866347` / `123928806245`
+- Expected-red integration run/job: `41014866347` / `123928797124`
 - Expected result: 996 Node tests, 995 passed, one failed
   (`production rejects executable abort signals without invocation or queue access`).
 - Repaired branch head: `be3613583de60c4ff7d36ac6f50f7679b04ae9a0`
