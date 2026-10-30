@@ -43,6 +43,24 @@ test('direct delivery rejects query and fragment endpoint variants before storag
   assert.equal(active,0);
  }
 });
+test('direct delivery rejects executable query results without invocation',async()=>{
+ let reads=0,fetches=0,updates=0;
+ const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.query',
+  payload:{},created_at:'2026-01-01T00:00:00.000Z',cursor_created_at:'2026-01-01 00:00:00+00'};
+ const attempts=[
+  {get rows(){reads++;throw Error('outbox rows getter executed');}},
+  {rows:new Proxy([],{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}})},
+  {rows:Object.defineProperty([],'0',{get(){reads++;throw Error('outbox row getter executed');}})},
+  {rows:[new Proxy(event,{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}})]},
+  {rows:[Object.defineProperty({...event},'id',{enumerable:true,get(){reads++;throw Error('outbox field getter executed');}})]},
+ ];
+ for(const result of attempts){
+  const db={active(){},read:async()=>result,tx:async()=>{updates++;}};
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>{fetches++;return jsonResponse({accepted_event_id:event.id});}}),/^Error: OUTBOX_QUERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);assert.equal(fetches,0);assert.equal(updates,0);
+});
 test('direct delivery enforces receiver byte ceilings before network access',async t=>{
  const now=1800000000000;t.mock.method(Date,'now',()=>now);
  const encoded=event=>JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:now,event});
