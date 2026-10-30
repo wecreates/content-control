@@ -191,6 +191,12 @@ export async function produceOnce(options={}){
  const claimProduction=claimCapability.value,assertProducible=assertCapability.value,
   failProduction=failCapability.value,holdProduction=holdCapability.value,
   completeProduction=completeCapability.value;
+ // A claimed job cannot be safely authorized or resolved without the complete
+ // host-supplied authority contract. Reject incomplete authority before queue
+ // access so no durable lease is created without a bound validation path.
+ if(typeof resolveGrant!=='function'||typeof resolveTask!=='function'||
+  typeof upstreamKey!=='string'||Buffer.byteLength(upstreamKey)<32)
+  throw Error('PRODUCTION_AUTHORITY_UNVERIFIED');
  const store=new ArtifactStore(databaseReceiver,{budgetBytes});
  const claimedJob=await Reflect.apply(claimProduction,databaseReceiver,[]);
  const productionEnabled=()=>{
