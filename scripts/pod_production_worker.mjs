@@ -220,16 +220,19 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // Bind the exact resolver-authorized inputs before evidence verification. Grant
   // and database callbacks must not replace verified paths before generation or QA.
   const sourceCapability=dataProperty(task,'source'),assetRightsCapability=dataProperty(task,'assetRights'),
-   textLayersCapability=dataProperty(task,'textLayers'),assetRootCapability=dataProperty(task,'assetRoot'),
-   templateCapability=dataProperty(task,'template');
-  if([sourceCapability,assetRightsCapability,textLayersCapability,assetRootCapability,templateCapability]
+   textLayersCapability=dataProperty(task,'textLayers'),assetRootCapability=dataProperty(task,'assetRoot');
+  if([sourceCapability,assetRightsCapability,textLayersCapability,assetRootCapability]
    .some(capability=>!capability.valid))throw Error('TASK_GENERATION_INPUTS_INVALID');
   const source=sourceCapability.value,assetRights=assetRightsCapability.value,
-   textLayersPath=textLayersCapability.value,assetRoot=assetRootCapability.value,
-   templatePath=templateCapability.value;
+   textLayersPath=textLayersCapability.value,assetRoot=assetRootCapability.value;
   const {sourceSha256,textLayers}=await verifyProductionSourceEvidence(
    source,assetRights,textLayersPath,rightsKey,{signal});
   enabled();
+  // Rights evidence keeps diagnostic precedence, but the verified template path
+  // is still bound before any authority callback can replace it.
+  const templateCapability=dataProperty(task,'template');
+  if(!templateCapability.valid)throw Error('TASK_GENERATION_INPUTS_INVALID');
+  const templatePath=templateCapability.value;
   // Scope comes from the hash-bound descriptor; signatures alone do not establish
   // official provenance or authorize a different product/country/platform. Reject
   // executable or Proxy-backed resolver values before reading any scope fields.
