@@ -203,6 +203,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const cleanupCapability=dataProperty(task,'cleanup');
   if(!cleanupCapability.valid)throw Error('TASK_CLEANUP_INVALID');
   cleanupTask=cleanupCapability.value;
+  // Bind the resolver-authorized reviewer function before authority, database
+  // or storage callbacks can replace the task member.
+  const reviewCapability=dataProperty(task,'reviewPackage');
+  if(!reviewCapability.valid)throw Error('TASK_REVIEWER_INVALID');
+  const reviewPackage=reviewCapability.value;
   const rightsCapability=dataProperty(task,'rights_verified');
   if(!rightsCapability.valid)throw Error('TASK_RIGHTS_INVALID');
   if(rightsCapability.value!==true)throw Error('RIGHTS_BLOCKED');
@@ -328,9 +333,6 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   await authorizeProduction();
   await store.putMany(artifacts);
   const reviewGrant=await authorizeProduction();
-  const reviewCapability=dataProperty(task,'reviewPackage');
-  if(!reviewCapability.valid)throw Error('TASK_REVIEWER_INVALID');
-  const reviewPackage=reviewCapability.value;
   if(typeof reviewPackage!=='function'){
    // A review hold is durable package exposure. Database lease and rights locks
    // can wait after the grant lookup, so revalidate that exact grant and the
