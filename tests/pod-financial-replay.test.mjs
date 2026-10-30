@@ -44,6 +44,26 @@ test('corrupt statement bytes cannot create or acknowledge a financial event',as
   assert.equal(f.rows.length,replay?1:0);assert.equal(f.outbox.length,0);
  }
 });
+test('financial intake rejects executable stored-evidence query results without invocation',async()=>{
+ const sha=event().evidence_sha256;let reads=0,writes=0;
+ const valid={sha256:sha,media_type:'application/json',body_sha256:sha};
+ const attempts=[
+  Object.defineProperty({},'rows',{get(){reads++;throw Error('evidence rows getter executed');}}),
+  new Proxy({rows:[valid]},{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}}),
+  {rows:new Proxy([valid],{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})},
+  {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('evidence row getter executed');}})},
+  {rows:[new Proxy(valid,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})]},
+  {rows:[Object.defineProperty({...valid},'sha256',{enumerable:true,get(){reads++;throw Error('evidence field getter executed');}})]},
+ ];
+ for(const result of attempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.includes('FROM pod_artifacts'))return result;
+   writes++;assert.fail('unverified evidence result reached financial mutation');
+  }})};
+  await assert.rejects(recordFinancialEvent(db,sign(event()),key),/^Error: EVIDENCE_QUERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);assert.equal(writes,0);
+});
 test('one authority event cannot cross provider or job boundaries',async()=>{
  for(const change of [{provider:'teepublic',provider_event_id:'different'},{job_id:'other-job',provider_event_id:'different'}]){
   const e=event(),f=fixture([{...e,id:'original'}]);
