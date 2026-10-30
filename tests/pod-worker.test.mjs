@@ -126,6 +126,22 @@ test('production runtime options reject accessors and proxies without invocation
  assert.throws(()=>startProductionRuntime(options),/PRODUCTION_RUNTIME_OPTIONS_UNVERIFIED/);
  assert.equal(reads,0);
 });
+test('production runtime rejects executable nested configuration without invocation',async()=>{
+ let reads=0;
+ const executable=(target,key)=>Object.defineProperty(target,key,{enumerable:true,get(){reads++;throw Error('nested runtime getter executed');}});
+ const env={};executable(env,'POD_PRODUCTION_ENABLED');
+ const envRuntime=startProductionRuntime({env});
+ assert.equal(envRuntime.status(),'BLOCKED_PRODUCTION_CONFIGURATION');await envRuntime.stop();
+ for(const key of ['authorityReady','resolveTask','resolveGrant','root']){
+  const production={resolveTask:async()=>{},resolveGrant:async()=>{}};executable(production,key);
+  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},db:{},production});
+  assert.equal(runtime.status(),'BLOCKED_PRODUCTION_CONFIGURATION',key);await runtime.stop();
+ }
+ const keyEnv={POD_PRODUCTION_ENABLED:'true'};executable(keyEnv,'POD_UPSTREAM_KEY');
+ const keyRuntime=startProductionRuntime({env:keyEnv,db:{},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+ assert.equal(keyRuntime.status(),'BLOCKED_PRODUCTION_CONFIGURATION');await keyRuntime.stop();
+ assert.equal(reads,0);
+});
 import {runPodWorker} from '../integrations/pod/orchestrator.mjs';
 for(const phase of ['recovery','rejected recovery','claim']){
  test(`disable during ${phase} stops the lifecycle without completion or retry health`,async()=>{
