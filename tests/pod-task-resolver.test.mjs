@@ -58,7 +58,7 @@ test('production stops after a delayed claim or grant before beginning task rest
    job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,task_sha256:sha});
   let grants=0,tasks=0,reason,restorationSignal;
   const result=await produceOnce({upstreamKey:key,signal:controller.signal,env:{POD_PRODUCTION_ENABLED:'true'},
-   db:{claimProduction:async()=>{if(stopAt==='claim')controller.abort();return {id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief};},failProduction:async(_job,r)=>{reason=r;}},
+   db:{assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false}),claimProduction:async()=>{if(stopAt==='claim')controller.abort();return {id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief};},failProduction:async(_job,r)=>{reason=r;}},
    resolveGrant:async()=>{grants++;if(stopAt==='grant')controller.abort();return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};},
    resolveTask:async(_job,{signal}={})=>{tasks++;restorationSignal=signal;controller.abort();throw Error('PRODUCTION_STOPPED');}});
   assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'PRODUCTION_STOPPED'});
@@ -250,7 +250,7 @@ test('production blocks colliding inputs before Python and records only a fixed 
  const store={get:async()=>{reads++;return {media_type:'application/json',body:Buffer.from(JSON.stringify({...task,files:{...task.files,package:sha}}))};}};
  const result=await produceOnce({upstreamKey:key,env:{POD_PRODUCTION_ENABLED:'true',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
   db:{claimProduction:async()=>({id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async(_job,reason)=>stored=reason,
-   assertProducible:async()=>{throw Error('must not reach production authorization');}},
+   assertProducible:async()=>{throw Error('must not reach production authorization');},holdProduction:async()=>{},completeProduction:async()=>({pass:false})},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:createStoredTaskResolvers({}, {store}).resolveTask});
  assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'TASK_FILES_INVALID'});
