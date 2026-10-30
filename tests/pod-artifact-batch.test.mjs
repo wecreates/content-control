@@ -179,6 +179,48 @@ test('artifact writes reject executable batches and records without invocation',
  assert.equal(reads,0);
 });
 
+test('artifact writes reject executable query results without invocation',async()=>{
+ let reads=0,writes=0;
+ const artifact=entry('query boundary'),sha=hash(artifact.body);
+ const lookupAttempts=[
+  {get rows(){reads++;throw Error('lookup rows getter executed');}},
+  {rows:new Proxy([],{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}})},
+  {rows:Object.defineProperty([],'0',{get(){reads++;throw Error('lookup row getter executed');}})},
+  {rows:[Object.defineProperty({media_type:artifact.mediaType,body_sha256:sha},'sha256',{
+   enumerable:true,get(){reads++;throw Error('lookup field getter executed');}
+  })]},
+  {rows:[new Proxy({sha256:sha,media_type:artifact.mediaType,body_sha256:sha},{
+   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+  })]},
+ ];
+ for(const lookup of lookupAttempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.includes('ANY('))return lookup;
+   if(sql.includes('sum('))assert.fail('budget query reached');
+   if(sql.startsWith('INSERT'))writes++;
+   return {rows:[]};
+  }})};
+  await assert.rejects(new ArtifactStore(db).putMany([artifact]),/^Error: ARTIFACT_QUERY_UNVERIFIED$/);
+ }
+ const usageAttempts=[
+  {get rows(){reads++;throw Error('usage rows getter executed');}},
+  {rows:new Proxy([{bytes:'0'}],{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}})},
+  {rows:Object.defineProperty([],'0',{get(){reads++;throw Error('usage row getter executed');}})},
+  {rows:[Object.defineProperty({},'bytes',{get(){reads++;throw Error('usage field getter executed');}})]},
+  {rows:[new Proxy({bytes:'0'},{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}})]},
+ ];
+ for(const usage of usageAttempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.includes('ANY('))return {rows:[]};
+   if(sql.includes('sum('))return usage;
+   if(sql.startsWith('INSERT'))writes++;
+   return {rows:[]};
+  }})};
+  await assert.rejects(new ArtifactStore(db).putMany([artifact]),/^Error: ARTIFACT_QUERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);assert.equal(writes,0);
+});
+
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{

@@ -58,6 +58,34 @@ function snapshotArtifactRow(result){
  if(!body.valid||!mediaType.valid||utilTypes.isProxy(body.value))throw Error('ARTIFACT_ROW_UNVERIFIED');
  return Object.freeze({body:body.value,media_type:mediaType.value});
 }
+function snapshotQueryRows(result,fields,{maxRows,exactRows}={}){
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('ARTIFACT_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  if(!Object.hasOwn(descriptor||{},'value')||!Number.isInteger(descriptor.value)||descriptor.value<0)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('ARTIFACT_QUERY_UNVERIFIED');}
+ if((Number.isInteger(maxRows)&&length>maxRows)||(Number.isInteger(exactRows)&&length!==exactRows))throw Error('ARTIFACT_QUERY_UNVERIFIED');
+ const snapshots=[];
+ for(let index=0;index<length;index++){
+  let descriptor;
+  try{descriptor=Object.getOwnPropertyDescriptor(rows.value,String(index));}
+  catch{throw Error('ARTIFACT_QUERY_UNVERIFIED');}
+  if(!descriptor||!Object.hasOwn(descriptor,'value'))throw Error('ARTIFACT_QUERY_UNVERIFIED');
+  const row=descriptor.value;
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error('ARTIFACT_QUERY_UNVERIFIED');
+  const snapshot={};
+  for(const field of fields){
+   const capability=dataProperty(row,field);
+   if(!capability.valid||utilTypes.isProxy(capability.value))throw Error('ARTIFACT_QUERY_UNVERIFIED');
+   snapshot[field]=capability.value;
+  }
+  snapshots.push(Object.freeze(snapshot));
+ }
+ return Object.freeze(snapshots);
+}
 
 // Bounded PostgreSQL backend for the initial free-tier lane. Large libraries must
 // use an independently verified durable object-store implementation of this contract.
@@ -93,18 +121,21 @@ export class ArtifactStore {
    // immutable media metadata must not be reported as a successful replay.
    // Compute existing digests in PostgreSQL to avoid fetching duplicate blobs
    // into the low-memory Node process. No pgcrypto extension is required.
-   const stored=await c.query("SELECT sha256,media_type,encode(sha256(body),'hex') AS body_sha256 FROM pod_artifacts WHERE sha256=ANY($1::text[])",[[...unique.keys()]]);
+   const stored=snapshotQueryRows(await c.query("SELECT sha256,media_type,encode(sha256(body),'hex') AS body_sha256 FROM pod_artifacts WHERE sha256=ANY($1::text[])",[[...unique.keys()]]),
+    ['sha256','media_type','body_sha256'],{maxRows:unique.size});
    this.db.active();
-   for(const row of stored.rows){
+   for(const row of stored){
     const expected=unique.get(row.sha256);
     if(!expected||row.media_type!==expected.mediaType||row.body_sha256!==row.sha256)throw Error('ARTIFACT_CONFLICT');
     existing.add(row.sha256);
    }
    const missing=[...unique].filter(([sha])=>!existing.has(sha));
    if(!missing.length)return hashes;
-   const usage=await c.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts');
+   const usage=snapshotQueryRows(await c.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts'),
+    ['bytes'],{maxRows:1,exactRows:1});
    this.db.active();
-   const used=BigInt(usage.rows[0].bytes);
+   if(typeof usage[0].bytes!=='string'||!/^(?:0|[1-9]\d*)$/.test(usage[0].bytes))throw Error('ARTIFACT_QUERY_INVALID');
+   const used=BigInt(usage[0].bytes);
    const needed=missing.reduce((sum,[,artifact])=>sum+BigInt(artifact.body.length),0n);
    if(used+needed>BigInt(this.budgetBytes))throw Error('ARTIFACT_BUDGET_EXHAUSTED');
    for(const [sha,{body,mediaType}] of missing){
