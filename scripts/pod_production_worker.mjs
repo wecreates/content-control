@@ -245,6 +245,11 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const coverEnvelope=await readSignedJSONFile(templatePath,{signal});
   enabled();
   const cover=validateTemplate(coverEnvelope,templateKey,scope);
+  // Bind the resolver-authorized package directory before authority callbacks
+  // can redirect generation, package reads, durable storage or QA to other bytes.
+  const outputCapability=dataProperty(task,'output');
+  if(!outputCapability.valid)throw Error('TASK_OUTPUT_INVALID');
+  const outputPath=outputCapability.value;
   let kdpInputs;
   if(job.brief.platform==='kdp'){
    // Bind the complete resolver-authorized KDP input set after cover validation
@@ -299,16 +304,16 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   }
   await authorizeProduction();
   await runStage('pod_asset_generator.py',['--source',source,'--template',templatePath,
-   '--text-layers',textLayersPath,'--rights',assetRights,'--output-dir',task.output,...(assetRoot?['--asset-root',assetRoot]:[])]);
+   '--text-layers',textLayersPath,'--rights',assetRights,'--output-dir',outputPath,...(assetRoot?['--asset-root',assetRoot]:[])]);
   enabled();
   if(job.brief.platform==='kdp'){
    await authorizeProduction();
-   await runStage('pod_book_package.py',['--package-dir',task.output,'--template',kdpInputs.interior.template,
+   await runStage('pod_book_package.py',['--package-dir',outputPath,'--template',kdpInputs.interior.template,
     '--pages',kdpInputs.interior.pages,'--font',kdpInputs.interior.font]);
    enabled();
   }
   // Competitive reviewer must inspect the NEW package; it cannot preapprove unknown future bytes.
-  const {manifest,artifacts}=await readPackageSnapshot(task.output,
+  const {manifest,artifacts}=await readPackageSnapshot(outputPath,
    {platform:job.brief.platform,template:cover,interiorTemplate,sourceSha256,textLayers},
    {platform:job.brief.platform},{beforeArtifacts:authorizeProduction});
   // Persist exact package bytes before marking the job complete. Never rely on Render's local disk.
@@ -334,7 +339,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   // controls remain outside this snapshot and are rechecked at each boundary.
   const qaInterior=job.brief.platform==='kdp'?kdpInputs.interior:undefined;
   const qaTask=Object.freeze({
-   output:task.output,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
+   output:outputPath,reference:task.reference,qaOutput:task.qaOutput,qaSignedOutput:task.qaSignedOutput,
    source,assetRights,textLayers:textLayersPath,assetRoot,
    template:templatePath,templateSource:kdpInputs?.templateSource,stageWorkspace,
    interior:qaInterior
