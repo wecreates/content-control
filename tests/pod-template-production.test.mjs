@@ -133,7 +133,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    templateScopeCapabilityAccessed++;return scope;
   }});
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
-  if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
+  if(disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
   if(disableAfterInteriorRead){
    Object.defineProperty(interiorTask,'template',{enumerable:true,get(){interiorTemplateReads++;env.POD_PRODUCTION_ENABLED='false';return interiorPath;}});
    Object.defineProperty(resolvedTask,'templateSource',{enumerable:true,get(){coverSourceReads++;return sourcePath;}});
@@ -309,15 +309,15 @@ test('executable output capability is rejected without invocation',async()=>{
 });
 test('production disable during QA stops before signed QA-output access',async()=>{
  const result=await exercise({review:true,disableDuringQaStage:true,detailed:true});
- assert.equal(result.qaOutputReads,1);
+ assert.equal(result.qaOutputReads,0);
  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.started,true);
  assert.equal(result.qaStarted,true);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
-test('production disable during signed QA-output read wins over a conflicting late result',async()=>{
+test('executable signed QA-output capability is rejected without invocation',async()=>{
  const result=await exercise({review:true,disableDuringQaOutputRead:true,detailed:true});
- assert.equal(result.qaOutputReads,2);
- assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.qaStarted,true);
- assert.equal(result.completed,0);assert.equal(result.cleaned,1);
+ assert.equal(result.qaOutputReads,0);
+ assert.equal(result.reason,'PRODUCTION_BLOCKED');assert.equal(result.started,false);
+ assert.equal(result.qaStarted,false);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
 });
 test('production disable during completion stops before the durable QA state change',async()=>{
  const result=await exercise({review:true,disableDuringCompletion:true,detailed:true});
