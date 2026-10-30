@@ -25,7 +25,8 @@ test('disabled production never claims work',async()=>{
 });
 test('live production enable checks reject accessors without invocation',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
- const result=await produceOnce({env,db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async()=>{
+ const result=await produceOnce({env,upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
+  db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async()=>{
   Object.defineProperty(env,'POD_PRODUCTION_ENABLED',{configurable:true,enumerable:true,get(){reads++;return 'false';}});
   return null;
  }}});
@@ -193,12 +194,13 @@ test('production rejects executable abort signals without invocation or queue ac
 test('cancellation during an empty production claim reports stopped',async()=>{
  const controller=new AbortController();
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
+  upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
   db:{...durableProductionEndpoints,claimProduction:async()=>{controller.abort();return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('production disable during an empty claim reports stopped',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};
- const result=await produceOnce({env,
+ const result=await produceOnce({env,upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
   db:{...durableProductionEndpoints,claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
