@@ -30,7 +30,7 @@ for(const [error,expected] of [
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  let stored;
  const options={env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:key},upstreamKey:key,
-  db:{recover:async()=>{},claimProduction:async()=>({id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async(job,reason)=>{stored=reason;}},
+  db:{recover:async()=>{},assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false}),claimProduction:async()=>({id:'j',account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async(job,reason)=>{stored=reason;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>{throw error;}};
  const result=await produceOnce(options);
