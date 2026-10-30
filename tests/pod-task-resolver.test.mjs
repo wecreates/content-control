@@ -348,3 +348,22 @@ test('production snapshots rights and template authority keys before callbacks',
   assert.equal(templateReads,0);
  }finally{await fs.rm(directory,{recursive:true,force:true});}
 });
+
+
+test('stored task resolver rejects executable authority configuration without invocation',()=>{
+ let reads=0;
+ const accessor=key=>{
+  const options={store:{}};
+  Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('task resolver option getter executed');}});
+  return options;
+ };
+ for(const key of ['store','approvedEvaluators','approvedEditorialEvaluators','env','fetchImpl'])
+  assert.throws(()=>createStoredTaskResolvers({},accessor(key)),/TASK_RESOLVER_OPTIONS_UNVERIFIED/);
+ const proxy=new Proxy({store:{}},{get(){reads++;throw Error('task resolver option trap executed');}});
+ assert.throws(()=>createStoredTaskResolvers({},proxy),/TASK_RESOLVER_OPTIONS_UNVERIFIED/);
+ const env={};
+ Object.defineProperty(env,'POD_GRANT_URL',{enumerable:true,get(){reads++;throw Error('grant environment getter executed');}});
+ const resolver=createStoredTaskResolvers({}, {store:{},env,fetchImpl:async()=>{}});
+ assert.equal(resolver.authorityReady,false);
+ assert.equal(reads,0);
+});
