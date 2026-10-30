@@ -17,6 +17,12 @@ test('live production enable checks reject accessors without invocation',async()
  }}});
  assert.equal(reads,0);assert.deepEqual(result,{status:'STOPPED'});
 });
+test('production requires durable failure settlement before queue access',async()=>{
+ let claims=0;
+ await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},
+  db:{claimProduction:async()=>{claims++;return null;}}}),/PRODUCTION_DATABASE_UNVERIFIED/);
+ assert.equal(claims,0);
+});
 test('malformed production storage budgets fail before queue access',async()=>{
  for(const value of ['', '0', 'NaN', '134217729']){
   await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true',POD_ARTIFACT_BUDGET_BYTES:value},
