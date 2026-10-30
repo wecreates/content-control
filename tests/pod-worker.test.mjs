@@ -5,13 +5,16 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 const productionClaim=brief=>({id:'j',account_id:'a',platform:brief.platform,fencing_token:1,brief});
+const durableProductionEndpoints=Object.freeze({
+ assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false})
+});
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
 });
 test('live production enable checks reject accessors without invocation',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
- const result=await produceOnce({env,db:{failProduction:async()=>{},claimProduction:async()=>{
+ const result=await produceOnce({env,db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async()=>{
   Object.defineProperty(env,'POD_PRODUCTION_ENABLED',{configurable:true,enumerable:true,get(){reads++;return 'false';}});
   return null;
  }}});
@@ -22,6 +25,17 @@ test('production requires durable failure settlement before queue access',async(
  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},
   db:{claimProduction:async()=>{claims++;return null;}}}),/PRODUCTION_DATABASE_UNVERIFIED/);
  assert.equal(claims,0);
+});
+test('production requires every durable database endpoint before queue access',async()=>{
+ for(const missing of ['assertProducible','holdProduction','completeProduction']){
+  let claims=0;
+  const db={claimProduction:async()=>{claims++;return null;},failProduction:async()=>{},
+   assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false})};
+  delete db[missing];
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},db}),
+   /PRODUCTION_DATABASE_UNVERIFIED/,missing);
+  assert.equal(claims,0,missing);
+ }
 });
 test('malformed production storage budgets fail before queue access',async()=>{
  for(const value of ['', '0', 'NaN', '134217729']){
@@ -35,7 +49,7 @@ test('production-only grant reaches task resolution without publishing',async()=
   job_id:'j',account_id:'a',business_id:'b',platform:'kdp',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  let resolved=false,failed=false;
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{failed=true;}},
+  db:{...durableProductionEndpoints,claimProduction:async()=>productionClaim(brief),failProduction:async()=>{failed=true;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>{resolved=true;return {rights_verified:false};}});
  assert.equal(resolved,true);assert.equal(failed,true);assert.equal(result.status,'BLOCKED');
@@ -45,7 +59,7 @@ test('workspace cleanup failure preserves the durable job result and exposes onl
  const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const options={env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:key},upstreamKey:key,
-  db:{recover:async()=>{},claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
+  db:{...durableProductionEndpoints,recover:async()=>{},claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('private workspace path');}})};
  const result=await produceOnce(options);
@@ -68,7 +82,7 @@ test('workspace cleanup failure cannot mask an earlier persistence failure',asyn
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const persistenceFailure=Error('primary persistence failure');
  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{throw persistenceFailure;}},
+  db:{...durableProductionEndpoints,claimProduction:async()=>productionClaim(brief),failProduction:async()=>{throw persistenceFailure;}},
   resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
   resolveTask:async()=>({rights_verified:false,cleanup:async()=>{throw Error('secondary cleanup failure');}})}),
  error=>error===persistenceFailure);
@@ -81,7 +95,7 @@ for(const phase of ['recovery','rejected recovery','claim']){
   let release,entered,claims=0;
   const started=new Promise(resolve=>entered=resolve);
   const pending=new Promise(resolve=>release=resolve);
-  const runtime=startProductionRuntime({env,db:{
+  const runtime=startProductionRuntime({env,db:{...durableProductionEndpoints,
    recover:async()=>{if(phase!=='claim'){entered();await pending;if(phase==='rejected recovery')throw Error('private recovery failure');}},
    claimProduction:async()=>{claims++;if(phase==='claim'){entered();await pending;}return null;},failProduction:async()=>{}
   },production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
@@ -130,7 +144,7 @@ test('enabled worker without authority resolvers fails closed',async()=>{
 test('worker awaits its in-flight cycle before shutdown',async()=>{
  let entered,finish;const entry=new Promise(r=>entered=r),pending=new Promise(r=>finish=r);
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
-  db:{recover:async()=>{},claimProduction:async()=>{entered();await pending;return null;},failProduction:async()=>{}},
+  db:{...durableProductionEndpoints,recover:async()=>{},claimProduction:async()=>{entered();await pending;return null;},failProduction:async()=>{}},
   production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
  await entry;let stopped=false;const shutdown=runtime.stop().then(()=>stopped=true);
  await new Promise(r=>setImmediate(r));assert.equal(stopped,false);finish();await shutdown;
@@ -153,13 +167,13 @@ test('production rejects executable abort signals without invocation or queue ac
 test('cancellation during an empty production claim reports stopped',async()=>{
  const controller=new AbortController();
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
-  db:{claimProduction:async()=>{controller.abort();return null;},failProduction:async()=>{}}});
+  db:{...durableProductionEndpoints,claimProduction:async()=>{controller.abort();return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('production disable during an empty claim reports stopped',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};
  const result=await produceOnce({env,
-  db:{claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;},failProduction:async()=>{}}});
+  db:{...durableProductionEndpoints,claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('executable source capability is rejected without invocation before template access',async()=>{
@@ -185,7 +199,7 @@ test('executable source capability is rejected without invocation before templat
    template:{get(){templateReads++;return path.join(root,'missing-template.json');}}
   });
   const result=await produceOnce({env,upstreamKey:key,
-   db:{claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
+   db:{...durableProductionEndpoints,claimProduction:async()=>productionClaim(brief),failProduction:async()=>{}},
    resolveGrant:async()=>({payload:grantPayload,signature:crypto.createHmac('sha256',key).update(grantPayload).digest('hex')}),
    resolveTask:async()=>task});
   assert.equal(sourceReads,0);assert.equal(templateReads,0);
@@ -208,7 +222,7 @@ test('failed recovery reports retrying without leaking database error details',a
 });
 test('idle cycle records completion without claiming successful production',async()=>{
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
-  db:{recover:async()=>{},claimProduction:async()=>null,failProduction:async()=>{}},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+  db:{...durableProductionEndpoints,recover:async()=>{},claimProduction:async()=>null,failProduction:async()=>{}},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
  await new Promise(r=>setImmediate(r));const h=runtime.health();assert.equal(h.cycles,1);assert.equal(h.last_result,'IDLE');
  assert.ok(h.last_completed_at);await runtime.stop();
 });
@@ -226,7 +240,7 @@ test('unsnapshotable production claims never reach callbacks or settlement',asyn
   }):Object.defineProperty({...original},'id',{enumerable:true,get(){reads++;return original.id;}});
   try{
    outcome=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-    db:{claimProduction:async()=>claimed,failProduction:async job=>{settlements++;void job.id;void job.fencing_token;}},
+    db:{...durableProductionEndpoints,claimProduction:async()=>claimed,failProduction:async job=>{settlements++;void job.id;void job.fencing_token;}},
     resolveGrant:async()=>{callbacks++;return envelope;},
     resolveTask:async()=>{callbacks++;return {rights_verified:false};}});
   }catch(value){error=value;}
@@ -243,7 +257,7 @@ test('production callbacks cannot redirect fenced settlement identity',async()=>
  const claimed={id:'j',account_id:'a',platform:'redbubble',fencing_token:'7',brief},settlements=[];
  const mutate=job=>{job.id='redirected';job.account_id='redirected';job.platform='kdp';job.fencing_token=99;job.brief.id='redirected';};
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
-  db:{claimProduction:async()=>claimed,failProduction:async job=>settlements.push([job.id,job.account_id,job.platform,job.fencing_token,job.brief.id])},
+  db:{...durableProductionEndpoints,claimProduction:async()=>claimed,failProduction:async job=>settlements.push([job.id,job.account_id,job.platform,job.fencing_token,job.brief.id])},
   resolveGrant:async job=>{mutate(job);return envelope;},
   resolveTask:async job=>{mutate(job);return {rights_verified:false};}});
  assert.deepEqual(result,{status:'BLOCKED',job_id:'j',reason_code:'RIGHTS_BLOCKED'});
@@ -258,7 +272,7 @@ test('production database settlement is bound before the claim callback',async()
   job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
  const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
  let originalSettlements=0,replacementSettlements=0,originalTransactions=0,replacementTransactions=0;
- const db={
+ const db={...durableProductionEndpoints,
   tx:async fn=>{originalTransactions++;return fn({});},
   failProduction:async function(){originalSettlements++;return this.tx(async()=>{});},
   claimProduction:async()=>{

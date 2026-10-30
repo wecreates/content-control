@@ -44,7 +44,7 @@ for(const [verdict,duplicate,duplicatePayload=false] of [
    job_id:brief.id,account_id:brief.account_id,business_id:brief.business_id,platform:brief.platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
   let completed=0,blocked=0,cleaned=0;
   const options={root,env:{...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,POD_UPSTREAM_KEY:key},upstreamKey:key,
-   db:{active(){},recover:async()=>{},assertProducible:async()=>true,claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};},
+   db:{active(){},recover:async()=>{},assertProducible:async()=>true,holdProduction:async()=>{},claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
    resolveTask:async()=>({rights_verified:true,templateScope,source:sourcePath,template:templatePath,textLayers:layersPath,assetRights:rightsPath,
