@@ -115,6 +115,17 @@ test('workspace cleanup failure cannot mask an earlier persistence failure',asyn
  error=>error===persistenceFailure);
 });
 import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
+test('production runtime options reject accessors and proxies without invocation',()=>{
+ let reads=0;
+ for(const key of ['db','production','env','pythonReady','onError']){
+  const options={};
+  Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('runtime option getter executed');}});
+  assert.throws(()=>startProductionRuntime(options),/PRODUCTION_RUNTIME_OPTIONS_UNVERIFIED/,key);
+ }
+ const options=new Proxy({},{get(){reads++;throw Error('runtime option proxy executed');}});
+ assert.throws(()=>startProductionRuntime(options),/PRODUCTION_RUNTIME_OPTIONS_UNVERIFIED/);
+ assert.equal(reads,0);
+});
 import {runPodWorker} from '../integrations/pod/orchestrator.mjs';
 for(const phase of ['recovery','rejected recovery','claim']){
  test(`disable during ${phase} stops the lifecycle without completion or retry health`,async()=>{
