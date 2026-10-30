@@ -367,3 +367,28 @@ test('stored task resolver rejects executable authority configuration without in
  assert.equal(resolver.authorityReady,false);
  assert.equal(reads,0);
 });
+
+
+test('stored task resolver rejects executable invocation and store capabilities without invocation',async()=>{
+ let reads=0;
+ const job={brief:{task_sha256:hashes.descriptor}};
+ const safeStore={get:async()=>{throw Error('unexpected store read');}};
+ const resolver=createStoredTaskResolvers({}, {store:safeStore});
+ const invocation={};
+ Object.defineProperty(invocation,'signal',{enumerable:true,get(){reads++;throw Error('task invocation getter executed');}});
+ await assert.rejects(resolver.resolveTask(job,invocation),/TASK_RESOLVER_INVOCATION_UNVERIFIED/);
+ const invocationProxy=new Proxy({}, {get(){reads++;throw Error('task invocation trap executed');}});
+ await assert.rejects(resolver.resolveTask(job,invocationProxy),/TASK_RESOLVER_INVOCATION_UNVERIFIED/);
+ const signal={};
+ Object.defineProperty(signal,'aborted',{enumerable:true,get(){reads++;throw Error('task signal getter executed');}});
+ await assert.rejects(resolver.resolveTask(job,{signal}),/TASK_RESOLVER_SIGNAL_UNVERIFIED/);
+ const store={};
+ Object.defineProperty(store,'get',{enumerable:true,get(){reads++;throw Error('task store getter executed');}});
+ await assert.rejects(createStoredTaskResolvers({}, {store}).resolveTask(job),/TASK_STORE_UNVERIFIED/);
+ const storeProxy=new Proxy({}, {get(){reads++;throw Error('task store trap executed');}});
+ await assert.rejects(createStoredTaskResolvers({}, {store:storeProxy}).resolveTask(job),/TASK_STORE_UNVERIFIED/);
+ const executableJob={};
+ Object.defineProperty(executableJob,'brief',{enumerable:true,get(){reads++;throw Error('task job getter executed');}});
+ await assert.rejects(resolver.resolveTask(executableJob),/TASK_JOB_UNVERIFIED/);
+ assert.equal(reads,0);
+});
