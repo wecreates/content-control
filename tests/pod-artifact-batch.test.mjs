@@ -125,6 +125,31 @@ test('invalid batches fail before acquiring a database connection',async()=>{
  await assert.rejects(store.putMany([entry('1234567'),entry('123456')]),/ARTIFACT_BATCH_TOO_LARGE/);
 });
 
+test('artifact writes reject executable batches and records without invocation',async()=>{
+ let reads=0;
+ const store=new ArtifactStore({tx(){assert.fail('database reached');}});
+ const batchProxy=new Proxy([entry('safe')],{
+  get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+ });
+ await assert.rejects(store.putMany(batchProxy),/ARTIFACT_BATCH_UNVERIFIED/);
+ const batchAccessor=[entry('safe')];
+ Object.defineProperty(batchAccessor,'0',{enumerable:true,get(){reads++;throw Error('batch getter executed');}});
+ await assert.rejects(store.putMany(batchAccessor),/ARTIFACT_BATCH_UNVERIFIED/);
+ for(const key of ['body','mediaType']){
+  const record={};
+  Object.defineProperty(record,key,{enumerable:true,get(){reads++;throw Error('artifact getter executed');}});
+  Object.defineProperty(record,key==='body'?'mediaType':'body',{
+   enumerable:true,value:key==='body'?'application/json':Buffer.from('safe'),
+  });
+  await assert.rejects(store.putMany([record]),/ARTIFACT_INPUT_UNVERIFIED/);
+ }
+ const recordProxy=new Proxy(entry('safe'),{
+  get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+ });
+ await assert.rejects(store.putMany([recordProxy]),/ARTIFACT_INPUT_UNVERIFIED/);
+ assert.equal(reads,0);
+});
+
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{

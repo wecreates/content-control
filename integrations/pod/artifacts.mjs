@@ -1,9 +1,49 @@
 import crypto from 'node:crypto';
+import {types as utilTypes} from 'node:util';
 export const MAX_PACKAGE_BYTES=64*1024*1024;
 export const ARTIFACT_MEDIA_TYPES=Object.freeze([
  'image/png','application/pdf','application/json','font/ttf','text/plain','application/zip',
 ]);
 const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
+function snapshotArtifactInputs(artifacts){
+ if(!Array.isArray(artifacts))throw Error('ARTIFACT_BATCH_INVALID');
+ if(utilTypes.isProxy(artifacts))throw Error('ARTIFACT_BATCH_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(artifacts,'length');
+  if(!Object.hasOwn(descriptor||{},'value')||!Number.isInteger(descriptor.value)||descriptor.value<0)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('ARTIFACT_BATCH_UNVERIFIED');}
+ if(length>32)throw Error('ARTIFACT_BATCH_INVALID');
+ const result=[];
+ for(let index=0;index<length;index++){
+  let descriptor;
+  try{descriptor=Object.getOwnPropertyDescriptor(artifacts,String(index));}
+  catch{throw Error('ARTIFACT_BATCH_UNVERIFIED');}
+  if(descriptor&&!Object.hasOwn(descriptor,'value'))throw Error('ARTIFACT_BATCH_UNVERIFIED');
+  const artifact=descriptor?.value;
+  if(artifact===null||(typeof artifact!=='object'&&typeof artifact!=='function')){
+   result.push(Object.freeze({body:undefined,mediaType:undefined}));continue;
+  }
+  const body=dataProperty(artifact,'body'),mediaType=dataProperty(artifact,'mediaType');
+  if(!body.valid||!mediaType.valid||utilTypes.isProxy(body.value))throw Error('ARTIFACT_INPUT_UNVERIFIED');
+  result.push(Object.freeze({body:body.value,mediaType:mediaType.value}));
+ }
+ return Object.freeze(result);
+}
 
 // Bounded PostgreSQL backend for the initial free-tier lane. Large libraries must
 // use an independently verified durable object-store implementation of this contract.
@@ -17,10 +57,9 @@ export class ArtifactStore {
   return (await this.putMany([{body,mediaType}]))[0];
  }
  async putMany(artifacts){
-  if(!Array.isArray(artifacts)||artifacts.length>32)throw Error('ARTIFACT_BATCH_INVALID');
+  const inputs=snapshotArtifactInputs(artifacts);
   const unique=new Map(),hashes=[];let total=0;
-  for(const artifact of artifacts){
-   const {body,mediaType}=artifact||{};
+  for(const {body,mediaType} of inputs){
    if(!Buffer.isBuffer(body)||!body.length||body.length>this.maxObjectBytes||!artifactMediaTypes.has(mediaType))throw Error('ARTIFACT_INVALID');
    total+=body.length;if(total>this.maxBatchBytes)throw Error('ARTIFACT_BATCH_TOO_LARGE');
    // Callers retain ownership of their mutable buffers. Hash and persist one
