@@ -49,7 +49,9 @@ test('financial intake rejects executable stored-evidence query results without 
  const valid={sha256:sha,media_type:'application/json',body_sha256:sha};
  const attempts=[
   Object.defineProperty({},'rows',{get(){reads++;throw Error('evidence rows getter executed');}}),
-  new Proxy({rows:[valid]},{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}}),
+  new Proxy({rows:[valid]},{get(target,property,receiver){
+   if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+  }}),
   {rows:new Proxy([valid],{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})},
   {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('evidence row getter executed');}})},
   {rows:[new Proxy(valid,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})]},
