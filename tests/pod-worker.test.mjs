@@ -31,6 +31,21 @@ test('live production enable checks reject accessors without invocation',async()
  }}});
  assert.equal(reads,0);assert.deepEqual(result,{status:'STOPPED'});
 });
+test('production requires authority configuration before queue access',async()=>{
+ const key='k'.repeat(48);
+ for(const [name,authority] of [
+  ['missing grant resolver',{resolveTask:async()=>{},upstreamKey:key}],
+  ['missing task resolver',{resolveGrant:async()=>{},upstreamKey:key}],
+  ['missing signing key',{resolveGrant:async()=>{},resolveTask:async()=>{}}],
+  ['short signing key',{resolveGrant:async()=>{},resolveTask:async()=>{},upstreamKey:'short'}]
+ ]){
+  let claims=0;
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},...authority,
+   db:{...durableProductionEndpoints,claimProduction:async()=>{claims++;return null;},failProduction:async()=>{}}}),
+  /PRODUCTION_AUTHORITY_UNVERIFIED/,name);
+  assert.equal(claims,0,name);
+ }
+});
 test('production requires durable failure settlement before queue access',async()=>{
  let claims=0;
  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},
