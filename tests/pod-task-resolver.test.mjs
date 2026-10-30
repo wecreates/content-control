@@ -392,3 +392,32 @@ test('stored task resolver rejects executable invocation and store capabilities 
  await assert.rejects(resolver.resolveTask(executableJob),/TASK_JOB_UNVERIFIED/);
  assert.equal(reads,0);
 });
+
+test('stored task resolver rejects executable artifact records without invocation',async()=>{
+ let reads=0;
+ const body=Buffer.from(JSON.stringify(task));
+ const executable=(key,value)=>{
+  const record={};
+  Object.defineProperty(record,key,{enumerable:true,get(){reads++;throw Error('artifact record getter executed');}});
+  Object.defineProperty(record,key==='body'?'media_type':'body',{enumerable:true,value:key==='body'?'application/json':value});
+  return record;
+ };
+ for(const record of [executable('media_type','application/json'),executable('body',body)]){
+  const resolver=createStoredTaskResolvers({}, {store:{get:async()=>record}});
+  await assert.rejects(resolver.resolveTask({brief:{task_sha256:hashes.descriptor}}),/TASK_ARTIFACT_UNVERIFIED/);
+ }
+ const proxy=new Proxy({media_type:'application/json',body},{
+  get(target,key,receiver){if(key==='media_type'||key==='body')reads++;return Reflect.get(target,key,receiver);}
+ });
+ await assert.rejects(createStoredTaskResolvers({}, {store:{get:async()=>proxy}})
+  .resolveTask({brief:{task_sha256:hashes.descriptor}}),/TASK_ARTIFACT_UNVERIFIED/);
+ const input={};
+ Object.defineProperty(input,'body',{enumerable:true,get(){reads++;throw Error('input artifact getter executed');}});
+ Object.defineProperty(input,'media_type',{enumerable:true,value:'image/png'});
+ let calls=0;
+ const resolver=createStoredTaskResolvers({}, {store:{get:async()=>++calls===1
+  ?{media_type:'application/json',body}
+  :input}});
+ await assert.rejects(resolver.resolveTask({brief:{task_sha256:hashes.descriptor}}),/TASK_ARTIFACT_UNVERIFIED/);
+ assert.equal(reads,0);
+});
