@@ -163,7 +163,8 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   failCapability=dataProperty(db,'failProduction'),holdCapability=dataProperty(db,'holdProduction'),
   completeCapability=dataProperty(db,'completeProduction');
  if(!databaseReceiver||[claimCapability,assertCapability,failCapability,holdCapability,completeCapability]
-  .some(capability=>!capability.valid)||typeof claimCapability.value!=='function')
+  .some(capability=>!capability.valid)||typeof claimCapability.value!=='function'||
+  typeof failCapability.value!=='function')
   throw Error('PRODUCTION_DATABASE_UNVERIFIED');
  const claimProduction=claimCapability.value,assertProducible=assertCapability.value,
   failProduction=failCapability.value,holdProduction=holdCapability.value,
