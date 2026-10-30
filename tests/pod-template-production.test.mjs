@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,mutateOutputInput=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -159,7 +159,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
      if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();completed++;return {pass:true};
     },
-    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if(mutateKdpInputs&&localChecks===1){resolvedTask.templateSource=replacementCoverSourcePath;Object.assign(resolvedTask.interior,{template:replacementInteriorPath,source:replacementInteriorSourcePath,pages:'replacement-pages',font:'replacement-font',fontRights:'replacement-font-rights',fontLicense:'replacement-font-license',bookDetails:'replacement-book-details',regionalRightsEvidence:'replacement-regional-rights'});}if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
+    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if(mutateOutputInput&&localChecks===1)resolvedTask.output='replacement-output';if(mutateKdpInputs&&localChecks===1){resolvedTask.templateSource=replacementCoverSourcePath;Object.assign(resolvedTask.interior,{template:replacementInteriorPath,source:replacementInteriorSourcePath,pages:'replacement-pages',font:'replacement-font',fontRights:'replacement-font-rights',fontLicense:'replacement-font-license',bookDetails:'replacement-book-details',regionalRightsEvidence:'replacement-regional-rights'});}if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>{grantCalls++;if(replaceInterpreter)env.POD_PYTHON=replacementInterpreter;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
@@ -212,6 +212,13 @@ test('production binds the verified template path before authority callbacks',as
  const result=await exercise({mutateTemplateInput:true,captureAssetArgs:true,detailed:true});
  assert.equal(result.status,'REVIEW_REQUIRED');assert.equal(result.started,true);
  assert.equal(result.assetArgs.includes('replacement-template'),false);
+});
+
+test('production binds the output path before authority callbacks',async()=>{
+ const result=await exercise({mutateOutputInput:true,captureAssetArgs:true,detailed:true});
+ assert.equal(result.status,'REVIEW_REQUIRED');assert.equal(result.started,true);
+ assert.equal(result.assetArgs.includes('replacement-output'),false);
+ assert.match(result.assetArgs[result.assetArgs.indexOf('--output-dir')+1],/[/\\]output$/);
 });
 
 test('production binds verified KDP inputs before authority callbacks',async()=>{
@@ -280,14 +287,14 @@ test('executable KDP interior source capability is rejected without invocation',
  assert.equal(result.guideStarted,false);assert.equal(result.started,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
-test('production disable during the final generator stops before package-output access',async()=>{
+test('executable output capability is rejected without invocation',async()=>{
  for(const platform of ['redbubble','kdp']){
   const result=await exercise({platform,template:record(platform),
    ...(platform==='kdp'?{interior:{...record('kdp'),audience:'pod:interior-template'}}:{}),
    disableDuringFinalStage:true,detailed:true});
-  assert.equal(result.outputReads,platform==='kdp'?2:1);
-  assert.equal(result.reason,'PRODUCTION_STOPPED');assert.equal(result.started,true);
-  assert.equal(result.bookStarted,platform==='kdp');assert.equal(result.qaStarted,false);
+  assert.equal(result.outputReads,0);
+  assert.equal(result.reason,'PRODUCTION_BLOCKED');assert.equal(result.started,false);
+  assert.equal(result.bookStarted,false);assert.equal(result.qaStarted,false);
   assert.equal(result.completed,0);assert.equal(result.cleaned,1);
  }
 });
