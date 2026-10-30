@@ -6,6 +6,51 @@ const MAX_EVENT_REQUEST_BYTES=524288;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const EVENT_KIND=/^pod\.[a-z0-9]+(?:[._][a-z0-9]+)*$/;
 const EVENT_FIELDS=['created_at','id','job_id','kind','payload'];
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
+function snapshotQueryRows(result){
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('OUTBOX_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  if(!Object.hasOwn(descriptor||{},'value')||!Number.isInteger(descriptor.value)||descriptor.value<0||descriptor.value>20)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('OUTBOX_QUERY_UNVERIFIED');}
+ const snapshots=[];
+ for(let index=0;index<length;index++){
+  let descriptor,rowDescriptors,keys,prototype;
+  try{
+   descriptor=Object.getOwnPropertyDescriptor(rows.value,String(index));
+   if(!descriptor||!Object.hasOwn(descriptor,'value'))throw Error();
+   const row=descriptor.value;
+   if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+   prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);rowDescriptors=Object.getOwnPropertyDescriptors(row);
+  }catch{throw Error('OUTBOX_QUERY_UNVERIFIED');}
+  if((prototype!==Object.prototype&&prototype!==null)||keys.length>7)throw Error('OUTBOX_QUERY_UNVERIFIED');
+  const event={};let cursorTimestamp;
+  for(const key of keys){
+   const field=rowDescriptors[key];
+   if(typeof key!=='string'||!field?.enumerable||!Object.hasOwn(field,'value'))
+    throw Error('OUTBOX_QUERY_UNVERIFIED');
+   if(key==='cursor_created_at')cursorTimestamp=field.value;
+   else Object.defineProperty(event,key,{value:field.value,enumerable:true});
+  }
+  snapshots.push(Object.freeze({event:Object.freeze(event),cursor_created_at:cursorTimestamp}));
+ }
+ return Object.freeze(snapshots);
+}
 function assertEventJSON(value){
  const pending=[[value,0]];let nodes=0;
  while(pending.length){
@@ -72,9 +117,9 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
  // pg decodes timestamptz to a millisecond Date. Preserve the database's full
  // microsecond value separately or rejected rows can repeat forever on page 2.
- const events=(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null])).rows;
+ const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null]));
  let delivered=0,failed=0;
- for(const {cursor_created_at:_cursorTimestamp,...event} of events){
+ for(const {event} of events){
   if(signal?.aborted)break;
   // Selection and earlier deliveries may cross the storage safety cutoff.
   // This is a batch-wide stop, not a skippable per-event delivery failure.
@@ -105,7 +150,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  // Check empty pages and expiry during the final response/commit as well.
  if(!signal?.aborted)db.active();
  const last=events.at(-1);
- const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.id}:null;
+ const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.event.id}:null;
  return continueOnError?{delivered,failed,nextCursor}:{delivered};
 }
 
