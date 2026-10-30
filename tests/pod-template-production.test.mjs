@@ -80,7 +80,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   }
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
    platform,destination_platform:platform,mode:'PRELAUNCH'};
-  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,cleanupCapabilityAccessed=0,rightsCapabilityAccessed=0,stageWorkspaceCapabilityAccessed=0,templateScopeCapabilityAccessed=0,completed=0,templateReads=0,interiorReads=0,coverSourceReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
+  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,cleanupCapabilityAccessed=0,rightsCapabilityAccessed=0,stageWorkspaceCapabilityAccessed=0,templateScopeCapabilityAccessed=0,completed=0,templateReads=0,interiorReads=0,coverSourceReads=0,interiorTemplateReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
   const interpreterMarker=path.join(root,'replacement-interpreter-used');
   let replacementInterpreter;
@@ -135,7 +135,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(disableDuringFinalStage)Object.defineProperty(resolvedTask,'output',{enumerable:true,get(){outputReads++;return path.join(root,'output');}});
   if(disableDuringQaStage||disableDuringQaOutputRead)Object.defineProperty(resolvedTask,'qaSignedOutput',{enumerable:true,get(){qaOutputReads++;if(disableDuringQaOutputRead&&qaOutputReads===2)env.POD_PRODUCTION_ENABLED='false';return path.join(root,'qa-signed.json');}});
   if(disableAfterInteriorRead){
-   Object.defineProperty(interiorTask,'template',{enumerable:true,get(){env.POD_PRODUCTION_ENABLED='false';return interiorPath;}});
+   Object.defineProperty(interiorTask,'template',{enumerable:true,get(){interiorTemplateReads++;env.POD_PRODUCTION_ENABLED='false';return interiorPath;}});
    Object.defineProperty(resolvedTask,'templateSource',{enumerable:true,get(){coverSourceReads++;return sourcePath;}});
   }
   if(disableDuringCoverGuide)Object.defineProperty(interiorTask,'source',{enumerable:true,get(){interiorSourceReads++;return interiorSourcePath;}});
@@ -179,7 +179,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    book:await fs.readFile(path.join(root,'book-args.json'),'utf8').then(JSON.parse,()=>null)
   }:undefined;
   const replacementInterpreterUsed=replaceInterpreter?await fs.stat(interpreterMarker).then(()=>true,()=>false):undefined;
-  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(captureAssetArgs?{assetArgs}:{}),...(captureKdpArgs?{kdpArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(executableRightsCapability?{rightsCapabilityAccessed}:{}),...(executableStageWorkspaceCapability?{stageWorkspaceCapabilityAccessed}:{}),...(executableTemplateScopeCapability?{templateScopeCapabilityAccessed}:{}),...(disableAfterCoverRead?{templateReads,interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(captureAssetArgs?{assetArgs}:{}),...(captureKdpArgs?{kdpArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(executableRightsCapability?{rightsCapabilityAccessed}:{}),...(executableStageWorkspaceCapability?{stageWorkspaceCapabilityAccessed}:{}),...(executableTemplateScopeCapability?{templateScopeCapabilityAccessed}:{}),...(disableAfterCoverRead?{templateReads,interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads,interiorTemplateReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -264,20 +264,20 @@ test('executable cover template capability is rejected without invocation before
  assert.equal(result.started,false);assert.equal(result.guideStarted,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
-test('production disable during interior verification stops before retained cover-source access',async()=>{
+test('executable KDP interior template capability is rejected without invocation',async()=>{
  const result=await exercise({platform:'kdp',template:record('kdp'),
   interior:{...record('kdp'),audience:'pod:interior-template'},disableAfterInteriorRead:true,detailed:true});
- assert.equal(result.coverSourceReads,0);
- assert.equal(result.reason,'PRODUCTION_STOPPED');
+ assert.equal(result.interiorTemplateReads,0);assert.equal(result.coverSourceReads,0);
+ assert.equal(result.reason,'PRODUCTION_BLOCKED');
  assert.equal(result.started,false);assert.equal(result.guideStarted,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
-test('production disable during cover-guide inspection stops before retained interior-source access',async()=>{
+test('executable KDP interior source capability is rejected without invocation',async()=>{
  const result=await exercise({platform:'kdp',template:record('kdp'),
   interior:{...record('kdp'),audience:'pod:interior-template'},disableDuringCoverGuide:true,detailed:true});
  assert.equal(result.interiorSourceReads,0);
- assert.equal(result.reason,'PRODUCTION_STOPPED');
- assert.equal(result.guideStarted,true);assert.equal(result.started,false);
+ assert.equal(result.reason,'PRODUCTION_BLOCKED');
+ assert.equal(result.guideStarted,false);assert.equal(result.started,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
 test('production disable during the final generator stops before package-output access',async()=>{
