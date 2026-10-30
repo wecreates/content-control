@@ -40,6 +40,15 @@ function dataProperty(target,key){
   return {valid:true,value:undefined};
  }catch{return {valid:false};}
 }
+function snapshotArtifact(record){
+ try{
+  if(record===null||typeof record!=='object'||utilTypes.isProxy(record))throw Error();
+  const mediaType=dataProperty(record,'media_type'),body=dataProperty(record,'body');
+  if(!mediaType.valid||!body.valid||typeof mediaType.value!=='string'||
+   !Buffer.isBuffer(body.value)||utilTypes.isProxy(body.value))throw Error();
+  return Object.freeze({media_type:mediaType.value,body:Buffer.from(body.value)});
+ }catch{throw Error('TASK_ARTIFACT_UNVERIFIED');}
+}
 async function clearHeldDirectory(handle){
  const heldPath=`/proc/self/fd/${handle.fd}`;
  let names;
@@ -168,7 +177,7 @@ export function createStoredTaskResolvers(db,options={}){
    const active=()=>{if(signalAborted(signal))throw Error('PRODUCTION_STOPPED');};
    active();
    if(typeof taskSha256!=='string'||!hash.test(taskSha256))throw Error('TASK_REQUIRED');
-   const descriptor=await Reflect.apply(getArtifact,store,[taskSha256]);
+   const descriptor=snapshotArtifact(await Reflect.apply(getArtifact,store,[taskSha256]));
    active();
    if(descriptor.media_type!=='application/json'||descriptor.body.length>262144)throw Error('TASK_INVALID');
    // ArtifactStore authenticates the stored bytes by hash. Do not change those
@@ -198,7 +207,7 @@ export function createStoredTaskResolvers(db,options={}){
     active();
     let total=0;
     for(const [name,sha] of Object.entries(task.files)){
-     const artifact=await Reflect.apply(getArtifact,store,[sha]);active();
+     const artifact=snapshotArtifact(await Reflect.apply(getArtifact,store,[sha]));active();
      const expected=mediaTypes.get(name);
      if(expected&&artifact.media_type!==expected)throw Error('TASK_MEDIA_TYPE_INVALID');
      total+=artifact.body.length;
