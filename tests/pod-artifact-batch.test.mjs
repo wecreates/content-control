@@ -48,6 +48,9 @@ test('artifact reads reject executable results and snapshot accepted rows withou
   {rows:new Proxy([{body:target,media_type:'image/png'}],{
    get(value,key,receiver){reads++;return Reflect.get(value,key,receiver);}
   })},
+  {rows:Object.defineProperty([],'0',{
+   enumerable:true,get(){reads++;throw Error('row getter executed');}
+  })},
   {rows:[Object.defineProperty({media_type:'image/png'},'body',{
    enumerable:true,get(){reads++;throw Error('body getter executed');}
   })]},
