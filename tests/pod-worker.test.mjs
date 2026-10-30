@@ -142,6 +142,14 @@ test('already aborted production does not claim a job',async()=>{
   db:{claimProduction(){throw Error('must not claim');}}});
  assert.equal(result.status,'STOPPED');
 });
+test('production rejects executable abort signals without invocation or queue access',async()=>{
+ let reads=0,claims=0;
+ const signal={get aborted(){reads++;return false;}};
+ await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal,
+  db:{claimProduction:async()=>{claims++;return null;},failProduction:async()=>{}}}),
+ /PRODUCTION_SIGNAL_UNVERIFIED/);
+ assert.equal(reads,0);assert.equal(claims,0);
+});
 test('cancellation during an empty production claim reports stopped',async()=>{
  const controller=new AbortController();
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
