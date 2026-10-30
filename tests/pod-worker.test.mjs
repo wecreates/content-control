@@ -143,6 +143,25 @@ test('production runtime rejects executable nested configuration without invocat
  assert.equal(reads,0);
 });
 import {runPodWorker} from '../integrations/pod/orchestrator.mjs';
+test('worker rejects executable options, recovery and signals without invocation',async()=>{
+ let reads=0;
+ for(const key of ['db','produce','publish','signal','pollMs','onError','onCycle','shouldContinue']){
+  const options={};Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('worker option getter executed');}});
+  await assert.rejects(runPodWorker(options),/WORKER_OPTIONS_UNVERIFIED/,key);
+ }
+ const options=new Proxy({},{get(){reads++;throw Error('worker option proxy executed');}});
+ await assert.rejects(runPodWorker(options),/WORKER_OPTIONS_UNVERIFIED/);
+ for(const kind of ['accessor','proxy']){
+  const controller=new AbortController();let db={};
+  if(kind==='accessor')Object.defineProperty(db,'recover',{enumerable:true,get(){reads++;controller.abort();throw Error('recovery getter executed');}});
+  else db=new Proxy({},{get(){reads++;controller.abort();throw Error('recovery proxy executed');}});
+  await assert.rejects(runPodWorker({db,signal:controller.signal,produce:async()=>{},publish:async()=>{}}),/WORKER_CONFIG_INVALID/,kind);
+ }
+ const signal={get aborted(){reads++;return true;}};
+ await assert.rejects(runPodWorker({db:{recover:async()=>{}},signal,produce:async()=>{},publish:async()=>{}}),/WORKER_SIGNAL_UNVERIFIED/);
+ assert.equal(reads,0);
+});
+
 for(const phase of ['recovery','rejected recovery','claim']){
  test(`disable during ${phase} stops the lifecycle without completion or retry health`,async()=>{
   const env={POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)};
