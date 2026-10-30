@@ -11,6 +11,15 @@ import {verifyProductionSourceEvidence} from '../integrations/pod/source-evidenc
 import {parseSignedJSON} from '../integrations/pod/signed-json.mjs';
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 import {types as utilTypes} from 'node:util';
+const abortSignalAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
+function signalAborted(signal){
+ if(signal===undefined)return false;
+ try{
+  if(signal===null||typeof signal!=='object'||utilTypes.isProxy(signal)||
+   typeof abortSignalAborted!=='function')throw Error();
+  return Reflect.apply(abortSignalAborted,signal,[]);
+ }catch{throw Error('PRODUCTION_SIGNAL_UNVERIFIED');}
+}
 
 function snapshotData(value){
  try{
@@ -148,7 +157,7 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
  const initialEnabled=dataProperty(env,'POD_PRODUCTION_ENABLED');
  if(!initialEnabled.valid)throw Error('PRODUCTION_ENVIRONMENT_UNVERIFIED');
  if(initialEnabled.value!=='true')return {status:'DISABLED'};
- if(signal?.aborted)return {status:'STOPPED'};
+ if(signalAborted(signal))return {status:'STOPPED'};
  // Bind the complete data-only child environment before claim, grant and task
  // callbacks can replace an interpreter, signing key or stage configuration.
  // The enabled flag below remains a live stop control on the caller-owned object.
@@ -175,14 +184,14 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   const capability=dataProperty(env,'POD_PRODUCTION_ENABLED');
   return capability.valid&&capability.value==='true';
  };
- if(!claimedJob)return {status:signal?.aborted||!productionEnabled()?'STOPPED':'IDLE'};
+ if(!claimedJob)return {status:signalAborted(signal)||!productionEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact fenced identity before authority, task or database callbacks
  // can retain and mutate caller-visible objects.
  const job=snapshotClaimedProduction(claimedJob);
  if(!job)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
  const jobCopy=()=>snapshotClaimedProduction(job)??(()=>{throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');})();
  let task,cleanupTask;
- const enabled=()=>{if(!productionEnabled()||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
+ const enabled=()=>{if(!productionEnabled()||signalAborted(signal))throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
   enabled();
   const envelope=await resolveGrant(jobCopy(),{signal});
