@@ -153,7 +153,20 @@ function productionDatabaseReceiver(db){
   return Object.freeze(receiver);
  }catch{return null;}
 }
-export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
+export async function produceOnce(options={}){
+ // Read the caller-owned options object only through data descriptors. Function
+ // parameter destructuring would invoke accessors before the disabled-state and
+ // durable database boundaries, and a Proxy could run arbitrary traps there.
+ const dbCapability=dataProperty(options,'db'),taskCapability=dataProperty(options,'resolveTask'),
+  grantCapability=dataProperty(options,'resolveGrant'),keyCapability=dataProperty(options,'upstreamKey'),
+  rootCapability=dataProperty(options,'root'),envCapability=dataProperty(options,'env'),
+  signalCapability=dataProperty(options,'signal');
+ const optionCapabilities=[dbCapability,taskCapability,grantCapability,keyCapability,rootCapability,
+  envCapability,signalCapability];
+ if(optionCapabilities.some(capability=>!capability.valid))throw Error('PRODUCTION_OPTIONS_UNVERIFIED');
+ const db=dbCapability.value,resolveTask=taskCapability.value,resolveGrant=grantCapability.value,
+  upstreamKey=keyCapability.value,root=rootCapability.value===undefined?process.cwd():rootCapability.value,
+  env=envCapability.value===undefined?process.env:envCapability.value,signal=signalCapability.value;
  const initialEnabled=dataProperty(env,'POD_PRODUCTION_ENABLED');
  if(!initialEnabled.valid)throw Error('PRODUCTION_ENVIRONMENT_UNVERIFIED');
  if(initialEnabled.value!=='true')return {status:'DISABLED'};
