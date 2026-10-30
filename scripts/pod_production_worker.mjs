@@ -145,7 +145,9 @@ function productionDatabaseReceiver(db){
  }catch{return null;}
 }
 export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=process.cwd(),env=process.env,signal}){
- if(env.POD_PRODUCTION_ENABLED!=='true')return {status:'DISABLED'};
+ const initialEnabled=dataProperty(env,'POD_PRODUCTION_ENABLED');
+ if(!initialEnabled.valid)throw Error('PRODUCTION_ENVIRONMENT_UNVERIFIED');
+ if(initialEnabled.value!=='true')return {status:'DISABLED'};
  if(signal?.aborted)return {status:'STOPPED'};
  // Bind the complete data-only child environment before claim, grant and task
  // callbacks can replace an interpreter, signing key or stage configuration.
@@ -168,14 +170,18 @@ export async function produceOnce({db,resolveTask,resolveGrant,upstreamKey,root=
   completeProduction=completeCapability.value;
  const store=new ArtifactStore(databaseReceiver,{budgetBytes});
  const claimedJob=await Reflect.apply(claimProduction,databaseReceiver,[]);
- if(!claimedJob)return {status:signal?.aborted||env.POD_PRODUCTION_ENABLED!=='true'?'STOPPED':'IDLE'};
+ const productionEnabled=()=>{
+  const capability=dataProperty(env,'POD_PRODUCTION_ENABLED');
+  return capability.valid&&capability.value==='true';
+ };
+ if(!claimedJob)return {status:signal?.aborted||!productionEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact fenced identity before authority, task or database callbacks
  // can retain and mutate caller-visible objects.
  const job=snapshotClaimedProduction(claimedJob);
  if(!job)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
  const jobCopy=()=>snapshotClaimedProduction(job)??(()=>{throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');})();
  let task,cleanupTask;
- const enabled=()=>{if(env.POD_PRODUCTION_ENABLED!=='true'||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
+ const enabled=()=>{if(!productionEnabled()||signal?.aborted)throw Error('PRODUCTION_STOPPED');};
  const authorizeProduction=async()=>{
   enabled();
   const envelope=await resolveGrant(jobCopy(),{signal});
