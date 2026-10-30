@@ -23,6 +23,17 @@ test('production requires durable failure settlement before queue access',async(
   db:{claimProduction:async()=>{claims++;return null;}}}),/PRODUCTION_DATABASE_UNVERIFIED/);
  assert.equal(claims,0);
 });
+test('production requires every durable database endpoint before queue access',async()=>{
+ for(const missing of ['assertProducible','holdProduction','completeProduction']){
+  let claims=0;
+  const db={claimProduction:async()=>{claims++;return null;},failProduction:async()=>{},
+   assertProducible:async()=>{},holdProduction:async()=>{},completeProduction:async()=>({pass:false})};
+  delete db[missing];
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},db}),
+   /PRODUCTION_DATABASE_UNVERIFIED/,missing);
+  assert.equal(claims,0,missing);
+ }
+});
 test('malformed production storage budgets fail before queue access',async()=>{
  for(const value of ['', '0', 'NaN', '134217729']){
   await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true',POD_ARTIFACT_BUDGET_BYTES:value},
