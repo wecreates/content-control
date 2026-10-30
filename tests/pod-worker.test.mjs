@@ -11,7 +11,7 @@ test('disabled production never claims work',async()=>{
 });
 test('live production enable checks reject accessors without invocation',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
- const result=await produceOnce({env,db:{claimProduction:async()=>{
+ const result=await produceOnce({env,db:{failProduction:async()=>{},claimProduction:async()=>{
   Object.defineProperty(env,'POD_PRODUCTION_ENABLED',{configurable:true,enumerable:true,get(){reads++;return 'false';}});
   return null;
  }}});
@@ -83,7 +83,7 @@ for(const phase of ['recovery','rejected recovery','claim']){
   const pending=new Promise(resolve=>release=resolve);
   const runtime=startProductionRuntime({env,db:{
    recover:async()=>{if(phase!=='claim'){entered();await pending;if(phase==='rejected recovery')throw Error('private recovery failure');}},
-   claimProduction:async()=>{claims++;if(phase==='claim'){entered();await pending;}return null;}
+   claimProduction:async()=>{claims++;if(phase==='claim'){entered();await pending;}return null;},failProduction:async()=>{}
   },production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
   await started;env.POD_PRODUCTION_ENABLED='false';release();
   await new Promise(resolve=>setImmediate(resolve));
@@ -130,7 +130,7 @@ test('enabled worker without authority resolvers fails closed',async()=>{
 test('worker awaits its in-flight cycle before shutdown',async()=>{
  let entered,finish;const entry=new Promise(r=>entered=r),pending=new Promise(r=>finish=r);
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
-  db:{recover:async()=>{},claimProduction:async()=>{entered();await pending;return null;}},
+  db:{recover:async()=>{},claimProduction:async()=>{entered();await pending;return null;},failProduction:async()=>{}},
   production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
  await entry;let stopped=false;const shutdown=runtime.stop().then(()=>stopped=true);
  await new Promise(r=>setImmediate(r));assert.equal(stopped,false);finish();await shutdown;
@@ -145,13 +145,13 @@ test('already aborted production does not claim a job',async()=>{
 test('cancellation during an empty production claim reports stopped',async()=>{
  const controller=new AbortController();
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
-  db:{claimProduction:async()=>{controller.abort();return null;}}});
+  db:{claimProduction:async()=>{controller.abort();return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('production disable during an empty claim reports stopped',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};
  const result=await produceOnce({env,
-  db:{claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;}}});
+  db:{claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('executable source capability is rejected without invocation before template access',async()=>{
@@ -200,7 +200,7 @@ test('failed recovery reports retrying without leaking database error details',a
 });
 test('idle cycle records completion without claiming successful production',async()=>{
  const runtime=startProductionRuntime({env:{POD_PRODUCTION_ENABLED:'true',POD_UPSTREAM_KEY:'k'.repeat(48)},
-  db:{recover:async()=>{},claimProduction:async()=>null},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
+  db:{recover:async()=>{},claimProduction:async()=>null,failProduction:async()=>{}},production:{resolveTask:async()=>{},resolveGrant:async()=>{}}});
  await new Promise(r=>setImmediate(r));const h=runtime.health();assert.equal(h.cycles,1);assert.equal(h.last_result,'IDLE');
  assert.ok(h.last_completed_at);await runtime.stop();
 });
