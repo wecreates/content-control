@@ -74,3 +74,23 @@ test('grant resolver snapshots authority credentials before caller mutation',asy
  await assert.rejects(resolve({id:'job',brief}),/^Error: SIGNATURE_INVALID$/);
  assert.equal(authorization,'Bearer '+initialAuthKey);
 });
+
+
+test('grant resolver rejects executable authority configuration without invocation',()=>{
+ let reads=0;
+ for(const key of ['env','fetchImpl']){
+  const options={};
+  Object.defineProperty(options,key,{enumerable:true,get(){reads++;throw Error('grant option getter executed');}});
+  assert.throws(()=>createGrantResolver(options),/^Error: GRANT_OPTIONS_UNVERIFIED$/,key);
+ }
+ const proxyOptions=new Proxy({},{get(){reads++;throw Error('grant option proxy executed');}});
+ assert.throws(()=>createGrantResolver(proxyOptions),/^Error: GRANT_OPTIONS_UNVERIFIED$/);
+ for(const key of ['POD_GRANT_URL','POD_GRANT_AUTH_KEY','POD_UPSTREAM_KEY']){
+  const config={...env};
+  Object.defineProperty(config,key,{enumerable:true,get(){reads++;throw Error('grant environment getter executed');}});
+  assert.throws(()=>createGrantResolver({env:config}),/^Error: GRANT_ENV_UNVERIFIED$/,key);
+ }
+ const proxyEnv=new Proxy({...env},{get(){reads++;throw Error('grant environment proxy executed');}});
+ assert.throws(()=>createGrantResolver({env:proxyEnv}),/^Error: GRANT_ENV_UNVERIFIED$/);
+ assert.equal(reads,0);
+});
