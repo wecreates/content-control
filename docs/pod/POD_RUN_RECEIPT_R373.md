@@ -75,8 +75,9 @@ administration was attempted.
 ## Remaining acceptance state
 
 All 24 live-acceptance areas in `POD_COMPLETION_CHECKLIST.md` remain open.
-`POD_IMPLEMENTATION_STATUS.md` remains intentionally empty. Existing code and
-synthetic CI are not proof of production database migration, live provider
+`POD_IMPLEMENTATION_STATUS.md` still contains only the historical text
+`Action completed.`; that sentence does not establish any live acceptance.
+Existing code and synthetic CI are not proof of production database migration, live provider
 acceptance, financial reconciliation, measured live capacity, or controlled
 launch readiness. Publication and POD publication remain disabled pending
 explicit owner approval.
