@@ -1,17 +1,37 @@
+import {types as utilTypes} from 'node:util';
 import {verifyEnvelope,enforceBrief} from './policy.mjs';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 
-export function createGrantResolver({env=process.env,fetchImpl=fetch}={}){
- let endpoint,authKey,upstreamKey;
+function dataProperty(target,key){
  try{
-  endpoint=new URL(env.POD_GRANT_URL);
-  authKey=env.POD_GRANT_AUTH_KEY;
-  upstreamKey=env.POD_UPSTREAM_KEY;
- }catch{throw Error('GRANT_AUTHORITY_REQUIRED');}
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  let current=target;
+  while(current!==null){
+   if(utilTypes.isProxy(current))return {valid:false};
+   const descriptor=Object.getOwnPropertyDescriptor(current,key);
+   if(descriptor)return Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+   current=Object.getPrototypeOf(current);
+  }
+  return {valid:true,value:undefined};
+ }catch{return {valid:false};}
+}
+
+export function createGrantResolver(options={}){
+ const envCapability=dataProperty(options,'env'),fetchCapability=dataProperty(options,'fetchImpl');
+ if(!envCapability.valid||!fetchCapability.valid)throw Error('GRANT_OPTIONS_UNVERIFIED');
+ const env=envCapability.value===undefined?process.env:envCapability.value,
+  fetchImpl=fetchCapability.value===undefined?fetch:fetchCapability.value;
+ const urlCapability=dataProperty(env,'POD_GRANT_URL'),authCapability=dataProperty(env,'POD_GRANT_AUTH_KEY'),
+  upstreamCapability=dataProperty(env,'POD_UPSTREAM_KEY');
+ if(!urlCapability.valid||!authCapability.valid||!upstreamCapability.valid)throw Error('GRANT_ENV_UNVERIFIED');
+ let endpoint;
+ try{endpoint=new URL(urlCapability.value);}catch{throw Error('GRANT_AUTHORITY_REQUIRED');}
+ const authKey=authCapability.value,upstreamKey=upstreamCapability.value;
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.hash||endpoint.search||
   typeof authKey!=='string'||Buffer.byteLength(authKey)<32||
   typeof upstreamKey!=='string'||Buffer.byteLength(upstreamKey)<32||
-  Buffer.from(authKey).equals(Buffer.from(upstreamKey)))throw Error('GRANT_AUTHORITY_INVALID');
+  Buffer.from(authKey).equals(Buffer.from(upstreamKey))||typeof fetchImpl!=='function')
+  throw Error('GRANT_AUTHORITY_INVALID');
  // Bind the validated authority identity at construction. A caller-owned env
  // object must not replace either credential after this resolver is trusted.
  return async(job,{signal}={})=>{
