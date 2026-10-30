@@ -40,6 +40,32 @@ test('artifact read accepts the exact object ceiling and preserves bytes',async(
  assert.deepEqual(await store.get(hash(body)),{body,media_type:'image/png'});
  assert.equal(checks,2);
 });
+test('artifact reads reject executable results and snapshot accepted rows without invocation',async()=>{
+ let reads=0;
+ const target=Buffer.from('verified artifact bytes'),sha=hash(target);
+ const attempts=[
+  {get rows(){reads++;throw Error('rows getter executed');}},
+  {rows:new Proxy([{body:target,media_type:'image/png'}],{
+   get(value,key,receiver){reads++;return Reflect.get(value,key,receiver);}
+  })},
+  {rows:[Object.defineProperty({media_type:'image/png'},'body',{
+   enumerable:true,get(){reads++;throw Error('body getter executed');}
+  })]},
+  {rows:[new Proxy({body:target,media_type:'image/png'}, {
+   get(value,key,receiver){reads++;return Reflect.get(value,key,receiver);}
+  })]},
+ ];
+ for(const result of attempts){
+  const store=new ArtifactStore({active(){},read:async()=>result});
+  await assert.rejects(store.get(sha),/^Error: ARTIFACT_ROW_UNVERIFIED$/);
+ }
+ const body=Buffer.from(target);
+ const row=await new ArtifactStore({active(){},read:async()=>({rows:[{body,media_type:'image/png'}]})}).get(sha);
+ assert.notEqual(row.body,body);
+ body.fill(0);
+ assert.deepEqual(row,{body:target,media_type:'image/png'});
+ assert.equal(reads,0);
+});
 test('artifact read rejects an oversized returned body even from an alternate pool',async()=>{
  const body=Buffer.from('12345');
  const store=new ArtifactStore({active(){},read:async()=>({rows:[{body,media_type:'image/png'}]})},{maxObjectBytes:4});
