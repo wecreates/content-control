@@ -25,11 +25,27 @@ test('disabled production never claims work',async()=>{
 });
 test('live production enable checks reject accessors without invocation',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
- const result=await produceOnce({env,db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async()=>{
+ const result=await produceOnce({env,upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
+  db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async()=>{
   Object.defineProperty(env,'POD_PRODUCTION_ENABLED',{configurable:true,enumerable:true,get(){reads++;return 'false';}});
   return null;
  }}});
  assert.equal(reads,0);assert.deepEqual(result,{status:'STOPPED'});
+});
+test('production requires authority configuration before queue access',async()=>{
+ const key='k'.repeat(48);
+ for(const [name,authority] of [
+  ['missing grant resolver',{resolveTask:async()=>{},upstreamKey:key}],
+  ['missing task resolver',{resolveGrant:async()=>{},upstreamKey:key}],
+  ['missing signing key',{resolveGrant:async()=>{},resolveTask:async()=>{}}],
+  ['short signing key',{resolveGrant:async()=>{},resolveTask:async()=>{},upstreamKey:'short'}]
+ ]){
+  let claims=0;
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},...authority,
+   db:{...durableProductionEndpoints,claimProduction:async()=>{claims++;return null;},failProduction:async()=>{}}}),
+  /PRODUCTION_AUTHORITY_UNVERIFIED/,name);
+  assert.equal(claims,0,name);
+ }
 });
 test('production requires durable failure settlement before queue access',async()=>{
  let claims=0;
@@ -178,12 +194,13 @@ test('production rejects executable abort signals without invocation or queue ac
 test('cancellation during an empty production claim reports stopped',async()=>{
  const controller=new AbortController();
  const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
+  upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
   db:{...durableProductionEndpoints,claimProduction:async()=>{controller.abort();return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
 test('production disable during an empty claim reports stopped',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};
- const result=await produceOnce({env,
+ const result=await produceOnce({env,upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
   db:{...durableProductionEndpoints,claimProduction:async()=>{env.POD_PRODUCTION_ENABLED='false';return null;},failProduction:async()=>{}}});
  assert.deepEqual(result,{status:'STOPPED'});
 });
