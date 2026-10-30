@@ -9,6 +9,14 @@ import {produceOnce} from '../scripts/pod_production_worker.mjs';
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
 });
+test('live production enable checks reject accessors without invocation',async()=>{
+ const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
+ const result=await produceOnce({env,db:{claimProduction:async()=>{
+  Object.defineProperty(env,'POD_PRODUCTION_ENABLED',{configurable:true,enumerable:true,get(){reads++;return 'false';}});
+  return null;
+ }}});
+ assert.equal(reads,0);assert.deepEqual(result,{status:'STOPPED'});
+});
 test('malformed production storage budgets fail before queue access',async()=>{
  for(const value of ['', '0', 'NaN', '134217729']){
   await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true',POD_ARTIFACT_BUDGET_BYTES:value},
