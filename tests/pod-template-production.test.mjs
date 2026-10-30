@@ -38,7 +38,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateGenerationInputs=false,captureAssetArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateQaInputs=false,mutateGenerationInputs=false,mutateTemplateInput=false,captureAssetArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -151,7 +151,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
      if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();completed++;return {pass:true};
     },
-    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
+    assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
     tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
    resolveGrant:async()=>{grantCalls++;if(replaceInterpreter)env.POD_PYTHON=replacementInterpreter;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
@@ -193,6 +193,12 @@ test('production binds verified generation inputs before authority callbacks',as
  assert.equal(result.status,'REVIEW_REQUIRED');assert.equal(result.started,true);
  for(const replacement of ['replacement-source','replacement-rights','replacement-text-layers','replacement-asset-root'])
   assert.equal(result.assetArgs.includes(replacement),false,replacement);
+});
+
+test('production binds the verified template path before authority callbacks',async()=>{
+ const result=await exercise({mutateTemplateInput:true,captureAssetArgs:true,detailed:true});
+ assert.equal(result.status,'REVIEW_REQUIRED');assert.equal(result.started,true);
+ assert.equal(result.assetArgs.includes('replacement-template'),false);
 });
 
 test('production snapshots QA task inputs before the reviewer callback',async()=>{
