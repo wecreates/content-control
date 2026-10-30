@@ -7,6 +7,14 @@ import {ArtifactStore} from './artifacts.mjs';
 import {createGrantResolver} from './grant-client.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
 import {validOpaqueText} from './text-identity.mjs';
+const abortSignalAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
+function signalAborted(signal){
+ if(signal===undefined||signal===null)return false;
+ try{
+  if(typeof signal!=='object'||utilTypes.isProxy(signal)||typeof abortSignalAborted!=='function')throw Error();
+  return Reflect.apply(abortSignalAborted,signal,[]);
+ }catch{throw Error('TASK_RESOLVER_SIGNAL_UNVERIFIED');}
+}
 const hash=/^[a-f0-9]{64}$/;
 const outputNames=new Set(['package','qa.json','qa-signed.json']);
 const interiorRoles=['template','pages','font','fontRights','fontLicense','source','bookDetails','regionalRightsEvidence'];
@@ -142,11 +150,25 @@ export function createStoredTaskResolvers(db,options={}){
   resolveGrant=async()=>{throw Error(code);};}
  return {
   resolveGrant,authorityReady,
-  resolveTask:async(job,{signal}={})=>{
-   const active=()=>{if(signal?.aborted)throw Error('PRODUCTION_STOPPED');};
+  resolveTask:async(job,invocation={})=>{
+   const signalCapability=dataProperty(invocation,'signal');
+   if(!signalCapability.valid)throw Error('TASK_RESOLVER_INVOCATION_UNVERIFIED');
+   const signal=signalCapability.value;
+   signalAborted(signal);
+   const getCapability=dataProperty(store,'get');
+   if(!getCapability.valid||typeof getCapability.value!=='function')throw Error('TASK_STORE_UNVERIFIED');
+   const getArtifact=getCapability.value;
+   const briefCapability=dataProperty(job,'brief');
+   if(!briefCapability.valid)throw Error('TASK_JOB_UNVERIFIED');
+   const brief=briefCapability.value;
+   if(brief===undefined)throw Error('TASK_REQUIRED');
+   const taskCapability=dataProperty(brief,'task_sha256');
+   if(!taskCapability.valid)throw Error('TASK_JOB_UNVERIFIED');
+   const taskSha256=taskCapability.value;
+   const active=()=>{if(signalAborted(signal))throw Error('PRODUCTION_STOPPED');};
    active();
-   if(typeof job.brief?.task_sha256!=='string'||!hash.test(job.brief.task_sha256))throw Error('TASK_REQUIRED');
-   const descriptor=await store.get(job.brief.task_sha256);
+   if(typeof taskSha256!=='string'||!hash.test(taskSha256))throw Error('TASK_REQUIRED');
+   const descriptor=await Reflect.apply(getArtifact,store,[taskSha256]);
    active();
    if(descriptor.media_type!=='application/json'||descriptor.body.length>262144)throw Error('TASK_INVALID');
    // ArtifactStore authenticates the stored bytes by hash. Do not change those
@@ -176,7 +198,7 @@ export function createStoredTaskResolvers(db,options={}){
     active();
     let total=0;
     for(const [name,sha] of Object.entries(task.files)){
-     const artifact=await store.get(sha);active();
+     const artifact=await Reflect.apply(getArtifact,store,[sha]);active();
      const expected=mediaTypes.get(name);
      if(expected&&artifact.media_type!==expected)throw Error('TASK_MEDIA_TYPE_INVALID');
      total+=artifact.body.length;
