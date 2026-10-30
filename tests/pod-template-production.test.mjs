@@ -72,7 +72,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(interior)await fs.writeFile(interiorPath,interiorText??JSON.stringify(sign(interior)));
   const brief={id:'fixture-job',account_id:'fixture-account',business_id:'fixture-business',
    platform,destination_platform:platform,mode:'PRELAUNCH'};
-  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,cleanupCapabilityAccessed=0,rightsCapabilityAccessed=0,stageWorkspaceCapabilityAccessed=0,templateScopeCapabilityAccessed=0,completed=0,interiorReads=0,coverSourceReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
+  let blocked=0,held=0,cleaned=0,grantCalls=0,localChecks=0,reviewCalls=0,reviewCapabilityAccessed=0,cleanupCapabilityAccessed=0,rightsCapabilityAccessed=0,stageWorkspaceCapabilityAccessed=0,templateScopeCapabilityAccessed=0,completed=0,templateReads=0,interiorReads=0,coverSourceReads=0,interiorSourceReads=0,outputReads=0,qaOutputReads=0;
   const env={...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
   const interpreterMarker=path.join(root,'replacement-interpreter-used');
   let replacementInterpreter;
@@ -133,7 +133,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   if(disableDuringCoverGuide)Object.defineProperty(interiorTask,'source',{enumerable:true,get(){interiorSourceReads++;return interiorSourcePath;}});
   if(disableAfterCoverRead){
    Object.defineProperties(resolvedTask,{
-    template:{enumerable:true,get(){env.POD_PRODUCTION_ENABLED='false';return templatePath;}},
+    template:{enumerable:true,get(){templateReads++;env.POD_PRODUCTION_ENABLED='false';return templatePath;}},
     interior:{enumerable:true,get(){interiorReads++;return interiorTask;}}
    });
   }else{
@@ -166,7 +166,7 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   const qaArgs=captureQaArgs?await fs.readFile(path.join(root,'qa-args.json'),'utf8').then(JSON.parse,()=>null):null;
   const assetArgs=captureAssetArgs?await fs.readFile(path.join(root,'asset-args.json'),'utf8').then(JSON.parse,()=>null):null;
   const replacementInterpreterUsed=replaceInterpreter?await fs.stat(interpreterMarker).then(()=>true,()=>false):undefined;
-  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(captureAssetArgs?{assetArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(executableRightsCapability?{rightsCapabilityAccessed}:{}),...(executableStageWorkspaceCapability?{stageWorkspaceCapabilityAccessed}:{}),...(executableTemplateScopeCapability?{templateScopeCapabilityAccessed}:{}),...(disableAfterCoverRead?{interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
+  return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(captureAssetArgs?{assetArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(executableRightsCapability?{rightsCapabilityAccessed}:{}),...(executableStageWorkspaceCapability?{stageWorkspaceCapabilityAccessed}:{}),...(executableTemplateScopeCapability?{templateScopeCapabilityAccessed}:{}),...(disableAfterCoverRead?{templateReads,interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
 
@@ -229,11 +229,11 @@ test('production rejects ambiguous or linked signed templates before launching a
   assert.equal(result.qaStarted,false);assert.equal(result.completed,0);assert.equal(result.cleaned,1);
  }
 });
-test('production disable during cover verification stops before KDP interior access',async()=>{
+test('executable cover template capability is rejected without invocation before KDP interior access',async()=>{
  const result=await exercise({platform:'kdp',template:record('kdp'),
   interior:{...record('kdp'),audience:'pod:interior-template'},disableAfterCoverRead:true,detailed:true});
- assert.equal(result.interiorReads,0);
- assert.equal(result.reason,'PRODUCTION_STOPPED');
+ assert.equal(result.templateReads,0);assert.equal(result.interiorReads,0);
+ assert.equal(result.reason,'PRODUCTION_BLOCKED');
  assert.equal(result.started,false);assert.equal(result.guideStarted,false);
  assert.equal(result.interiorGuideStarted,false);assert.equal(result.cleaned,1);
 });
