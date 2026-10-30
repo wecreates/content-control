@@ -47,9 +47,9 @@ No successful deployment of the functional commit is claimed.
 - Etsy remains outside this lane.
 - No marketplace publication, purchases, paid infrastructure, external messages, credential disclosure, or database administration occurred.
 - The previously blocked database-administration path was not retried because no credible access-path change was present.
-- The current checklist blob is `cda5ae58b9011e147fe7ea9ce727e9bb3cdd928f`; all 24 acceptance areas remain open pending live evidence.
-- The current implementation-status blob is `cce7886b9d996130372da720c56a63f9c90470be` and remains intentionally empty.
-- The current free-deployment guide blob is `1d5b989e40c3142fcc63e6a3af5a31bf4de0bdb9`.
+- The current checklist blob is `cda5ae58cc58562d686193093c4ab812939241b3`; all 24 acceptance areas remain open pending live evidence.
+- The current implementation-status blob is `cce7888a8ea54ff5d4c06429371978be8a379914` and remains intentionally empty.
+- The current free-deployment guide blob is `1d5b989a0c73e6d528502a613d6253ce439bd271`.
 
 ## Remaining work
 
