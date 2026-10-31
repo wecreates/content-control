@@ -425,4 +425,12 @@ test('state archive rejects executable database results without invoking them',a
   await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
   assert.equal(executed,0);
  });
+ await t.test('restore snapshots bounded mutation counts',async t=>{
+  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+  const client=await f.db.pool.connect(),query=client.query.bind(client),counts=[3,1,1];
+  client.query=async(sql,...args)=>sql.startsWith('UPDATE public.')?{rowCount:counts.shift()}:query(sql,...args);
+  const receipt=await restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env});
+  assert.equal(receipt.accounts_disabled,3);assert.equal(receipt.production_held,1);assert.equal(receipt.publishing_ambiguous,1);
+  assert.deepEqual(counts,[]);
+ });
 });
