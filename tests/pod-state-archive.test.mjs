@@ -30,6 +30,7 @@ async function fixture(t){
   }
   if(sql.startsWith('DECLARE')){table=/FROM public\.(\w+) t/.exec(sql)[1];cursor=0;}
   if(sql.startsWith('FETCH')){const rows=data[table]||[];return {rows:cursor<rows.length?[{record:rows[cursor++]}]:[]};}
+  if(sql.startsWith('UPDATE public.'))return {rowCount:0};
   return {rows:[]};
  }};
  return {root,directory,queries,data,versions,db:{pool:{connect:async()=>client}}};
@@ -365,16 +366,63 @@ test('state successful export returns a clean connection without rollback',async
  assert.equal(calls.includes('ROLLBACK'),false);
 });
 
-
 test('state archive rejects executable database results without invoking them',async t=>{
- const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
- client.query=async(sql,...args)=>{
-  if(sql.includes('FROM public.pod_schema_version'))return Object.defineProperty({},'rows',{get(){
-   executed++;throw Error('STATE_ARCHIVE_ROWS_GETTER_EXECUTED');
-  }});
-  return query(sql,...args);
- };
- f.db.pool.connect=async()=>client;
- await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
- assert.equal(executed,0);
+ await t.test('schema result rows accessor',async t=>{
+  const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  client.query=async(sql,...args)=>sql.includes('FROM public.pod_schema_version')?
+   Object.defineProperty({},'rows',{get(){executed++;throw Error('STATE_ARCHIVE_ROWS_GETTER_EXECUTED');}}):query(sql,...args);
+  f.db.pool.connect=async()=>client;
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
+ await t.test('schema result Proxy',async t=>{
+  const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  client.query=async(sql,...args)=>sql.includes('FROM public.pod_schema_version')?
+   new Proxy({rows:f.versions},{get(target,property,receiver){
+    if(property==='rows'){executed++;throw Error('STATE_ARCHIVE_RESULT_PROXY_EXECUTED');}
+    return Reflect.get(target,property,receiver);
+   }}):query(sql,...args);
+  f.db.pool.connect=async()=>client;
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
+ await t.test('schema row accessor',async t=>{
+  const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  const row={};Object.defineProperty(row,'version',{enumerable:true,get(){executed++;throw Error('STATE_ARCHIVE_ROW_GETTER_EXECUTED');}});
+  Object.defineProperty(row,'sha256',{enumerable:true,value:f.versions[0].sha256});
+  client.query=async(sql,...args)=>sql.includes('FROM public.pod_schema_version')?{rows:[row]}:query(sql,...args);
+  f.db.pool.connect=async()=>client;
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
+ for(const [name,rows] of [['sparse cursor rows',Array(1)],['oversized cursor rows',[{record:'{}'},{record:'{}'}]]])
+  await t.test(name,async t=>{
+   const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);
+   client.query=async(sql,...args)=>sql.startsWith('FETCH')?{rows}:query(sql,...args);f.db.pool.connect=async()=>client;
+   await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  });
+ await t.test('cursor rows Proxy',async t=>{
+  const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  client.query=async(sql,...args)=>sql.startsWith('FETCH')?{rows:new Proxy([{record:'{}'}],{
+   get(){executed++;throw Error('STATE_ARCHIVE_ROWS_PROXY_EXECUTED');}})}:query(sql,...args);
+  f.db.pool.connect=async()=>client;
+  await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
+ await t.test('restore empty-target result accessor',async t=>{
+  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+  const client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  client.query=async(sql,...args)=>sql.startsWith('SELECT 1 FROM public.')?
+   Object.defineProperty({},'rows',{get(){executed++;throw Error('STATE_ARCHIVE_EMPTY_GETTER_EXECUTED');}}):query(sql,...args);
+  await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
+ await t.test('restore mutation count accessor',async t=>{
+  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+  const client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+  client.query=async(sql,...args)=>sql.startsWith('UPDATE public.')?
+   Object.defineProperty({},'rowCount',{get(){executed++;throw Error('STATE_ARCHIVE_COUNT_GETTER_EXECUTED');}}):query(sql,...args);
+  await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(executed,0);
+ });
 });
