@@ -19,6 +19,34 @@ test('meeting numeric targets never manufactures measured capacity or launch acc
  assert.equal(f.queries[0],'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');assert.equal(f.queries.at(-1),'COMMIT');
  assert.deepEqual(f.released,[false]);
 });
+test('capacity reporting rejects executable query results without invocation',async()=>{
+ const row={window_start:'2026-10-15T00:00:00Z',window_end:'2026-10-16T00:00:00Z',
+  registered_concept_records:'1',generated_concept_records:'1',generated_jobs:'1',
+  generated_package_hashes:'1',jobs_with_pass_event:'1',jobs_with_fail_event:'0'};
+ let reads=0;
+ const resultProxy=value=>new Proxy(value,{get(object,property,receiver){
+  if(property==='then')return undefined;reads++;return Reflect.get(object,property,receiver);
+ }});
+ const attempts=[
+  Object.defineProperty({},'rows',{get(){reads++;throw Error('CAPACITY_ROWS_GETTER_EXECUTED');}}),
+  resultProxy({rows:[row]}),
+  {rows:new Proxy([row],{get(object,property,receiver){reads++;return Reflect.get(object,property,receiver);}})},
+  {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('CAPACITY_ROW_GETTER_EXECUTED');}})},
+  {rows:[new Proxy(row,{get(object,property,receiver){reads++;return Reflect.get(object,property,receiver);}})]},
+  {rows:[Object.defineProperty({...row},'generated_jobs',{enumerable:true,get(){reads++;throw Error('CAPACITY_FIELD_GETTER_EXECUTED');}})]},
+  {rows:[]},{rows:new Array(1)},{rows:[row,row]},
+ ];
+ for(const result of attempts){
+  let released;
+  const db={pool:{connect:async()=>({
+   query:async sql=>sql.startsWith('WITH')?result:{rows:[]},
+   release:bad=>{released=bad},
+  })}};
+  await assert.rejects(productionActivity(db),/^Error: CAPACITY_REPORT_INVALID$/);
+  assert.equal(released,false);
+ }
+ assert.equal(reads,0);
+});
 test('malformed counts and observation windows fail closed',async()=>{
  for(const patch of [{generated_jobs:5},{generated_jobs:'-1'},{generated_jobs:'1e3'},
   {window_start:'invalid'},{window_end:'2026-10-17T00:00:00Z'}]){

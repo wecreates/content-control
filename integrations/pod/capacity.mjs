@@ -1,3 +1,53 @@
+import {types as utilTypes} from 'node:util';
+
+const COUNT_FIELDS=Object.freeze(['registered_concept_records','generated_concept_records','generated_jobs',
+ 'generated_package_hashes','jobs_with_pass_event','jobs_with_fail_event']);
+const CAPACITY_FIELDS=Object.freeze(['window_start','window_end',...COUNT_FIELDS]);
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  const descriptor=Object.getOwnPropertyDescriptor(target,key);
+  return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+ }catch{return {valid:false};}
+}
+function ordinaryRecord(value){
+ try{
+  return value!==null&&(typeof value==='object'||typeof value==='function')&&!utilTypes.isProxy(value)&&
+   [Object.prototype,null].includes(Object.getPrototypeOf(value));
+ }catch{return false;}
+}
+function snapshotTimestamp(value){
+ if(typeof value==='string'&&value.length<=35)return value;
+ if(value===null||typeof value!=='object'||utilTypes.isProxy(value)||!utilTypes.isDate(value))
+  throw Error('CAPACITY_REPORT_INVALID');
+ let millis;
+ try{millis=Date.prototype.getTime.call(value);}catch{throw Error('CAPACITY_REPORT_INVALID');}
+ if(!Number.isFinite(millis))throw Error('CAPACITY_REPORT_INVALID');
+ return new Date(millis).toISOString();
+}
+function snapshotCapacityRow(result){
+ if(result===null||(typeof result!=='object'&&typeof result!=='function')||utilTypes.isProxy(result))
+  throw Error('CAPACITY_REPORT_INVALID');
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('CAPACITY_REPORT_INVALID');
+ let length,rowDescriptor;
+ try{
+  const lengthDescriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  if(!lengthDescriptor||!Object.hasOwn(lengthDescriptor,'value')||lengthDescriptor.value!==1)throw Error();
+  length=lengthDescriptor.value;
+  rowDescriptor=Object.getOwnPropertyDescriptor(rows.value,'0');
+ }catch{throw Error('CAPACITY_REPORT_INVALID');}
+ if(length!==1||!rowDescriptor||!Object.hasOwn(rowDescriptor,'value')||!ordinaryRecord(rowDescriptor.value))
+  throw Error('CAPACITY_REPORT_INVALID');
+ const snapshot={};
+ for(const field of CAPACITY_FIELDS){
+  const property=dataProperty(rowDescriptor.value,field);
+  if(!property.valid)throw Error('CAPACITY_REPORT_INVALID');
+  snapshot[field]=field.startsWith('window_')?snapshotTimestamp(property.value):property.value;
+ }
+ return Object.freeze(snapshot);
+}
+
 // Historical activity is not proof of unique artwork, sustained throughput,
 // current QA readiness, publication permission or production acceptance.
 export async function productionActivity(db){
@@ -6,7 +56,7 @@ export async function productionActivity(db){
   beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
   await client.query("SET LOCAL lock_timeout='2s'");
   await client.query("SET LOCAL statement_timeout='5s'");
-  const {rows}=await client.query(`WITH observation_window AS (
+  const row=snapshotCapacityRow(await client.query(`WITH observation_window AS (
    SELECT transaction_timestamp() AS finish,transaction_timestamp()-interval '24 hours' AS start
   ), events AS (
    SELECT e.kind,e.payload,q.id AS job_id,q.concept_id FROM pod_events e
@@ -25,11 +75,10 @@ export async function productionActivity(db){
    (SELECT count(DISTINCT job_id)::text FROM generated) AS generated_jobs,
    (SELECT count(DISTINCT (payload->>'package_sha256'))::text FROM generated) AS generated_package_hashes,
    (SELECT count(DISTINCT job_id)::text FROM events WHERE kind='pod.production.qa_passed') AS jobs_with_pass_event,
-   (SELECT count(DISTINCT job_id)::text FROM events WHERE kind='pod.production.qa_failed') AS jobs_with_fail_event`);
-  const row=rows[0],counts={};
-  for(const field of ['registered_concept_records','generated_concept_records','generated_jobs',
-   'generated_package_hashes','jobs_with_pass_event','jobs_with_fail_event']){
-   if(typeof row?.[field]!=='string'||!/^(0|[1-9][0-9]*)$/.test(row[field]))throw Error('CAPACITY_REPORT_INVALID');
+   (SELECT count(DISTINCT job_id)::text FROM events WHERE kind='pod.production.qa_failed') AS jobs_with_fail_event`));
+  const counts={};
+  for(const field of COUNT_FIELDS){
+   if(typeof row[field]!=='string'||!/^(0|[1-9][0-9]{0,18})$/.test(row[field]))throw Error('CAPACITY_REPORT_INVALID');
    counts[field]=row[field];
   }
   const start=new Date(row.window_start),end=new Date(row.window_end);
