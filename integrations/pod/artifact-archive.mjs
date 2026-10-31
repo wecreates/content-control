@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import {types as utilTypes} from 'node:util';
 import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
@@ -10,6 +11,60 @@ const MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
 const TYPES=new Set(ARTIFACT_MEDIA_TYPES);
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
 const exactKeys=(value,keys)=>value&&!Array.isArray(value)&&JSON.stringify(Object.keys(value))===JSON.stringify(keys);
+const ownData=(target,key)=>{
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(target,key);
+  return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+ }catch{return {valid:false};}
+};
+function queryRows(result,{maxRows,exactRows,fields}){
+ if(result===null||(typeof result!=='object'&&typeof result!=='function')||utilTypes.isProxy(result))
+  throw Error('ARCHIVE_QUERY_UNVERIFIED');
+ const rowsProperty=ownData(result,'rows'),rows=rowsProperty.value;
+ if(!rowsProperty.valid||!Array.isArray(rows)||utilTypes.isProxy(rows))throw Error('ARCHIVE_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows,'length');
+  if(!descriptor||!Object.hasOwn(descriptor,'value')||!Number.isSafeInteger(descriptor.value)||descriptor.value<0||
+   descriptor.value>maxRows||(exactRows!==undefined&&descriptor.value!==exactRows)||Reflect.ownKeys(rows).length!==descriptor.value+1)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('ARCHIVE_QUERY_UNVERIFIED');}
+ const snapshots=[];
+ for(let index=0;index<length;index++){
+  let element,row,prototype,keys,descriptors;
+  try{
+   element=Object.getOwnPropertyDescriptor(rows,String(index));
+   if(!element||!Object.hasOwn(element,'value'))throw Error();
+   row=element.value;
+   if(row===null||typeof row!=='object'||utilTypes.isProxy(row))throw Error();
+   prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+  }catch{throw Error('ARCHIVE_QUERY_UNVERIFIED');}
+  if((prototype!==Object.prototype&&prototype!==null)||keys.length!==fields.length||
+   keys.some(key=>typeof key!=='string'||!fields.includes(key)||!descriptors[key]?.enumerable||!Object.hasOwn(descriptors[key],'value')))
+   throw Error('ARCHIVE_QUERY_UNVERIFIED');
+  snapshots.push(Object.freeze(Object.fromEntries(fields.map(field=>[field,descriptors[field].value]))));
+ }
+ return Object.freeze(snapshots);
+}
+function artifactCursorRows(result){
+ return queryRows(result,{maxRows:1,fields:['sha256','media_type','body']}).map(row=>{
+  if(typeof row.sha256!=='string'||typeof row.media_type!=='string'||!Buffer.isBuffer(row.body)||
+   utilTypes.isProxy(row.body)||Object.getPrototypeOf(row.body)!==Buffer.prototype)throw Error('ARCHIVE_QUERY_UNVERIFIED');
+  return Object.freeze({...row,body:Buffer.from(row.body)});
+ });
+}
+function usageRows(result){
+ const rows=queryRows(result,{maxRows:1,exactRows:1,fields:['bytes']});
+ if(typeof rows[0].bytes!=='string'||!/^(0|[1-9][0-9]*)$/.test(rows[0].bytes)||rows[0].bytes.length>20)
+  throw Error('ARCHIVE_QUERY_UNVERIFIED');
+ return rows;
+}
+function existingArtifactRows(result){
+ const rows=queryRows(result,{maxRows:1,fields:['media_type','bytes','body_sha256']});
+ if(rows.some(row=>typeof row.media_type!=='string'||!Number.isSafeInteger(row.bytes)||row.bytes<1||
+  (row.body_sha256!==null&&typeof row.body_sha256!=='string')))throw Error('ARCHIVE_QUERY_UNVERIFIED');
+ return rows;
+}
 function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
   !Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('ARCHIVE_CONFIG_INVALID');
@@ -83,7 +138,7 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
    FROM public.pod_artifacts ORDER BY sha256`);
   while(true){
    signal?.throwIfAborted();assertPublicationDisabled(env);
-   const {rows}=await client.query('FETCH FORWARD 1 FROM pod_artifact_export');
+   const rows=artifactCursorRows(await client.query('FETCH FORWARD 1 FROM pod_artifact_export'));
    signal?.throwIfAborted();assertPublicationDisabled(env);if(!rows.length)break;
    const row=rows[0];
    if(!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>MAX_OBJECT||digest(row.body)!==row.sha256||!TYPES.has(row.media_type))throw Error('ARCHIVE_ARTIFACT_INVALID');
@@ -138,20 +193,20 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   checkpoint();
   await client.query('SELECT pg_advisory_xact_lock($1)',[543211]);
   checkpoint();
-  const usage=await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts');
+  const usage=usageRows(await client.query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM public.pod_artifacts'));
   checkpoint();
-  let used=BigInt(usage.rows[0].bytes),inserted=0;
+  let used=BigInt(usage[0].bytes),inserted=0;
   for(const item of catalog.items){
    checkpoint();
    const body=await readArtifact(item,options);
    checkpoint();
    // Compare immutable identity in PostgreSQL without downloading existing
    // bytes. A length mismatch also skips hashing an oversized corrupt row.
-   const existingResult=await client.query(`SELECT media_type,octet_length(body) AS bytes,
+   const existingRows=existingArtifactRows(await client.query(`SELECT media_type,octet_length(body) AS bytes,
     CASE WHEN octet_length(body)=$2 THEN encode(sha256(body),'hex') ELSE NULL END AS body_sha256
-    FROM public.pod_artifacts WHERE sha256=$1`,[item.sha256,item.bytes]);
+    FROM public.pod_artifacts WHERE sha256=$1`,[item.sha256,item.bytes]));
    checkpoint();
-   const existing=existingResult.rows[0];
+   const existing=existingRows[0];
    if(existing){if(existing.media_type!==item.media_type||existing.bytes!==item.bytes||existing.body_sha256!==item.sha256)throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
    await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);

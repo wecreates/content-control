@@ -362,6 +362,40 @@ test('artifact export rejects executable PostgreSQL row results before archive d
  assert.equal(getterExecuted,false);
 });
 
+test('artifact export rejects Proxy, accessor, sparse and oversized cursor results',async t=>{
+ const cases=[
+  ['result Proxy',()=>new Proxy({rows:[]},{getOwnPropertyDescriptor(){throw Error('RESULT_PROXY_EXECUTED');}})],
+  ['rows Proxy',()=>({rows:new Proxy([],{getOwnPropertyDescriptor(){throw Error('ROWS_PROXY_EXECUTED');}})})],
+  ['row accessor',()=>({rows:[{sha256:'a'.repeat(64),media_type:'application/json',get body(){throw Error('ROW_ACCESSOR_EXECUTED');}}]})],
+  ['row Proxy',()=>({rows:[new Proxy({sha256:'a'.repeat(64),media_type:'application/json',body:Buffer.from('x')},{getOwnPropertyDescriptor(){throw Error('ROW_PROXY_EXECUTED');}})]})],
+  ['sparse rows',()=>({rows:Array(1)})],
+  ['oversized rows',()=>({rows:[{},{}]})],
+ ];
+ for(const [name,result] of cases){
+  const directory=await workspace(t),db=database([Buffer.from(name)]),client=await db.pool.connect(),query=client.query.bind(client);
+  client.query=async(sql,...args)=>sql.startsWith('FETCH')?result():query(sql,...args);db.pool.connect=async()=>client;
+  await assert.rejects(exportArtifactLibrary(db,{directory,key}),/ARCHIVE_QUERY_UNVERIFIED/,name);
+ }
+});
+
+test('artifact restore rejects executable usage and identity results before writes',async t=>{
+ const body=Buffer.from('restore query boundary fixture'),source=database([body]);
+ const directory=await workspace(t);await exportArtifactLibrary(source,{directory,key});
+ for(const phase of ['usage','identity']){
+  const target=database(),tx=target.tx;let getterExecuted=false;
+  target.tx=fn=>tx(client=>fn({query:async(sql,...args)=>{
+   if(phase==='usage'&&sql.includes('COALESCE(sum('))
+    return {rows:[{get bytes(){getterExecuted=true;throw Error('USAGE_GETTER_EXECUTED');}}]};
+   if(phase==='identity'&&sql.startsWith('SELECT media_type,octet_length'))
+    return {get rows(){getterExecuted=true;throw Error('IDENTITY_ROWS_GETTER_EXECUTED');}};
+   return client.query(sql,...args);
+  }}));
+  await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/ARCHIVE_QUERY_UNVERIFIED/,phase);
+  assert.equal(getterExecuted,false,phase);assert.equal(target.rows.size,0,phase);
+  assert.equal(target.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),false,phase);
+ }
+});
+
 test('corrupt archives are rejected before opening a restore transaction',async t=>{
  const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
  const file=path.join(directory,sha(body)+'.pod'),data=await fs.readFile(file);data[data.length-1]^=1;await fs.writeFile(file,data);
