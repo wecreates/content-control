@@ -67,6 +67,12 @@ function existingArtifactRows(result){
   (row.body_sha256!==null&&typeof row.body_sha256!=='string')))throw Error('ARCHIVE_QUERY_UNVERIFIED');
  return rows;
 }
+function verifyArtifactInsert(result,item){
+ const rows=queryRows(result,{maxRows:1,exactRows:1,fields:['sha256','media_type','bytes','body_sha256']});
+ const count=ownData(result,'rowCount'),row=rows[0];
+ if(!count.valid||count.value!==1||row.sha256!==item.sha256||row.media_type!==item.media_type||
+  row.bytes!==item.bytes||row.body_sha256!==item.sha256)throw Error('ARCHIVE_QUERY_UNVERIFIED');
+}
 function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
   !Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('ARCHIVE_CONFIG_INVALID');
@@ -211,7 +217,9 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
    const existing=existingRows[0];
    if(existing){if(existing.media_type!==item.media_type||existing.bytes!==item.bytes||existing.body_sha256!==item.sha256)throw Error('ARCHIVE_RESTORE_CONFLICT');continue;}
    used+=BigInt(body.length);if(used>BigInt(budgetBytes))throw Error('ARCHIVE_BUDGET_EXCEEDED');
-   await client.query('INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[item.sha256,body,item.media_type]);
+   verifyArtifactInsert(await client.query(`INSERT INTO public.pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)
+    RETURNING sha256,media_type,octet_length(body) AS bytes,encode(sha256(body),'hex') AS body_sha256`,
+   [item.sha256,body,item.media_type]),item);
    checkpoint();inserted++;
   }
   await assertCatalogEntries(catalog,options);

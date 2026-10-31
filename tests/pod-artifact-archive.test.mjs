@@ -27,7 +27,10 @@ function database(values=[]){
   if(sql.includes('COALESCE(sum'))return {rows:[{bytes:String([...rows.values()].reduce((n,x)=>n+x.body.length,0))}]};
   if(sql.startsWith('SELECT media_type,octet_length')){const row=rows.get(args[0]);return {rows:row?[{media_type:row.media_type,
    bytes:row.body.length,body_sha256:row.body.length===args[1]?sha(row.body):null}]:[]};}
-  if(sql.startsWith('INSERT INTO public.pod_artifacts')){rows.set(args[0],{body:args[1],media_type:args[2]});return {rows:[]};}
+  if(sql.startsWith('INSERT INTO public.pod_artifacts')){
+   rows.set(args[0],{body:args[1],media_type:args[2]});
+   return {rowCount:1,rows:[{sha256:args[0],media_type:args[2],bytes:args[1].length,body_sha256:sha(args[1])}]};
+  }
   if(/^(BEGIN|COMMIT|ROLLBACK|SET LOCAL|SELECT pg_advisory)/.test(sql))return {rows:[]};
   throw Error('UNEXPECTED_QUERY');
  };
@@ -403,6 +406,43 @@ test('artifact restore rejects executable usage and identity results before writ
   assert.equal(getterExecuted,false,phase);assert.equal(target.rows.size,0,phase);
   assert.equal(target.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),false,phase);
  }
+});
+
+test('artifact restore rejects unverified insert mutations and rolls back restored bytes',async t=>{
+ const body=Buffer.from('restore mutation boundary fixture'),source=database([body]);
+ const directory=await workspace(t);await exportArtifactLibrary(source,{directory,key});
+ let reads=0;
+ const resultProxy=value=>new Proxy(value,{get(target,property,receiver){
+  if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+ }});
+ const valid=id=>({sha256:id,media_type:'application/json',bytes:body.length,body_sha256:id});
+ const sparse=[];sparse.length=1;
+ const attempts=[
+  id=>Object.defineProperty({},'rows',{get(){reads++;throw Error('RESTORE_MUTATION_ROWS_GETTER_EXECUTED');}}),
+  id=>resultProxy({rowCount:1,rows:[valid(id)]}),
+  ()=>({rowCount:0,rows:[]}),
+  ()=>({rowCount:1,rows:[]}),
+  id=>({rowCount:1,rows:new Proxy([valid(id)],{get(){reads++;throw Error('RESTORE_MUTATION_ARRAY_PROXY_EXECUTED');}})}),
+  ()=>({rowCount:1,rows:sparse}),
+  id=>({rowCount:1,rows:[valid(id),valid(id)]}),
+  id=>({rowCount:1,rows:[new Proxy(valid(id),{get(){reads++;throw Error('RESTORE_MUTATION_ROW_PROXY_EXECUTED');}})]}),
+  id=>({rowCount:1,rows:[Object.defineProperty(valid(id),'sha256',{enumerable:true,get(){reads++;throw Error('RESTORE_MUTATION_FIELD_GETTER_EXECUTED');}})]}),
+  id=>({rowCount:1,rows:[{...valid(id),sha256:'0'.repeat(64)}]}),
+  id=>({rowCount:1,rows:[{...valid(id),media_type:'image/png'}]}),
+  id=>({rowCount:1,rows:[{...valid(id),bytes:body.length+1}]}),
+  id=>({rowCount:1,rows:[{...valid(id),body_sha256:'0'.repeat(64)}]}),
+ ];
+ for(const attempt of attempts){
+  const target=database(),tx=target.tx;let inserts=0;
+  target.tx=fn=>tx(client=>fn({query:async(sql,...args)=>{
+   const result=await client.query(sql,...args);
+   if(sql.startsWith('INSERT INTO public.pod_artifacts')){inserts++;return attempt(args[0][0]);}
+   return result;
+  }}));
+  await assert.rejects(restoreArtifactLibrary(target,{directory,key,env}),/^Error: ARCHIVE_QUERY_UNVERIFIED$/);
+  assert.equal(inserts,1);assert.equal(target.rows.size,0);
+ }
+ assert.equal(reads,0);
 });
 
 test('corrupt archives are rejected before opening a restore transaction',async t=>{
