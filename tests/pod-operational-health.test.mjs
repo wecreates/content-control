@@ -62,6 +62,49 @@ test('metrics remain read-only and available inside the write-blocking expiry wi
  assert.ok(f.queries.every(q=>!/^(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE)/.test(q)));assert.equal(f.released,false);
  assert.throws(()=>f.db.active(),/POD_STORAGE_EXPIRING/);
 });
+test('metrics reject executable database results without invocation',async()=>{
+ const stages=[
+  ['states',{platform:'redbubble',state:'raw',count:'1'}],
+  ['failures',{count:'0'}],
+  ['storage',{bytes:'90'}],
+  ['financials',{currency:'USD',verified_net_recorded_minor:'1',evidence_count:'1'}],
+  ['leases',{count:'0'}],
+  ['events',{count:'0',oldest_seconds:'0'}],
+ ];
+ const stageFor=sql=>sql.includes('GROUP BY platform')?'states':sql.includes('AND NOT')?'failures':
+  sql.includes('FROM pod_artifacts')?'storage':sql.includes('FROM pod_financial_events')?'financials':
+  sql.includes('lease_until<=')?'leases':sql.includes('FROM pod_events')?'events':null;
+ for(const [target,row] of stages){
+  let reads=0;
+  const resultProxy=value=>new Proxy(value,{get(object,property,receiver){
+   if(property==='then')return undefined;reads++;return Reflect.get(object,property,receiver);
+  }});
+  const firstField=Object.keys(row)[0];
+  const attempts=[
+   Object.defineProperty({},'rows',{get(){reads++;throw Error('metric rows getter executed');}}),
+   resultProxy({rows:[row]}),
+   {rows:new Proxy([row],{get(object,property,receiver){reads++;return Reflect.get(object,property,receiver);}})},
+   {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('metric row getter executed');}})},
+   {rows:[new Proxy(row,{get(object,property,receiver){reads++;return Reflect.get(object,property,receiver);}})]},
+   {rows:[Object.defineProperty({...row},firstField,{enumerable:true,get(){reads++;throw Error('metric field getter executed');}})]},
+  ];
+  for(const attempt of attempts){
+   const queries=[];let released;
+   const client={release:bad=>{released=bad;},query:async sql=>{
+    sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
+    const stage=stageFor(sql);
+    if(!stage)return {rows:[]};
+    if(stage===target)return attempt;
+    const safe=stages.find(([name])=>name===stage)[1];
+    return Object.assign(Object.create({driver_result:true}),{rows:[safe]});
+   }};
+   const db={expiresAt:now+8*86400000,pool:{connect:async()=>client}};
+   await assert.rejects(metrics(db,{env:healthy.env,clock:()=>now}),/^Error: POD_METRICS_QUERY_UNVERIFIED$/);
+   assert.equal(queries.at(-1),'ROLLBACK');assert.equal(released,false);
+  }
+  assert.equal(reads,0,target);
+ }
+});
 test('metrics errors roll back and discard a connection if rollback itself fails',async()=>{
  for(const rollbackFails of [false,true]){
   const f=fixture({fail:true,rollbackFails});await assert.rejects(metrics(f.db),/private database error/);
