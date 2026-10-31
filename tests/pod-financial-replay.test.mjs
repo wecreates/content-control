@@ -59,7 +59,7 @@ function fixture(previous=[],corrupt=false){
     return result({rowCount:1,rows:[{id}]});
    }
    if(sql.includes('FROM pod_financial_events'))return result({rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2])).map(r=>({...r,occurred_at_matches:new Date(r.occurred_at).getTime()===Date.parse(args[3])}))});
-   if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[]};}
+   if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[{id:args[0],job_id:args[1],kind:args[2]}]};}
    throw Error('UNEXPECTED_QUERY');
   }});}catch(e){rows.length=size;outbox.length=events;throw e;}
  }};
@@ -131,6 +131,38 @@ test('financial intake rejects executable ledger query results without invocatio
   }};
   await assert.rejects(recordFinancialEvent(db,sign(e),key),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
   assert.equal(ledgerWrites,1);assert.equal(outboxWrites,0);assert.equal(rolledBack,true);
+ }
+ assert.equal(reads,0);
+});
+test('financial intake rejects unverified audit event mutations and rolls back the ledger',async()=>{
+ const e=event(),validEvidence={rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
+ let reads=0;
+ const resultProxy=value=>new Proxy(value,{get(target,property,receiver){
+  if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+ }});
+ const attempts=[
+  ()=>Object.defineProperty({},'rowCount',{get(){reads++;throw Error('audit rowCount getter executed');}}),
+  id=>resultProxy({rowCount:1,rows:[{id,job_id:e.job_id,kind:'pod.finance.verified'}]}),
+  ()=>({rowCount:0,rows:[]}),
+  ()=>({rowCount:1,rows:[]}),
+  ()=>({rowCount:1,rows:[{id:'wrong',job_id:e.job_id,kind:'pod.finance.verified'}]}),
+  id=>({rowCount:1,rows:[{id,job_id:'wrong',kind:'pod.finance.verified'}]}),
+  id=>({rowCount:1,rows:[{id,job_id:e.job_id,kind:'wrong'}]}),
+ ];
+ for(const attempt of attempts){
+  let ledgerWrites=0,auditWrites=0,rolledBack=false;
+  const db={active(){},tx:async fn=>{
+   try{return await fn({query:async(sql,args)=>{
+    if(sql.includes('FROM pod_artifacts'))return validEvidence;
+    if(sql.startsWith('INSERT INTO pod_financial_events')){ledgerWrites++;return {rowCount:1,rows:[{id:args[0]}]};}
+    if(sql.startsWith('INSERT INTO pod_events')){
+     auditWrites++;return attempt(args[0]);
+    }
+    assert.fail('unexpected financial query');
+   }});}catch(error){rolledBack=true;throw error;}
+  }};
+  await assert.rejects(recordFinancialEvent(db,sign(e),key),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+  assert.equal(ledgerWrites,1);assert.equal(auditWrites,1);assert.equal(rolledBack,true);
  }
  assert.equal(reads,0);
 });
