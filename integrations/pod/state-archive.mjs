@@ -252,10 +252,10 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
   const accounts=snapshotMutationCount(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'"));
   checkpoint();
-  const production=(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
+  const production=snapshotMutationCount(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
    lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`));
   checkpoint();
-  const publishing=(await client.query(`UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
+  const publishing=snapshotMutationCount(await client.query(`UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
    lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`));
   checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
