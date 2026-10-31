@@ -54,3 +54,30 @@ test('review acceptance rejects a held package without its exact durable event i
   assert.equal(writes,0);
  }
 });
+
+test('review acceptance rejects unverified queue and audit mutation receipts',async()=>{
+ const {manifest,qa,manifestSha256}=reviewFixture();
+ const attempts=[
+  undefined,{},
+  {rowCount:0,rows:[]},
+  {rowCount:1,rows:[]},
+  Object.defineProperty({},'rowCount',{get(){throw Error('review mutation rowCount getter executed');}}),
+  {rowCount:1,rows:new Proxy([],{get(){throw Error('review mutation rows proxy executed');}})},
+ ];
+ for(const stage of ['queue','audit'])for(const attempt of attempts){
+  let writes=0;
+  const db=new PodDB({pool:{},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=fn=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('SELECT'))return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_failed',
+    reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:manifestSha256}]};
+   writes+=1;
+   if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
+    {rowCount:1,rows:[{id:'fixture-job',state:'qa_passed',reason_code:null}]};
+   if(sql.startsWith('INSERT'))return stage==='audit'?attempt:
+    {rowCount:1,rows:[{id:args[0],job_id:'fixture-job',kind:'pod.production.qa_passed'}]};
+   throw Error('unexpected review query');
+  }});
+  await assert.rejects(db.acceptReview('fixture-job',qa),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,stage==='queue'?1:2);
+ }
+});
