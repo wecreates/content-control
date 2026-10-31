@@ -34,6 +34,13 @@ test('financial totals reject executable or unbounded query results without invo
  }
  assert.equal(reads,0);
 });
+test('financial totals return frozen scalar snapshots detached from driver-owned rows',async()=>{
+ const row={currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'2'},rows=[row];
+ const result=await financialTotals({read:async()=>({rows})});
+ assert.deepEqual(result,[row]);assert.equal(Object.isFrozen(result),true);assert.equal(Object.isFrozen(result[0]),true);
+ row.currency='EUR';rows.push({currency:'CAD',verified_net_recorded_minor:'1',evidence_count:'1'});
+ assert.deepEqual(result,[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'2'}]);
+});
 function fixture(previous=[],corrupt=false){
  const rows=previous.map(x=>({...x})),outbox=[];
  const result=value=>Object.assign(Object.create({driver_result:true}),value);

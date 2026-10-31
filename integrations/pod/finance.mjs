@@ -7,6 +7,10 @@ import {validOpaqueText} from './text-identity.mjs';
 
 const REPLAY_FIELDS=Object.freeze(['id','job_id','provider','provider_event_id','kind','amount_minor','currency',
  'evidence_sha256','authority_event_id','occurred_at_matches']);
+const TOTAL_FIELDS=Object.freeze(['currency','verified_net_recorded_minor','evidence_count']);
+const MAX_CURRENCIES=26**3;
+const canonicalUnsigned=value=>typeof value==='string'&&/^(0|[1-9][0-9]{0,18})$/.test(value);
+const canonicalSignedTotal=value=>typeof value==='string'&&/^(0|-?[1-9][0-9]{0,38})$/.test(value);
 function dataProperty(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -55,6 +59,36 @@ function snapshotReplayRows(result){
  }
  return Object.freeze(snapshots);
 }
+function snapshotFinancialTotals(result){
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  if(!descriptor||!Object.hasOwn(descriptor,'value')||!Number.isInteger(descriptor.value)||descriptor.value<0||
+   descriptor.value>MAX_CURRENCIES)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
+ const snapshots=[],currencies=new Set();
+ for(let index=0;index<length;index++){
+  let element;
+  try{element=Object.getOwnPropertyDescriptor(rows.value,String(index));}
+  catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
+  if(!element||!Object.hasOwn(element,'value')||!ordinaryRecord(element.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+  const snapshot={};
+  for(const field of TOTAL_FIELDS){
+   const capability=dataProperty(element.value,field);
+   if(!capability.valid||typeof capability.value!=='string')throw Error('FINANCIAL_QUERY_UNVERIFIED');
+   snapshot[field]=capability.value;
+  }
+  if(!/^[A-Z]{3}$/.test(snapshot.currency)||!canonicalSignedTotal(snapshot.verified_net_recorded_minor)||
+   !canonicalUnsigned(snapshot.evidence_count)||snapshot.evidence_count==='0'||currencies.has(snapshot.currency))
+   throw Error('FINANCIAL_QUERY_UNVERIFIED');
+  currencies.add(snapshot.currency);snapshots.push(Object.freeze(snapshot));
+ }
+ return Object.freeze(snapshots);
+}
 
 export async function recordFinancialEvent(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
@@ -94,8 +128,7 @@ export async function recordFinancialEvent(db,envelope,key){
  });
 }
 export async function financialTotals(db){
- const rows=(await db.read(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
-  FROM pod_financial_events GROUP BY currency ORDER BY currency`)).rows;
- return rows;
+ return snapshotFinancialTotals(await db.read(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
+  FROM pod_financial_events GROUP BY currency ORDER BY currency`));
 }
 
