@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {types as utilTypes} from 'node:util';
 import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
@@ -21,6 +22,57 @@ const hash=body=>crypto.createHash('sha256').update(body).digest('hex');
 const exactKeys=(value,keys)=>value&&!Array.isArray(value)&&JSON.stringify(Object.keys(value))===JSON.stringify(keys);
 const recordFile=index=>String(index).padStart(5,'0')+'.pod';
 const aad=(id,item)=>`pod:state:v1:${id}:${item.table}:${item.index}:${item.sha256}:${item.bytes}`;
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  const descriptor=Object.getOwnPropertyDescriptor(target,key);
+  return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+ }catch{return {valid:false};}
+}
+function ordinaryRecord(value){
+ try{
+  return value!==null&&typeof value==='object'&&!utilTypes.isProxy(value)&&
+   [Object.prototype,null].includes(Object.getPrototypeOf(value));
+ }catch{return false;}
+}
+function snapshotRows(result,fields,max){
+ const rowsProperty=dataProperty(result,'rows'),rows=rowsProperty.value;
+ if(!rowsProperty.valid||!Array.isArray(rows)||utilTypes.isProxy(rows))throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows,'length');
+  if(!descriptor||!Object.hasOwn(descriptor,'value')||!Number.isSafeInteger(descriptor.value)||
+   descriptor.value<0||descriptor.value>max)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');}
+ const snapshots=[];
+ for(let index=0;index<length;index++){
+  let element;
+  try{element=Object.getOwnPropertyDescriptor(rows,String(index));}
+  catch{throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');}
+  if(!element||!Object.hasOwn(element,'value')||!ordinaryRecord(element.value))throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+  if(fields===null){snapshots.push(Object.freeze({}));continue;}
+  let keys;
+  try{keys=Reflect.ownKeys(element.value);}
+  catch{throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');}
+  if(keys.length!==fields.length||keys.some((key,position)=>key!==fields[position]))throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+  const snapshot={};
+  for(const field of fields){
+   const property=dataProperty(element.value,field),type=typeof property.value;
+   if(!property.valid||property.value!==null&&['object','function','symbol','bigint','undefined'].includes(type))
+    throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+   snapshot[field]=property.value;
+  }
+  snapshots.push(Object.freeze(snapshot));
+ }
+ return Object.freeze(snapshots);
+}
+function snapshotMutationCount(result){
+ const property=dataProperty(result,'rowCount');
+ if(!property.valid||!Number.isSafeInteger(property.value)||property.value<0||property.value>MAX_ROWS)
+  throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+ return property.value;
+}
 function disabled(env,restoring=false){
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false'||
   (restoring&&(env.POD_PRODUCTION_ENABLED!=='false'||env.POD_OUTBOX_ENABLED!=='false')))
@@ -37,13 +89,15 @@ async function expectedVersions(){
  return Promise.all(names.map(async version=>({version,sha256:hash(await fs.readFile(new URL(version,directory)))})));
 }
 async function schema(client,checkpoint=()=>{}){
- const versions=(await client.query('SELECT version,sha256 FROM public.pod_schema_version ORDER BY version')).rows;
+ const versions=snapshotRows(await client.query('SELECT version,sha256 FROM public.pod_schema_version ORDER BY version'),
+  ['version','sha256'],MIGRATIONS.length);
  checkpoint();const expected=await expectedVersions();checkpoint();
  if(JSON.stringify(versions)!==JSON.stringify(expected))throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
  const columns={};
  for(const table of NAMES){
-  columns[table]=(await client.query(`SELECT a.attname AS name,format_type(a.atttypid,a.atttypmod) AS type,
-   a.attnotnull AS required FROM pg_attribute a WHERE a.attrelid=$1::regclass AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum`,['public.'+table])).rows;
+  columns[table]=snapshotRows(await client.query(`SELECT a.attname AS name,format_type(a.atttypid,a.atttypmod) AS type,
+   a.attnotnull AS required FROM pg_attribute a WHERE a.attrelid=$1::regclass AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum`,['public.'+table]),
+  ['name','type','required'],64);
   checkpoint();
   if(!columns[table].length)throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
  }
@@ -132,7 +186,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
     THEN row_to_json(t)::text ELSE NULL END AS record FROM public.${table} t ORDER BY ${TABLES[table]}`);
    checkpoint();
    while(true){
-    checkpoint();const {rows}=await client.query('FETCH FORWARD 1 FROM pod_state_export');checkpoint();if(!rows.length)break;
+    checkpoint();const rows=snapshotRows(await client.query('FETCH FORWARD 1 FROM pod_state_export'),['record'],1);checkpoint();if(!rows.length)break;
     if(typeof rows[0].record!=='string')throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
     const body=Buffer.from(rows[0].record);bytes+=body.length;
     if(body.length>MAX_ROW||bytes>MAX_TOTAL||catalog.items.length>=MAX_ROWS)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
@@ -183,8 +237,8 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   checkpoint();await client.query(`LOCK TABLE ${NAMES.map(t=>'public.'+t).join(',')} IN SHARE ROW EXCLUSIVE MODE`);checkpoint();
   const structure=await schema(client,checkpoint);
   if(JSON.stringify(structure.columns)!==JSON.stringify(catalog.columns))throw Error('STATE_ARCHIVE_SCHEMA_MISMATCH');
-  for(const table of NAMES){checkpoint();const existing=await client.query(`SELECT 1 FROM public.${table} LIMIT 1`);checkpoint();
-   if(existing.rows.length)throw Error('STATE_ARCHIVE_TARGET_NOT_EMPTY');}
+  for(const table of NAMES){checkpoint();const existing=snapshotRows(await client.query(`SELECT 1 FROM public.${table} LIMIT 1`),null,1);checkpoint();
+   if(existing.length)throw Error('STATE_ARCHIVE_TARGET_NOT_EMPTY');}
   for(const item of catalog.items){
    checkpoint();const {body}=await recordFor(item,catalog,options);checkpoint();
    // Send original JSON text to PostgreSQL: parsing/re-serializing bigint
@@ -196,13 +250,13 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   // requested pathname must still identify that same snapshot at commit time.
   // Check before safety-state mutations so replacement rolls back every row.
   checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
-  const accounts=(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'")).rowCount;
+  const accounts=snapshotMutationCount(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'"));
   checkpoint();
   const production=(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
-   lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`)).rowCount;
+   lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`));
   checkpoint();
   const publishing=(await client.query(`UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
-   lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`)).rowCount;
+   lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`));
   checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
   await client.query('INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.recovery.restored',receipt]);
