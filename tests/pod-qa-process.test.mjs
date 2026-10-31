@@ -6,6 +6,9 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {produceOnce} from '../scripts/pod_production_worker.mjs';
 import {startProductionRuntime} from '../integrations/pod/production-runtime.mjs';
+const artifactInsert=args=>({rowCount:1,rows:[{
+ sha256:args[0],media_type:args[2],body_sha256:crypto.createHash('sha256').update(args[1]).digest('hex'),
+}]});
 
 for(const [verdict,duplicate,duplicatePayload=false] of [
  ['PASS',false],['FAIL',false],['FAIL',true],['FAIL',false,true]
@@ -45,7 +48,8 @@ for(const [verdict,duplicate,duplicatePayload=false] of [
   let completed=0,blocked=0,cleaned=0;
   const options={root,env:{...process.env,POD_PYTHON:process.execPath,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,POD_UPSTREAM_KEY:key},upstreamKey:key,
    db:{active(){},recover:async()=>{},assertProducible:async()=>true,holdProduction:async()=>{},claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async()=>{blocked++;},completeProduction:async()=>{completed++;return {pass:false};},
-    tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
+    tx:async fn=>fn({query:async(sql,args)=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:
+     sql.startsWith('INSERT INTO pod_artifacts')?artifactInsert(args):{rows:[]}})},
    resolveGrant:async()=>({payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')}),
    resolveTask:async()=>({rights_verified:true,templateScope,source:sourcePath,template:templatePath,textLayers:layersPath,assetRights:rightsPath,
     output:path.join(root,'output'),reference:'unused',qaOutput:'unused',qaSignedOutput:path.join(root,'qa.json'),

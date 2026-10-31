@@ -8,6 +8,9 @@ import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
 import {validateTemplate} from '../integrations/pod/templates.mjs';
 const key='a'.repeat(48);
+const artifactInsert=args=>({rowCount:1,rows:[{
+ sha256:args[0],media_type:args[2],body_sha256:crypto.createHash('sha256').update(args[1]).digest('hex'),
+}]});
 test('authenticated parser failures return sanitized JSON before any database operation',async()=>{
  const app=express();app.set('env','development');let calls=0,escaped=0;
  const db=new Proxy({}, {get(){calls++;throw Error('database must not be touched');}});
@@ -41,9 +44,9 @@ test('authenticated parser failures return sanitized JSON before any database op
 });
 test('authenticated uploads share the bounded deployment storage policy',async()=>{
  const env={POD_ARTIFACT_BUDGET_BYTES:'3'};let inserts=0,transactions=0;
- const db={active(){},tx:async fn=>{transactions++;return fn({query:async(sql)=>{
+ const db={active(){},tx:async fn=>{transactions++;return fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT'))inserts++;
+  if(sql.startsWith('INSERT')){inserts++;return artifactInsert(args);}
   return {rows:[]};
  }});}};
  const app=express();app.use(createPodRouter({db,env,authorize:operationalAuth(key)}));
@@ -60,7 +63,7 @@ test('authenticated uploads share the bounded deployment storage policy',async()
 test('authenticated regional-rights evidence upload accepts and preserves text/plain',async()=>{
  const inserts=[],db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT'))inserts.push(args);
+  if(sql.startsWith('INSERT')){inserts.push(args);return artifactInsert(args);}
   return {rows:[]};
  }})};
  const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
@@ -78,7 +81,7 @@ test('authenticated regional-rights evidence upload accepts and preserves text/p
 test('authenticated KDP template archive upload accepts and preserves application/zip',async()=>{
  const inserts=[],db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT'))inserts.push(args);
+  if(sql.startsWith('INSERT')){inserts.push(args);return artifactInsert(args);}
   return {rows:[]};
  }})};
  const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));

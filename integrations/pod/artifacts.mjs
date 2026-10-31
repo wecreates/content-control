@@ -5,6 +5,7 @@ export const ARTIFACT_MEDIA_TYPES=Object.freeze([
  'image/png','application/pdf','application/json','font/ttf','text/plain','application/zip',
 ]);
 const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
+const INSERT_FIELDS=Object.freeze(['body_sha256','media_type','sha256']);
 function dataProperty(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -86,6 +87,28 @@ function snapshotQueryRows(result,fields,{maxRows,exactRows}={}){
  }
  return Object.freeze(snapshots);
 }
+function assertArtifactInsert(result,{sha256,mediaType}){
+ if(result===null||(typeof result!=='object'&&typeof result!=='function')||utilTypes.isProxy(result))
+  throw Error('ARTIFACT_INSERT_UNVERIFIED');
+ let countDescriptor,rowsDescriptor,lengthDescriptor,rowDescriptor,row,keys,descriptors,prototype;
+ try{
+  countDescriptor=Object.getOwnPropertyDescriptor(result,'rowCount');
+  rowsDescriptor=Object.getOwnPropertyDescriptor(result,'rows');
+  if(!countDescriptor||!Object.hasOwn(countDescriptor,'value')||countDescriptor.value!==1||
+   !rowsDescriptor||!Object.hasOwn(rowsDescriptor,'value')||!Array.isArray(rowsDescriptor.value)||utilTypes.isProxy(rowsDescriptor.value))throw Error();
+  lengthDescriptor=Object.getOwnPropertyDescriptor(rowsDescriptor.value,'length');
+  rowDescriptor=Object.getOwnPropertyDescriptor(rowsDescriptor.value,'0');
+  if(!lengthDescriptor||!Object.hasOwn(lengthDescriptor,'value')||lengthDescriptor.value!==1||
+   !rowDescriptor?.enumerable||!Object.hasOwn(rowDescriptor,'value'))throw Error();
+  row=rowDescriptor.value;
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+  prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('ARTIFACT_INSERT_UNVERIFIED');}
+ if((prototype!==Object.prototype&&prototype!==null)||keys.length!==INSERT_FIELDS.length||
+  !INSERT_FIELDS.every(field=>keys.includes(field)&&descriptors[field]?.enumerable&&Object.hasOwn(descriptors[field],'value'))||
+  descriptors.sha256.value!==sha256||descriptors.media_type.value!==mediaType||descriptors.body_sha256.value!==sha256)
+  throw Error('ARTIFACT_INSERT_UNVERIFIED');
+}
 
 // Bounded PostgreSQL backend for the initial free-tier lane. Large libraries must
 // use an independently verified durable object-store implementation of this contract.
@@ -139,7 +162,9 @@ export class ArtifactStore {
    const needed=missing.reduce((sum,[,artifact])=>sum+BigInt(artifact.body.length),0n);
    if(used+needed>BigInt(this.budgetBytes))throw Error('ARTIFACT_BUDGET_EXHAUSTED');
    for(const [sha,{body,mediaType}] of missing){
-    await c.query('INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)',[sha,body,mediaType]);
+    const inserted=await c.query(`INSERT INTO pod_artifacts(sha256,body,media_type) VALUES($1,$2,$3)
+     RETURNING sha256,media_type,encode(sha256(body),'hex') AS body_sha256`,[sha,body,mediaType]);
+    assertArtifactInsert(inserted,{sha256:sha,mediaType});
     this.db.active();
    }
    return hashes;

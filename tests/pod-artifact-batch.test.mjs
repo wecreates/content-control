@@ -9,6 +9,7 @@ import {readPackageArtifacts,readPackageManifest,readPackageSnapshot} from '../i
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const entry=b=>({body:Buffer.from(b),mediaType:'application/json'});
+const insertResult=args=>({rowCount:1,rows:[{sha256:args[0],media_type:args[2],body_sha256:hash(args[1])}]});
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=','base64');
 const pdf=Buffer.from('%PDF-1.4\n%%EOF\n');
 const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
@@ -103,7 +104,7 @@ test('artifact bytes are snapshotted before database waits',async()=>{
   a.body.fill(120);a.mediaType='image/png';
   return fn({query:async(sql,args)=>{
    if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-   if(sql.startsWith('INSERT'))inserted=args;
+   if(sql.startsWith('INSERT')){inserted=args;return insertResult(args);}
    return {rows:[]};
   }});
  }};
@@ -116,7 +117,7 @@ test('regional-rights evidence accepts text/plain and rejects unapproved media b
  const writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT'))writes.push(args);
+  if(sql.startsWith('INSERT')){writes.push(args);return insertResult(args);}
   return {rows:[]};
  }})};
  const body=Buffer.from('synthetic rights evidence; not legal approval');
@@ -129,7 +130,7 @@ test('KDP template archives accept application/zip and preserve immutable identi
  const writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT'))writes.push(args);
+  if(sql.startsWith('INSERT')){writes.push(args);return insertResult(args);}
   return {rows:[]};
  }})};
  const body=Buffer.concat([Buffer.from([0x50,0x4b,0x03,0x04]),Buffer.from('synthetic bounded KDP template archive')]);
@@ -221,12 +222,49 @@ test('artifact writes reject executable query results without invocation',async(
  assert.equal(reads,0);assert.equal(writes,0);
 });
 
+test('artifact writes require a verified exact one-row durable insert',async()=>{
+ const artifact=entry('durable insert boundary'),sha=hash(artifact.body);let reads=0;
+ const attempts=[
+  {rowCount:0,rows:[]},
+  {rowCount:2,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},
+  {rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},
+  Object.defineProperty({rows:[]},'rowCount',{get(){reads++;throw Error('insert row count getter executed');}}),
+  new Proxy({rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},{get(target,key,receiver){
+   if(key==='then')return undefined;reads++;return Reflect.get(target,key,receiver);
+  }}),
+  {rowCount:1,rows:new Proxy([{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}],{
+   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+  })},
+  {rowCount:1,rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('insert row getter executed');}})},
+  {rowCount:1,rows:[new Proxy({sha256:sha,media_type:artifact.mediaType,body_sha256:sha},{
+   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+  })]},
+  {rowCount:1,rows:[Object.defineProperty({media_type:artifact.mediaType,body_sha256:sha},'sha256',{
+   enumerable:true,get(){reads++;throw Error('insert field getter executed');}
+  })]},
+  {rowCount:1,rows:[{sha256:'0'.repeat(64),media_type:artifact.mediaType,body_sha256:sha}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:'image/png',body_sha256:sha}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:'0'.repeat(64)}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha,extra:'not exact'}]},
+ ];
+ for(const result of attempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.includes('ANY('))return {rows:[]};
+   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+   if(sql.startsWith('INSERT'))return result;
+   return {rows:[]};
+  }})};
+  await assert.rejects(new ArtifactStore(db).putMany([artifact]),/^Error: ARTIFACT_INSERT_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);
+});
+
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('ANY('))return {rows:[{sha256:hash(a.body),body_sha256:hash(a.body),media_type:a.mediaType}]};
   if(sql.includes('sum('))return {rows:[{bytes:'4'}]};
-  if(sql.startsWith('INSERT'))writes.push(args);
+  if(sql.startsWith('INSERT')){writes.push(args);return insertResult(args);}
   return {rows:[]};
  }})};
  const store=new ArtifactStore(db,{budgetBytes:6});
@@ -251,9 +289,9 @@ test('artifact batch stops before budget and inserts when storage expires during
 
 test('artifact batch stops after storage expires during the first insert',async()=>{
  const a=entry('expiry first insert'),b=entry('expiry second insert');let expired=false,writes=0;
- const db={active(){if(expired)throw Error('STORAGE_EXPIRED');},tx:fn=>fn({query:async sql=>{
+ const db={active(){if(expired)throw Error('STORAGE_EXPIRED');},tx:fn=>fn({query:async(sql,args)=>{
   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
-  if(sql.startsWith('INSERT')){writes++;expired=true;}
+  if(sql.startsWith('INSERT')){writes++;expired=true;return insertResult(args);}
   return {rows:[]};
  }})};
  await assert.rejects(new ArtifactStore(db).putMany([a,b]),/STORAGE_EXPIRED/);
