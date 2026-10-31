@@ -17,11 +17,12 @@ async function emptySource(){
   version:n+'_pod.sql',sha256:digest(await fs.readFile(new URL('../migrations/'+n+'_pod.sql',import.meta.url)))
  })));
  const queries=[];
- const client={release(){},async query(sql){
+ const client={release(){},async query(sql,args=[]){
   queries.push(sql);
   if(sql.includes('FROM public.pod_schema_version'))return {rows:versions};
   if(sql.includes('FROM pg_attribute'))return {rows:[{name:'id',type:'uuid',required:true}]};
   if(sql.includes('COALESCE(sum'))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('WITH restored_event AS'))return {rowCount:1,rows:[{id:args[0],kind:args[1],exact:true}]};
   return {rows:[],rowCount:0};
  }};
  return {queries,client,pool:{connect:async()=>client}};
