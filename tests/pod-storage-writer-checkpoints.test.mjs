@@ -47,7 +47,7 @@ test('market replay stops before row lookup when storage expires during conflict
  db=expiringDB(async sql=>{
   if(sql.includes('FROM pod_artifacts'))return evidence();
   if(sql.startsWith('INSERT INTO pod_market_intelligence')){db.expire();return {rowCount:0,rows:[]};}
-  if(sql.startsWith('SELECT * FROM pod_market_intelligence'))replayReads++;
+  if(sql.includes('FROM pod_market_intelligence'))replayReads++;
   return {rows:[]};
  });
  await assert.rejects(recordMarketObservation(db,market(),key),/POD_STORAGE_EXPIRING/);
