@@ -22,6 +22,9 @@ const retainedSource=Buffer.from('retained synthetic cover source, not official 
 const assetSource=Buffer.from('synthetic task artwork identity');
 const assetSourceSha256=crypto.createHash('sha256').update(assetSource).digest('hex');
 const emptyTextLayersSha256=crypto.createHash('sha256').update('[]').digest('hex');
+const artifactInsert=args=>({rowCount:1,rows:[{
+ sha256:args[0],media_type:args[2],body_sha256:crypto.createHash('sha256').update(args[1]).digest('hex'),
+}]});
 const interiorMember='English/English/6 x 9 inch (15.24 x 22.86 cm).docx';
 const kdpCover=(spec={page_count:24,paper_type:'white',trim_inches:[6,9]})=>{
  const spine=spec.page_count*({white:.002252,cream:.0025,groundwood:.00235}[spec.paper_type]);
@@ -160,7 +163,8 @@ async function exercise({template=record(),templateText,templateLink=false,templ
      beforeStateChange?.();completed++;return {pass:true};
     },
     assertProducible:async()=>{localChecks++;if(mutateGenerationInputs&&localChecks===1)Object.assign(resolvedTask,{source:'replacement-source',assetRights:'replacement-rights',textLayers:'replacement-text-layers',assetRoot:'replacement-asset-root'});if(mutateTemplateInput&&localChecks===1)resolvedTask.template='replacement-template';if(mutateReviewCapabilityDuringAuthority&&localChecks===1)resolvedTask.reviewPackage=async()=>{replacementReviewCalls++;return {rights:'replacement-rights',competitive:'replacement-competitive'};};if(mutateQaInputsDuringAuthority&&localChecks===1)Object.assign(resolvedTask,{reference:'replacement-reference',qaOutput:'replacement-qa-output',qaSignedOutput:'replacement-qa-signed-output'});if(mutateOutputInput&&localChecks===1)resolvedTask.output='replacement-output';if(mutateKdpInputs&&localChecks===1){resolvedTask.templateSource=replacementCoverSourcePath;Object.assign(resolvedTask.interior,{template:replacementInteriorPath,source:replacementInteriorSourcePath,pages:'replacement-pages',font:'replacement-font',fontRights:'replacement-font-rights',fontLicense:'replacement-font-license',bookDetails:'replacement-book-details',regionalRightsEvidence:'replacement-regional-rights'});}if((disableDuringCoverGuide&&localChecks===1)||(disableDuringFinalStage&&localChecks===(platform==='kdp'?4:1))||(disableDuringQaStage&&localChecks===5))setTimeout(()=>{env.POD_PRODUCTION_ENABLED='false';},10);await localPolicy?.({env,controller,originalNow});},
-    tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
+    tx:async fn=>fn({query:async(sql,args)=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:
+     sql.startsWith('INSERT INTO pod_artifacts')?artifactInsert(args):{rows:[]}})},
    resolveGrant:async()=>{grantCalls++;if(replaceInterpreter)env.POD_PYTHON=replacementInterpreter;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
