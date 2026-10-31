@@ -1,0 +1,64 @@
+{
+  "name": "Reviewed editorial consumer fixtures (read only)",
+  "on": {
+    "workflow_dispatch": {
+      "inputs": {
+        "reviewed_source_sha": {
+          "description": "Exact independently reviewed Content Control commit containing this candidate",
+          "required": true,
+          "type": "string"
+        }
+      }
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "concurrency": {
+    "group": "reviewed-editorial-fixtures",
+    "cancel-in-progress": false
+  },
+  "jobs": {
+    "fixtures": {
+      "if": "github.repository == 'wecreates/content-control' && github.event.repository.private == false",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 10,
+      "env": {
+        "PUBLICATION_ENABLED": "false",
+        "PAID_GENERATION_ENABLED": "false",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "EXPECTED_SOURCE_SHA": "${{ inputs.reviewed_source_sha }}",
+        "ACTUAL_SOURCE_SHA": "${{ github.sha }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "with": {
+            "ref": "${{ github.sha }}",
+            "persist-credentials": false,
+            "submodules": false
+          }
+        },
+        {
+          "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+          "with": {
+            "node-version": "24.12.0"
+          }
+        },
+        {
+          "uses": "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065",
+          "with": {
+            "python-version": "3.12.3"
+          }
+        },
+        {
+          "name": "Verify reviewed identity and run first-party fixtures only",
+          "env": {
+            "REVIEWED_MANIFEST_SHA256": "37c923e588f1d42ebdf9444b0830c02d12ece3a5c54abc73996a3c4b36d01d7b"
+          },
+          "run": "python -B ci/accepted-editorial/run.py"
+        }
+      ]
+    }
+  }
+}

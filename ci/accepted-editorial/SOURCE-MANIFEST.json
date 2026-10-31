@@ -1,0 +1,92 @@
+{
+  "scope": "FIRST_PARTY_FIXTURES_ONLY",
+  "files": [
+    {
+      "path": "release-review/multiframe-integration/export-editorial-handoff.mjs",
+      "sha256": "57e73a77db3bf63a4b9bffe631a0e6325bd76d4b0bee1fb131eaf0a3b7cadf21",
+      "source_path": "release-review/multiframe-integration/export-editorial-handoff.mjs",
+      "source_sha256": "57e73a77db3bf63a4b9bffe631a0e6325bd76d4b0bee1fb131eaf0a3b7cadf21",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/multiframe-integration/export-editorial-handoff.test.mjs",
+      "sha256": "b228113fd8f1c5f4b1758cc60b9b0c0c7318fadbc1467cdfa9273c03624d2a75",
+      "source_path": "release-review/multiframe-integration/export-editorial-handoff.test.mjs",
+      "source_sha256": "09a02c9db0f34f3f06a045315ff175ab9f20d31f305d45208e40685084721adc",
+      "portability_only_change": true
+    },
+    {
+      "path": "release-review/multiframe-integration/openmontage-consumer.mjs",
+      "sha256": "5dacfeb85ec0d831cbfdd3097994d8992b28d67a517bf27baf5836c96a29e0eb",
+      "source_path": "release-review/multiframe-integration/openmontage-consumer.mjs",
+      "source_sha256": "5dacfeb85ec0d831cbfdd3097994d8992b28d67a517bf27baf5836c96a29e0eb",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/multiframe-integration/openmontage-consumer.test.mjs",
+      "sha256": "7fda48625b596cd13e771375e695c1b6490a1104d24c054b27ead3b32e62e249",
+      "source_path": "release-review/multiframe-integration/openmontage-consumer.test.mjs",
+      "source_sha256": "7fda48625b596cd13e771375e695c1b6490a1104d24c054b27ead3b32e62e249",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/scripts/repository_editorial.py",
+      "sha256": "fb98b6488e8ea9e87f3a38acdcf60e206b7c36762a4e2ed87f6b0af31e4cf97e",
+      "source_path": "release-review/dashboard-candidate/scripts/repository_editorial.py",
+      "source_sha256": "fb98b6488e8ea9e87f3a38acdcf60e206b7c36762a4e2ed87f6b0af31e4cf97e",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/scripts/test_repository_editorial.py",
+      "sha256": "67a5e76e9f4603d2993cacae41476301f7a63c6311c5fad0d8d0f5d1838837d1",
+      "source_path": "release-review/dashboard-candidate/scripts/test_repository_editorial.py",
+      "source_sha256": "67a5e76e9f4603d2993cacae41476301f7a63c6311c5fad0d8d0f5d1838837d1",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/scripts/repository_v2_handoff.py",
+      "sha256": "d1632e9b05e9d0961635a46040f3c4ae01243abb07639c4cfb20e22b729b1fdc",
+      "source_path": "release-review/dashboard-candidate/scripts/repository_v2_handoff.py",
+      "source_sha256": "d1632e9b05e9d0961635a46040f3c4ae01243abb07639c4cfb20e22b729b1fdc",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/scripts/repository_tools.py",
+      "sha256": "2d3e1abae1d445a1df656738de49aebebda8dfe0e05ab3e838c3a465a2f1a629",
+      "source_path": "release-review/dashboard-candidate/scripts/repository_tools.py",
+      "source_sha256": "151f582950f0f99b0345ebe70fe2fcd062f329440615a7d392cc7ca3b24049ec",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/integrations/production-render-binding.mjs",
+      "sha256": "3b093c75d7fb8c078760d5a7c163d05405f610aca35104ef0162234f96eb0e1e",
+      "source_path": "release-review/dashboard-candidate/integrations/production-render-binding.mjs",
+      "source_sha256": "3b093c75d7fb8c078760d5a7c163d05405f610aca35104ef0162234f96eb0e1e",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/scripts/repository_window_review.py",
+      "sha256": "9cf5c2fec58588d90b856349cf3698865f986b1c9e503bfba438fdb14d22dfcf",
+      "source_path": "release-review/dashboard-candidate/scripts/repository_window_review.py",
+      "source_sha256": "351c93cb0ddefb6741b278645cdc0290dd4cd6974cca6c74c25262d788b3d087",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/tests/test_repository_window_review.py",
+      "sha256": "177814d57c5becdb10573ad2c35a5a2f4bff253dbf2b75cba7e6401c73a4f58e",
+      "source_path": "release-review/dashboard-candidate/tests/test_repository_window_review.py",
+      "source_sha256": "df3e08722f2c76c9d4c91c1de4a47899843bbc5d6c9b197d6cdadb837d03818b",
+      "portability_only_change": false
+    },
+    {
+      "path": "release-review/dashboard-candidate/tests/test_window_snapshot.py",
+      "sha256": "fc38a10aa503459fad92780d4902c36593ce69fcdb09a1b0a4be26bd044d2dbb",
+      "source_path": "release-review/dashboard-candidate/tests/test_window_snapshot.py",
+      "source_sha256": "12cb499f8806292d1f34343903eedbc4fcef6e85216eef18041c71171bc6d6e8",
+      "portability_only_change": false
+    }
+  ],
+  "upstream_execution": false,
+  "production_approved": false,
+  "publication_enabled": false
+}
