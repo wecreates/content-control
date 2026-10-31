@@ -27,13 +27,17 @@ async function exercise(spec,stage,expired){
   const envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
   const queries=[];
   const advance=()=>{now=issued+(expired?1000:999);};
-  const client={release(){},query:async sql=>{
-   sql=typeof sql==='string'?sql:sql.text;
+  const client={release(){},query:async(sql,args=[])=>{
+   if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
    queries.push(sql);
    if(stage==='database'&&/^(SELECT|UPDATE|INSERT)/.test(sql))advance();
    if(sql.includes('AS budget_day'))return {rows:[{budget_day:'2026-10-16'}]};
    if(sql.includes('FROM pod_concepts WHERE fingerprint='))return {rows:spec.duplicate?
     [{id:'existing-concept',business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]:[]};
+   if(sql.startsWith('UPDATE pod_concepts'))return {rowCount:1,
+    rows:[{id:'existing-concept',rights_state:args[1],permanently_unpublished:true}]};
+   if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,kind'))return {rowCount:1,
+    rows:[{id:args[0],kind:args[1]}]};
    if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
    if(sql.includes('SELECT q.*'))return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{}}]};
    return {rows:[{id:job.id,used:1}]};

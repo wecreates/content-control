@@ -226,10 +226,13 @@ export class PodDB {
     // Deduplication saves concept budget, never discards newly adverse evidence.
     // Preserve an existing tombstone exactly; even later PASS cannot revive it.
     if(intake.rights_state!=='PASS'&&!existing.permanently_unpublished){
-     await c.query('UPDATE pod_concepts SET rights_state=$2,permanently_unpublished=true WHERE id=$1',[existing.id,intake.rights_state]);
-     await c.query('INSERT INTO pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.concept.rights_blocked',
+     assertExactMutation(await c.query('UPDATE pod_concepts SET rights_state=$2,permanently_unpublished=true WHERE id=$1 RETURNING id,rights_state,permanently_unpublished',[existing.id,intake.rights_state]),
+      {id:existing.id,rights_state:intake.rights_state,permanently_unpublished:true});
+     const eventId=crypto.randomUUID(),eventKind='pod.concept.rights_blocked';
+     assertExactMutation(await c.query('INSERT INTO pod_events(id,kind,payload) VALUES($1,$2,$3) RETURNING id,kind',[eventId,eventKind,
       {concept_id:existing.id,business_id:businessId,rights_state:intake.rights_state,
-       intake_sha256:crypto.createHash('sha256').update(envelope.payload).digest('hex'),publication_enabled:false}]);
+       intake_sha256:crypto.createHash('sha256').update(envelope.payload).digest('hex'),publication_enabled:false}]),
+      {id:eventId,kind:eventKind});
     }
     verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
     return {id:existing.id};

@@ -14,9 +14,12 @@ function fixture({rights_state='PASS',permanently_unpublished=false}={}){
   if(sql.startsWith('SELECT id FROM pod_concepts'))return {rows:[{id:concept.id}]};
   if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:[{...concept}]};
   if(sql.startsWith('UPDATE pod_concepts')){
-   writes.push({sql,params});concept.rights_state=params[1];concept.permanently_unpublished=true;return {rowCount:1,rows:[]};
+   writes.push({sql,params});concept.rights_state=params[1];concept.permanently_unpublished=true;
+   return {rowCount:1,rows:[{id:concept.id,rights_state:params[1],permanently_unpublished:true}]};
   }
-  if(sql.startsWith('INSERT INTO pod_events')){writes.push({sql,params});return {rowCount:1,rows:[]};}
+  if(sql.startsWith('INSERT INTO pod_events')){
+   writes.push({sql,params});return {rowCount:1,rows:[{id:params[0],kind:'pod.concept.rights_blocked'}]};
+  }
   if(sql.includes('pod_daily_concept_budget'))throw Error('duplicate must not consume budget');
   if(sql.includes('pg_advisory_xact_lock'))return {rows:[]};
   throw Error('Unexpected query');
@@ -45,6 +48,32 @@ test('PASS duplicate is idempotent and consumes no additional concept budget',as
 test('matching fingerprint cannot return or mutate another business concept',async()=>{
  const f=fixture();await assert.rejects(f.db.registerIntake(f.request('UNKNOWN','other-business')),/INTAKE_FINGERPRINT_CONFLICT/);
  assert.equal(f.concept.rights_state,'PASS');assert.equal(f.writes.length,0);
+});
+
+test('adverse duplicate intake rejects unverified concept and audit mutation receipts',async()=>{
+ const attempts=[
+  undefined,{},
+  {rowCount:0,rows:[]},
+  {rowCount:1,rows:[]},
+  Object.defineProperty({},'rowCount',{get(){throw Error('intake mutation rowCount getter executed');}}),
+  {rowCount:1,rows:new Proxy([],{get(){throw Error('intake mutation rows proxy executed');}})},
+ ];
+ for(const stage of ['concept','audit'])for(const attempt of attempts){
+  const f=fixture(),original=f.db.tx;let writes=0;
+  f.db.tx=fn=>original(client=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('UPDATE pod_concepts')){
+    writes+=1;
+    return stage==='concept'?attempt:{rowCount:1,rows:[{id:f.concept.id,rights_state:args[1],permanently_unpublished:true}]};
+   }
+   if(sql.startsWith('INSERT INTO pod_events')){
+    writes+=1;
+    return stage==='audit'?attempt:{rowCount:1,rows:[{id:args[0],kind:'pod.concept.rights_blocked'}]};
+   }
+   return client.query(sql,args);
+  }}));
+  await assert.rejects(f.db.registerIntake(f.request('UNKNOWN')),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,stage==='concept'?1:2);
+ }
 });
 
 for(const [name,values] of [['non-string',[1,true,[],['fingerprint'],{},null]],['blank',['',' ','\t\n','\u2003']]]){
