@@ -33,6 +33,24 @@ function snapshotMutationCount(result){
  if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>1)throw Error('FINANCIAL_QUERY_UNVERIFIED');
  return count.value;
 }
+function verifyAuditMutation(result,expected){
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ let length,rowDescriptor;
+ try{
+  const lengthDescriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  length=lengthDescriptor&&Object.hasOwn(lengthDescriptor,'value')?lengthDescriptor.value:null;
+  rowDescriptor=Object.getOwnPropertyDescriptor(rows.value,'0');
+ }catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
+ if(length!==1||!rowDescriptor||!Object.hasOwn(rowDescriptor,'value')||!ordinaryRecord(rowDescriptor.value))
+  throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ for(const field of ['id','job_id','kind']){
+  const capability=dataProperty(rowDescriptor.value,field);
+  if(!capability.valid||capability.value!==expected[field])throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ }
+}
 function snapshotReplayRows(result){
  if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
  const rows=dataProperty(result,'rows');
@@ -121,7 +139,10 @@ export async function recordFinancialEvent(db,envelope,key){
    verifyEnvelope(envelope,key,'content-control:pod:finance');
    return {id:previous.id,duplicate:true};
   }
-  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.finance.verified',{financial_event_id:id,authority_event_id:e.authority_event_id}]);
+  const audit={id:crypto.randomUUID(),job_id:e.job_id,kind:'pod.finance.verified'};
+  verifyAuditMutation(await c.query(`INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)
+   RETURNING id,job_id,kind`,[audit.id,audit.job_id,audit.kind,
+   {financial_event_id:id,authority_event_id:e.authority_event_id}]),audit);
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:finance');
   return {id,duplicate:false};
