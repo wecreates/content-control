@@ -364,3 +364,17 @@ test('state successful export returns a clean connection without rollback',async
  assert.deepEqual(releases,[false]);assert.equal(calls.at(-1),'COMMIT');
  assert.equal(calls.includes('ROLLBACK'),false);
 });
+
+
+test('state archive rejects executable database results without invoking them',async t=>{
+ const f=await fixture(t),client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
+ client.query=async(sql,...args)=>{
+  if(sql.includes('FROM public.pod_schema_version'))return Object.defineProperty({},'rows',{get(){
+   executed++;throw Error('STATE_ARCHIVE_ROWS_GETTER_EXECUTED');
+  }});
+  return query(sql,...args);
+ };
+ f.db.pool.connect=async()=>client;
+ await assert.rejects(exportStateArchive(f.db,{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+ assert.equal(executed,0);
+});
