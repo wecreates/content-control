@@ -98,7 +98,8 @@ function snapshotJson(value,depth=0,state={nodes:0}){
 function snapshotReplayRows(result){
  return Object.freeze(snapshotRows(result,REPLAY_FIELDS,1).map(row=>{
   const priceValid=row.price_minor===null||Number.isSafeInteger(row.price_minor)&&row.price_minor>=0||
-   typeof row.price_minor==='string'&&/^(0|[1-9][0-9]*)$/.test(row.price_minor)&&BigInt(row.price_minor)<=BigInt(Number.MAX_SAFE_INTEGER);
+   typeof row.price_minor==='string'&&/^(0|[1-9][0-9]{0,15})$/.test(row.price_minor)&&
+    Number.isSafeInteger(Number(row.price_minor));
   if(!validPostgresText(row.id)||!row.id||typeof row.country!=='string'||!/^[A-Z]{2}$/.test(row.country)||
    !validPostgresText(row.category)||!row.category||(row.image_sha256!==null&&!hash(row.image_sha256))||!priceValid||
    !(row.currency===null||typeof row.currency==='string'&&/^[A-Z]{3}$/.test(row.currency))||
