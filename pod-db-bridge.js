@@ -23,6 +23,37 @@ function exactObject(value,keys){
   JSON.stringify(ownKeys.sort())===JSON.stringify(keys)&&
   keys.every(key=>descriptors[key]?.enumerable&&Object.hasOwn(descriptors[key],'value'));
 }
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  const descriptor=Object.getOwnPropertyDescriptor(target,key);
+  return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+ }catch{return {valid:false};}
+}
+function assertExactMutation(result,expected){
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ let length,rowDescriptor,row,prototype,keys,descriptors;
+ try{
+  length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  rowDescriptor=Object.getOwnPropertyDescriptor(rows.value,'0');
+  if(!Object.hasOwn(length||{},'value')||length.value!==1||!rowDescriptor?.enumerable||
+   !Object.hasOwn(rowDescriptor,'value'))throw Error();
+  row=rowDescriptor.value;
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+  prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('POD_MUTATION_UNVERIFIED');}
+ const fields=Object.keys(expected).sort();
+ if((prototype!==Object.prototype&&prototype!==null)||keys.length!==fields.length||
+  keys.some(key=>typeof key!=='string')||keys.map(String).sort().some((key,index)=>key!==fields[index]))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ for(const field of fields){
+  const descriptor=descriptors[field];
+  if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||descriptor.value!==expected[field])
+   throw Error('POD_MUTATION_UNVERIFIED');
+ }
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -414,9 +445,12 @@ export class PodDB {
    // Authentication before connection acquisition cannot authorize an expired
    // review after pool or row-lock waits. Revalidate at the state transition.
    enforceQA(verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa'),job.manifest.package_sha256,job.manifest.template_sha256,job.platform);
-   await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1",[jobId,qaEnvelope]);
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),jobId,'pod.production.qa_passed',
-    {package_sha256:job.manifest.package_sha256,manifest_sha256:job.manifest_sha256,publication_enabled:false}]);
+   assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_passed',qa_envelope=$2,reason_code=NULL,updated_at=now() WHERE id=$1 RETURNING id,state,reason_code",[jobId,qaEnvelope]),
+    {id:jobId,state:'qa_passed',reason_code:null});
+   const eventId=crypto.randomUUID(),eventKind='pod.production.qa_passed';
+   assertExactMutation(await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',[eventId,jobId,eventKind,
+    {package_sha256:job.manifest.package_sha256,manifest_sha256:job.manifest_sha256,publication_enabled:false}]),
+    {id:eventId,job_id:jobId,kind:eventKind});
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {status:'QA_PASSED',publication_enabled:false};
   });
