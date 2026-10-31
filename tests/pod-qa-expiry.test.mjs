@@ -37,8 +37,11 @@ async function exercise(stage,verdict,run,expired){
     valid:true,rights_state:'PASS',permanently_unpublished:false}]};
    if(/^(UPDATE|INSERT)/.test(sql)){
     writes.push(sql);
-    if(sql.includes("RETURNING id,state,reason_code"))return {rowCount:1,rows:[{id:job.id,state:'qa_passed',reason_code:null}]};
-    if(sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:'pod.production.qa_passed'}]};
+    if(sql.includes("RETURNING id,state,reason_code")){
+     const state=sql.includes("state='qa_passed'")?'qa_passed':args[0];
+     return {rowCount:1,rows:[{id:job.id,state,reason_code:state==='qa_passed'?null:'QA_FAILED'}]};
+    }
+    if(sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:args[2]}]};
     return {rows:[{id:job.id}]};
    }
    return {rows:[]};
