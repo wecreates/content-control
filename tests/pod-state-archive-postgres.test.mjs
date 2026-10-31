@@ -76,7 +76,7 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   let mutated=false;
   const racing={tx:fn=>target.tx(c=>fn({query:async(sql,args)=>{
    const result=await c.query(sql,args);
-   if(sql.startsWith('INSERT INTO public.pod_artifacts')&&!mutated){mutated=true;await fs.writeFile(file,corrupt);}
+   if(sql.includes('INSERT INTO public.pod_artifacts')&&!mutated){mutated=true;await fs.writeFile(file,corrupt);}
    return result;
   }}))};
   await assert.rejects(restoreStateArchive(racing,{directory,key,env}),/ARCHIVE_AUTH_FAILED/);
