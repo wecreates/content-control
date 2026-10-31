@@ -32,7 +32,7 @@ async function fixture(t){
   if(sql.startsWith('FETCH')){const rows=data[table]||[];return {rows:cursor<rows.length?[{record:rows[cursor++]}]:[]};}
   if(sql.startsWith('WITH source AS'))return {rowCount:1,rows:[{inserted:'1',exact:true}]};
   if(sql.startsWith('WITH restored_event AS'))return {rowCount:1,rows:[{id:args[0],kind:args[1],exact:true}]};
-  if(sql.startsWith('UPDATE public.'))return {rowCount:0};
+  if(sql.startsWith('WITH changed AS'))return {rowCount:1,rows:[{changed:'0',exact:true}]};
   return {rows:[]};
  }};
  return {root,directory,queries,data,versions,db:{pool:{connect:async()=>client}}};
@@ -422,15 +422,16 @@ test('state archive rejects executable database results without invoking them',a
  await t.test('restore mutation count accessor',async t=>{
   const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
   const client=await f.db.pool.connect(),query=client.query.bind(client);let executed=0;
-  client.query=async(sql,...args)=>sql.startsWith('UPDATE public.')?
+  client.query=async(sql,...args)=>sql.startsWith('WITH changed AS')?
    Object.defineProperty({},'rowCount',{get(){executed++;throw Error('STATE_ARCHIVE_COUNT_GETTER_EXECUTED');}}):query(sql,...args);
   await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),/^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
   assert.equal(executed,0);
  });
  await t.test('restore snapshots bounded mutation counts',async t=>{
   const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
-  const client=await f.db.pool.connect(),query=client.query.bind(client),counts=[3,1,1];
-  client.query=async(sql,...args)=>sql.startsWith('UPDATE public.')?{rowCount:counts.shift()}:query(sql,...args);
+  const client=await f.db.pool.connect(),query=client.query.bind(client),counts=['3','1','1'];
+  client.query=async(sql,...args)=>sql.startsWith('WITH changed AS')?
+   {rowCount:1,rows:[{changed:counts.shift(),exact:true}]}:query(sql,...args);
   const receipt=await restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env});
   assert.equal(receipt.accounts_disabled,3);assert.equal(receipt.production_held,1);assert.equal(receipt.publishing_ambiguous,1);
   assert.deepEqual(counts,[]);
@@ -450,6 +451,23 @@ test('state restore rejects unverified data and recovery receipt mutations',asyn
    const ordinary=await query(sql,...args);
    if(phase.startsWith('data insert')&&sql.startsWith('WITH source AS'))return result;
    if(phase.startsWith('recovery receipt')&&sql.startsWith('WITH restored_event AS'))return result;
+   return ordinary;
+  };
+  await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),
+   /^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
+ });
+});
+
+test('state restore rejects unverified recovery safety mutations',async t=>{
+ for(const [phase,result] of [
+  ['missing proof',{rowCount:1,rows:[]}],
+  ['mismatched proof',{rowCount:1,rows:[{changed:'1',exact:false}]}]
+ ])await t.test(phase,async()=>{
+  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+  const client=await f.db.pool.connect(),query=client.query.bind(client);
+  client.query=async(sql,...args)=>{
+   const ordinary=await query(sql,...args);
+   if(sql.includes('UPDATE public.pod_accounts'))return result;
    return ordinary;
   };
   await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),
