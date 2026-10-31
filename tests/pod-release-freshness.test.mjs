@@ -729,7 +729,10 @@ test('direct submitted transition preserves a valid opaque listing ID',async()=>
   query:async(sql,args)=>{if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}queries.push({sql,args});
    if(sql.includes("state='publishing' FOR UPDATE"))return {rows:[{id:'fixture-job'}]};
    if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
-   return {rows:sql.startsWith('UPDATE')?[{id:'fixture-job'}]:[]};},release(){}
+   if(sql.startsWith('UPDATE'))return {rowCount:1,rows:[{id:'fixture-job',state:'submitted',
+    provider_id:id,reason_code:null}]};
+   if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:'fixture-job',kind:'pod.submitted'}]};
+   return {rows:[]};},release(){}
  })}});
  await db.finish({id:'fixture-job',fencing_token:'1'},'submitted',{id});
  assert.equal(queries.find(q=>q.sql.startsWith('UPDATE')).args[1],id);
