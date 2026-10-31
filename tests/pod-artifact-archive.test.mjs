@@ -378,6 +378,15 @@ test('artifact export rejects Proxy, accessor, sparse and oversized cursor resul
  }
 });
 
+test('artifact export preserves the bounded SQL projection diagnostic for oversized legacy bodies',async t=>{
+ const directory=await workspace(t),db=database([Buffer.from('legacy oversized fixture')]);
+ const client=await db.pool.connect(),query=client.query.bind(client);
+ client.query=async(sql,...args)=>sql.startsWith('FETCH')?
+  {rows:[{sha256:'a'.repeat(64),media_type:'application/json',body:null}]}:query(sql,...args);
+ db.pool.connect=async()=>client;
+ await assert.rejects(exportArtifactLibrary(db,{directory,key}),/ARCHIVE_ARTIFACT_INVALID/);
+});
+
 test('artifact restore rejects executable usage and identity results before writes',async t=>{
  const body=Buffer.from('restore query boundary fixture'),source=database([body]);
  const directory=await workspace(t);await exportArtifactLibrary(source,{directory,key});

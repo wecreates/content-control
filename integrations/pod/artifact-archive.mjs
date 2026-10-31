@@ -48,8 +48,10 @@ function queryRows(result,{maxRows,exactRows,fields}){
 }
 function artifactCursorRows(result){
  return queryRows(result,{maxRows:1,fields:['sha256','media_type','body']}).map(row=>{
-  if(typeof row.sha256!=='string'||typeof row.media_type!=='string'||!Buffer.isBuffer(row.body)||
-   utilTypes.isProxy(row.body)||Object.getPrototypeOf(row.body)!==Buffer.prototype)throw Error('ARCHIVE_QUERY_UNVERIFIED');
+  if(typeof row.sha256!=='string'||typeof row.media_type!=='string')throw Error('ARCHIVE_QUERY_UNVERIFIED');
+  if(row.body===null)return row; // The bounded SQL projection deliberately exposes oversized legacy rows as NULL.
+  if(!Buffer.isBuffer(row.body)||utilTypes.isProxy(row.body)||Object.getPrototypeOf(row.body)!==Buffer.prototype)
+   throw Error('ARCHIVE_QUERY_UNVERIFIED');
   return Object.freeze({...row,body:Buffer.from(row.body)});
  });
 }
