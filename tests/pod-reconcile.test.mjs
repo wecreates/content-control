@@ -32,6 +32,37 @@ test('corrupt listing evidence cannot publish, replay or add a published observa
   assert.equal(db.writes.length,0);
  }
 });
+test('listing reconciliation rejects executable database results without invocation',async()=>{
+ const validJob={id:observation.job_id,account_id:observation.account_id,platform:observation.platform,
+  state:'published',provider_id:observation.provider_id,reason_code:null,lease_until:null,
+  manifest:{package_sha256:observation.package_sha256}};
+ const validInbox={evidence_sha256:observation.evidence_sha256,payload:observation};
+ let reads=0,writes=0;
+ const attempts=[
+  ['job',Object.defineProperty({},'rows',{get(){reads++;throw Error('job rows getter executed');}})],
+  ['job',new Proxy({rows:[validJob]},{get(target,property,receiver){
+   if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+  }})],
+  ['job',{rows:new Proxy([validJob],{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})}],
+  ['job',{rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('job row getter executed');}})}],
+  ['job',{rows:[new Proxy(validJob,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})]}],
+  ['job',{rows:[Object.defineProperty({...validJob},'state',{enumerable:true,get(){reads++;throw Error('job field getter executed');}})]}],
+  ['inbox',Object.defineProperty({},'rowCount',{get(){reads++;throw Error('inbox row count getter executed');}})],
+  ['inbox',{rowCount:1,rows:[Object.defineProperty({...validInbox},'payload',{enumerable:true,get(){reads++;throw Error('inbox payload getter executed');}})]}],
+  ['inbox',{rowCount:1,rows:[{...validInbox,payload:new Proxy(observation,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})}]}],
+ ];
+ for(const [stage,result] of attempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.startsWith('SELECT * FROM pod_production_queue'))return stage==='job'?result:{rows:[validJob]};
+   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:observation.evidence_sha256,
+    media_type:'application/json',body_sha256:observation.evidence_sha256}]};
+   if(sql.includes('FROM pod_provider_inbox'))return stage==='inbox'?result:{rowCount:0,rows:[]};
+   writes++;assert.fail('unverified listing result reached mutation');
+  }})};
+  await assert.rejects(reconcilePublication(db,sign(observation),key),/^Error: LISTING_QUERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);assert.equal(writes,0);
+});
 test('exact replay ignores refreshed envelope times and never mutates state',async()=>{
  const db=database(observation,{evidence_sha256:observation.evidence_sha256,payload:{...observation,issued_at_ms:1,expires_at_ms:2}},'published');
  assert.deepEqual(await reconcilePublication(db,sign(observation),key),{duplicate:true});assert.equal(db.writes.length,0);
