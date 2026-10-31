@@ -73,6 +73,16 @@ function snapshotMutationCount(result){
   throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
  return property.value;
 }
+function verifyRestoredRecord(result){
+ const count=dataProperty(result,'rowCount'),rows=snapshotRows(result,['inserted','exact'],1);
+ if(!count.valid||count.value!==1||rows.length!==1||rows[0].inserted!=='1'||rows[0].exact!==true)
+  throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+}
+function verifyRecoveryEvent(result,id,kind){
+ const count=dataProperty(result,'rowCount'),rows=snapshotRows(result,['id','kind','exact'],1);
+ if(!count.valid||count.value!==1||rows.length!==1||rows[0].id!==id||rows[0].kind!==kind||rows[0].exact!==true)
+  throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+}
 function disabled(env,restoring=false){
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false'||
   (restoring&&(env.POD_PRODUCTION_ENABLED!=='false'||env.POD_OUTBOX_ENABLED!=='false')))
@@ -243,7 +253,13 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
    checkpoint();const {body}=await recordFor(item,catalog,options);checkpoint();
    // Send original JSON text to PostgreSQL: parsing/re-serializing bigint
    // fields in JavaScript would round financial amounts and fencing tokens.
-   await client.query(`INSERT INTO public.${item.table} SELECT * FROM json_populate_record(NULL::public.${item.table},$1::json)`,[body.toString('utf8')]);
+   verifyRestoredRecord(await client.query(`WITH source AS (
+    SELECT * FROM json_populate_record(NULL::public.${item.table},$1::json)
+   ), inserted AS (
+    INSERT INTO public.${item.table} SELECT * FROM source RETURNING *
+   ) SELECT count(*)::text AS inserted,
+    bool_and(to_jsonb(inserted) IS NOT DISTINCT FROM to_jsonb(source)) AS exact
+   FROM inserted CROSS JOIN source`,[body.toString('utf8')]));
    checkpoint();
   }
   // The held descriptor prevents redirecting authenticated reads, but the
@@ -259,7 +275,10 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
    lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`));
   checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
-  await client.query('INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3)',[crypto.randomUUID(),'pod.recovery.restored',receipt]);
+  const eventId=crypto.randomUUID(),eventKind='pod.recovery.restored';
+  verifyRecoveryEvent(await client.query(`WITH restored_event AS (
+   INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3) RETURNING id::text AS id,kind,payload
+  ) SELECT id,kind,payload=$3::jsonb AS exact FROM restored_event`,[eventId,eventKind,receipt]),eventId,eventKind);
   checkpoint();return receipt;
  });
  // COMMIT and pool release are asynchronous. A completed transaction cannot
