@@ -11,6 +11,7 @@ const sign=value=>{const payload=JSON.stringify({schema_version:1,audience:'cont
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
 function fixture(previous=[],corrupt=false){
  const rows=previous.map(x=>({...x})),outbox=[];
+ const result=value=>Object.assign(Object.create({driver_result:true}),value);
  const db={active(){},tx:async fn=>{
   const size=rows.length,events=outbox.length;
   try{return await fn({query:async(sql,args)=>{
@@ -19,13 +20,13 @@ function fixture(previous=[],corrupt=false){
     const [id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id]=args;
     const conflict=rows.some(r=>r.provider===provider&&r.provider_event_id===provider_event_id);
     const authorityConflict=rows.some(r=>r.authority_event_id===authority_event_id);
-    if(conflict||(authorityConflict&&sql.includes('ON CONFLICT DO NOTHING')))return {rowCount:0,rows:[]};
+    if(conflict||(authorityConflict&&sql.includes('ON CONFLICT DO NOTHING')))return result({rowCount:0,rows:[]});
     // The old targeted conflict handler had no upstream-identity uniqueness.
     // Model that path too so the regression exposes the actual double count.
     rows.push({id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id});
-    return {rowCount:1,rows:[{id}]};
+    return result({rowCount:1,rows:[{id}]});
    }
-   if(sql.includes('FROM pod_financial_events'))return {rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2])).map(r=>({...r,occurred_at_matches:new Date(r.occurred_at).getTime()===Date.parse(args[3])}))};
+   if(sql.includes('FROM pod_financial_events'))return result({rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2])).map(r=>({...r,occurred_at_matches:new Date(r.occurred_at).getTime()===Date.parse(args[3])}))});
    if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[]};}
    throw Error('UNEXPECTED_QUERY');
   }});}catch(e){rows.length=size;outbox.length=events;throw e;}

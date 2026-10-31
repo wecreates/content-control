@@ -20,14 +20,17 @@ function ordinaryRecord(value){
    [Object.prototype,null].includes(Object.getPrototypeOf(value));
  }catch{return false;}
 }
+function inertQueryResult(value){
+ return value!==null&&(typeof value==='object'||typeof value==='function')&&!utilTypes.isProxy(value);
+}
 function snapshotMutationCount(result){
- if(!ordinaryRecord(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
  const count=dataProperty(result,'rowCount');
  if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>1)throw Error('FINANCIAL_QUERY_UNVERIFIED');
  return count.value;
 }
 function snapshotReplayRows(result){
- if(!ordinaryRecord(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
  const rows=dataProperty(result,'rows');
  if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
  let length;
