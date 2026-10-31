@@ -19,6 +19,16 @@ test('meeting numeric targets never manufactures measured capacity or launch acc
  assert.equal(f.queries[0],'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');assert.equal(f.queries.at(-1),'COMMIT');
  assert.deepEqual(f.released,[false]);
 });
+test('capacity reporting rejects executable query results without invocation',async()=>{
+ let reads=0,released;
+ const result=Object.defineProperty({},'rows',{get(){reads++;throw Error('CAPACITY_ROWS_GETTER_EXECUTED');}});
+ const db={pool:{connect:async()=>({
+  query:async sql=>sql.startsWith('WITH')?result:{rows:[]},
+  release:bad=>{released=bad},
+ })}};
+ await assert.rejects(productionActivity(db),/^Error: CAPACITY_REPORT_INVALID$/);
+ assert.equal(reads,0);assert.equal(released,false);
+});
 test('malformed counts and observation windows fail closed',async()=>{
  for(const patch of [{generated_jobs:5},{generated_jobs:'-1'},{generated_jobs:'1e3'},
   {window_start:'invalid'},{window_end:'2026-10-17T00:00:00Z'}]){
