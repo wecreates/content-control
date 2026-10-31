@@ -1,10 +1,60 @@
 import crypto from 'node:crypto';
+import {types as utilTypes} from 'node:util';
 import {verifyEnvelope} from './policy.mjs';
 import {assertStoredEvidence} from './stored-evidence.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
 import {validOpaqueText} from './text-identity.mjs';
 
-
+const REPLAY_FIELDS=Object.freeze(['id','job_id','provider','provider_event_id','kind','amount_minor','currency',
+ 'evidence_sha256','authority_event_id','occurred_at_matches']);
+function dataProperty(target,key){
+ try{
+  if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
+  const descriptor=Object.getOwnPropertyDescriptor(target,key);
+  return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
+ }catch{return {valid:false};}
+}
+function ordinaryRecord(value){
+ try{
+  return value!==null&&(typeof value==='object'||typeof value==='function')&&!utilTypes.isProxy(value)&&
+   [Object.prototype,null].includes(Object.getPrototypeOf(value));
+ }catch{return false;}
+}
+function inertQueryResult(value){
+ return value!==null&&(typeof value==='object'||typeof value==='function')&&!utilTypes.isProxy(value);
+}
+function snapshotMutationCount(result){
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ const count=dataProperty(result,'rowCount');
+ if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>1)throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ return count.value;
+}
+function snapshotReplayRows(result){
+ if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+ let length;
+ try{
+  const descriptor=Object.getOwnPropertyDescriptor(rows.value,'length');
+  if(!descriptor||!Object.hasOwn(descriptor,'value')||!Number.isInteger(descriptor.value)||descriptor.value<0||descriptor.value>2)throw Error();
+  length=descriptor.value;
+ }catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
+ const snapshots=[];
+ for(let index=0;index<length;index++){
+  let element;
+  try{element=Object.getOwnPropertyDescriptor(rows.value,String(index));}
+  catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
+  if(!element||!Object.hasOwn(element,'value')||!ordinaryRecord(element.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+  const snapshot={};
+  for(const field of REPLAY_FIELDS){
+   const capability=dataProperty(element.value,field);
+   if(!capability.valid||utilTypes.isProxy(capability.value))throw Error('FINANCIAL_QUERY_UNVERIFIED');
+   snapshot[field]=capability.value;
+  }
+  snapshots.push(Object.freeze(snapshot));
+ }
+ return Object.freeze(snapshots);
+}
 
 export async function recordFinancialEvent(db,envelope,key){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
@@ -21,12 +71,15 @@ export async function recordFinancialEvent(db,envelope,key){
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id`,
    [id,e.job_id,e.provider,e.provider_event_id,e.kind,e.amount_minor,e.currency,e.occurred_at,e.evidence_sha256,e.authority_event_id]);
   db.active();
-  if(!result.rowCount){
+  if(snapshotMutationCount(result)===0){
    // Both identities must resolve to exactly the same immutable event. A new
    // provider ID cannot turn one authoritative event into additional income.
    // pg's Date decoder loses microseconds. Compare the original parameter in
    // PostgreSQL so sub-millisecond changes cannot masquerade as exact retries.
-   const matches=(await c.query('SELECT *,occurred_at=$4::timestamptz AS occurred_at_matches FROM pod_financial_events WHERE (provider=$1 AND provider_event_id=$2) OR authority_event_id=$3',[e.provider,e.provider_event_id,e.authority_event_id,e.occurred_at])).rows;
+   const matches=snapshotReplayRows(await c.query(`SELECT id,job_id,provider,provider_event_id,kind,amount_minor,currency,
+    evidence_sha256,authority_event_id,occurred_at=$4::timestamptz AS occurred_at_matches
+    FROM pod_financial_events WHERE (provider=$1 AND provider_event_id=$2) OR authority_event_id=$3`,
+    [e.provider,e.provider_event_id,e.authority_event_id,e.occurred_at]));
    db.active();
    const previous=matches[0];
    if(matches.length!==1||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
