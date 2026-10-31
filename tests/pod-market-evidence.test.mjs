@@ -147,3 +147,35 @@ test('market observation JSON rejects lossy keys and values before database acce
   assert.equal(f.writes.length,0);
  }
 });
+
+test('market intake rejects executable and malformed query results before replay decisions',async()=>{
+ const o=observation();
+ const evidence={rows:[{sha256:o.source_sha256,media_type:'application/json',body_sha256:o.source_sha256},
+  {sha256:o.image_sha256,media_type:'application/json',body_sha256:o.image_sha256},
+  {sha256:o.rank_evidence_sha256,media_type:'application/json',body_sha256:o.rank_evidence_sha256}]};
+ const previous={id:'original-id',country:o.country,category:o.category,image_sha256:o.image_sha256,
+  price_minor:String(o.price_minor),currency:o.currency,observed_rank:o.observed_rank,
+  source_sha256:o.source_sha256,observations:o.observations,rank_evidence_sha256:o.rank_evidence_sha256};
+ const cases=[
+  ['insert rowCount getter',()=>Object.defineProperty({rows:[{id:'stored-id'}]},'rowCount',{get(){throw Error('insert rowCount getter executed');}}),null],
+  ['insert rows getter',()=>Object.defineProperty({rowCount:1},'rows',{get(){throw Error('insert rows getter executed');}}),null],
+  ['insert row getter',()=>({rowCount:1,rows:[Object.defineProperty({},'id',{get(){throw Error('insert id getter executed');}})]}),null],
+  ['insert rows proxy',()=>({rowCount:1,rows:new Proxy([{id:'stored-id'}],{get(){throw Error('insert rows proxy executed');}})}),null],
+  ['replay rows getter',()=>({rowCount:0,rows:[]}),()=>Object.defineProperty({},'rows',{get(){throw Error('replay rows getter executed');}})],
+  ['replay row proxy',()=>({rowCount:0,rows:[]}),()=>({rows:[new Proxy(previous,{get(){throw Error('replay row proxy executed');}})]})],
+  ['replay field getter',()=>({rowCount:0,rows:[]}),()=>({rows:[Object.defineProperty({...previous},'country',{get(){throw Error('replay country getter executed');}})]})],
+  ['replay nested getter',()=>({rowCount:0,rows:[]}),()=>({rows:[{...previous,observations:{
+   get tags(){throw Error('replay observations getter executed');}}}]})],
+  ['replay sparse rows',()=>({rowCount:0,rows:[]}),()=>({rows:new Array(1)})],
+  ['replay oversized rows',()=>({rowCount:0,rows:[]}),()=>({rows:[previous,previous]})]
+ ];
+ for(const [label,insert,replay] of cases){
+  const db={active(){},tx:async fn=>fn({query:async sql=>{
+   if(sql.includes('FROM pod_artifacts'))return evidence;
+   if(sql.startsWith('INSERT INTO pod_market_intelligence'))return insert();
+   if(sql.includes('FROM pod_market_intelligence'))return replay();
+   throw Error('UNEXPECTED_QUERY');
+  }})};
+  await assert.rejects(recordMarketObservation(db,sign(o),key),/MARKET_QUERY_UNVERIFIED/,label);
+ }
+});
