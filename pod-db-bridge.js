@@ -637,9 +637,13 @@ export class PodDB {
   return this.tx(async c=>{
    await lockPublishingLease(c,job);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp() RETURNING id`,[state,providerId,reason,job.id,job.fencing_token]);
-   if(!r.rows.length)throw Error('LEASE_LOST');
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.'+state,eventPayload]);
+    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp()
+    RETURNING id,state,provider_id,reason_code`,[state,providerId,reason,job.id,job.fencing_token]);
+   assertExactMutation(r,{id:job.id,state,provider_id:providerId,reason_code:reason});
+   const eventId=crypto.randomUUID(),eventKind='pod.'+state;
+   const event=await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',
+    [eventId,job.id,eventKind,eventPayload]);
+   assertExactMutation(event,{id:eventId,job_id:job.id,kind:eventKind});
   });
  }
  async recover(){return this.tx(async c=>{
