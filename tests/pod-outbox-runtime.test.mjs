@@ -61,6 +61,19 @@ test('direct delivery rejects executable query results without invocation',async
  }
  assert.equal(reads,0);assert.equal(fetches,0);assert.equal(updates,0);
 });
+test('acknowledged events require a verified one-row durable delivery mutation',async()=>{
+ let reads=0;
+ const attempts=[undefined,{}, {rowCount:0},{rowCount:2},
+  new Proxy({rowCount:1},{get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}}),
+  Object.defineProperty({},'rowCount',{get(){reads++;throw Error('delivery row count getter executed');}})];
+ for(const result of attempts){
+  const db={active(){},read:async()=>({rows:[{id:'event'}]}),
+   tx:async fn=>fn({query:async()=>result})};
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>jsonResponse({accepted_event_id:'event'})}),/^Error: OUTBOX_DELIVERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);
+});
 test('direct delivery enforces receiver byte ceilings before network access',async t=>{
  const now=1800000000000;t.mock.method(Date,'now',()=>now);
  const encoded=event=>JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:now,event});
