@@ -67,11 +67,12 @@ function snapshotRows(result,fields,max){
  }
  return Object.freeze(snapshots);
 }
-function snapshotMutationCount(result){
- const property=dataProperty(result,'rowCount');
- if(!property.valid||!Number.isSafeInteger(property.value)||property.value<0||property.value>MAX_ROWS)
-  throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
- return property.value;
+function verifySafetyMutation(result){
+ const count=dataProperty(result,'rowCount'),rows=snapshotRows(result,['changed','exact'],1);
+ if(!count.valid||count.value!==1||rows.length!==1||typeof rows[0].changed!=='string'||
+  !/^(0|[1-9][0-9]*)$/.test(rows[0].changed)||rows[0].changed.length>String(MAX_ROWS).length||
+  Number(rows[0].changed)>MAX_ROWS||rows[0].exact!==true)throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
+ return Number(rows[0].changed);
 }
 function verifyRestoredRecord(result){
  const count=dataProperty(result,'rowCount'),rows=snapshotRows(result,['inserted','exact'],1);
@@ -266,13 +267,23 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   // requested pathname must still identify that same snapshot at commit time.
   // Check before safety-state mutations so replacement rolls back every row.
   checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
-  const accounts=snapshotMutationCount(await client.query("UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED'"));
+  const accounts=verifySafetyMutation(await client.query(`WITH changed AS (
+   UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED' RETURNING state
+  ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='DISABLED'),true) AS exact FROM changed`));
   checkpoint();
-  const production=snapshotMutationCount(await client.query(`UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
-   lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='processing'`));
+  const production=verifySafetyMutation(await client.query(`WITH changed AS (
+   UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
+    lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp()
+   WHERE state='processing' RETURNING state,reason_code,lease_until
+  ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='blocked' AND reason_code='PRODUCTION_LEASE_EXPIRED'
+   AND lease_until<clock_timestamp()),true) AS exact FROM changed`));
   checkpoint();
-  const publishing=snapshotMutationCount(await client.query(`UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
-   lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp() WHERE state='publishing'`));
+  const publishing=verifySafetyMutation(await client.query(`WITH changed AS (
+   UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
+    lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp()
+   WHERE state='publishing' RETURNING state,reason_code,lease_until
+  ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='ambiguous'
+   AND reason_code='RECOVERY_RECONCILIATION_REQUIRED' AND lease_until IS NULL),true) AS exact FROM changed`));
   checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
   const eventId=crypto.randomUUID(),eventKind='pod.recovery.restored';
