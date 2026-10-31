@@ -66,6 +66,41 @@ test('financial intake rejects executable stored-evidence query results without 
  }
  assert.equal(reads,0);assert.equal(writes,0);
 });
+test('financial intake rejects executable ledger query results without invocation',async()=>{
+ const e=event(),validEvidence={rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
+ let reads=0;
+ const resultProxy=value=>new Proxy(value,{get(target,property,receiver){
+  if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+ }});
+ const insertAttempts=[
+  Object.defineProperty({},'rowCount',{get(){reads++;throw Error('rowCount getter executed');}}),
+  resultProxy({rowCount:1,rows:[]}),
+ ];
+ const replayRow={id:'original',...e,occurred_at_matches:true};
+ const replayAttempts=[
+  Object.defineProperty({},'rows',{get(){reads++;throw Error('replay rows getter executed');}}),
+  resultProxy({rows:[replayRow]}),
+  {rows:new Proxy([replayRow],{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})},
+  {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('replay row getter executed');}})},
+  {rows:[new Proxy(replayRow,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})]},
+  {rows:[Object.defineProperty({...replayRow},'id',{enumerable:true,get(){reads++;throw Error('replay field getter executed');}})]},
+ ];
+ for(const [stage,attempt] of [...insertAttempts.map(value=>['insert',value]),...replayAttempts.map(value=>['replay',value])]){
+  let ledgerWrites=0,outboxWrites=0,rolledBack=false;
+  const db={active(){},tx:async fn=>{
+   try{return await fn({query:async sql=>{
+    if(sql.includes('FROM pod_artifacts'))return validEvidence;
+    if(sql.startsWith('INSERT INTO pod_financial_events')){ledgerWrites++;return stage==='insert'?attempt:{rowCount:0,rows:[]};}
+    if(sql.includes('FROM pod_financial_events'))return attempt;
+    if(sql.startsWith('INSERT INTO pod_events')){outboxWrites++;return {rowCount:1,rows:[]};}
+    assert.fail('unexpected financial query');
+   }});}catch(error){rolledBack=true;throw error;}
+  }};
+  await assert.rejects(recordFinancialEvent(db,sign(e),key),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+  assert.equal(ledgerWrites,1);assert.equal(outboxWrites,0);assert.equal(rolledBack,true);
+ }
+ assert.equal(reads,0);
+});
 test('one authority event cannot cross provider or job boundaries',async()=>{
  for(const change of [{provider:'teepublic',provider_event_id:'different'},{job_id:'other-job',provider_event_id:'different'}]){
   const e=event(),f=fixture([{...e,id:'original'}]);
