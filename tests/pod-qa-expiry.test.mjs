@@ -28,14 +28,19 @@ async function exercise(stage,verdict,run,expired){
   const qa={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
   const writes=[],queries=[];
   const advance=()=>{now=issued+(expired?1000:999);};
-  const client={release(){},query:async sql=>{
-   sql=typeof sql==='string'?sql:sql.text;
+  const client={release(){},query:async(sql,args)=>{
+   if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    queries.push(sql);
    if(stage==='rights'&&sql.includes('FOR SHARE OF p'))advance();
    if(stage==='event'&&sql.startsWith('INSERT INTO pod_events'))advance();
    if(sql.startsWith('SELECT'))return {rows:[{...job,platform:'redbubble',manifest,manifest_sha256:manifestSha256,
     valid:true,rights_state:'PASS',permanently_unpublished:false}]};
-   if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}
+   if(/^(UPDATE|INSERT)/.test(sql)){
+    writes.push(sql);
+    if(sql.includes("RETURNING id,state,reason_code"))return {rowCount:1,rows:[{id:job.id,state:'qa_passed',reason_code:null}]};
+    if(sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:'pod.production.qa_passed'}]};
+    return {rows:[{id:job.id}]};
+   }
    return {rows:[]};
   }};
   const db=new PodDB({pool:{connect:async()=>{if(stage==='connection')advance();return client;}},
