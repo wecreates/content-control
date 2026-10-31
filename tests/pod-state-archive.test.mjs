@@ -30,6 +30,8 @@ async function fixture(t){
   }
   if(sql.startsWith('DECLARE')){table=/FROM public\.(\w+) t/.exec(sql)[1];cursor=0;}
   if(sql.startsWith('FETCH')){const rows=data[table]||[];return {rows:cursor<rows.length?[{record:rows[cursor++]}]:[]};}
+  if(sql.startsWith('WITH source AS'))return {rowCount:1,rows:[{inserted:'1',exact:true}]};
+  if(sql.startsWith('WITH restored_event AS'))return {rowCount:1,rows:[{id:args[0],kind:args[1],exact:true}]};
   if(sql.startsWith('UPDATE public.'))return {rowCount:0};
   return {rows:[]};
  }};
@@ -297,7 +299,7 @@ test('state restore rolls back when the requested archive root is replaced',asyn
  }};
  await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env}),/ARCHIVE_DIRECTORY_INVALID/);
  assert.equal(rolledBack,true);
- assert.equal(f.queries.some(sql=>sql.startsWith('INSERT INTO public.pod_artifacts')),true);
+ assert.equal(f.queries.some(sql=>sql.includes('INSERT INTO public.pod_artifacts')),true);
 });
 test('state restore rejects its receipt when the root is replaced after commit',async t=>{
  const f=await fixture(t),held=f.directory+'-held',replacement=f.directory+'-replacement';
@@ -315,12 +317,12 @@ for(const flag of Object.keys(env))test(`state restore stops after the first ins
  const f=await fixture(t),settings={...env};await exportStateArchive(f.db,{...f,key,env:settings});
  const client=await f.db.pool.connect(),query=client.query.bind(client),calls=[];let changed=false;
  client.query=async(sql,...args)=>{calls.push(sql);const result=await query(sql,...args);
-  if(!changed&&sql.startsWith('INSERT INTO public.')){changed=true;settings[flag]='true';}
+  if(!changed&&sql.startsWith('WITH source AS')){changed=true;settings[flag]='true';}
   return result;
  };
  const target={tx:fn=>fn(client)};
  await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env:settings}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
- assert.equal(calls.filter(sql=>sql.startsWith('INSERT INTO public.')).length,1);
+ assert.equal(calls.filter(sql=>sql.startsWith('WITH source AS')).length,1);
  assert.equal(calls.some(sql=>sql.startsWith('UPDATE public.')),false);
  assert.equal(calls.some(sql=>sql.includes("'pod.recovery.restored'")),false);
 });
@@ -432,5 +434,25 @@ test('state archive rejects executable database results without invoking them',a
   const receipt=await restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env});
   assert.equal(receipt.accounts_disabled,3);assert.equal(receipt.production_held,1);assert.equal(receipt.publishing_ambiguous,1);
   assert.deepEqual(counts,[]);
+ });
+});
+
+test('state restore rejects unverified data and recovery receipt mutations',async t=>{
+ for(const [phase,result] of [
+  ['data insert zero-row',{rowCount:0,rows:[]}],
+  ['data insert mismatch',{rowCount:1,rows:[{inserted:'1',exact:false}]}],
+  ['recovery receipt zero-row',{rowCount:0,rows:[]}],
+  ['recovery receipt mismatch',{rowCount:1,rows:[{id:'wrong',kind:'pod.recovery.restored',exact:true}]}]
+ ])await t.test(phase,async()=>{
+  const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+  const client=await f.db.pool.connect(),query=client.query.bind(client);
+  client.query=async(sql,...args)=>{
+   const ordinary=await query(sql,...args);
+   if(phase.startsWith('data insert')&&sql.startsWith('WITH source AS'))return result;
+   if(phase.startsWith('recovery receipt')&&sql.startsWith('WITH restored_event AS'))return result;
+   return ordinary;
+  };
+  await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),
+   /^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
  });
 });
