@@ -350,6 +350,18 @@ test('artifact verification and restore reject unreferenced archive entries',asy
  assert.equal(target.queries.length,0,'non-canonical directories must fail before database access');
 });
 
+test('artifact export rejects executable PostgreSQL row results before archive decisions',async t=>{
+ const directory=await workspace(t),db=database([Buffer.from('query boundary fixture')]);
+ const client=await db.pool.connect(),query=client.query.bind(client);let getterExecuted=false;
+ client.query=async(sql,...args)=>{
+  if(sql.startsWith('FETCH'))return {get rows(){getterExecuted=true;throw Error('ARTIFACT_ARCHIVE_ROWS_GETTER_EXECUTED');}};
+  return query(sql,...args);
+ };
+ db.pool.connect=async()=>client;
+ await assert.rejects(exportArtifactLibrary(db,{directory,key}),/ARCHIVE_QUERY_UNVERIFIED/);
+ assert.equal(getterExecuted,false);
+});
+
 test('corrupt archives are rejected before opening a restore transaction',async t=>{
  const directory=await workspace(t),body=Buffer.from('fixture');await exportArtifactLibrary(database([body]),{directory,key});
  const file=path.join(directory,sha(body)+'.pod'),data=await fs.readFile(file);data[data.length-1]^=1;await fs.writeFile(file,data);
