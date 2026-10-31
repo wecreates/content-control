@@ -610,7 +610,9 @@ const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYT
  POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
  db:{claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async()=>{held++;},completeProduction:async()=>({pass:false}),
   active(){},
-  tx:async fn=>fn({query:async sql=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:{rows:[]}})},
+  tx:async fn=>fn({query:async(sql,args)=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:
+   sql.startsWith('INSERT INTO pod_artifacts')?{rowCount:1,rows:[{sha256:args[0],media_type:args[2],
+    body_sha256:crypto.createHash('sha256').update(args[1]).digest('hex')}]}:{rows:[]}})},
  resolveGrant:async()=>sign({audience:'content-control:pod',job_id:brief.id,account_id:'a',business_id:'b',platform:'kdp',
  max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false}),
  resolveTask:async()=>({rights_verified:true,templateScope:scope,template:path.join(root,'cover.json'),templateSource:archive,
