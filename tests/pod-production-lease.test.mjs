@@ -8,16 +8,23 @@ const key='synthetic-review-key-'.repeat(3),job={id:'fixture-job',fencing_token:
 const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
  package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
   'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
-function qa(){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
- expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
+function qa(verdict='PASS'){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa',issued_at_ms:Date.now()-1,
+ expires_at_ms:Date.now()+60000,verdict,...manifest,
  checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};}
 function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
  const writes=[],queries=[];
- const client={release(){},query:async sql=>{sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
+ const client={release(){},query:async(sql,args=[])=>{if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}queries.push(sql);
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
   if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
-  if(/^(UPDATE|INSERT)/.test(sql)){writes.push(sql);return {rows:[{id:job.id}]};}
+  if(/^(UPDATE|INSERT)/.test(sql)){
+   writes.push(sql);
+   if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
+    rows:[{id:job.id,state:args[0],reason_code:args[0]==='qa_passed'?null:'QA_FAILED'}]};
+   if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
+    rows:[{id:args[0],job_id:args[1],kind:args[2]}]};
+   return {rows:[{id:job.id}]};
+  }
   return {rows:[]};}};
  const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  return {db,writes,queries};
@@ -112,6 +119,36 @@ test('publication settlement rejects accessor and Proxy receipts without reading
   const f=fixture(true),reads={count:0};
   await assert.rejects(f.db.finish(job,'submitted',makeReceipt(reads)),/RECEIPT_INVALID/);
   assert.equal(reads.count,0);assert.equal(f.queries.length,0);assert.equal(f.writes.length,0);
+ }
+});
+
+test('production completion rejects unverified queue and audit mutation receipts',async()=>{
+ const attempts=[
+  {rows:[{id:job.id}]},
+  {rowCount:0,rows:[]},
+  {rowCount:1,rows:[]},
+  {rowCount:1,rows:[{id:'wrong',state:'qa_passed',reason_code:null}]},
+  Object.defineProperty({},'rowCount',{get(){throw Error('completion mutation rowCount getter executed');}}),
+  {rowCount:1,rows:new Proxy([],{get(){throw Error('completion mutation rows proxy executed');}})},
+ ];
+ for(const verdict of ['PASS','FAIL'])for(const stage of ['queue','audit'])for(const attempt of attempts){
+  const pass=verdict==='PASS',state=pass?'qa_passed':'qa_failed',reasonCode=pass?null:'QA_FAILED';
+  let writes=0;
+  const db=new PodDB({pool:{},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=fn=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('SELECT')){
+    if(sql.includes('lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+    return {rows:[{id:job.id,rights_state:'PASS',permanently_unpublished:false}]};
+   }
+   writes+=1;
+   if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
+    {rowCount:1,rows:[{id:job.id,state,reason_code:reasonCode}]};
+   if(sql.startsWith('INSERT'))return stage==='audit'?attempt:
+    {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:`pod.production.${state}`}]};
+   throw Error('unexpected completion query');
+  }});
+  await assert.rejects(db.completeProduction(job,manifest,qa(verdict)),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,stage==='queue'?1:2);
  }
 });
 

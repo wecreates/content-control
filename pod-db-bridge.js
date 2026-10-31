@@ -528,14 +528,17 @@ export class PodDB {
    // before the first state-changing statement. A stop throws, rolls back the
    // transaction and leaves the fenced failure path free to settle the lease.
    beforeStateChange?.();
+   const nextState=pass?'qa_passed':'qa_failed',nextReason=pass?null:'QA_FAILED';
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,reason_code=CASE WHEN $1='qa_passed' THEN NULL ELSE 'QA_FAILED' END,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id`,
-    [pass?'qa_passed':'qa_failed',manifest,qaEnvelope,job.id,job.fencing_token]);
-   if(!r.rows.length)throw Error('LEASE_LOST');
-   await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',
-    [crypto.randomUUID(),job.id,pass?'pod.production.qa_passed':'pod.production.qa_failed',
+    WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code`,
+    [nextState,manifest,qaEnvelope,job.id,job.fencing_token]);
+   assertExactMutation(r,{id:job.id,state:nextState,reason_code:nextReason});
+   const eventId=crypto.randomUUID(),eventKind=`pod.production.${nextState}`;
+   const event=await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',
+    [eventId,job.id,eventKind,
      {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,
       fencing_token:job.fencing_token,publication_enabled:false}]);
+   assertExactMutation(event,{id:eventId,job_id:job.id,kind:eventKind});
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {pass};
   });
