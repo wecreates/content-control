@@ -23,8 +23,8 @@ async function exercise(kind,duplicate,expired){
       provider_event_id:'event-fixture',package_sha256:hash,evidence_sha256:hash})};
   const payload=JSON.stringify(e),envelope={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
   const queries=[],rows=(...rows)=>({rows,rowCount:rows.length});
-  const client={release(){},query:async sql=>{
-   sql=typeof sql==='string'?sql:sql.text;
+  const client={release(){},query:async(sql,args)=>{
+   if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    queries.push(sql);
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
@@ -36,6 +36,12 @@ async function exercise(kind,duplicate,expired){
    if(sql.startsWith('SELECT * FROM pod_production_queue'))return rows({id:e.job_id,account_id:e.account_id,platform:e.platform,
     state:kind==='listing-published'||(kind==='listing'&&duplicate)?'published':'submitted',provider_id:e.provider_id,manifest:{package_sha256:hash}});
    if(sql.startsWith('SELECT evidence_sha256,payload FROM pod_provider_inbox'))return duplicate?rows({evidence_sha256:hash,payload:e}):rows();
+   if(sql.startsWith('INSERT INTO pod_provider_inbox'))return rows({provider:e.platform,account_id:e.account_id,
+    provider_event_id:e.provider_event_id,evidence_sha256:e.evidence_sha256});
+   if(sql.startsWith('UPDATE pod_production_queue'))return rows({job_id:e.job_id,state:'published',
+    provider_id:e.provider_id,reason_code:null,lease_until:null});
+   if(sql.startsWith('INSERT INTO pod_events'))return rows({id:args[0],job_id:e.job_id,
+    kind:kind==='finance'?'pod.finance.verified':'pod.published'});
    return rows();
   }};
   const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

@@ -95,7 +95,8 @@ test('listing readback stops before state mutation when storage expires during i
   if(sql.startsWith('SELECT * FROM pod_production_queue'))return job();
   if(sql.includes('FROM pod_artifacts'))return evidence();
   if(sql.includes('FROM pod_provider_inbox'))return {rows:[],rowCount:0};
-  if(sql.startsWith('INSERT INTO pod_provider_inbox')){db.expire();return {rowCount:1,rows:[]};}
+  if(sql.startsWith('INSERT INTO pod_provider_inbox')){db.expire();return {rowCount:1,rows:[{provider:'redbubble',
+   account_id:'account-fixture',provider_event_id:'listing-event',evidence_sha256:sha}]};}
   if(sql.startsWith('UPDATE pod_production_queue')||sql.startsWith('INSERT INTO pod_events'))stateWrites++;
   return {rowCount:1,rows:[]};
  });

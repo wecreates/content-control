@@ -565,8 +565,14 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:proof,media_type:'application/json',body_sha256:proof}]};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:0,rows:[]};
   writes.push(sql);
-  if(sql.startsWith('UPDATE pod_production_queue')){state='published';savedId=args[1];}
-  return {rowCount:1};
+  if(sql.startsWith('INSERT INTO pod_provider_inbox'))return {rowCount:1,rows:[{provider:observation.platform,
+   account_id:observation.account_id,provider_event_id:observation.provider_event_id,
+   evidence_sha256:observation.evidence_sha256}]};
+  if(sql.startsWith('UPDATE pod_production_queue')){state='published';savedId=args[1];return {rowCount:1,
+   rows:[{job_id:observation.job_id,state,provider_id:savedId,reason_code:null,lease_until:null}]};}
+  if(sql.startsWith('INSERT INTO pod_events'))return {rowCount:1,
+   rows:[{id:args[0],job_id:observation.job_id,kind:'pod.published'}]};
+  assert.fail(`unexpected mutation: ${sql}`);
  }})};
  assert.deepEqual(await reconcilePublication(db,sign(observation),key),{published:true});
  assert.equal(state,'published');assert.equal(savedId,providerId);assert.equal(calls,1);assert.equal(writes.length,3);

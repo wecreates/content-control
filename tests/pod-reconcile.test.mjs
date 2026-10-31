@@ -15,7 +15,13 @@ function database(value,seen,state='submitted',corrupt=false,jobProviderId=value
    platform:value.platform,state,provider_id:jobProviderId,reason_code:reasonCode,manifest:{package_sha256:value.package_sha256}}]};
   if(sql.includes('FROM pod_artifacts'))return {rowCount:1,rows:[{sha256:value.evidence_sha256,media_type:'application/json',body_sha256:corrupt?'0'.repeat(64):value.evidence_sha256}]};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[seen]:[]};
-  writes.push({sql,args});return {rowCount:1};
+  writes.push({sql,args});
+  if(sql.startsWith('INSERT INTO pod_provider_inbox'))return {rowCount:1,rows:[{provider:value.platform,
+   account_id:value.account_id,provider_event_id:value.provider_event_id,evidence_sha256:value.evidence_sha256}]};
+  if(sql.startsWith('UPDATE pod_production_queue'))return {rowCount:1,rows:[{job_id:value.job_id,state:'published',
+   provider_id:value.provider_id,reason_code:null,lease_until:null}]};
+  if(sql.startsWith('INSERT INTO pod_events'))return {rowCount:1,rows:[{id:args[0],job_id:value.job_id,kind:'pod.published'}]};
+  assert.fail(`unexpected mutation: ${sql}`);
  }})};
 }
 test('provider event replay cannot be acknowledged for another job sharing evidence',async()=>{
@@ -101,6 +107,31 @@ test('new scoped observation records inbox, listing state and outbox atomically'
  assert.deepEqual(db.writes[0].args[4],observation);
  assert.match(db.writes[1].sql,/UPDATE pod_production_queue/);
  assert.match(db.writes[2].sql,/INSERT INTO pod_events/);
+});
+test('listing reconciliation rejects unverified durable mutation results without executing them',async()=>{
+ const stages=['INSERT INTO pod_provider_inbox','UPDATE pod_production_queue','INSERT INTO pod_events'];
+ for(const target of stages){
+  let executed=0;
+  const unverified=Object.defineProperty({},'rowCount',{get(){executed++;throw Error('mutation getter executed');}});
+  const db={active(){},tx:async fn=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{account_id:observation.account_id,
+    platform:observation.platform,state:'submitted',provider_id:null,reason_code:null,lease_until:null,
+    manifest:{package_sha256:observation.package_sha256}}]};
+   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:observation.evidence_sha256,
+    media_type:'application/json',body_sha256:observation.evidence_sha256}]};
+   if(sql.includes('FROM pod_provider_inbox'))return {rows:[],rowCount:0};
+   if(sql.startsWith(target))return unverified;
+   if(sql.startsWith('INSERT INTO pod_provider_inbox'))return {rowCount:1,rows:[{provider:observation.platform,
+    account_id:observation.account_id,provider_event_id:observation.provider_event_id,
+    evidence_sha256:observation.evidence_sha256}]};
+   if(sql.startsWith('UPDATE pod_production_queue'))return {rowCount:1,rows:[{job_id:observation.job_id,state:'published',
+    provider_id:observation.provider_id,reason_code:null,lease_until:null}]};
+   if(sql.startsWith('INSERT INTO pod_events'))return {rowCount:1,rows:[{id:args[0],job_id:observation.job_id,kind:'pod.published'}]};
+   assert.fail(`unexpected query: ${sql}`);
+  }})};
+  await assert.rejects(reconcilePublication(db,sign(observation),key),/^Error: LISTING_MUTATION_UNVERIFIED$/,target);
+  assert.equal(executed,0,target);
+ }
 });
 test('observed-live reconciliation clears a stale failure reason',async()=>{
  const db=database(observation,null,'ambiguous',false,null,'SUBMISSION_UNCERTAIN');

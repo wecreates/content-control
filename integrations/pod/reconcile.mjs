@@ -55,6 +55,30 @@ function snapshotQueryRows(result,fields,maxRows){
  }
  return Object.freeze(snapshots);
 }
+function assertMutationResult(result,expected){
+ const rowCount=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!rowCount.valid||rowCount.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('LISTING_MUTATION_UNVERIFIED');
+ let length,rowDescriptor,row,prototype,keys,descriptors;
+ try{
+  length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  rowDescriptor=Object.getOwnPropertyDescriptor(rows.value,'0');
+  if(!Object.hasOwn(length||{},'value')||length.value!==1||!rowDescriptor?.enumerable||
+   !Object.hasOwn(rowDescriptor,'value'))throw Error();
+  row=rowDescriptor.value;
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+  prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('LISTING_MUTATION_UNVERIFIED');}
+ const fields=Object.keys(expected).sort();
+ if((prototype!==Object.prototype&&prototype!==null)||keys.length!==fields.length||
+  keys.some(key=>typeof key!=='string')||keys.map(String).sort().some((key,index)=>key!==fields[index]))
+  throw Error('LISTING_MUTATION_UNVERIFIED');
+ for(const field of fields){
+  const descriptor=descriptors[field];
+  if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||descriptor.value!==expected[field])
+   throw Error('LISTING_MUTATION_UNVERIFIED');
+ }
+}
 function exactListingObservation(value){
  return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.getPrototypeOf(value)===Object.prototype&&
   JSON.stringify(Object.keys(value).sort())===JSON.stringify(SIGNED_LISTING_FIELDS);
@@ -90,14 +114,27 @@ export async function reconcilePublication(db,envelope,key){
    verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
    return {duplicate:true};
   }
-  await c.query('INSERT INTO pod_provider_inbox(provider,account_id,provider_event_id,evidence_sha256,payload) VALUES($1,$2,$3,$4,$5)',[e.platform,e.account_id,e.provider_event_id,e.evidence_sha256,evidence]);
+  assertMutationResult(await c.query(`INSERT INTO pod_provider_inbox(provider,account_id,provider_event_id,evidence_sha256,payload)
+   VALUES($1,$2,$3,$4,$5) RETURNING provider,account_id::text AS account_id,provider_event_id,evidence_sha256`,
+   [e.platform,e.account_id,e.provider_event_id,e.evidence_sha256,evidence]),{
+   provider:e.platform,account_id:e.account_id,provider_event_id:e.provider_event_id,evidence_sha256:e.evidence_sha256
+  });
   db.active();
   // A fresh observation is new evidence, not another publication transition.
   // The job row lock serializes concurrent observations with different event IDs.
   if(job.state==='published'){verifyEnvelope(envelope,key,'content-control:pod:listing-observation');return {published:true,already_published:true};}
-  await c.query("UPDATE pod_production_queue SET state='published',provider_id=$2,reason_code=NULL,lease_until=NULL,updated_at=now() WHERE id=$1",[e.job_id,e.provider_id]);
+  assertMutationResult(await c.query(`UPDATE pod_production_queue
+   SET state='published',provider_id=$2,reason_code=NULL,lease_until=NULL,updated_at=now() WHERE id=$1
+   RETURNING id::text AS job_id,state,provider_id,reason_code,lease_until::text AS lease_until`,[e.job_id,e.provider_id]),{
+   job_id:e.job_id,state:'published',provider_id:e.provider_id,reason_code:null,lease_until:null
+  });
   db.active();
-  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),e.job_id,'pod.published',{provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]);
+  const eventId=crypto.randomUUID();
+  assertMutationResult(await c.query(`INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)
+   RETURNING id::text AS id,job_id::text AS job_id,kind`,[eventId,e.job_id,'pod.published',
+   {provider_id:e.provider_id,evidence_sha256:e.evidence_sha256}]),{
+   id:eventId,job_id:e.job_id,kind:'pod.published'
+  });
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
   return {published:true};
