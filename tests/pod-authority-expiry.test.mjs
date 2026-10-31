@@ -36,8 +36,12 @@ async function exercise(spec,stage,expired){
     [{id:'existing-concept',business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]:[]};
    if(sql.startsWith('UPDATE pod_concepts'))return {rowCount:1,
     rows:[{id:'existing-concept',rights_state:args[1],permanently_unpublished:true}]};
+   if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
+    rows:[{id:args[0],job_id:args[1],kind:args[2]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,kind'))return {rowCount:1,
     rows:[{id:args[0],kind:args[1]}]};
+   if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
+    rows:[{id:args[0],state:'raw',reason_code:null}]};
    if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
    if(sql.includes('SELECT q.*'))return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{}}]};
    return {rows:[{id:job.id,used:1}]};
