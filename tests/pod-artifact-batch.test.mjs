@@ -221,6 +221,43 @@ test('artifact writes reject executable query results without invocation',async(
  assert.equal(reads,0);assert.equal(writes,0);
 });
 
+test('artifact writes require a verified exact one-row durable insert',async()=>{
+ const artifact=entry('durable insert boundary'),sha=hash(artifact.body);let reads=0;
+ const attempts=[
+  {rowCount:0,rows:[]},
+  {rowCount:2,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},
+  {rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},
+  Object.defineProperty({rows:[]},'rowCount',{get(){reads++;throw Error('insert row count getter executed');}}),
+  new Proxy({rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}]},{get(target,key,receiver){
+   if(key==='then')return undefined;reads++;return Reflect.get(target,key,receiver);
+  }}),
+  {rowCount:1,rows:new Proxy([{sha256:sha,media_type:artifact.mediaType,body_sha256:sha}],{
+   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+  })},
+  {rowCount:1,rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('insert row getter executed');}})},
+  {rowCount:1,rows:[new Proxy({sha256:sha,media_type:artifact.mediaType,body_sha256:sha},{
+   get(target,key,receiver){reads++;return Reflect.get(target,key,receiver);}
+  })]},
+  {rowCount:1,rows:[Object.defineProperty({media_type:artifact.mediaType,body_sha256:sha},'sha256',{
+   enumerable:true,get(){reads++;throw Error('insert field getter executed');}
+  })]},
+  {rowCount:1,rows:[{sha256:'0'.repeat(64),media_type:artifact.mediaType,body_sha256:sha}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:'image/png',body_sha256:sha}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:'0'.repeat(64)}]},
+  {rowCount:1,rows:[{sha256:sha,media_type:artifact.mediaType,body_sha256:sha,extra:'not exact'}]},
+ ];
+ for(const result of attempts){
+  const db={active(){},tx:fn=>fn({query:async sql=>{
+   if(sql.includes('ANY('))return {rows:[]};
+   if(sql.includes('sum('))return {rows:[{bytes:'0'}]};
+   if(sql.startsWith('INSERT'))return result;
+   return {rows:[]};
+  }})};
+  await assert.rejects(new ArtifactStore(db).putMany([artifact]),/^Error: ARTIFACT_INSERT_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);
+});
+
 test('batch budget is checked before any insert and counts distinct missing bytes',async()=>{
  const a=entry('aaaa'),b=entry('bb'),writes=[];
  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
