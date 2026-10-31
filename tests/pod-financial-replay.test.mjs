@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import {recordFinancialEvent} from '../integrations/pod/finance.mjs';
+import {financialTotals,recordFinancialEvent} from '../integrations/pod/finance.mjs';
 
 const key='synthetic-finance-replay-key-'.repeat(2);
 const event=()=>({verified:true,authority_event_id:'mf-event',provider_event_id:'provider-event',provider:'redbubble',
@@ -9,6 +9,38 @@ const event=()=>({verified:true,authority_event_id:'mf-event',provider_event_id:
 const sign=value=>{const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:finance',
  issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,...value});
  return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
+
+test('financial totals reject executable or unbounded query results without invocation',async()=>{
+ const valid={currency:'USD',verified_net_recorded_minor:'125',evidence_count:'2'};let reads=0;
+ const resultProxy=value=>new Proxy(value,{get(target,property,receiver){
+  if(property==='then')return undefined;reads++;return Reflect.get(target,property,receiver);
+ }});
+ const sparse=[];sparse.length=1;
+ const attempts=[
+  Object.defineProperty({},'rows',{get(){reads++;throw Error('FINANCIAL_TOTAL_ROWS_GETTER_EXECUTED');}}),
+  resultProxy({rows:[valid]}),
+  {rows:new Proxy([valid],{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})},
+  {rows:sparse},
+  {rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('FINANCIAL_TOTAL_ROW_GETTER_EXECUTED');}})},
+  {rows:[new Proxy(valid,{get(target,property,receiver){reads++;return Reflect.get(target,property,receiver);}})]},
+  {rows:[Object.defineProperty({...valid},'currency',{enumerable:true,get(){reads++;throw Error('FINANCIAL_TOTAL_FIELD_GETTER_EXECUTED');}})]},
+  {rows:new Array(26**3+1)},
+  {rows:[{...valid,evidence_count:'0'}]},
+  {rows:[valid,{...valid}]},
+ ];
+ for(const result of attempts){
+  const db={read:async()=>result};
+  await assert.rejects(financialTotals(db),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);
+});
+test('financial totals return frozen scalar snapshots detached from driver-owned rows',async()=>{
+ const row={currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'2'},rows=[row];
+ const result=await financialTotals({read:async()=>({rows})});
+ assert.deepEqual(result,[row]);assert.equal(Object.isFrozen(result),true);assert.equal(Object.isFrozen(result[0]),true);
+ row.currency='EUR';rows.push({currency:'CAD',verified_net_recorded_minor:'1',evidence_count:'1'});
+ assert.deepEqual(result,[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'2'}]);
+});
 function fixture(previous=[],corrupt=false){
  const rows=previous.map(x=>({...x})),outbox=[];
  const result=value=>Object.assign(Object.create({driver_result:true}),value);
