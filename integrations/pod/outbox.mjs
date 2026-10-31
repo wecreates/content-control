@@ -51,6 +51,23 @@ function snapshotQueryRows(result){
  }
  return Object.freeze(snapshots);
 }
+function assertDeliveryMutation(result,eventId){
+ const rowCount=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!rowCount.valid||rowCount.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('OUTBOX_DELIVERY_UNVERIFIED');
+ let length,rowDescriptor,row,keys,descriptors,prototype;
+ try{
+  length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  rowDescriptor=Object.getOwnPropertyDescriptor(rows.value,'0');
+  if(!Object.hasOwn(length||{},'value')||length.value!==1||!rowDescriptor?.enumerable||!Object.hasOwn(rowDescriptor,'value'))throw Error();
+  row=rowDescriptor.value;
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+  prototype=Object.getPrototypeOf(row);keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('OUTBOX_DELIVERY_UNVERIFIED');}
+ if((prototype!==Object.prototype&&prototype!==null)||keys.length!==1||keys[0]!=='id'||
+  !descriptors.id?.enumerable||!Object.hasOwn(descriptors.id,'value')||descriptors.id.value!==eventId)
+  throw Error('OUTBOX_DELIVERY_UNVERIFIED');
+}
 function assertEventJSON(value){
  const pending=[[value,0]];let nodes=0;
  while(pending.length){
@@ -144,7 +161,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.getPrototypeOf(ack)!==Object.prototype||
    Object.keys(ack).length!==1||!Object.hasOwn(ack,'accepted_event_id')||ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);
-  await db.tx(c=>c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL',[event.id]));delivered++;
+  await db.tx(async c=>assertDeliveryMutation(await c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL RETURNING id',[event.id]),event.id));delivered++;
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
  }
  // Check empty pages and expiry during the final response/commit as well.

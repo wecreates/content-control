@@ -14,7 +14,7 @@ function streamResponse({status=200,headers={},chunks=[]}={}){
  const body=new ReadableStream({start(c){for(const chunk of chunks)c.enqueue(Buffer.from(chunk));},cancel(){cancelled++;}});
  return {response:new Response(body,{status,headers:{'content-type':'application/json',...headers}}),cancelled:()=>cancelled};
 }
-function dbFixture(){const updated=[];return {updated,active(){},read:async()=>({rows:[{id:'event'}]}),tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+function dbFixture(){const updated=[];return {updated,active(){},read:async()=>({rows:[{id:'event'}]}),tx:async fn=>fn({query:async(_sql,args)=>{updated.push(args[0]);return {rowCount:1,rows:[{id:args[0]}]};}})};}
 const jsonResponse=value=>new Response(JSON.stringify(value),{headers:{'content-type':'application/json'}});
 const grantJob=()=>({id:'job',brief:scopedGrant().brief});
 test('rejected authority response is cancelled without consuming its body',async()=>{

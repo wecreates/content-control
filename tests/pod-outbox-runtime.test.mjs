@@ -61,6 +61,25 @@ test('direct delivery rejects executable query results without invocation',async
  }
  assert.equal(reads,0);assert.equal(fetches,0);assert.equal(updates,0);
 });
+test('acknowledged events require a verified one-row durable delivery mutation',async()=>{
+ let reads=0;
+ const attempts=[undefined,{}, {rowCount:0},{rowCount:2},
+  new Proxy({rowCount:1},{get(target,key,receiver){if(key==='rowCount')reads++;return Reflect.get(target,key,receiver);}}),
+  Object.defineProperty({},'rowCount',{get(){reads++;throw Error('delivery row count getter executed');}}),
+  Object.defineProperty({rowCount:1},'rows',{get(){reads++;throw Error('delivery rows getter executed');}}),
+  {rowCount:1,rows:new Proxy([{id:'event'}],{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})},
+  {rowCount:1,rows:Object.defineProperty([],'0',{enumerable:true,get(){reads++;throw Error('delivery row getter executed');}})},
+  {rowCount:1,rows:[new Proxy({id:'event'},{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})]},
+  {rowCount:1,rows:[Object.defineProperty({},'id',{enumerable:true,get(){reads++;throw Error('delivery id getter executed');}})]},
+  {rowCount:1,rows:[{id:'wrong'}]},{rowCount:1,rows:[{id:'event',extra:true}]}];
+ for(const result of attempts){
+  const db={active(){},read:async()=>({rows:[{id:'event'}]}),
+   tx:async fn=>fn({query:async()=>result})};
+  await assert.rejects(deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,
+   fetchImpl:async()=>jsonResponse({accepted_event_id:'event'})}),/^Error: OUTBOX_DELIVERY_UNVERIFIED$/);
+ }
+ assert.equal(reads,0);
+});
 test('direct delivery enforces receiver byte ceilings before network access',async t=>{
  const now=1800000000000;t.mock.method(Date,'now',()=>now);
  const encoded=event=>JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:now,event});
@@ -182,7 +201,7 @@ test('shutdown aborts in-flight delivery and drains before returning',async()=>{
   started();await new Promise(resolve=>signal.addEventListener('abort',resolve,{once:true}));finished=true;throw Error('aborted');
  }});await entered;await r.stop();assert.equal(finished,true);assert.equal(r.status().failures,0);
 });
-function dbFixture(events){const updated=[];return {updated,active(){},read:async()=>({rows:events}),tx:async fn=>fn({query:async(_sql,args)=>updated.push(args[0])})};}
+function dbFixture(events){const updated=[];return {updated,active(){},read:async()=>({rows:events}),tx:async fn=>fn({query:async(_sql,args)=>{updated.push(args[0]);return {rowCount:1,rows:[{id:args[0]}]};}})};}
 test('disabling the outbox during polling stops before the next batch',async()=>{
  const config={...env};let calls=0;
  const runtime=startOutboxRuntime({db:{},env:config,
@@ -234,7 +253,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
     if(phase.endsWith('select'))expire();
     return {rows:selected()};
    }
-   if(sql.startsWith('UPDATE pod_events'))pending.push(args[0]);
+   if(sql.startsWith('UPDATE pod_events')){pending.push(args[0]);return {rowCount:1,rows:[{id:args[0]}]};}
    if(sql==='ROLLBACK')pending.length=0;
    if(sql==='COMMIT'){
     const acknowledged=pending.length>0;
