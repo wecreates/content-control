@@ -48,8 +48,8 @@
       "health_sha256": "a35043e08547e2159a09655b568927e50d6949dd809c598c48bf4e02d0ab456d",
       "media_path": "public-review/episode1-v10-free.mp4",
       "publication_enabled": false,
-      "qa_receipt_sha256": "31ddf9503c2f6a7c575c4be86677f45a48ab59b45d642cc2b86ae0d20e026ed4",
-      "repository_commit": "701bc2d33dbfa8c50f15129bb5d40cbcc45d437a"
+      "qa_receipt_sha256": "a2e44e7c9c355e40405e22a41c882db1a39ab30a2e8a726428dfd57f36e1fd1d",
+      "repository_commit": "2e3bc4f999bf630ab5887c7733fb9d3b06f43f16"
     }
   ],
   "max_entries": 20,
