@@ -22,6 +22,7 @@ async function emptySource(){
   if(sql.includes('FROM public.pod_schema_version'))return {rows:versions};
   if(sql.includes('FROM pg_attribute'))return {rows:[{name:'id',type:'uuid',required:true}]};
   if(sql.includes('COALESCE(sum'))return {rows:[{bytes:'0'}]};
+  if(sql.startsWith('WITH changed AS'))return {rowCount:1,rows:[{changed:'0',exact:true}]};
   if(sql.startsWith('WITH restored_event AS'))return {rowCount:1,rows:[{id:args[0],kind:args[1],exact:true}]};
   return {rows:[],rowCount:0};
  }};
