@@ -21,6 +21,8 @@ function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
    writes.push(sql);
    if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
     rows:[{id:job.id,state:args[0],reason_code:args[0]==='qa_passed'?null:'QA_FAILED'}]};
+   if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,provider_id,reason_code'))return {rowCount:1,
+    rows:[{id:job.id,state:args[0],provider_id:args[1],reason_code:args[2]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
     rows:[{id:args[0],job_id:args[1],kind:args[2]}]};
    return {rows:[{id:job.id}]};
@@ -148,6 +150,37 @@ test('production completion rejects unverified queue and audit mutation receipts
    throw Error('unexpected completion query');
   }});
   await assert.rejects(db.completeProduction(job,manifest,qa(verdict)),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,stage==='queue'?1:2);
+ }
+});
+
+test('publication settlement rejects unverified queue and audit mutation receipts',async()=>{
+ const attempts=[
+  {rows:[{id:job.id}]},
+  {rowCount:0,rows:[]},
+  {rowCount:1,rows:[]},
+  {rowCount:1,rows:[{id:'wrong',state:'submitted',provider_id:'provider-listing',reason_code:null}]},
+  Object.defineProperty({},'rowCount',{get(){throw Error('settlement mutation rowCount getter executed');}}),
+  {rowCount:1,rows:new Proxy([],{get(){throw Error('settlement mutation rows proxy executed');}})},
+ ];
+ for(const [state,receipt,reason] of [
+  ['submitted',{id:'provider-listing'},null],
+  ['ambiguous',{},'SUBMISSION_UNCERTAIN'],
+  ['blocked',{},'RELEASE_BLOCKED']
+ ])for(const stage of ['queue','audit'])for(const attempt of attempts){
+  const providerId=state==='submitted'?receipt.id:null;let writes=0;
+  const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=fn=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('SELECT'))return sql.includes('lease_until>clock_timestamp()')?
+    {rows:[{valid:true}]}:{rows:[{id:job.id}]};
+   writes+=1;
+   if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
+    {rowCount:1,rows:[{id:job.id,state,provider_id:providerId,reason_code:reason}]};
+   if(sql.startsWith('INSERT'))return stage==='audit'?attempt:
+    {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:`pod.${state}`}]};
+   throw Error('unexpected settlement query');
+  }});
+  await assert.rejects(db.finish(job,state,receipt,reason),/POD_MUTATION_UNVERIFIED/);
   assert.equal(writes,stage==='queue'?1:2);
  }
 });
