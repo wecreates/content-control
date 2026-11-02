@@ -384,8 +384,9 @@ export class PodDB {
  }
  async failProduction(job,reason){return this.tx(async c=>{
   await lockProductionLease(c,job);
-  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[productionReason(reason),job.id,job.fencing_token]);
-  if(!r.rows.length)throw Error('LEASE_LOST');
+  const reasonCode=productionReason(reason);
+  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code",[reasonCode,job.id,job.fencing_token]),
+   {id:job.id,state:'qa_failed',reason_code:reasonCode});
  });}
  async claimProduction(){return this.tx(async c=>{
   // Lock acquisition can outlive a retry deadline. Eligibility and the new
@@ -425,10 +426,12 @@ export class PodDB {
   if(!current)throw Error('LEASE_LOST');
   if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
   beforeStateChange?.();
-  const r=await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id",[manifest,job.id,job.fencing_token]);
-  if(!r.rows.length)throw Error('LEASE_LOST');
-  await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)',[crypto.randomUUID(),job.id,'pod.production.review_required',
-   {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,publication_enabled:false}]);
+  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code",[manifest,job.id,job.fencing_token]),
+   {id:job.id,state:'qa_failed',reason_code:'REVIEW_REQUIRED'});
+  const eventId=crypto.randomUUID(),eventKind='pod.production.review_required';
+  assertExactMutation(await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',[eventId,job.id,eventKind,
+   {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,publication_enabled:false}]),
+   {id:eventId,job_id:job.id,kind:eventKind});
  });}
  async acceptReview(jobId,qaEnvelope){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
