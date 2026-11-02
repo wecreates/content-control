@@ -25,8 +25,8 @@ Raw caption metadata can be computed deterministically. A passing provenance/acc
 
 ## Local repairs
 
-- Add `/livez` returning process liveness only, explicitly no production/publication approval. `/health` readiness and `/media` rejection stay unchanged.
-- Smoke startup uses `/livez`; acceptance still requires `/health` 200 and all existing route assertions.
+- Keep `/livez` returning process liveness only, explicitly no production/publication approval. The existing service's `/health` rollout path now has the same no-approval liveness semantics; accepted-evidence readiness moves to `/readyz`, and `/media` rejection stays unchanged.
+- Smoke startup can use `/livez` or `/health`; acceptance requires `/readyz` 200 and all existing route assertions.
 - Add read-only, bounded regular-file input preflight. Missing caption hashes produce structured BLOCKED reasons and observed byte hashes, never a fabricated PASS or uncaught KeyError.
 - Fix live smoke to check the actual hash-qualified caption URL.
 - Receipts require successful probe/assertion step outcomes. Existing output files or two missing hashes cannot create passing evidence.
