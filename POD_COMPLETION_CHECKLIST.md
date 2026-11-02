@@ -48,11 +48,17 @@ the scheduled execution environment could not independently open the public TLS
 socket; the free database is capped at 1 GiB with a six-hour restore window; and
 no separately retained backup exists beyond the provider snapshot. The conservative
 operational cutoff remains November 1, 2026 at 00:00:00 UTC, the end of the current
-verified quota period, not a claim that Neon deletes data then. Render also rejected
-the environment-triggered deploy before build because pipeline minutes remain
-exhausted. No network allowlist should be broadened to work around either limitation.
-Free web hosting is not an always-on guarantee. The live authority, rights inputs
-and authorized marketplace adapters still need actual configuration and acceptance.
+verified quota period, not a claim that Neon deletes data then. On November 2 the
+free Render build quota reset and the existing worker reached `live` after rollout
+liveness was separated from accepted-evidence readiness. The current review artifact
+is still unaccepted, `/readyz` is not verified green and
+`state/live-deployment-health.json` remains `FAIL`; process liveness therefore does
+not close hosting or end-to-end acceptance. No network allowlist should be broadened
+to work around either limitation. Free web hosting is not an always-on guarantee.
+The live authority, rights inputs and authorized marketplace adapters still need
+actual configuration and acceptance. See
+[the r410 receipt](docs/pod/POD_RUN_RECEIPT_R410.md) for the exact deployment evidence
+and limits.
 Do not replace these requirements with mock adapters, synthetic statements, renewed
 stale approvals, or automatic QA passes. See
 [the r281 receipt](docs/pod/POD_RUN_RECEIPT_R281.md) for exact evidence and limits.
