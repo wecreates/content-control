@@ -29,6 +29,15 @@ class DeploymentContractTests(unittest.TestCase):
     def test_current_container_contract(self):
         self.assertEqual(verify(self.root)['status'], 'PASS')
 
+    def test_rollout_health_uses_liveness_not_evidence_readiness(self):
+        contract = json.loads((self.root / 'state/deployment-contract.json').read_text())
+        manifest = (self.root / 'render.yaml').read_text()
+        server = (ROOT / contract['canonical_server']).read_text()
+        self.assertEqual(contract['health_check_path'], '/livez')
+        self.assertIn('healthCheckPath: /livez', manifest)
+        self.assertIn('app.get("/livez"', server)
+        self.assertIn('production_approved:false,publication:false', server)
+
     def test_other_false_flags_cannot_mask_publication_enabled(self):
         self.mutate('render.yaml', 'key: PUBLICATION_ENABLED\n        value: "false"', 'key: PUBLICATION_ENABLED\n        value: "true"')
         self.assertIn('publication_lock', verify(self.root)['failed_checks'])
