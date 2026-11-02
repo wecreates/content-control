@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
     "review_server_smoke_green": false,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,6 +55,7 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
@@ -67,7 +68,13 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "cdd7c8ed39b82063f37ed7ee8034be14aca1ae86ea0593abf1d6e06e48463c14",
+      "expected": "de14fffe4f36795ba3856e87fca8e0eec05d4bd052f9857f48f824c391bf9a2a",
+      "path": "render.yaml"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
