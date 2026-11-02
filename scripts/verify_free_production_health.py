@@ -237,7 +237,7 @@ ops={
     "zero_credit_runtime":completion["zero_credit_runtime"],
     "publication_enabled":False,
     "public_watch_url":"https://content-control-render-worker.onrender.com/watch",
-    "public_health_url":"https://content-control-render-worker.onrender.com/health",
+    "public_health_url":"https://content-control-render-worker.onrender.com/readyz",
     "live_deployment_status":live_deployment.get("status"),
     "dependency_vulnerabilities":security.get("npm_counts",{}),
     "python_dependency_vulnerabilities":python_security.get("total_vulnerabilities"),
