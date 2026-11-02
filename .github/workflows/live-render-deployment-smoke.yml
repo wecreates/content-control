@@ -59,7 +59,7 @@ jobs:
           mkdir -p /tmp/live-probe
           ok=0
           for attempt in 1 2 3 4 5; do
-            code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/health.headers -o /tmp/live-probe/health.json -w "%{http_code}" "$BASE/health" || true)
+            code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/health.headers -o /tmp/live-probe/health.json -w "%{http_code}" "$BASE/readyz" || true)
             if [ "$code" = "200" ]; then ok=1; break; fi
             sleep $((attempt*8))
           done
