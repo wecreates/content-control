@@ -19,8 +19,12 @@ function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
   if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
   if(/^(UPDATE|INSERT)/.test(sql)){
    writes.push(sql);
-   if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
-    rows:[{id:job.id,state:args[0],reason_code:args[0]==='qa_passed'?null:'QA_FAILED'}]};
+   if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code')){
+    const reviewHold=sql.includes("reason_code='REVIEW_REQUIRED'"),failure=sql.includes("reason_code=$1");
+    const state=reviewHold||failure?'qa_failed':args[0];
+    const reason_code=reviewHold?'REVIEW_REQUIRED':failure?args[0]:args[0]==='qa_passed'?null:'QA_FAILED';
+    return {rowCount:1,rows:[{id:job.id,state,reason_code}]};
+   }
    if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,provider_id,reason_code'))return {rowCount:1,
     rows:[{id:job.id,state:args[0],provider_id:args[1],reason_code:args[2]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
@@ -150,6 +154,43 @@ test('production completion rejects unverified queue and audit mutation receipts
    throw Error('unexpected completion query');
   }});
   await assert.rejects(db.completeProduction(job,manifest,qa(verdict)),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,stage==='queue'?1:2);
+ }
+});
+
+test('production failure and review hold reject unverified mutation receipts',async()=>{
+ const attempts=[
+  {rows:[{id:job.id}]},
+  {rowCount:0,rows:[]},
+  {rowCount:1,rows:[]},
+  {rowCount:1,rows:[{id:'wrong',state:'qa_failed',reason_code:'QA_FAILED'}]},
+  Object.defineProperty({},'rowCount',{get(){throw Error('failure mutation rowCount getter executed');}}),
+  {rowCount:1,rows:new Proxy([],{get(){throw Error('failure mutation rows proxy executed');}})},
+ ];
+ for(const attempt of attempts){
+  let writes=0;
+  const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=fn=>fn({query:async sql=>{
+   if(sql.startsWith('SELECT'))return {rows:[{valid:true}]};
+   writes+=1;return attempt;
+  }});
+  await assert.rejects(db.failProduction(job,'QA_FAILED'),/POD_MUTATION_UNVERIFIED/);
+  assert.equal(writes,1);
+ }
+ for(const stage of ['queue','audit'])for(const attempt of attempts){
+  let writes=0;
+  const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=fn=>fn({query:async(sql,args=[])=>{
+   if(sql.startsWith('SELECT'))return sql.includes('lease_until>clock_timestamp()')?
+    {rows:[{valid:true}]}:{rows:[{rights_state:'PASS',permanently_unpublished:false}]};
+   writes+=1;
+   if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
+    {rowCount:1,rows:[{id:job.id,state:'qa_failed',reason_code:'REVIEW_REQUIRED'}]};
+   if(sql.startsWith('INSERT'))return stage==='audit'?attempt:
+    {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:'pod.production.review_required'}]};
+   throw Error('unexpected review-hold query');
+  }});
+  await assert.rejects(db.holdProduction(job,manifest),/POD_MUTATION_UNVERIFIED/);
   assert.equal(writes,stage==='queue'?1:2);
  }
 });
