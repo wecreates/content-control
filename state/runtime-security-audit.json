@@ -14,9 +14,9 @@
   "vulnerabilities": [
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/bundler",
@@ -28,9 +28,9 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": true,
       "name": "@remotion/cli",
@@ -44,13 +44,13 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/codemods",
-      "range": ">=4.0.528",
+      "range": "4.0.528 - 4.0.539",
       "severity": "high",
       "via": [
         "@remotion/studio-protocol"
@@ -58,13 +58,13 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/media",
-      "range": ">=4.0.429",
+      "range": "4.0.429 - 4.0.539",
       "severity": "high",
       "via": [
         "zod"
@@ -72,13 +72,13 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/studio",
-      "range": ">=4.0.278",
+      "range": "4.0.278 - 4.0.539",
       "severity": "high",
       "via": [
         "@remotion/codemods",
@@ -89,13 +89,13 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/studio-protocol",
-      "range": ">=4.0.520",
+      "range": "4.0.520 - 4.0.539",
       "severity": "high",
       "via": [
         "zod"
@@ -103,13 +103,13 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "@remotion/studio-server",
-      "range": ">=4.0.278",
+      "range": "4.0.278 - 4.0.539",
       "severity": "high",
       "via": [
         "@remotion/bundler",
@@ -164,9 +164,9 @@
     },
     {
       "fix_available": {
-        "isSemVerMajor": true,
+        "isSemVerMajor": false,
         "name": "@remotion/cli",
-        "version": "4.0.501"
+        "version": "4.0.540"
       },
       "is_direct": false,
       "name": "zod",
