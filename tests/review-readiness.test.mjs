@@ -19,7 +19,8 @@ test('actual HTTP liveness stays separate from blocked caption/media acceptance'
  try{
   const base=`http://127.0.0.1:${server.address().port}`;
   const live=await fetch(base+'/livez');assert.equal(live.status,200);assert.deepEqual(await live.json(),{alive:true,service:'content-control-review',production_approved:false,publication:false});
-  const health=await fetch(base+'/health');assert.equal(health.status,503);const h=await health.json();assert.equal(h.captionReady,false);assert.equal(h.publication,false);
+  const health=await fetch(base+'/health');assert.equal(health.status,200);const h=await health.json();assert.equal(h.evidence_ready,null);assert.equal(h.readiness_url,'/readyz');assert.equal(h.production_approved,false);assert.equal(h.publication,false);
+  const readiness=await fetch(base+'/readyz');assert.equal(readiness.status,503);const r=await readiness.json();assert.equal(r.ok,false);assert.equal(r.captionReady,false);assert.equal(r.production_approved,false);assert.equal(r.publication,false);
   const media=await fetch(base+'/media');assert.equal(media.status,409);
  }finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 });
