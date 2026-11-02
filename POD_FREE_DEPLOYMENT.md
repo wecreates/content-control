@@ -25,21 +25,21 @@ awaiting an unreferenced transport. Header and body waits share that attempt's
 abort signal and monotonic deadline; failed-response cancellation is best effort
 and cannot hold the probe open. Child-process regressions exercise these limits
 without a test server keeping the child alive.
-The shared `/health` route measures video acceptance and is not used as POD startup
-evidence. Render's deployment health check uses `/livez`, which proves only that
-the process is listening and explicitly reports no production or publication
-approval. Evidence readiness remains fail-closed on `/health`, and the separate
-live deployment smoke still verifies the accepted artifact when one is available.
+The existing service's `/health` route is process liveness only and explicitly
+reports no production or publication approval. Accepted video evidence is checked
+separately by fail-closed `/readyz`; `/livez` remains the equivalent direct process
+probe. The separate live deployment smoke uses `/readyz` and still verifies the
+accepted artifact when one is available.
 Additional OCR languages require installation and validation before jobs in those
 languages are enabled. A successful container gate is build/test evidence, not
 proof that Render has deployed that revision or that any live acceptance row passes.
 
 After the container gate passes, the existing Render service can use Docker runtime
 with Dockerfile path `./Dockerfile`. Preserve its environment variables, domain,
-liveness health path `/livez`, free plan, and integrations. The checked-in
-render.yaml uses the same Docker runtime, liveness path and explicit free plan.
-Do not substitute `/health` as the platform rollout check: that route intentionally
-returns 503 whenever accepted review evidence is missing or blocked.
+liveness health path `/health`, free plan, and integrations. The checked-in
+render.yaml uses the same Docker runtime, existing liveness path and explicit free
+plan. Do not use platform rollout success as evidence readiness: only `/readyz`
+returns a success status for an accepted, hash-bound review artifact.
 Runtime deployment success does not imply that the POD database is initialized.
 The dashboard source update triggers deployment; do not trigger a duplicate deploy.
 Rollback uses the previous Node runtime/build/start configuration.

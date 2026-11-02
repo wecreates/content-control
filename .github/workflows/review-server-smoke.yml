@@ -62,7 +62,7 @@ jobs:
         id: routes
         run: |
           set -euo pipefail
-          test "$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/health)" = "200"
+          test "$(curl -s -o /tmp/health.json -w "%{http_code}" http://127.0.0.1:10000/readyz)" = "200"
           python - <<'PY'
           import json
           h=json.load(open("/tmp/health.json"))
@@ -128,7 +128,7 @@ jobs:
           PORT=10001 node server-lowmem.js > /tmp/review-server-corrupt.log 2>&1 &
           echo $! > /tmp/review-server-corrupt.pid
           sleep 2
-          test "$(curl -s -o /tmp/badhealth.json -w "%{http_code}" http://127.0.0.1:10001/health)" = "503"
+          test "$(curl -s -o /tmp/badhealth.json -w "%{http_code}" http://127.0.0.1:10001/readyz)" = "503"
           test "$(curl -s -o /tmp/badmedia.json -w "%{http_code}" http://127.0.0.1:10001/media)" = "409"
           python - <<'PY'
           import json

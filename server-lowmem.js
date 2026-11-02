@@ -181,10 +181,16 @@ app.get("/livez",(req,res)=>{
 });
 
 app.get("/health",(req,res)=>{
+  res.setHeader("Cache-Control","no-store");
+  res.json({alive:true,service:"content-control-review",evidence_ready:null,readiness_url:"/readyz",production_approved:false,publication:false});
+});
+
+app.get("/readyz",(req,res)=>{
   const a=acceptance();
   res.setHeader("Cache-Control","no-store");
   res.status(a.ready?200:503).json({
     ok:a.ready,
+    production_approved:false,
     engine:"remotion-v10-free",
     publication:false,
     qaStatus:a.health?.status||"missing",

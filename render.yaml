@@ -5,7 +5,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    healthCheckPath: /livez
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
