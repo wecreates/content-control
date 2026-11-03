@@ -60,7 +60,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     const c=await pool.connect();await c.query('SET ROLE pod_test_runtime');
     return {query:(...args)=>c.query(...args),release:()=>c.release(true)};
    },end:async()=>{}})});
-  assert.equal(report.checks.find(c=>c.code==='DATABASE_READABLE').status,'PASS');
+  assert.equal(report.checks.find(c=>c.code==='DATABASE_READABLE').status,'PASS',JSON.stringify(report));
   assert.equal(report.checks.find(c=>c.code==='POD_TABLE_PRIVILEGES').status,'PASS');
   assert.equal(report.checks.find(c=>c.code==='SOCIAL_VAULT_ISOLATED').status,'PASS');
   assert.equal(report.checks.find(c=>c.code==='SCHEMA_CHECKSUMS').status,'PASS');
