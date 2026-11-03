@@ -263,6 +263,14 @@ function repairableQuerySnapshot(result,jobId){
   (row.reason_code!==null&&!validOpaqueText(row.reason_code)))throw Error('POD_QUERY_UNVERIFIED');
  return {id:row.id,brief,attempt:row.attempt,manifest,qa_envelope:qaEnvelope,reason_code:row.reason_code};
 }
+function reviewableQuerySnapshot(result,jobId){
+ const row=exactQueryRow(result,['id','platform','manifest','manifest_sha256']);
+ if(row===null)return null;
+ const manifest=snapshotClaimData(row.manifest);
+ if(row.id!==jobId||!validOpaqueText(row.id)||
+  manifest===null||typeof manifest!=='object'||Array.isArray(manifest))throw Error('POD_QUERY_UNVERIFIED');
+ return {id:row.id,platform:row.platform,manifest,manifest_sha256:row.manifest_sha256};
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -662,14 +670,14 @@ export class PodDB {
   // connection or query parameter. Review artifacts already use this bound.
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('REVIEW_NOT_PENDING');
   return this.tx(async c=>{
-   const job=(await c.query(`SELECT q.*,
+   const job=reviewableQuerySnapshot(await c.query(`SELECT q.id,q.platform,q.manifest,
     (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
      AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
      ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
     FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
     WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
     AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-    FOR UPDATE OF q FOR SHARE OF p`,[jobId])).rows[0];
+    FOR UPDATE OF q FOR SHARE OF p`,[jobId]),jobId);
    if(!job)throw Error('REVIEW_NOT_PENDING');
    // A signed QA decision can only promote the same package that the owner
    // could retrieve from this durable review hold. Missing, malformed or
