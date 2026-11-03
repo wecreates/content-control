@@ -1,6 +1,15 @@
 name: Python Runtime Security Audit
 on:
   workflow_dispatch:
+    inputs:
+      validation_only:
+        description: 'Run read-only security regression tests only (no audit persistence)'
+        type: boolean
+        default: true
+      expected_sha:
+        description: 'Exact 40-character commit SHA expected at the selected ref'
+        type: string
+        required: true
   push:
     branches: [main]
     paths:
@@ -13,12 +22,43 @@ on:
   schedule:
     - cron: '13 11 * * 2'
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: python-security-audit
+  group: python-security-audit-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.validation_only && 'validation' || 'audit' }}
   cancel-in-progress: true
 jobs:
+  validation:
+    if: github.event_name == 'workflow_dispatch' && inputs.validation_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Verify requested commit before checkout
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_SHA" == "$GITHUB_SHA" ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only patched Pillow wheel
+        run: |
+          python -m pip install --disable-pip-version-check --no-cache-dir --only-binary=:all: --no-deps Pillow==13.0.0
+      - name: Run exact offline regression and synthetic-image suites
+        run: |
+          python -m unittest discover -s tests -p test_python_security_audit.py -v
+          python -m unittest discover -s tests -p test_pillow_security_compatibility.py -v
   audit:
+    if: github.ref == 'refs/heads/main' && !(github.event_name == 'workflow_dispatch' && inputs.validation_only)
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
