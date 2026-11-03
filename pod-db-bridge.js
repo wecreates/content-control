@@ -164,7 +164,7 @@ function claimedProductionMutation(result){
   (values.fencing_token.length===19&&values.fencing_token>'9223372036854775807')||
   brief===null||typeof brief!=='object'||Array.isArray(brief))throw Error('POD_MUTATION_UNVERIFIED');
  return {id:values.id,account_id:values.account_id,platform:values.platform,
-  fencing_token:values.fencing_token,attempt:values.attempt,brief};
+  fencing_token:values.fencing_token,attempt:values.attempt,brief,state:values.state};
 }
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
