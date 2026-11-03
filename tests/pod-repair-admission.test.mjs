@@ -70,6 +70,21 @@ for(const stage of ['rows','brief'])test('repair query rejects accessor-backed '
  assert.equal(reads,0);assert.equal(writes,0);
 });
 
+test('repair query accepts a legacy null reason and archives only the fixed fallback',async()=>{
+ let archived;
+ const db=new PodDB({bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+ db.tx=fn=>fn({query:async(sql,args=[])=>{
+  if(sql.startsWith('SELECT'))return {rows:[{id:jobId,brief:{id:jobId,business_id:'fixture-business',
+   account_id:'fixture-account',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},
+   attempt:1,manifest:{},qa_envelope:{},reason_code:null}]};
+  if(sql.startsWith('INSERT')){archived=args[3];return {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived'}]};}
+  if(sql.startsWith('UPDATE'))return {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null}]};
+  throw Error('unexpected repair query');
+ }});
+ await db.requeueRepair(jobId,signed());
+ assert.equal(archived.reason_code,'PRODUCTION_BLOCKED');
+});
+
 test('repair requeue rejects unverified archive and queue mutation receipts',async()=>{
  const attempts=[
   undefined,{},
