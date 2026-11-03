@@ -19,7 +19,7 @@ for(const boundary of ['connect','lock','commit'])for(const change of ['storage'
    statements.push(sql);
    if(boundary==='lock'&&sql.includes('pg_advisory_xact_lock'))invalidate();
    if(boundary==='commit'&&sql.startsWith('GRANT SELECT ON pod_schema_version'))invalidate();
-   if(sql.startsWith('SELECT rolsuper'))return {rows:[{}]};
+   if(sql.startsWith('SELECT rolsuper'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false}]};
    if(sql==='SELECT current_user AS name')return {rows:[{name:'owner'}]};
    if(sql.includes('AS elevated'))return {rows:[{elevated:false}]};
    if(sql.startsWith("SELECT format('REVOKE TEMPORARY"))return {rows:[{sql:'REVOKE TEMPORARY ON DATABASE pod FROM PUBLIC'}]};
