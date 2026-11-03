@@ -45,14 +45,32 @@ test('review acceptance rejects a held package without its exact durable event i
   let writes=0;
   const db=new PodDB({pool:{},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
   db.tx=fn=>fn({query:async sql=>{
-   if(sql.startsWith('SELECT'))return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_failed',
-    reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:eventIdentity}]};
+   if(sql.startsWith('SELECT'))return {rows:[{id:'fixture-job',platform:'redbubble',
+    manifest,manifest_sha256:eventIdentity}]};
    writes+=1;return {rows:[{id:'fixture-job'}]};
   }});
   assert.notEqual(eventIdentity,manifestSha256);
   await assert.rejects(db.acceptReview('fixture-job',qa),/PACKAGE_UNAVAILABLE/);
   assert.equal(writes,0);
  }
+});
+
+for(const stage of ['rows','manifest'])test('review acceptance rejects accessor-backed '+stage+' evidence without invocation',async()=>{
+ const {manifest,qa,manifestSha256}=reviewFixture();
+ let reads=0,writes=0;
+ const row={id:'fixture-job',platform:'redbubble',manifest,manifest_sha256:manifestSha256};
+ const executable=stage==='rows'?Object.defineProperty({},'rows',{enumerable:true,get(){reads++;return [row];}}):
+  {rows:[Object.defineProperty({...row},'manifest',{enumerable:true,get(){reads++;return manifest;}})]};
+ const db=new PodDB({pool:{},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
+ db.tx=fn=>fn({query:async(sql,args=[])=>{
+  if(sql.startsWith('SELECT'))return executable;
+  writes+=1;
+  if(sql.startsWith('UPDATE'))return {rowCount:1,rows:[{id:'fixture-job',state:'qa_passed',reason_code:null}]};
+  if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:'fixture-job',kind:'pod.production.qa_passed'}]};
+  throw Error('unexpected review query');
+ }});
+ await assert.rejects(db.acceptReview('fixture-job',qa),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(writes,0);
 });
 
 test('review acceptance rejects unverified queue and audit mutation receipts',async()=>{
@@ -68,8 +86,8 @@ test('review acceptance rejects unverified queue and audit mutation receipts',as
   let writes=0;
   const db=new PodDB({pool:{},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
   db.tx=fn=>fn({query:async(sql,args)=>{
-   if(sql.startsWith('SELECT'))return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_failed',
-    reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:manifestSha256}]};
+   if(sql.startsWith('SELECT'))return {rows:[{id:'fixture-job',platform:'redbubble',
+    manifest,manifest_sha256:manifestSha256}]};
    writes+=1;
    if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
     {rowCount:1,rows:[{id:'fixture-job',state:'qa_passed',reason_code:null}]};
