@@ -244,6 +244,12 @@ function enqueueConceptQuerySnapshot(result){
   typeof row.permanently_unpublished!=='boolean'))throw Error('POD_QUERY_UNVERIFIED');
  return row;
 }
+function productionRightsQuerySnapshot(result){
+ const row=exactQueryRow(result,['rights_state','permanently_unpublished']);
+ if(row!==null&&(!['PASS','FAIL','UNKNOWN'].includes(row.rights_state)||
+  typeof row.permanently_unpublished!=='boolean'))throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -622,10 +628,10 @@ export class PodDB {
   // The earlier stage check releases its locks before this transaction. Bind
   // the durable review hold to current concept rights after acquiring the live
   // production lease, then run the caller's synchronous authority/stop guard.
-  const current=(await c.query(`SELECT p.rights_state,p.permanently_unpublished
+  const current=productionRightsQuerySnapshot(await c.query(`SELECT p.rights_state,p.permanently_unpublished
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.fencing_token=$2 AND q.state='processing'
-   FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token])).rows[0];
+   FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token]));
   if(!current)throw Error('LEASE_LOST');
   if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
   beforeStateChange?.();
@@ -721,10 +727,10 @@ export class PodDB {
    if(pass){
     // Lock current rights through the readiness transition; a prior claim or
     // signed technical QA does not authorize a subsequently revoked concept.
-    const current=(await c.query(`SELECT p.rights_state,p.permanently_unpublished
+    const current=productionRightsQuerySnapshot(await c.query(`SELECT p.rights_state,p.permanently_unpublished
      FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
      WHERE q.id=$1 AND q.fencing_token=$2 AND q.state='processing'
-     FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token])).rows[0];
+     FOR UPDATE OF q FOR SHARE OF p`,[job.id,job.fencing_token]));
     if(!current)throw Error('LEASE_LOST');
     if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
    }
