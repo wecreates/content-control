@@ -271,6 +271,28 @@ function reviewableQuerySnapshot(result,jobId){
   manifest===null||typeof manifest!=='object'||Array.isArray(manifest))throw Error('POD_QUERY_UNVERIFIED');
  return {id:row.id,platform:row.platform,manifest,manifest_sha256:row.manifest_sha256};
 }
+function reviewPackageQuerySnapshot(result,jobId){
+ const row=exactQueryRow(result,['id','platform','state','reason_code','manifest','manifest_sha256']);
+ if(row===null)return null;
+ if(row.id!==jobId)throw Error('PACKAGE_UNAVAILABLE');
+ const manifest=snapshotClaimData(row.manifest);
+ if(!validOpaqueText(row.id)||
+  (row.manifest!==null&&typeof row.manifest==='object'&&manifest===null))throw Error('POD_QUERY_UNVERIFIED');
+ return {id:row.id,platform:row.platform,state:row.state,reason_code:row.reason_code,
+  manifest,manifest_sha256:row.manifest_sha256};
+}
+function reviewArtifactQuerySnapshot(result,jobId){
+ const row=exactQueryRow(result,['id','platform','state','reason_code','manifest','manifest_sha256','body','media_type']);
+ if(row===null)return null;
+ if(row.id!==jobId)throw Error('ARTIFACT_UNAVAILABLE');
+ const manifest=snapshotClaimData(row.manifest);
+ if(!validOpaqueText(row.id)||
+  (row.manifest!==null&&typeof row.manifest==='object'&&manifest===null)||
+  (row.body!==null&&typeof row.body==='object'&&utilTypes.isProxy(row.body)))throw Error('POD_QUERY_UNVERIFIED');
+ const body=Buffer.isBuffer(row.body)?Buffer.from(row.body):row.body;
+ return {id:row.id,platform:row.platform,state:row.state,reason_code:row.reason_code,
+  manifest,manifest_sha256:row.manifest_sha256,body,media_type:row.media_type};
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -698,14 +720,14 @@ export class PodDB {
  }
  async reviewPackage(jobId){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
-  const row=(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+  const row=reviewPackageQuerySnapshot(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
-   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId])).rows[0];
-  if(!row?.manifest||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId]),jobId);
+  if(!row?.manifest||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   this.active();
   return row;
@@ -714,7 +736,7 @@ export class PodDB {
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId)||typeof sha!=='string'||!SHA256.test(sha))throw Error('ARTIFACT_UNAVAILABLE');
   // Resolve the hold, manifest and bytes in one database snapshot. A bearer
   // key and a known content hash alone must not expose unrelated stored data.
-  const row=(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
+  const row=reviewArtifactQuerySnapshot(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.review_required' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256,
@@ -724,7 +746,7 @@ export class PodDB {
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
-   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES])).rows[0];
+   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES]),jobId);
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
    !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
