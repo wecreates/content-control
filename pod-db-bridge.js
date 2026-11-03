@@ -357,6 +357,41 @@ function publishableQuerySnapshot(result,job){
   qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope))throw Error('POD_QUERY_UNVERIFIED');
  return {id:row.id,platform:row.platform,manifest,qa_envelope:qaEnvelope,manifest_sha256:row.manifest_sha256};
 }
+function publishAccountLockQuerySnapshot(result,accountId){
+ const row=exactQueryRow(result,['id']);
+ if(row!==null&&(!validOpaqueText(row.id)||row.id!==accountId))throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
+function publishAccountQuerySnapshot(result,accountId){
+ const row=exactQueryRow(result,['id','platform','daily_cap']);
+ if(row!==null&&(!validOpaqueText(row.id)||row.id!==accountId||!PLATFORMS.includes(row.platform)||
+  !Number.isSafeInteger(row.daily_cap)||row.daily_cap<0))throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
+function queryPresenceSnapshot(result){
+ const row=exactQueryRow(result,['present']);
+ if(row!==null&&row.present!==true)throw Error('POD_QUERY_UNVERIFIED');
+ return row!==null;
+}
+function nonnegativeCountQuerySnapshot(result){
+ const row=exactQueryRow(result,['n']);
+ if(row===null||!Number.isSafeInteger(row.n)||row.n<0)throw Error('POD_QUERY_UNVERIFIED');
+ return row.n;
+}
+function publishCandidateQuerySnapshot(result,accountId,platform){
+ const row=exactQueryRow(result,['id','account_id','platform','manifest','qa_envelope','manifest_sha256']);
+ if(row===null)return null;
+ const manifest=row.manifest===null?null:snapshotClaimData(row.manifest),
+  qaEnvelope=row.qa_envelope===null?null:snapshotClaimData(row.qa_envelope);
+ if(!validOpaqueText(row.id)||!validOpaqueText(row.account_id)||row.account_id!==accountId||
+  row.platform!==platform||!PLATFORMS.includes(row.platform)||
+  (row.manifest_sha256!==null&&!SHA256.test(row.manifest_sha256||''))||
+  (row.manifest!==null&&(manifest===null||typeof manifest!=='object'||Array.isArray(manifest)))||
+  (row.qa_envelope!==null&&(qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope))))
+  throw Error('POD_QUERY_UNVERIFIED');
+ return {id:row.id,account_id:row.account_id,platform:row.platform,manifest,
+  qa_envelope:qaEnvelope,manifest_sha256:row.manifest_sha256};
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -865,25 +900,25 @@ export class PodDB {
   const query=async(sql,args)=>{const result=await c.query(sql,args);this.active();return result;};
   // Acquire the account lock first, then evaluate cooldown on the live clock.
   // A predicate in the locking SELECT can be evaluated before its lock wait.
-  const locked=(await query('SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE',[accountId])).rows[0];
+  const locked=publishAccountLockQuerySnapshot(await query('SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE',[accountId]),accountId);
   if(!locked)return null;
-  const a=(await query("SELECT * FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=clock_timestamp()",[accountId])).rows[0];
+  const a=publishAccountQuerySnapshot(await query("SELECT id,platform,daily_cap FROM pod_accounts WHERE id=$1 AND state='ACTIVE' AND next_allowed_at<=clock_timestamp()",[accountId]),accountId);
   if(!a)return null;
-  const busy=await query("SELECT 1 FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]);
-  if(busy.rows.length)return null;
-  const count=(await query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId])).rows[0].n;
+  const busy=queryPresenceSnapshot(await query("SELECT true AS present FROM pod_production_queue WHERE account_id=$1 AND state IN ('publishing','ambiguous') LIMIT 1",[accountId]));
+  if(busy)return null;
+  const count=nonnegativeCountQuerySnapshot(await query("SELECT count(*)::int AS n FROM pod_quota_reservations WHERE account_id=$1 AND reserved_at>clock_timestamp()-interval '24 hours'",[accountId]));
   if(count>=a.daily_cap)return null;
   // Bind the account lock to its configured marketplace before consuming quota
   // or moving a job into publishing. A later release check is not early enough:
   // a mismatched queued row must remain untouched and must not reserve capacity.
-  const j=(await query(`SELECT q.*,
+  const j=publishCandidateQuerySnapshot(await query(`SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.qa_passed' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.account_id=$1 AND q.platform=$2 AND q.state='qa_passed' AND q.next_attempt_at<=clock_timestamp()
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-   ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId,a.platform])).rows[0];
+   ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1`,[accountId,a.platform]),accountId,a.platform);
   if(!j)return null;
   // A legacy, restored or corrupted readiness row must not consume account
   // quota/cooldown before the publisher discovers that its package is not the
@@ -899,15 +934,15 @@ export class PodDB {
    // per-format weekly allowance every Sunday at 00:00 UTC. This lane supports
    // paperback only. A retry/update of the same durable job therefore does not
    // consume another weekly title, while a third distinct job fails closed.
-   const prior=(await query(`SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
+   const prior=queryPresenceSnapshot(await query(`SELECT true AS present FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
     WHERE r.account_id=$1 AND r.job_id=$2 AND (q.provider_id IS NOT NULL OR
      r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC'))
-    LIMIT 1`,[accountId,j.id])).rows.length>0;
+    LIMIT 1`,[accountId,j.id]));
    if(!prior){
-    const weekly=(await query(`SELECT count(DISTINCT r.job_id)::int AS n
+    const weekly=nonnegativeCountQuerySnapshot(await query(`SELECT count(DISTINCT r.job_id)::int AS n
      FROM pod_quota_reservations r JOIN pod_production_queue q ON q.id=r.job_id
      WHERE r.account_id=$1 AND q.platform='kdp'
-     AND r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC')`,[accountId])).rows[0].n;
+     AND r.reserved_at>=((date_trunc('week',(clock_timestamp() AT TIME ZONE 'UTC')+interval '1 day')-interval '1 day') AT TIME ZONE 'UTC')`,[accountId]));
     if(weekly>=2)return null;
    }
   }
