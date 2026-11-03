@@ -12,7 +12,7 @@ function fixture(days,{duplicate=false,full=false,budgetResult,conceptResult}={}
   if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
   queries.push({sql,args});
   if(sql.includes('AS budget_day'))return {rows:[{budget_day:days.shift()}]};
-  if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:duplicate?[{id:'existing',business_id:'business',permanently_unpublished:false}]:[]};
+  if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:duplicate?[{id:'existing',business_id:'business',rights_state:'PASS',permanently_unpublished:false}]:[]};
   if(sql.startsWith('UPDATE pod_daily_concept_budget'))return budgetResult??(full?{rowCount:0,rows:[]}:
    {rowCount:1,rows:[{business_id:'business',day:args[1],within_limit:true}]});
   if(sql.startsWith('INSERT INTO pod_concepts'))return conceptResult??{rowCount:1,rows:[{
