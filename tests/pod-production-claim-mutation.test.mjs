@@ -20,7 +20,7 @@ test('production claim returns a data-only snapshot from exact mutation evidence
  const {db,queries}=fixture({rowCount:1,rows:[source]});
  const claim=await db.claimProduction();
  assert.deepEqual(claim,{id:'job',account_id:'account',platform:'kdp',fencing_token:'2',attempt:2,
-  brief:{id:'job',facts:{title:'Bounded fixture'}}});
+  brief:{id:'job',facts:{title:'Bounded fixture'}},state:'processing'});
  assert.notEqual(claim,source);assert.notEqual(claim.brief,source.brief);
  source.brief.facts.title='retained mutation';
  assert.equal(claim.brief.facts.title,'Bounded fixture');
