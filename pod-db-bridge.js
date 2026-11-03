@@ -226,6 +226,11 @@ function exactQueryRow(result,fields){
   throw Error('POD_QUERY_UNVERIFIED');
  return Object.fromEntries(expected.map(field=>[field,rowDescriptors[field].value]));
 }
+function producibleQuerySnapshot(result,job){
+ const row=exactQueryRow(result,['id']);
+ if(row!==null&&row.id!==job.id)throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -584,13 +589,13 @@ export class PodDB {
   return claimedProductionMutation(r);
  });}
  async assertProducible(job){return this.tx(async c=>{
-  const current=(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+  const current=producibleQuerySnapshot(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
    AND q.state='processing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-   FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform])).rows[0];
+   FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform]),job);
   if(!current)throw Error('LOCAL_PRODUCTION_BLOCKED');
   // A queued lock acquisition must not preserve an expired production lease.
-  const lease=(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
   if(lease?.valid!==true)throw Error('LOCAL_PRODUCTION_BLOCKED');
   return true;
  });}
