@@ -48,7 +48,8 @@ async function exercise(spec,stage,expired){
     rows:[{id:args[0],state:'raw',reason_code:null}]};
    if(sql.startsWith('INSERT INTO pod_production_queue'))return {rowCount:1,rows:[{id:args[0]}]};
    if(sql.includes('FROM pod_concepts WHERE id='))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
-   if(sql.includes('SELECT q.*'))return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{}}]};
+   if(sql.includes('SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code'))
+    return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{},reason_code:'QA_FAILED'}]};
    return {rows:[{id:job.id,used:1}]};
   }};
   const db=new PodDB({pool:{connect:async()=>{if(stage==='connection')advance();return client;}},
@@ -60,7 +61,7 @@ async function exercise(spec,stage,expired){
    assert.equal(queries.includes('COMMIT'),false);assert.equal(queries.at(-2),'ROLLBACK');
   }else{
    await run();assert.equal(queries.at(-2),'COMMIT');
-   if(spec.repair)assert.match(queries.find(q=>q.includes('SELECT q.*')),/FOR SHARE OF p/);
+   if(spec.repair)assert.match(queries.find(q=>q.includes('SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code')),/FOR SHARE OF p/);
   }
  }finally{Date.now=originalNow;}
 }
