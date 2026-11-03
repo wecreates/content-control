@@ -33,8 +33,13 @@ async function exercise(stage,verdict,run,expired){
    queries.push(sql);
    if(stage==='rights'&&sql.includes('FOR SHARE OF p'))advance();
    if(stage==='event'&&sql.startsWith('INSERT INTO pod_events'))advance();
-   if(sql.startsWith('SELECT'))return {rows:[{...job,platform:'redbubble',manifest,manifest_sha256:manifestSha256,
-    valid:true,rights_state:'PASS',permanently_unpublished:false}]};
+   if(sql.startsWith('SELECT')){
+    if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+    if(sql.includes("state='processing' FOR UPDATE"))return {rows:[{id:job.id}]};
+    if(sql.includes('SELECT p.rights_state,p.permanently_unpublished'))
+     return {rows:[{rights_state:'PASS',permanently_unpublished:false}]};
+    return {rows:[{...job,platform:'redbubble',manifest,manifest_sha256:manifestSha256}]};
+   }
    if(/^(UPDATE|INSERT)/.test(sql)){
     writes.push(sql);
     if(sql.includes("RETURNING id,state,reason_code")){
