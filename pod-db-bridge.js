@@ -99,6 +99,73 @@ function exactEmptyMutation(result){
   return keys.length===1&&keys[0]==='length'&&Object.hasOwn(length||{},'value')&&length.value===0;
  }catch{return false;}
 }
+function snapshotClaimData(value){
+ try{
+  const state={nodes:0};
+  const copy=(item,depth)=>{
+   if(depth>64||++state.nodes>10000)throw Error();
+   if(item===null||typeof item==='string'||typeof item==='boolean')return item;
+   if(typeof item==='number'){
+    if(!Number.isFinite(item)||(Number.isInteger(item)&&!Number.isSafeInteger(item)))throw Error();
+    return item;
+   }
+   if(typeof item!=='object'||utilTypes.isProxy(item))throw Error();
+   const prototype=Object.getPrototypeOf(item),keys=Reflect.ownKeys(item);
+   if(Array.isArray(item)){
+    const length=Object.getOwnPropertyDescriptor(item,'length');
+    if(prototype!==Array.prototype||!Object.hasOwn(length||{},'value')||
+     !Number.isInteger(length.value)||length.value<0||length.value>10000||keys.length!==length.value+1)throw Error();
+    const result=[];
+    for(let index=0;index<length.value;index++){
+     const descriptor=Object.getOwnPropertyDescriptor(item,String(index));
+     if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+     result.push(copy(descriptor.value,depth+1));
+    }
+    return result;
+   }
+   if(prototype!==Object.prototype||keys.length>10000||keys.some(key=>typeof key!=='string'))throw Error();
+   const result={};
+   for(const key of keys){
+    const descriptor=Object.getOwnPropertyDescriptor(item,key);
+    if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value'))throw Error();
+    Object.defineProperty(result,key,{value:copy(descriptor.value,depth+1),enumerable:true,writable:true,configurable:true});
+   }
+   return result;
+  };
+  return copy(value,0);
+ }catch{return null;}
+}
+function claimedProductionMutation(result){
+ if(exactEmptyMutation(result))return null;
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ let row,keys,descriptors;
+ try{
+  const rowKeys=Reflect.ownKeys(rows.value),length=Object.getOwnPropertyDescriptor(rows.value,'length'),
+   item=Object.getOwnPropertyDescriptor(rows.value,'0');
+  if(rowKeys.length!==2||rowKeys[0]!=='0'||rowKeys[1]!=='length'||
+   !Object.hasOwn(length||{},'value')||length.value!==1||!item?.enumerable||!Object.hasOwn(item,'value'))throw Error();
+  row=item.value;
+  if(row===null||typeof row!=='object'||Array.isArray(row)||utilTypes.isProxy(row)||
+   Object.getPrototypeOf(row)!==Object.prototype)throw Error();
+  keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('POD_MUTATION_UNVERIFIED');}
+ const fields=['account_id','attempt','brief','fencing_token','id','platform','state'];
+ if(keys.length!==fields.length||keys.some(key=>typeof key!=='string')||
+  keys.map(String).sort().some((key,index)=>key!==fields[index])||
+  fields.some(field=>!descriptors[field]?.enumerable||!Object.hasOwn(descriptors[field],'value')))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ const values=Object.fromEntries(fields.map(field=>[field,descriptors[field].value]));
+ const brief=snapshotClaimData(values.brief);
+ if(!validOpaqueText(values.id)||!validOpaqueText(values.account_id)||!PLATFORMS.includes(values.platform)||
+  values.state!=='processing'||!Number.isSafeInteger(values.attempt)||values.attempt<1||
+  typeof values.fencing_token!=='string'||!/^[1-9][0-9]{0,18}$/.test(values.fencing_token)||
+  (values.fencing_token.length===19&&values.fencing_token>'9223372036854775807')||
+  brief===null||typeof brief!=='object'||Array.isArray(brief))throw Error('POD_MUTATION_UNVERIFIED');
+ return {id:values.id,account_id:values.account_id,platform:values.platform,
+  fencing_token:values.fencing_token,attempt:values.attempt,brief,state:values.state};
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -443,7 +510,9 @@ export class PodDB {
    fencing_token=fencing_token+1,attempt=attempt+1,updated_at=clock_timestamp()
    WHERE id=(SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
     WHERE q.state='raw' AND q.next_attempt_at<=clock_timestamp() AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-    ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1) RETURNING *`);return r.rows[0]||null;
+    ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1)
+    RETURNING id,account_id,platform,fencing_token::text AS fencing_token,attempt,brief,state`);
+  return claimedProductionMutation(r);
  });}
  async assertProducible(job){return this.tx(async c=>{
   const current=(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
