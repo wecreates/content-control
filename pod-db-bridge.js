@@ -250,9 +250,11 @@ export class PodDB {
    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['pod:concept-budget:'+businessId]);
    const day=await conceptBudgetDay(c);
    await c.query('INSERT INTO pod_daily_concept_budget(business_id,day) VALUES($1,$2::date) ON CONFLICT DO NOTHING',[businessId,day]);
-   const budget=await c.query('UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=$2::date AND used<$3 RETURNING used',[businessId,day,dailyLimit]);
-   if(!budget.rows.length)throw Error('DAILY_CONCEPT_LIMIT');
-   await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp())',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']);
+   const budget=await c.query('UPDATE pod_daily_concept_budget SET used=used+1 WHERE business_id=$1 AND day=$2::date AND used<$3 RETURNING business_id,day::text AS day,(used<=$3) AS within_limit',[businessId,day,dailyLimit]);
+   if(exactEmptyMutation(budget))throw Error('DAILY_CONCEPT_LIMIT');
+   assertExactMutation(budget,{business_id:businessId,day,within_limit:true});
+   assertExactMutation(await c.query('INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished,created_at) VALUES($1,$2,$3,$4,$5,clock_timestamp()) RETURNING id,business_id,fingerprint,rights_state,permanently_unpublished',[id,businessId,intake.fingerprint,intake.rights_state,intake.rights_state!=='PASS']),
+    {id,business_id:businessId,fingerprint:intake.fingerprint,rights_state:intake.rights_state,permanently_unpublished:intake.rights_state!=='PASS'});
    if(await conceptBudgetDay(c)!==day)throw Error('CONCEPT_BUDGET_DAY_CHANGED');
    // Revalidate after all database waits so expiry rolls back budget and writes.
    verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
