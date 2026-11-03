@@ -32,11 +32,11 @@ for(const [name,manifest,manifest_sha256] of [
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
    if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
-   if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',state:'ACTIVE',daily_cap:10}]};
-   if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
+   if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',daily_cap:10}]};
+   if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.*,'))return {rows:[{id:'job',account_id:'account',platform:'redbubble',
-    state:'qa_passed',manifest,manifest_sha256}]};
+   if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,'))return {rows:[{
+    id:'job',account_id:'account',platform:'redbubble',manifest,manifest_sha256,qa_envelope:signedQA()}]};
    if(sql.startsWith('UPDATE pod_production_queue SET state='))return {rows:[{id:'job'}]};
    if(sql.startsWith('INSERT INTO pod_quota_reservations')||sql.startsWith('UPDATE pod_accounts SET next_allowed_at='))return {rows:[]};
    throw Error('UNEXPECTED_QUERY: '+sql);
@@ -63,11 +63,12 @@ for(const [name,qa_envelope] of [
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
    if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
-   if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',state:'ACTIVE',daily_cap:10}]};
-   if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
+   if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',daily_cap:10}]};
+   if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.*,'))return {rows:[{id:'job',account_id:'account',platform:'redbubble',
-    state:'qa_passed',manifest:validManifest,manifest_sha256:validIdentity,qa_envelope}]};
+   if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,'))return {rows:[{
+    id:'job',account_id:'account',platform:'redbubble',manifest:validManifest,
+    manifest_sha256:validIdentity,qa_envelope}]};
    if(sql.startsWith('UPDATE pod_production_queue SET state='))return {rows:[{id:'job',attempt:1}]};
    if(sql.startsWith('INSERT INTO pod_quota_reservations')||sql.startsWith('UPDATE pod_accounts SET next_allowed_at='))return {rows:[]};
    throw Error('UNEXPECTED_QUERY: '+sql);
