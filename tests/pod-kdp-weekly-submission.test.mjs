@@ -26,7 +26,7 @@ const signedQA=manifest=>{
 function fixture({platform='kdp',prior=false,weekly=0}={}){
  const manifest=releaseManifest(platform);
  const job={id:'00000000-0000-4000-8000-000000000001',account_id:'00000000-0000-4000-8000-000000000002',
-  platform,state:'qa_passed',attempt:0,fencing_token:'0',manifest,
+  platform,state:'qa_passed',attempt:0,fencing_token:'0',manifest,brief:{id:'fixture'},idempotency_key:'fixture-key',
   manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),qa_envelope:signedQA(manifest)};
  const queries=[];
  const client={
@@ -41,8 +41,13 @@ function fixture({platform='kdp',prior=false,weekly=0}={}){
    if(sql.startsWith('SELECT q.*,'))return {rows:[job]};
    if(sql.startsWith('SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue'))return {rows:prior?[{}]:[]};
    if(sql.startsWith('SELECT count(DISTINCT r.job_id)::int AS n'))return {rows:[{n:weekly}]};
-   if(sql.startsWith('UPDATE pod_production_queue SET state='))return {rows:[{...job,state:'publishing',attempt:1,fencing_token:'1'}]};
-   if(sql.startsWith('INSERT INTO pod_quota_reservations')||sql.startsWith('UPDATE pod_accounts SET next_allowed_at='))return {rows:[]};
+   if(sql.startsWith('UPDATE pod_production_queue SET state=')){
+    const {manifest_sha256,...claimed}={...job,state:'publishing',attempt:1,fencing_token:'1'};
+    return {rowCount:1,rows:[claimed]};
+   }
+   if(sql.startsWith('INSERT INTO pod_quota_reservations'))
+    return {rowCount:1,rows:[{job_id:job.id,attempt:1,account_id:job.account_id}]};
+   if(sql.startsWith('UPDATE pod_accounts'))return {rowCount:1,rows:[{id:job.account_id}]};
    throw Error('unexpected SQL: '+sql);
   },
   release(){}
