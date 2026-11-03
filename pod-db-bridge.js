@@ -350,19 +350,19 @@ async function conceptBudgetDay(client){
  return day;
 }
 async function lockProductionLease(client,job){
- const current=(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='processing' FOR UPDATE",[job.id,job.fencing_token])).rows[0];
+ const current=producibleQuerySnapshot(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='processing' FOR UPDATE",[job.id,job.fencing_token]),job);
  if(!current)throw Error('LEASE_LOST');
  // Evaluate wall time in a separate statement after acquiring the row lock.
  // now() is fixed at BEGIN, and a SELECT expression can run before a lock wait.
- const lease=(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+ const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
  if(lease?.valid!==true)throw Error('LEASE_LOST');
 }
 async function lockPublishingLease(client,job){
- const current=(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='publishing' FOR UPDATE",[job.id,job.fencing_token])).rows[0];
+ const current=producibleQuerySnapshot(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='publishing' FOR UPDATE",[job.id,job.fencing_token]),job);
  if(!current)throw Error('LEASE_LOST');
  // The provider call can outlive its release lease. Check wall time only after
  // acquiring the row lock so a stale publisher cannot commit a late outcome.
- const lease=(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+ const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
  if(lease?.valid!==true)throw Error('LEASE_LOST');
 }
 export async function createPodPool(env=process.env) {
