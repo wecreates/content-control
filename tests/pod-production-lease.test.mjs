@@ -17,6 +17,7 @@ function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
  const client={release(){},query:async(sql,args=[])=>{if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}queries.push(sql);
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
   if(sql.includes("q.state='processing'")&&sql.includes('FOR SHARE OF q,p'))return {rows:[{id:job.id}]};
+  if(sql.includes("state='processing' FOR UPDATE")||sql.includes("state='publishing' FOR UPDATE"))return {rows:[{id:job.id}]};
   if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
   if(/^(UPDATE|INSERT)/.test(sql)){
    writes.push(sql);
@@ -62,6 +63,31 @@ for(const [label,run] of [
   assert.ok(lock>=0&&clock>lock);assert.equal(f.queries.at(-2),'COMMIT');
  });
 }
+
+for(const [label,publishing,stage,run] of [
+ ['production lock',false,'lock',db=>db.failProduction(job,'QA_FAILED')],
+ ['production lease clock',false,'lease',db=>db.failProduction(job,'QA_FAILED')],
+ ['publishing lock',true,'lock',db=>db.finish(job,'blocked',{},'RELEASE_BLOCKED')],
+ ['publishing lease clock',true,'lease',db=>db.finish(job,'blocked',{},'RELEASE_BLOCKED')],
+])test('settlement lease regression rejects accessor-backed '+label+' evidence without invocation',async()=>{
+ let reads=0,writes=0;
+ const executable={};
+ Object.defineProperty(executable,'rows',{enumerable:true,get(){reads++;return stage==='lease'?[{valid:true}]:[{id:job.id}];}});
+ const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ db.tx=fn=>fn({query:async(sql,args=[])=>{
+  if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return stage==='lease'?executable:{rows:[{valid:true}]};
+  if(sql.startsWith('SELECT'))return stage==='lock'?executable:{rows:[{id:job.id}]};
+  writes++;
+  if(sql.startsWith('UPDATE'))return publishing?
+   {rowCount:1,rows:[{id:job.id,state:'blocked',provider_id:null,reason_code:'RELEASE_BLOCKED'}]}:
+   {rowCount:1,rows:[{id:job.id,state:'qa_failed',reason_code:'QA_FAILED'}]};
+  if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:'pod.blocked'}]};
+  throw Error('unexpected settlement lease query');
+ }});
+ await assert.rejects(run(db),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(writes,0);
+});
+
 test('completion stop guard rolls back before the durable QA state change',async()=>{
  const f=fixture(true);let calls=0;
  await assert.rejects(f.db.completeProduction(job,manifest,qa(),{
@@ -145,6 +171,7 @@ test('production completion rejects unverified queue and audit mutation receipts
   db.tx=fn=>fn({query:async(sql,args)=>{
    if(sql.startsWith('SELECT')){
     if(sql.includes('lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+    if(sql.includes("state='processing' FOR UPDATE"))return {rows:[{id:job.id}]};
     return {rows:[{id:job.id,rights_state:'PASS',permanently_unpublished:false}]};
    }
    writes+=1;
@@ -172,7 +199,8 @@ test('production failure and review hold reject unverified mutation receipts',as
   let writes=0;
   const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
   db.tx=fn=>fn({query:async sql=>{
-   if(sql.startsWith('SELECT'))return {rows:[{valid:true}]};
+   if(sql.startsWith('SELECT'))return sql.includes('lease_until>clock_timestamp()')?
+    {rows:[{valid:true}]}:{rows:[{id:job.id}]};
    writes+=1;return attempt;
   }});
   await assert.rejects(db.failProduction(job,'QA_FAILED'),/POD_MUTATION_UNVERIFIED/);
@@ -183,7 +211,8 @@ test('production failure and review hold reject unverified mutation receipts',as
   const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
   db.tx=fn=>fn({query:async(sql,args=[])=>{
    if(sql.startsWith('SELECT'))return sql.includes('lease_until>clock_timestamp()')?
-    {rows:[{valid:true}]}:{rows:[{rights_state:'PASS',permanently_unpublished:false}]};
+    {rows:[{valid:true}]}:sql.includes("state='processing' FOR UPDATE")?
+     {rows:[{id:job.id}]}:{rows:[{rights_state:'PASS',permanently_unpublished:false}]};
    writes+=1;
    if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
     {rowCount:1,rows:[{id:job.id,state:'qa_failed',reason_code:'REVIEW_REQUIRED'}]};
