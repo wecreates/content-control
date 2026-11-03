@@ -166,6 +166,40 @@ function claimedProductionMutation(result){
  return {id:values.id,account_id:values.account_id,platform:values.platform,
   fencing_token:values.fencing_token,attempt:values.attempt,brief,state:values.state};
 }
+function claimedPublishMutation(result){
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ let row,keys,descriptors;
+ try{
+  const rowKeys=Reflect.ownKeys(rows.value),length=Object.getOwnPropertyDescriptor(rows.value,'length'),
+   item=Object.getOwnPropertyDescriptor(rows.value,'0');
+  if(rowKeys.length!==2||rowKeys[0]!=='0'||rowKeys[1]!=='length'||
+   !Object.hasOwn(length||{},'value')||length.value!==1||!item?.enumerable||!Object.hasOwn(item,'value'))throw Error();
+  row=item.value;
+  if(row===null||typeof row!=='object'||Array.isArray(row)||utilTypes.isProxy(row)||
+   Object.getPrototypeOf(row)!==Object.prototype)throw Error();
+  keys=Reflect.ownKeys(row);descriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('POD_MUTATION_UNVERIFIED');}
+ const fields=['account_id','attempt','brief','fencing_token','id','idempotency_key','manifest','platform','qa_envelope','state'];
+ if(keys.length!==fields.length||keys.some(key=>typeof key!=='string')||
+  keys.map(String).sort().some((key,index)=>key!==fields[index])||
+  fields.some(field=>!descriptors[field]?.enumerable||!Object.hasOwn(descriptors[field],'value')))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ const values=Object.fromEntries(fields.map(field=>[field,descriptors[field].value])),
+  brief=snapshotClaimData(values.brief),manifest=snapshotClaimData(values.manifest),
+  qaEnvelope=snapshotClaimData(values.qa_envelope);
+ if(!validOpaqueText(values.id)||!validOpaqueText(values.account_id)||!PLATFORMS.includes(values.platform)||
+  !validOpaqueText(values.idempotency_key)||values.state!=='publishing'||
+  !Number.isSafeInteger(values.attempt)||values.attempt<1||
+  typeof values.fencing_token!=='string'||!/^[1-9][0-9]{0,18}$/.test(values.fencing_token)||
+  (values.fencing_token.length===19&&values.fencing_token>'9223372036854775807')||
+  [brief,manifest,qaEnvelope].some(value=>value===null||typeof value!=='object'||Array.isArray(value)))
+  throw Error('POD_MUTATION_UNVERIFIED');
+ return {id:values.id,platform:values.platform,account_id:values.account_id,
+  fencing_token:values.fencing_token,brief,manifest,qa_envelope:qaEnvelope,
+  idempotency_key:values.idempotency_key,attempt:values.attempt,state:values.state};
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -718,12 +752,20 @@ export class PodDB {
     if(weekly>=2)return null;
    }
   }
-  const r=await query("UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1 RETURNING *",[j.id]);
+  const r=await query(`UPDATE pod_production_queue SET state='publishing',attempt=attempt+1,fencing_token=fencing_token+1,
+   lease_until=clock_timestamp()+interval '5 minutes',updated_at=clock_timestamp() WHERE id=$1
+   RETURNING id,platform,account_id,fencing_token::text AS fencing_token,brief,manifest,qa_envelope,idempotency_key,attempt,state`,[j.id]);
+  const claimed=claimedPublishMutation(r);
   // Override the schema's transaction-time default: reservations must not age
   // while the claimant is waiting for the account lock.
-  await query('INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at) VALUES($1,$2,$3,clock_timestamp())',[j.id,r.rows[0].attempt,accountId]);
-  await query("UPDATE pod_accounts SET next_allowed_at=clock_timestamp()+($2::double precision*interval '1 second') WHERE id=$1",[accountId,delaySeconds]);
-  return r.rows[0];
+  const reservation=await query(`INSERT INTO pod_quota_reservations(job_id,attempt,account_id,reserved_at)
+   VALUES($1,$2,$3,clock_timestamp()) RETURNING job_id,attempt,account_id`,[j.id,claimed.attempt,accountId]);
+  assertExactMutation(reservation,{job_id:j.id,attempt:claimed.attempt,account_id:accountId});
+  const cooldown=await query(`UPDATE pod_accounts
+   SET next_allowed_at=clock_timestamp()+($2::double precision*interval '1 second') WHERE id=$1 RETURNING id`,
+   [accountId,delaySeconds]);
+  assertExactMutation(cooldown,{id:accountId});
+  return claimed;
  });}
  async assertPublishable(job){return this.tx(async c=>{
   const current=(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,

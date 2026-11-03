@@ -30,10 +30,14 @@ function fixture(expireOn){
    if(sql.startsWith('SELECT id FROM pod_accounts'))rows=[{id:'account'}];
    else if(sql.startsWith('SELECT * FROM pod_accounts'))rows=[{id:'account',platform:'redbubble',daily_cap:10}];
    else if(sql.startsWith('SELECT count(*)::int'))rows=[{n:0}];
-   else if(sql.startsWith('SELECT q.*,'))rows=[{id:'job',platform:'redbubble',manifest,manifest_sha256:manifestSha256,qa_envelope:qaEnvelope}];
-   else if(sql.startsWith('UPDATE pod_production_queue'))rows=[{id:'job',attempt:1}];
+   else if(sql.startsWith('SELECT q.*,'))rows=[{id:'job',account_id:'account',platform:'redbubble',brief:{id:'fixture'},
+    manifest,manifest_sha256:manifestSha256,qa_envelope:qaEnvelope,idempotency_key:'fixture-key'}];
+   else if(sql.startsWith('UPDATE pod_production_queue'))rows=[{id:'job',account_id:'account',platform:'redbubble',
+    fencing_token:'1',brief:{id:'fixture'},manifest,qa_envelope:qaEnvelope,idempotency_key:'fixture-key',attempt:1,state:'publishing'}];
+   else if(sql.startsWith('INSERT INTO pod_quota_reservations'))rows=[{job_id:'job',attempt:1,account_id:'account'}];
+   else if(sql.startsWith('UPDATE pod_accounts SET next_allowed_at'))rows=[{id:'account'}];
    if(sql.includes(expireOn))db.expiresAt=0;
-   return {rows};
+   return {rowCount:rows.length,rows};
   },
   release(){}
  };
