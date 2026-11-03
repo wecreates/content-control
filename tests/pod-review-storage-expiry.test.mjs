@@ -40,14 +40,13 @@ for(const [name,read] of [
    files:{'art-mask.png':'b'.repeat(64),'print.png':sha,'text-mask.png':'d'.repeat(64)}};
   const manifestSha256=crypto.createHash('sha256').update(canonical(plain)).digest('hex');
   let db;
-  const manifest=new Proxy(plain,{get(target,key,receiver){
-   if(key==='files')db.expiresAt=Date.now();
-   return Reflect.get(target,key,receiver);
-  }});
-  const client={release(){},query:async()=>({rows:[{id:'fixture-job',platform:'redbubble',state:'qa_failed',
-   reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:manifestSha256,body,media_type:'image/png'}]})};
+  const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+   manifest:plain,manifest_sha256:manifestSha256,...(name==='review artifact'?{body,media_type:'image/png'}:{})};
+  const client={release(){},query:async()=>({rows:[row]})};
   const pool={connect:async()=>client};
   db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
+  const active=db.active.bind(db);let checks=0;
+  db.active=()=>{if(++checks===7)db.expiresAt=Date.now();return active();};
   await assert.rejects(read(db,sha),/POD_STORAGE_EXPIRING/);
  });
 }
