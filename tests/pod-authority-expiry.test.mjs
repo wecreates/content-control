@@ -42,6 +42,7 @@ async function exercise(spec,stage,expired){
     rows:[{id:args[0],kind:args[1]}]};
    if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
     rows:[{id:args[0],state:'raw',reason_code:null}]};
+   if(sql.startsWith('INSERT INTO pod_production_queue'))return {rowCount:1,rows:[{id:args[0]}]};
    if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
    if(sql.includes('SELECT q.*'))return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{}}]};
    return {rows:[{id:job.id,used:1}]};
