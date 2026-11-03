@@ -226,6 +226,61 @@ function exactQueryRow(result,fields){
   throw Error('POD_QUERY_UNVERIFIED');
  return Object.fromEntries(expected.map(field=>[field,rowDescriptors[field].value]));
 }
+function exactQueryRows(result,fields,limit){
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('POD_QUERY_UNVERIFIED');
+ let keys,length,descriptors;
+ try{
+  keys=Reflect.ownKeys(rows.value);length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  descriptors=Object.getOwnPropertyDescriptors(rows.value);
+ }catch{throw Error('POD_QUERY_UNVERIFIED');}
+ if(!Object.hasOwn(length||{},'value')||!Number.isInteger(length.value)||length.value<0||length.value>limit||
+  keys.length!==length.value+1||keys.some((key,index)=>index<length.value?key!==String(index):key!=='length'))
+  throw Error('POD_QUERY_UNVERIFIED');
+ const expected=[...fields].sort(),resultRows=[];
+ for(let index=0;index<length.value;index++){
+  const item=descriptors[String(index)];
+  if(!item?.enumerable||!Object.hasOwn(item,'value'))throw Error('POD_QUERY_UNVERIFIED');
+  const row=item.value;let prototype,rowKeys,rowDescriptors;
+  try{
+   if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+   prototype=Object.getPrototypeOf(row);rowKeys=Reflect.ownKeys(row);rowDescriptors=Object.getOwnPropertyDescriptors(row);
+  }catch{throw Error('POD_QUERY_UNVERIFIED');}
+  if((prototype!==Object.prototype&&prototype!==null)||rowKeys.length!==expected.length||
+   rowKeys.some(key=>typeof key!=='string')||rowKeys.map(String).sort().some((key,offset)=>key!==expected[offset])||
+   expected.some(field=>!rowDescriptors[field]?.enumerable||!Object.hasOwn(rowDescriptors[field],'value')))
+   throw Error('POD_QUERY_UNVERIFIED');
+  resultRows.push(Object.fromEntries(expected.map(field=>[field,rowDescriptors[field].value])));
+ }
+ return resultRows;
+}
+function readyListQuerySnapshot(result){
+ return exactQueryRows(result,['id','platform','state'],20).map(row=>{
+  if(!validOpaqueText(row.id)||!PLATFORMS.includes(row.platform)||row.state!=='qa_passed')
+   throw Error('POD_QUERY_UNVERIFIED');
+  return {id:row.id,platform:row.platform,state:row.state};
+ });
+}
+function operationsListQuerySnapshot(result,state){
+ return exactQueryRows(result,['id','platform','state','reason_code','attempt','created_at','manifest',
+  'manifest_sha256','can_preview'],50).map(row=>{
+  let createdAtMs;
+  try{
+   if(utilTypes.isProxy(row.created_at))throw Error();
+   createdAtMs=Date.prototype.getTime.call(row.created_at);
+  }catch{throw Error('POD_QUERY_UNVERIFIED');}
+  const manifest=row.manifest===null?null:snapshotClaimData(row.manifest);
+  if(!validOpaqueText(row.id)||!PLATFORMS.includes(row.platform)||row.state!==state||
+   (row.reason_code!==null&&!validOpaqueText(row.reason_code))||
+   !Number.isSafeInteger(row.attempt)||row.attempt<0||!Number.isFinite(createdAtMs)||
+   (row.manifest!==null&&manifest===null)||
+   (row.manifest_sha256!==null&&!validOpaqueText(row.manifest_sha256))||typeof row.can_preview!=='boolean')
+   throw Error('POD_QUERY_UNVERIFIED');
+  return {id:row.id,platform:row.platform,state:row.state,reason_code:row.reason_code,
+   attempt:row.attempt,created_at:new Date(createdAtMs),manifest,
+   manifest_sha256:row.manifest_sha256,can_preview:row.can_preview};
+ });
+}
 function producibleQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id']);
  if(row!==null&&row.id!==job.id)throw Error('POD_QUERY_UNVERIFIED');
@@ -609,12 +664,13 @@ export class PodDB {
   });
  }
  async listReady(){this.active();
-  return (await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20")).rows;
+  const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20"));
+  this.active();return rows;
  }
  async listOperationsJobs(state='review_required'){
   if(!['review_required','raw','processing','qa_failed','qa_passed','blocked','publishing','ambiguous','submitted','published'].includes(state))throw Error('JOB_FILTER_INVALID');
   this.active();
-  const rows=(await this.read(`SELECT q.id,q.platform,
+  const rows=operationsListQuerySnapshot(await this.read(`SELECT q.id,q.platform,
    CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END AS state,
    q.reason_code,q.attempt,q.created_at,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
@@ -624,14 +680,15 @@ export class PodDB {
     AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END=$1
-   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state])).rows;
-  return rows.map(row=>{
+   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state]),state);
+  const listed=rows.map(row=>{
    const {manifest,manifest_sha256,...listed}=row;
-   let canPreview=listed.can_preview===true;
+   let canPreview=listed.can_preview;
    if(canPreview)try{assertStoredManifest(manifest,row.platform,manifest_sha256);}catch{canPreview=false;}
    return {...listed,can_preview:canPreview,
     reason_code:row.reason_code===null?null:productionReason(row.reason_code)};
   });
+  this.active();return listed;
  }
  async failProduction(job,reason){return this.tx(async c=>{
   await lockProductionLease(c,job);

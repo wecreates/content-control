@@ -586,7 +586,7 @@ test('operations list retains revoked review records without advertising preview
   const rightsBound=text.includes('JOIN pod_concepts p ON p.id=q.concept_id')&&
    text.includes("p.rights_state='PASS'")&&text.includes('NOT p.permanently_unpublished');
   return {rows:[{id:'fixture-job',platform:'redbubble',state:'review_required',reason_code:null,
-   attempt:1,created_at:new Date(0),can_preview:rightsBound?false:true}]};
+   attempt:1,created_at:new Date(0),manifest:null,manifest_sha256:null,can_preview:rightsBound?false:true}]};
  });
  const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
  const rows=await db.listOperationsJobs();
@@ -597,7 +597,7 @@ test('operations list advertises previews only for the exact durable review hold
   const text=typeof sql==='string'?sql:sql.text;
   const exactHold=text.includes("q.manifest IS NOT NULL AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'");
   return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_passed',reason_code:null,
-   attempt:1,created_at:new Date(0),can_preview:exactHold?false:true}]};
+   attempt:1,created_at:new Date(0),manifest:null,manifest_sha256:null,can_preview:exactHold?false:true}]};
  });
  const db=new PodDB({bridge,pool,expiresAt:'2099-01-01T00:00:00Z'});
  const rows=await db.listOperationsJobs('qa_passed');
