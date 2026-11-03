@@ -200,6 +200,41 @@ function claimedPublishMutation(result){
   fencing_token:values.fencing_token,brief,manifest,qa_envelope:qaEnvelope,
   idempotency_key:values.idempotency_key,attempt:values.attempt,state:values.state};
 }
+function exactQueryRow(result,fields){
+ const rows=dataProperty(result,'rows');
+ if(!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('POD_QUERY_UNVERIFIED');
+ let keys,length,descriptors;
+ try{
+  keys=Reflect.ownKeys(rows.value);length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  descriptors=Object.getOwnPropertyDescriptors(rows.value);
+ }catch{throw Error('POD_QUERY_UNVERIFIED');}
+ if(!Object.hasOwn(length||{},'value')||!Number.isInteger(length.value)||length.value<0||length.value>1||
+  keys.length!==length.value+1||keys.some((key,index)=>index<length.value?key!==String(index):key!=='length'))
+  throw Error('POD_QUERY_UNVERIFIED');
+ if(length.value===0)return null;
+ const item=descriptors['0'];
+ if(!item?.enumerable||!Object.hasOwn(item,'value'))throw Error('POD_QUERY_UNVERIFIED');
+ const row=item.value;let prototype,rowKeys,rowDescriptors;
+ try{
+  if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+  prototype=Object.getPrototypeOf(row);rowKeys=Reflect.ownKeys(row);rowDescriptors=Object.getOwnPropertyDescriptors(row);
+ }catch{throw Error('POD_QUERY_UNVERIFIED');}
+ const expected=[...fields].sort();
+ if((prototype!==Object.prototype&&prototype!==null)||rowKeys.length!==expected.length||
+  rowKeys.some(key=>typeof key!=='string')||rowKeys.map(String).sort().some((key,index)=>key!==expected[index])||
+  expected.some(field=>!rowDescriptors[field]?.enumerable||!Object.hasOwn(rowDescriptors[field],'value')))
+  throw Error('POD_QUERY_UNVERIFIED');
+ return Object.fromEntries(expected.map(field=>[field,rowDescriptors[field].value]));
+}
+function publishableQuerySnapshot(result,job){
+ const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
+ if(row===null)return null;
+ const manifest=snapshotClaimData(row.manifest),qaEnvelope=snapshotClaimData(row.qa_envelope);
+ if(row.id!==job.id||row.platform!==job.platform||!SHA256.test(row.manifest_sha256||'')||
+  manifest===null||typeof manifest!=='object'||Array.isArray(manifest)||
+  qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope))throw Error('POD_QUERY_UNVERIFIED');
+ return {id:row.id,platform:row.platform,manifest,qa_envelope:qaEnvelope,manifest_sha256:row.manifest_sha256};
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -768,7 +803,7 @@ export class PodDB {
   return claimed;
  });}
  async assertPublishable(job){return this.tx(async c=>{
-  const current=(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,
+  const current=publishableQuerySnapshot(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.qa_passed' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
@@ -776,7 +811,7 @@ export class PodDB {
    JOIN pod_concepts p ON p.id=q.concept_id JOIN pod_accounts a ON a.id=q.account_id AND a.platform=q.platform
    WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
    AND q.state='publishing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished AND a.state='ACTIVE'
-   FOR SHARE OF q,p,a`,[job.id,job.fencing_token,job.account_id,job.platform])).rows[0];
+   FOR SHARE OF q,p,a`,[job.id,job.fencing_token,job.account_id,job.platform]),job);
   if(!current)throw Error('LOCAL_RELEASE_BLOCKED');
   // The claim transaction releases its locks before artifact/grant resolution.
   // Rebind the final local guard to the exact durable manifest and signed QA
@@ -784,7 +819,7 @@ export class PodDB {
   // submit stale in-memory evidence after those waits.
   assertCurrentReleaseSnapshot(current,job,this.qaKey);
   // Evaluate the live clock after row-lock waits, not transaction-start now().
-  const lease=(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id])).rows[0];
+  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
   if(lease?.valid!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   return true;
  });}
