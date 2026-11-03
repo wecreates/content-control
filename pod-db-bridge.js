@@ -54,6 +54,14 @@ function assertExactMutation(result,expected){
    throw Error('POD_MUTATION_UNVERIFIED');
  }
 }
+function exactEmptyMutation(result){
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||count.value!==0||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))return false;
+ try{
+  const keys=Reflect.ownKeys(rows.value),length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  return keys.length===1&&keys[0]==='length'&&Object.hasOwn(length||{},'value')&&length.value===0;
+ }catch{return false;}
+}
 function assertSettlement(state,receipt,reason){
  if(state==='submitted'){
   if(!exactObject(receipt,['id'])||!validOpaqueText(receipt.id))throw Error('RECEIPT_INVALID');
@@ -353,7 +361,8 @@ export class PodDB {
    const r=await c.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(idempotency_key) DO NOTHING RETURNING id`,
     [job.id,conceptId,job.account_id,job.platform,revision,brief,upstream,key]);
-   if(!r.rows.length)throw Error('DUPLICATE_JOB');
+   if(exactEmptyMutation(r))throw Error('DUPLICATE_JOB');
+   assertExactMutation(r,{id:job.id});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return r.rows[0];
   });
  }
