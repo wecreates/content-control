@@ -15,12 +15,12 @@ test('publish claim leaves a cross-platform queued job untouched',async()=>{
    queries.push({sql,params});
    if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql==='SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE')return {rows:[{id:accountId}]};
-   if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{
-    id:accountId,platform:'kdp',state:'ACTIVE',daily_cap:10
+   if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{
+    id:accountId,platform:'kdp',daily_cap:10
    }]};
-   if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
+   if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.*,')){
+   if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,')){
     assert.deepEqual(params,[accountId,'kdp']);
     return {rows:[]};
    }
