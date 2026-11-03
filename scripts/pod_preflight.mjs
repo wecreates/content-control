@@ -96,7 +96,7 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
   beginAttempted=true;await client.query('BEGIN READ ONLY');began=true;
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
-  const searchPathRow=queryRow(await client.query('SELECT current_schemas(false) AS search_path'),['search_path']);
+  const searchPathRow=queryRow(await client.query('SELECT current_schemas(false)::text[] AS search_path'),['search_path']);
   const searchPath=searchPathRow===null?null:stringArraySnapshot(searchPathRow.search_path,16);
   check('DATABASE_SEARCH_PATH',Array.isArray(searchPath)&&
    JSON.stringify(searchPath)===JSON.stringify(['pg_catalog','public']));
