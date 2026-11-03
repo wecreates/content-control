@@ -250,6 +250,19 @@ function productionRightsQuerySnapshot(result){
   typeof row.permanently_unpublished!=='boolean'))throw Error('POD_QUERY_UNVERIFIED');
  return row;
 }
+function repairableQuerySnapshot(result,jobId){
+ const row=exactQueryRow(result,['id','brief','attempt','manifest','qa_envelope','reason_code']);
+ if(row===null)return null;
+ const brief=snapshotClaimData(row.brief),
+  manifest=row.manifest===null?null:snapshotClaimData(row.manifest),
+  qaEnvelope=row.qa_envelope===null?null:snapshotClaimData(row.qa_envelope);
+ if(row.id!==jobId||!validOpaqueText(row.id)||!Number.isSafeInteger(row.attempt)||row.attempt<0||row.attempt>=3||
+  brief===null||typeof brief!=='object'||Array.isArray(brief)||
+  (row.manifest!==null&&(manifest===null||typeof manifest!=='object'||Array.isArray(manifest)))||
+  (row.qa_envelope!==null&&(qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope)))||
+  (row.reason_code!==null&&!validOpaqueText(row.reason_code)))throw Error('POD_QUERY_UNVERIFIED');
+ return {id:row.id,brief,attempt:row.attempt,manifest,qa_envelope:qaEnvelope,reason_code:row.reason_code};
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -465,11 +478,12 @@ export class PodDB {
   return this.tx(async c=>{
    // Only an expired internal production lease is recoverable from blocked.
    // Publication ambiguity and other blocked reasons must never become raw.
-   const j=(await c.query(`SELECT q.* FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
+   const j=repairableQuerySnapshot(await c.query(`SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code
+    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
     WHERE q.id=$1 AND (q.state='qa_failed' OR (q.state='blocked' AND q.reason_code='PRODUCTION_LEASE_EXPIRED'
       AND q.lease_until<=clock_timestamp() AND q.provider_id IS NULL))
     AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-    FOR UPDATE OF q FOR SHARE OF p`,[jobId])).rows[0];
+    FOR UPDATE OF q FOR SHARE OF p`,[jobId]),jobId);
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
    const eventId=crypto.randomUUID(),eventKind='pod.repair.archived';
    const archived=await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',
