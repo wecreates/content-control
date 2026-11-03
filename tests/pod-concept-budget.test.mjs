@@ -5,13 +5,13 @@ import {PodDB} from '../pod-db-bridge.js';
 import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const key='synthetic-intake-budget-key-'.repeat(2);
-function fixture(days,{duplicate=false,full=false,budgetResult,conceptResult}={}){
+function fixture(days,{duplicate=false,full=false,budgetResult,conceptResult,clockResult}={}){
  const queries=[],payload=JSON.stringify({schema_version:1,audience:'content-control:pod:intake',issued_at_ms:Date.now()-1,
   expires_at_ms:Date.now()+60000,concept_id:'concept',business_id:'business',fingerprint:'fingerprint',rights_state:'PASS'});
  const client={release(){},query:async(sql,args=[])=>{
   if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
   queries.push({sql,args});
-  if(sql.includes('AS budget_day'))return {rows:[{budget_day:days.shift()}]};
+  if(sql.includes('AS budget_day'))return clockResult??{rows:[{budget_day:days.shift()}]};
   if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:duplicate?[{id:'existing',business_id:'business',rights_state:'PASS',permanently_unpublished:false}]:[]};
   if(sql.startsWith('UPDATE pod_daily_concept_budget'))return budgetResult??(full?{rowCount:0,rows:[]}:
    {rowCount:1,rows:[{business_id:'business',day:args[1],within_limit:true}]});
@@ -45,6 +45,17 @@ test('missing database clock and exhausted budget fail closed',async()=>{
   const f=fixture(days,options);await assert.rejects(f.run(),reason);assert.equal(f.queries.at(-2).sql,'ROLLBACK');
   assert.ok(!f.queries.some(q=>q.sql.startsWith('INSERT INTO pod_concepts')));
  }
+});
+for(const variant of [
+ {name:'result rows accessor',make:probes=>Object.defineProperty({},'rows',{get(){probes.push('result rows accessor');return [{budget_day:'2026-10-17'}];}})},
+ {name:'rows Proxy',make:probes=>({rows:new Proxy([{budget_day:'2026-10-17'}],{get(target,key,receiver){probes.push('rows Proxy');return Reflect.get(target,key,receiver);}})})},
+ {name:'row field accessor',make:probes=>({rows:[Object.defineProperty({},'budget_day',{enumerable:true,get(){probes.push('row field accessor');return '2026-10-17';}})]})},
+ {name:'row Proxy',make:probes=>({rows:[new Proxy({budget_day:'2026-10-17'},{get(target,key,receiver){probes.push('row Proxy');return Reflect.get(target,key,receiver);}})]})},
+])test(`database budget clock rejects ${variant.name} without executing it`,async()=>{
+ const probes=[],f=fixture([],{clockResult:variant.make(probes)});
+ await assert.rejects(f.run(),error=>error?.message==='POD_QUERY_UNVERIFIED');
+ assert.deepEqual(probes,[]);
+ assert.ok(!f.queries.some(q=>q.sql.includes('pod_daily_concept_budget')||q.sql.startsWith('INSERT INTO pod_concepts')));
 });
 test('a duplicate keeps its identity without consuming a new daily budget',async()=>{
  const f=fixture([],{duplicate:true});assert.deepEqual(await f.run(),{id:'existing'});

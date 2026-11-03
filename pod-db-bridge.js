@@ -484,7 +484,8 @@ function assertCurrentReleaseSnapshot(current,claimed,key){
  }catch{throw Error('LOCAL_RELEASE_BLOCKED');}
 }
 async function conceptBudgetDay(client){
- const day=(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day")).rows[0]?.budget_day;
+ const row=exactQueryRow(await client.query("SELECT (clock_timestamp() AT TIME ZONE 'UTC')::date::text AS budget_day"),['budget_day']),
+  day=row?.budget_day;
  if(typeof day!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(day))throw Error('CONCEPT_BUDGET_CLOCK_INVALID');
  return day;
 }
