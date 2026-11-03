@@ -36,7 +36,8 @@ test('preflight rejects indirect non-inherited and column-level excess privilege
   const status=(report,code)=>report.checks.find(c=>c.code===code)?.status;
   const clean=async()=>{
    const report=await inspect();
-   for(const code of ['DATABASE_READABLE','RESTRICTED_RUNTIME_ROLE','POD_TABLE_PRIVILEGES','SOCIAL_VAULT_ISOLATED','SCHEMA_CHECKSUMS'])assert.equal(status(report,code),'PASS',code);
+   for(const code of ['DATABASE_READABLE','RESTRICTED_RUNTIME_ROLE','POD_TABLE_PRIVILEGES','SOCIAL_VAULT_ISOLATED','SCHEMA_CHECKSUMS'])
+    assert.equal(status(report,code),'PASS',code+' '+JSON.stringify(report));
    assert.equal(status(report,'DATABASE_TLS'),'BLOCKED'); // Local fixture does not establish production TLS.
   };
   assert.equal((await pool.query("SELECT has_database_privilege($1,current_database(),'TEMP') AS granted",[runtime])).rows[0].granted,false);

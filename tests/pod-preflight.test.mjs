@@ -20,14 +20,15 @@ async function bridgeWorkspace(t){
 function fixture(overrides={}){
  const queries=[],releases=[];let released=false,ended=false;
  const client={async query(sql,args){queries.push(sql);
+  const output=result=>overrides.queryResult?overrides.queryResult(sql,result):result;
   if((overrides.throwOn&&sql.includes(overrides.throwOn))||(overrides.rollbackFails&&sql==='ROLLBACK'))throw Error('secret password internal-url');
-  if(sql.includes('current_schemas(false)'))return {rows:[{search_path:overrides.searchPath??['pg_catalog','public']}]};
-  if(sql.includes('FROM pg_roles r'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,db_temp:false,elevated_membership:false,schema_create:false,...overrides.role}]};
-  if(sql.includes('pg_stat_ssl'))return {rows:[{ssl:overrides.tls??true}]};
-  if(sql.includes('ANY($1'))return {rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))};
-  if(sql.includes("relname='cyzor_social_vault'"))return {rows:[{access:overrides.vault??false,column_access:false,owns:false}]};
-  if(sql.includes('SELECT version,sha256'))return {rows:['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))};
-  return {rows:[]};},release(discard){released=true;releases.push(discard);}};
+  if(sql.includes('current_schemas(false)'))return output({rows:[{search_path:overrides.searchPath??['pg_catalog','public']}]});
+  if(sql.includes('FROM pg_roles r'))return output({rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,db_temp:false,elevated_membership:false,schema_create:false,...overrides.role}]});
+  if(sql.includes('pg_stat_ssl'))return output({rows:[{ssl:overrides.tls??true}]});
+  if(sql.includes('ANY($1'))return output({rows:args[0].map(relname=>({relname,owns:false,excess:false,can_select:true,can_insert:relname!=='pod_schema_version',can_update:relname!=='pod_schema_version'}))});
+  if(sql.includes("relname='cyzor_social_vault'"))return output({rows:[{access:overrides.vault??false,column_access:false,owns:false}]});
+  if(sql.includes('SELECT version,sha256'))return output({rows:['001_pod.sql','002_pod.sql','003_pod.sql','004_pod.sql','005_pod.sql'].filter(v=>v!==overrides.missingMigration).map(version=>({version,sha256:overrides.hash??crypto.createHash('sha256').update('sql').digest('hex')}))});
+  return output({rows:[]});},release(discard){released=true;releases.push(discard);}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,releases,closed:()=>released&&ended};
 }
 for(const remaining of [86400001,86400000,86399999])test('preflight reports storage lifetime after cleanup: '+remaining,async t=>{
@@ -74,6 +75,23 @@ test('verified configuration is read-only and never authorizes publication',asyn
  const f=fixture(),r=await preflight(f.options);assert.equal(r.status,'CONFIGURATION_VERIFIED');assert.equal(r.publication_enabled,false);
  assert.equal(f.queries[0],'BEGIN READ ONLY');assert.equal(f.queries.at(-1),'ROLLBACK');assert.ok(f.closed());
  assert.ok(f.queries.every(q=>/^(SELECT|BEGIN READ ONLY|SET LOCAL|ROLLBACK)/.test(q)));
+});
+for(const variant of [
+ {name:'search-path result accessor',match:'current_schemas(false)',wrap:(result,reads)=>Object.defineProperty({},'rows',{get(){reads.count++;return result.rows;}})},
+ {name:'search-path field accessor',match:'current_schemas(false)',wrap:(result,reads)=>({rows:[Object.defineProperty({},'search_path',{enumerable:true,get(){reads.count++;return result.rows[0].search_path;}})]})},
+ {name:'search-path array Proxy',match:'current_schemas(false)',wrap:(result,reads)=>({rows:[{search_path:new Proxy(result.rows[0].search_path,{get(target,key,receiver){reads.count++;return Reflect.get(target,key,receiver);}})}]})},
+ {name:'role row Proxy',match:'FROM pg_roles r',wrap:(result,reads)=>({rows:[new Proxy(result.rows[0],{get(target,key,receiver){reads.count++;return Reflect.get(target,key,receiver);}})]})},
+ {name:'TLS rows Proxy',match:'pg_stat_ssl',wrap:(result,reads)=>({rows:new Proxy(result.rows,{get(target,key,receiver){reads.count++;return Reflect.get(target,key,receiver);}})})},
+ {name:'table result Proxy',match:'c.relname=ANY',wrap:(result,reads)=>new Proxy(result,{get(target,key,receiver){if(key!=='then')reads.count++;return Reflect.get(target,key,receiver);}})},
+ {name:'vault row accessor',match:"relname='cyzor_social_vault'",wrap:(result,reads)=>({rows:[{...result.rows[0],get access(){reads.count++;return false;}}]})},
+ {name:'migration row Proxy',match:'SELECT version,sha256',wrap:(result,reads)=>({rows:[new Proxy(result.rows[0],{get(target,key,receiver){reads.count++;return Reflect.get(target,key,receiver);}}),...result.rows.slice(1)]})},
+])test(`preflight rejects executable ${variant.name} without invocation`,async()=>{
+ const reads={count:0},f=fixture({queryResult:(sql,result)=>sql.includes(variant.match)?variant.wrap(result,reads):result});
+ const r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.filter(c=>c.code==='DATABASE_READABLE'),[{code:'DATABASE_READABLE',status:'BLOCKED'}]);
+ assert.equal(reads.count,0);
+ assert.ok(f.closed());
 });
 test('invalid artifact budget blocks preflight without exposing its value',async()=>{
  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_ARTIFACT_BUDGET_BYTES:'private-invalid-budget'}});
