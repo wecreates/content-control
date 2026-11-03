@@ -231,6 +231,19 @@ function producibleQuerySnapshot(result,job){
  if(row!==null&&row.id!==job.id)throw Error('POD_QUERY_UNVERIFIED');
  return row;
 }
+function intakeConceptQuerySnapshot(result){
+ const row=exactQueryRow(result,['id','business_id','rights_state','permanently_unpublished']);
+ if(row!==null&&(!validOpaqueText(row.id)||!validOpaqueText(row.business_id)||
+  !['PASS','FAIL','UNKNOWN'].includes(row.rights_state)||typeof row.permanently_unpublished!=='boolean'))
+  throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
+function enqueueConceptQuerySnapshot(result){
+ const row=exactQueryRow(result,['business_id','rights_state','permanently_unpublished']);
+ if(row!==null&&(!validOpaqueText(row.business_id)||!['PASS','FAIL','UNKNOWN'].includes(row.rights_state)||
+  typeof row.permanently_unpublished!=='boolean'))throw Error('POD_QUERY_UNVERIFIED');
+ return row;
+}
 function publishableQuerySnapshot(result,job){
  const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
@@ -405,9 +418,8 @@ export class PodDB {
   return this.tx(async c=>{
    // Serialize fingerprint deduplication so duplicate retries never consume unique-concept budget.
    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[intake.fingerprint]);
-   const found=await c.query('SELECT id,business_id,rights_state,permanently_unpublished FROM pod_concepts WHERE fingerprint=$1 FOR UPDATE',[intake.fingerprint]);
-   if(found.rows.length){
-    const existing=found.rows[0];
+   const existing=intakeConceptQuerySnapshot(await c.query('SELECT id,business_id,rights_state,permanently_unpublished FROM pod_concepts WHERE fingerprint=$1 FOR UPDATE',[intake.fingerprint]));
+   if(existing){
     if(existing.business_id!==businessId)throw Error('INTAKE_FINGERPRINT_CONFLICT');
     // Deduplication saves concept budget, never discards newly adverse evidence.
     // Preserve an existing tombstone exactly; even later PASS cannot revive it.
@@ -535,15 +547,15 @@ export class PodDB {
   // and int4 coercion must not decide whether malformed input is admissible.
   if(!validOpaqueText(conceptId)||!Number.isInteger(revision)||revision<1||revision>2147483647)throw Error('QUEUE_SCOPE_INVALID');
   return this.tx(async c=>{
-   const {rows}=await c.query('SELECT * FROM pod_concepts WHERE id=$1 FOR SHARE',[conceptId]);
-   if(rows[0]?.rights_state!=='PASS'||rows[0]?.permanently_unpublished||rows[0]?.business_id!==job.business_id)throw Error('RIGHTS_BLOCKED');
+   const concept=enqueueConceptQuerySnapshot(await c.query('SELECT business_id,rights_state,permanently_unpublished FROM pod_concepts WHERE id=$1 FOR SHARE',[conceptId]));
+   if(concept?.rights_state!=='PASS'||concept.permanently_unpublished||concept.business_id!==job.business_id)throw Error('RIGHTS_BLOCKED');
    const key=crypto.createHash('sha256').update(JSON.stringify([conceptId,job.account_id,revision])).digest('hex');
    const r=await c.query(`INSERT INTO pod_production_queue(id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(idempotency_key) DO NOTHING RETURNING id`,
     [job.id,conceptId,job.account_id,job.platform,revision,brief,upstream,key]);
    if(exactEmptyMutation(r))throw Error('DUPLICATE_JOB');
    assertExactMutation(r,{id:job.id});
-   verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return r.rows[0];
+   verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return {id:job.id};
   });
  }
  async listReady(){this.active();

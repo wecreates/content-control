@@ -28,7 +28,7 @@ function fixture(){
 function databaseFixture(insertResult){
  const db=new PodDB({bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  db.tx=async fn=>fn({query:async sql=>{
-  if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
+  if(sql.includes('FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
   return insertResult;
  }});
  return db;
@@ -62,7 +62,7 @@ for(const revision of [1,2147483647])test('valid queue revision reaches the data
  const queries=[];
  db.tx=async fn=>fn({query:async(sql,args)=>{
   queries.push({sql,args});
-  if(sql.includes('SELECT * FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
+  if(sql.includes('FROM pod_concepts'))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
   return {rowCount:1,rows:[{id:job.id}]};
  }});
  await assert.doesNotReject(db.enqueue({job,upstream:signed(),conceptId:'fixture-concept',revision}));
@@ -73,6 +73,49 @@ for(const revision of [1,2147483647])test('valid queue revision reaches the data
 test('verified duplicate queue insert preserves the duplicate-job contract',async()=>{
  const db=databaseFixture({rowCount:0,rows:[]});
  await assert.rejects(db.enqueue({job,upstream:signed(),conceptId:'fixture-concept',revision:1}),/DUPLICATE_JOB/);
+});
+
+test('queue admission query regression rejects accessor-backed concept evidence without invocation',async()=>{
+ let reads=0,writes=0;
+ const db=new PodDB({bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+ db.tx=async fn=>fn({query:async sql=>{
+  if(sql.includes('FROM pod_concepts')){
+   const result={};Object.defineProperty(result,'rows',{enumerable:true,get(){reads++;return [{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}];}});return result;
+  }
+  writes+=1;return {rowCount:1,rows:[{id:job.id}]};
+ }});
+ await assert.rejects(db.enqueue({job,upstream:signed(),conceptId:'fixture-concept',revision:1}),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(writes,0);
+});
+
+test('queue admission accepts only exact inert concept query evidence',async()=>{
+ let reads=0;
+ const exact={business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false};
+ const sparse=Array(1),extraRows=[exact];extraRows.extra=true;
+ const accessorRow={...exact};
+ Object.defineProperty(accessorRow,'rights_state',{enumerable:true,get(){reads++;return 'PASS';}});
+ const attempts=[
+  new Proxy({rows:[exact]},{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}}),
+  {rows:new Proxy([exact],{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})},
+  {rows:sparse},
+  {rows:extraRows},
+  {rows:[exact,exact]},
+  {rows:[new Proxy(exact,{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})]},
+  {rows:[accessorRow]},
+  {rows:[{...exact,extra:true}]},
+  {rows:[{...exact,business_id:''}]},
+  {rows:[{...exact,rights_state:'ALLOW'}]},
+  {rows:[{...exact,permanently_unpublished:0}]},
+ ];
+ for(const conceptResult of attempts){
+  let writes=0;
+  const db=new PodDB({bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+  db.tx=async fn=>fn({query:async sql=>{if(sql.includes('FROM pod_concepts'))return conceptResult;
+   writes+=1;return {rowCount:1,rows:[{id:job.id}]};}});
+  await assert.rejects(db.enqueue({job,upstream:signed(),conceptId:'fixture-concept',revision:1}),/^Error: POD_QUERY_UNVERIFIED$/);
+  assert.equal(writes,0);
+ }
+ assert.equal(reads,0);
 });
 
 test('queue admission requires exact inert proof of the inserted job identity',async()=>{

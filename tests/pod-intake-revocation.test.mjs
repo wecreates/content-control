@@ -50,6 +50,48 @@ test('matching fingerprint cannot return or mutate another business concept',asy
  assert.equal(f.concept.rights_state,'PASS');assert.equal(f.writes.length,0);
 });
 
+test('duplicate intake query regression rejects accessor-backed concept evidence without invocation',async()=>{
+ const f=fixture(),original=f.db.tx;let reads=0;
+ f.db.tx=fn=>original(client=>fn({query:async(sql,args)=>{
+  if(sql.includes('FROM pod_concepts WHERE fingerprint')){
+   const result={};Object.defineProperty(result,'rows',{enumerable:true,get(){reads++;return [{...f.concept}];}});return result;
+  }
+  return client.query(sql,args);
+ }}));
+ await assert.rejects(f.db.registerIntake(f.request('PASS')),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(f.writes.length,0);
+});
+
+test('duplicate intake accepts only exact inert concept query evidence',async()=>{
+ let reads=0;
+ const exact={id:'existing-concept',business_id:'business',rights_state:'PASS',permanently_unpublished:false};
+ const sparse=Array(1),extraRows=[exact];extraRows.extra=true;
+ const accessorRow={...exact};
+ Object.defineProperty(accessorRow,'id',{enumerable:true,get(){reads++;return exact.id;}});
+ const attempts=[
+  new Proxy({rows:[exact]},{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}}),
+  {rows:new Proxy([exact],{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})},
+  {rows:sparse},
+  {rows:extraRows},
+  {rows:[exact,exact]},
+  {rows:[new Proxy(exact,{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})]},
+  {rows:[accessorRow]},
+  {rows:[{...exact,extra:true}]},
+  {rows:[{...exact,id:''}]},
+  {rows:[{...exact,business_id:''}]},
+  {rows:[{...exact,rights_state:'ALLOW'}]},
+  {rows:[{...exact,permanently_unpublished:0}]},
+ ];
+ for(const conceptResult of attempts){
+  const f=fixture(),original=f.db.tx;
+  f.db.tx=fn=>original(client=>fn({query:async(sql,args)=>
+   sql.includes('FROM pod_concepts WHERE fingerprint')?conceptResult:client.query(sql,args)}));
+  await assert.rejects(f.db.registerIntake(f.request('PASS')),/^Error: POD_QUERY_UNVERIFIED$/);
+  assert.equal(f.writes.length,0);
+ }
+ assert.equal(reads,0);
+});
+
 test('adverse duplicate intake rejects unverified concept and audit mutation receipts',async()=>{
  const attempts=[
   undefined,{},
