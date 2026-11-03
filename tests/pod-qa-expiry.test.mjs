@@ -38,6 +38,8 @@ async function exercise(stage,verdict,run,expired){
     if(sql.includes("state='processing' FOR UPDATE"))return {rows:[{id:job.id}]};
     if(sql.includes('SELECT p.rights_state,p.permanently_unpublished'))
      return {rows:[{rights_state:'PASS',permanently_unpublished:false}]};
+    if(sql.includes('SELECT q.id,q.platform,q.manifest'))return {rows:[{id:job.id,
+     platform:'redbubble',manifest,manifest_sha256:manifestSha256}]};
     return {rows:[{...job,platform:'redbubble',manifest,manifest_sha256:manifestSha256}]};
    }
    if(/^(UPDATE|INSERT)/.test(sql)){
