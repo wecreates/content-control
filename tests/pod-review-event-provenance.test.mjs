@@ -26,6 +26,22 @@ function reviewFixture(){
   manifestSha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex')};
 }
 
+function readFixture(result){
+ const client={release(){},query:async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;
+  return text.includes('FROM pod_production_queue q')?result:{rows:[]};
+ }};
+ return new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+}
+
+function validPng(){
+ const body=Buffer.alloc(45);
+ Buffer.from('89504e470d0a1a0a','hex').copy(body);
+ body.writeUInt32BE(13,8);body.write('IHDR',12,'ascii');
+ body.writeUInt32BE(0,33);body.write('IEND',37,'ascii');
+ return body;
+}
+
 test('review retrieval selects manifest identity only from the review-hold event',async()=>{
  const queries=[];
  const client={release(){},query:async sql=>{queries.push(typeof sql==='string'?sql:sql.text);return {rows:[]};}};
@@ -71,6 +87,28 @@ for(const stage of ['rows','manifest'])test('review acceptance rejects accessor-
  }});
  await assert.rejects(db.acceptReview('fixture-job',qa),/^Error: POD_QUERY_UNVERIFIED$/);
  assert.equal(reads,0);assert.equal(writes,0);
+});
+
+for(const stage of ['rows','manifest'])test('review package retrieval rejects accessor-backed '+stage+' evidence without invocation',async()=>{
+ const {manifest,manifestSha256}=reviewFixture();let reads=0;
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+  manifest,manifest_sha256:manifestSha256};
+ const executable=stage==='rows'?Object.defineProperty({},'rows',{enumerable:true,get(){reads++;return [row];}}):
+  {rows:[Object.defineProperty({...row},'manifest',{enumerable:true,get(){reads++;return manifest;}})]};
+ await assert.rejects(readFixture(executable).reviewPackage('fixture-job'),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);
+});
+
+for(const stage of ['rows','body'])test('review artifact retrieval rejects accessor-backed '+stage+' evidence without invocation',async()=>{
+ const {manifest}=reviewFixture(),body=validPng(),sha=crypto.createHash('sha256').update(body).digest('hex');
+ for(const name of Object.keys(manifest.files))manifest.files[name]=sha;
+ const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
+  manifest,manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex'),body,media_type:'image/png'};
+ let reads=0;
+ const executable=stage==='rows'?Object.defineProperty({},'rows',{enumerable:true,get(){reads++;return [row];}}):
+  {rows:[Object.defineProperty({...row},'body',{enumerable:true,get(){reads++;return body;}})]};
+ await assert.rejects(readFixture(executable).reviewArtifact('fixture-job',sha),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);
 });
 
 test('review acceptance rejects unverified queue and audit mutation receipts',async()=>{
