@@ -36,6 +36,10 @@ async function exercise(spec,stage,expired){
     [{id:'existing-concept',business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]:[]};
    if(sql.startsWith('UPDATE pod_concepts'))return {rowCount:1,
     rows:[{id:'existing-concept',rights_state:args[1],permanently_unpublished:true}]};
+   if(sql.startsWith('UPDATE pod_daily_concept_budget'))return {rowCount:1,
+    rows:[{business_id:args[0],day:args[1],within_limit:true}]};
+   if(sql.startsWith('INSERT INTO pod_concepts'))return {rowCount:1,rows:[{
+    id:args[0],business_id:args[1],fingerprint:args[2],rights_state:args[3],permanently_unpublished:args[4]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
     rows:[{id:args[0],job_id:args[1],kind:args[2]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,kind'))return {rowCount:1,
