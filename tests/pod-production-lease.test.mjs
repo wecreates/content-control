@@ -18,7 +18,9 @@ function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
   if(sql.includes("q.state='processing'")&&sql.includes('FOR SHARE OF q,p'))return {rows:[{id:job.id}]};
   if(sql.includes("state='processing' FOR UPDATE")||sql.includes("state='publishing' FOR UPDATE"))return {rows:[{id:job.id}]};
-  if(sql.startsWith('SELECT'))return {rows:[{id:job.id,rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
+  if(sql.includes('SELECT p.rights_state,p.permanently_unpublished'))
+   return {rows:[{rights_state:rightsState,permanently_unpublished:permanentlyUnpublished}]};
+  if(sql.startsWith('SELECT'))return {rows:[{id:job.id}]};
   if(/^(UPDATE|INSERT)/.test(sql)){
    writes.push(sql);
    if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code')){
@@ -83,6 +85,30 @@ for(const [label,publishing,stage,run] of [
    {rowCount:1,rows:[{id:job.id,state:'qa_failed',reason_code:'QA_FAILED'}]};
   if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:'pod.blocked'}]};
   throw Error('unexpected settlement lease query');
+ }});
+ await assert.rejects(run(db),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(writes,0);
+});
+
+for(const [label,run] of [
+ ['review hold',db=>db.holdProduction(job,manifest)],
+ ['successful completion',db=>db.completeProduction(job,manifest,qa())],
+])test('production rights regression rejects accessor-backed '+label+' evidence without invocation',async()=>{
+ let reads=0,writes=0;
+ const executable={};
+ Object.defineProperty(executable,'rows',{enumerable:true,get(){reads++;return [{rights_state:'PASS',permanently_unpublished:false}];}});
+ const db=new PodDB({pool:{},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+ db.tx=fn=>fn({query:async(sql,args=[])=>{
+  if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
+  if(sql.includes("state='processing' FOR UPDATE"))return {rows:[{id:job.id}]};
+  if(sql.includes('SELECT p.rights_state,p.permanently_unpublished'))return executable;
+  writes++;
+  if(sql.startsWith('UPDATE')){
+   const review=sql.includes("reason_code='REVIEW_REQUIRED'");
+   return {rowCount:1,rows:[{id:job.id,state:review?'qa_failed':'qa_passed',reason_code:review?'REVIEW_REQUIRED':null}]};
+  }
+  if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:job.id,kind:args[2]}]};
+  throw Error('unexpected production rights query');
  }});
  await assert.rejects(run(db),/^Error: POD_QUERY_UNVERIFIED$/);
  assert.equal(reads,0);assert.equal(writes,0);
@@ -172,7 +198,9 @@ test('production completion rejects unverified queue and audit mutation receipts
    if(sql.startsWith('SELECT')){
     if(sql.includes('lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
     if(sql.includes("state='processing' FOR UPDATE"))return {rows:[{id:job.id}]};
-    return {rows:[{id:job.id,rights_state:'PASS',permanently_unpublished:false}]};
+    if(sql.includes('SELECT p.rights_state,p.permanently_unpublished'))
+     return {rows:[{rights_state:'PASS',permanently_unpublished:false}]};
+    return {rows:[{id:job.id}]};
    }
    writes+=1;
    if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
