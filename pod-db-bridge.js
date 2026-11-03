@@ -14,6 +14,7 @@ const artifactMediaTypes=new Set(ARTIFACT_MEDIA_TYPES);
 const BASE_REVIEW_FILES=Object.freeze(['art-mask.png','print.png','text-mask.png']);
 const KDP_REVIEW_FILES=Object.freeze([...BASE_REVIEW_FILES,'cover.pdf','interior.pdf','interior.receipt.json'].sort());
 const RELEASE_REASONS=Object.freeze({ambiguous:'SUBMISSION_UNCERTAIN',blocked:'RELEASE_BLOCKED'});
+const RECOVERY_BATCH_LIMIT=100;
 const TRANSACTION_COMMANDS=new Set(['ABORT','BEGIN','COMMIT','END','PREPARE','RELEASE','ROLLBACK','SAVEPOINT','START']);
 function exactObject(value,keys){
  if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
@@ -53,6 +54,42 @@ function assertExactMutation(result,expected){
   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||descriptor.value!==expected[field])
    throw Error('POD_MUTATION_UNVERIFIED');
  }
+}
+function assertExactMutationBatch(result,expected,limit){
+ const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
+ if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>limit||
+  !rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))throw Error('POD_MUTATION_UNVERIFIED');
+ let keys,length,descriptors;
+ try{
+  keys=Reflect.ownKeys(rows.value);length=Object.getOwnPropertyDescriptor(rows.value,'length');
+  descriptors=Object.getOwnPropertyDescriptors(rows.value);
+ }catch{throw Error('POD_MUTATION_UNVERIFIED');}
+ if(!Object.hasOwn(length||{},'value')||length.value!==count.value||keys.length!==count.value+1||
+  keys.some((key,index)=>index<count.value?key!==String(index):key!=='length'))throw Error('POD_MUTATION_UNVERIFIED');
+ const fields=['id',...Object.keys(expected)].sort(),ids=new Set();
+ for(let index=0;index<count.value;index++){
+  const item=descriptors[String(index)];
+  if(!item?.enumerable||!Object.hasOwn(item,'value'))throw Error('POD_MUTATION_UNVERIFIED');
+  const row=item.value;
+  let prototype,rowKeys,rowDescriptors;
+  try{
+   if(row===null||(typeof row!=='object'&&typeof row!=='function')||utilTypes.isProxy(row))throw Error();
+   prototype=Object.getPrototypeOf(row);rowKeys=Reflect.ownKeys(row);rowDescriptors=Object.getOwnPropertyDescriptors(row);
+  }catch{throw Error('POD_MUTATION_UNVERIFIED');}
+  if((prototype!==Object.prototype&&prototype!==null)||rowKeys.length!==fields.length||
+   rowKeys.some(key=>typeof key!=='string')||rowKeys.map(String).sort().some((key,offset)=>key!==fields[offset]))
+   throw Error('POD_MUTATION_UNVERIFIED');
+  for(const [field,value] of Object.entries(expected)){
+   const descriptor=rowDescriptors[field];
+   if(!descriptor?.enumerable||!Object.hasOwn(descriptor,'value')||descriptor.value!==value)
+    throw Error('POD_MUTATION_UNVERIFIED');
+  }
+  const id=rowDescriptors.id;
+  if(!id?.enumerable||!Object.hasOwn(id,'value')||!validOpaqueText(id.value)||ids.has(id.value))
+   throw Error('POD_MUTATION_UNVERIFIED');
+  ids.add(id.value);
+ }
+ return ids;
 }
 function exactEmptyMutation(result){
  const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
@@ -663,8 +700,23 @@ export class PodDB {
  async recover(){return this.tx(async c=>{
   // Relation/row-lock waits can outlive a lease. BEGIN's frozen now() must
   // not defer already-expired work to another sweep or misdate its transition.
-  await c.query("UPDATE pod_production_queue SET state='ambiguous',reason_code='LEASE_EXPIRED',updated_at=clock_timestamp() WHERE state='publishing' AND lease_until<clock_timestamp()");
-  await c.query("UPDATE pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',updated_at=clock_timestamp() WHERE state='processing' AND lease_until<clock_timestamp()");
+  // Bound each sweep so RETURNING can prove every transition without allowing
+  // an unbounded result to consume worker memory. Later cycles drain backlog.
+  const publishing=await c.query(`WITH candidates AS (
+   SELECT id FROM pod_production_queue WHERE state='publishing' AND lease_until<clock_timestamp()
+   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT ${RECOVERY_BATCH_LIMIT}
+  ) UPDATE pod_production_queue q SET state='ambiguous',reason_code='LEASE_EXPIRED',updated_at=clock_timestamp()
+   FROM candidates c WHERE q.id=c.id RETURNING q.id,q.state,q.reason_code`);
+  const publishingIds=assertExactMutationBatch(publishing,
+   {state:'ambiguous',reason_code:'LEASE_EXPIRED'},RECOVERY_BATCH_LIMIT);
+  const processing=await c.query(`WITH candidates AS (
+   SELECT id FROM pod_production_queue WHERE state='processing' AND lease_until<clock_timestamp()
+   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT ${RECOVERY_BATCH_LIMIT}
+  ) UPDATE pod_production_queue q SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',updated_at=clock_timestamp()
+   FROM candidates c WHERE q.id=c.id RETURNING q.id,q.state,q.reason_code`);
+  const processingIds=assertExactMutationBatch(processing,
+   {state:'blocked',reason_code:'PRODUCTION_LEASE_EXPIRED'},RECOVERY_BATCH_LIMIT);
+  for(const id of processingIds)if(publishingIds.has(id))throw Error('POD_MUTATION_UNVERIFIED');
  });}
  async close(){await this.pool.end();}
 }
