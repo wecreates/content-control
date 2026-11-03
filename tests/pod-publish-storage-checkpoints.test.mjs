@@ -28,10 +28,11 @@ function fixture(expireOn){
    calls.push(sql);
    let rows=[];
    if(sql.startsWith('SELECT id FROM pod_accounts'))rows=[{id:'account'}];
-   else if(sql.startsWith('SELECT * FROM pod_accounts'))rows=[{id:'account',platform:'redbubble',daily_cap:10}];
+   else if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))rows=[{id:'account',platform:'redbubble',daily_cap:10}];
    else if(sql.startsWith('SELECT count(*)::int'))rows=[{n:0}];
-   else if(sql.startsWith('SELECT q.*,'))rows=[{id:'job',account_id:'account',platform:'redbubble',brief:{id:'fixture'},
-    manifest,manifest_sha256:manifestSha256,qa_envelope:qaEnvelope,idempotency_key:'fixture-key'}];
+   else if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,'))rows=[{
+    id:'job',account_id:'account',platform:'redbubble',manifest,
+    manifest_sha256:manifestSha256,qa_envelope:qaEnvelope}];
    else if(sql.startsWith('UPDATE pod_production_queue'))rows=[{id:'job',account_id:'account',platform:'redbubble',
     fencing_token:'1',brief:{id:'fixture'},manifest,qa_envelope:qaEnvelope,idempotency_key:'fixture-key',attempt:1,state:'publishing'}];
    else if(sql.startsWith('INSERT INTO pod_quota_reservations'))rows=[{job_id:'job',attempt:1,account_id:'account'}];
@@ -46,8 +47,8 @@ function fixture(expireOn){
 }
 
 for(const [name,expireOn,forbidden] of [
- ['account lock','SELECT id FROM pod_accounts','SELECT * FROM pod_accounts'],
- ['queue lock','SELECT q.*,','UPDATE pod_production_queue'],
+ ['account lock','SELECT id FROM pod_accounts','SELECT id,platform,daily_cap FROM pod_accounts'],
+ ['queue lock','SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,','UPDATE pod_production_queue'],
  ['publishing transition','UPDATE pod_production_queue','INSERT INTO pod_quota_reservations'],
  ['quota reservation','INSERT INTO pod_quota_reservations','UPDATE pod_accounts SET next_allowed_at']
 ])test(`publish claim stops after storage expires during ${name}`,async()=>{

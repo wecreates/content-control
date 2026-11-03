@@ -22,6 +22,8 @@ const qaEnvelope={payload:qaPayload,signature:crypto.createHmac('sha256',qaKey).
 const brief={id:jobId,account_id:accountId,platform:'redbubble'};
 const ready={id:jobId,account_id:accountId,platform:'redbubble',fencing_token:'0',attempt:0,
  brief,manifest,qa_envelope:qaEnvelope,idempotency_key:'idem',state:'qa_passed',manifest_sha256:manifestSha256};
+const candidate={id:ready.id,account_id:ready.account_id,platform:ready.platform,manifest:ready.manifest,
+ qa_envelope:ready.qa_envelope,manifest_sha256:ready.manifest_sha256};
 const claimed={id:jobId,account_id:accountId,platform:'redbubble',fencing_token:'1',attempt:1,
  brief,manifest,qa_envelope:qaEnvelope,idempotency_key:'idem',state:'publishing'};
 const exactQueue={rowCount:1,rows:[claimed]};
@@ -33,10 +35,10 @@ function fixture({queue=exactQueue,quota=exactQuota,account=exactAccount}={}){
  const db=new PodDB({bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
  db.tx=async fn=>fn({query:async(sql,args=[])=>{
   if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:accountId}]};
-  if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:accountId,platform:'redbubble',daily_cap:10}]};
-  if(sql.startsWith('SELECT 1 FROM pod_production_queue'))return {rows:[]};
+  if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:accountId,platform:'redbubble',daily_cap:10}]};
+  if(sql.startsWith('SELECT true AS present FROM pod_production_queue'))return {rows:[]};
   if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-  if(sql.startsWith('SELECT q.*,'))return {rows:[ready]};
+  if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,'))return {rows:[candidate]};
   if(sql.startsWith('UPDATE pod_production_queue')){mutations.push(['queue',args]);return queue;}
   if(sql.startsWith('INSERT INTO pod_quota_reservations')){mutations.push(['quota',args]);return quota;}
   if(sql.startsWith('UPDATE pod_accounts')){mutations.push(['account',args]);return account;}
