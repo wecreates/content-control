@@ -23,7 +23,7 @@ const signedQA=manifest=>{
  return {payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
 };
 
-function fixture({platform='kdp',prior=false,weekly=0}={}){
+function fixture({platform='kdp',prior=false,weekly=0,priorResult,weeklyResult}={}){
  const manifest=releaseManifest(platform);
  const job={id:'00000000-0000-4000-8000-000000000001',account_id:'00000000-0000-4000-8000-000000000002',
   platform,state:'qa_passed',attempt:0,fencing_token:'0',manifest,brief:{id:'fixture'},idempotency_key:'fixture-key',
@@ -35,12 +35,14 @@ function fixture({platform='kdp',prior=false,weekly=0}={}){
    queries.push({sql,params});
    if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql==='SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE')return {rows:[{id:job.account_id}]};
-   if(sql.startsWith('SELECT * FROM pod_accounts'))return {rows:[{id:job.account_id,platform,state:'ACTIVE',daily_cap:10}]};
-   if(sql.startsWith('SELECT 1 FROM pod_production_queue WHERE account_id='))return {rows:[]};
+   if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:job.account_id,platform,daily_cap:10}]};
+   if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
    if(sql.startsWith('SELECT count(*)::int AS n FROM pod_quota_reservations'))return {rows:[{n:0}]};
-   if(sql.startsWith('SELECT q.*,'))return {rows:[job]};
-   if(sql.startsWith('SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue'))return {rows:prior?[{}]:[]};
-   if(sql.startsWith('SELECT count(DISTINCT r.job_id)::int AS n'))return {rows:[{n:weekly}]};
+   if(sql.startsWith('SELECT q.id,q.account_id,q.platform,q.manifest,q.qa_envelope,'))return {rows:[{
+    id:job.id,account_id:job.account_id,platform:job.platform,manifest:job.manifest,
+    qa_envelope:job.qa_envelope,manifest_sha256:job.manifest_sha256}]};
+   if(sql.startsWith('SELECT true AS present FROM pod_quota_reservations r JOIN pod_production_queue'))return priorResult??{rows:prior?[{present:true}]:[]};
+   if(sql.startsWith('SELECT count(DISTINCT r.job_id)::int AS n'))return weeklyResult??{rows:[{n:weekly}]};
    if(sql.startsWith('UPDATE pod_production_queue SET state=')){
     const {manifest_sha256,...claimed}={...job,state:'publishing',attempt:1,fencing_token:'1'};
     return {rowCount:1,rows:[claimed]};
@@ -66,7 +68,7 @@ test('KDP blocks a third distinct paperback title in the current Sunday UTC week
  assert.match(check.sql,/interval '1 day'/);
  assert.equal(queries.some(({sql})=>sql.startsWith('UPDATE pod_production_queue SET state=')),false);
  assert.equal(queries.some(({sql})=>sql.startsWith('INSERT INTO pod_quota_reservations')),false);
- const prior=queries.find(({sql})=>sql.startsWith('SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue'));
+ const prior=queries.find(({sql})=>sql.startsWith('SELECT true AS present FROM pod_quota_reservations r JOIN pod_production_queue'));
  assert.match(prior.sql,/provider_id IS NOT NULL/);
  assert.match(prior.sql,/AT TIME ZONE 'UTC'/);
 });
@@ -90,6 +92,22 @@ test('KDP retry or update of an already submitted durable job does not consume a
 test('non-KDP accounts retain the rolling daily cap without a KDP weekly query',async()=>{
  const {db,job,queries}=fixture({platform:'redbubble',weekly:2});
  assert.equal((await db.claimPublish(job.account_id,45)).id,job.id);
- assert.equal(queries.some(({sql})=>sql.startsWith('SELECT 1 FROM pod_quota_reservations r JOIN pod_production_queue')),false);
+ assert.equal(queries.some(({sql})=>sql.startsWith('SELECT true AS present FROM pod_quota_reservations r JOIN pod_production_queue')),false);
  assert.equal(queries.some(({sql})=>sql.startsWith('SELECT count(DISTINCT r.job_id)::int AS n')),false);
+});
+
+test('KDP claim rejects accessor-backed prior-submission evidence without invoking it',async()=>{
+ let reads=0;const priorResult={};
+ Object.defineProperty(priorResult,'rows',{enumerable:true,get(){reads++;return [];}});
+ const {db,job}=fixture({priorResult});
+ await assert.rejects(db.claimPublish(job.account_id,45),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);
+});
+
+test('KDP claim rejects accessor-backed weekly quota evidence without invoking it',async()=>{
+ let reads=0;const row={};
+ Object.defineProperty(row,'n',{enumerable:true,get(){reads++;return 0;}});
+ const {db,job}=fixture({weeklyResult:{rows:[row]}});
+ await assert.rejects(db.claimPublish(job.account_id,45),/^Error: POD_QUERY_UNVERIFIED$/);
+ assert.equal(reads,0);
 });
