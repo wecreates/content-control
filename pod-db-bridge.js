@@ -260,7 +260,7 @@ function repairableQuerySnapshot(result,jobId){
   brief===null||typeof brief!=='object'||Array.isArray(brief)||
   (row.manifest!==null&&(manifest===null||typeof manifest!=='object'||Array.isArray(manifest)))||
   (row.qa_envelope!==null&&(qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope)))||
-  !validOpaqueText(row.reason_code))throw Error('POD_QUERY_UNVERIFIED');
+  (row.reason_code!==null&&!validOpaqueText(row.reason_code)))throw Error('POD_QUERY_UNVERIFIED');
  return {id:row.id,brief,attempt:row.attempt,manifest,qa_envelope:qaEnvelope,reason_code:row.reason_code};
 }
 function publishableQuerySnapshot(result,job){
