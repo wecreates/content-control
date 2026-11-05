@@ -19,6 +19,16 @@ package-output access, another Python process, package persistence, signed
 QA-output processing, or production completion. If the production switch changes
 during the signed-output read, the in-flight read settles but its late result is
 discarded before payload inspection.
+The worker passes the same lifecycle signal into its recovery sweep and the
+production coordinator passes it into the initial production claim. Those
+pre-work transactions use the shared guarded database wait: cancellation can
+interrupt pool acquisition, setup, or business SQL, roll back and scrub a client
+when the transaction is known clean, and destroy a late or uncertain client
+instead of retaining a production pool slot. Cancellation before a claim commit
+therefore creates no lease. A commit already in flight is allowed to settle so
+its outcome is known; any returned lease continues through the fenced stopped
+settlement described below.
+
 The review-hold and completion transactions also invoke synchronous guards after
 their lease and applicable-rights checks, and after the signed-QA checks for
 completion, immediately before their first durable state changes. Each guard
@@ -28,20 +38,22 @@ expiry or current-rights failure observed after those database waits rolls back
 the transition, then uses the existing fenced failure settlement. It cannot
 persist a review hold or QA completion and subsequently overwrite it as stopped.
 No external authority call is made while database locks are held. These are final
-pre-write boundaries, not claims that an already-issued PostgreSQL statement can
-be canceled or that a still-current signed grant is live revocation evidence.
+pre-write boundaries, not claims that PostgreSQL server execution is forcibly
+terminated or that a still-current signed grant is live revocation evidence.
 If a delayed production claim returns no job after cancellation, the direct
 worker result is `STOPPED`, not a healthy `IDLE` cycle. The same result applies
 when the production switch changes to false while an empty claim is in flight.
 A claim that did acquire a lease continues through the existing fenced
 `PRODUCTION_STOPPED` settlement; it is never silently abandoned.
 
-In-flight database reads and filesystem writes are awaited before cleanup. This
-does not cancel PostgreSQL queries, impose a pool-acquisition deadline, or promise
-instant shutdown. It avoids racing workspace deletion against unfinished writes.
-Existing host connection/query deadlines are still required. Failure recording
-uses the current lease/fencing guard; an expired claim cannot be rewritten by a
-late stopped worker. Cancellation does not imply automatic retry or approval.
+In-flight filesystem writes and post-claim durable settlement are awaited before
+cleanup. The lifecycle signal now releases the worker from its initial recovery
+and claim database waits, but it does not forcibly terminate PostgreSQL server
+execution, abandon a claim whose commit may have succeeded, or promise instant
+shutdown. Existing host connection/query deadlines are still required. Failure
+recording uses the current lease/fencing guard; an expired claim cannot be
+rewritten by a late stopped worker. Cancellation does not imply automatic retry
+or approval.
 
 The tests use synthetic grants, injected artifact reads, and real temporary files.
 They establish cancellation boundaries and cleanup, not live storage, measured
@@ -63,8 +75,8 @@ process or completion write. Ordinary reviewer failures retain existing redactio
 Failure recording remains subject to the current database lease/fencing checks.
 
 This is cooperative cancellation, not a forced deadline for arbitrary host code.
-A reviewer ignoring the signal can still delay shutdown, as can outstanding
-database or cleanup work. The host must enforce its own review I/O deadlines.
+A reviewer ignoring the signal can still delay shutdown, as can post-claim
+database settlement or cleanup work. The host must enforce its own review I/O deadlines.
 The default stored resolver still holds work for independent review; no reviewer,
 approval, timeout-based pass, or publication permission is created here.
 

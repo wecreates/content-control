@@ -73,6 +73,19 @@ test('guarded read cancellation between statements rolls back and reuses a scrub
  assert.deepEqual(releases,[false]);
 });
 
+test('initial runtime database operations forward lifecycle cancellation to guarded waits',async()=>{
+ const controller=new AbortController(),txSignals=[];let readSignal;
+ const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ db.read=async(_sql,_values,options)=>{readSignal=options?.signal;return {rows:[]};};
+ db.tx=async(_callback,options)=>{txSignals.push(options?.signal);return null;};
+ assert.deepEqual(await db.listReady({signal:controller.signal}),[]);
+ assert.equal(await db.claimProduction({signal:controller.signal}),null);
+ assert.equal(await db.claimPublish('fixture-account',45,{signal:controller.signal}),null);
+ assert.equal(await db.recover({signal:controller.signal}),null);
+ assert.equal(readSignal,controller.signal);
+ assert.deepEqual(txSignals,[controller.signal,controller.signal,controller.signal]);
+});
+
 test('guarded reads scrub committed session state before returning the pooled client',async()=>{
  const queries=[],releases=[];let applicationName='pool-default';
  const client={release:bad=>releases.push(bad),query:async query=>{

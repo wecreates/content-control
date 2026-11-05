@@ -135,14 +135,23 @@ actual adapters/readback still require separate acceptance.
 An already-aborted publisher returns `STOPPED` before a dry-run queue read or an
 enabled publishing claim. This prevents shutdown from acquiring a release lease,
 reserving quota or applying account cooldown before cancellation is observed.
-If cancellation arrives while the dry-run queue read is in flight, its completed
-read is discarded and the publisher reports `STOPPED` without emitting a healthy
-dry-run log. The read-only scan still acquires no lease and performs no write.
+The publisher passes that signal into both the dry-run scan and enabled claim.
+Their shared guarded database waits can interrupt pool acquisition, setup, or
+business SQL; a clean transaction is rolled back and scrubbed, while a late or
+uncertain client is destroyed instead of retaining a production pool slot. If
+cancellation arrives while the dry-run queue read is in flight, the read is
+canceled or its completed result is discarded and the publisher reports
+`STOPPED` without emitting a healthy dry-run log. The read-only scan still
+acquires no lease and performs no write. Cancellation before an enabled claim
+commit rolls back the queue, reservation and cooldown mutations together.
 Cancellation after a claim continues through the existing fail-closed settlement
 path so a claimed lease is never silently abandoned as if no work began. If the
 signal changes while the claim itself is in flight, the publisher settles that
 lease as blocked before starting artifact verification or adapter work. If the
 claim returns no job after cancellation, it reports `STOPPED` rather than `IDLE`.
+An outcome-defining commit is allowed to settle rather than being abandoned with
+an unknown claim result. This client-side cancellation boundary does not claim
+that PostgreSQL server execution is forcibly terminated.
 The same post-claim boundary observes either publication kill switch changing to
 false. A returned lease is settled as blocked before artifact or authority work;
 an empty claim reports `STOPPED`. Each later awaited trust boundary is also

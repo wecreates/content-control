@@ -132,7 +132,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  if(!publicationEnabled()) {
   const listReady=dataProperty(db,'listReady');
   if(!listReady.valid||typeof listReady.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
-  const jobs=await Reflect.apply(listReady.value,db,[]);if(signal?.aborted)return {status:'STOPPED'};
+  const jobs=await Reflect.apply(listReady.value,db,[{signal}]);if(signal?.aborted)return {status:'STOPPED'};
   log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
   return {status:'DRY_RUN',count:jobs.length};
  }
@@ -147,7 +147,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  if(!databaseReceiver||!finishCapability.valid||!assertCapability.valid||!claimCapability.valid||
   typeof claimCapability.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
  const finish=finishCapability.value,assertPublishable=assertCapability.value;
- const claimedJob=await Reflect.apply(claimCapability.value,db,[accountId,crypto.randomInt(45,181)]);
+ const claimedJob=await Reflect.apply(claimCapability.value,db,[accountId,crypto.randomInt(45,181),{signal}]);
  if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.

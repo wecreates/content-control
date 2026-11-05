@@ -109,6 +109,13 @@ test('cancellation during a dry-run queue read reports stopped without logging s
   log:value=>logs.push(value)});
  assert.deepEqual(result,{status:'STOPPED'});assert.deepEqual(logs,[]);
 });
+test('dry-run queue scan receives the lifecycle cancellation signal',async()=>{
+ const controller=new AbortController();let observedSignal;
+ const result=await publishOnce({signal:controller.signal,
+  env:{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
+  db:{listReady:async options=>{observedSignal=options?.signal;return [];}},log:()=>{}});
+ assert.deepEqual(result,{status:'DRY_RUN',count:0});assert.equal(observedSignal,controller.signal);
+});
 test('cancellation during a publishing claim settles without artifact work',async()=>{
  const f=fixture(),controller=new AbortController();let artifactChecks=0;
  f.options.signal=controller.signal;
@@ -126,6 +133,15 @@ test('cancellation during an empty publishing claim reports stopped',async()=>{
   resolveGrant:async()=>assert.fail('grant resolver reached'),
   verifyArtifacts:async()=>assert.fail('artifact verifier reached')});
  assert.deepEqual(result,{status:'STOPPED'});assert.equal(settled,0);
+});
+test('publishing claim receives the lifecycle cancellation signal',async()=>{
+ const f=fixture(),controller=new AbortController();let observedSignal;
+ f.options.signal=controller.signal;
+ f.options.db.claimPublish=async(_accountId,_delaySeconds,options)=>{
+  observedSignal=options?.signal;return null;
+ };
+ assert.deepEqual(await publishOnce(f.options),{status:'IDLE'});
+ assert.equal(observedSignal,controller.signal);
 });
 test('publication disable during a publishing claim settles before artifact work',async()=>{
  for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
