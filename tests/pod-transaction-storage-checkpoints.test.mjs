@@ -42,6 +42,50 @@ test('transaction stops before BEGIN when storage expires during connection acqu
  assert.deepEqual(releases,[false]);
 });
 
+test('transaction cancellation interrupts pool acquisition and destroys a late client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_TRANSACTION_CANCELLED'),releases=[];
+ let connect,entered=false;
+ const pending=new Promise(resolve=>{connect=resolve;});
+ const db=new PodDB({pool:{connect:()=>{entered=true;return pending;}},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const transaction=db.tx(()=>assert.fail('transaction callback reached'),{signal:controller.signal});
+ while(!entered)await new Promise(resolve=>setImmediate(resolve));
+ controller.abort(reason);
+ await assert.rejects(transaction,error=>error===reason);
+ connect({query:()=>assert.fail('late client queried'),release:bad=>releases.push(bad)});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(releases,[true]);
+});
+
+test('transaction cancellation interrupts a stalled query and destroys its client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_QUERY_CANCELLED'),calls=[],releases=[];
+ let entered;
+ const started=new Promise(resolve=>{entered=resolve;}),stalled=new Promise(()=>{});
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='STALLED_QUERY'){entered();return stalled;}
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const transaction=db.tx(c=>c.query('STALLED_QUERY'),{signal:controller.signal});
+ await started;
+ controller.abort(reason);
+ await assert.rejects(transaction,error=>error===reason);
+ assert.equal(calls.includes('ROLLBACK'),false);
+ assert.equal(calls.includes('DISCARD ALL'),false);
+ assert.deepEqual(releases,[true]);
+});
+
+test('transaction cancellation between statements rolls back and reuses a scrubbed client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_BETWEEN_QUERY_CANCELLED');
+ const {db,calls,releases}=fixture();
+ await assert.rejects(db.tx(async client=>{
+  await client.query('COMPLETED_QUERY');
+  controller.abort(reason);
+ },{signal:controller.signal}),error=>error===reason);
+ assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
+ assert.deepEqual(releases,[false]);
+});
+
 test('transaction stops before setup when storage expires during BEGIN',async()=>{
  const {db,calls}=fixture({expireOnQuery:'BEGIN'});
  await assert.rejects(db.tx(()=>assert.fail('transaction callback reached')),/POD_STORAGE_EXPIRING/);

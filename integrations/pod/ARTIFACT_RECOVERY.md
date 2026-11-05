@@ -127,6 +127,15 @@ during one artifact insert stops before the next artifact or later transaction
 work and rolls the in-progress transaction back. A change during COMMIT is still
 reported only after completion and requires reconciliation as described below.
 
+The restore signal is also passed into the managed database transaction. An
+abort while waiting for pool admission or business SQL rejects without waiting
+for the driver's normal connection/query deadline. A client acquired after the
+abort, or one with an in-flight query whose transport outcome is uncertain, is
+destroyed instead of returned to the two-slot pool. Cancellation observed between
+completed statements uses the ordinary rollback and session scrub. COMMIT still
+settles under the existing ten-second statement timeout so its outcome is known;
+the post-COMMIT reconciliation rule below remains unchanged.
+
 A VERIFIED receipt proves only that the referenced artifact bytes were readable
 and authentic at that time. It does not prove independent retention, future
 availability, queue/account/financial recovery, current grants, production role
