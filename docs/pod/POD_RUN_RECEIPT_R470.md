@@ -86,6 +86,12 @@ repair. The available Render connector verified deploy state but did not
 independently verify a green `/readyz` response. This documentation-only R470
 receipt uses `[skip render]` and must not trigger another deployment.
 
+After Content Control receipt PR 1037 merged as
+`8cb64967ec9307fb7f3f1513ca34d214508c52b7`, Render recorded
+`commit_ignored` event `evt-dbm4mhbncjis738q4lp0` at
+2026-11-05T09:24:21.454861Z. No deploy started; the live revision and deploy ID
+above remained unchanged.
+
 ## Remaining boundaries and execution limits
 
 All 24 live acceptance areas remain **OPEN**. This repair establishes fail-closed
