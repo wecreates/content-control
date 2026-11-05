@@ -82,6 +82,26 @@ establish database, authority, marketplace, end-to-end or publication acceptance
 This documentation-only R468 receipt uses `[skip render]` and must not trigger
 another deployment.
 
+### Concurrent watchdog deployment after the observation
+
+While the receipt branch was open, the existing free-production-watchdog workflow
+committed `be0e792e85639351b69a531f71a5c69435717541` to Content Control main.
+That concurrent work was preserved. Its diff changed only
+`state/free-production-watchdog.json`, `state/operations-snapshot.json` and
+`state/system-completion.json`; it continued to report `REPAIR_REQUIRED`, an
+unconverged candidate, unavailable live-public evidence, missing caption evidence,
+incomplete provenance inputs and publication gates off.
+
+Because that workflow commit lacked `[skip render]` and included two state paths
+outside the report-only allowlist, Render automatically created deploy
+`dep-dbm2ucijnfac73csuncg`. No manual or duplicate deploy was requested. The deploy
+finished `live` on the exact watchdog revision and deactivated the prior live deploy.
+This proves rollout liveness for that Content Control state revision only. It does
+not contain the separate Money Factory authority repair, make `/readyz` accepted,
+or close any POD acceptance area. The scheduled environment could inspect the
+Render deploy state but could not independently reach the service's `/readyz` or
+`/health` URL through its available public-web path.
+
 ## Remaining boundaries and execution limits
 
 All 24 live acceptance areas remain **OPEN**. This repair establishes a tested
