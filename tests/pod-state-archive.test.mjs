@@ -346,6 +346,13 @@ test('restore and CLI require disabled workers and explicit empty-target recover
  await assert.rejects(stateArchiveCLI(['export','/unused'],{...env,POD_ARCHIVE_KEY:'invalid'}),/STATE_ARCHIVE_CLI_CONFIG_INVALID/);
 });
 
+test('state restore forwards cancellation into its managed transaction',async t=>{
+ const f=await fixture(t),controller=new AbortController(),reason=Error('STATE_RESTORE_TRANSACTION_STOPPED');
+ await exportStateArchive(f.db,{...f,key,env});
+ const target={tx:async(_fn,options)=>{assert.equal(options.signal,controller.signal);throw reason;}};
+ await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env,signal:controller.signal}),error=>error===reason);
+});
+
 for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false,true]){
  test(`state export ${phase} failure with broken rollback=${brokenRollback}`,async t=>{
   const f=await fixture(t),{directory,db}=f;

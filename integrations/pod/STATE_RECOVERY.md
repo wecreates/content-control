@@ -182,3 +182,12 @@ disabled, inspect the target and reconcile the recovery audit before deciding
 what to do next. A committed state restore leaves a nonempty target, so another
 restore is rejected; never delete restored rows or bypass that protection to
 force a retry. No recovery failure authorizes automatic activation or publication.
+
+The restore signal is passed into the managed database transaction. An abort
+while waiting for pool admission or business SQL rejects without waiting for the
+driver's normal connection/query deadline. A client acquired after the abort, or
+one with an in-flight query whose transport outcome is uncertain, is destroyed
+instead of returned to the two-slot pool. Cancellation observed between completed
+statements uses the ordinary rollback and session scrub. COMMIT still settles
+under the existing ten-second statement timeout so the reconciliation boundary
+above remains authoritative.

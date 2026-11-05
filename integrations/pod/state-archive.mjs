@@ -296,7 +296,7 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
    INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3) RETURNING id::text AS id,kind,payload
   ) SELECT id,kind,payload=$3::jsonb AS exact FROM restored_event`,[eventId,eventKind,receipt]),eventId,eventKind);
   checkpoint();return receipt;
- });
+ },{signal});
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.

@@ -284,12 +284,12 @@ test('artifact restore does not insert after cancellation during the existing-ro
  const directory=await workspace(t),source=database([Buffer.from('cancellation boundary')]);
  await exportArtifactLibrary(source,{directory,key});
  const target=database(),tx=target.tx,controller=new AbortController();let inserts=0;
- target.tx=fn=>tx(client=>fn({query:async(...args)=>{
+ target.tx=(fn,options)=>{assert.equal(options.signal,controller.signal);return tx(client=>fn({query:async(...args)=>{
   const result=await client.query(...args);
   if(args[0].startsWith('SELECT media_type,octet_length'))controller.abort();
   if(args[0].startsWith('INSERT INTO public.pod_artifacts'))inserts++;
   return result;
- }}));
+ }}));};
  await assert.rejects(restoreArtifactLibrary(target,{directory,key,env,signal:controller.signal}),error=>error.name==='AbortError');
  assert.equal(inserts,0);
  assert.equal(target.rows.size,0);

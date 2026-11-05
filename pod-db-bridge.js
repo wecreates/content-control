@@ -7,6 +7,7 @@ import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
+import {databaseWait} from './integrations/pod/database-wait.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -615,14 +616,17 @@ export class PodDB {
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   });
  }
- async tx(fn){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
+ async tx(fn,{signal}={}){
+  const checkpoint=()=>signal?.throwIfAborted();
+  this.active();checkpoint();const waiting=databaseWait(signal);
+  let c,bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
   try{
+   c=await waiting.step(()=>this.pool.connect(),{onLate:late=>late.release(true)});
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
-   this.active();beginAttempted=true;await c.query('BEGIN');began=true;this.active();
-   await c.query("SET LOCAL lock_timeout='2s'");this.active();
-   await c.query("SET LOCAL statement_timeout='10s'");this.active();
+   this.active();checkpoint();beginAttempted=true;await waiting.step(()=>c.query('BEGIN'));began=true;this.active();checkpoint();
+   await waiting.step(()=>c.query("SET LOCAL lock_timeout='2s'"));this.active();checkpoint();
+   await waiting.step(()=>c.query("SET LOCAL statement_timeout='10s'"));this.active();checkpoint();
    // A callback may await non-database work between statements (for example,
    // archive file verification). Check on both sides so crossing the retention
    // cutoff in that wait cannot issue one last business statement.
@@ -633,7 +637,7 @@ export class PodDB {
    const pendingQueries=new Set();let queryFailure=null,acceptingQueries=true;
    const guardedQuery=(query,values)=>{
     if(!acceptingQueries)throw Error('POD_TRANSACTION_CLIENT_CLOSED');
-    this.active();
+    this.active();checkpoint();
     const config=typeof query==='string'?{text:query,values:values??[],queryMode:'extended'}:{...query,queryMode:'extended'};
     // DISCARD ALL deliberately clears server-side prepared statements. Do not
     // let a callback create a named statement that node-postgres would still
@@ -645,7 +649,7 @@ export class PodDB {
     // unable to undo earlier writes. Reject transaction-control commands before
     // PostgreSQL can execute them, including comment-obscured forms.
     assertManagedTransactionStatement(config.text);
-    const operation=(async()=>{const result=await c.query(config);this.active();return result;})();
+    const operation=(async()=>{const result=await waiting.step(()=>c.query(config));this.active();checkpoint();return result;})();
     // A callback must not be able to report success by starting a database
     // operation and returning without awaiting it. Track every issued query,
     // consume its rejection immediately and preserve the first failure so the
@@ -677,9 +681,12 @@ export class PodDB {
    }
    while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
    if(queryFailure)throw queryFailure;
-   this.active();commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;return r;
-  }catch(e){if(commitPending)bad=true;else if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw e;
-  }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
+   // COMMIT must settle so its outcome is known. The managed transaction's
+   // ten-second statement timeout bounds this control statement; cancellation
+   // is applied at the checkpoint immediately after it completes.
+   this.active();checkpoint();commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return r;
+  }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
+  }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
  async enqueue({job,upstream,conceptId,revision}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');

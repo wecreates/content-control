@@ -235,7 +235,7 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
   await assertArchiveDirectory(directory,opened);
   checkpoint();
   return {status:'RESTORED',scope:'artifacts_only',objects:catalog.items.length,inserted,bytes,publication_enabled:false};
- });
+ },{signal});
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.
