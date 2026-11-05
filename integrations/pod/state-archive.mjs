@@ -5,6 +5,7 @@ import {types as utilTypes} from 'node:util';
 import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
+import {databaseWait} from './database-wait.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 // Dependency order is fixed in code, never taken from an archive or request.
@@ -178,26 +179,27 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
  const checkpoint=()=>{signal?.throwIfAborted();disabled(env);};
  config(directory,key);checkpoint();const budget=artifactBudgetBytes(env);
- const opened=await createArchiveDirectory(directory);let client,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false,commitPending=false;
+ const opened=await createArchiveDirectory(directory),waiting=databaseWait(signal);let client,query,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
   checkpoint();
-  client=await db.pool.connect();checkpoint();
-  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;checkpoint();
-  await client.query("SET LOCAL statement_timeout='10s'");checkpoint();
-  await client.query("SET LOCAL lock_timeout='2s'");checkpoint();
-  await client.query("SET LOCAL timezone='UTC'");checkpoint();
-  await client.query("SET LOCAL datestyle='ISO, YMD'");checkpoint();
-  await client.query("SET LOCAL bytea_output='hex'");checkpoint();
-  const structure=await schema(client,checkpoint);
+  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>late.release(true)});checkpoint();
+  query=(...args)=>waiting.step(()=>client.query(...args));
+  beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;checkpoint();
+  await query("SET LOCAL statement_timeout='10s'");checkpoint();
+  await query("SET LOCAL lock_timeout='2s'");checkpoint();
+  await query("SET LOCAL timezone='UTC'");checkpoint();
+  await query("SET LOCAL datestyle='ISO, YMD'");checkpoint();
+  await query("SET LOCAL bytea_output='hex'");checkpoint();
+  const structure=await schema({query},checkpoint);
   const catalog={schema_version:1,scope:'pod_tables_only',snapshot_id:crypto.randomUUID(),created_at:new Date().toISOString(),
    tables:NAMES,...structure,items:[]};
   for(const table of NAMES){
    checkpoint();
-   await client.query(`DECLARE pod_state_export NO SCROLL CURSOR FOR SELECT CASE WHEN octet_length(row_to_json(t)::text)<=${MAX_ROW}
+   await query(`DECLARE pod_state_export NO SCROLL CURSOR FOR SELECT CASE WHEN octet_length(row_to_json(t)::text)<=${MAX_ROW}
     THEN row_to_json(t)::text ELSE NULL END AS record FROM public.${table} t ORDER BY ${TABLES[table]}`);
    checkpoint();
    while(true){
-    checkpoint();const rows=snapshotRows(await client.query('FETCH FORWARD 1 FROM pod_state_export'),['record'],1);checkpoint();if(!rows.length)break;
+    checkpoint();const rows=snapshotRows(await query('FETCH FORWARD 1 FROM pod_state_export'),['record'],1);checkpoint();if(!rows.length)break;
     if(typeof rows[0].record!=='string')throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
     const body=Buffer.from(rows[0].record);bytes+=body.length;
     if(body.length>MAX_ROW||bytes>MAX_TOTAL||catalog.items.length>=MAX_ROWS)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
@@ -205,9 +207,12 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
     const item={index:catalog.items.length,table,sha256:hash(body),bytes:body.length};
     await writeNew(path.join(opened.base,recordFile(item.index)),seal(body,key,aad(catalog.snapshot_id,item)));checkpoint();catalog.items.push(item);
    }
-   await client.query('CLOSE pod_state_export');checkpoint();
+   await query('CLOSE pod_state_export');checkpoint();
   }
   const body=Buffer.from(JSON.stringify(catalog));if(body.length>MAX_CATALOG)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');
+  // COMMIT must settle so its outcome is known. The transaction's 10-second
+  // statement timeout still bounds this control statement; apply caller
+  // cancellation at the checkpoint immediately after it completes.
   checkpoint();commitPending=true;await client.query('COMMIT');commitPending=false;began=false;beginAttempted=false;checkpoint();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encrypted);checkpoint();
@@ -226,8 +231,8 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
  }catch(error){
   // COMMIT rejection has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
-  if(client&&commitPending)bad=true;
-  else if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  if(client&&(waiting.interrupted||commitPending))bad=true;
+  else if(client&&began)try{await query('ROLLBACK');}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}

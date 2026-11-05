@@ -5,6 +5,7 @@ import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
+import {databaseWait} from './database-wait.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 const MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
@@ -134,19 +135,20 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
 export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();assertPublicationDisabled(env);
  const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
- let client;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false,commitPending=false;
+ const waiting=databaseWait(signal);let client,query;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
-  client=await db.pool.connect();
-  beginAttempted=true;await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
-  await client.query("SET LOCAL statement_timeout='10s'");
+  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>late.release(true)});
+  query=(...args)=>waiting.step(()=>client.query(...args));
+  beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
+  await query("SET LOCAL statement_timeout='10s'");
   // Keep invalid rows visible so export fails, but do not transfer an oversized
   // legacy body into the low-memory process before checking its bound.
-  await client.query(`DECLARE pod_artifact_export NO SCROLL CURSOR FOR SELECT sha256,media_type,
+  await query(`DECLARE pod_artifact_export NO SCROLL CURSOR FOR SELECT sha256,media_type,
    CASE WHEN octet_length(body) BETWEEN 1 AND ${MAX_OBJECT} THEN body ELSE NULL END AS body
    FROM public.pod_artifacts ORDER BY sha256`);
   while(true){
    signal?.throwIfAborted();assertPublicationDisabled(env);
-   const rows=artifactCursorRows(await client.query('FETCH FORWARD 1 FROM pod_artifact_export'));
+   const rows=artifactCursorRows(await query('FETCH FORWARD 1 FROM pod_artifact_export'));
    signal?.throwIfAborted();assertPublicationDisabled(env);if(!rows.length)break;
    const row=rows[0];
    if(!Buffer.isBuffer(row.body)||!row.body.length||row.body.length>MAX_OBJECT||digest(row.body)!==row.sha256||!TYPES.has(row.media_type))throw Error('ARCHIVE_ARTIFACT_INVALID');
@@ -156,6 +158,9 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   }
   const catalog=Buffer.from(JSON.stringify({schema_version:1,scope:'artifacts_only',created_at:new Date().toISOString(),items}));
   if(catalog.length>MAX_CATALOG)throw Error('ARCHIVE_CATALOG_TOO_LARGE');
+  // COMMIT must settle so its outcome is known. The transaction's 10-second
+  // statement timeout still bounds this control statement; apply caller
+  // cancellation at the checkpoint immediately after it completes.
   assertPublicationDisabled(env);commitPending=true;await client.query('COMMIT');commitPending=false;began=false;beginAttempted=false;
   signal?.throwIfAborted();assertPublicationDisabled(env);
   // Written last: an interrupted export without this catalog is not restorable.
@@ -177,8 +182,8 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
  }catch(error){
   // COMMIT rejection has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
-  if(client&&commitPending)bad=true;
-  else if(client&&began)try{await client.query('ROLLBACK');}catch{bad=true;}
+  if(client&&(waiting.interrupted||commitPending))bad=true;
+  else if(client&&began)try{await query('ROLLBACK');}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}
