@@ -89,7 +89,7 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   // rejection, but release the reader without awaiting transport cleanup.
   if(reader){
    try{Promise.resolve(reader.cancel()).catch(()=>{});}catch{}
-   reader.releaseLock();
+   try{reader.releaseLock();}catch{}
   }else if(response.body&&!response.body.locked){
    try{Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
   }

@@ -48,6 +48,15 @@ test('failed response cancellation cannot mask the delivery failure',async()=>{
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>response}),/^Error: OUTBOX_DELIVERY_FAILED$/);
  assert.deepEqual(db.updated,[]);assert.equal(body.locked,false);
 });
+test('failed reader release cannot replace a body result or primary failure',async()=>{
+ const response=chunks=>({ok:true,headers:new Headers({'content-type':'application/json'}),body:{
+  getReader(){return {read:async()=>chunks.shift()||{done:true},cancel(){},releaseLock(){throw Error('private remote detail');}};}
+ }});
+ assert.deepEqual(await readBridgeJSON(response([{done:false,value:Buffer.from('{}')}]),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),{});
+ await assert.rejects(readBridgeJSON(response([{done:false,value:Buffer.from('123')}]),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: SIZE$/);
+});
 test('malformed JSON, invalid UTF-8 and absent body cannot acknowledge an event',async()=>{
  for(const response of [new Response('{'),new Response(Buffer.from([0xff])),new Response(null,{status:204})]){
   const db=dbFixture();
