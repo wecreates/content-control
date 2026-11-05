@@ -86,6 +86,16 @@ test('initial runtime database operations forward lifecycle cancellation to guar
  assert.deepEqual(txSignals,[controller.signal,controller.signal,controller.signal]);
 });
 
+test('owner review reads forward request cancellation to guarded database reads',async()=>{
+ const controller=new AbortController(),signals=[];
+ const db=new PodDB({pool:{},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ db.read=async(_sql,_values,options)=>{signals.push(options?.signal);return {rows:[]};};
+ assert.deepEqual(await db.listOperationsJobs('review_required',{signal:controller.signal}),[]);
+ await assert.rejects(db.reviewPackage('fixture-job',{signal:controller.signal}),/PACKAGE_UNAVAILABLE/);
+ await assert.rejects(db.reviewArtifact('fixture-job','a'.repeat(64),{signal:controller.signal}),/ARTIFACT_UNAVAILABLE/);
+ assert.deepEqual(signals,[controller.signal,controller.signal,controller.signal]);
+});
+
 test('guarded reads scrub committed session state before returning the pooled client',async()=>{
  const queries=[],releases=[];let applicationName='pool-default';
  const client={release:bad=>releases.push(bad),query:async query=>{

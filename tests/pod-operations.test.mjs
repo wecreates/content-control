@@ -194,6 +194,48 @@ test('job inspection route authenticates and forwards only its filter',async()=>
   assert.match(result.headers.get('content-security-policy'),/img-src blob:/);
  }finally{await new Promise(r=>server.close(r));}
 });
+test('authenticated review routes forward a native request lifecycle signal',async()=>{
+ const calls=[],body=Buffer.from('fixture');
+ const db={
+  listOperationsJobs:async(state,options)=>{calls.push(['jobs',state,options?.signal]);return [];},
+  reviewPackage:async(id,options)=>{calls.push(['package',id,options?.signal]);return {id};},
+  reviewArtifact:async(id,sha,options)=>{calls.push(['artifact',id,sha,options?.signal]);return {body,media_type:'image/png'};},
+  listReady:async options=>{calls.push(['ready',options?.signal]);return [];},
+ };
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const base=`http://127.0.0.1:${server.address().port}`,headers={Authorization:`Bearer ${key}`};
+  assert.equal((await fetch(base+'/jobs?state=blocked',{headers})).status,200);
+  assert.equal((await fetch(base+'/jobs/fixture-job/package',{headers})).status,200);
+  assert.equal((await fetch(base+'/jobs/fixture-job/artifacts/'+'a'.repeat(64),{headers})).status,200);
+  assert.equal((await fetch(base+'/ready',{headers})).status,200);
+  assert.deepEqual(calls.map(call=>call.slice(0,-1)),[
+   ['jobs','blocked'],['package','fixture-job'],['artifact','fixture-job','a'.repeat(64)],['ready']]);
+  for(const call of calls){const signal=call.at(-1);assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,false);}
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('disconnecting an authenticated read aborts its pending database operation',async()=>{
+ let entered,aborted;const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{aborted=resolve;});
+ const db={listOperationsJobs:async(_state,{signal}={})=>{
+  entered();
+  return new Promise((resolve,reject)=>{
+   const stop=()=>{aborted(signal);reject(signal.reason);};
+   if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});
+  });
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{
+   headers:{Authorization:`Bearer ${key}`},signal:controller.signal});
+  await started;controller.abort();
+  await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('request cancellation not forwarded')),1000))]);
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{controller.abort();await new Promise(r=>server.close(r));}
+});
 test('template safe box uses x y width height consistently with Python QA',()=>{
  const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
  assert.deepEqual(validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}).safe_box_px,[400,400,100,100]);
