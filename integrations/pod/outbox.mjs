@@ -132,9 +132,10 @@ function assertEventShape(event,issuedAt){
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
+ if(signal?.aborted)return continueOnError?{delivered:0,failed:0,nextCursor:null}:{delivered:0};
  // pg decodes timestamptz to a millisecond Date. Preserve the database's full
  // microsecond value separately or rejected rows can repeat forever on page 2.
- const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null]));
+ const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
  let delivered=0,failed=0;
  for(const {event} of events){
   if(signal?.aborted)break;
@@ -161,7 +162,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.getPrototypeOf(ack)!==Object.prototype||
    Object.keys(ack).length!==1||!Object.hasOwn(ack,'accepted_event_id')||ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);
-  await db.tx(async c=>assertDeliveryMutation(await c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL RETURNING id',[event.id]),event.id));delivered++;
+  await db.tx(async c=>assertDeliveryMutation(await c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL RETURNING id',[event.id]),event.id),{signal});delivered++;
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
  }
  // Check empty pages and expiry during the final response/commit as well.

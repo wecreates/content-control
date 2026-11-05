@@ -27,6 +27,52 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  assert.deepEqual(releases,[false]);
 });
 
+test('guarded read cancellation interrupts pool acquisition and destroys a late client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_READ_CANCELLED'),releases=[];
+ let connect,entered=false;
+ const pending=new Promise(resolve=>{connect=resolve;});
+ const db=new PodDB({pool:{connect:()=>{entered=true;return pending;}},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const read=db.read('SELECT fixture',[],{signal:controller.signal});
+ while(!entered)await new Promise(resolve=>setImmediate(resolve));
+ controller.abort(reason);
+ await assert.rejects(read,error=>error===reason);
+ connect({query:()=>assert.fail('late client queried'),release:bad=>releases.push(bad)});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(releases,[true]);
+});
+
+test('guarded read cancellation interrupts a stalled query and destroys its client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_READ_QUERY_CANCELLED'),queries=[],releases=[];
+ let entered;
+ const started=new Promise(resolve=>{entered=resolve;}),stalled=new Promise(()=>{});
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;queries.push(text);
+  if(text==='SELECT fixture'){entered();return stalled;}
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ const read=db.read('SELECT fixture',[],{signal:controller.signal});
+ await started;
+ controller.abort(reason);
+ await assert.rejects(read,error=>error===reason);
+ assert.equal(queries.includes('ROLLBACK'),false);
+ assert.equal(queries.includes('DISCARD ALL'),false);
+ assert.deepEqual(releases,[true]);
+});
+
+test('guarded read cancellation between statements rolls back and reuses a scrubbed client',async()=>{
+ const controller=new AbortController(),reason=Error('POD_READ_BETWEEN_QUERY_CANCELLED'),queries=[],releases=[];
+ const client={release:bad=>releases.push(bad),query:async query=>{
+  const text=typeof query==='string'?query:query.text;queries.push(text);
+  if(text==='SELECT fixture')controller.abort(reason);
+  return {rows:[]};
+ }};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture',[],{signal:controller.signal}),error=>error===reason);
+ assert.deepEqual(queries.slice(-2),['ROLLBACK','DISCARD ALL']);
+ assert.deepEqual(releases,[false]);
+});
+
 test('guarded reads scrub committed session state before returning the pooled client',async()=>{
  const queries=[],releases=[];let applicationName='pool-default';
  const client={release:bad=>releases.push(bad),query:async query=>{

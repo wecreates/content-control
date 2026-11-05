@@ -528,14 +528,17 @@ export class PodDB {
   if(!validDateMs(now)||!validDateMs(this.expiresAt)||
    this.expiresAt-now<=86400000)throw Error('POD_STORAGE_EXPIRING');
  }
- async read(sql,values){
-  this.active();const c=await this.pool.connect();let bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
+ async read(sql,values,{signal}={}){
+  const checkpoint=()=>signal?.throwIfAborted();
+  this.active();checkpoint();const waiting=databaseWait(signal);
+  let c,bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
   try{
+   c=await waiting.step(()=>this.pool.connect(),{onLate:late=>late.release(true)});
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
    // mistaken future caller cannot mutate durable state through this helper.
-   this.active();beginAttempted=true;await c.query('BEGIN READ ONLY');began=true;this.active();
-   await c.query("SET LOCAL statement_timeout='10s'");this.active();
+   this.active();checkpoint();beginAttempted=true;await waiting.step(()=>c.query('BEGIN READ ONLY'));began=true;this.active();checkpoint();
+   await waiting.step(()=>c.query("SET LOCAL statement_timeout='10s'"));this.active();checkpoint();
    // Force the extended protocol even for parameterless reads. PostgreSQL's
    // simple-query protocol accepts multiple statements, which could otherwise
    // end this read-only transaction before a later statement in the same call.
@@ -544,10 +547,12 @@ export class PodDB {
    // COMMIT or ROLLBACK, so reject transaction control before PostgreSQL can
    // end the managed read transaction early.
    assertManagedTransactionStatement(sql);
-   const result=await c.query({text:sql,values:values??[],queryMode:'extended'});this.active();
-   commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;return result;
-  }catch(error){if(commitPending)bad=true;else if(began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(beginAttempted)bad=true;throw error;
-  }finally{if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}
+   const result=await waiting.step(()=>c.query({text:sql,values:values??[],queryMode:'extended'}));this.active();checkpoint();
+   // COMMIT must settle so a completed read has a known outcome. Cancellation
+   // is applied immediately after it, matching the managed write boundary.
+   commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return result;
+  }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
+  }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
