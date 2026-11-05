@@ -20,6 +20,7 @@ on:
       - 'scripts/watchdog_scope.py'
       - 'tests/test_watchdog_scope.py'
       - 'tests/test_security_repair_dispatch.py'
+      - 'tests/test_watchdog_routing.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -83,6 +84,7 @@ jobs:
         continue-on-error: true
         run: |
           python -m unittest discover -s tests -p test_security_repair_dispatch.py -v
+          python -m unittest discover -s tests -p test_watchdog_routing.py -v
           python -m unittest tests/test_watchdog_scope.py
           python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
@@ -123,6 +125,7 @@ jobs:
               "factual_compliance_green":"factual-compliance-gate.yml",
               "sync_retention_green":"sync-retention-gate.yml",
               "dependency_security_clean":"runtime-security-audit.yml",
+              "python_dependency_security_clean":"python-security-audit.yml",
               "runtime_locks_present":"generate-runtime-locks.yml",
               "system_wiring_green":"system-wiring-audit.yml",
           }
@@ -145,6 +148,7 @@ jobs:
               "runtime_integrity_manifest","live_deployment_green","review_server_smoke_green",
               "factual_compliance_green","sync_retention_green","narration_transcription_green",
               "caption_health_green","dependency_security_clean","runtime_locks_present",
+              "python_dependency_security_clean",
               "provenance_candidate_match","provenance_inputs_current","sbom_valid",
               "workflow_control_green","system_wiring_green","deployment_contract_green",
               "acceptance_ledger_candidate_match","caption_candidate_match",
@@ -164,13 +168,17 @@ jobs:
               continue
             fi
             echo "dispatching repair: $workflow"
-            if [ "$workflow" = "runtime-security-audit.yml" ]; then
+            if [ "$workflow" = "runtime-security-audit.yml" ] || [ "$workflow" = "python-security-audit.yml" ]; then
               # Pin the requested scan to the current main source. The audit's
               # own guard rejects a main-advance race rather than scanning a
               # different source under this request.
               expected_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')
               [[ "$expected_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
-              gh workflow run "$workflow" --ref main -f "expected_sha=$expected_sha"
+              if [ "$workflow" = "python-security-audit.yml" ]; then
+                gh workflow run "$workflow" --ref main -f "expected_sha=$expected_sha" -f validation_only=false
+              else
+                gh workflow run "$workflow" --ref main -f "expected_sha=$expected_sha"
+              fi
             else
               gh workflow run "$workflow" --ref main
             fi
