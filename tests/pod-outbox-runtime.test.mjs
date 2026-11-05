@@ -288,9 +288,22 @@ test('full rejected batch returns a cursor so later events remain reachable',asy
 test('default delivery behavior preserves error contract',async()=>{
  await assert.rejects(deliverOutbox(dbFixture([{id:'a'}]),{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,fetchImpl:async()=>new Response('',{status:503})}),/OUTBOX_DELIVERY_FAILED/);
 });
-test('already cancelled batch sends nothing',async()=>{
- const c=new AbortController();c.abort();const db=dbFixture([{id:'a'}]);
- await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,signal:c.signal,fetchImpl:()=>assert.fail('network attempted')});assert.equal(db.updated.length,0);
+test('already cancelled batch performs no storage or network work',async()=>{
+ const c=new AbortController();c.abort();let reads=0,transactions=0;
+ const db={active(){},read:async()=>{reads++;throw Error('database read attempted');},tx:async()=>{transactions++;}};
+ await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,signal:c.signal,fetchImpl:()=>assert.fail('network attempted')});
+ assert.equal(reads,0);assert.equal(transactions,0);
+});
+test('outbox forwards runtime cancellation into selection and delivery-marker transactions',async()=>{
+ const controller=new AbortController(),event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,
+  kind:'pod.test.cancellation',payload:{},created_at:new Date(Date.now()-1000).toISOString()};
+ let readSignal,transactionSignal;
+ const db={active(){},read:async(_sql,_values,options)=>{readSignal=options?.signal;return {rows:[event]};},
+  tx:async(fn,options)=>{transactionSignal=options?.signal;return fn({query:async(_sql,args)=>({rowCount:1,rows:[{id:args[0]}]})});}};
+ await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,signal:controller.signal,
+  fetchImpl:async()=>jsonResponse({accepted_event_id:event.id})});
+ assert.equal(readSignal,controller.signal);
+ assert.equal(transactionSignal,controller.signal);
 });
 test('pagination preserves PostgreSQL microseconds without changing the event envelope',async()=>{
  const timestamp='2026-01-01 00:00:00.000123+00';
