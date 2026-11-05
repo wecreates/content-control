@@ -44,7 +44,7 @@ export async function runPodWorker(options={}){
  const recover=recoverCapability.value;
  const active=()=>!signalAborted(signal)&&shouldContinue()===true;
  while(active()){
-  try{onCycle({phase:'started'});if(!active())break;await Reflect.apply(recover,db,[]);if(!active())break;
+  try{onCycle({phase:'started'});if(!active())break;await Reflect.apply(recover,db,[{signal}]);if(!active())break;
    const result=await produce();if(!active())break;
    await publish();if(!active())break;
    onCycle({phase:'completed',result});

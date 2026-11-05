@@ -711,8 +711,8 @@ export class PodDB {
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return {id:job.id};
   });
  }
- async listReady(){this.active();
-  const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20"));
+ async listReady({signal}={}){this.active();
+  const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20",[],{signal}));
   this.active();return rows;
  }
  async listOperationsJobs(state='review_required'){
@@ -744,7 +744,7 @@ export class PodDB {
   assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code",[reasonCode,job.id,job.fencing_token]),
    {id:job.id,state:'qa_failed',reason_code:reasonCode});
  });}
- async claimProduction(){return this.tx(async c=>{
+ async claimProduction({signal}={}){return this.tx(async c=>{
   // Lock acquisition can outlive a retry deadline. Eligibility and the new
   // lease must use wall time, not the timestamp frozen at transaction BEGIN.
   const r=await c.query(`UPDATE pod_production_queue SET state='processing',lease_until=clock_timestamp()+interval '30 minutes',
@@ -754,7 +754,7 @@ export class PodDB {
     ORDER BY q.created_at FOR UPDATE OF q SKIP LOCKED LIMIT 1)
     RETURNING id,account_id,platform,fencing_token::text AS fencing_token,attempt,brief,state`);
   return claimedProductionMutation(r);
- });}
+ },{signal});}
  async assertProducible(job){return this.tx(async c=>{
   const current=producibleQuerySnapshot(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
@@ -904,7 +904,7 @@ export class PodDB {
    return {pass};
   });
  }
- async claimPublish(accountId,delaySeconds){
+ async claimPublish(accountId,delaySeconds,{signal}={}){
   if(!Number.isInteger(delaySeconds)||delaySeconds<45||delaySeconds>180)throw Error('PUBLISH_DELAY_INVALID');
   return this.tx(async c=>{
   // A transaction rollback prevents an expired store from committing, but it
@@ -973,7 +973,7 @@ export class PodDB {
    [accountId,delaySeconds]);
   assertExactMutation(cooldown,{id:accountId});
   return claimed;
- });}
+ },{signal});}
  async assertPublishable(job){return this.tx(async c=>{
   const current=publishableQuerySnapshot(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
@@ -1015,7 +1015,7 @@ export class PodDB {
    assertExactMutation(event,{id:eventId,job_id:job.id,kind:eventKind});
   });
  }
- async recover(){return this.tx(async c=>{
+ async recover({signal}={}){return this.tx(async c=>{
   // Relation/row-lock waits can outlive a lease. BEGIN's frozen now() must
   // not defer already-expired work to another sweep or misdate its transition.
   // Bound each sweep so RETURNING can prove every transition without allowing
@@ -1035,7 +1035,7 @@ export class PodDB {
   const processingIds=assertExactMutationBatch(processing,
    {state:'blocked',reason_code:'PRODUCTION_LEASE_EXPIRED'},RECOVERY_BATCH_LIMIT);
   for(const id of processingIds)if(publishingIds.has(id))throw Error('POD_MUTATION_UNVERIFIED');
- });}
+ },{signal});}
  async close(){await this.pool.end();}
 }
 

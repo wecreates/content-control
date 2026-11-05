@@ -198,7 +198,7 @@ export async function produceOnce(options={}){
   typeof upstreamKey!=='string'||Buffer.byteLength(upstreamKey)<32)
   throw Error('PRODUCTION_AUTHORITY_UNVERIFIED');
  const store=new ArtifactStore(databaseReceiver,{budgetBytes});
- const claimedJob=await Reflect.apply(claimProduction,databaseReceiver,[]);
+ const claimedJob=await Reflect.apply(claimProduction,databaseReceiver,[{signal}]);
  const productionEnabled=()=>{
   const capability=dataProperty(env,'POD_PRODUCTION_ENABLED');
   return capability.valid&&capability.value==='true';

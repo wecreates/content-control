@@ -23,6 +23,15 @@ test('production options reject accessors and proxies without invocation',async(
 test('disabled production never claims work',async()=>{
  assert.deepEqual(await produceOnce({env:{},db:{claimProduction(){throw Error('unexpected');}}}),{status:'DISABLED'});
 });
+test('production claim receives the lifecycle cancellation signal',async()=>{
+ const controller=new AbortController();let observedSignal;
+ const result=await produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},signal:controller.signal,
+  upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
+  db:{...durableProductionEndpoints,failProduction:async()=>{},claimProduction:async options=>{
+   observedSignal=options?.signal;return null;
+  }}});
+ assert.deepEqual(result,{status:'IDLE'});assert.equal(observedSignal,controller.signal);
+});
 test('live production enable checks reject accessors without invocation',async()=>{
  const env={POD_PRODUCTION_ENABLED:'true'};let reads=0;
  const result=await produceOnce({env,upstreamKey:'k'.repeat(48),resolveGrant:async()=>{},resolveTask:async()=>{},
@@ -187,6 +196,14 @@ test('disabled worker continuation gate prevents recovery before the first cycle
  await runPodWorker({signal:controller.signal,shouldContinue:()=>false,
   db:{recover:async()=>{recovered++;controller.abort();}},produce:async()=>{},publish:async()=>{}});
  assert.equal(recovered,0);
+});
+test('worker recovery receives the lifecycle cancellation signal',async()=>{
+ const controller=new AbortController();let observedSignal;
+ await runPodWorker({signal:controller.signal,
+  db:{recover:async options=>{observedSignal=options?.signal;controller.abort();}},
+  produce:async()=>assert.fail('production reached after cancellation'),
+  publish:async()=>assert.fail('publisher reached after cancellation')});
+ assert.equal(observedSignal,controller.signal);
 });
 test('disable after production prevents the following stage and completion notification',async()=>{
  const controller=new AbortController();let enabled=true,published=0,completed=0;
