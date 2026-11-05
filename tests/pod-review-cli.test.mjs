@@ -52,8 +52,10 @@ async function withCLI(mode,fn){
  const exited=once(child,'exit');
  const closed=once(child,'close');
  const readPID=async name=>{
-  for(let i=0;i<200;i++){
+  const deadline=Date.now()+10000;
+  while(Date.now()<deadline){
    try{const pid=Number(await fs.readFile(path.join(tmp,name),'utf8'));if(Number.isInteger(pid)&&pid>0)return pid;}catch{}
+   if(child.exitCode!==null||child.signalCode!==null)throw Error('CLI exited before fixture initialized: '+name);
    await wait(10);
   }
   throw Error('fixture did not initialize: '+name);
