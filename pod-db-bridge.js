@@ -715,7 +715,7 @@ export class PodDB {
   const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20",[],{signal}));
   this.active();return rows;
  }
- async listOperationsJobs(state='review_required'){
+ async listOperationsJobs(state='review_required',{signal}={}){
   if(!['review_required','raw','processing','qa_failed','qa_passed','blocked','publishing','ambiguous','submitted','published'].includes(state))throw Error('JOB_FILTER_INVALID');
   this.active();
   const rows=operationsListQuerySnapshot(await this.read(`SELECT q.id,q.platform,
@@ -728,7 +728,7 @@ export class PodDB {
     AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END=$1
-   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state]),state);
+   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state],{signal}),state);
   const listed=rows.map(row=>{
    const {manifest,manifest_sha256,...listed}=row;
    let canPreview=listed.can_preview;
@@ -823,7 +823,7 @@ export class PodDB {
    return {status:'QA_PASSED',publication_enabled:false};
   });
  }
- async reviewPackage(jobId){this.active();
+ async reviewPackage(jobId,{signal}={}){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
   const row=reviewPackageQuerySnapshot(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
@@ -831,13 +831,13 @@ export class PodDB {
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
-   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId]),jobId);
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId],{signal}),jobId);
   if(!row?.manifest||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   this.active();
   return row;
  }
- async reviewArtifact(jobId,sha){this.active();
+ async reviewArtifact(jobId,sha,{signal}={}){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId)||typeof sha!=='string'||!SHA256.test(sha))throw Error('ARTIFACT_UNAVAILABLE');
   // Resolve the hold, manifest and bytes in one database snapshot. A bearer
   // key and a known content hash alone must not expose unrelated stored data.
@@ -851,7 +851,7 @@ export class PodDB {
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
-   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES]),jobId);
+   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES],{signal}),jobId);
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
    !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
