@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {performance} from 'node:perf_hooks';
 import {operationalHealth} from '../integrations/pod/operational-health.mjs';
 import {metrics} from '../integrations/pod/metrics.mjs';
 import {operationsSnapshot} from '../scripts/pod_operations_snapshot.mjs';
@@ -149,6 +150,20 @@ test('metrics abort a stalled pool acquisition and destroy a late client',async(
  connect({release:bad=>releases.push(bad)});
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(releases,[true]);
+});
+test('metrics discard a query completing at the absolute deadline without rollback',async t=>{
+ let monotonic=0,complete;const queries=[],releases=[];
+ t.mock.method(performance,'now',()=>monotonic);
+ t.mock.method(AbortSignal,'timeout',()=>new AbortController().signal);
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return new Promise(resolve=>{complete=resolve;});return {rows:[]};},
+  release:bad=>releases.push(bad),
+ })}};
+ const result=metrics(db);
+ while(!complete)await new Promise(resolve=>setImmediate(resolve));
+ monotonic=40000;complete({rows:[]});
+ await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
+ assert.equal(queries.includes('ROLLBACK'),false);assert.deepEqual(releases,[true]);
 });
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){
