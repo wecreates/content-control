@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import express from 'express';
+import {performance} from 'node:perf_hooks';
 import {operationalAuth} from '../integrations/pod/auth.mjs';
 import {createPodRouter} from '../integrations/pod/router.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
@@ -258,6 +259,25 @@ test('authenticated reads enforce one fixed server deadline while the client sta
   const response=await request;assert.equal(response.status,409);
   assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
  }finally{deadline.abort();await new Promise(r=>server.close(r));}
+});
+test('late read completion cannot beat a delayed server deadline callback',async t=>{
+ let now=100,timeoutMs,entered,release,signal;
+ const started=new Promise(resolve=>{entered=resolve;}),timeout=new AbortController();
+ t.mock.method(performance,'now',()=>now);
+ t.mock.method(AbortSignal,'timeout',ms=>{timeoutMs=ms;return timeout.signal;});
+ const db={listOperationsJobs:async(_state,options)=>{
+  signal=options?.signal;entered();return new Promise(resolve=>{release=resolve;});
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{headers:{Authorization:`Bearer ${key}`}});
+  await started;assert.equal(timeoutMs,30000);assert.equal(signal.aborted,false);
+  now=30100;release([]);
+  const response=await request;assert.equal(response.status,409);
+  assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_TIMEOUT');
+ }finally{timeout.abort();await new Promise(r=>server.close(r));}
 });
 test('template safe box uses x y width height consistently with Python QA',()=>{
  const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
