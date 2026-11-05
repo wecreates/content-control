@@ -40,6 +40,7 @@ Publication was not enabled. Live state remains `production_approved:false`, `pu
 - Authorized workspace/service: `tea-darsafojo6nc739844hg` / `srv-darsdb8u01pc73dn4i2g`.
 - Service remains an unsuspended one-instance free Docker web service on branch `main`, with auto-deploy enabled and health path `/health`.
 - Deploy `dep-dbmck2eq1p3s73aqtgl0` remains live on the last functional Content Control merge `858c83a0ade49c61dba6b82fce3589e3e06f4f35`; the Money Factory-only merge did not create a Content Control deployment.
+- Documentation-only evidence PR #1068 merged as `fce50cec43aeda24e370646d6019942d04038cfd`; Render event `evt-dbme9voae00c73bhhmag` recorded it as `commit_ignored`, preserving the verified functional deployment.
 - Fresh `/health`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/livez`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/readyz`: HTTP 503 with `ok:false`, `production_approved:false`, `publication:false`, and the current QA hash bound.
