@@ -45,6 +45,19 @@ for(const phase of ['commit','catalog','parent'])test('artifact export rejects c
   run:signal=>exportArtifactLibrary(db,{directory,key,signal}),
   verify:()=>verifyArtifactLibrary({directory,key})});
 });
+test('artifact export aborts a stalled database query and destroys its client',async t=>{
+ const directory=await workspace(t),controller=new AbortController(),reason=Error('ARCHIVE_DATABASE_CANCELLED');
+ const queries=[],releases=[],client={
+  query:sql=>{queries.push(sql);return new Promise(()=>{});},
+  release:discard=>releases.push(discard),
+ };
+ const result=exportArtifactLibrary({pool:{connect:async()=>client}},{directory,key,signal:controller.signal});
+ while(!queries.length)await new Promise(resolve=>setImmediate(resolve));
+ controller.abort(reason);
+ await assert.rejects(result,error=>error===reason);
+ assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+ assert.deepEqual(releases,[true]);
+});
 test('artifact export requires both publication kill switches before creating an archive',async t=>{
  const directory=await workspace(t),db=database(),connect=t.mock.method(db.pool,'connect');
  for(const flags of [{},{...env,PUBLICATION_ENABLED:'true'},{PUBLICATION_ENABLED:'false'}]){

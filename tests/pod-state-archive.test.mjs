@@ -43,6 +43,18 @@ for(const phase of ['commit','catalog','parent'])test('state export rejects canc
   run:signal=>exportStateArchive(f.db,{...f,key,env,signal}),
   verify:()=>verifyStateArchive({...f,key})});
 });
+test('state export aborts a stalled pool acquisition and destroys a late client',async t=>{
+ const f=await fixture(t),controller=new AbortController(),reason=Error('STATE_DATABASE_CANCELLED');
+ const releases=[];let connect,entered=false;
+ const pending=new Promise(resolve=>{connect=resolve;});
+ const result=exportStateArchive({pool:{connect:()=>{entered=true;return pending;}}},{directory:f.directory,key,env,signal:controller.signal});
+ while(!entered)await new Promise(resolve=>setImmediate(resolve));
+ controller.abort(reason);
+ await assert.rejects(result,error=>error===reason);
+ connect({release:discard=>releases.push(discard)});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(releases,[true]);
+});
 for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED']){
  test(`state export stops before database setup when ${flag} changes during connection`,async t=>{
   const f=await fixture(t),settings={...env},client=await f.db.pool.connect(),releases=[];
