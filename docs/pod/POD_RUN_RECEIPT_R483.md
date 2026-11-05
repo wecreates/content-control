@@ -49,6 +49,7 @@ Publication was not enabled. Live state remains `production_approved:false`, `pu
 - Authorized workspace/service: `tea-darsafojo6nc739844hg` / `srv-darsdb8u01pc73dn4i2g`.
 - Service remains an unsuspended one-instance free Docker web service on branch `main`, with commit auto-deploy enabled and health path `/health`.
 - Content Control merge `f7366f0e65fcf5af0d5b81f46f5c793883adaf26` deployed as `dep-dbmfg1uq1p3s73ee1fl0`; build and deploy completed successfully and the deployment is live.
+- Documentation-only evidence PR #1073 merged as `ddc652ba3c1c2e42bfaabab65cb35b9dc9e72e59`; Render event `evt-dbmfjp6c6qcc73ef483g` recorded it as `commit_ignored`, preserving the verified functional deployment.
 - Fresh `/health`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/livez`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/readyz`: HTTP 503 with `ok:false`, `production_approved:false`, `publication:false`, `qaStatus:"GREEN"`, and exact expected/actual QA hashes while remaining not ready.
