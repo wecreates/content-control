@@ -236,6 +236,29 @@ test('disconnecting an authenticated read aborts its pending database operation'
   assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
  }finally{controller.abort();await new Promise(r=>server.close(r));}
 });
+test('authenticated reads enforce one fixed server deadline while the client stays connected',async t=>{
+ const deadline=new AbortController();let timeoutMs,entered,observed;
+ const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{observed=resolve;});
+ t.mock.method(AbortSignal,'timeout',ms=>{timeoutMs=ms;return deadline.signal;});
+ const db={listOperationsJobs:async(_state,{signal}={})=>{
+  entered();
+  return new Promise((resolve,reject)=>{
+   const stop=()=>{observed(signal);reject(signal.reason);};
+   if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});
+  });
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{headers:{Authorization:`Bearer ${key}`}});
+  await started;assert.equal(timeoutMs,30000);
+  deadline.abort(new DOMException('deadline','TimeoutError'));
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('request deadline not forwarded')),1000))]);
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.name,'TimeoutError');
+  const response=await request;assert.equal(response.status,409);
+  assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+ }finally{deadline.abort();await new Promise(r=>server.close(r));}
+});
 test('template safe box uses x y width height consistently with Python QA',()=>{
  const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
  assert.deepEqual(validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}).safe_box_px,[400,400,100,100]);
