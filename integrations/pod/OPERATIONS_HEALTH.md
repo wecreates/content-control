@@ -7,6 +7,14 @@ two-second lock timeout and five-second per-statement timeout. It reads aggregat
 values from dedicated POD tables only. It returns no job IDs, briefs, event
 payloads, signing envelopes, connection URLs or raw errors.
 
+The transaction also has one absolute 40-second monotonic deadline covering pool
+admission, setup, every query and commit. Completion at or beyond that boundary
+is rejected even when native timer dispatch was delayed. A late-acquired client
+is destroyed, and a query that resolves or rejects after the boundary makes its
+client unusable without attempting rollback or later diagnostic work. This same
+boundary applies to the authenticated capacity report and the manual operations
+snapshot.
+
 Diagnostics deliberately do not call the write-side `db.active()` gate. An
 already-initialized service can therefore report approaching/elapsed storage
 expiry while production and other writes remain blocked. The runtime preflight,
