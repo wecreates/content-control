@@ -57,6 +57,13 @@ test('failed reader release cannot replace a body result or primary failure',asy
  await assert.rejects(readBridgeJSON(response([{done:false,value:Buffer.from('123')}]),
   {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: SIZE$/);
 });
+test('failed body access during cleanup cannot replace a primary failure',async()=>{
+ const response={ok:false,get body(){throw Error('private remote detail');}};
+ await assert.rejects(readBridgeJSON(response,
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: STATUS$/);
+ await assert.rejects(readBridgeJSON(response,
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE',signal:AbortSignal.abort()}),{name:'AbortError'});
+});
 test('malformed JSON, invalid UTF-8 and absent body cannot acknowledge an event',async()=>{
  for(const response of [new Response('{'),new Response(Buffer.from([0xff])),new Response(null,{status:204})]){
   const db=dbFixture();

@@ -90,8 +90,11 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(reader){
    try{Promise.resolve(reader.cancel()).catch(()=>{});}catch{}
    try{reader.releaseLock();}catch{}
-  }else if(response.body&&!response.body.locked){
-   try{Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
+  }else{
+   try{
+    const body=response?.body;
+    if(body&&!body.locked)Promise.resolve(body.cancel()).catch(()=>{});
+   }catch{}
   }
  }
 }
