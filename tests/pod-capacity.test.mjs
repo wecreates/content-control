@@ -80,3 +80,15 @@ test('capacity reporting discards an uncertain connection when commit fails',asy
  assert.equal(queries.at(-1),'COMMIT');assert.equal(queries.includes('ROLLBACK'),false);
  assert.deepEqual(releases,[true]);
 });
+test('capacity reporting aborts a stalled diagnostic query and discards its client',async()=>{
+ const controller=new AbortController(),queries=[],releases=[];
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);if(sql.startsWith('WITH'))return new Promise(()=>{});return {rows:[]};},
+  release:bad=>releases.push(bad),
+ })}};
+ const result=productionActivity(db,{signal:controller.signal});
+ while(!queries.some(sql=>sql.startsWith('WITH')))await new Promise(resolve=>setImmediate(resolve));
+ controller.abort();
+ await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
+ assert.equal(queries.includes('ROLLBACK'),false);assert.deepEqual(releases,[true]);
+});

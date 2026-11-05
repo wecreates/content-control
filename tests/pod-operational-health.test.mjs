@@ -127,6 +127,29 @@ test('metrics discard an uncertain connection when commit fails',async()=>{
  await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now}),error=>error===original);
  assert.equal(f.queries.at(-1),'COMMIT');assert.equal(f.queries.includes('ROLLBACK'),false);assert.equal(f.released,true);
 });
+test('metrics abort a stalled diagnostic transaction and discard its client',async()=>{
+ const controller=new AbortController(),queries=[],releases=[];let entered;
+ const stalled=new Promise(resolve=>{entered=resolve;}).then(()=>new Promise(()=>{}));
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return stalled;return {rows:[]};},
+  release:bad=>releases.push(bad),
+ })}};
+ const result=metrics(db,{signal:controller.signal});
+ while(!queries.some(sql=>sql.includes('GROUP BY platform')))await new Promise(resolve=>setImmediate(resolve));
+ entered();controller.abort();
+ await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
+ assert.equal(queries.includes('ROLLBACK'),false);assert.deepEqual(releases,[true]);
+});
+test('metrics abort a stalled pool acquisition and destroy a late client',async()=>{
+ const controller=new AbortController(),releases=[];let connect;
+ const pending=new Promise(resolve=>{connect=resolve;});
+ const result=metrics({pool:{connect:()=>pending}},{signal:controller.signal});
+ controller.abort();
+ await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
+ connect({release:bad=>releases.push(bad)});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(releases,[true]);
+});
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){
   const f=fixture({fail}),invoke=()=>operationsSnapshot({connect:async()=>f.db.pool,
