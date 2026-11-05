@@ -39,6 +39,7 @@ Publication was not enabled. Live state remains `production_approved:false`, `pu
 - Authorized workspace/service: `tea-darsafojo6nc739844hg` / `srv-darsdb8u01pc73dn4i2g`.
 - Service remains an unsuspended one-instance free Docker web service on branch `main`, with auto-deploy enabled and health path `/health`.
 - Concurrent watchdog commit `941f4723c468775e25773325a4200a184c934bd3` triggered deploy `dep-dbmelfd9el5s73c15rdg`; it finished live successfully and deactivated the previous deployment. This was concurrent report/state work, not the Money Factory repair and not POD acceptance.
+- Documentation-only evidence PR #1070 merged as `e6d8ca6101fc98cc183cfeae1afad44668f75358`; Render event `evt-dbmenfavcj2c73egodg0` recorded it as `commit_ignored`, preserving the verified concurrent deployment.
 - Fresh `/health`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/livez`: HTTP 200 with `production_approved:false` and `publication:false`.
 - Fresh `/readyz`: HTTP 503 with `ok:false`, `production_approved:false`, `publication:false`, and the current QA hash bound.
