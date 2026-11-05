@@ -10,6 +10,7 @@ import {podRequestError} from './request-errors.mjs';
 import {productionActivity} from './capacity.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
 const requestDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
+const READ_REQUEST_TIMEOUT_MS=30000;
 function verifyRequestJSON(_req,_res,body){parseSignedJSON(requestDecoder.decode(body));}
 function storageFailure(res,error,status,code){
  if(error?.message==='POD_STORAGE_EXPIRING')return res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});
@@ -17,9 +18,11 @@ function storageFailure(res,error,status,code){
 }
 function requestLifecycle(req,res){
  const controller=new AbortController();
+ const timeout=AbortSignal.timeout(READ_REQUEST_TIMEOUT_MS);
+ const signal=AbortSignal.any([controller.signal,timeout]);
  const abort=()=>{if(!controller.signal.aborted)controller.abort(Error('POD_REQUEST_CANCELLED'));};
  req.once('aborted',abort);res.once('close',abort);
- return {signal:controller.signal,dispose(){req.off('aborted',abort);res.off('close',abort);}};
+ return {signal,dispose(){req.off('aborted',abort);res.off('close',abort);}};
 }
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
