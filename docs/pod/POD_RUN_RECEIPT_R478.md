@@ -109,6 +109,13 @@ This proves process liveness for the exact merged repair and confirms that the
 acceptance readiness gate still fails closed. It does not convert deployment
 success into hosting, end-to-end or launch acceptance.
 
+After this documentation receipt merged as
+`2d458c1c336c72ec5344f1469d76738eed0b4fcf`, Render recorded
+`commit_ignored` event `evt-dbmbhsrbc2fs73b2svqg` at
+2026-11-05T17:12:19.077853Z. No second deployment started; functional deploy
+`dep-dbmbduvb9u1s738olkag` remained live on
+`89426466825140f3f5e9940e5db5697e33a41dc8`.
+
 ## Remaining boundaries and execution limits
 
 All 24 live acceptance areas remain **OPEN**. This repair closes one code-level
