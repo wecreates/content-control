@@ -19,6 +19,7 @@ on:
       - 'scripts/verify_free_production_health.py'
       - 'scripts/watchdog_scope.py'
       - 'tests/test_watchdog_scope.py'
+      - 'tests/test_security_repair_dispatch.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -81,6 +82,7 @@ jobs:
         id: verify
         continue-on-error: true
         run: |
+          python -m unittest discover -s tests -p test_security_repair_dispatch.py -v
           python -m unittest tests/test_watchdog_scope.py
           python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
@@ -162,7 +164,16 @@ jobs:
               continue
             fi
             echo "dispatching repair: $workflow"
-            gh workflow run "$workflow" --ref main
+            if [ "$workflow" = "runtime-security-audit.yml" ]; then
+              # Pin the requested scan to the current main source. The audit's
+              # own guard rejects a main-advance race rather than scanning a
+              # different source under this request.
+              expected_sha=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')
+              [[ "$expected_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+              gh workflow run "$workflow" --ref main -f "expected_sha=$expected_sha"
+            else
+              gh workflow run "$workflow" --ref main
+            fi
           done < /tmp/repair-workflows
       - name: Fail watchdog when repair is required
         if: steps.verify.outcome == 'failure'
