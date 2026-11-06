@@ -38,3 +38,33 @@ Render deploy dep-dbmv0g8u01pc739k2j4g was live at start, on functional
 883a753cc365ed2441c0055d24d144829e19b5aa. Both publication flags remain false.
 Etsy is excluded. No purchase, paid infrastructure, secret disclosure, social-vault
 access, network widening or continuous self-hosted worker is claimed.
+
+## Verified repair and rollout
+
+Final focused suite: 56/56. Final complete local Node suite: 1,201 total,
+1,192 passed, nine expected environment skips. Python: 385/385 in 294.022s.
+Syntax/whitespace checks passed. Exact local/remote tree:
+`0e8586d236da391f768cd6f531a96300c3538a49`.
+CC #1125 passed integration run 42249185142/job 127999358518 and container
+run 42249185076/job 127999358211, then merged as
+`6f9c453739b5dfa79379b71fe056f40e4a750d29`.
+
+Render automatically deployed that exact merge as
+`dep-dbmvpgec6qcc73blgfhg`, live at 2026-11-06T16:15:05.579429Z.
+Fresh public probes showed health alive=true, production_approved=false and
+publication=false; readiness ok=false/captionReady=false; POD service,
+production and outbox DISABLED, zero cycles, publication enabled/requested=false
+and adapters_verified=false. These are liveness/safeguard observations only.
+The extension tool returned Unknown tool; public probes used the available
+cloud browser. No database administration was attempted through it.
+
+Money Factory pin #457 preserves the current monitoring records and both false
+publication literals. Local bridge verification passed 279 Node tests with one
+expected PostgreSQL-only skip and all 81 Python tests. Its exact-head hosted
+workflow and merge outcome are retained with the PR and final receipt update.
+
+Exact-head Money Factory workflow 42250426140, job 128003738410, passed every
+pinned contract, Python/KDP, Node/PostgreSQL and Python bridge stage.
+MF #457 merged as `087d981a784a05699810c4d7c4b8371b18d60069`.
+All 24 live acceptance areas remain OPEN, so the completion automation remains
+enabled. Publication is held for explicit approval and cannot be enabled here.
