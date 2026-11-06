@@ -70,6 +70,10 @@ web service on `main`, with commit auto-deploy enabled and `/health` as its live
 path. Functional merge `a521aac51a0e026569f2b90b8609979a8c8614e3` built and
 deployed successfully as `dep-dbmi01nb9u1s73d2gm00`; Render event
 `evt-dbmi0henlp7c73bkso10` recorded the successful deploy end.
+Documentation-only receipt PR #1079 merged as
+`bf1dd3aeacafbb5eed0fb4ea60ce541e9d1d93c1`; Render event
+`evt-dbmi40o473hc73d63rm0` recorded it as `commit_ignored`, preserving the verified
+functional deployment without consuming another build.
 
 Fresh browser probes after the deployment returned:
 
