@@ -12,6 +12,30 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 const env={POD_DATABASE_URL:'postgresql://secret:secret@example.invalid/db',POD_BRIDGE_PATH:'bridge',
  POD_UPSTREAM_KEY:'a'.repeat(32),POD_QA_KEY:'b'.repeat(32),INTERNAL_OPERATIONS_KEY:'c'.repeat(32),
  POD_STORAGE_EXPIRES_AT:'2030-01-01T00:00:00Z',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+test('pre-aborted preflight starts no bridge or database work',async()=>{
+ const controller=new AbortController();controller.abort();let invoked=0;
+ const r=await preflight({env,signal:controller.signal,readBridge:()=>{invoked++;},connect:()=>{invoked++;}});
+ assert.equal(invoked,0);assert.equal(r.status,'BLOCKED');
+});
+for(const stage of ['bridge','factory','acquisition','query','rollback','shutdown'])test(`preflight cancellation bounds stalled ${stage}`,async()=>{
+ const controller=new AbortController(),never=new Promise(()=>{}),releases=[];let ended=0,settle;
+ const stall=()=>{controller.abort();return never;};
+ const client={query:async sql=>{
+  if(stage==='query'||stage==='rollback'&&sql==='ROLLBACK')return stall();
+  if(sql==='BEGIN READ ONLY')return {rows:[]};
+  throw Error('private backend failure');
+ },release:bad=>releases.push(bad)};
+ const pool={connect:()=>stage==='acquisition'?new Promise(resolve=>{settle=resolve;controller.abort();}):client,
+  end:()=>{ended++;return stage==='shutdown'?stall():Promise.resolve();}};
+ const r=await preflight({env,signal:controller.signal,readBridge:()=>stage==='bridge'?stall():bridge,
+  connect:()=>stage==='factory'?new Promise(resolve=>{settle=resolve;controller.abort();}):pool});
+ assert.equal(r.status,'BLOCKED');assert.equal(r.publication_enabled,false);
+ assert.equal(JSON.stringify(r).includes('private backend'),false);
+ if(stage==='factory'){settle(pool);await new Promise(resolve=>setImmediate(resolve));assert.equal(ended,1);}
+ if(stage==='acquisition'){settle(client);await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(releases,[true]);assert.equal(ended,1);}
+ if(['query','rollback'].includes(stage)){assert.deepEqual(releases,[true]);assert.equal(ended,1);}
+ if(stage==='shutdown')assert.equal(ended,1);
+});
 async function bridgeWorkspace(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-bridge-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));

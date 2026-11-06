@@ -8,6 +8,7 @@ import {parseBridgeJSON,readBridgeFile} from '../integrations/pod/bridge-file.mj
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {isolatedRuntimeKeys,REQUIRED_RUNTIME_KEYS} from '../integrations/pod/key-policy.mjs';
 import {parseStorageExpiry,validDateMs} from '../integrations/pod/storage-expiry.mjs';
+import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from '../integrations/pod/diagnostic-deadline.mjs';
 
 const TABLES=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
 function dataProperty(target,key){
@@ -66,7 +67,9 @@ function stringArraySnapshot(value,limit){
  }
  return snapshot;
 }
-export async function preflight({env=process.env,connect,readFile=fs.readFile,readBridge,now=Date.now,directory=new URL('../migrations/',import.meta.url)}={}) {
+async function preflightChecks({env=process.env,connect,readFile=fs.readFile,readBridge,now=Date.now,signal,directory=new URL('../migrations/',import.meta.url)}={}) {
+ const deadline=diagnosticDeadline(signal);
+ const step=(operation,options)=>diagnosticStep(operation,deadline,options);
  const checks=[];
  const check=(code,ok)=>checks.push({code,status:ok?'PASS':'BLOCKED'});
  // Numeric time remains a fixed test hook; the default clock is sampled again
@@ -84,15 +87,18 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
  check('POD_KEY_ISOLATION',isolatedRuntimeKeys(env));
  for(const [code,ok] of safety())check(code,ok);
  try{
-  const bridge=readBridge?await readBridge(env.POD_BRIDGE_PATH):
-   readFile===fs.readFile?await readBridgeFile(env.POD_BRIDGE_PATH):parseBridgeJSON(await readFile(env.POD_BRIDGE_PATH,'utf8'));
+  const bridge=await step(async()=>readBridge?await readBridge(env.POD_BRIDGE_PATH):
+   readFile===fs.readFile?await readBridgeFile(env.POD_BRIDGE_PATH):parseBridgeJSON(await readFile(env.POD_BRIDGE_PATH,'utf8')));
   assertBridge(bridge);check('BRIDGE_CONTRACT',true);
  }catch{check('BRIDGE_CONTRACT',false);}
  check('DEDICATED_DATABASE_CONFIGURED',!!env.POD_DATABASE_URL);
  let pool,client,readable=false,bad=false,began=false,beginAttempted=false;
  if(env.POD_DATABASE_URL)try{
   const factory=connect|| (async e=>(await import('../pod-db-bridge.js')).createPodPool(e));
-  pool=await factory(env);client=await pool.connect();
+  pool=await step(()=>factory(env),{onLate:late=>{try{Promise.resolve(late.end()).catch(()=>{});}catch{}}});
+  client=await step(()=>pool.connect(),{onLate:late=>late.release(true)});
+  const acquired=client;
+  client={query:(...args)=>step(()=>acquired.query(...args)),release:bad=>acquired.release(bad)};
   beginAttempted=true;await client.query('BEGIN READ ONLY');began=true;
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
@@ -156,22 +162,27 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
    ['version','sha256'],requiredMigrations.length);
   let matching=versions.length===requiredMigrations.length;
   for(const name of requiredMigrations){
-   const sql=await readFile(new URL(name,directory),'utf8');
+   const sql=await step(()=>readFile(new URL(name,directory),'utf8'));
    matching&&=versions.find(r=>r.version===name)?.sha256===crypto.createHash('sha256').update(sql).digest('hex');
   }
   check('SCHEMA_CHECKSUMS',matching);
   readable=true;
- }catch{readable=false;}
+ }catch(error){readable=false;if(isDiagnosticDeadline(error))bad=true;}
  finally{
   if(client){
    // Startup may borrow a service-owned pool. Never probe a client again after
    // BEGIN rejects; its protocol state is uncertain. A confirmed transaction
    // still uses rollback, whose failure also invalidates and destroys it.
-   if(began)try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
+   if(began&&!bad)try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
    else if(beginAttempted)bad=true;
    client.release(bad);
   }
-  if(pool)await pool.end().catch(()=>{});
+  if(pool)try{
+   // Initiate owned-pool shutdown even after expiry, but never wait forever
+   // for a pending acquisition/query to let that shutdown settle.
+   const ending=Promise.resolve(pool.end());ending.catch(()=>{});
+   await step(()=>ending);
+  }catch{readable=false;}
  }
  if(env.POD_DATABASE_URL)check('DATABASE_READABLE',readable);
  // Downgrade stale evidence without duplicating checks or clearing an earlier
@@ -180,6 +191,15 @@ export async function preflight({env=process.env,connect,readFile=fs.readFile,re
  return {schema_version:1,status:checks.every(c=>c.status==='PASS')?'CONFIGURATION_VERIFIED':'BLOCKED',
   publication_enabled:false,scope:'configuration_only',checks,
   unverified:['production_dependencies','production_resolvers','rights_and_editorial_review','authorized_platform_adapters','upstream_revenue_events']};
+}
+export async function preflight(options={}){
+ // AbortSignal.timeout is unreferenced. Keep the standalone CLI alive until
+ // it can emit its bounded, redacted BLOCKED result even with stalled I/O.
+ const controller=new AbortController();
+ const timer=setTimeout(()=>controller.abort(),40000);
+ try{return await preflightChecks({...options,signal:options.signal===undefined?controller.signal:
+  AbortSignal.any([options.signal,controller.signal])});}
+ finally{clearTimeout(timer);}
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const result=await preflight();console.log(JSON.stringify(result));process.exitCode=result.status==='BLOCKED'?1:0;
