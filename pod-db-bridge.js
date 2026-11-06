@@ -554,7 +554,7 @@ export class PodDB {
   }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
- async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
+ async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100},{signal}={}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
   if(!validOpaqueText(id)||!validOpaqueText(businessId)||intake.concept_id!==id||intake.business_id!==businessId||
@@ -595,7 +595,7 @@ export class PodDB {
    // Revalidate after all database waits so expiry rolls back budget and writes.
    verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
    return {id};
-  });
+  },{signal});
  }
  async requeueRepair(jobId,upstream,{signal}={}){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
@@ -693,7 +693,7 @@ export class PodDB {
   }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
- async enqueue({job,upstream,conceptId,revision}) {
+ async enqueue({job,upstream,conceptId,revision},{signal}={}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   const brief=enforceBrief(grant,job);
   // Validate queue-only scope before connection acquisition. PostgreSQL uuid
@@ -709,7 +709,7 @@ export class PodDB {
    if(exactEmptyMutation(r))throw Error('DUPLICATE_JOB');
    assertExactMutation(r,{id:job.id});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return {id:job.id};
-  });
+  },{signal});
  }
  async listReady({signal}={}){this.active();
   const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20",[],{signal}));

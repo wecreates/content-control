@@ -108,7 +108,7 @@ function snapshotFinancialTotals(result){
  return Object.freeze(snapshots);
 }
 
-export async function recordFinancialEvent(db,envelope,key){
+export async function recordFinancialEvent(db,envelope,key,{signal}={}){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
  if(e.verified!==true||!['authority_event_id','provider_event_id','provider','job_id'].every(k=>validOpaqueText(e[k]))||
   !Number.isSafeInteger(e.amount_minor)||!['royalty','refund','fee','production_cost','generation_cost','tax','adjustment'].includes(e.kind)||
@@ -146,7 +146,7 @@ export async function recordFinancialEvent(db,envelope,key){
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:finance');
   return {id,duplicate:false};
- });
+ },{signal});
 }
 export async function financialTotals(db){
  return snapshotFinancialTotals(await db.read(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count

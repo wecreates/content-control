@@ -124,7 +124,7 @@ function validObservationJson(value){
  }
  return true;
 }
-export async function recordMarketObservation(db,envelope,key){
+export async function recordMarketObservation(db,envelope,key,{signal}={}){
  const o=verifyEnvelope(envelope,key,'content-control:pod:market');
  if(!validPostgresText(o.source_url))throw Error('MARKET_SOURCE_INVALID');
  let url;try{url=new URL(o.source_url);}catch{throw Error('MARKET_SOURCE_INVALID');}
@@ -160,6 +160,6 @@ export async function recordMarketObservation(db,envelope,key){
    !isDeepStrictEqual(previous.observations,observations))throw Error('MARKET_REPLAY_CONFLICT');
   verifyEnvelope(envelope,key,'content-control:pod:market');
   return {inserted:false,id:previous.id};
- });
+ },{signal});
 }
 
