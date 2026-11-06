@@ -143,3 +143,10 @@ launch remain unverified. Publication remains held for explicit owner approval,
 and this automation cannot enable it.
 
 The continuation automation therefore remains enabled.
+
+## Receipt deployment suppression
+
+Documentation merge `8fdf7569f595fa674cc9cf55106cdbe8c4b77009` was ignored by
+Render as intended in event `evt-dbmpvqff3r2c73amdjc0`. The verified live deploy
+therefore remained `dep-dbmprd0n74is73bbc210` from functional merge
+`04f1daadc22d2ae55d7b1aae06ec3a41919af07d`.
