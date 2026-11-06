@@ -17,13 +17,20 @@ function begin(){
 }
 function checkDeadline(context){if(performance.now()>=context.deadline&&!context.signal.aborted)context.controller.abort(Error(timeoutMessage));}
 function end(context){if(context.version===generation){clearTimeout(deadlineTimer);deadlineTimer=undefined;}}
-async function waitFor(pending,context){
- const {signal}=context;let onAbort;
+async function waitFor(start,context){
+ const {signal}=context;let onAbort,listenerAttached=false,cancelled=false;
  try{
   checkDeadline(context);
-  const aborted=new Promise((_,reject)=>{onAbort=()=>reject(signal.reason);signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort();});
+  let rejectAbort;
+  const aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+  onAbort=()=>{cancelled=true;let reason;try{reason=signal.reason;}catch{}
+   rejectAbort(reason instanceof Error?reason:Error('POD request cancelled.'));};
+  try{listenerAttached=true;signal.addEventListener('abort',onAbort,{once:true});if(signal.aborted)onAbort();}
+  catch{throw Error('POD request unavailable.');}
+  if(cancelled)return await aborted;
+  const pending=start();
   const value=await Promise.race([pending,aborted]);checkDeadline(context);signal.throwIfAborted();return value;
- }finally{if(onAbort)signal.removeEventListener('abort',onAbort);}
+ }finally{if(listenerAttached&&onAbort)try{signal.removeEventListener('abort',onAbort);}catch{}}
 }
 function cancelBody(body){try{Promise.resolve(body?.cancel()).catch(()=>{});}catch{}}
 async function read(route,context,limit){
@@ -31,12 +38,11 @@ async function read(route,context,limit){
  checkDeadline(context);context.signal.throwIfAborted();
  let response,reader;
  try{
-  const pending=fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal})
-   .then(value=>{response=value;if(context.signal.aborted){cancelBody(response.body);context.signal.throwIfAborted();}return value;});
-  response=await waitFor(pending,context);
+  response=await waitFor(()=>fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal})
+   .then(value=>{response=value;if(context.signal.aborted){cancelBody(response.body);context.signal.throwIfAborted();}return value;}),context);
   if(!response.ok)throw Error(response.status===401?'Authentication failed.':'POD data is unavailable.');
   reader=response.body.getReader();const chunks=[];let length=0;
-  while(true){const {done,value}=await waitFor(reader.read(),context);if(done)break;length+=value.byteLength;
+  while(true){const {done,value}=await waitFor(()=>reader.read(),context);if(done)break;length+=value.byteLength;
    if(length>limit)throw Error('Response exceeds the preview limit.');chunks.push(value);}
   if(context.version!==generation)throw Error('STALE_REQUEST');
   const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
@@ -66,7 +72,7 @@ function exactPackageFiles(manifest,platform){
 }
 async function exactPackageIdentity(manifest,manifestSha256,context){
  const bytes=new TextEncoder().encode(canonical(manifest));
- const digest=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
+ const digest=Array.from(new Uint8Array(await waitFor(()=>crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
  return digest===manifestSha256;
 }
 function parseResponseJSON(text){
@@ -98,7 +104,7 @@ function parseResponseJSON(text){
  return value;
 }
 const json=async(route,context)=>parseResponseJSON(responseDecoder.decode(await read(route,context,262144)));
-function failure(error,context){if(context.version===generation&&(!context.signal.aborted||context.signal.reason?.message===timeoutMessage))element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
+function failure(error,context){if(context.version===generation)element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
  [timeoutMessage,'Authentication failed.','Enter your operations key.','POD data is unavailable.','Response exceeds the preview limit.','Print preview is unavailable.'].includes(error.message)?error.message:'Unable to verify this preview or response.';}
 function listJobs(rows){
  if(!Array.isArray(rows)||rows.length>50)throw Error('INVALID_JOBS');
@@ -157,7 +163,7 @@ async function openPreview(id){
    !/^[a-f0-9]{64}$/.test(manifest.package_sha256)||!/^[a-f0-9]{64}$/.test(record.manifest_sha256)||
    !(await exactPackageIdentity(manifest,record.manifest_sha256,context)))throw Error('Print preview is unavailable.');
   const bytes=await read('/jobs/'+encodeURIComponent(id)+'/artifacts/'+hash,context,16777216);
-  const actual=Array.from(new Uint8Array(await waitFor(crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
+  const actual=Array.from(new Uint8Array(await waitFor(()=>crypto.subtle.digest('SHA-256',bytes),context)),b=>b.toString(16).padStart(2,'0')).join('');
   if(actual!==hash)throw Error('HASH_MISMATCH');
   // Reject non-PNG and decompression-sized previews before the browser image decoder.
   const header=[137,80,78,71,13,10,26,10],view=new DataView(bytes.buffer);
