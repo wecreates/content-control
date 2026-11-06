@@ -105,6 +105,21 @@ async function requestRead(lifecycle,operation){
  const result=await databaseWait(lifecycle.signal).step(operation);
  lifecycle.checkpoint();return result;
 }
+function boundedBody(parser){
+ return (req,res,next)=>{
+  const lifecycle=requestLifecycle(req,res);let finished=false,queued=false;
+  const remove=()=>{try{lifecycle.signal.removeEventListener('abort',abort);}catch{}};
+  const abort=()=>{
+   if(queued)return;queued=true;
+   queueMicrotask(()=>{if(!finished&&!req.destroyed)req.destroy();});
+  };
+  try{
+   lifecycle.signal.addEventListener('abort',abort,{once:true});
+   parser(req,res,error=>{finished=true;remove();next(error);});
+   if(lifecycle.signal.aborted)abort();
+  }catch(error){finished=true;remove();lifecycle.dispose();next(error);}
+ };
+}
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
@@ -124,7 +139,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
    next();
   }catch{lifecycle.dispose();res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}
  });
- router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf','text/plain','application/zip'],limit:'16mb'}),async(req,res)=>{
+ router.post('/artifacts',boundedBody(express.raw({type:['image/png','application/pdf','application/json','font/ttf','text/plain','application/zip'],limit:'16mb'})),async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
   try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await requestRead(lifecycle,()=>store.put(req.body,req.get('content-type').split(';')[0],{signal:lifecycle.signal}))});}
   catch(error){storageFailure(res,error,409,'ARTIFACT_STORAGE_BLOCKED');}finally{lifecycle.dispose();}
@@ -144,7 +159,7 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   try{res.json({jobs:await requestRead(lifecycle,()=>db.listOperationsJobs(req.query.state||'review_required',{signal:lifecycle.signal})),limit:50,publication_enabled:false});}
   catch(error){storageFailure(res,error,409,'JOB_LIST_UNAVAILABLE');}finally{lifecycle.dispose();}
  });
- router.use(express.json({limit:'256kb',strict:true,verify:verifyRequestJSON}));
+ router.use(boundedBody(express.json({limit:'256kb',strict:true,verify:verifyRequestJSON})));
  router.post('/jobs/:id/retry',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
   try{await requestRead(lifecycle,()=>db.requeueRepair(req.params.id,req.body,{signal:lifecycle.signal}));
