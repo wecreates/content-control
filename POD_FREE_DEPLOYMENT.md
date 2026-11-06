@@ -65,6 +65,10 @@ Environment variables:
   `YYYY-MM-DDTHH:mm:ssZ` or exact millisecond ISO text, never a fictitious future
   date. Date-only, offset or otherwise normalized text is rejected.
 
+Preflight publication-off evidence requires both PUBLICATION_ENABLED and
+POD_PUBLICATION_ENABLED to be literal `false` strings, including at final cleanup.
+Missing, malformed or ambiguous values cannot produce CONFIGURATION_VERIFIED.
+
 Default dispatch is check-only. Selecting apply runs the existing checksum-guarded,
 advisory-locked, transactional migration and then verifies access using the runtime
 credentials. It rejects differing hosts/databases, the same owner/runtime identity,

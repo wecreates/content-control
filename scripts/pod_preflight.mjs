@@ -78,7 +78,7 @@ async function preflightChecks({env=process.env,connect,readFile=fs.readFile,rea
  const safety=()=>{
   const observedAt=clock(),expiresAt=parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT);
   return [
-   ['PUBLICATION_DISABLED',env.PUBLICATION_ENABLED!=='true'&&env.POD_PUBLICATION_ENABLED!=='true'],
+   ['PUBLICATION_DISABLED',env.PUBLICATION_ENABLED==='false'&&env.POD_PUBLICATION_ENABLED==='false'],
    ['STORAGE_LIFETIME',validDateMs(observedAt)&&validDateMs(expiresAt)&&expiresAt-observedAt>86400000],
   ];
  };
