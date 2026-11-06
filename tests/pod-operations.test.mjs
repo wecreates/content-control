@@ -134,6 +134,24 @@ for(const [name,path] of [
   assert.equal(response.headers.get('cache-control'),'no-store');
  }finally{await new Promise(r=>server.close(r));}
 });
+test('operation errors cannot execute or steer the storage-cutoff classifier',async()=>{
+ let messageReads=0,proxyReads=0;
+ const error=Error('private-error');
+ Object.defineProperty(error,'message',{configurable:true,get(){messageReads++;return 'POD_STORAGE_EXPIRING';}});
+ const errors=[error,new Proxy({}, {get(){proxyReads++;throw Error('message proxy trap executed');}})];
+ const db={listOperationsJobs:async()=>{throw errors.shift();}};
+ const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  for(let i=0;i<2;i++){
+   const response=await fetch(`http://127.0.0.1:${server.address().port}/jobs`,{
+    headers:{Authorization:`Bearer ${key}`}});
+   assert.equal(response.status,409);
+   assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+  }
+  assert.equal(messageReads,0);assert.equal(proxyReads,0);assert.equal(errors.length,0);
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('authenticated mutations report the exact storage cutoff as unavailable',async()=>{
  const unavailable=async()=>{throw Error('POD_STORAGE_EXPIRING');};
  const db={tx:unavailable,requeueRepair:unavailable,acceptReview:unavailable,registerIntake:unavailable,enqueue:unavailable};

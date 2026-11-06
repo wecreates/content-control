@@ -25,3 +25,14 @@ test('already-started responses delegate without attempting a second response',(
  podRequestError(error,{}, {headersSent:true,status(){assert.fail('second response');}},e=>{forwarded=e;});
  assert.equal(forwarded,error);
 });
+test('executable parser error types cannot steer the fixed response',()=>{
+ for(const error of [
+  Object.defineProperty({},'type',{get(){throw Error('type accessor executed');}}),
+  new Proxy({}, {get(){throw Error('type proxy trap executed');}}),
+ ]){
+  let actualStatus,body;
+  const res={headersSent:false,status(n){actualStatus=n;return this;},json(value){body=value;}};
+  assert.doesNotThrow(()=>podRequestError(error,{},res,()=>assert.fail('escaped router')));
+  assert.equal(actualStatus,500);assert.deepEqual(body,{error:'POD_REQUEST_FAILED'});
+ }
+});
