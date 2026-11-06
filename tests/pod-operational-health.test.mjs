@@ -106,6 +106,34 @@ test('metrics reject executable database results without invocation',async()=>{
   assert.equal(reads,0,target);
  }
 });
+for(const failure of ['throw','reject','stall'])test('metrics cannot return success after '+failure+' from client release',async()=>{
+ const f=fixture(),client=await f.db.pool.connect(),controller=new AbortController();let attempts=0;
+ client.release=bad=>{attempts++;assert.equal(bad,false);
+  if(failure==='throw')throw Error('private release failure');
+  if(failure==='reject'){const pending=Promise.reject(Error('private release failure'));pending.catch(()=>{});return pending;}
+  controller.abort();return new Promise(()=>{});
+ };
+ await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now,signal:controller.signal}),
+  failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
+ assert.equal(attempts,1);assert.equal(f.queries.at(-1),'COMMIT');
+});
+test('metrics consume asynchronous rejection when destroying a late client',async()=>{
+ const controller=new AbortController();let complete,consumed=0;
+ const task=metrics({pool:{connect:()=>new Promise(resolve=>{complete=resolve;})}},{signal:controller.signal});
+ controller.abort();await assert.rejects(task,/POD_DIAGNOSTIC_TIMEOUT/);
+ complete({release:bad=>{assert.equal(bad,true);return {then(_resolve,reject){consumed++;reject(Error('private late release'));}};}});
+ await new Promise(r=>setImmediate(r));assert.equal(consumed,1);
+});
+for(const failure of ['reject','stall'])test('manual snapshot closes owned pool after '+failure+' from client release',async()=>{
+ const f=fixture(),client=await f.db.pool.connect(),controller=new AbortController();
+ client.release=()=>{
+  if(failure==='reject'){const pending=Promise.reject(Error('private release failure'));pending.catch(()=>{});return pending;}
+  controller.abort();return new Promise(()=>{});
+ };
+ await assert.rejects(operationsSnapshot({connect:()=>f.db.pool,env:healthy.env,clock:()=>now,signal:controller.signal}),
+  failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
+ assert.equal(f.ended,true);
+});
 test('metrics errors roll back and discard a connection if rollback itself fails',async()=>{
  for(const rollbackFails of [false,true]){
   const f=fixture({fail:true,rollbackFails});await assert.rejects(metrics(f.db),/private database error/);

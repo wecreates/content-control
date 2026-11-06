@@ -68,7 +68,9 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
  // Unlike writes, authenticated diagnostics must remain available while the
  // database approaches expiry. PostgreSQL enforces this transaction read-only.
  const deadline=diagnosticDeadline(signal);
- const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>late.release(true)});
+ const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>{
+  try{Promise.resolve(late.release(true)).catch(()=>{});}catch{}
+ }});
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
  let bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
@@ -99,5 +101,10 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   else if(began)try{await query('ROLLBACK');}catch{bad=true;}
   else if(beginAttempted)bad=true;
   throw error;
- }finally{client.release(bad);}
+ }finally{
+  // Always initiate release, including after cancellation. Its outcome is part
+  // of the diagnostic: never return successful metrics before cleanup settles.
+  const releasing=Promise.resolve(client.release(bad));releasing.catch(()=>{});
+  await diagnosticStep(()=>releasing,deadline);
+ }
 }
