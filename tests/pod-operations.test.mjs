@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {request as httpRequest} from 'node:http';
 import express from 'express';
 import {performance} from 'node:perf_hooks';
 import {operationalAuth} from '../integrations/pod/auth.mjs';
@@ -228,6 +229,32 @@ test('owner authorization and protected work share one request lifecycle signal'
   assert.equal(response.status,200);assert.ok(authorizationSignal instanceof AbortSignal);
   assert.equal(operationSignal,authorizationSignal);assert.equal(operationSignal.aborted,false);
  }finally{await new Promise(r=>server.close(r));}
+});
+test('authenticated body parsing cannot outlive the fixed request deadline',async t=>{
+ const deadline=new AbortController();let authorized,serverRequest,clientRequest,databaseCalls=0;
+ const entered=new Promise(resolve=>{authorized=resolve;});
+ t.mock.method(AbortSignal,'timeout',()=>deadline.signal);
+ const authorize=req=>{serverRequest=req;authorized();return true;};
+ const db=new Proxy({}, {get(){databaseCalls++;throw Error('database must not be touched');}});
+ const app=express();app.use(createPodRouter({authorize,env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const closed=new Promise(resolve=>{
+   clientRequest=httpRequest({host:'127.0.0.1',port:server.address().port,path:'/jobs',method:'POST',headers:{
+    'Content-Type':'application/json','Content-Length':'2'}},response=>{
+     response.resume();resolve({response:response.statusCode});
+    });
+   clientRequest.once('error',error=>resolve({error:error.code||error.message}));
+   clientRequest.once('close',()=>resolve({closed:true}));
+   clientRequest.write('{');
+  });
+  await entered;
+  for(let i=0;i<100&&serverRequest.listenerCount('data')===0;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(serverRequest.listenerCount('data')>0,'body parser did not start');
+  deadline.abort(new DOMException('deadline','TimeoutError'));
+  const outcome=await Promise.race([closed,new Promise((_,reject)=>setTimeout(()=>reject(Error('body parser outlived request deadline')),1000))]);
+  assert.ok(outcome.error||outcome.closed);assert.equal(databaseCalls,0);
+ }finally{clientRequest?.destroy();deadline.abort();await new Promise(r=>server.close(r));}
 });
 test('authenticated review routes forward a native request lifecycle signal',async()=>{
  const calls=[],body=Buffer.from('fixture');
