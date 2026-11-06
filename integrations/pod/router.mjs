@@ -76,7 +76,8 @@ function publicationRequested(env){
 }
 function verifyRequestJSON(_req,_res,body){parseSignedJSON(requestDecoder.decode(body));}
 function storageFailure(res,error,status,code){
- if(error?.message==='POD_STORAGE_EXPIRING')return res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});
+ const message=ownData(error,'message');
+ if(message.valid&&message.value==='POD_STORAGE_EXPIRING')return res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});
  return res.status(status).json({error:code});
 }
 function requestLifecycle(req,res){
