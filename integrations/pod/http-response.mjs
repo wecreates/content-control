@@ -32,12 +32,13 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
  if(count>=MAX_PENDING_REQUESTS)throw Error('BRIDGE_REQUEST_BUSY');
  let onAbort;
  try{
-  let aborted;
+  let aborted,abortObserved=false;
   if(signal){
    let rejectAbort;
    aborted=new Promise((_,reject)=>{rejectAbort=reject;});
-   onAbort=()=>rejectAbort(abortReason(signal));
+   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
    signal.addEventListener('abort',onAbort,{once:true});
+   if(abortObserved)return await aborted;
   }
   // Do not consume admission or start the transport unless cancellation
   // control was established successfully.
@@ -63,7 +64,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
 // Body reads share the request deadline even if a transport does not propagate
 // aborts. Best-effort cancellation must not delay a result or replace its error.
 export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,mediaTypeError,signal,deadline}){
- let reader,onAbort;
+ let reader,onAbort,abortObserved=false;
  try{
   assertBridgeRequest(signal,deadline);
   if(!response.ok)throw Error(statusError);
@@ -75,9 +76,10 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
   reader=response.body.getReader();
   const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>reject(abortReason(signal));
+   onAbort=()=>{abortObserved=true;reject(abortReason(signal));};
    signal.addEventListener('abort',onAbort,{once:true});
   });
+  if(abortObserved)return await aborted;
   const chunks=[];let size=0;
   while(true){
    assertBridgeRequest(signal,deadline);
