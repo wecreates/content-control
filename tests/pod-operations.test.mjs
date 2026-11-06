@@ -218,6 +218,29 @@ test('disconnecting during owner authorization aborts the pending authority chec
   assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
  }finally{release();controller.abort();await new Promise(r=>server.close(r));}
 });
+test('a request disconnected before POD routing cannot start owner authorization',async()=>{
+ let entered,release,aborted,clientRequest,authorizationCalls=0,databaseCalls=0;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  disconnected=new Promise(resolve=>{aborted=resolve;});
+ const app=express();
+ app.use(async(req,_res,next)=>{
+  req.once('aborted',aborted);entered(req);await pending;next();
+ });
+ app.use(createPodRouter({
+  authorize(){authorizationCalls++;return true;},env:{},
+  db:new Proxy({}, {get(){databaseCalls++;throw Error('database must not be touched');}}),
+ }));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  clientRequest=httpRequest({host:'127.0.0.1',port:server.address().port,path:'/jobs'});
+  clientRequest.once('error',()=>{});clientRequest.end();
+  const serverRequest=await started;clientRequest.destroy();
+  await Promise.race([disconnected,new Promise((_,reject)=>setTimeout(()=>reject(Error('server did not observe disconnect')),1000))]);
+  assert.equal(serverRequest.aborted,true);release();
+  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(authorizationCalls,0);assert.equal(databaseCalls,0);
+ }finally{release();clientRequest?.destroy();await new Promise(r=>server.close(r));}
+});
 test('owner authorization and protected work share one request lifecycle signal',async()=>{
  let authorizationSignal,operationSignal;
  const authorize=async(_req,options)=>{authorizationSignal=options?.signal;return true;};
