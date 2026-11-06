@@ -24,13 +24,18 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
  assertBridgeRequest(signal,deadline);
  const count=pendingRequests.get(fetchImpl)||0;
  if(count>=MAX_PENDING_REQUESTS)throw Error('BRIDGE_REQUEST_BUSY');
- pendingRequests.set(fetchImpl,count+1);
  let onAbort;
  try{
-  const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>reject(signal.reason);
+  let aborted;
+  if(signal){
+   let rejectAbort;
+   aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+   onAbort=()=>rejectAbort(signal.reason);
    signal.addEventListener('abort',onAbort,{once:true});
-  });
+  }
+  // Do not consume admission or start the transport unless cancellation
+  // control was established successfully.
+  pendingRequests.set(fetchImpl,count+1);
   const pending=Promise.resolve().then(()=>{
    assertBridgeRequest(signal,deadline);
    return fetchImpl(url,options);
@@ -44,7 +49,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
   // Promise.race also consumes a late rejection after cancellation has won.
   return await (aborted?Promise.race([pending,aborted]):pending);
  }finally{
-  if(onAbort)signal.removeEventListener('abort',onAbort);
+  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
  }
 }
 
@@ -84,7 +89,7 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   assertBridgeRequest(signal,deadline);
   return result;
  }finally{
-  if(onAbort)signal.removeEventListener('abort',onAbort);
+  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
   // A remote/custom stream may never settle cancel(). Invoke it and consume
   // rejection, but release the reader without awaiting transport cleanup.
   if(reader){
