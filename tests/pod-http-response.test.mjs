@@ -217,6 +217,34 @@ test('response abort interrupts an uncooperative read and releases a stalled can
  await assert.rejects(bounded(operation),{name:'AbortError'});
  assert.equal(cancelled,1);assert.equal(body.locked,false);
 });
+for(const phase of ['headers','body']){
+ test(`abort reason access cannot stall an uncooperative ${phase} wait`,async()=>{
+  let abort,entered,cancelled=0;
+  const started=new Promise(resolve=>entered=resolve);
+  const signal={
+   throwIfAborted(){},
+   addEventListener(_type,listener){abort=listener;},
+   removeEventListener(){},
+   get reason(){throw Error('private signal detail');},
+  };
+  let operation;
+  if(phase==='headers'){
+   operation=fetchBridgeResponse(()=>{entered();return new Promise(()=>{});},
+    'https://authority.example',{signal});
+  }else{
+   const body={getReader(){return {
+    read(){entered();return new Promise(()=>{});},
+    cancel(){cancelled++;return new Promise(()=>{});},
+    releaseLock(){},
+   };}};
+   operation=readBridgeJSON({ok:true,headers:new Headers(),body},
+    {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal});
+  }
+  await started;abort();
+  await assert.rejects(bounded(operation),{name:'AbortError'});
+  assert.equal(cancelled,phase==='body'?1:0);
+ });
+}
 for(const caller of ['grant','outbox']){
  test(`${caller} forwards cancellation to a body that ignores fetch's signal`,async()=>{
   const controller=new AbortController();let reading,cancelled=0;
