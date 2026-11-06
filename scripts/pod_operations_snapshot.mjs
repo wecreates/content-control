@@ -9,8 +9,9 @@ import {diagnosticDeadline,diagnosticStep} from '../integrations/pod/diagnostic-
 // blocked. This does not mount a router, start workers, migrate or change flags.
 export async function operationsSnapshot({env=process.env,connect=createPodPool,clock=Date.now,signal}={}){
  // Keep a standalone CLI alive long enough to emit its bounded failure receipt.
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),40000);
+ const controller=new AbortController();
  const deadline=diagnosticDeadline(signal===undefined?controller.signal:AbortSignal.any([signal,controller.signal]));
+ const timer=setTimeout(()=>controller.abort(),40000);
  const step=operation=>diagnosticStep(operation,deadline);
  let pool;
  try{

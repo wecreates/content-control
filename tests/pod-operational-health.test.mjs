@@ -169,6 +169,12 @@ async function snapshotResult(task){
  const stalled=(async()=>{for(let i=0;i<100;i++)await new Promise(r=>setImmediate(r));throw Error('UNBOUNDED_SNAPSHOT');})();
  return Promise.race([task,stalled]);
 }
+test('manual diagnostics validate cancellation before allocating an owned timer',async t=>{
+ let timers=0;const set=globalThis.setTimeout;
+ t.mock.method(globalThis,'setTimeout',(...args)=>{timers++;return set(...args);});
+ await assert.rejects(operationsSnapshot({signal:{},connect:()=>{throw Error('must not connect');}}),TypeError);
+ assert.equal(timers,0);
+});
 test('manual diagnostics start no work after cancellation',async()=>{
  const controller=new AbortController();controller.abort();let calls=0;
  await assert.rejects(snapshotResult(operationsSnapshot({signal:controller.signal,connect:()=>{calls++;return fixture().db.pool;}})),/POD_DIAGNOSTIC_TIMEOUT/);
