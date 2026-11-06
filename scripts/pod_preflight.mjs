@@ -96,7 +96,9 @@ async function preflightChecks({env=process.env,connect,readFile=fs.readFile,rea
  if(env.POD_DATABASE_URL)try{
   const factory=connect|| (async e=>(await import('../pod-db-bridge.js')).createPodPool(e));
   pool=await step(()=>factory(env),{onLate:late=>{try{Promise.resolve(late.end()).catch(()=>{});}catch{}}});
-  client=await step(()=>pool.connect(),{onLate:late=>late.release(true)});
+  client=await step(()=>pool.connect(),{onLate:late=>{
+   try{Promise.resolve(late.release(true)).catch(()=>{});}catch{}
+  }});
   const acquired=client;
   client={query:(...args)=>step(()=>acquired.query(...args)),release:bad=>acquired.release(bad)};
   beginAttempted=true;await client.query('BEGIN READ ONLY');began=true;
@@ -175,7 +177,13 @@ async function preflightChecks({env=process.env,connect,readFile=fs.readFile,rea
    // still uses rollback, whose failure also invalidates and destroys it.
    if(began&&!bad)try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
    else if(beginAttempted)bad=true;
-   client.release(bad);
+   try{
+    // Release must run even after cancellation. Its outcome still belongs to
+    // the preflight: a failed or stalled release cannot verify configuration,
+    // expose backend detail, or prevent owned-pool shutdown below.
+    const releasing=Promise.resolve(client.release(bad));releasing.catch(()=>{});
+    await step(()=>releasing);
+   }catch{readable=false;}
   }
   if(pool)try{
    // Initiate owned-pool shutdown even after expiry, but never wait forever

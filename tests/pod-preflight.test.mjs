@@ -55,6 +55,28 @@ function fixture(overrides={}){
   return output({rows:[]});},release(discard){released=true;releases.push(discard);}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,releases,closed:()=>released&&ended};
 }
+for(const failure of ['throw','reject','stall'])test(`preflight redacts ${failure} from client release and still closes its pool`,async()=>{
+ const f=fixture(),pool=await f.options.connect(),client=await pool.connect();
+ const controller=new AbortController();let attempts=0,ended=0;
+ client.release=()=>{attempts++;if(failure==='throw')throw Error('private release detail');
+  if(failure==='reject')return Promise.reject(Error('private release detail'));
+  controller.abort();return new Promise(()=>{});};
+ pool.end=async()=>{ended++;};
+ const report=await preflight({...f.options,signal:controller.signal,connect:async()=>pool});
+ assert.equal(report.status,'BLOCKED');assert.equal(report.publication_enabled,false);
+ assert.equal(report.checks.find(c=>c.code==='DATABASE_READABLE').status,'BLOCKED');
+ assert.equal(attempts,1);assert.equal(ended,1);
+ assert.equal(JSON.stringify(report).includes('private release'),false);
+});
+for(const failure of ['throw','reject'])test(`late preflight acquisition consumes ${failure} from client release`,async()=>{
+ const controller=new AbortController();let settle,releases=0,ended=0;
+ const pool={connect:()=>new Promise(resolve=>{settle=resolve;controller.abort();}),end:async()=>{ended++;}};
+ const report=await preflight({env,signal:controller.signal,readBridge:()=>bridge,connect:()=>pool});
+ assert.equal(report.status,'BLOCKED');assert.equal(ended,1);
+ settle({release:bad=>{assert.equal(bad,true);releases++;if(failure==='throw')throw Error('private late release');
+  return Promise.reject(Error('private late release'));}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(releases,1);
+});
 for(const remaining of [86400001,86400000,86399999])test('preflight reports storage lifetime after cleanup: '+remaining,async t=>{
  let now=1800000000000;t.mock.method(Date,'now',()=>now);
  const f=fixture(),settings={...env,POD_STORAGE_EXPIRES_AT:new Date(now+86400002).toISOString()};
