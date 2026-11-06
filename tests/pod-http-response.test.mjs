@@ -401,6 +401,18 @@ test('failed abort-listener registration does not consume transport admission',a
  const response=await fetchBridgeResponse(fetchImpl,'https://authority.example',{});
  assert.deepEqual(await response.json(),{});assert.equal(calls,1);
 });
+test('failed abort-listener registration does not start a response-body read',async()=>{
+ let reads=0,cancelled=0;const failure=Error('signal listener failed');
+ const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+ const body={getReader(){return {
+  read(){reads++;return new Promise(()=>{});},
+  cancel(){cancelled++;return new Promise(()=>{});},
+  releaseLock(){},
+ };}};
+ await assert.rejects(bounded(readBridgeJSON({ok:true,headers:new Headers(),body},
+  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal})),error=>error===failure);
+ assert.equal(reads,0);assert.equal(cancelled,1);
+});
 test('outbox shutdown drains a header wait without accepting a late acknowledgement',async()=>{
  const db=dbFixture();let entered,respond,cancelled=0;
  const started=new Promise(resolve=>entered=resolve);
