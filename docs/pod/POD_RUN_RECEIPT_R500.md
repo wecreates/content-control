@@ -39,3 +39,34 @@ boundary, credentials, permissions, network access or approvals were invented.
 The last verified storage cutoff is not extended by this code.
 Both publication flags remain false; Etsy is excluded. Only currently available
 bounded tools were used; no continuously running self-hosted worker is claimed.
+
+## Verified implementation and deployment outcome
+
+Content Control PR #1123 passed exact-head integration run 42241205154
+(job 127971648781) and container run 42241205149 (job 127971648642), then
+merged as `883a753cc365ed2441c0055d24d144829e19b5aa`.
+The complete local Node suite passed 1,187 tests with nine expected skips;
+Python passed all 385 tests in 312.227 seconds. A real standalone stalled-bridge
+probe emitted BLOCKED at 40,006 ms rather than silently exiting or waiting
+indefinitely. Syntax and whitespace checks passed. Local and remote tested trees
+matched `44ef41e2bb5e36cd8a39d7689f468a84e02f8562`.
+
+Render auto-deploy `dep-dbmv0g8u01pc739k2j4g` reached live on the exact
+functional merge. Fresh public browser probes showed health alive=true,
+production_approved=false, publication=false; readiness ok=false,
+captionReady=false; POD service/production/outbox DISABLED, zero production
+cycles, publication enabled/requested=false, adapters_verified=false.
+The extension tool returned Unknown tool, so the available cloud browser was
+used only for public diagnostics. No live database connection was attempted.
+
+Money Factory pin PR #456 preserves the earlier #455 fixture repair and both
+false publication literals. Its complete local configured bridge suite passed
+279 Node tests with one expected PostgreSQL skip and all 81 Python tests.
+Concurrent main commit `da3d42b1fd43918477db69030e206164d59acc9d` changes
+only FREE_MONITOR_EVENTS.json and FREE_MONITOR_STATE.json; it is not overwritten.
+
+Exact-head cross-repository workflow 42242212676, job 127975110151, completed
+successfully through every pinned contract, Python/KDP, Node/PostgreSQL and
+Python bridge stage. MF #456 merged as `4233997e0513c1dca6fb36eed5c4e43cba54f4c8`.
+The automation remains enabled because all 24 live acceptance areas remain OPEN;
+publication remains held for explicit approval and cannot be enabled by this run.
