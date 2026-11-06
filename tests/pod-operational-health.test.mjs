@@ -165,6 +165,31 @@ test('metrics discard a query completing at the absolute deadline without rollba
  await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
  assert.equal(queries.includes('ROLLBACK'),false);assert.deepEqual(releases,[true]);
 });
+async function snapshotResult(task){
+ const stalled=(async()=>{for(let i=0;i<100;i++)await new Promise(r=>setImmediate(r));throw Error('UNBOUNDED_SNAPSHOT');})();
+ return Promise.race([task,stalled]);
+}
+test('manual diagnostics start no work after cancellation',async()=>{
+ const controller=new AbortController();controller.abort();let calls=0;
+ await assert.rejects(snapshotResult(operationsSnapshot({signal:controller.signal,connect:()=>{calls++;return fixture().db.pool;}})),/POD_DIAGNOSTIC_TIMEOUT/);
+ assert.equal(calls,0);
+});
+for(const failure of ['throw','reject'])test('manual diagnostics destroy a late pool and consume '+failure+' from shutdown',async()=>{
+ const controller=new AbortController();let complete,ended=0;
+ const task=operationsSnapshot({signal:controller.signal,connect:()=>new Promise(resolve=>{complete=resolve;controller.abort();})});
+ await assert.rejects(snapshotResult(task),/POD_DIAGNOSTIC_TIMEOUT/);
+ complete({end:()=>{ended++;if(failure==='throw')throw Error('private shutdown');return Promise.reject(Error('private shutdown'));}});
+ await new Promise(r=>setImmediate(r));assert.equal(ended,1);
+});
+test('manual diagnostics cannot return success when owned-pool shutdown stalls',async()=>{
+ const controller=new AbortController(),f=fixture();let ended=0,finish;
+ f.db.pool.end=()=>{ended++;controller.abort();return new Promise(resolve=>{finish=resolve;});};
+ try{
+  await assert.rejects(snapshotResult(operationsSnapshot({signal:controller.signal,connect:()=>f.db.pool,
+   env:healthy.env,clock:()=>now})),/POD_DIAGNOSTIC_TIMEOUT/);
+  assert.equal(ended,1);assert.equal(f.released,false);
+ }finally{finish?.();}
+});
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){
   const f=fixture({fail}),invoke=()=>operationsSnapshot({connect:async()=>f.db.pool,
