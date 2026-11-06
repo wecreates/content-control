@@ -88,4 +88,4 @@ The continuation automation therefore remains enabled.
 
 ## Receipt deployment suppression
 
-Pending verification after this receipt is merged with `[skip render]`.
+Documentation merge `9cd9856e3f90ec78342cc227b7f46e5f1b5104c4` was ignored by Render as intended in event `evt-dbmlt38u01pc7398mr10`. The verified live deploy therefore remained `dep-dbmlp66c6qcc73b8p9qg` from functional merge `da8f85bf47524c0c822b4755014a0fa46af5a669`.
