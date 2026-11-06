@@ -26,10 +26,7 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
  const deadline=started+timeoutMs;
  const expired=()=>{const now=performance.now();return !Number.isFinite(now)||now>=deadline;};
  return new Promise((resolve,reject)=>{
-  let child;
-  try{child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...stageArgs],
-   {cwd:root,env,detached:true,stdio});}catch{reject(Error('PYTHON_STAGE_SPAWN_FAILED'));return;}
-  let bytes=0,failure=null,forceTimer,timer,settled=false;
+  let child,bytes=0,failure=null,forceTimer,timer,settled=false;
   const chunks=[];
   const signalGroup=signalName=>{
    if(!Number.isInteger(child.pid)||child.pid<1)return false;
@@ -41,11 +38,13 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
   };
   const terminate=reason=>{
    if(failure||settled)return;
-   failure=reason;signalGroup('SIGTERM');
+   failure=reason;if(!child)return;
+   signalGroup('SIGTERM');
    forceTimer=setTimeout(()=>{if(!settled)signalGroup('SIGKILL');},killGraceMs);
   };
   const abort=()=>terminate('PYTHON_STAGE_ABORTED');
-  const cleanup=()=>{clearTimeout(timer);clearTimeout(forceTimer);signal?.removeEventListener('abort',abort);};
+  const cleanup=()=>{clearTimeout(timer);clearTimeout(forceTimer);
+   try{signal?.removeEventListener('abort',abort);}catch{}};
   const finish=code=>{
    if(settled)return;
    // Timer dispatch can be delayed by other synchronous work. A zero exit
@@ -62,6 +61,15 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
     if(expired())reject(Error('PYTHON_STAGE_TIMEOUT'));else resolve(output);
    }
   };
+  // Cancellation must be controllable before process launch. A custom signal
+  // can fail or synchronously abort while its listener is being registered.
+  try{signal?.addEventListener('abort',abort,{once:true});}
+  catch{cleanup();reject(Error('PYTHON_STAGE_ABORTED'));return;}
+  try{if(signal?.aborted)abort();}catch{abort();}
+  if(failure){cleanup();reject(Error(failure));return;}
+  try{child=spawn(env.POD_PYTHON||'python3',[path.join(root,'scripts',script),...stageArgs],
+   {cwd:root,env,detached:true,stdio});}
+  catch{cleanup();reject(Error('PYTHON_STAGE_SPAWN_FAILED'));return;}
   child.stdout.on('data',chunk=>{
    bytes+=chunk.length;
    if(bytes>maxOutputBytes)terminate('PYTHON_STAGE_OUTPUT_LIMIT');
@@ -79,7 +87,5 @@ export async function runPythonStage(script,args,{root,signal,env=process.env,
   });
   child.on('close',finish);
   timer=setTimeout(()=>terminate('PYTHON_STAGE_TIMEOUT'),Math.max(1,Math.ceil(deadline-performance.now())));
-  signal?.addEventListener('abort',abort,{once:true});
-  if(signal?.aborted)abort();
  });
 }
