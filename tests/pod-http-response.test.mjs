@@ -57,6 +57,16 @@ test('failed reader release cannot replace a body result or primary failure',asy
  await assert.rejects(readBridgeJSON(response([{done:false,value:Buffer.from('123')}]),
   {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: SIZE$/);
 });
+test('failed abort-listener cleanup cannot replace a bridge result or primary failure',async()=>{
+ const signal={
+  throwIfAborted(){},addEventListener(){},
+  removeEventListener(){throw Error('private signal detail');},
+ };
+ const response=await fetchBridgeResponse(async()=>new Response('{}'),'https://authority.example',{signal});
+ assert.deepEqual(await response.json(),{});
+ await assert.rejects(readBridgeJSON(new Response('123'),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE',signal}),/^Error: SIZE$/);
+});
 test('failed body access during cleanup cannot replace a primary failure',async()=>{
  const response={ok:false,get body(){throw Error('private remote detail');}};
  await assert.rejects(readBridgeJSON(response,
@@ -324,6 +334,16 @@ test('synchronous transport failures release admission and preserve the error',a
  let calls=0;const failure=Error('transport failed'),fetchImpl=()=>{calls++;throw failure;};
  for(let i=0;i<40;i++)await assert.rejects(fetchBridgeResponse(fetchImpl,'https://authority.example',{}),error=>error===failure);
  assert.equal(calls,40);
+});
+test('failed abort-listener registration does not consume transport admission',async()=>{
+ let calls=0;const failure=Error('signal listener failed');
+ const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+ const fetchImpl=async()=>{calls++;return new Response('{}');};
+ for(let i=0;i<40;i++)await assert.rejects(
+  fetchBridgeResponse(fetchImpl,'https://authority.example',{signal}),error=>error===failure);
+ assert.equal(calls,0);
+ const response=await fetchBridgeResponse(fetchImpl,'https://authority.example',{});
+ assert.deepEqual(await response.json(),{});assert.equal(calls,1);
 });
 test('outbox shutdown drains a header wait without accepting a late acknowledgement',async()=>{
  const db=dbFixture();let entered,respond,cancelled=0;
