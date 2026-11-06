@@ -73,6 +73,11 @@ path. Functional merge `dd3706a90ebfcb530f5d2520d17336d3003d936f` built and
 deployed successfully as `dep-dbmifivavr4c73enqq60`; Render event
 `evt-dbmig1e5d6jc73ejvj7g` recorded the successful deploy end.
 
+Documentation-only receipt PR #1082 merged as
+`b15e8eda98a0c401aa04c0afc6b37ac0caa68f98`; Render event
+`evt-dbmij5o473hc73dge8ig` recorded it as `commit_ignored`, preserving the verified
+functional deployment without consuming another build.
+
 Fresh browser probes after deployment returned:
 
 - `/health`: `alive:true`, `production_approved:false`, `publication:false`;
