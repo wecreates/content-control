@@ -245,6 +245,34 @@ for(const phase of ['headers','body']){
   assert.equal(cancelled,phase==='body'?1:0);
  });
 }
+for(const phase of ['headers','body']){
+ test(`synchronous abort registration prevents an uncooperative ${phase} start`,async()=>{
+  let started=0,cancelled=0;
+  const reason=new DOMException('stopped','AbortError');
+  const signal={
+   throwIfAborted(){},
+   addEventListener(_type,listener){listener();},
+   removeEventListener(){},
+   reason,
+  };
+  let operation;
+  if(phase==='headers'){
+   operation=fetchBridgeResponse(()=>{started++;return new Promise(()=>{});},
+    'https://authority.example',{signal});
+  }else{
+   const body={getReader(){return {
+    read(){started++;return new Promise(()=>{});},
+    cancel(){cancelled++;return new Promise(()=>{});},
+    releaseLock(){},
+   };}};
+   operation=readBridgeJSON({ok:true,headers:new Headers(),body},
+    {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal});
+  }
+  await assert.rejects(bounded(operation),error=>error===reason);
+  assert.equal(started,0);
+  assert.equal(cancelled,phase==='body'?1:0);
+ });
+}
 for(const caller of ['grant','outbox']){
  test(`${caller} forwards cancellation to a body that ignores fetch's signal`,async()=>{
   const controller=new AbortController();let reading,cancelled=0;
