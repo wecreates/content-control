@@ -3,6 +3,13 @@
 This is deployment tooling, not evidence of live production or marketplace publication.
 Existing Render service: content-control-render-worker. Do not create a duplicate service.
 
+Manual `scripts/pod_operations_snapshot.mjs` diagnostics share one 40-second
+deadline across pool creation, read-only metrics and owned-pool shutdown. A stalled
+dependency must produce a redacted BLOCKED CLI receipt, not an indefinite wait or
+a successful snapshot before cleanup completes. A late pool is closed best effort;
+cancellation does not prove remote I/O stops. This command does not start workers,
+migrate, enable publication or verify the live acceptance checklist.
+
 ## Runtime dependencies
 
 `Dockerfile` installs Node 22, Python 3.12, the pinned print libraries, English
