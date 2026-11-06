@@ -11,9 +11,11 @@ import {reconcilePublication} from './reconcile.mjs';
 import {podRequestError} from './request-errors.mjs';
 import {productionActivity} from './capacity.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
+import {databaseWait} from './database-wait.mjs';
 const requestDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
 const READ_REQUEST_TIMEOUT_MS=30000;
 const STATUS_CODE=/^[A-Z][A-Z0-9_]{0,63}$/;
+const requestLifecycles=new WeakMap();
 function ownData(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -78,22 +80,31 @@ function storageFailure(res,error,status,code){
  return res.status(status).json({error:code});
 }
 function requestLifecycle(req,res){
+ const existing=requestLifecycles.get(req);
+ if(existing)return existing;
  const controller=new AbortController();
  const deadline=performance.now()+READ_REQUEST_TIMEOUT_MS;
  const timeout=AbortSignal.timeout(READ_REQUEST_TIMEOUT_MS);
  const signal=AbortSignal.any([controller.signal,timeout]);
  const abort=()=>{if(!controller.signal.aborted)controller.abort(Error('POD_REQUEST_CANCELLED'));};
+ let disposed=false;
  req.once('aborted',abort);res.once('close',abort);
- return {signal,checkpoint(){
+ const lifecycle={signal,checkpoint(){
   signal.throwIfAborted();
   const now=performance.now();
   if(Number.isFinite(now)&&now<deadline)return;
   const error=Error('POD_REQUEST_TIMEOUT');
   if(!controller.signal.aborted)controller.abort(error);
   throw error;
- },dispose(){req.off('aborted',abort);res.off('close',abort);}};
+ },dispose(){if(disposed)return;disposed=true;req.off('aborted',abort);res.off('close',abort);requestLifecycles.delete(req);}};
+ requestLifecycles.set(req,lifecycle);
+ return lifecycle;
 }
-async function requestRead(lifecycle,operation){const result=await operation;lifecycle.checkpoint();return result;}
+async function requestRead(lifecycle,operation){
+ lifecycle.checkpoint();
+ const result=await databaseWait(lifecycle.signal).step(operation);
+ lifecycle.checkpoint();return result;
+}
 export function createPodRouter({db,authorize,env=process.env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
@@ -104,53 +115,62 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   try{res.json({...publicStatus(status),...fixed});}
   catch{res.status(503).json({status:'BLOCKED_STATUS_UNAVAILABLE',...fixed});}
  });
- router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
+ router.use(async(req,res,next)=>{
+  const lifecycle=requestLifecycle(req,res);
+  try{
+   if(typeof authorize!=='function'||await requestRead(lifecycle,()=>authorize(req,{signal:lifecycle.signal}))!==true){
+    lifecycle.dispose();return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});
+   }
+   next();
+  }catch{lifecycle.dispose();res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}
+ });
  router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf','text/plain','application/zip'],limit:'16mb'}),async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await requestRead(lifecycle,store.put(req.body,req.get('content-type').split(';')[0],{signal:lifecycle.signal}))});}
+  try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await requestRead(lifecycle,()=>store.put(req.body,req.get('content-type').split(';')[0],{signal:lifecycle.signal}))});}
   catch(error){storageFailure(res,error,409,'ARTIFACT_STORAGE_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.get('/artifacts/:sha',(_req,res)=>res.status(404).json({error:'ARTIFACT_UNAVAILABLE'}));
  router.get('/jobs/:id/artifacts/:sha',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{const item=await requestRead(lifecycle,db.reviewArtifact(req.params.id,req.params.sha,{signal:lifecycle.signal}));res.set('X-Content-Type-Options','nosniff');res.type(item.media_type).send(item.body);}
+  try{const item=await requestRead(lifecycle,()=>db.reviewArtifact(req.params.id,req.params.sha,{signal:lifecycle.signal}));res.set('X-Content-Type-Options','nosniff');res.type(item.media_type).send(item.body);}
   catch(error){storageFailure(res,error,404,'ARTIFACT_UNAVAILABLE');}finally{lifecycle.dispose();}
  });
  router.get('/jobs/:id/package',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{res.json(await requestRead(lifecycle,db.reviewPackage(req.params.id,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,404,'PACKAGE_UNAVAILABLE');}finally{lifecycle.dispose();}
+  try{res.json(await requestRead(lifecycle,()=>db.reviewPackage(req.params.id,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,404,'PACKAGE_UNAVAILABLE');}finally{lifecycle.dispose();}
  });
  router.get('/jobs',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{res.json({jobs:await requestRead(lifecycle,db.listOperationsJobs(req.query.state||'review_required',{signal:lifecycle.signal})),limit:50,publication_enabled:false});}
+  try{res.json({jobs:await requestRead(lifecycle,()=>db.listOperationsJobs(req.query.state||'review_required',{signal:lifecycle.signal})),limit:50,publication_enabled:false});}
   catch(error){storageFailure(res,error,409,'JOB_LIST_UNAVAILABLE');}finally{lifecycle.dispose();}
  });
  router.use(express.json({limit:'256kb',strict:true,verify:verifyRequestJSON}));
  router.post('/jobs/:id/retry',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{await requestRead(lifecycle,db.requeueRepair(req.params.id,req.body,{signal:lifecycle.signal}));
+  try{await requestRead(lifecycle,()=>db.requeueRepair(req.params.id,req.body,{signal:lifecycle.signal}));
    res.json({status:'QUEUED',publication_enabled:false});}
   catch(error){storageFailure(res,error,409,'RETRY_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.post('/jobs/:id/review',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{res.json(await requestRead(lifecycle,db.acceptReview(req.params.id,req.body,{signal:lifecycle.signal})));}
+  try{res.json(await requestRead(lifecycle,()=>db.acceptReview(req.params.id,req.body,{signal:lifecycle.signal})));}
   catch(error){storageFailure(res,error,409,'REVIEW_BLOCKED');}finally{lifecycle.dispose();}
  });
- router.post('/market',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,recordMarketObservation(db,req.body,env.POD_MARKET_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'MARKET_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
- router.post('/listing-observations',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,reconcilePublication(db,req.body,env.POD_PROVIDER_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'LISTING_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
- router.get('/metrics',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,metrics(db,{env,signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
- router.get('/capacity',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,productionActivity(db,{signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_CAPACITY_UNAVAILABLE'});}finally{lifecycle.dispose();}});
- router.post('/financial-events',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'FINANCIAL_EVENT_BLOCKED');}finally{lifecycle.dispose();}});
- router.post('/intake',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)},{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'INTAKE_BLOCKED');}finally{lifecycle.dispose();}});
+ router.post('/market',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,()=>recordMarketObservation(db,req.body,env.POD_MARKET_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'MARKET_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
+ router.post('/listing-observations',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,()=>reconcilePublication(db,req.body,env.POD_PROVIDER_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'LISTING_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
+ router.get('/metrics',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,()=>metrics(db,{env,signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
+ router.get('/capacity',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,()=>productionActivity(db,{signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_CAPACITY_UNAVAILABLE'});}finally{lifecycle.dispose();}});
+ router.post('/financial-events',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,()=>recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'FINANCIAL_EVENT_BLOCKED');}finally{lifecycle.dispose();}});
+ router.post('/intake',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,()=>db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)},{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'INTAKE_BLOCKED');}finally{lifecycle.dispose();}});
  router.post('/jobs',async(req,res)=>{
   const lifecycle=requestLifecycle(req,res);
-  try{const r=await requestRead(lifecycle,db.enqueue(req.body,{signal:lifecycle.signal}));res.status(202).json(r);}
+  try{const r=await requestRead(lifecycle,()=>db.enqueue(req.body,{signal:lifecycle.signal}));res.status(202).json(r);}
   catch(error){storageFailure(res,error,409,'POD_INTAKE_BLOCKED');}finally{lifecycle.dispose();}
  });
- router.get('/ready',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json({jobs:await requestRead(lifecycle,db.listReady({signal:lifecycle.signal}))});}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
+ router.get('/ready',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json({jobs:await requestRead(lifecycle,()=>db.listReady({signal:lifecycle.signal}))});}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
+ router.use((req,_res,next)=>{requestLifecycles.get(req)?.dispose();next();});
  // Keep parser failures inside this router, including in development mode.
  // Express's default handler may expose parser messages and stack traces.
- router.use(podRequestError);
+ router.use((error,req,res,next)=>{requestLifecycles.get(req)?.dispose();podRequestError(error,req,res,next);});
  return router;
 }
