@@ -12,6 +12,7 @@ import {podRequestError} from './request-errors.mjs';
 import {productionActivity} from './capacity.mjs';
 import {parseSignedJSON} from './signed-json.mjs';
 import {databaseWait} from './database-wait.mjs';
+import {storageLifetimeStatus} from './storage-expiry.mjs';
 const requestDecoder=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true});
 const READ_REQUEST_TIMEOUT_MS=30000;
 const STATUS_CODE=/^[A-Z][A-Z0-9_]{0,63}$/;
@@ -128,7 +129,8 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  router.get('/dashboard',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.html',import.meta.url))));
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
  router.get('/status',(_req,res)=>{
-  const publication_requested=publicationRequested(env),fixed={publication_enabled:false,publication_requested,adapters_verified:false};
+  const publication_requested=publicationRequested(env),fixed={publication_enabled:false,publication_requested,adapters_verified:false,
+   storage_lifetime:storageLifetimeStatus(ownData(env,'POD_STORAGE_EXPIRES_AT').value)};
   try{res.json({...publicStatus(status),...fixed});}
   catch{res.status(503).json({status:'BLOCKED_STATUS_UNAVAILABLE',...fixed});}
  });

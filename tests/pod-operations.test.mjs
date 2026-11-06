@@ -484,7 +484,8 @@ test('public POD status exposes only inert bounded health fields',async()=>{
     last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
     last_error_code:'QA_FAILED',last_result:'QA_FAILED'},
    outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null},publication_enabled:false,
-   publication_requested:false,adapters_verified:false});
+   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+    scope:'configured_cutoff_only',acceptance_verified:false}});
   assert.doesNotMatch(JSON.stringify(observed),/private|postgresql/i);
  }finally{await new Promise(r=>server.close(r));}
 });
@@ -496,6 +497,7 @@ test('public POD status rejects executable health fields without invoking them',
  try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
   assert.equal(response.status,503);assert.equal(reads,0);
   assert.deepEqual(observed,{status:'BLOCKED_STATUS_UNAVAILABLE',publication_enabled:false,
-   publication_requested:false,adapters_verified:false});
+   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+    scope:'configured_cutoff_only',acceptance_verified:false}});
  }finally{await new Promise(r=>server.close(r));}
 });
