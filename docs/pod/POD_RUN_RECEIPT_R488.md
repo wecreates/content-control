@@ -77,6 +77,11 @@ successfully as `dep-dbmjrl5ckfvc738mnqu0`; Render build event
 `evt-dbmjrsvbf4ts7383kkbg` and deploy-end event `evt-dbmjs4vrkulc73eh8kp0`
 recorded success.
 
+Documentation-only receipt PR #1088 merged as
+`b4f6d543b1d52ec6fc0f5797149ecbc281fbb2c4`; Render event
+`evt-dbmju70n74is73b5av9g` recorded it as `commit_ignored`, preserving the verified
+functional deployment without consuming another build.
+
 Fresh browser probes after deployment returned:
 
 - `/health`: `alive:true`, `production_approved:false`, `publication:false`;
