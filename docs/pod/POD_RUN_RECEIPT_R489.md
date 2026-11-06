@@ -88,3 +88,7 @@ This receipt describes one bounded scheduled execution with the tools and permis
 All 24 acceptance areas in `POD_COMPLETION_CHECKLIST.md` remain **OPEN**. In particular, live dedicated database/durable recovery, current external grants and account records, authorized marketplace intelligence, regional-rights evidence, official-template provenance, independent human/platform QA and remediation, authorized platform-account adapters, live economics/reconciliation, measured capacity, end-to-end live acceptance, and controlled launch readiness still require real evidence. Publication remains held for explicit owner approval, and this automation cannot enable it.
 
 The continuation automation therefore remains enabled.
+
+## Receipt deployment suppression
+
+Documentation merge `920458c668ef3e7df9dc968534586412318fed78` was ignored by Render as intended in event `evt-dbml8j0n74is73b6n1e0`. The verified live deploy therefore remained `dep-dbml5avavr4c738skq50` from functional merge `3dc03c2f5c0112f8aea710d5190788c94d18e08c`.
