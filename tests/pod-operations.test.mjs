@@ -294,3 +294,39 @@ test('requested publication cannot masquerade as enabled without an adapter',asy
   assert.equal(state.production_status,'BLOCKED_PRODUCTION_CONFIGURATION');
  }finally{await new Promise(r=>server.close(r));}
 });
+test('public POD status exposes only inert bounded health fields',async()=>{
+ let privateReads=0;
+ const state={status:'DISABLED',database_health:{idle_connection_failures:2,
+  last_idle_connection_failure_at:'2026-11-06T08:00:00.000Z',last_error_code:'POD_DATABASE_IDLE_CONNECTION_FAILED',
+  private_database_url:'postgresql://private'},production_status:'STOPPED',
+  production_health:{status:'STOPPED',cycles:3,consecutive_failures:1,
+   last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
+   last_error_code:'QA_FAILED',last_result:'QA_FAILED',private_worker_key:'private'},
+  outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null,private_outbox_key:'private'},
+  private_top_level:'private'};
+ Object.defineProperty(state,'private_accessor',{enumerable:true,get(){privateReads++;return 'private';}});
+ const app=express();app.use(createPodRouter({env:{},status:()=>state}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
+  assert.equal(response.status,200);assert.equal(privateReads,0);
+  assert.deepEqual(observed,{status:'DISABLED',database_health:{idle_connection_failures:2,
+   last_idle_connection_failure_at:'2026-11-06T08:00:00.000Z',last_error_code:'POD_DATABASE_IDLE_CONNECTION_FAILED'},
+   production_status:'STOPPED',production_health:{status:'STOPPED',cycles:3,consecutive_failures:1,
+    last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
+    last_error_code:'QA_FAILED',last_result:'QA_FAILED'},
+   outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null},publication_enabled:false,
+   publication_requested:false,adapters_verified:false});
+  assert.doesNotMatch(JSON.stringify(observed),/private|postgresql/i);
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('public POD status rejects executable health fields without invoking them',async()=>{
+ let reads=0;const state={database_health:null,production_status:'DISABLED',production_health:null,outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null}};
+ Object.defineProperty(state,'status',{enumerable:true,get(){reads++;return 'DISABLED';}});
+ const app=express();app.use(createPodRouter({env:{},status:()=>state}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
+  assert.equal(response.status,503);assert.equal(reads,0);
+  assert.deepEqual(observed,{status:'BLOCKED_STATUS_UNAVAILABLE',publication_enabled:false,
+   publication_requested:false,adapters_verified:false});
+ }finally{await new Promise(r=>server.close(r));}
+});
