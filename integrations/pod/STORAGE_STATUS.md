@@ -15,3 +15,11 @@ This permits independent deployed cutoff readback without reading secrets or
 activating POD. A configured date is not provider retention, free-quota capacity,
 backup/restore evidence, production permission or closure of any acceptance area.
 The actual runtime storage guards remain authoritative for work admission.
+
+The read-only operations dashboard includes an explicit Check storage cutoff
+button. It works without an operations key and sends neither authorization nor
+cookies. It accepts only the scoped, unverified status contract, renders known
+labels/canonical cutoff through text nodes, and bounds reads to 8 KiB and the
+existing 30-second deadline. Malformed/error/oversized responses show unavailable,
+not readiness. Session clearing, key changes and page exit cancel pending checks.
+Checking clears protected panels; no credentials are persisted or mutations sent.
