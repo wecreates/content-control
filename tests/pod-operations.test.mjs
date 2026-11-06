@@ -195,6 +195,40 @@ test('job inspection route authenticates and forwards only its filter',async()=>
   assert.match(result.headers.get('content-security-policy'),/img-src blob:/);
  }finally{await new Promise(r=>server.close(r));}
 });
+test('disconnecting during owner authorization aborts the pending authority check',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const authorize=async(_req,options)=>{
+  observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return true;
+ };
+ const app=express();app.use(createPodRouter({authorize,env:{},db:{listOperationsJobs:async()=>[]}}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('authorization cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
+test('owner authorization and protected work share one request lifecycle signal',async()=>{
+ let authorizationSignal,operationSignal;
+ const authorize=async(_req,options)=>{authorizationSignal=options?.signal;return true;};
+ const db={listOperationsJobs:async(_state,options)=>{operationSignal=options?.signal;return [];}};
+ const app=express();app.use(createPodRouter({authorize,env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/jobs`);
+  assert.equal(response.status,200);assert.ok(authorizationSignal instanceof AbortSignal);
+  assert.equal(operationSignal,authorizationSignal);assert.equal(operationSignal.aborted,false);
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('authenticated review routes forward a native request lifecycle signal',async()=>{
  const calls=[],body=Buffer.from('fixture');
  const db={
