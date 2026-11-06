@@ -237,6 +237,32 @@ test('disconnecting an authenticated read aborts its pending database operation'
   assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
  }finally{controller.abort();await new Promise(r=>server.close(r));}
 });
+for(const [name,path,method] of [
+ ['repair retry','/jobs/fixture-job/retry','requeueRepair'],
+ ['review acceptance','/jobs/fixture-job/review','acceptReview'],
+])test('disconnecting authenticated '+name+' aborts its pending database mutation',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const db={[method]:async(_id,_body,options)=>{
+  observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return {status:'fixture'};
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}`+path,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:'{}',signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('mutation cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
 test('authenticated reads enforce one fixed server deadline while the client stays connected',async t=>{
  const deadline=new AbortController();let timeoutMs,entered,observed;
  const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{observed=resolve;});

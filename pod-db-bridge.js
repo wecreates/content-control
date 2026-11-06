@@ -597,7 +597,7 @@ export class PodDB {
    return {id};
   });
  }
- async requeueRepair(jobId,upstream){
+ async requeueRepair(jobId,upstream,{signal}={}){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   // A current grant may authorize only its exact repair target. Reject wrong
   // or lossy route identities before acquiring or locking database rows.
@@ -619,7 +619,7 @@ export class PodDB {
    const queued=await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,lease_until=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1 RETURNING id,state,reason_code",[jobId,upstream]);
    assertExactMutation(queued,{id:jobId,state:'raw',reason_code:null});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
-  });
+  },{signal});
  }
  async tx(fn,{signal}={}){
   const checkpoint=()=>signal?.throwIfAborted();
@@ -791,7 +791,7 @@ export class PodDB {
    {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,publication_enabled:false}]),
    {id:eventId,job_id:job.id,kind:eventKind});
  });}
- async acceptReview(jobId,qaEnvelope){
+ async acceptReview(jobId,qaEnvelope,{signal}={}){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   // Authenticate first, then reject malformed route identities before a
   // connection or query parameter. Review artifacts already use this bound.
@@ -821,7 +821,7 @@ export class PodDB {
     {id:eventId,job_id:jobId,kind:eventKind});
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {status:'QA_PASSED',publication_enabled:false};
-  });
+  },{signal});
  }
  async reviewPackage(jobId,{signal}={}){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
