@@ -106,8 +106,9 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  });
  router.use(async(req,res,next)=>{try{if(typeof authorize!=='function'||await authorize(req)!==true)return res.status(401).json({error:'OWNER_AUTH_REQUIRED'});next();}catch{res.status(401).json({error:'OWNER_AUTH_REQUIRED'});}});
  router.post('/artifacts',express.raw({type:['image/png','application/pdf','application/json','font/ttf','text/plain','application/zip'],limit:'16mb'}),async(req,res)=>{
-  try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await store.put(req.body,req.get('content-type').split(';')[0])});}
-  catch(error){storageFailure(res,error,409,'ARTIFACT_STORAGE_BLOCKED');}
+  const lifecycle=requestLifecycle(req,res);
+  try{const store=new ArtifactStore(db,{budgetBytes:artifactBudgetBytes(env)});res.status(201).json({sha256:await requestRead(lifecycle,store.put(req.body,req.get('content-type').split(';')[0],{signal:lifecycle.signal}))});}
+  catch(error){storageFailure(res,error,409,'ARTIFACT_STORAGE_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.get('/artifacts/:sha',(_req,res)=>res.status(404).json({error:'ARTIFACT_UNAVAILABLE'}));
  router.get('/jobs/:id/artifacts/:sha',async(req,res)=>{
@@ -136,15 +137,16 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
   try{res.json(await requestRead(lifecycle,db.acceptReview(req.params.id,req.body,{signal:lifecycle.signal})));}
   catch(error){storageFailure(res,error,409,'REVIEW_BLOCKED');}finally{lifecycle.dispose();}
  });
- router.post('/market',async(req,res)=>{try{res.status(202).json(await recordMarketObservation(db,req.body,env.POD_MARKET_KEY));}catch(error){storageFailure(res,error,409,'MARKET_OBSERVATION_BLOCKED');}});
- router.post('/listing-observations',async(req,res)=>{try{res.json(await reconcilePublication(db,req.body,env.POD_PROVIDER_KEY));}catch(error){storageFailure(res,error,409,'LISTING_OBSERVATION_BLOCKED');}});
+ router.post('/market',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,recordMarketObservation(db,req.body,env.POD_MARKET_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'MARKET_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
+ router.post('/listing-observations',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,reconcilePublication(db,req.body,env.POD_PROVIDER_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'LISTING_OBSERVATION_BLOCKED');}finally{lifecycle.dispose();}});
  router.get('/metrics',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,metrics(db,{env,signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
  router.get('/capacity',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json(await requestRead(lifecycle,productionActivity(db,{signal:lifecycle.signal})));}catch{res.status(503).json({error:'POD_CAPACITY_UNAVAILABLE'});}finally{lifecycle.dispose();}});
- router.post('/financial-events',async(req,res)=>{try{res.status(202).json(await recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY));}catch(error){storageFailure(res,error,409,'FINANCIAL_EVENT_BLOCKED');}});
- router.post('/intake',async(req,res)=>{try{res.status(202).json(await db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)}));}catch(error){storageFailure(res,error,409,'INTAKE_BLOCKED');}});
+ router.post('/financial-events',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,recordFinancialEvent(db,req.body,env.POD_FINANCE_KEY,{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'FINANCIAL_EVENT_BLOCKED');}finally{lifecycle.dispose();}});
+ router.post('/intake',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.status(202).json(await requestRead(lifecycle,db.registerIntake({...req.body,intakeKey:env.POD_INTAKE_KEY,dailyLimit:Number(env.POD_DAILY_CONCEPT_LIMIT||100)},{signal:lifecycle.signal})));}catch(error){storageFailure(res,error,409,'INTAKE_BLOCKED');}finally{lifecycle.dispose();}});
  router.post('/jobs',async(req,res)=>{
-  try{const r=await db.enqueue(req.body);res.status(202).json(r);}
-  catch(error){storageFailure(res,error,409,'POD_INTAKE_BLOCKED');}
+  const lifecycle=requestLifecycle(req,res);
+  try{const r=await requestRead(lifecycle,db.enqueue(req.body,{signal:lifecycle.signal}));res.status(202).json(r);}
+  catch(error){storageFailure(res,error,409,'POD_INTAKE_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.get('/ready',async(req,res)=>{const lifecycle=requestLifecycle(req,res);try{res.json({jobs:await requestRead(lifecycle,db.listReady({signal:lifecycle.signal}))});}catch{res.status(503).json({error:'POD_STORAGE_UNAVAILABLE'});}finally{lifecycle.dispose();}});
  // Keep parser failures inside this router, including in development mode.

@@ -85,7 +85,7 @@ function exactListingObservation(value){
 }
 
 // An authenticated provider observer must confirm the listing; submit success is insufficient.
-export async function reconcilePublication(db,envelope,key){
+export async function reconcilePublication(db,envelope,key,{signal}={}){
  const e=verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
  if(!exactListingObservation(e)||e.status!=='LIVE'||e.provider_verified!==true||!PLATFORMS.includes(e.platform)||
   !['job_id','account_id','platform','provider_id','provider_event_id'].every(k=>validOpaqueText(e[k]))||
@@ -138,6 +138,6 @@ export async function reconcilePublication(db,envelope,key){
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:listing-observation');
   return {published:true};
- });
+ },{signal});
 }
 

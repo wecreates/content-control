@@ -263,6 +263,47 @@ for(const [name,path,method] of [
   assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
  }finally{release();controller.abort();await new Promise(r=>server.close(r));}
 });
+const mutationEnvelope={
+ market:()=>sign({audience:'content-control:pod:market',platform:'redbubble',source_url:'https://example.org/fixture',
+  country:'US',category:'shirt',observed_at:'2026-01-01T00:00:00Z',collection_authorized:true,source_sha256:'a'.repeat(64)}),
+ listing:()=>sign({audience:'content-control:pod:listing-observation',account_id:'account',evidence_sha256:'a'.repeat(64),
+  job_id:'job',package_sha256:'b'.repeat(64),platform:'redbubble',provider_event_id:'event',provider_id:'listing',provider_verified:true,status:'LIVE'}),
+ financial:()=>sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'authority',provider_event_id:'event',
+  provider:'redbubble',job_id:'job',amount_minor:1,kind:'royalty',currency:'USD',occurred_at:'2026-01-01T00:00:00Z',evidence_sha256:'a'.repeat(64)}),
+};
+for(const fixture of [
+ {name:'artifact upload',path:'/artifacts',type:'image/png',body:Buffer.from('fixture'),operation:'tx'},
+ {name:'market observation',path:'/market',type:'application/json',body:mutationEnvelope.market(),operation:'tx'},
+ {name:'listing observation',path:'/listing-observations',type:'application/json',body:mutationEnvelope.listing(),operation:'tx'},
+ {name:'financial event',path:'/financial-events',type:'application/json',body:mutationEnvelope.financial(),operation:'tx'},
+ {name:'concept intake',path:'/intake',type:'application/json',body:{},operation:'registerIntake'},
+ {name:'job enqueue',path:'/jobs',type:'application/json',body:{},operation:'enqueue'},
+])test('disconnecting authenticated '+fixture.name+' aborts its pending database mutation',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const operation=async(...args)=>{
+  const options=args.at(-1);observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return fixture.operation==='tx'?[]:{id:'fixture'};
+ };
+ const db={active(){},[fixture.operation]:operation};
+ const env={POD_MARKET_KEY:key,POD_PROVIDER_KEY:key,POD_FINANCE_KEY:key};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env,db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}`+fixture.path,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':fixture.type},
+   body:fixture.type==='application/json'?JSON.stringify(fixture.body):fixture.body,signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('mutation cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
 test('authenticated reads enforce one fixed server deadline while the client stays connected',async t=>{
  const deadline=new AbortController();let timeoutMs,entered,observed;
  const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{observed=resolve;});
