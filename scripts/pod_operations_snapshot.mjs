@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url';
 import {createPodPool} from '../pod-db-bridge.js';
 import {metrics} from '../integrations/pod/metrics.mjs';
 import {parseStorageExpiry} from '../integrations/pod/storage-expiry.mjs';
+import {operationalHealth} from '../integrations/pod/operational-health.mjs';
 import {diagnosticDeadline,diagnosticStep} from '../integrations/pod/diagnostic-deadline.mjs';
 
 // Manual read-only diagnostics remain usable when service startup/preflight is
@@ -13,12 +14,12 @@ export async function operationsSnapshot({env=process.env,connect=createPodPool,
  const deadline=diagnosticDeadline(signal===undefined?controller.signal:AbortSignal.any([signal,controller.signal]));
  const timer=setTimeout(()=>controller.abort(),40000);
  const step=operation=>diagnosticStep(operation,deadline);
- let pool;
+ let pool,report;
  try{
   pool=await diagnosticStep(()=>connect(env),deadline,{onLate:late=>{
    try{Promise.resolve(late.end()).catch(()=>{});}catch{}
   }});
-  return await step(()=>metrics({pool,expiresAt:parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT)},
+  report=await step(()=>metrics({pool,expiresAt:parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT)},
    {env,clock,signal:deadline.signal}));
  }finally{
   try{
@@ -29,6 +30,11 @@ export async function operationsSnapshot({env=process.env,connect=createPodPool,
    }
   }finally{clearTimeout(timer);}
  }
+ // Owned-pool shutdown is another asynchronous boundary after metrics release.
+ return {...report,health:operationalHealth({expiresAt:parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT),
+  artifactBytes:report.artifact_bytes,expiredLeases:report.health.expired_leases,
+  pendingEvents:report.health.outbox.pending,oldestEventSeconds:report.health.outbox.oldest_pending_seconds,
+  now:clock(),env})};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
