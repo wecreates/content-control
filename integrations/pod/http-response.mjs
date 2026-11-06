@@ -7,6 +7,12 @@ const MAX_PENDING_REQUESTS=32;
 function cancelBody(response){
  try{if(response?.body&&!response.body.locked)Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
 }
+function abortReason(signal){
+ try{
+  const reason=signal.reason;
+  return reason===undefined?new DOMException('Bridge request aborted','AbortError'):reason;
+ }catch{return new DOMException('Bridge request aborted','AbortError');}
+}
 
 // Timers interrupt stalled I/O; elapsed-time checks reject late completion even
 // when the event loop has not dispatched a timeout callback yet.
@@ -30,7 +36,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
   if(signal){
    let rejectAbort;
    aborted=new Promise((_,reject)=>{rejectAbort=reject;});
-   onAbort=()=>rejectAbort(signal.reason);
+   onAbort=()=>rejectAbort(abortReason(signal));
    signal.addEventListener('abort',onAbort,{once:true});
   }
   // Do not consume admission or start the transport unless cancellation
@@ -69,7 +75,7 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
   reader=response.body.getReader();
   const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>reject(signal.reason);
+   onAbort=()=>reject(abortReason(signal));
    signal.addEventListener('abort',onAbort,{once:true});
   });
   const chunks=[];let size=0;
