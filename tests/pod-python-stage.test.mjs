@@ -76,6 +76,35 @@ test('deadline and pre-aborted signal cannot succeed',async()=>{
   await assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal:controller.signal}),/PYTHON_STAGE_ABORTED/);
  });
 });
+test('failed stage abort-listener registration cannot start a process',async()=>{
+ await fixture("require('node:fs').writeFileSync('started','yes');",async options=>{
+  const signal={aborted:false,
+   addEventListener(){throw Error('private listener failure');},
+   removeEventListener(){}};
+  await assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal}),/^Error: PYTHON_STAGE_ABORTED$/);
+  await wait(100);
+  await assert.rejects(fs.stat(path.join(options.root,'started')),{code:'ENOENT'});
+ });
+});
+test('synchronous stage abort registration prevents process work',async()=>{
+ await fixture("require('node:fs').writeFileSync('started','yes');",async options=>{
+  const signal={aborted:false,
+   addEventListener(_type,listener){listener();},
+   removeEventListener(){}};
+  await assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal}),/^Error: PYTHON_STAGE_ABORTED$/);
+  await wait(100);
+  await assert.rejects(fs.stat(path.join(options.root,'started')),{code:'ENOENT'});
+ });
+});
+test('failed stage listener cleanup cannot strand settlement',async()=>{
+ const signal={aborted:false,
+  addEventListener(){},
+  removeEventListener(){throw Error('private cleanup failure');}};
+ await fixture("process.stdout.write('complete');",async options=>
+  assert.equal(await runPythonStage('fixture.cjs',[],{...options,signal}),'complete'));
+ await fixture('process.exit(2);',async options=>
+  assert.rejects(runPythonStage('fixture.cjs',[],{...options,signal}),/^Error: PYTHON_STAGE_FAILED$/));
+});
 for(const [name,elapsed,expired] of [['before',59999,false],['at',60000,true],['after',60001,true]]){
  test(`stage completion ${name} elapsed deadline does not depend on timer dispatch`,async t=>{
   await fixture("process.stdout.write('completed stage');",async options=>{
