@@ -72,7 +72,7 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   try{Promise.resolve(late.release(true)).catch(()=>{});}catch{}
  }});
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
- let bad=false,began=false,beginAttempted=false,commitPending=false;
+ let bad=false,began=false,beginAttempted=false,commitPending=false,report,readHealth;
  try{
   beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
   await query("SET LOCAL lock_timeout='2s'");await query("SET LOCAL statement_timeout='5s'");
@@ -88,11 +88,11 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   if(!validStateRows(states)||!canonicalUnsigned(failures[0].count)||!canonicalUnsigned(storage[0].bytes)||
    !validFinancialRows(financials)||!canonicalUnsigned(leases[0].count)||!canonicalUnsigned(events[0].count)||
    !canonicalUnsigned(events[0].oldest_seconds))throw Error('POD_METRICS_QUERY_UNVERIFIED');
-  const health=operationalHealth({expiresAt:db.expiresAt,artifactBytes:storage[0].bytes,
+  readHealth=()=>operationalHealth({expiresAt:db.expiresAt,artifactBytes:storage[0].bytes,
    expiredLeases:leases[0].count,pendingEvents:events[0].count,oldestEventSeconds:events[0].oldest_seconds,now:clock(),env});
+  readHealth(); // Preserve validation before commit, without returning stale time.
   commitPending=true;await query('COMMIT');commitPending=false;began=false;beginAttempted=false;
-  return {queues:states,incident_count:failures[0].count,artifact_bytes:storage[0].bytes,
-   financials,health,publication_enabled:false};
+  report={queues:states,incident_count:failures[0].count,artifact_bytes:storage[0].bytes,financials};
  }catch(error){
   // A rejected BEGIN leaves transport/protocol state uncertain and there is
   // no confirmed transaction to roll back. Destroy that pooled client rather
@@ -107,4 +107,7 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   const releasing=Promise.resolve(client.release(bad));releasing.catch(()=>{});
   await diagnosticStep(()=>releasing,deadline);
  }
+ // Commit and release may cross an expiry threshold. Counts remain the exact
+ // read-only transaction snapshot; time-sensitive health is observed at return.
+ return {...report,health:readHealth(),publication_enabled:false};
 }

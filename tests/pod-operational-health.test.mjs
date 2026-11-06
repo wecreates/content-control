@@ -134,6 +134,32 @@ for(const failure of ['reject','stall'])test('manual snapshot closes owned pool 
   failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
  assert.equal(f.ended,true);
 });
+for(const stage of ['commit','release','pool shutdown']){
+ const prepare=async remaining=>{
+  let current=now;const f=fixture(),client=await f.db.pool.connect(),query=client.query,release=client.release,end=f.db.pool.end;
+  f.db.expiresAt=now+remaining;
+  client.query=async sql=>{const result=await query(sql);if(stage==='commit'&&sql==='COMMIT')current++;return result;};
+  client.release=async bad=>{release(bad);if(stage==='release')current++;};
+  f.db.pool.end=async()=>{await end();if(stage==='pool shutdown')current++;};
+  const invoke=()=>stage==='pool shutdown'?operationsSnapshot({env:{...healthy.env,POD_STORAGE_EXPIRES_AT:new Date(f.db.expiresAt).toISOString()},
+   clock:()=>current,connect:()=>f.db.pool}):metrics(f.db,{env:healthy.env,clock:()=>current});
+  return {f,invoke,setClock:value=>{current=value;},client};
+ };
+ for(const [remaining,lifetime] of [[86400001,'BLOCKED'],[1,'EXPIRED']])test('storage alerts reflect '+stage+' crossing '+lifetime,async()=>{
+  const {f,invoke}=await prepare(remaining),report=await invoke();
+  assert.equal(report.health.storage.lifetime,lifetime);assert.equal(report.health.observed_at,new Date(now+1).toISOString());
+  assert.equal(report.health.acceptance_verified,false);assert.equal(report.publication_enabled,false);
+  assert.equal(f.released,false);if(stage==='pool shutdown')assert.equal(f.ended,true);
+ });
+ test('invalid clock after '+stage+' cannot return stale health',async()=>{
+  const {f,invoke,setClock,client}=await prepare(86400001);
+  if(stage==='commit'){const query=client.query;client.query=async sql=>{const result=await query(sql);if(sql==='COMMIT')setClock(NaN);return result;};}
+  if(stage==='release'){const release=client.release;client.release=async bad=>{await release(bad);setClock(NaN);};}
+  if(stage==='pool shutdown'){const end=f.db.pool.end;f.db.pool.end=async()=>{await end();setClock(NaN);};}
+  await assert.rejects(invoke(),/^Error: OPERATIONAL_CLOCK_INVALID$/);
+  assert.equal(f.released,false);if(stage==='pool shutdown')assert.equal(f.ended,true);
+ });
+}
 test('metrics errors roll back and discard a connection if rollback itself fails',async()=>{
  for(const rollbackFails of [false,true]){
   const f=fixture({fail:true,rollbackFails});await assert.rejects(metrics(f.db),/private database error/);
