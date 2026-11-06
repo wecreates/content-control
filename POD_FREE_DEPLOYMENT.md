@@ -94,10 +94,29 @@ Neon project `damp-base-09108632`, production branch
 `br-orange-sun-arizhns5`, database `content_control_state`. Its verified free-plan
 limits are 1 GiB of logical storage and a six-hour restore window. No provider
 project-deletion date was found. Until a longer-lived arrangement is approved, use
-the current verified quota-period boundary, November 1, 2026 at 00:00:00 UTC, as a
+the current verified quota-period boundary, December 1, 2026 at 00:00:00 UTC, as a
 conservative operational cutoff rather than representing it as a deletion date.
 An approved independently retained backup arrangement is still required before
 relying on this database for ongoing production. No paid resources are created here.
+
+## November 6 provider refresh (r502)
+
+Read-only Neon project metadata returned consumption period November 1 through
+December 1, 2026 UTC, free_v3 plan, 1 GiB branch limit and six-hour history retention.
+Production branch br-orange-sun-arizhns5 was ready with logical_size 40,009,728
+bytes; its compute was idle and not disabled. These metadata reads did not execute
+SQL, disclose credentials or establish a changed database-administration path.
+The stale November 1 operational cutoff was updated in the existing Render service
+to `2026-12-01T00:00:00Z`, with service/production/outbox and both publication
+flags explicitly false. Existing variables were merged, not replaced.
+
+The provider listed zero snapshots before refresh. New free-project snapshot
+`snap-broad-fog-arr61fmj` (`pod-r502-20261106-free-recovery`) was created from
+production at `2026-11-06T16:27:56Z` and independently listed afterward. No
+expiry field was returned, so no retention duration is claimed. No restore,
+production overwrite or independently retained backup was performed. The October
+26 snapshot/recovery observations below are historical, not proof that the old
+snapshot is still recoverable. All 24 acceptance areas remain OPEN.
 
 ## October 26 Neon replacement and recovery drill
 
