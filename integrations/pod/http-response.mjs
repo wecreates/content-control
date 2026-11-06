@@ -75,11 +75,15 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(Number(response.headers.get('content-length'))>maxBytes)throw Error(sizeError);
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
   reader=response.body.getReader();
-  const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>{abortObserved=true;reject(abortReason(signal));};
-   signal.addEventListener('abort',onAbort,{once:true});
-  });
-  if(abortObserved)return await aborted;
+  let aborted;
+  if(signal){
+   let rejectAbort;
+   aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
+   try{signal.addEventListener('abort',onAbort,{once:true});}
+   catch(error){if(!abortObserved)throw error;}
+   if(abortObserved)return await aborted;
+  }
   const chunks=[];let size=0;
   while(true){
    assertBridgeRequest(signal,deadline);
