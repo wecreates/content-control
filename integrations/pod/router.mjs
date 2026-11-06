@@ -126,10 +126,15 @@ export function createPodRouter({db,authorize,env=process.env,status}) {
  });
  router.use(express.json({limit:'256kb',strict:true,verify:verifyRequestJSON}));
  router.post('/jobs/:id/retry',async(req,res)=>{
-  try{await db.requeueRepair(req.params.id,req.body);res.json({status:'QUEUED',publication_enabled:false});}catch(error){storageFailure(res,error,409,'RETRY_BLOCKED');}
+  const lifecycle=requestLifecycle(req,res);
+  try{await requestRead(lifecycle,db.requeueRepair(req.params.id,req.body,{signal:lifecycle.signal}));
+   res.json({status:'QUEUED',publication_enabled:false});}
+  catch(error){storageFailure(res,error,409,'RETRY_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.post('/jobs/:id/review',async(req,res)=>{
-  try{res.json(await db.acceptReview(req.params.id,req.body));}catch(error){storageFailure(res,error,409,'REVIEW_BLOCKED');}
+  const lifecycle=requestLifecycle(req,res);
+  try{res.json(await requestRead(lifecycle,db.acceptReview(req.params.id,req.body,{signal:lifecycle.signal})));}
+  catch(error){storageFailure(res,error,409,'REVIEW_BLOCKED');}finally{lifecycle.dispose();}
  });
  router.post('/market',async(req,res)=>{try{res.status(202).json(await recordMarketObservation(db,req.body,env.POD_MARKET_KEY));}catch(error){storageFailure(res,error,409,'MARKET_OBSERVATION_BLOCKED');}});
  router.post('/listing-observations',async(req,res)=>{try{res.json(await reconcilePublication(db,req.body,env.POD_PROVIDER_KEY));}catch(error){storageFailure(res,error,409,'LISTING_OBSERVATION_BLOCKED');}});
