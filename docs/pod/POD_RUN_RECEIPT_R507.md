@@ -27,9 +27,55 @@ snapshot tests verify owned-pool shutdown still runs after client-release failur
 No new activation, mutation, credentials, signing or publication capability added.
 
 Final focused health suite passed31/31 with no skips; syntax and whitespace pass.
-Full local/hosted and dependent pin results follow below. Remote commits are based
-on fresh main and changed blobs checked exactly; no whole-tree equivalence is
+Full local Node passed1,223 with nine expected environment skips (1,232 total),
+zero failures. MF local POD bridge passed279 Node with one database skip (280
+total) and all81 Python tests. A standalone stalled-release snapshot probe returned
+POD_DIAGNOSTIC_TIMEOUT after40,009ms and attempted pool shutdown exactly once;
+no test-runner handle kept it alive. This is bounded receipt evidence, not proof
+underlying remote I/O is stopped. Full local Python passed all385 tests in274.274
+seconds; hostile-annotation MuPDF warnings were not test failures. Hosted and
+dependent pin results follow below. Remote commits are based on fresh main and
+changed blobs checked exactly; no whole-tree equivalence is
 claimed for a local source tree lacking unrelated prior QA/ledger outputs.
+
+## Hosted verification and dependent pin
+
+[CC PR1136](https://github.com/wecreates/content-control/pull/1136), exact head
+fc33641057815cc4ae1d400275e18209ab292ed8, passed integration
+[42298476975](https://github.com/wecreates/content-control/actions/runs/42298476975),
+job128169782070, and container
+[42298477103](https://github.com/wecreates/content-control/actions/runs/42298477103),
+job128169782324. Both passed all1,232 Node/PostgreSQL tests without skips and all385
+Python tests, plus durable E2E; container startup also passed. Fresh unchanged
+main/head and mergeability checks preceded guarded squash merge
+20175c25a8ca26f44b1e3467f0d79d0283a304fc. All three changed blobs match local.
+
+[MF PR464](https://github.com/wecreates/Money-factory/pull/464) pins that consumer;
+the existing health step already runs the expanded31-test suite. Only checkout
+ref changes; remote old workflow hash checked before editing. New workflow blob
+ef21cc91e6717ddbe76ace02b7f358b447b98354 matches local. Both publication flags
+remain literal false. Concurrent browser/monitor source and output changes remain.
+Exact head96c7bce6ff292d9062c4f52248f1ef8163485260 passed cross-repository
+[42299865826](https://github.com/wecreates/Money-factory/actions/runs/42299865826),
+job128174542672:898 selected CC Node tests,31 health/lifecycle tests,280 MF
+Node/PostgreSQL tests, selected CC Python stages and81 MF Python tests, zero
+failures/skips. Fresh unchanged main/head and mergeability checks preceded guarded
+squash merge3e798635969472455375d6d73cb1d9be249356d0.
+
+## Live deployment evidence
+
+Automatic deploy dep-dbn4mj4s728c73ecqfc0 of exact functional merge
+20175c25a8ca26f44b1e3467f0d79d0283a304fc reached live at
+2026-11-06T21:49:53.468061Z. No duplicate rollout or configuration change occurred.
+The connected local-browser tool returned Unknown tool; cloud-browser public
+observations independently showed /api/print/status service/production/outbox
+DISABLED, publication_enabled=false, publication_requested=false,
+adapters_verified=false and scoped storage acceptance_verified=false. Configured
+cutoff remains December1, not provider-retention proof. /health showed alive=true,
+production_approved=false and publication=false, with evidence readiness separate.
+No key was entered. No protected metric, job, database, grant or marketplace was
+accessed. This is public rollout evidence, not an authenticated live release-failure
+probe, owner-phone acceptance or verified evidence readiness.
 
 ## Unfinished acceptance
 

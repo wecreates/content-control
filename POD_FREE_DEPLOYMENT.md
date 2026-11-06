@@ -9,6 +9,9 @@ dependency must produce a redacted BLOCKED CLI receipt, not an indefinite wait o
 a successful snapshot before cleanup completes. A late pool is closed best effort;
 cancellation does not prove remote I/O stops. This command does not start workers,
 migrate, enable publication or verify the live acceptance checklist.
+Metrics also await client release within their existing diagnostic deadline.
+A rejected or stalled asynchronous release cannot produce a successful metrics
+report; late-client destruction errors are consumed without exposing backend detail.
 
 ## Runtime dependencies
 
