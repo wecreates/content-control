@@ -14,7 +14,7 @@ const record=bytes=>{
  manifest.package_sha256=sha(Buffer.from(canonical(manifest)));
  return {id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:sha(Buffer.from(canonical(manifest)))};
 };
-function harness(fetcher,timers={setTimeout,clearTimeout}){
+function harness(fetcher,timers={setTimeout,clearTimeout},AbortControllerImpl=AbortController){
  class Element{
   constructor(){this.value='';this.textContent='';this.hidden=false;this.listeners={};this.children=[];}
   addEventListener(name,fn){this.listeners[name]=fn;}
@@ -26,7 +26,7 @@ function harness(fetcher,timers={setTimeout,clearTimeout}){
  const nodes=new Map(),urls=[],revoked=[],requests=[],events={};
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
  const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:{addEventListener:(k,v)=>events[k]=v},
-  AbortController,TextDecoder,TextEncoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
+  AbortController:AbortControllerImpl,TextDecoder,TextEncoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
   setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,performance:timers.performance||performance,
   URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:fixture-'+urls.length;},revokeObjectURL:url=>revoked.push(url)},
   fetch:async(url,options)=>{requests.push({url,options});return fetcher(url,options);}});
@@ -261,4 +261,41 @@ test('late completion cannot beat an overdue deadline when its timer callback wa
  now=30000;release(response(record(png)));await operation;
  assert.equal(h.get('notice').textContent,'POD request timed out. Try again.');
  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(timers.pending.size,0);
+});
+
+test('dashboard does not start protected work when cancellation listener setup fails',async()=>{
+ class SetupFailureController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){},
+   addEventListener(){throw Error('private listener failure');},removeEventListener(){}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(()=>response(record(png)),undefined,SetupFailureController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,0);assert.equal(h.urls.length,0);
+ assert.equal(h.get('notice').textContent,'Unable to verify this preview or response.');
+});
+
+test('dashboard does not start protected work after synchronous cancellation admission',async()=>{
+ class SynchronousAbortController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){if(this.aborted)throw this.reason;},
+   addEventListener(_type,listener){this.aborted=true;this.reason=Error('private cancellation detail');listener();},
+   removeEventListener(){}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(()=>response(record(png)),undefined,SynchronousAbortController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,0);assert.equal(h.urls.length,0);
+ assert.equal(h.get('notice').textContent,'Unable to verify this preview or response.');
+});
+
+test('dashboard listener cleanup failure cannot replace a verified preview',async()=>{
+ class CleanupFailureController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){if(this.aborted)throw this.reason;},
+   addEventListener(){},removeEventListener(){throw Error('private cleanup failure');}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(url=>url.includes('/package')?response(record(png)):new Response(png),undefined,CleanupFailureController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,2);assert.equal(h.urls.length,1);
+ assert.equal(h.get('notice').textContent,'Preview loaded. This does not grant QA or publication approval.');
 });
