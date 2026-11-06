@@ -165,3 +165,12 @@ acceptance and controlled launch remain unverified. Publication remains held
 for explicit owner approval, and this automation cannot enable it.
 
 The continuation automation therefore remains enabled.
+
+## Receipt deployment suppression
+
+Content Control receipt PR #1121 merged as
+`d2a6d9e84937bb73fbc58642b657ba273efec678`. Render event
+`evt-dbmu0bmc6qcc73bii4r0` recorded that exact `[skip render]`
+documentation revision as `commit_ignored` at
+`2026-11-06T14:11:58.971453Z`. It did not replace live functional deploy
+`dep-dbmtsbtckfvc73923u0g` or trigger a duplicate build.
