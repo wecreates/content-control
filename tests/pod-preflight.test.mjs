@@ -87,6 +87,19 @@ for(const remaining of [86400001,86400000,86399999])test('preflight reports stor
  assert.deepEqual(r.checks.filter(c=>c.code==='STORAGE_LIFETIME'),[{code:'STORAGE_LIFETIME',status:remaining>86400000?'PASS':'BLOCKED'}]);
  assert.ok(f.closed());assert.equal(r.publication_enabled,false);
 });
+for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test('preflight requires explicit false '+flag+' before and after cleanup',async()=>{
+ for(const value of [undefined,null,false,true,0,'','FALSE','False',' false','false ','true','disabled']){
+  for(const stage of ['initial','cleanup']){
+   const f=fixture(),settings={...env},pool=await f.options.connect(),end=pool.end;
+   if(stage==='initial')settings[flag]=value;
+   pool.end=async()=>{await end();settings[flag]=stage==='cleanup'?value:'false';};
+   const r=await preflight({...f.options,env:settings,connect:async()=>pool});
+   assert.equal(r.status,'BLOCKED',`${flag}: ${String(value)} at ${stage}`);
+   assert.deepEqual(r.checks.filter(c=>c.code==='PUBLICATION_DISABLED'),[{code:'PUBLICATION_DISABLED',status:'BLOCKED'}]);
+   assert.equal(r.publication_enabled,false);assert.ok(f.closed());
+  }
+ }
+});
 for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test('preflight rejects '+flag+' enabled during cleanup',async()=>{
  const f=fixture(),settings={...env},pool=await f.options.connect(),end=pool.end;
  pool.end=async()=>{await end();settings[flag]='true';};
