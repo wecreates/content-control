@@ -27,16 +27,22 @@ function expired(deadline){
 // than leaked back into the pool; late query settlement is consumed here.
 export function diagnosticStep(operation,deadline,{onLate}={}){
  if(expired(deadline))return Promise.reject(deadlineError());
- let pending;
- try{pending=Promise.resolve(operation());}
- catch(error){return Promise.reject(expired(deadline)?deadlineError():error);}
  return new Promise((resolve,reject)=>{
   let settled=false;
-  const aborted=()=>{if(!settled){settled=true;reject(deadlineError());}};
-  deadline.signal.addEventListener('abort',aborted,{once:true});
+  const remove=()=>{try{deadline.signal.removeEventListener('abort',aborted);}catch{}};
+  const aborted=()=>{if(!settled){settled=true;remove();reject(deadlineError());}};
+  try{deadline.signal.addEventListener('abort',aborted,{once:true});}
+  catch{settled=true;reject(deadlineError());return;}
+  // Cancellation must be controllable before database acquisition or query
+  // work starts. A custom signal can abort during listener registration.
+  if(settled)return;
+  if(expired(deadline)){settled=true;remove();reject(deadlineError());return;}
+  let pending;
+  try{pending=Promise.resolve(operation());}
+  catch(error){settled=true;remove();reject(expired(deadline)?deadlineError():error);return;}
   pending.then(value=>{
    if(settled){try{onLate?.(value);}catch{}return;}
-   settled=true;deadline.signal.removeEventListener('abort',aborted);
+   settled=true;remove();
    if(expired(deadline)){
     try{onLate?.(value);}catch{}
     reject(deadlineError());return;
@@ -44,7 +50,7 @@ export function diagnosticStep(operation,deadline,{onLate}={}){
    resolve(value);
   },error=>{
    if(settled)return;
-   settled=true;deadline.signal.removeEventListener('abort',aborted);
+   settled=true;remove();
    reject(expired(deadline)?deadlineError():error);
   });
  });
