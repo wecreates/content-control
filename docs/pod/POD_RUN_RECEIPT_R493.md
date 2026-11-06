@@ -142,3 +142,10 @@ and this automation cannot enable it.
 
 The continuation automation therefore remains enabled.
 
+## Receipt deployment suppression
+
+Documentation merge `7e7c722451bf2fe03e0a4f5917f1fa07e90fe43f` was ignored by
+Render as intended in event `evt-dbmphcks728c739f679g`. The verified live deploy
+therefore remained `dep-dbmpdc5g1s2s73d83g5g` from functional merge
+`6d2a21807eab571b0f6e63ed308a34531b3d0a5c`.
+
