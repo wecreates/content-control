@@ -9,6 +9,7 @@ function resetView(){
  element('package-info').textContent='';element('preview-status').textContent='';
  element('jobs').replaceChildren();element('result').textContent='Authenticate to load metrics.';
  element('activity-counts').replaceChildren();element('activity-window').textContent='Authenticate to load recorded activity.';
+ element('storage-window').textContent='Check the configured cutoff without an operations key.';
 }
 function begin(){
  resetView();const controller=request=new AbortController();
@@ -33,12 +34,13 @@ async function waitFor(start,context){
  }finally{if(listenerAttached&&onAbort)try{signal.removeEventListener('abort',onAbort);}catch{}}
 }
 function cancelBody(body){try{Promise.resolve(body?.cancel()).catch(()=>{});}catch{}}
-async function read(route,context,limit){
- if(!context.key)throw Error('Enter your operations key.');
+async function read(route,context,limit,publicStatus=false){
+ const publicRead=publicStatus===true&&route==='/status';
+ if(!publicRead&&!context.key)throw Error('Enter your operations key.');
  checkDeadline(context);context.signal.throwIfAborted();
  let response,reader;
  try{
-  response=await waitFor(()=>fetch('/api/print'+route,{headers:{Authorization:'Bearer '+context.key},cache:'no-store',redirect:'error',signal:context.signal})
+  response=await waitFor(()=>fetch('/api/print'+route,{...(publicRead?{headers:{},credentials:'omit'}:{headers:{Authorization:'Bearer '+context.key}}),cache:'no-store',redirect:'error',signal:context.signal})
    .then(value=>{response=value;if(context.signal.aborted){cancelBody(response.body);context.signal.throwIfAborted();}return value;}),context);
   if(!response.ok)throw Error(response.status===401?'Authentication failed.':'POD data is unavailable.');
   reader=response.body.getReader();const chunks=[];let length=0;
@@ -104,6 +106,23 @@ function parseResponseJSON(text){
  return value;
 }
 const json=async(route,context)=>parseResponseJSON(responseDecoder.decode(await read(route,context,262144)));
+async function checkStorage(){
+ const context=begin();element('storage-window').textContent='Checking configured storage window…';
+ try{
+  const report=parseResponseJSON(responseDecoder.decode(await read('/status',context,8192,true))),storage=report?.storage_lifetime;
+  const labels={UNCONFIGURED:'Not configured',INVALID:'Invalid configuration',CLOCK_INVALID:'Server clock unavailable',
+   EXPIRED:'Configured cutoff has passed',EXPIRING:'Configured cutoff is within 24 hours',CONFIGURED_WINDOW_VALID:'Within configured window'};
+  const cutoff=storage?.operational_cutoff,hasCutoff=typeof cutoff==='string'&&cutoff.length===24&&
+   Number.isFinite(Date.parse(cutoff))&&new Date(cutoff).toISOString()===cutoff;
+  if(report.publication_enabled!==false||storage?.scope!=='configured_cutoff_only'||storage.acceptance_verified!==false||
+   !Object.hasOwn(labels,storage.status)||(['UNCONFIGURED','INVALID'].includes(storage.status)?cutoff!==null:!hasCutoff))throw Error('INVALID_STORAGE_STATUS');
+  if(context.version!==generation)return;
+  element('storage-window').textContent=labels[storage.status]+(hasCutoff?' · Cutoff (UTC): '+cutoff:'')+' · Storage acceptance remains unverified.';
+ }catch{
+  if(context.version===generation)element('storage-window').textContent='Configured storage status unavailable. No readiness is verified.';
+ }finally{end(context);}
+}
+element('storage-check').addEventListener('click',checkStorage);
 function failure(error,context){if(context.version===generation)element('notice').textContent=error.message==='STALE_REQUEST'?'Request replaced.':
  [timeoutMessage,'Authentication failed.','Enter your operations key.','POD data is unavailable.','Response exceeds the preview limit.','Print preview is unavailable.'].includes(error.message)?error.message:'Unable to verify this preview or response.';}
 function listJobs(rows){
