@@ -31,6 +31,11 @@ No item is complete merely because code or a test exists. This registry preserve
 
 ## Current code additions
 
+The operations dashboard offers a key-free, read-only configured storage cutoff
+check. It deliberately labels acceptance unverified; no backup/recovery, provider
+retention or owner-phone acceptance row is closed by this display. See the
+[r504 receipt](docs/pod/POD_RUN_RECEIPT_R504.md) for verification and limits.
+
 The repository already contains dedicated queue migrations, durable hash-addressed artifacts, worker leases, technical QA, review holds, read-only deployment preflight, production container/deployment tooling, internal outbox delivery and exact review-package restoration. Current-grant renewal now requests a fresh scoped grant from the existing Money Factory authority interface instead of relying only on an aging queue envelope. None of these additions creates credentials, paid resources, legal clearance or marketplace permission.
 
 ## External blockers

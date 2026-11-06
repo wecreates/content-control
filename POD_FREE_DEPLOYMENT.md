@@ -42,6 +42,10 @@ plan. Do not use platform rollout success as evidence readiness: only `/readyz`
 returns a success status for an accepted, hash-bound review artifact.
 Runtime deployment success does not imply that the POD database is initialized.
 The dashboard source update triggers deployment; do not trigger a duplicate deploy.
+Its Check storage cutoff control needs no operations key and reads only public
+configuration telemetry. It clears protected panels, sends no authorization or
+cookies, and labels storage acceptance unverified. This display is not a provider
+retention check, restore drill or permission to activate production/publication.
 Rollback uses the previous Node runtime/build/start configuration.
 
 ## Database migration without Render Shell
