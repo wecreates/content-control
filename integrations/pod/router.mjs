@@ -89,6 +89,7 @@ function requestLifecycle(req,res){
  const abort=()=>{if(!controller.signal.aborted)controller.abort(Error('POD_REQUEST_CANCELLED'));};
  let disposed=false;
  req.once('aborted',abort);res.once('close',abort);
+ if(req.aborted===true||res.destroyed===true)abort();
  const lifecycle={signal,checkpoint(){
   signal.throwIfAborted();
   const now=performance.now();
