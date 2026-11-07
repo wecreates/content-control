@@ -13,7 +13,8 @@ test('publish claim leaves a cross-platform queued job untouched',async()=>{
   async query(sql,params=[]){
    if(typeof sql!=='string'){params=sql.values??params;sql=sql.text;}
    queries.push({sql,params});
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql==='SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE')return {rows:[{id:accountId}]};
    if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{
     id:accountId,platform:'kdp',daily_cap:10

@@ -26,7 +26,8 @@ function fixture({currentResult={rows:[current]},leaseResult={rows:[{valid:true}
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))return currentResult;
    if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return leaseResult;
    throw Error('UNEXPECTED_QUERY: '+sql);

@@ -33,7 +33,8 @@ function fixture({platform='kdp',prior=false,weekly=0,priorResult,weeklyResult}=
   async query(sql,params=[]){
    if(typeof sql!=='string'){params=sql.values??params;sql=sql.text;}
    queries.push({sql,params});
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql==='SELECT id FROM pod_accounts WHERE id=$1 FOR UPDATE')return {rows:[{id:job.account_id}]};
    if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:job.account_id,platform,daily_cap:10}]};
    if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
