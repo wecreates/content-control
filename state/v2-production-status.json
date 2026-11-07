@@ -1,50 +1,73 @@
 {
   "schema_version": 1,
-  "run_id": 39990218582,
-  "source_commit": "0413f767ce00d41c9f4063301833db479bebbedf",
-  "workflow_outcome": "cancelled",
-  "recorded_at": "2026-10-23T17:16:51.629576+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/39990218582",
-  "candidate_sha256": null,
-  "candidate_generated": false,
+  "run_id": 42354745987,
+  "source_commit": "74aeaf5a3a9cb360edbcaf94f583b1fb15c952a9",
+  "workflow_outcome": "failure",
+  "recorded_at": "2026-11-07T08:20:18.368736+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/42354745987",
+  "candidate_sha256": "15d3d5cb8dfaabbe762d4a9e364f63d66218374c6246982e27f93247c1f04afd",
+  "candidate_generated": true,
   "checks": {
     "voices": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "6fdfa3b15869e2473f88d717fc828c2a53fa910e7a91b52d6068dbd939038cc2"
     },
     "sound_mix": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "8e2b9bf561989f52619715deb41d46e1a2cb7d9c0af49f47ce54bc87a706eeae"
     },
     "transcription": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "8e4f89ae63b38451d1df83329596004d7cd1c4546b3d362c9f5678665df0a68d"
     },
     "captions": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "2f37feb40c07644e24e68c33c098046d85882ce40485cf1056608827c0d728c4"
     },
     "caption_frames": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "0d9eb40d02b893f0e6d36973b0056e3bcbaac5f4ff29973a435bcde2c49a0af5"
     },
     "technical_video": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "6878f3909bf60cd1329b10a6c8fd95948c368fe9d9d3679d019ec32ff789aaec"
     },
     "style_parity": {
-      "status": "NOT_RUN"
+      "status": "BLOCKED",
+      "failed_checks": [
+        "framewise_style_parity"
+      ],
+      "receipt_sha256": "a1a66b7aabc7108a1f0fd89fe46b98ccde74d6f7fe6bc853e1b6c6030fe6e0f0",
+      "reason": "Review candidate hash does not match exact video"
     },
     "character_binding": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "6ba1c68be5f18168ad97dda469a2c4f4697b2cb9bbd39864c2f91073b5bc1361"
     },
     "phone_viewport": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "84cc6e9e12b53b9294c824bab7ae792ca35ff26d5b62c461fc63a9c2346b3d0a"
     }
   },
   "diagnostics": {
     "caption_windows": {
-      "status": "NOT_RUN"
+      "status": "PASS",
+      "failed_checks": [],
+      "receipt_sha256": "4c435e8fb241deec68e8eea06d2b06337ff9601c208ef3be3ea5fba0e9999b21"
     }
   },
-  "status": "BLOCKED",
-  "technical_status": "BLOCKED",
-  "review_status": "TECHNICAL_PREREQUISITES_MISSING",
-  "next_action": "Resolve missing or failed original technical evidence; no approval inferred.",
+  "status": "AWAITING_REVIEW",
+  "technical_status": "PASS",
+  "review_status": "CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED",
+  "next_action": "Review the exact existing candidate, then revalidate without regeneration. Full audiovisual and competitor approval remain mandatory.",
   "production_approved": false,
   "publication_enabled": false,
   "scope": "Recorded build result; no full audiovisual or competitor approval."
