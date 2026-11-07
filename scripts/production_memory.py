@@ -53,8 +53,22 @@ def snapshot(ccsd_path, manifest_path, candidate, qa_path, root=ROOT, baseline=N
     voices = policy['voices']
     if policy.get('paid_providers_enabled') is not False or policy.get('paid_network_requests_allowed') is not False:
         raise ValueError('Free voice policy required')
-    if manifest.get('provider') != policy['primary']['provider'] or manifest.get('model_id') != policy['primary']['model_id']:
+    if manifest.get('provider') == 'voicestudio':
+        try:
+            from scripts.v2_voicestudio import VOICE_ASSIGNMENTS, MODEL, MODEL_REVISION, UPSTREAM_REVISION
+        except ModuleNotFoundError:
+            from v2_voicestudio import VOICE_ASSIGNMENTS, MODEL, MODEL_REVISION, UPSTREAM_REVISION
+        expected={'engine':'kittentts','model_id':'kitten-tts-mini-0.8','model_repository':MODEL,
+                  'model_revision':MODEL_REVISION,'upstream_revision':UPSTREAM_REVISION,'paid_generation_enabled':False}
+        if any(manifest.get(k)!=v for k,v in expected.items()):raise ValueError('Voice provider mismatch')
+        voices={**VOICE_ASSIGNMENTS,'cashback_goblin':None}
+    elif manifest.get('provider') != policy['primary']['provider'] or manifest.get('model_id') != policy['primary']['model_id']:
         raise ValueError('Voice provider mismatch')
+    selected_voice_policy = {key: manifest.get(key) for key in
+        ('provider','engine','model_id','model_repository','model_revision','upstream_revision')}
+    selected_voice_policy['voice_assignments'] = dict(voices)
+    if baseline is not None and baseline.get('selected_voice_policy') != selected_voice_policy:
+        raise ValueError('Selected voice policy drift; explicit new baseline required')
     for assignments in (doc.get('voice_assignments', {}), manifest.get('voice_assignments', {})):
         if any(speaker not in voices or voices[speaker] != voice for speaker, voice in assignments.items()):
             raise ValueError('Voice assignment drift')
@@ -98,13 +112,22 @@ def snapshot(ccsd_path, manifest_path, candidate, qa_path, root=ROOT, baseline=N
         if sha(clip_path) != clip.get('audio_sha256'):
             raise ValueError('Voice clip hash mismatch')
         clip_sources[str(clip_path)] = sha(clip_path)
+        if manifest.get('provider') == 'voicestudio':
+            try:
+                from scripts.v2_audio_assemble import validate_voicestudio_clip
+            except ModuleNotFoundError:
+                from v2_audio_assemble import validate_voicestudio_clip
+            validate_voicestudio_clip(Path(manifest_path).resolve().parent,clip,line['text'])
+            for key in ('source_file','generation_file'):
+                source=local(Path(manifest_path).resolve().parent,clip[key])
+                clip_sources[str(source)]=sha(source)
     source_references = {}
     if doc.get('source_script'):
         source = local(root, doc['source_script'])
         source_references[doc['source_script']] = sha(source)
         if doc.get('source_sha256') and doc['source_sha256'] != sha(source):
             raise ValueError('Source script hash mismatch')
-    return {'schema_version': 1, 'entries': entries, 'scene_count': len(entries), 'assets': list(assets.values()), 'identity_sources': sources, 'source_references': source_references, 'clip_sources': clip_sources, 'ccsd_sha256': sha(ccsd_path), 'manifest_sha256': sha(manifest_path), 'qa_sha256': sha(qa_path), 'candidate_sha256': digest, 'project_id': doc.get('project_id'), 'status': 'TECHNICAL_QA_MEMORY_SNAPSHOT', 'technical_qa': 'PASS', 'visual_identity_review': 'PENDING', 'creative_review': 'PENDING', 'successful_hooks': [], 'production_approved': False, 'publication_enabled': False}
+    return {'schema_version': 1, 'selected_voice_policy': selected_voice_policy, 'entries': entries, 'scene_count': len(entries), 'assets': list(assets.values()), 'identity_sources': sources, 'source_references': source_references, 'clip_sources': clip_sources, 'ccsd_sha256': sha(ccsd_path), 'manifest_sha256': sha(manifest_path), 'qa_sha256': sha(qa_path), 'candidate_sha256': digest, 'project_id': doc.get('project_id'), 'status': 'TECHNICAL_QA_MEMORY_SNAPSHOT', 'technical_qa': 'PASS', 'visual_identity_review': 'PENDING', 'creative_review': 'PENDING', 'successful_hooks': [], 'production_approved': False, 'publication_enabled': False}
 
 
 def main():
