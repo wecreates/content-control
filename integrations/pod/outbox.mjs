@@ -6,6 +6,17 @@ const MAX_EVENT_REQUEST_BYTES=524288;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const EVENT_KIND=/^pod\.[a-z0-9]+(?:[._][a-z0-9]+)*$/;
 const EVENT_FIELDS=['created_at','id','job_id','kind','payload'];
+function snapshotEventTimestamp(value){
+ if(typeof value==='string')return value;
+ if(value===null||typeof value!=='object'||utilTypes.isProxy(value)||
+  !utilTypes.isDate(value)||Object.getPrototypeOf(value)!==Date.prototype)
+  throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ const millis=Date.prototype.getTime.call(value);
+ if(!Number.isSafeInteger(millis)||millis<0)throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ // Retain only the internal instant: JSON.stringify must never call a returned
+ // Date's toJSON or other caller-provided methods after validation/signing.
+ return new Date(millis).toISOString();
+}
 function dataProperty(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -45,7 +56,7 @@ function snapshotQueryRows(result){
    if(typeof key!=='string'||!field?.enumerable||!Object.hasOwn(field,'value'))
     throw Error('OUTBOX_QUERY_UNVERIFIED');
    if(key==='cursor_created_at')cursorTimestamp=field.value;
-   else Object.defineProperty(event,key,{value:field.value,enumerable:true});
+   else Object.defineProperty(event,key,{value:key==='created_at'?snapshotEventTimestamp(field.value):field.value,enumerable:true});
   }
   snapshots.push(Object.freeze({event:Object.freeze(event),cursor_created_at:cursorTimestamp}));
  }
@@ -109,13 +120,7 @@ function assertEventShape(event,issuedAt){
  if(keys.length!==EVENT_FIELDS.length||keys.some(key=>typeof key!=='string'||!EVENT_FIELDS.includes(key)||
   !descriptors[key].enumerable||!Object.hasOwn(descriptors[key],'value')))
   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
- let createdAt=event.created_at;
- if(createdAt instanceof Date){
-  const millis=createdAt.getTime();
-  if(Object.getPrototypeOf(createdAt)!==Date.prototype||!Number.isSafeInteger(millis)||millis<0)
-   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
-  createdAt=createdAt.toISOString();
- }
+ const createdAt=event.created_at;
  if(typeof createdAt!=='string')throw Error('OUTBOX_EVENT_SCOPE_INVALID');
  const createdMillis=Date.parse(createdAt);
  if(typeof event.id!=='string'||event.id.length!==36||!UUID.test(event.id)||
