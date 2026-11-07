@@ -82,6 +82,30 @@ test('malformed counts and observation windows fail closed',async()=>{
   assert.equal(f.queries.at(-1),'ROLLBACK');assert.deepEqual(f.released,[false]);
  }
 });
+test('activity rejects normalized or ambiguous timestamp strings even for a 24-hour window',async()=>{
+ for(const [window_start,window_end] of [
+  ['2026-02-30T00:00:00Z','2026-02-31T00:00:00Z'],
+  ['2026-10-15','2026-10-16'],
+  ['2026-10-15T00:00:00','2026-10-16T00:00:00'],
+  ['2026-10-15T24:00:00Z','2026-10-16T24:00:00Z'],
+  ['2026-10-15T00:00:00+00:00','2026-10-16T00:00:00+00:00'],
+  ['2026-10-15T00:00:00.000001Z','2026-10-16T00:00:00.000002Z'],
+ ]){
+  const f=fixture({window_start,window_end});
+  await assert.rejects(productionActivity(f.db),/^Error: CAPACITY_REPORT_INVALID$/);
+  assert.equal(f.queries.at(-1),'ROLLBACK');assert.deepEqual(f.released,[false]);
+ }
+});
+test('activity preserves canonical UTC milliseconds and native database Date instants',async()=>{
+ for(const date of [value=>value,value=>new Date(value)]){
+  const f=fixture({window_start:date('2026-10-15T00:00:00.123Z'),window_end:date('2026-10-16T00:00:00.123Z')});
+  const report=await productionActivity(f.db);
+  assert.equal(report.window.start,'2026-10-15T00:00:00.123Z');
+  assert.equal(report.window.end,'2026-10-16T00:00:00.123Z');
+  assert.equal(report.capacity_verified,false);assert.equal(report.acceptance_verified,false);
+  assert.equal(report.publication_enabled,false);assert.equal(f.queries.at(-1),'COMMIT');
+ }
+});
 test('failed rollback discards the connection and preserves the original failure',async()=>{
  const releases=[];
  const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK')throw Error('rollback');return {rows:[]};},release:bad=>releases.push(bad)})}};

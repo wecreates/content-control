@@ -18,7 +18,16 @@ function ordinaryRecord(value){
  }catch{return false;}
 }
 function snapshotTimestamp(value){
- if(typeof value==='string'&&value.length<=35)return value;
+ // pg returns native Dates. String adapters must provide exact UTC seconds or
+ // milliseconds; Date.parse must not normalize calendar errors or lose precision.
+ if(typeof value==='string'){
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value))throw Error('CAPACITY_REPORT_INVALID');
+  const millis=Date.parse(value);
+  if(!Number.isFinite(millis))throw Error('CAPACITY_REPORT_INVALID');
+  const canonical=new Date(millis).toISOString();
+  if(value!==canonical&&value!==canonical.replace('.000Z','Z'))throw Error('CAPACITY_REPORT_INVALID');
+  return canonical;
+ }
  if(value===null||typeof value!=='object'||utilTypes.isProxy(value)||!utilTypes.isDate(value))
   throw Error('CAPACITY_REPORT_INVALID');
  let millis;
