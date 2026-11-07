@@ -42,6 +42,17 @@ test('aggregate counts all 20 required operations independently of original eigh
   assert.equal(result.publication_enabled,false);
   assert.equal(result.paid_generation_enabled,false);
 });
+test('offline bridge registration never inflates hosted aggregate verification',async()=>{
+  const data=aggregateFixture();
+  data.registry.external_bridges=[{id:'open-seo',revision:'e'.repeat(40),operations:['readiness','import-serp'],
+    production_ready:true,runtime_status:'READY',offline_bridge_enabled:true}];
+  const result=await aggregateReader(data)();
+  assert.equal(result.expected_operation_count,20);
+  assert.equal(result.verified_operation_count,20);
+  assert.equal(result.external_bridges[0].upstream_runtime_verified,false);
+  assert.equal(result.external_bridges[0].production_ready,false);
+  assert.deepEqual(result.external_bridges[0].verified_operations,[]);
+});
 test('each additional tool fails aggregate closed for missing, failed, running, stale or invalid evidence',async()=>{
   for(const id of Object.keys(additionalOperations))for(const mutate of [
     e=>{e.report=null},e=>{e.run=null},e=>{e.run.conclusion='failure'},e=>{e.run.status='in_progress'},
