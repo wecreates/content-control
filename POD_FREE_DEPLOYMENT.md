@@ -18,6 +18,9 @@ transaction snapshot; a refreshed health timestamp is not a new database read.
 Recorded production activity also requires successful client release within its
 diagnostic deadline. Historical counts and numeric targets never establish
 measured capacity, current QA readiness or launch acceptance.
+Its observation timestamps accept native PostgreSQL Dates or exact UTC seconds /
+three-digit milliseconds from string adapters. Ambiguous zones, normalized calendar
+dates and precision-losing sub-millisecond strings fail closed, not rounded windows.
 
 ## Runtime dependencies
 
