@@ -213,7 +213,7 @@ def job_lock(workdir):
         yield
 
 
-def execute(ccsd_path, workdir, composition="StudioAnimatic"):
+def execute(ccsd_path, workdir, composition="StudioAnimatic", voicestudio_config=None):
     if composition not in ("StudioAnimatic", "StudioLong"):
         raise ValueError("Unsupported composition")
     ccsd_path = Path(ccsd_path).resolve()
@@ -240,15 +240,35 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
         def python(name, args, outputs):
             return command(name, [sys.executable, scripts / (name + '.py'), *args], outputs)
 
+        voice_module = 'v2_free_voice'
+        voice_args = ['--ccsd', ccsd_path, '--out-dir', clips]
+        voice_inputs = [ccsd_path, scripts / 'v2_free_voice.py', ROOT / 'control/free-voice-policy.json', ROOT / 'control/audio-sync-policy.json']
+        # Explicit opt-in. Existing Kokoro assignments and accepted takes stay untouched.
+        if voicestudio_config is not None:
+            config_path = Path(voicestudio_config).resolve()
+            config = json.loads(config_path.read_text())
+            if set(config) != {'money_factory', 'runtime'}:
+                raise ValueError('VoiceStudio config requires only money_factory and runtime paths')
+            mf, runtime = Path(config['money_factory']).resolve(), Path(config['runtime']).resolve()
+            voice_module = 'v2_voicestudio'
+            voice_args += ['--money-factory', mf, '--runtime', runtime]
+            voice_inputs += [config_path, scripts / 'v2_voicestudio.py',
+                mf / 'integrations/voicestudio/runner.py', mf / 'integrations/voicestudio/validation.py',
+                mf / 'integrations/voicestudio/setup_runtime.py', runtime / 'model-manifest.json']
+        # Selected provider is part of the resume fingerprint in both directions.
+        selection = w / 'voice-selection.json'
+        atomic_json(selection, {'module': voice_module, 'args': [str(a) for a in voice_args]})
+        voice_inputs.append(selection)
+
         def generate():
-            python('v2_free_voice', ['--ccsd', ccsd_path, '--out-dir', clips], [clips / 'approved-manifest.json'])
+            python(voice_module, voice_args, [clips / 'approved-manifest.json'])
             manifest = json.loads((clips / 'approved-manifest.json').read_text())
             paths = [(clips / item['file']).resolve() for item in manifest['clips']]
             if any(not p.is_relative_to(clips) for p in paths):
                 raise ValueError('Clip outside job directory')
-            return [clips / 'approved-manifest.json', *paths]
+            return [clips / 'approved-manifest.json', *paths, *sorted(clips.glob('*-source.wav*')), *sorted(clips.glob('*-request.json'))]
 
-        voice_record = runner.stage('voice', [ccsd_path, scripts / 'v2_free_voice.py', ROOT / 'control/free-voice-policy.json', ROOT / 'control/audio-sync-policy.json'], generate)
+        voice_record = runner.stage('voice', voice_inputs, generate)
         runner.stage('assembly', [ccsd_path, scripts / 'v2_audio_assemble.py', *voice_record['outputs']], lambda: python('v2_audio_assemble', ['--ccsd', ccsd_path, '--manifest', clips / 'approved-manifest.json', '--out', voice, '--receipt', w / 'assembly.json'], [voice, w / 'assembly.json']))
         stems = [ROOT / 'public/audio' / name for name in ('episode1-music.mp3', 'episode1-sfx-1.mp3', 'episode1-sfx-2.mp3')]
         runner.stage('mix', [ccsd_path, voice, scripts / 'v2_sound_mix.py', *stems], lambda: python('v2_sound_mix', ['--ccsd', ccsd_path, '--voice', voice, '--out-dir', mixdir, '--receipt', w / 'mix.json'], [mixdir / name for name in ('music.wav', 'sfx.wav', 'mix.wav')] + [w / 'mix.json']))
@@ -344,9 +364,10 @@ def main():
     parser.add_argument('--ccsd', required=True)
     parser.add_argument('--workdir', required=True)
     parser.add_argument('--composition', choices=['StudioAnimatic', 'StudioLong'], default='StudioAnimatic')
+    parser.add_argument('--voicestudio-config', help='Opt-in local VoiceStudio runtime config; use a fresh workdir')
     args = parser.parse_args()
     try:
-        result = execute(args.ccsd, args.workdir, args.composition)
+        result = execute(args.ccsd, args.workdir, args.composition, args.voicestudio_config) if args.voicestudio_config else execute(args.ccsd, args.workdir, args.composition)
         print(json.dumps({k: v for k, v in result.items() if k != 'stages'}))
         return 0
     except Exception as error:

@@ -28,15 +28,63 @@ def sha(path):
     return hashlib.sha256(read_audio(path)).hexdigest()
 
 
+def validate_voicestudio_clip(root, clip, text):
+    """Check bounded source/receipt snapshots; supplied provenance is not authentication."""
+    try:
+        from scripts.v2_voicestudio import MODEL, MODEL_REVISION, UPSTREAM_REVISION
+    except ModuleNotFoundError:
+        from v2_voicestudio import MODEL, MODEL_REVISION, UPSTREAM_REVISION
+    snapshots = {}
+    for key, hash_key, limit in [('generation_file','generation_sha256',2*1024*1024),
+                                  ('source_file','source_audio_sha256',9*1024*1024)]:
+        name = clip.get(key)
+        if not isinstance(name,str) or not name or Path(name).name != name:
+            raise ValueError('Invalid VoiceStudio provenance path')
+        path = Path(root)/name
+        if path.is_symlink():raise ValueError('Linked VoiceStudio provenance is not allowed')
+        data = read_audio(path,limit)
+        if hashlib.sha256(data).hexdigest() != clip.get(hash_key):
+            raise ValueError('VoiceStudio provenance hash mismatch')
+        snapshots[key] = data
+    record = json.loads(snapshots['generation_file'])
+    expected = {'status':'PASS','tool':'voicestudio','operation':'synthesize','engine':'kittentts',
+        'model':MODEL,'model_revision':MODEL_REVISION,'upstream_revision':UPSTREAM_REVISION,
+        'text_sha256':hashlib.sha256(text.strip().encode()).hexdigest(), 'voice':clip['voice_id'],
+        'speed':clip.get('speed'),'language':'en','synthetic':True,
+        'output_sha256':clip['source_audio_sha256'],'publication_enabled':False,'paid_generation_enabled':False}
+    if not isinstance(record,dict) or any(record.get(k)!=v for k,v in expected.items()):
+        raise ValueError('VoiceStudio generation receipt mismatch')
+    if type(clip.get('speed')) not in (int,float) or not 1 <= clip['speed'] <= 1.45:
+        raise ValueError('Invalid VoiceStudio speed')
+    with wave.open(io.BytesIO(snapshots['source_file']),'rb') as w:
+        if (w.getnchannels(),w.getsampwidth(),w.getframerate(),w.getcomptype()) != (1,2,24000,'NONE'):
+            raise ValueError('Invalid VoiceStudio source format')
+        frames=w.getnframes()
+        if not 0 < frames <= 24000*180 or len(w.readframes(frames)) != frames*2:
+            raise ValueError('Invalid VoiceStudio source length')
+    return record
+
+
 def assemble(ccsd, manifest, root, output):
     root=Path(root).resolve();output=Path(output)
     if not isinstance(ccsd,dict) or not isinstance(manifest,dict):raise ValueError('CCSD and manifest objects required')
     if ccsd.get('publication_enabled') is not False or manifest.get('publication_enabled') is not False:
         raise ValueError('PUBLICATION_DISABLED required')
-    if manifest.get('provider')!='kokoro' or manifest.get('model_id')!='Kokoro-82M':
-        raise ValueError('Free-only production requires local Kokoro-82M clips')
-    locks=manifest.get('voice_assignments',{})
     approved={'dave':'am_fenrir','points_monk':'am_michael','narrator':'am_adam'}
+    if manifest.get('provider') == 'voicestudio':
+        try:
+            from scripts.v2_voicestudio import VOICE_ASSIGNMENTS, MODEL, MODEL_REVISION, UPSTREAM_REVISION
+        except ModuleNotFoundError:
+            from v2_voicestudio import VOICE_ASSIGNMENTS, MODEL, MODEL_REVISION, UPSTREAM_REVISION
+        expected={'model_id':'kitten-tts-mini-0.8','engine':'kittentts','model_repository':MODEL,
+                  'model_revision':MODEL_REVISION,'upstream_revision':UPSTREAM_REVISION,
+                  'paid_generation_enabled':False}
+        if any(manifest.get(k)!=v for k,v in expected.items()):
+            raise ValueError('Unreviewed VoiceStudio model or provider')
+        approved=VOICE_ASSIGNMENTS
+    elif manifest.get('provider')!='kokoro' or manifest.get('model_id')!='Kokoro-82M':
+        raise ValueError('Free-only production requires local Kokoro-82M or pinned VoiceStudio clips')
+    locks=manifest.get('voice_assignments',{})
     if any(approved.get(s)!=v for s,v in locks.items()):raise ValueError('Voice assignment differs from fixed character voice policy')
     scenes=ccsd.get('scenes',[])
     if not isinstance(scenes,list) or not scenes:raise ValueError('Scenes required')
@@ -66,6 +114,8 @@ def assemble(ccsd, manifest, root, output):
         if clip.get('scene_id')!=scene['id'] or clip.get('speaker')!=d['speaker'] or clip.get('voice_id')!=locks[d['speaker']]:
             raise ValueError('Clip speaker/scene/voice does not match locked dialogue')
         if clip.get('text_sha256')!=hashlib.sha256(d['text'].strip().encode()).hexdigest():raise ValueError('Clip text hash mismatch')
+        if manifest.get('provider') == 'voicestudio':
+            validate_voicestudio_clip(root,clip,d['text'])
         snapshot=read_audio(paths[i])
         clip_sha=hashlib.sha256(snapshot).hexdigest()
         if clip_sha!=clip.get('audio_sha256'):raise ValueError('Clip audio hash mismatch')
@@ -119,6 +169,8 @@ def main():
         manifest=json.loads(read_audio(m,2*1024*1024))
         clips=manifest.get('clips',[])
         sources=[a.ccsd,m,*[m.parent/clip['file'] for clip in clips if isinstance(clip,dict) and isinstance(clip.get('file'),str)]] if isinstance(clips,list) else [a.ccsd,m]
+        if manifest.get('provider') == 'voicestudio':
+            sources += [m.parent/clip[k] for clip in clips for k in ('source_file','generation_file') if isinstance(clip.get(k),str)]
         try:check_destinations(a.out,a.receipt,sources)
         except (ValueError,OSError):
             receipt_safe=False
