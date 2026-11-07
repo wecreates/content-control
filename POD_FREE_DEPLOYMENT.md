@@ -3,6 +3,12 @@
 This is deployment tooling, not evidence of live production or marketplace publication.
 Existing Render service: content-control-render-worker. Do not create a duplicate service.
 
+Outbox Date results are reduced to inert canonical UTC strings from their internal
+instant before validation/signing. Object-supplied getTime/toISOString/toJSON are
+never called. Invalid, forged or proxy Dates fail inside the per-event boundary;
+authorized continuation and the separate PostgreSQL microsecond cursor remain
+unchanged. This is signed-envelope hardening, not live Money Factory acceptance.
+
 Manual `scripts/pod_operations_snapshot.mjs` diagnostics share one 40-second
 deadline across pool creation, read-only metrics and owned-pool shutdown. A stalled
 dependency must produce a redacted BLOCKED CLI receipt, not an indefinite wait or
