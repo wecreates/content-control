@@ -6,6 +6,17 @@ const MAX_EVENT_REQUEST_BYTES=524288;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const EVENT_KIND=/^pod\.[a-z0-9]+(?:[._][a-z0-9]+)*$/;
 const EVENT_FIELDS=['created_at','id','job_id','kind','payload'];
+function snapshotEventTimestamp(value){
+ if(typeof value==='string')return value;
+ if(value===null||typeof value!=='object'||utilTypes.isProxy(value)||
+  !utilTypes.isDate(value)||Object.getPrototypeOf(value)!==Date.prototype)
+  throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ const millis=Date.prototype.getTime.call(value);
+ if(!Number.isSafeInteger(millis)||millis<0)throw Error('OUTBOX_EVENT_SCOPE_INVALID');
+ // Retain only the internal instant: JSON.stringify must never call a returned
+ // Date's toJSON or other caller-provided methods after validation/signing.
+ return new Date(millis).toISOString();
+}
 function dataProperty(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -109,13 +120,7 @@ function assertEventShape(event,issuedAt){
  if(keys.length!==EVENT_FIELDS.length||keys.some(key=>typeof key!=='string'||!EVENT_FIELDS.includes(key)||
   !descriptors[key].enumerable||!Object.hasOwn(descriptors[key],'value')))
   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
- let createdAt=event.created_at;
- if(createdAt instanceof Date){
-  const millis=createdAt.getTime();
-  if(Object.getPrototypeOf(createdAt)!==Date.prototype||!Number.isSafeInteger(millis)||millis<0)
-   throw Error('OUTBOX_EVENT_SCOPE_INVALID');
-  createdAt=createdAt.toISOString();
- }
+ const createdAt=event.created_at;
  if(typeof createdAt!=='string')throw Error('OUTBOX_EVENT_SCOPE_INVALID');
  const createdMillis=Date.parse(createdAt);
  if(typeof event.id!=='string'||event.id.length!==36||!UUID.test(event.id)||
@@ -137,12 +142,14 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  // microsecond value separately or rejected rows can repeat forever on page 2.
  const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
  let delivered=0,failed=0;
- for(const {event} of events){
+ for(const {event:rowEvent} of events){
   if(signal?.aborted)break;
   // Selection and earlier deliveries may cross the storage safety cutoff.
   // This is a batch-wide stop, not a skippable per-event delivery failure.
   db.active();
   try{
+  const event=Object.hasOwn(rowEvent,'created_at')?
+   Object.freeze({...rowEvent,created_at:snapshotEventTimestamp(rowEvent.created_at)}):rowEvent;
   const issuedAt=Date.now();
   if(!Number.isSafeInteger(issuedAt)||issuedAt<0)throw Error('OUTBOX_CLOCK_INVALID');
   // PostgreSQL rows always include payload. Keep transport-only fixtures that
