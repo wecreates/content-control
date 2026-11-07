@@ -166,6 +166,36 @@ test('financial intake rejects unverified audit event mutations and rolls back t
  }
  assert.equal(reads,0);
 });
+test('financial insertion requires the exact returned ledger ID before writing its audit event',async()=>{
+ const e=event();let reads=0;
+ for(const insert of [{rowCount:1},{rowCount:1,rows:[]},{rowCount:1,rows:[{id:'other'}]},
+  {rowCount:1,rows:[{get id(){reads++;throw Error('private ID getter');}}]}]){
+  let audits=0;
+  const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
+   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
+   if(sql.startsWith('INSERT INTO pod_financial_events'))return insert;
+   if(sql.startsWith('INSERT INTO pod_events')){audits++;return {rowCount:1,rows:[{id:args[0],job_id:args[1],kind:args[2]}]};}
+   assert.fail('unexpected query');
+  }})};
+  await assert.rejects(recordFinancialEvent(db,sign(e),key),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+  assert.equal(audits,0);
+ }
+ assert.equal(reads,0);
+});
+test('financial replay rejects coercible database amounts without invoking conversion',async()=>{
+ let calls=0;
+ const e=event();
+ for(const amount_minor of [['1234'],{toString(){calls++;return '1234';}}]){
+  const f=fixture([{...e,id:'original',amount_minor}]);
+  await assert.rejects(recordFinancialEvent(f.db,sign(e),key),/^Error: FINANCIAL_REPLAY_CONFLICT$/);
+  assert.equal(f.outbox.length,0);
+ }
+ assert.equal(calls,0);
+});
+test('financial intake rejects coercible signed currency before database access',async()=>{
+ const db={tx:()=>assert.fail('non-string currency reached database')};
+ await assert.rejects(recordFinancialEvent(db,sign({...event(),currency:['USD']}),key),/^Error: FINANCIAL_EVIDENCE_REQUIRED$/);
+});
 test('one authority event cannot cross provider or job boundaries',async()=>{
  for(const change of [{provider:'teepublic',provider_event_id:'different'},{job_id:'other-job',provider_event_id:'different'}]){
   const e=event(),f=fixture([{...e,id:'original'}]);
