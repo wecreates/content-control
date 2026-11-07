@@ -56,7 +56,7 @@ function snapshotQueryRows(result){
    if(typeof key!=='string'||!field?.enumerable||!Object.hasOwn(field,'value'))
     throw Error('OUTBOX_QUERY_UNVERIFIED');
    if(key==='cursor_created_at')cursorTimestamp=field.value;
-   else Object.defineProperty(event,key,{value:key==='created_at'?snapshotEventTimestamp(field.value):field.value,enumerable:true});
+   else Object.defineProperty(event,key,{value:field.value,enumerable:true});
   }
   snapshots.push(Object.freeze({event:Object.freeze(event),cursor_created_at:cursorTimestamp}));
  }
@@ -142,12 +142,14 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  // microsecond value separately or rejected rows can repeat forever on page 2.
  const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
  let delivered=0,failed=0;
- for(const {event} of events){
+ for(const {event:rowEvent} of events){
   if(signal?.aborted)break;
   // Selection and earlier deliveries may cross the storage safety cutoff.
   // This is a batch-wide stop, not a skippable per-event delivery failure.
   db.active();
   try{
+  const event=Object.hasOwn(rowEvent,'created_at')?
+   Object.freeze({...rowEvent,created_at:snapshotEventTimestamp(rowEvent.created_at)}):rowEvent;
   const issuedAt=Date.now();
   if(!Number.isSafeInteger(issuedAt)||issuedAt<0)throw Error('OUTBOX_CLOCK_INVALID');
   // PostgreSQL rows always include payload. Keep transport-only fixtures that

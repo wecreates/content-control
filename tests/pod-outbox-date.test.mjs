@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {deliverOutbox} from '../integrations/pod/outbox.mjs';
 const instant='2026-01-01T00:00:00.123Z';
-async function deliver(created_at){
+async function deliver(created_at,options={}){
  const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.date',payload:{},created_at};
  let sent;
  const db={active(){},read:async()=>({rows:[event]}),tx:async fn=>fn({query:async()=>({rowCount:1,rows:[{id:event.id}]})})};
- const result=await deliverOutbox(db,{url:'https://authority.example/events',key:'k'.repeat(32),fetchImpl:async(_url,options)=>{
+ const result=await deliverOutbox(db,{...options,url:'https://authority.example/events',key:'k'.repeat(32),fetchImpl:async(_url,options)=>{
   sent=JSON.parse(JSON.parse(options.body).payload).event;
   return new Response(JSON.stringify({accepted_event_id:event.id}),{headers:{'content-type':'application/json'}});
  }});
@@ -34,4 +34,8 @@ test('outbox rejects proxy, invalid and forged Dates without invoking traps',asy
  for(const value of [proxy,new Date(NaN),Object.create(Date.prototype)])
   await assert.rejects(deliver(value),/^Error: OUTBOX_EVENT_SCOPE_INVALID$/);
  assert.equal(traps,0);
+});
+test('invalid Date retains per-event failure accounting when continuation is authorized',async()=>{
+ const {sent,result}=await deliver(new Date(NaN),{continueOnError:true});
+ assert.equal(sent,undefined);assert.deepEqual(result,{delivered:0,failed:1,nextCursor:null});
 });
