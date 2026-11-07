@@ -34,6 +34,55 @@ measured100/1,000-concept capacity from recorded history.
 Final focused capacity suite passed12/12, zero skips. Syntax and whitespace pass.
 Full local/hosted, dependent consumer and rollout evidence follow below. Changed
 blobs are checked exactly; tests and code are not live acceptance evidence.
+Full local Node passed1,237 with nine expected environment skips (1,246 total),
+zero failures. MF local POD bridge passed279 Node with one expected database skip
+(280 total), and all81 Python. The existing /capacity router catch maps failures
+to fixed POD_CAPACITY_UNAVAILABLE, without backend details.
+Full local Python passed all385 tests in236.130 seconds; hostile-annotation MuPDF
+warnings were not failures. A workflow-specific fetch URL was unsupported by the
+connector; the supported repository-run listing confirmed the latest POD gates.
+
+## Hosted verification and dependent pin
+
+[CC PR1140](https://github.com/wecreates/content-control/pull/1140), exact head
+8185b2b6d9338712acc4f33fd77b4609eeeb2b88, passed integration
+[42318095765](https://github.com/wecreates/content-control/actions/runs/42318095765),
+job128235642267, and container
+[42318095790](https://github.com/wecreates/content-control/actions/runs/42318095790),
+job128235642534. Both passed all1,246 Node/PostgreSQL tests without skips and all385
+Python tests, plus durable E2E; container startup also passed. Fresh unchanged
+main/head and mergeability checks preceded guarded squash merge
+dbddb961cabeb04a35b62be7ca329ead5bd5717f. All three changed blobs match local.
+
+[MF PR466](https://github.com/wecreates/Money-factory/pull/466) pins that consumer
+and adds an explicit12-test capacity step. Only POD workflow changes; prior remote
+workflow hash was checked before editing. New blobdea09cf52e51335623c7030aa3989acb9334ce0a
+matches local; both publication flags remain literal false. Fresh remote base
+c4ba4ed98975cb8708fd3b6e5715ac6071952931 preserves concurrent work rather than
+overwriting it with the older local whole tree.
+The concurrent MF difference is limited to FREE_MONITOR_EVENTS.json and
+FREE_MONITOR_STATE.json; both were preserved from the fresh base.
+Exact headef08540a65b99f553145fdf0c7ed811618bd2e67 passed cross-repository
+[42318960428](https://github.com/wecreates/Money-factory/actions/runs/42318960428),
+job128238539490:898 selected CC Node tests,40 health tests,12 dedicated capacity
+tests,280 MF Node/PostgreSQL, selected CC Python stages and81 MF Python tests,
+zero failures/skips. Fresh unchanged main/head and mergeability checks preceded
+guarded squash mergecd0d91b825a78933529eb96e1202c0133afc6350.
+
+## Live rollout evidence
+
+Automatic deploy dep-dbn73efavr4c73dmng70 of exact functional merge
+dbddb961cabeb04a35b62be7ca329ead5bd5717f reached live at
+2026-11-07T00:33:59.052409Z. No duplicate rollout or setting change was made.
+The local-browser tool returned Unknown tool; independent public cloud-browser
+/api/print/status showed service/production/outbox DISABLED,
+publication_enabled=false, publication_requested=false, adapters_verified=false
+and scoped storage acceptance_verified=false. Configured cutoff remains December1,
+not provider-retention proof. /health showed alive=true, production_approved=false
+and publication=false, with accepted evidence readiness kept separate.
+No key was entered; no protected activity, job, database, grant or marketplace
+was accessed. This is public deployment evidence, not a live authenticated release
+failure drill, measured capacity or actual owner-phone acceptance.
 
 ## Unfinished acceptance
 
