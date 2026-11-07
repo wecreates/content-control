@@ -47,6 +47,34 @@ test('capacity reporting rejects executable query results without invocation',as
  }
  assert.equal(reads,0);
 });
+for(const failure of ['throw','reject','stall'])test('activity cannot return success after '+failure+' from release',async()=>{
+ const f=fixture(),client=await f.db.pool.connect(),controller=new AbortController();let calls=0;
+ client.release=bad=>{calls++;assert.equal(bad,false);
+  if(failure==='throw')throw Error('private release failure');
+  if(failure==='reject'){const rejected=Promise.reject(Error('private release failure'));rejected.catch(()=>{});return rejected;}
+  controller.abort();return new Promise(()=>{});
+ };
+ f.db.pool.connect=async()=>client;
+ await assert.rejects(productionActivity(f.db,{signal:controller.signal}),
+  failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
+ assert.equal(calls,1);assert.equal(f.queries.at(-1),'COMMIT');
+});
+test('activity waits for successful asynchronous release before returning unverified evidence',async()=>{
+ const f=fixture(),client=await f.db.pool.connect();let complete,settled=false;
+ client.release=()=>new Promise(resolve=>{complete=resolve;});f.db.pool.connect=async()=>client;
+ const task=productionActivity(f.db).then(value=>{settled=true;return value;});
+ while(!complete)await new Promise(r=>setImmediate(r));
+ try{assert.equal(settled,false);}finally{complete();}
+ const report=await task;assert.equal(report.capacity_verified,false);assert.equal(report.acceptance_verified,false);
+ assert.equal(report.publication_enabled,false);
+});
+test('activity consumes asynchronous late-client destruction failure after cancelled acquisition',async()=>{
+ const controller=new AbortController();let complete,consumed=0;
+ const task=productionActivity({pool:{connect:()=>new Promise(resolve=>{complete=resolve;})}},{signal:controller.signal});
+ controller.abort();await assert.rejects(task,/POD_DIAGNOSTIC_TIMEOUT/);
+ complete({release:bad=>{assert.equal(bad,true);return {then(_resolve,reject){consumed++;reject(Error('private late release'));}};}});
+ await new Promise(r=>setImmediate(r));assert.equal(consumed,1);
+});
 test('malformed counts and observation windows fail closed',async()=>{
  for(const patch of [{generated_jobs:5},{generated_jobs:'-1'},{generated_jobs:'1e3'},
   {window_start:'invalid'},{window_end:'2026-10-17T00:00:00Z'}]){

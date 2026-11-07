@@ -53,7 +53,9 @@ function snapshotCapacityRow(result){
 // current QA readiness, publication permission or production acceptance.
 export async function productionActivity(db,{signal}={}){
  const deadline=diagnosticDeadline(signal);
- const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>late.release(true)});
+ const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>{
+  try{Promise.resolve(late.release(true)).catch(()=>{});}catch{}
+ }});
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
  let bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
@@ -98,5 +100,10 @@ export async function productionActivity(db,{signal}={}){
   else if(began)try{await query('ROLLBACK');}catch{bad=true;}
   else if(beginAttempted)bad=true;
   throw error;
- }finally{client.release(bad);}
+ }finally{
+  // Cleanup is part of verification, even after cancellation. Never return a
+  // report while asynchronous release is failed or still unverified.
+  const releasing=Promise.resolve(client.release(bad));releasing.catch(()=>{});
+  await diagnosticStep(()=>releasing,deadline);
+ }
 }
