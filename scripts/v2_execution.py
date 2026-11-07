@@ -213,6 +213,22 @@ def job_lock(workdir):
         yield
 
 
+def mark_review_candidate(state, candidate):
+    """Resolve stale current errors only after every recorded stage passes."""
+    if not state.get('stages') or any(stage.get('status') != 'PASS' for stage in state['stages'].values()):
+        raise ValueError('All production stages must pass before completing review candidate')
+    digest = sha(candidate)
+    previous = {key: state[key] for key in ('reason', 'error') if key in state}
+    if previous:
+        state.setdefault('resolved_failures', []).append({
+            'details': previous, 'resolved_candidate_sha256': digest,
+        })
+        for key in previous:
+            state.pop(key)
+    state.update(status='REVIEW_CANDIDATE', candidate=str(candidate), candidate_sha256=digest,
+                 creative_review='PENDING', audio_listening_review='PENDING')
+
+
 def execute(ccsd_path, workdir, composition="StudioAnimatic"):
     if composition not in ("StudioAnimatic", "StudioLong"):
         raise ValueError("Unsupported composition")
@@ -334,7 +350,7 @@ def execute(ccsd_path, workdir, composition="StudioAnimatic"):
                 raise ValueError('Package output outside job directory')
             return [package_receipt, *paths]
         runner.stage('package', [ccsd_path, metadata, final, qa, captions, voice, ROOT / 'control/long-form-showrunner.json', scripts / 'production_package.py', scripts / 'verify_caption_frames.mjs', ROOT / 'remotion/ObservedCaptions.mjs'], review_package)
-        runner.state.update(status='REVIEW_CANDIDATE', candidate=str(final), candidate_sha256=sha(final), creative_review='PENDING', audio_listening_review='PENDING')
+        mark_review_candidate(runner.state, final)
         runner.save()
         return runner.state
 

@@ -48,3 +48,25 @@ class RecognitionRepairTests(unittest.TestCase):
    repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:[{'word':'Useful credits','start':0.,'end':2.}])
   self.audio.write_bytes(b'changed')
   with self.assertRaisesRegex(ValueError,'actual audio'):repair(self.cc,self.report,self.assembly,self.audio,self.samples,self.observe)
+ def test_exact_words_outside_dialogue_window_reobserved(self):
+  self.report['words'][1].update(word='credits',end=1.05)
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,self.observe)
+  self.assertEqual(self.calls,[14400]);self.assertEqual(result['words'][1]['end'],.8)
+  self.assertEqual(result['recognition_repair']['windows'][0]['repair_reasons'],['observed_words_leave_dialogue_window'])
+  self.assertEqual(result['original_full_transcription']['words'][1]['end'],1.05)
+ def test_early_next_speaker_reobserved_not_clamped(self):
+  self.report['words'][1]['word']='credits';self.report['words'][2]['start']=.99
+  local=[{'word':'Continue','start':.1,'end':.3},{'word':'now','start':.5,'end':.8}]
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:local)
+  self.assertEqual(result['words'][2]['start'],1.1)
+  self.assertEqual(result['recognition_repair']['windows'][0]['scene_id'],'b')
+ def test_fractional_crop_never_begins_before_source_window(self):
+  start=1+1/48000
+  self.cc['scenes'][1]['start']=start;self.assembly['dialogue'][1]['start']=start
+  self.report['words'][1]['word']='credits'
+  local=[{'word':'Continue','start':0.,'end':.3},{'word':'now','start':.5,'end':.8}]
+  result=repair(self.cc,self.report,self.assembly,self.audio,self.samples,lambda crop:local)
+  proof=result['recognition_repair']['windows'][0]
+  self.assertEqual(proof['sample_start'],16001)
+  self.assertGreaterEqual(result['words'][2]['start'],start)
+  self.assertEqual(result['words'][2]['start'],16001/16000)
