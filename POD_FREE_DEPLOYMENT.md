@@ -15,6 +15,9 @@ report; late-client destruction errors are consumed without exposing backend det
 Expiry health is observed again after commit/client release and, for manual
 snapshots, after owned-pool shutdown. Counts remain the original read-only
 transaction snapshot; a refreshed health timestamp is not a new database read.
+Recorded production activity also requires successful client release within its
+diagnostic deadline. Historical counts and numeric targets never establish
+measured capacity, current QA readiness or launch acceptance.
 
 ## Runtime dependencies
 
