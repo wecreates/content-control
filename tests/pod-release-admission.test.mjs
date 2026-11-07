@@ -30,7 +30,8 @@ for(const [name,manifest,manifest_sha256] of [
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
    if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',daily_cap:10}]};
    if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
@@ -61,7 +62,8 @@ for(const [name,qa_envelope] of [
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
    if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))return {rows:[{id:'account',platform:'redbubble',daily_cap:10}]};
    if(sql.startsWith('SELECT true AS present FROM pod_production_queue WHERE account_id='))return {rows:[]};
@@ -94,7 +96,8 @@ test('final local release guard rejects a changed durable manifest or QA snapsho
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;
-   if(sql==='BEGIN'||sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
+   if(sql==='COMMIT')return {command:'COMMIT'};
+   if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))return {rows:[current]};
    if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
    throw Error('UNEXPECTED_QUERY: '+sql);

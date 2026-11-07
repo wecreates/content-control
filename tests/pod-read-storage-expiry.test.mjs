@@ -12,6 +12,7 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  const queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async(sql,args)=>{
   queries.push({sql,args});
+  if(sql==='COMMIT')return {command:'COMMIT'};
   if((typeof sql==='string'?sql:sql.text)==='SELECT fixture')return {rows:[{value:1}]};
   return {rows:[]};
  }};
@@ -101,6 +102,7 @@ test('guarded reads scrub committed session state before returning the pooled cl
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text.startsWith('SELECT set_config'))applicationName='read-poison';
+  if(text==='COMMIT')return {command:'COMMIT'};
   if(text==='DISCARD ALL')applicationName='pool-default';
   return {rows:[{application_name:applicationName}]};
  }};

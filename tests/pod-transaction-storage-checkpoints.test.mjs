@@ -13,6 +13,7 @@ function fixture({expireOnConnect=false,expireOnQuery=null}={}){
   async query(sql){
    calls.push(sql);
    if((typeof sql==='string'?sql:sql.text)===expireOnQuery)db.expiresAt=0;
+   if(sql==='COMMIT')return {command:'COMMIT'};
    return {rows:[]};
   },
   release(bad){releases.push(bad);}
@@ -172,6 +173,7 @@ test('transaction waits for a callback query even when the callback does not awa
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='UNAWAITED_WRITE')return pending;
+  if(text==='COMMIT')return {command:'COMMIT'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -218,6 +220,7 @@ test('transaction scrubs committed session state before returning the pooled cli
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text.startsWith('SELECT set_config'))applicationName='transaction-poison';
+  if(text==='COMMIT')return {command:'COMMIT'};
   if(text==='DISCARD ALL')applicationName='pool-default';
   return {rows:[]};
  }};
@@ -259,6 +262,7 @@ test('transaction preserves a committed result but discards a client when sessio
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='DISCARD ALL')throw Error('SESSION_CLEANUP_FAILED');
+  if(text==='COMMIT')return {command:'COMMIT'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

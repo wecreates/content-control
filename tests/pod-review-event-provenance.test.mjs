@@ -29,6 +29,7 @@ function reviewFixture(){
 function readFixture(result){
  const client={release(){},query:async sql=>{
   const text=typeof sql==='string'?sql:sql.text;
+  if(text==='COMMIT')return {command:'COMMIT'};
   return text.includes('FROM pod_production_queue q')?result:{rows:[]};
  }};
  return new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -44,7 +45,7 @@ function validPng(){
 
 test('review retrieval selects manifest identity only from the review-hold event',async()=>{
  const queries=[];
- const client={release(){},query:async sql=>{queries.push(typeof sql==='string'?sql:sql.text);return {rows:[]};}};
+ const client={release(){},query:async sql=>{queries.push(typeof sql==='string'?sql:sql.text);return sql==='COMMIT'?{command:'COMMIT'}:{rows:[]};}};
  const pool={connect:async()=>client};
  const db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
 

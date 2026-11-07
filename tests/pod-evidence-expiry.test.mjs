@@ -26,6 +26,7 @@ async function exercise(kind,duplicate,expired){
   const client={release(){},query:async(sql,args)=>{
    if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    queries.push(sql);
+   if(sql==='COMMIT')return {command:'COMMIT'};
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
    if(sql.startsWith('INSERT INTO pod_market_intelligence'))return duplicate?rows():rows({id:'record-fixture'});

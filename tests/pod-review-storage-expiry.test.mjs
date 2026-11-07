@@ -42,7 +42,7 @@ for(const [name,read] of [
   let db;
   const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
    manifest:plain,manifest_sha256:manifestSha256,...(name==='review artifact'?{body,media_type:'image/png'}:{})};
-  const client={release(){},query:async()=>({rows:[row]})};
+  const client={release(){},query:async sql=>sql==='COMMIT'?{command:'COMMIT'}:{rows:[row]}};
   const pool={connect:async()=>client};
   db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
   const active=db.active.bind(db);let checks=0;
