@@ -2,6 +2,9 @@ name: Visual review regression tests
 on:
   pull_request:
     paths:
+      - '.github/workflows/visual-analysis.yml'
+      - 'scripts/run_visual_analysis.py'
+      - 'tests/test_run_visual_analysis.py'
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/style_structure_diagnostic.py'
       - 'scripts/reconcile_visual_review.py'
@@ -33,6 +36,7 @@ jobs:
         run: python -m pip install opencv-python-headless==5.0.0.93 numpy==2.3.5
       - name: Test comparison and review reconciliation
         run: |
+          python -m unittest tests.test_run_visual_analysis -v
           python -m unittest discover -s tests -p 'test_rendered_visual_parity.py' -v
           python -m unittest discover -s tests -p 'test_reconcile_visual_review.py' -v
           python -m unittest discover -s tests -p 'test_visual_review_reference_decode.py' -v
