@@ -54,6 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
+      PYTHONDONTWRITEBYTECODE: '1'
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4

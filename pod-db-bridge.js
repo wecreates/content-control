@@ -32,6 +32,13 @@ function dataProperty(target,key){
   return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
  }catch{return {valid:false};}
 }
+function assertCommitOutcome(result){
+ // PostgreSQL may resolve COMMIT with a ROLLBACK command tag on an aborted
+ // transaction. Do not return read or write evidence from that transaction.
+ const command=dataProperty(result,'command');
+ if(!command.valid||typeof result!=='object'||Array.isArray(result)||command.value!=='COMMIT')
+  throw Error('POD_COMMIT_UNVERIFIED');
+}
 function assertExactMutation(result,expected){
  const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
  if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
@@ -550,7 +557,7 @@ export class PodDB {
    const result=await waiting.step(()=>c.query({text:sql,values:values??[],queryMode:'extended'}));this.active();checkpoint();
    // COMMIT must settle so a completed read has a known outcome. Cancellation
    // is applied immediately after it, matching the managed write boundary.
-   commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return result;
+   commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return result;
   }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
@@ -689,7 +696,7 @@ export class PodDB {
    // COMMIT must settle so its outcome is known. The managed transaction's
    // ten-second statement timeout bounds this control statement; cancellation
    // is applied at the checkpoint immediately after it completes.
-   this.active();checkpoint();commitPending=true;await c.query('COMMIT');commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return r;
+   this.active();checkpoint();commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return r;
   }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }

@@ -5,7 +5,8 @@ import hashlib, json
 from pathlib import Path
 from watchdog_scope import completion_scope
 from normalize_npm_security_audit import security_report_is_clean
-from import_hosted_npm_security_evidence import load_hosted_report
+from load_live_npm_security_evidence import load_live_npm_report
+from load_live_python_security_evidence import load_live_python_report
 
 ROOT=Path(".")
 health=json.loads((ROOT/"state/content-control-health.json").read_text())
@@ -13,8 +14,8 @@ receipt=json.loads((ROOT/"qa-output/free/final-receipt.json").read_text())
 owner=json.loads((ROOT/"control/publication-owner-gate.json").read_text())
 sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
-security=load_hosted_report(ROOT, "wecreates/content-control")
-python_security=json.loads((ROOT/"state/python-security-audit.json").read_text()) if (ROOT/"state/python-security-audit.json").exists() else {"status":"MISSING"}
+security=load_live_npm_report(ROOT, "wecreates/content-control")
+python_security=load_live_python_report(ROOT, "wecreates/content-control")
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
 wiring_health=json.loads((ROOT/"state/system-wiring-health.json").read_text()) if (ROOT/"state/system-wiring-health.json").exists() else {"status":"MISSING"}
 factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if (ROOT/"state/factual-compliance-health.json").exists() else {"status":"MISSING"}

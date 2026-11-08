@@ -10,6 +10,23 @@ on:
         description: 'Exact 40-character commit SHA expected at the selected ref'
         type: string
         required: true
+  pull_request:
+    branches: [main]
+    paths:
+      - 'requirements-free-qa.lock.txt'
+      - 'requirements-transcription.txt'
+      - 'requirements-pod-runtime.txt'
+      - 'scripts/normalize_python_security_audit.py'
+      - 'scripts/verify_hosted_python_security_evidence.py'
+      - 'scripts/load_live_python_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_python_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
+      - 'tests/test_hosted_python_security_evidence.py'
+      - 'tests/test_python_security_audit.py'
+      - 'tests/test_security_workflow_hardening.py'
+      - 'tests/test_pillow_security_compatibility.py'
+      - '.github/workflows/python-security-audit.yml'
   push:
     branches: [main]
     paths:
@@ -17,6 +34,12 @@ on:
       - 'requirements-transcription.txt'
       - 'requirements-pod-runtime.txt'
       - 'scripts/normalize_python_security_audit.py'
+      - 'scripts/verify_hosted_python_security_evidence.py'
+      - 'scripts/load_live_python_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_python_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
+      - 'tests/test_hosted_python_security_evidence.py'
       - 'tests/test_python_security_audit.py'
       - 'tests/test_security_workflow_hardening.py'
       - 'tests/test_pillow_security_compatibility.py'
@@ -57,9 +80,12 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_security_workflow_hardening.py -v
           python -m unittest discover -s tests -p test_python_security_audit.py -v
+          python -m unittest discover -s tests -p test_hosted_python_security_evidence.py -v
+          python -m unittest discover -s tests -p test_live_python_security_evidence.py -v
+          python -m unittest discover -s tests -p test_npm_security_source_equivalence.py -v
           python -m unittest discover -s tests -p test_pillow_security_compatibility.py -v
   audit:
-    if: github.ref == 'refs/heads/main' && !(github.event_name == 'workflow_dispatch' && inputs.validation_only)
+    if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && !(github.event_name == 'workflow_dispatch' && inputs.validation_only)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -93,52 +119,60 @@ jobs:
         run: python -m unittest discover -s tests -p test_security_workflow_hardening.py -v
       - name: Test audit normalization
         run: python -m unittest discover -s tests -p test_python_security_audit.py -v
+      - name: Test hosted Python evidence verification
+        run: |
+          python -m unittest discover -s tests -p test_hosted_python_security_evidence.py -v
+          python -m unittest discover -s tests -p test_live_python_security_evidence.py -v
+          python -m unittest discover -s tests -p test_npm_security_source_equivalence.py -v
       - name: Install audit tool
         run: python -m pip install 'pip-audit>=2.9,<3'
       - name: Audit Python lock files
         continue-on-error: true
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
         run: |
+          set -euo pipefail
+          cp requirements-transcription.txt requirements-free-qa.lock.txt requirements-pod-runtime.txt "$EVIDENCE_DIR/"
           set +e
-          rm -f /tmp/{transcription,qa,pod}-audit.json /tmp/{transcription,qa,pod}-exit
-          pip-audit -r requirements-transcription.txt --format json -o /tmp/transcription-audit.json
-          echo $? > /tmp/transcription-exit
-          pip-audit -r requirements-free-qa.lock.txt --format json -o /tmp/qa-audit.json
-          echo $? > /tmp/qa-exit
-          pip-audit -r requirements-pod-runtime.txt --format json -o /tmp/pod-audit.json
-          echo $? > /tmp/pod-exit
+          pip-audit -r requirements-transcription.txt --format json -o "$EVIDENCE_DIR/transcription-audit.json"
+          echo $? > "$EVIDENCE_DIR/transcription-exit"
+          pip-audit -r requirements-free-qa.lock.txt --format json -o "$EVIDENCE_DIR/qa-audit.json"
+          echo $? > "$EVIDENCE_DIR/qa-exit"
+          pip-audit -r requirements-pod-runtime.txt --format json -o "$EVIDENCE_DIR/pod-audit.json"
+          echo $? > "$EVIDENCE_DIR/pod-exit"
           exit 0
       - name: Normalize Python security report
         if: always() && steps.evidence.outcome == 'success'
         env:
           EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
         run: |
-          python scripts/normalize_python_security_audit.py --input-dir /tmp --output "$EVIDENCE_DIR/python-security-audit.json"
+          python scripts/normalize_python_security_audit.py --input-dir "$EVIDENCE_DIR" --output "$EVIDENCE_DIR/python-security-audit.json"
       - name: Bind evidence to this run
         id: receipt
         if: always() && steps.evidence.outcome == 'success'
         env:
           EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
+          REPOSITORY: ${{ github.repository }}
           SOURCE_SHA: ${{ github.sha }}
           SOURCE_REF: ${{ github.ref }}
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           python - <<'PYMETA'
-          import json, os, pathlib
-          from datetime import datetime, timezone
+          import json, os, pathlib, sys
+          sys.dont_write_bytecode = True
+          sys.path.insert(0, 'scripts')
+          from verify_hosted_python_security_evidence import build_receipt, WORKFLOW
           directory = pathlib.Path(os.environ['EVIDENCE_DIR'])
-          report = directory / 'python-security-audit.json'
-          document = json.loads(report.read_text())
-          assert document['status'] in ('PASS', 'FAIL', 'ERROR')
-          path = directory / 'python-security-audit-provenance.json'
-          path.write_text(json.dumps({**{key: os.environ[key] for key in ('SOURCE_SHA', 'SOURCE_REF', 'RUN_ID', 'RUN_ATTEMPT')}, 'recorded_at': datetime.now(timezone.utc).isoformat()}, sort_keys=True) + '\n')
+          identity = {key: os.environ[key] for key in ('REPOSITORY', 'SOURCE_SHA', 'SOURCE_REF', 'RUN_ID', 'RUN_ATTEMPT')}
+          identity['WORKFLOW_PATH'] = WORKFLOW
+          receipt = build_receipt(directory, identity)
+          (directory / 'python-security-audit-provenance.json').write_text(json.dumps(receipt, sort_keys=True) + '\n')
           PYMETA
       - uses: actions/upload-artifact@v4
         if: always() && steps.receipt.outcome == 'success'
         with:
-          name: python-security-audit-${{ github.sha }}-${{ github.run_attempt }}
+          name: python-security-audit-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           if-no-files-found: error
-          path: |
-            ${{ steps.evidence.outputs.directory }}/python-security-audit.json
-            ${{ steps.evidence.outputs.directory }}/python-security-audit-provenance.json
+          path: ${{ steps.evidence.outputs.directory }}/
           retention-days: 30

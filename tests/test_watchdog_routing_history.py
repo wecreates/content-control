@@ -1,4 +1,4 @@
-"""History regressions plus health-unit fixtures; synthetic npm loader is explicitly mocked.
+"""History regressions plus health-unit fixtures; synthetic npm/Python loaders are explicitly mocked.
 Real hosted provenance validation remains covered by test_hosted_npm_security_evidence.
 """
 import contextlib
@@ -275,20 +275,25 @@ def health_fixture(root):
 
 class SecurityGatingTests(unittest.TestCase):
     def run_health(self, root, isolate_hosted_loader=True):
-        if not isolate_hosted_loader:
-            return subprocess.run([sys.executable, "-B", str(HEALTH)], cwd=root, text=True, capture_output=True)
-        # Isolate the hosted importer boundary, not the strict clean-report gate.
-        # These component/history fixtures are not Git repositories or real scans.
+        # Component mode mocks authenticated loader boundaries explicitly.
+        # Negative mode uses real loaders and gates, injecting only API failure
+        # so unsigned local PASS files cannot cause network use or success.
         wrapper = """
 import json, pathlib, runpy, sys
 from unittest.mock import patch
 sys.path.insert(0, sys.argv[1])
-import import_hosted_npm_security_evidence
-with patch.object(import_hosted_npm_security_evidence, 'load_hosted_report',
-                  side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/runtime-security-audit.json').read_text())):
-    runpy.run_path(sys.argv[2], run_name='__main__')
+import load_live_npm_security_evidence as npm
+import load_live_python_security_evidence as python
+if sys.argv[3] == 'synthetic_component':
+    with patch.object(npm, 'load_live_npm_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/runtime-security-audit.json').read_text())), patch.object(python, 'load_live_python_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/python-security-audit.json').read_text())):
+        runpy.run_path(sys.argv[2], run_name='__main__')
+else:
+    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
+        runpy.run_path(sys.argv[2], run_name='__main__')
 """
-        return subprocess.run([sys.executable, "-B", "-c", wrapper, str(ROOT / 'scripts'), str(HEALTH)], cwd=root, text=True, capture_output=True)
+        return subprocess.run([sys.executable, "-B", "-c", wrapper, str(ROOT / 'scripts'), str(HEALTH),
+                               'synthetic_component' if isolate_hosted_loader else 'real_loaders_offline_failure'],
+                              cwd=root, text=True, capture_output=True)
 
     def test_clean_fixture_passes_component_checks_but_not_production(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -336,8 +341,25 @@ with patch.object(import_hosted_npm_security_evidence, 'load_hosted_report',
             self.assertEqual(result.returncode, 2, result.stderr)
             report = json.loads(result.stdout)
             self.assertIn('dependency_security_clean', report['watchdog']['failed_checks'])
+            self.assertIn('python_dependency_security_clean', report['watchdog']['failed_checks'])
             self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
             self.assertFalse(report['completion']['publication_enabled'])
+
+    def test_real_loaders_reject_missing_or_forged_clean_local_reports(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                if missing:
+                    (root / 'state/runtime-security-audit.json').unlink()
+                    (root / 'state/python-security-audit.json').unlink()
+                result = self.run_health(root, isolate_hosted_loader=False)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertIn('dependency_security_clean', report['watchdog']['failed_checks'])
+                self.assertIn('python_dependency_security_clean', report['watchdog']['failed_checks'])
+                self.assertFalse(report['completion']['publication_enabled'])
+                self.assertFalse(report['completion']['production_ready'])
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,6 +8,7 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 function database(result){
  const client={release(){},query:async query=>{
   const text=typeof query==='string'?query:query.text;
+  if(text==='COMMIT')return {command:'COMMIT'};
   return text.startsWith('SELECT ')?result:{rows:[]};
  }};
  return new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

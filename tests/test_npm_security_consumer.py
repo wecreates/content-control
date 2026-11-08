@@ -46,8 +46,11 @@ class ConsumerTests(unittest.TestCase):
         tree = ast.parse(source)
         assignments = [n for n in tree.body if isinstance(n, ast.Assign)]
         security = next(n for n in assignments if any(isinstance(t,ast.Name) and t.id=='security' for t in n.targets))
-        self.assertEqual(security.value.func.id, 'load_hosted_report')
+        self.assertEqual(security.value.func.id, 'load_live_npm_report')
         self.assertEqual(security.value.args[1].value, 'wecreates/content-control')
+        python_security = next(n for n in assignments if any(isinstance(t,ast.Name) and t.id=='python_security' for t in n.targets))
+        self.assertEqual(python_security.value.func.id, 'load_live_python_report')
+        self.assertEqual(python_security.value.args[1].value, 'wecreates/content-control')
         check = next(n for n in assignments if any(isinstance(t,ast.Subscript) and isinstance(t.slice,ast.Constant) and t.slice.value=='dependency_security_clean' for t in n.targets))
         self.assertEqual(check.value.func.id, 'security_report_is_clean')
     def test_workflow_readonly_fresh_artifact_and_scans(self):
@@ -68,3 +71,14 @@ class ConsumerTests(unittest.TestCase):
     def test_watchdog_no_default_zero_security_shortcut(self):
         source = (ROOT/'scripts/verify_free_production_health.py').read_text()
         self.assertNotIn('security.get("npm_counts",{}).get(k,0)', source)
+        self.assertNotIn('load_hosted_report(', source)
+        self.assertNotIn('ROOT/"state/python-security-audit.json"', source)
+        watchdog = (ROOT/'.github/workflows/free-production-watchdog.yml').read_text()
+        self.assertIn("PYTHONDONTWRITEBYTECODE: '1'", watchdog)
+        for ecosystem in ('npm', 'python'):
+            workflow = 'runtime-security-audit.yml' if ecosystem == 'npm' else 'python-security-audit.yml'
+            text = (ROOT/'.github/workflows'/workflow).read_text()
+            self.assertIn(f'scripts/load_live_{ecosystem}_security_evidence.py', text)
+            self.assertIn('scripts/npm_security_source_equivalence.py', text)
+            self.assertIn(f'test_live_{ecosystem}_security_evidence.py', text)
+            self.assertIn('contents: read', text)

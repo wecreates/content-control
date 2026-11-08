@@ -6,6 +6,25 @@ on:
         description: Exact 40-character commit SHA expected at the selected ref
         type: string
         required: true
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements-free-qa.lock.txt'
+      - 'scripts/normalize_npm_security_audit.py'
+      - 'scripts/import_hosted_npm_security_evidence.py'
+      - 'scripts/refresh_npm_security_evidence.py'
+      - 'scripts/verify_free_production_health.py'
+      - 'scripts/load_live_npm_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_npm_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
+      - 'tests/test_npm_security_audit.py'
+      - 'tests/test_hosted_npm_security_evidence.py'
+      - 'tests/test_refresh_npm_security_evidence.py'
+      - 'tests/test_npm_security_consumer.py'
+      - '.github/workflows/runtime-security-audit.yml'
   push:
     branches: [main]
     paths:
@@ -16,6 +35,10 @@ on:
       - 'scripts/import_hosted_npm_security_evidence.py'
       - 'scripts/refresh_npm_security_evidence.py'
       - 'scripts/verify_free_production_health.py'
+      - 'scripts/load_live_npm_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_npm_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
       - 'tests/test_npm_security_audit.py'
       - 'tests/test_hosted_npm_security_evidence.py'
       - 'tests/test_refresh_npm_security_evidence.py'
@@ -62,6 +85,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_npm_security*.py' -v
           python -m unittest discover -s tests -p 'test_hosted_npm_security_evidence.py' -v
           python -m unittest discover -s tests -p 'test_refresh_npm_security_evidence.py' -v
+          python -m unittest discover -s tests -p 'test_live_npm_security_evidence.py' -v
       - name: Audit locked npm dependency graph without lifecycle scripts
         env:
           EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
