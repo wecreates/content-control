@@ -24,7 +24,7 @@
   "scripts/segment_observed_words.py": "0593bb7b8c038a87af716e8574214067b7bfc4ea8fd6ff326fc818e56ea1227e",
   "state/episode1-factual-contract.json": "1ccdfbdb9111b9c91d501e9d44d2e849c55f29a81e2b5fe100bf66b843de93a8",
   "tests/fixtures/v10-source-before/V9ArticulatedVisual.jsx": "95f25034a847d9a5858df43ce2a41bbbb5de811e5437e0e6e6651efdaaa58bdc",
-  "tests/test_candidate_preview.py": "61cf5b99f19f5383a08f7997f04e0ff2ca08cb2302058f314fcabc872fbd4c34",
+  "tests/test_candidate_preview.py": "6f248fc30b94cdc4632ef6e39a1124b422baa8ca7c06db8567add02c1833bc93",
   "tests/test_observed_sentence_segments.py": "1d5df6bdff22c6c4a48304fdb61565383282dca794ed6ac9d07e324649935100",
   "tests/test_transcription_audio_identity.py": "ce74d97928fd631d27033575f539546e1ba94234dd1d74a33797cdabb1a2db37",
   "tests/test_word_timed_workflow.py": "d34d6347229afee6d10e6464c305230bb7e94c835be856d562cf0b1db1eba38b",

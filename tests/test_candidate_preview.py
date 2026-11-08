@@ -200,13 +200,77 @@ class Guards(unittest.TestCase):
                     with self.assertRaises(ValueError):p.generated_identity()
             finally: os.chdir(old)
     def test_caption_builder_has_isolated_cwd_and_absolute_script(self):
-        with patch.object(p,'command') as command:
+        def fake_run(args, **kwargs):
+            kwargs['stdout'].write(b'{"status":"PASS"}')
+            return SimpleNamespace(returncode=0)
+        with patch.object(p.subprocess,'run',side_effect=fake_run) as command, \
+             patch.object(p,'save'), patch.object(p,'caption_scalar_metrics',return_value={}):
             p.build_isolated_captions()
         args=command.call_args.args[0]
         self.assertEqual(Path(args[1]),Path('scripts/build_verified_captions.py').resolve())
         self.assertEqual(command.call_args.kwargs['cwd'],p.OUT.resolve())
         self.assertTrue(Path(args[2]).is_absolute())
         self.assertTrue(Path(args[3]).is_absolute())
+    def test_caption_builder_success_failure_unknown_output(self):
+        cases=[(0,b'{"status":"PASS"}','PASS'),
+               (2,b'{"status":"BLOCKED","reason":"Caption timing differs from its observed segment"}','SEGMENT_TIMING_MISMATCH'),
+               (2,b'{"status":"BLOCKED","reason":"PRIVATE_TRANSCRIPT_SENTINEL"}','BUILDER_FAILED'),
+               (2,b'PRIVATE_TRANSCRIPT_SENTINEL','UNKNOWN_OUTPUT'),
+               (0,b'{"status":"unexpected","text":"PRIVATE_TRANSCRIPT_SENTINEL"}','UNKNOWN_OUTPUT'),
+               (2,b'x'*8193,'UNKNOWN_OUTPUT')]
+        for exit_code,output,expected in cases:
+            with self.subTest(exit_code=exit_code,expected=expected), tempfile.TemporaryDirectory() as td:
+                old=os.getcwd()
+                try:
+                    os.chdir(td);p.OUT.mkdir();p.save(p.OUT/'gates.json',{})
+                    def fake_run(args,**kwargs):
+                        kwargs['stdout'].write(output)
+                        kwargs['stderr'].write(b'PRIVATE_TRANSCRIPT_SENTINEL')
+                        return SimpleNamespace(returncode=exit_code)
+                    with patch.object(p.subprocess,'run',side_effect=fake_run), \
+                         patch.object(p,'sources',return_value={}), \
+                         patch.object(p,'caption_scalar_metrics',return_value={'normalized_words_match':True,'max_timing_delta_seconds':.12}):
+                        if expected=='PASS':p.gate('caption_source_words_timing',p.build_isolated_captions)
+                        else:
+                            with self.assertRaises((p.subprocess.CalledProcessError,ValueError)) as error:
+                                p.gate('caption_source_words_timing',p.build_isolated_captions)
+                            if exit_code:self.assertEqual(error.exception.returncode,exit_code)
+                    result=p.caption_builder_diagnostic()
+                    self.assertEqual(result['code'],expected)
+                    self.assertEqual(result['exit_code'],exit_code)
+                    self.assertNotIn('PRIVATE_TRANSCRIPT_SENTINEL',json.dumps(result))
+                    self.assertEqual(json.loads((p.OUT/'gates.json').read_text())['caption_source_words_timing']['status'],'PASS' if expected=='PASS' else 'FAIL')
+                finally:os.chdir(old)
+    def test_caption_diagnostic_rejects_untrusted_fields(self):
+        result=p.sanitize_caption_diagnostic({'code':['bad'],'status':'PASS',
+             'reason':'PRIVATE_TRANSCRIPT_SENTINEL','transcript':'PRIVATE_TRANSCRIPT_SENTINEL',
+             'normalized_words_match':'true','observed_segment_count':True,
+             'max_timing_delta_seconds':float('nan')})
+        self.assertEqual(result['status'],'BLOCKED')
+        self.assertEqual(result['code'],'UNKNOWN_OUTPUT')
+        self.assertNotIn('PRIVATE_TRANSCRIPT_SENTINEL',json.dumps(result))
+        self.assertNotIn('max_timing_delta_seconds',result)
+        self.assertNotIn('observed_segment_count',result)
+    def test_caption_scalar_metrics_do_not_emit_words(self):
+        with tempfile.TemporaryDirectory() as td:
+            old=os.getcwd()
+            try:
+                os.chdir(td);p.AUDIO.parent.mkdir(parents=True);p.AUDIO.write_bytes(b'fixture')
+                (p.OUT/'state').mkdir()
+                contract={'narration_text':'Private fixture words','narration_sha256':p.digest(p.AUDIO),
+                          'caption_cues':[{'start':0,'end':1,'text':'Private fixture words'}]}
+                transcription={'expected_text':'Private fixture words','actual_transcript':'Private fixture words',
+                          'audio_sha256':p.digest(p.AUDIO),'segments':[{'start':0,'end':1.12,'text':'Private fixture words'}]}
+                p.save(p.OUT/'state/episode1-factual-contract.json',contract);p.save(p.DERIVED,transcription)
+                normalizer=SimpleNamespace(norm=lambda value:value.lower())
+                with patch.dict('sys.modules',{'scripts.free_transcription_qa':normalizer,'free_transcription_qa':normalizer}):
+                    result=p.caption_scalar_metrics()
+                self.assertTrue(result['normalized_words_match'])
+                self.assertEqual(result['observed_segment_count'],1)
+                self.assertEqual(result['approved_segment_count'],1)
+                self.assertEqual(result['max_timing_delta_seconds'],.12)
+                self.assertNotIn('Private fixture words',json.dumps(result))
+            finally:os.chdir(old)
     def test_diagnostic_uses_only_explicit_preview_sources(self):
         source=(ROOT/'scripts/v10_candidate_preview.py').read_text()
         self.assertIn("'render', 'preview/v10-narration-candidate/index.jsx'",source)

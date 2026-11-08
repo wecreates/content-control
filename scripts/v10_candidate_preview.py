@@ -1,5 +1,6 @@
 """Hosted branch-only compute diagnostic. No artifact upload or retained media."""
 import hashlib
+import math
 import json
 import os
 from pathlib import Path
@@ -7,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 OUT = Path('candidate-preview')
 VIDEO = OUT / 'episode1-v10-canonical-candidate.mp4'
@@ -155,10 +157,127 @@ def regenerate_audio():
     shutil.copyfile(DRAFT_CONTRACT, contract)
     generated_identity()
 
+CAPTION_REASONS = {
+    'PUBLICATION_NOT_DISABLED': 'Publication must remain disabled',
+    'TRANSCRIPTION_NOT_PASS': 'Passing transcription required',
+    'NARRATION_HASH_MISMATCH': 'Current narration hash must match transcription and approved contract',
+    'TRANSCRIPT_WORDS_MISMATCH': 'Transcription words differ from approved narration',
+    'INVALID_DURATION': 'Invalid narration duration',
+    'SEGMENT_COUNT_MISMATCH': 'Caption count differs from observed transcription segments',
+    'COMBINED_WORDS_MISMATCH': 'Caption/segment words differ from approved narration',
+    'SEGMENT_WORDS_MISMATCH': 'Caption words differ from their observed segment',
+    'SEGMENT_TIMING_MISMATCH': 'Caption timing differs from its observed segment',
+    'NARRATION_COVERAGE_MISMATCH': 'Captions do not cover the observed narration',
+    'INVALID_CUES': 'Nonempty bounded caption/segment list required',
+    'INVALID_CUE': 'Invalid caption/segment',
+    'CUE_OUTSIDE_BOUNDS': 'Caption/segment timing is outside media bounds',
+    'CUE_PRECISION_LOSS': 'Caption/segment disappears at VTT millisecond precision',
+    'UNKNOWN_OUTPUT': 'Builder output is unrecognized; untrusted detail omitted',
+    'BUILDER_FAILED': 'Caption builder failed without a recognized reason',
+    'PASS': 'Caption builder passed unchanged validation',
+}
+CAPTION_BOOL_METRICS = {'normalized_words_match', 'combined_words_match', 'paired_segment_words_match',
+                        'narration_hashes_match'}
+CAPTION_NUM_METRICS = {'approved_segment_count', 'observed_segment_count', 'max_timing_delta_seconds'}
+
+def bounded_object(path, limit=2*1024*1024):
+    path = Path(path)
+    require(not path.is_symlink() and path.is_file() and path.stat().st_size <= limit, 'Invalid diagnostic input')
+    value = json.loads(path.read_text())
+    require(isinstance(value, dict), 'Expected diagnostic object')
+    return value
+
+def caption_scalar_metrics():
+    # Diagnostic-only comparisons reuse the unchanged producer normalization.
+    # These metrics neither replace validate_sources nor change acceptance thresholds.
+    try:
+        try:
+            from scripts.free_transcription_qa import norm
+        except ModuleNotFoundError:
+            from free_transcription_qa import norm
+        contract = bounded_object(OUT / 'state/episode1-factual-contract.json')
+        transcript = bounded_object(DERIVED)
+        cues, segments = contract.get('caption_cues'), transcript.get('segments')
+        require(isinstance(cues, list) and isinstance(segments, list) and 1 <= len(cues) <= 10000
+                and 1 <= len(segments) <= 10000, 'Invalid bounded cue list')
+        def normalized(value):
+            require(isinstance(value, str) and 0 < len(value) <= 200000, 'Invalid diagnostic text')
+            return norm(value)
+        expected = normalized(contract.get('narration_text'))
+        result = {'normalized_words_match': normalized(transcript.get('expected_text')) == expected
+                  and normalized(transcript.get('actual_transcript')) == expected,
+                  'approved_segment_count': len(cues), 'observed_segment_count': len(segments),
+                  'narration_hashes_match': contract.get('narration_sha256') == transcript.get('audio_sha256') == digest(AUDIO)}
+        cue_words = [normalized(cue.get('text')) for cue in cues]
+        segment_words = [normalized(segment.get('text')) for segment in segments]
+        result['combined_words_match'] = normalized(' '.join(cue_words)) == normalized(' '.join(segment_words)) == expected
+        result['paired_segment_words_match'] = cue_words == segment_words
+        if len(cues) == len(segments):
+            deltas = []
+            for cue, segment in zip(cues, segments):
+                for key in ['start', 'end']:
+                    a, b = cue.get(key), segment.get(key)
+                    require(all(type(x) in {int, float} and 0 <= x <= 600 and math.isfinite(x) for x in [a, b]), 'Invalid diagnostic timing')
+                    deltas.append(abs(a-b))
+            result['max_timing_delta_seconds'] = round(max(deltas), 6)
+        return result
+    except (OSError, ValueError, TypeError, AttributeError, ImportError, KeyError):
+        return {}
+
+def sanitize_caption_diagnostic(raw):
+    if not isinstance(raw, dict):
+        raw = {}
+    code = raw.get('code')
+    code = code if isinstance(code, str) and code in CAPTION_REASONS else 'UNKNOWN_OUTPUT'
+    result = {'status': 'PASS' if raw.get('status') == 'PASS' and code == 'PASS' else 'BLOCKED',
+              'code': code, 'reason': CAPTION_REASONS[code]}
+    value = raw.get('exit_code')
+    if type(value) is int and -128 <= value <= 255:
+        result['exit_code'] = value
+    for key in CAPTION_BOOL_METRICS:
+        if type(raw.get(key)) is bool:
+            result[key] = raw[key]
+    for key in CAPTION_NUM_METRICS:
+        value = raw.get(key)
+        bound = 600 if key == 'max_timing_delta_seconds' else 10000
+        if type(value) in {int, float} and 0 <= value <= bound and math.isfinite(value):
+            result[key] = value
+    return result
+
+def caption_builder_diagnostic():
+    try:
+        return sanitize_caption_diagnostic(bounded_object(OUT / 'caption-builder-diagnostic.json', 4096))
+    except (OSError, ValueError):
+        return {'status': 'NOT_RUN', 'code': 'NO_VALID_DIAGNOSTIC'}
+
 def build_isolated_captions():
-    # Absolute, unchanged script plus explicit isolated working root. No import hooks or gate monkeypatch.
-    command([sys.executable, str(Path('scripts/build_verified_captions.py').resolve()),
-             str(DERIVED.resolve()), str(VTT.resolve())], cwd=OUT.resolve())
+    # Invoke the actual unchanged builder, not a replacement validation path.
+    args = [sys.executable, str(Path('scripts/build_verified_captions.py').resolve()),
+            str(DERIVED.resolve()), str(VTT.resolve())]
+    # Bound what is parsed/emitted; raw stdout/stderr disappear with these temp files.
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        completed = subprocess.run(args, cwd=OUT.resolve(), stdout=stdout, stderr=stderr, check=False)
+        stdout.seek(0)
+        output = stdout.read(8193)
+    code = 'UNKNOWN_OUTPUT'
+    try:
+        require(len(output) <= 8192, 'Oversized builder output')
+        raw = json.loads(output)
+        require(isinstance(raw, dict), 'Invalid builder output')
+        if completed.returncode == 0 and raw.get('status') == 'PASS':
+            code = 'PASS'
+        elif completed.returncode != 0 and raw.get('status') == 'BLOCKED':
+            code = next((key for key, reason in CAPTION_REASONS.items() if key not in {'PASS', 'UNKNOWN_OUTPUT', 'BUILDER_FAILED'}
+                         and raw.get('reason') == reason), 'BUILDER_FAILED')
+    except (ValueError, UnicodeError):
+        pass
+    report = sanitize_caption_diagnostic(dict(status='PASS' if code == 'PASS' else 'BLOCKED', code=code,
+                       exit_code=completed.returncode, **caption_scalar_metrics()))
+    save(OUT / 'caption-builder-diagnostic.json', report)
+    if completed.returncode != 0:
+        raise subprocess.CalledProcessError(completed.returncode, args)
+    require(code == 'PASS', 'Unrecognized caption builder success output')
+
 
 def run():
     identity(os.environ)
@@ -304,6 +423,7 @@ def manifest():
     compact['manifest_sha256'] = digest(OUT / 'manifest.json')
     compact['regeneration'] = regeneration_diagnostic()
     compact['encoder_runtime'] = encoder_runtime_diagnostic()
+    compact['caption_builder'] = caption_builder_diagnostic()
     text = json.dumps(compact, sort_keys=True, separators=(',', ':'))
     print(text)
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
