@@ -176,6 +176,23 @@ class AuditTests(unittest.TestCase):
             path.write_text(json.dumps(doc))
             self.assertEqual(self.result()['status'], 'ERROR')
 
+    def test_stale_pymupdf_inventory_cannot_satisfy_fixed_pin(self):
+        # Synthetic inventory only: a clean old scan is not proof for the fix.
+        self.assertEqual(audit.direct_requirements(ROOT / 'requirements-pod-runtime.txt')['pymupdf'],
+                         '1.26.7')
+        path = self.directory / 'pod-audit.json'
+        document = json.loads(path.read_text())
+        dependency = next(d for d in document['dependencies'] if d['name'] == 'pymupdf')
+        dependency['version'] = '1.26.6'
+        path.write_text(json.dumps(document))
+        stale = self.result()
+        self.assertEqual(stale['status'], 'ERROR')
+        self.assertFalse(stale['direct_requirements_verified'])
+        self.assertEqual(stale['total_vulnerabilities'], 0)
+        dependency['version'] = '1.26.7'
+        path.write_text(json.dumps(document))
+        self.assertEqual(self.result()['status'], 'PASS')
+
     def test_transitive_dependencies_and_canonical_names_are_allowed(self):
         path = self.directory / 'qa-audit.json'
         doc = json.loads(path.read_text())
@@ -210,7 +227,14 @@ class AuditTests(unittest.TestCase):
         self.assertNotIn('pip install Pillow==', workflow)
         self.assertEqual(audit.direct_requirements(ROOT / 'requirements-pod-runtime.txt'), {
             'pillow': '13.0.0', 'numpy': '2.3.5', 'opencv-python-headless': '5.0.0.93',
-            'reportlab': '4.4.9', 'pymupdf': '1.26.6', 'fonttools': '4.61.1'})
+            'reportlab': '4.4.9', 'pymupdf': '1.26.7', 'fonttools': '4.61.1'})
+
+    def test_separate_pod_worker_preserves_pins_and_runtime_parity(self):
+        worker = audit.direct_requirements(ROOT / 'requirements-pod.txt')
+        runtime = audit.direct_requirements(ROOT / 'requirements-pod-runtime.txt')
+        self.assertEqual(worker, {
+            'reportlab': '4.4.9', 'pymupdf': '1.26.7', 'fonttools': '4.61.1'})
+        self.assertEqual(worker, {name: runtime[name] for name in worker})
 
     def test_semantic_workflow_pin_preserves_other_dependencies(self):
         workflow = (ROOT / '.github/workflows/semantic-visual-analysis.yml').read_text()
