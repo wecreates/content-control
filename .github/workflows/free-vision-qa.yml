@@ -72,7 +72,9 @@ jobs:
       - name: Render local-only V10
         run: |
           set -euo pipefail
-          rm -rf qa-output/free
+          # Keep prior candidate history; clear only replaceable run outputs.
+          mkdir -p qa-output/free/history
+          find qa-output/free -mindepth 1 -maxdepth 1 ! -name history -exec rm -rf -- {} +
           mkdir -p qa-output/free/candidate-frames public-review
           npx remotion render remotion/v10-index.jsx Episode1V10FinalProof /tmp/episode1-v10-raw.mp4 --codec h264 --crf 25 --concurrency 2
           ffmpeg -y -i /tmp/episode1-v10-raw.mp4 -map 0:v:0 -map 0:a:0 -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -profile:v high -level 4.1 -c:a copy -movflags +faststart public-review/episode1-v10-free.mp4
