@@ -19,6 +19,7 @@ on:
       - 'scripts/verify_free_production_health.py'
       - 'scripts/watchdog_scope.py'
       - 'tests/test_watchdog_scope.py'
+      - 'tests/test_watchdog_routing_history.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -81,7 +82,7 @@ jobs:
         id: verify
         continue-on-error: true
         run: |
-          python -m unittest tests/test_watchdog_scope.py
+          python -m unittest tests.test_watchdog_scope tests.test_watchdog_routing_history
           python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
         run: |
@@ -121,6 +122,7 @@ jobs:
               "factual_compliance_green":"factual-compliance-gate.yml",
               "sync_retention_green":"sync-retention-gate.yml",
               "dependency_security_clean":"runtime-security-audit.yml",
+              "python_dependency_security_clean":"runtime-security-audit.yml",
               "runtime_locks_present":"generate-runtime-locks.yml",
               "system_wiring_green":"system-wiring-audit.yml",
           }
@@ -142,7 +144,7 @@ jobs:
           auxiliary={
               "runtime_integrity_manifest","live_deployment_green","review_server_smoke_green",
               "factual_compliance_green","sync_retention_green","narration_transcription_green",
-              "caption_health_green","dependency_security_clean","runtime_locks_present",
+              "caption_health_green","dependency_security_clean","python_dependency_security_clean","runtime_locks_present",
               "provenance_candidate_match","provenance_inputs_current","sbom_valid",
               "workflow_control_green","system_wiring_green","deployment_contract_green",
               "acceptance_ledger_candidate_match","caption_candidate_match",

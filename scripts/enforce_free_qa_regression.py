@@ -64,17 +64,34 @@ health={
   "metrics":m,
   "regression_policy":policy,
 }
-health_path.parent.mkdir(parents=True,exist_ok=True)
-health_path.write_text(json.dumps(health,indent=2,sort_keys=True)+"\n")
+# A rerun may update current metrics, but must never rewrite prior history.
 history=Path("qa-output/free/history")/(r["candidate_sha256"]+".json")
 history.parent.mkdir(parents=True,exist_ok=True)
-history.write_text(json.dumps({
-  "schema_version":1,
-  "candidate_sha256":r["candidate_sha256"],
-  "accepted":True,
-  "receipt_path":"qa-output/free/final-receipt.json",
-  "metrics":m,
-  "publication_enabled":False,
-  "credit_cost":0,
-},indent=2,sort_keys=True)+"\n")
+if history.exists() or history.is_symlink():
+    if history.is_symlink() or not history.is_file():
+        raise ValueError("Existing candidate history must be a regular file")
+    prior=json.loads(history.read_text())
+    if not (
+        isinstance(prior,dict)
+        and prior.get("schema_version")==1
+        and prior.get("candidate_sha256")==r["candidate_sha256"]
+        and prior.get("accepted") is True
+        and prior.get("publication_enabled") is False
+        and prior.get("credit_cost")==0
+    ):
+        raise ValueError("Existing candidate history identity or acceptance is invalid")
+else:
+    with history.open("x") as output:
+        output.write(json.dumps({
+            "schema_version":1,
+            "candidate_sha256":r["candidate_sha256"],
+            "accepted":True,
+            "receipt_path":"qa-output/free/final-receipt.json",
+            "metrics":m,
+            "publication_enabled":False,
+            "credit_cost":0,
+        },indent=2,sort_keys=True)+"\n")
+
+health_path.parent.mkdir(parents=True,exist_ok=True)
+health_path.write_text(json.dumps(health,indent=2,sort_keys=True)+"\n")
 print(json.dumps({"status":"GREEN","candidate_sha256":r["candidate_sha256"],"metrics":m},sort_keys=True))
