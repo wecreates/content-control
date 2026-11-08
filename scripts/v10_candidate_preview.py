@@ -282,12 +282,13 @@ def build_isolated_captions():
 def run():
     identity(os.environ)
     sources()
-    for name in ['test_observed_sentence_segments.py', 'test_transcription_audio_identity.py', 'test_word_timed_workflow.py', 'test_candidate_preview.py']:
+    for name in ['test_observed_sentence_segments.py', 'test_transcription_audio_identity.py', 'test_word_timed_workflow.py', 'test_candidate_preview.py', 'test_preview_asr_observer.py']:
         gate('offline_' + name.removeprefix('test_').removesuffix('.py'),
              [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-p', name, '-v'])
     gate('canonical_visual_source', ['node', 'tests/v10-canonical-source.test.mjs'])
     gate('regenerate_frozen_audio', regenerate_audio)
-    gate('fresh_asr', [sys.executable, 'scripts/free_transcription_qa.py', '--audio', str(AUDIO),
+    gate('fresh_asr', [sys.executable, 'scripts/observe_preview_asr.py',
+        '--observer-output', str(OUT / 'asr-observer.json'), '--', '--audio', str(AUDIO),
         '--contract', str(OUT / 'state/episode1-factual-contract.json'), '--output', str(RAW),
         '--model', 'base.en', '--spoken-numbers', '--full-audio'], RAW)
     segmentation = [sys.executable, 'scripts/segment_observed_words.py', '--receipt', str(RAW),
@@ -388,6 +389,18 @@ def regeneration_diagnostic():
             result['ffmpeg_version_first_line'] = first
     return result
 
+def asr_observer_diagnostic():
+    try:
+        raw = bounded_object(OUT / 'asr-observer.json', 65536)
+        # Import only the pinned observer's sanitizer; never import/execute the ASR model here.
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('preview_observer_summary', 'scripts/observe_preview_asr.py')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.public_summary(raw)
+    except (OSError, ValueError, ImportError, TypeError, AttributeError):
+        return {'status': 'UNAVAILABLE', 'reason': 'No valid bounded ASR observation'}
+
 def manifest():
     ident = identity(os.environ)
     gates = json.loads((OUT / 'gates.json').read_text())
@@ -403,7 +416,7 @@ def manifest():
     except Exception as exc:
         gates['source_identity_at_sealing'] = {'status': 'FAIL', 'reason': str(exc)}
     for name in ['offline_observed_sentence_segments', 'offline_transcription_audio_identity',
-                 'offline_word_timed_workflow', 'offline_candidate_preview', 'canonical_visual_source', 'regenerate_frozen_audio', 'fresh_asr', 'observed_segmentation', 'retained_raw_verification',
+                 'offline_word_timed_workflow', 'offline_candidate_preview', 'offline_preview_asr_observer', 'canonical_visual_source', 'regenerate_frozen_audio', 'fresh_asr', 'observed_segmentation', 'retained_raw_verification',
                  'caption_source_words_timing', 'reviewed_caption_hash', 'mono_source_probe',
                  'new_candidate_identity', 'fresh_remotion_render', 'finalize_media', 'mobile', 'audio']:
         gates.setdefault(name, {'status': 'NOT_RUN'})
@@ -424,6 +437,7 @@ def manifest():
     compact['regeneration'] = regeneration_diagnostic()
     compact['encoder_runtime'] = encoder_runtime_diagnostic()
     compact['caption_builder'] = caption_builder_diagnostic()
+    compact['asr_observer'] = asr_observer_diagnostic()
     text = json.dumps(compact, sort_keys=True, separators=(',', ':'))
     print(text)
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
