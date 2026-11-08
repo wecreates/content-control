@@ -2,7 +2,7 @@
   "audio_duration_seconds": 30.058667,
   "audio_start_relative_seconds": 0.0,
   "audio_start_tolerance_seconds": 0.05,
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "channels": 2,
   "checks": {
     "analysis_complete": true,
