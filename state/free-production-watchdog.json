@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
     "review_server_smoke_green": false,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,6 +55,7 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
@@ -67,7 +68,23 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "7ee2bbf928f98846905dec41c0ae18fbbbefba71efd437228b038c6da1f43cf6",
+      "expected": "15143bb161a3f958d9ef09430c8d74b52555741aade672652ba26446e7f74f9f",
+      "path": "package-lock.json"
+    },
+    {
+      "actual": "c8bd0286ca32b1c012b0591b432dd2f08dcdffd7743c85b5e07b6c8cc99d8597",
+      "expected": "b82ebc9e178e34a915c094d9f806d00548a7b1772c45b766d3fcd63941a1960b",
+      "path": "package.json"
+    },
+    {
+      "actual": "b675e082cad676073102c6d9211a463b397a89399e4bfe0431bc7d5d981c4960",
+      "expected": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6",
+      "path": "requirements-free-qa.lock.txt"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
