@@ -1,81 +1,138 @@
 name: Runtime Dependency Security Audit
 on:
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact 40-character commit SHA expected at the selected ref
+        type: string
+        required: true
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'requirements-free-qa.lock.txt'
+      - 'scripts/normalize_npm_security_audit.py'
+      - 'scripts/import_hosted_npm_security_evidence.py'
+      - 'scripts/refresh_npm_security_evidence.py'
+      - 'scripts/verify_free_production_health.py'
+      - 'scripts/load_live_npm_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_npm_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
+      - 'tests/test_npm_security_audit.py'
+      - 'tests/test_hosted_npm_security_evidence.py'
+      - 'tests/test_refresh_npm_security_evidence.py'
+      - 'tests/test_npm_security_consumer.py'
+      - '.github/workflows/runtime-security-audit.yml'
   push:
     branches: [main]
     paths:
       - 'package.json'
       - 'package-lock.json'
       - 'requirements-free-qa.lock.txt'
+      - 'scripts/normalize_npm_security_audit.py'
+      - 'scripts/import_hosted_npm_security_evidence.py'
+      - 'scripts/refresh_npm_security_evidence.py'
+      - 'scripts/verify_free_production_health.py'
+      - 'scripts/load_live_npm_security_evidence.py'
+      - 'scripts/npm_security_source_equivalence.py'
+      - 'tests/test_live_npm_security_evidence.py'
+      - 'tests/test_npm_security_source_equivalence.py'
+      - 'tests/test_npm_security_audit.py'
+      - 'tests/test_hosted_npm_security_evidence.py'
+      - 'tests/test_refresh_npm_security_evidence.py'
+      - 'tests/test_npm_security_consumer.py'
       - '.github/workflows/runtime-security-audit.yml'
   schedule:
     - cron: '29 11 * * 1'
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: runtime-security-audit
+  group: runtime-security-audit-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   audit:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Verify manual source before checkout
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$EXPECTED_SHA" == "$GITHUB_SHA" ]]
       - uses: actions/checkout@v4
-        with: {fetch-depth: 0}
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Create fresh evidence directory
+        id: evidence
+        run: |
+          set -euo pipefail
+          directory=$(mktemp -d "$RUNNER_TEMP/npm-security-audit.XXXXXX")
+          echo "directory=$directory" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Audit npm dependency graph
-        continue-on-error: true
+      - name: Test security normalization and consumer
         run: |
-          npm ci --ignore-scripts
-          npm audit --json > /tmp/npm-audit.json || true
+          python -m unittest discover -s tests -p 'test_npm_security*.py' -v
+          python -m unittest discover -s tests -p 'test_hosted_npm_security_evidence.py' -v
+          python -m unittest discover -s tests -p 'test_refresh_npm_security_evidence.py' -v
+          python -m unittest discover -s tests -p 'test_live_npm_security_evidence.py' -v
+      - name: Audit locked npm dependency graph without lifecycle scripts
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
+        run: |
+          set +e
+          npm audit --package-lock-only --ignore-scripts --audit-level=info --include=dev --include=optional --include=peer --registry=https://registry.npmjs.org --json > "$EVIDENCE_DIR/npm-audit.json"
+          code=$?
+          printf '%s\n' "$code" > "$EVIDENCE_DIR/npm-audit-exit"
+          exit 0
       - name: Build normalized security report
+        if: always() && steps.evidence.outcome == 'success'
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
+        run: |
+          python scripts/normalize_npm_security_audit.py --input "$EVIDENCE_DIR/npm-audit.json" --exit-code-file "$EVIDENCE_DIR/npm-audit-exit" --output "$EVIDENCE_DIR/runtime-security-audit.json"
+      - name: Bind fresh report to source and lock
+        id: receipt
+        if: always() && steps.evidence.outcome == 'success'
+        env:
+          EVIDENCE_DIR: ${{ steps.evidence.outputs.directory }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_PATH: .github/workflows/runtime-security-audit.yml
+          SOURCE_SHA: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           python - <<'PY'
-          import json,pathlib
-          p=pathlib.Path("/tmp/npm-audit.json")
-          raw=json.loads(p.read_text()) if p.exists() and p.stat().st_size else {}
-          meta=raw.get("metadata",{}).get("vulnerabilities",{})
-          vulns=[]
-          for name,v in raw.get("vulnerabilities",{}).items():
-              vulns.append({
-                  "name":name,
-                  "severity":v.get("severity"),
-                  "is_direct":v.get("isDirect"),
-                  "via":[x if isinstance(x,str) else {
-                      "source":x.get("source"),"name":x.get("name"),"severity":x.get("severity"),
-                      "title":x.get("title"),"range":x.get("range")
-                  } for x in v.get("via",[])],
-                  "range":v.get("range"),
-                  "fix_available":v.get("fixAvailable"),
-              })
-          report={
-              "schema_version":1,
-              "npm_counts":meta,
-              "vulnerabilities":vulns,
-              "critical_count":int(meta.get("critical",0)),
-              "high_count":int(meta.get("high",0)),
-              "publication_enabled":False,
-          }
-          pathlib.Path("state/runtime-security-audit.json").write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
-          print(json.dumps(report,sort_keys=True))
+          import hashlib, json, os
+          from pathlib import Path
+          from datetime import datetime, timezone
+          directory = Path(os.environ['EVIDENCE_DIR'])
+          report = directory / 'runtime-security-audit.json'
+          document = json.loads(report.read_text())
+          if document.get('status') not in ('PASS', 'FAIL', 'ERROR'):
+              raise SystemExit('Invalid fresh report')
+          receipt = {key: os.environ[key] for key in ('SOURCE_SHA', 'RUN_ID', 'RUN_ATTEMPT', 'REPOSITORY', 'WORKFLOW_PATH')}
+          receipt.update(receipt_schema_version=1, origin='github_actions',
+                         package_sha256=hashlib.sha256(Path('package.json').read_bytes()).hexdigest(),
+                         recorded_at=datetime.now(timezone.utc).isoformat(),
+                         report_sha256=hashlib.sha256(report.read_bytes()).hexdigest(),
+                         package_lock_sha256=hashlib.sha256(Path('package-lock.json').read_bytes()).hexdigest())
+          (directory / 'provenance.json').write_text(json.dumps(receipt, sort_keys=True) + '\n')
           PY
-      - name: Persist audit evidence
-        run: |
-          git config user.name content-control-runtime
-          git config user.email actions@users.noreply.github.com
-          git add state/runtime-security-audit.json
-          git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update runtime dependency security audit')"
-          for attempt in 1 2 3; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
-            git rebase --abort || true
-            sleep $((attempt*4))
-          done
-          exit 1
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.receipt.outcome == 'success'
         with:
-          name: runtime-security-audit
-          path: state/runtime-security-audit.json
+          name: runtime-security-audit-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: ${{ steps.evidence.outputs.directory }}/
           retention-days: 30

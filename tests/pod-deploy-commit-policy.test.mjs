@@ -28,23 +28,24 @@ test('watchdog observations alone skip Render but every mixed runtime change dep
   assert.equal(renderCommitMessage('Update watchdog',[report,other]),'Update watchdog');
  }
 });
-test('runtime security audit workflow skips only its normalized report commit',async()=>{
- const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-security-audit-commit-'));
- const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'});
- try{
-  git('init','--quiet');git('config','user.name','Synthetic Test');git('config','user.email','fixture@example.invalid');
-  await fs.mkdir(path.join(root,'state'));await fs.mkdir(path.join(root,'scripts'));
-  await fs.copyFile(new URL('../scripts/pod_deploy_commit_policy.mjs',import.meta.url),path.join(root,'scripts/pod_deploy_commit_policy.mjs'));
-  await fs.writeFile(path.join(root,'state/runtime-security-audit.json'),'{}\n');
-  git('add','.');git('commit','--quiet','-m','Fixture baseline');
-  const workflow=await fs.readFile(new URL('../.github/workflows/runtime-security-audit.yml',import.meta.url),'utf8');
-  const line=workflow.split('\n').find(line=>line.includes('git diff --cached --quiet || git commit -m'));
-  assert.ok(line?.includes('pod_deploy_commit_policy.mjs'));
-  await fs.writeFile(path.join(root,'state/runtime-security-audit.json'),'{"high_count":0}\n');
-  git('add','state/runtime-security-audit.json');
-  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
-  assert.equal(git('log','-1','--format=%s').trim(),'Update runtime dependency security audit [skip render]');
- }finally{await fs.rm(root,{recursive:true,force:true});}
+test('runtime security audit workflow is read-only and publishes source-bound artifacts only',async()=>{
+ const workflow=await fs.readFile(new URL('../.github/workflows/runtime-security-audit.yml',import.meta.url),'utf8');
+ // The audit collects evidence; trusted promotion is a separate operation.
+ assert.match(workflow,/^permissions:\n  contents: read\n(?=\S)/m);
+ assert.equal((workflow.match(/^\s*permissions:/gm)||[]).length,1);
+ assert.match(workflow,/- uses: actions\/checkout@v4\n\s+with:\n\s+ref: \$\{\{ github\.sha \}\}\n\s+persist-credentials: false\n/);
+ assert.doesNotMatch(workflow,/\bgit\s+(?:add|commit|push)\b/);
+ assert.doesNotMatch(workflow,/\b(?:GH_TOKEN|GITHUB_TOKEN)\s*:/);
+ assert.doesNotMatch(workflow,/--promote\b|state\/runtime-security-audit(?:-hosted)?\.json/);
+ assert.match(workflow,/directory=\$\(mktemp -d "\$RUNNER_TEMP\/npm-security-audit\.XXXXXX"\)/);
+ assert.match(workflow,/npm audit --package-lock-only --ignore-scripts --audit-level=info[^\n]+> "\$EVIDENCE_DIR\/npm-audit\.json"/);
+ assert.match(workflow,/--output "\$EVIDENCE_DIR\/runtime-security-audit\.json"/);
+ for(const [name,expression] of [['REPOSITORY','github.repository'],['SOURCE_SHA','github.sha'],
+  ['RUN_ID','github.run_id'],['RUN_ATTEMPT','github.run_attempt']]){
+  assert.ok(workflow.includes(name+': ${{ '+expression+' }}'));
+ }
+ assert.match(workflow,/\(directory \/ 'provenance\.json'\)\.write_text/);
+ assert.match(workflow,/- uses: actions\/upload-artifact@v4\n\s+if: always\(\) && steps\.receipt\.outcome == 'success'\n\s+with:\n\s+name: runtime-security-audit-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}\n\s+if-no-files-found: error\n\s+path: \$\{\{ steps\.evidence\.outputs\.directory \}\}\//);
 });
 test('runtime integrity workflow skips only its generated manifest receipt',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-integrity-manifest-commit-'));

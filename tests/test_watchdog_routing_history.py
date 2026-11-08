@@ -1,3 +1,6 @@
+"""History regressions plus health-unit fixtures; synthetic npm/Python loaders are explicitly mocked.
+Real hosted provenance validation remains covered by test_hosted_npm_security_evidence.
+"""
 import contextlib
 import hashlib
 import io
@@ -63,20 +66,20 @@ def run_regression(root, value):
 
 class RepairRoutingTests(unittest.TestCase):
     def test_python_security_routes_only_to_security(self):
-        self.assertEqual(run_routes(["python_dependency_security_clean"]), {"runtime-security-audit.yml"})
+        self.assertEqual(run_routes(["python_dependency_security_clean"]), {"python-security-audit.yml"})
 
-    def test_both_security_failures_deduplicate_without_render(self):
-        self.assertEqual(run_routes(["dependency_security_clean", "python_dependency_security_clean"]), {"runtime-security-audit.yml"})
+    def test_both_security_failures_keep_separate_audits_without_render(self):
+        self.assertEqual(run_routes(["dependency_security_clean", "python_dependency_security_clean"]), {"runtime-security-audit.yml", "python-security-audit.yml"})
 
     def test_observed_failure_set_does_not_render(self):
         failed = ["dependency_security_clean", "python_dependency_security_clean", "live_deployment_green",
                   "caption_candidate_match", "caption_health_green", "provenance_inputs_current",
                   "candidate_identity_consistent", "candidate_converged"]
-        self.assertEqual(run_routes(failed), {"runtime-security-audit.yml", "narration-transcription-gate.yml"})
+        self.assertEqual(run_routes(failed), {"runtime-security-audit.yml", "python-security-audit.yml", "narration-transcription-gate.yml"})
 
     def test_real_video_failure_still_routes_to_qa(self):
         self.assertEqual(run_routes(["python_dependency_security_clean", "video_hash_bound"]),
-                         {"runtime-security-audit.yml", "free-vision-qa.yml"})
+                         {"python-security-audit.yml", "free-vision-qa.yml"})
 
     def test_unknown_failure_still_routes_to_qa(self):
         self.assertEqual(run_routes(["unknown_invariant"]), {"free-vision-qa.yml"})
@@ -198,6 +201,24 @@ class HistoryTests(unittest.TestCase):
             self.assertNotEqual(run_regression(root, invalid).returncode, 0)
             self.assertEqual((old.read_bytes(), health.read_bytes()), before)
 
+def synthetic_npm_report(vulnerable=False):
+    # Synthetic unit evidence only, never a GitHub or live audit attestation.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('history_test_npm_normalizer', ROOT / 'scripts/normalize_npm_security_audit.py')
+    normalizer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(normalizer)
+    counts = dict.fromkeys(('info', 'low', 'moderate', 'high', 'critical', 'total'), 0)
+    vulnerabilities = {}
+    if vulnerable:
+        counts.update(high=1, total=1)
+        vulnerabilities['synthetic-package'] = {
+            'name': 'synthetic-package', 'severity': 'high',
+            'via': [{'name': 'synthetic-package', 'title': 'Synthetic test advisory'}],
+            'nodes': ['node_modules/synthetic-package'],
+        }
+    return normalizer.normalize({'auditReportVersion': 2, 'vulnerabilities': vulnerabilities,
+                                 'metadata': {'vulnerabilities': counts}}, int(vulnerable))
+
 def health_fixture(root):
     def raw(name, data):
         p = root / name
@@ -228,7 +249,7 @@ def health_fixture(root):
     for name in ["publication-owner-gate", "publication-separation"]:
         write_json(root, "control/" + name + ".json", {"publication_enabled": False})
     write_json(root, "state/runtime-integrity-manifest.json", {"critical_file_count": 0, "entries": {}})
-    write_json(root, "state/runtime-security-audit.json", {"npm_counts": {"critical": 0, "high": 0, "moderate": 0, "low": 0}})
+    write_json(root, "state/runtime-security-audit.json", synthetic_npm_report())
     write_json(root, "state/python-security-audit.json", {"status": "PASS", "total_vulnerabilities": 0})
     for name in ["workflow-control-health", "system-wiring-health", "factual-compliance-health", "deployment-health", "sync-retention-health", "narration-transcription-health"]:
         write_json(root, "state/" + name + ".json", {"status": "PASS", "checks": {"fixture": True}})
@@ -253,8 +274,26 @@ def health_fixture(root):
     write_json(root, "qa-output/free/history/" + candidate + ".json", {"candidate_sha256": candidate})
 
 class SecurityGatingTests(unittest.TestCase):
-    def run_health(self, root):
-        return subprocess.run([sys.executable, "-B", str(HEALTH)], cwd=root, text=True, capture_output=True)
+    def run_health(self, root, isolate_hosted_loader=True):
+        # Component mode mocks authenticated loader boundaries explicitly.
+        # Negative mode uses real loaders and gates, injecting only API failure
+        # so unsigned local PASS files cannot cause network use or success.
+        wrapper = """
+import json, pathlib, runpy, sys
+from unittest.mock import patch
+sys.path.insert(0, sys.argv[1])
+import load_live_npm_security_evidence as npm
+import load_live_python_security_evidence as python
+if sys.argv[3] == 'synthetic_component':
+    with patch.object(npm, 'load_live_npm_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/runtime-security-audit.json').read_text())), patch.object(python, 'load_live_python_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/python-security-audit.json').read_text())):
+        runpy.run_path(sys.argv[2], run_name='__main__')
+else:
+    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
+        runpy.run_path(sys.argv[2], run_name='__main__')
+"""
+        return subprocess.run([sys.executable, "-B", "-c", wrapper, str(ROOT / 'scripts'), str(HEALTH),
+                               'synthetic_component' if isolate_hosted_loader else 'real_loaders_offline_failure'],
+                              cwd=root, text=True, capture_output=True)
 
     def test_clean_fixture_passes_component_checks_but_not_production(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -284,13 +323,43 @@ class SecurityGatingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             health_fixture(root)
-            write_json(root, "state/runtime-security-audit.json", {"npm_counts": {"critical": 0, "high": 1, "moderate": 0, "low": 0}})
+            write_json(root, "state/runtime-security-audit.json", synthetic_npm_report(vulnerable=True))
             result = self.run_health(root)
             self.assertEqual(result.returncode, 2, result.stderr)
             report = json.loads(result.stdout)
             self.assertEqual(report["watchdog"]["failed_checks"], ["dependency_security_clean"])
             self.assertFalse(report["completion"]["production_ready"])
             self.assertFalse(report["completion"]["publication_enabled"])
+
+    def test_real_consumer_rejects_legacy_unsigned_npm_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            health_fixture(root)
+            write_json(root, 'state/runtime-security-audit.json',
+                       {'npm_counts': {'critical': 0, 'high': 0, 'moderate': 0, 'low': 0}})
+            result = self.run_health(root, isolate_hosted_loader=False)
+            self.assertEqual(result.returncode, 2, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertIn('dependency_security_clean', report['watchdog']['failed_checks'])
+            self.assertIn('python_dependency_security_clean', report['watchdog']['failed_checks'])
+            self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
+            self.assertFalse(report['completion']['publication_enabled'])
+
+    def test_real_loaders_reject_missing_or_forged_clean_local_reports(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                if missing:
+                    (root / 'state/runtime-security-audit.json').unlink()
+                    (root / 'state/python-security-audit.json').unlink()
+                result = self.run_health(root, isolate_hosted_loader=False)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertIn('dependency_security_clean', report['watchdog']['failed_checks'])
+                self.assertIn('python_dependency_security_clean', report['watchdog']['failed_checks'])
+                self.assertFalse(report['completion']['publication_enabled'])
+                self.assertFalse(report['completion']['production_ready'])
 
 if __name__ == "__main__":
     unittest.main()

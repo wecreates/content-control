@@ -39,7 +39,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:pod
       - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr fonts-dejavu-core
-      - run: pip install Pillow==12.3.0 numpy==2.3.5 opencv-python-headless==5.0.0.93 reportlab==4.4.9 PyMuPDF==1.26.6 fonttools==4.61.1
+      - run: pip install -r requirements-pod-runtime.txt
       - run: npm run test:pod-python
       - run: node --test tests/pod-production-e2e.mjs
       - run: node --check server-lowmem.js

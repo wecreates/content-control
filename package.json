@@ -31,16 +31,16 @@
     "test:pod-python": "python3 -m unittest discover -s tests -p 'test_pod*.py'"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.529",
-    "express": "4.22.1",
+    "@remotion/cli": "4.0.540",
+    "express": "4.22.3",
     "pg": "8.23.1",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "remotion": "4.0.529"
+    "remotion": "4.0.540"
   },
   "overrides": {
     "body-parser": "1.20.9",
     "fast-uri": "3.1.9",
-    "qs": "6.16.0"
+    "qs": "6.16.1"
   }
 }
