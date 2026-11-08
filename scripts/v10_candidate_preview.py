@@ -12,6 +12,7 @@ OUT = Path('candidate-preview')
 VIDEO = OUT / 'episode1-v10-canonical-candidate.mp4'
 ORIGINAL_AUDIO = Path('public/audio/episode1-narration.mp3')
 AUDIO = OUT / 'public/audio/episode1-narration.mp3'
+DRAFT_CONTRACT = Path('preview/v10-narration-candidate/episode1-factual-contract.draft.json')
 GENERATED_SHA = 'c2b633f1c509fec43be6fd75d365b6335ca273e8beb6be6c5552bbb3cd24cd57'
 GENERATED_WAV_SHA = 'e6576e6936e914c1614282cdaf8f1b4ba96428ef1e9b2b9c2e75bb732af2f14f'
 RAW = OUT / 'narration-transcription-raw.json'
@@ -109,7 +110,7 @@ def generated_identity():
     require(AUDIO.is_file() and not AUDIO.is_symlink() and digest(AUDIO) == GENERATED_SHA,
             'Generated narration differs from frozen repaired bytes')
     contract = OUT / 'state/episode1-factual-contract.json'
-    require(contract.is_file() and digest(contract) == digest('state/episode1-factual-contract.json'),
+    require(contract.is_file() and digest(contract) == digest(DRAFT_CONTRACT),
             'Isolated contract differs from reviewed draft')
 
 def reconstruction_container_args(work):
@@ -151,7 +152,7 @@ def regenerate_audio():
     shutil.copyfile(mp3, AUDIO)
     contract = OUT / 'state/episode1-factual-contract.json'
     contract.parent.mkdir(exist_ok=False)
-    shutil.copyfile('state/episode1-factual-contract.json', contract)
+    shutil.copyfile(DRAFT_CONTRACT, contract)
     generated_identity()
 
 def build_isolated_captions():
@@ -184,8 +185,8 @@ def run():
     gate('mono_source_probe', mono_probe)
     sources()  # Original repository audio and reviewed JSX must stay unchanged.
     generated_identity()  # Distinct generated c2b633 pin immediately before render.
-    gate('fresh_remotion_render', ['node_modules/.bin/remotion', 'render', 'remotion/v10-index.jsx',
-        'Episode1V10FinalProof', str(OUT / 'raw-remotion.mp4'), '--codec', 'h264', '--crf', '18', '--concurrency', '2',
+    gate('fresh_remotion_render', ['node_modules/.bin/remotion', 'render', 'preview/v10-narration-candidate/index.jsx',
+        'Episode1V10NarrationCandidate', str(OUT / 'raw-remotion.mp4'), '--codec', 'h264', '--crf', '18', '--concurrency', '2',
         '--public-dir', str((OUT / 'public').resolve())])
     generated_identity()
     # Unity-gain mono duplication; resample without speech stretching; append silence.
