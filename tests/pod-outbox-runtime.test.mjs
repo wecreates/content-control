@@ -259,6 +259,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
     const acknowledged=pending.length>0;
     committed.push(...pending);pending.length=0;
     if(phase.endsWith('commit')&&acknowledged)expire();
+    return {command:'COMMIT'};
    }
    return {rows:[]};
   }};
