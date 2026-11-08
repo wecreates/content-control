@@ -48,12 +48,12 @@ const scenes=[
 ({p})=><><Text>Now compare real value.</Text><g transform="translate(360 585)"><line x1="-210" y1="0" x2="210" y2="0" stroke={K} strokeWidth="6"/><line y1="-90" y2="120" stroke={K} strokeWidth="6"/><path d="M-150 0 L-210 140 H-90 Z M150 0 L90 140 H210 Z" fill={W} stroke={K} strokeWidth="5.5"/><Text x={-150} y={190} size={28}>REAL VALUE</Text><Text x={150} y={190} size={28}>ANNUAL FEE</Text><circle cx={I(p,0,1,-90,90)} cy="-45" r="28" fill={Y} stroke={K} strokeWidth="5"/></g><Text y={1015} size={30}>Count only what you’d buy anyway.</Text></>,
 ({p})=><><Text color={G}>Value wins?</Text><Meter v={I(p,0,1,0,.88)} color={G}/><Text y={610} size={62} color={G}>Maybe keep it.</Text><Stick x={360} y={930} s={1.28} label="POINTS MONK" face="smile" la1={I(p,0,1,150,205)} la2={I(p,0,1,125,220)} ra1={I(p,0,1,30,-25)} ra2={I(p,0,1,55,-55)}/></>,
 ({p})=><><Text color={R}>Value loses?</Text><Meter v={I(p,0,1,0,.33)} color={R}/><Text y={610} size={62} color={R}>Rethink it.</Text><Card x={360} y={835} rot={I(p,0,1,-6,10)} scale={.85} label="CUT THE FLEX"/><path d={`M${I(p,0,1,190,285)} 735 L${I(p,0,1,530,435)} 930`} stroke={R} strokeWidth="14" strokeLinecap="round"/></>,
-({p})=><><Text>One rule.</Text><Text y={270} size={70} color={G}>REAL VALUE &gt; FEE</Text><Stick x={225} y={790} s={1.28} label="DAVE" face="smile" lean={I(p,0,1,-3,3)} la1={I(p,0,1,150,205)} la2={I(p,0,1,125,220)}/><Stick x={495} y={790} s={1.28} label="POINTS MONK" face="smile" lean={I(p,0,1,3,-3)} ra1={I(p,0,1,30,-25)} ra2={I(p,0,1,55,-55)}/><path d="M150 1050 Q360 1120 570 1050" fill="none" stroke={G} strokeWidth="12" strokeLinecap="round"/><Text y={1180} size={31}>Ignore the flex. Keep the math.</Text></>
+({p,finalRuleSize=70})=><><Text>One rule.</Text><Text y={270} size={finalRuleSize} color={G}>REAL VALUE &gt; FEE</Text><Stick x={225} y={790} s={1.28} label="DAVE" face="smile" lean={I(p,0,1,-3,3)} la1={I(p,0,1,150,205)} la2={I(p,0,1,125,220)}/><Stick x={495} y={790} s={1.28} label="POINTS MONK" face="smile" lean={I(p,0,1,3,-3)} ra1={I(p,0,1,30,-25)} ra2={I(p,0,1,55,-55)}/><path d="M150 1050 Q360 1120 570 1050" fill="none" stroke={G} strokeWidth="12" strokeLinecap="round"/><Text y={1180} size={31}>Ignore the flex. Keep the math.</Text></>
 ];
 
 const cuts=[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30];
 
-export const V9ArticulatedVisual=({frame})=>{
+export const V9ArticulatedVisual=({frame,finalRuleSize=70})=>{
   const t=frame/24;
   let n=cuts.length-2;
   for(let k=0;k<cuts.length-1;k++){if(t>=cuts[k]&&t<cuts[k+1]){n=k;break;}}
@@ -65,7 +65,7 @@ export const V9ArticulatedVisual=({frame})=>{
   const jitterY=Math.cos(frame*0.33+n*0.7)*0.75;
   return <div style={{position:"absolute",inset:0,background:W,overflow:"hidden",backgroundImage:"radial-gradient(circle at 20% 15%,rgba(0,0,0,.025) 0 1px,transparent 1.4px),radial-gradient(circle at 80% 70%,rgba(0,0,0,.018) 0 1px,transparent 1.4px)",backgroundSize:"18px 18px,23px 23px"}}>
     <svg width="720" height="1280" viewBox="0 0 720 1280" style={{transform:`translate(${shift+jitterX}px,${jitterY}px) scale(${zoom}) rotate(${Math.sin(frame*0.08+n)*0.10}deg)`,transformOrigin:"center"}}>
-      <Scene p={p}/>
+      <Scene p={p} finalRuleSize={finalRuleSize}/>
     </svg>
   </div>;
 };

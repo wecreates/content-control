@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse,json,re,difflib,math,subprocess,hashlib
+import argparse,json,re,difflib,math,subprocess,hashlib,os,stat,tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -100,6 +100,34 @@ def spoken_number_suppression(tokenizer):
     return [-1]+sorted(ids)
 
 
+def audio_snapshot(path, limit=128 * 1024 * 1024):
+    """Read one bounded regular-file snapshot without waiting on special files."""
+    fd=os.open(path,os.O_RDONLY|getattr(os,'O_NONBLOCK',0))
+    try:
+        info=os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or not 0<info.st_size<=limit:
+            raise ValueError('Audio must be a bounded nonempty regular file')
+        with os.fdopen(fd,'rb') as stream:
+            fd=None
+            data=stream.read(limit+1)
+        if not data or len(data)>limit:
+            raise ValueError('Audio exceeds snapshot bound')
+        return data
+    finally:
+        if fd is not None:os.close(fd)
+
+
+def decode_bound_audio(path):
+    """Hash and decode the exact same private bytes, before model inference."""
+    data=audio_snapshot(path)
+    digest=hashlib.sha256(data).hexdigest()
+    with tempfile.TemporaryDirectory(prefix='transcription-audio-') as temporary:
+        source=Path(temporary)/'audio'
+        source.write_bytes(data)
+        samples,duration=decode_transcription_audio(source)
+    return samples,duration,digest
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
@@ -107,6 +135,7 @@ def main():
     ap.add_argument("--output",required=True)
     ap.add_argument("--model",default="tiny.en")
     ap.add_argument("--spoken-numbers",action="store_true",help="Decode numbers as spoken words; no script prompting")
+    ap.add_argument("--full-audio",action="store_true",help="Observe full audio without clipping at existing caption end")
     a=ap.parse_args()
 
     from faster_whisper import WhisperModel
@@ -115,9 +144,9 @@ def main():
     contract=json.loads(Path(a.contract).read_text())
     expected=contract["narration_text"]
     cues=contract.get("caption_cues",[])
-    narration_end=float(cues[-1]["end"]) if cues else None
+    narration_end=float(cues[-1]["end"]) if cues and not a.full_audio else None
 
-    audio_samples,media_duration=decode_transcription_audio(a.audio)
+    audio_samples,media_duration,audio_digest=decode_bound_audio(a.audio)
     model=WhisperModel(a.model,device="cpu",compute_type="int8")
     segments,info=model.transcribe(
         audio_samples,
@@ -179,7 +208,12 @@ def main():
       "transcript_coverage_ok":coverage_ratio>=0.70,
       "no_post_narration_hallucination":narration_end is None or segment_end<=narration_end+0.25,
       "publication_disabled":contract.get("publication_enabled") is False,
+      "audio_source_unchanged":False,
     }
+    try:
+        checks['audio_source_unchanged']=hashlib.sha256(audio_snapshot(a.audio)).hexdigest()==audio_digest
+    except (OSError,ValueError):
+        pass
     status="PASS" if all(checks.values()) else "FAIL"
     report={
       "schema_version":1,
@@ -188,6 +222,7 @@ def main():
       "faster_whisper_version":version("faster-whisper"),
       "model":a.model,
       "spoken_number_decoding":a.spoken_numbers,
+      "full_audio_decoding":a.full_audio,
       "language":getattr(info,"language","en"),
       "language_probability":getattr(info,"language_probability",None),
       "expected_text":expected,
@@ -195,7 +230,7 @@ def main():
       "segments":segs,
       "word_timestamps":True,
       "words":words,
-      "audio_sha256":hashlib.sha256(Path(a.audio).read_bytes()).hexdigest(),
+      "audio_sha256":audio_digest,
       "sequence_similarity":round(sequence_ratio,6),
       "content_token_recall":round(token_recall,6),
       "semantic_recall":round(semantic_recall,6),
@@ -214,3 +249,4 @@ def main():
 
 if __name__=="__main__":
     main()
+

@@ -29,6 +29,16 @@ class CaptionPersistenceTests(unittest.TestCase):
         self.write('state/content-control-health.json', {'status': 'GREEN', 'candidate_sha256': 'a' * 64, 'publication_enabled': False})
         self.write('state/episode1-factual-contract.json', {'publication_enabled': False})
         self.write('state/narration-transcription-health.json', {'status': 'PASS', 'publication_enabled': False})
+        raw = {'status': 'PASS', 'publication_enabled': False,
+               'audio_sha256': hashlib.sha256((self.repo / 'public/audio/episode1-narration.mp3').read_bytes()).hexdigest(),
+               'actual_transcript': 'Fixture sentence.', 'media_duration_seconds': 2,
+               'transcribed_duration_seconds': 2,
+               'segments': [{'start': 0, 'end': 2, 'text': 'Fixture sentence.'}],
+               'words': [{'start': 0, 'end': 1, 'word': 'Fixture'}, {'start': 1, 'end': 2, 'word': 'sentence.'}]}
+        self.write('state/narration-transcription-raw.json', raw)
+        derived = module.derive((self.repo / 'state/narration-transcription-raw.json').read_bytes(),
+                                (self.repo / 'public/audio/episode1-narration.mp3').read_bytes())
+        self.write('state/narration-transcription-health.json', derived)
         self.write('state/caption-health.json', {'status': 'PASS', 'publication_enabled': False})
         (self.repo / 'unrelated.txt').write_text('original')
         self.commit(self.repo, 'initial')
@@ -159,6 +169,25 @@ class CaptionPersistenceTests(unittest.TestCase):
         self.assertEqual(self.persist('reconcile')['status'], 'SAVED')
         self.assertEqual(json.loads(self.remote_file('state/caption-health.json'))['status'], 'PASS')
         self.assertEqual(json.loads(self.remote_file('state/acceptance-ledger-health.json'))['status'], 'PASS')
+
+    def test_retained_raw_receipt_must_rederive_canonical_transcription(self):
+        self.passing()
+        raw=json.loads((self.repo/'state/narration-transcription-raw.json').read_text())
+        raw['words'][0]['end']=.8
+        self.write('state/narration-transcription-raw.json',raw)
+        with self.assertRaisesRegex(ValueError,'derive'):
+            module.payload_for(self.repo,'narration',{})
+
+    def test_passing_narration_preserves_raw_parent_receipt(self):
+        self.passing()
+        expected=(self.repo/'state/narration-transcription-raw.json').read_bytes()
+        self.assertEqual(self.persist()['status'],'SAVED')
+        self.assertEqual(self.remote_file('state/narration-transcription-raw.json'),expected)
+
+    def test_helper_source_and_raw_receipt_are_watched(self):
+        self.assertIn('scripts/segment_observed_words.py',module.COMMON_INPUTS)
+        self.assertIn('state/narration-transcription-raw.json',module.INPUTS['reconcile'])
+        self.assertIn('state/narration-transcription-raw.json',module.OUTPUTS['narration'])
 
     def test_main_only_pinned_checkout_and_full_sha_required(self):
         self.fail()
@@ -332,3 +361,4 @@ class CaptionPersistenceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
