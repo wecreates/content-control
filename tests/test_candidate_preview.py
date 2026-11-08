@@ -7,6 +7,8 @@ import os
 import io
 from contextlib import redirect_stdout
 from unittest.mock import patch
+from types import SimpleNamespace
+from contextlib import ExitStack
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('preview', ROOT/'scripts/v10_candidate_preview.py')
@@ -78,6 +80,66 @@ class Guards(unittest.TestCase):
                 self.assertEqual(m['gates']['fresh_asr']['status'],'FAIL')
                 self.assertEqual(m['listening_acceptance'],'UNASSESSED')
             finally: os.chdir(old)
+    def test_runtime_wrapper_identity_checks_and_child_exit(self):
+        runtime_spec=importlib.util.spec_from_file_location('runtime',ROOT/'scripts/frozen_narration_runtime.py')
+        runtime=importlib.util.module_from_spec(runtime_spec)
+        runtime_spec.loader.exec_module(runtime)
+        for case in ['success','package','binary','python','numpy','child_exit']:
+            with self.subTest(case=case), ExitStack() as stack:
+                def package_version(args, **kwargs):
+                    if case=='package' and args[-1]=='ffmpeg':return 'wrong-version'
+                    return '3.100-6+b3' if args[-1]=='libmp3lame0' else '7:7.1.5-0+deb13u1'
+                stack.enter_context(patch.object(runtime.subprocess,'check_output',side_effect=package_version))
+                stack.enter_context(patch.object(runtime.platform,'python_version',return_value='0.0.0' if case=='python' else '3.12.14'))
+                stack.enter_context(patch.dict('sys.modules',{'numpy':SimpleNamespace(__version__='0.0.0' if case=='numpy' else '2.3.5')}))
+                stack.enter_context(patch.object(runtime.Path,'read_bytes',return_value=b'explicitly synthetic binary fixture'))
+                expected=[value[1] for value in runtime.BINARIES.values()]
+                if case=='binary':expected[0]='0'*64
+                stack.enter_context(patch.object(runtime.hashlib,'sha256',side_effect=[SimpleNamespace(hexdigest=lambda h=h:h) for h in expected]))
+                write=stack.enter_context(patch.object(runtime.Path,'write_text'))
+                child=stack.enter_context(patch.object(runtime.subprocess,'run',return_value=SimpleNamespace(returncode=7 if case=='child_exit' else 0)))
+                code=runtime.main()
+                report=json.loads(write.call_args.args[0])
+                if case in {'success','child_exit'}:
+                    self.assertEqual(code,7 if case=='child_exit' else 0)
+                    self.assertEqual(report['status'],'RUNTIME_IDENTITIES_VERIFIED')
+                    child.assert_called_once_with([runtime.sys.executable,'/input/regenerate.py',
+                        '--source','/input/original.mp3','--output-dir','/output/result'],check=False)
+                else:
+                    self.assertEqual(code,2)
+                    self.assertEqual(report['status'],'BLOCKED')
+                    child.assert_not_called()
+    def test_container_is_reconstruction_only_and_isolated(self):
+        args=p.reconstruction_container_args(p.OUT/'regeneration-work')
+        self.assertEqual(args[:3],['docker','run','--rm'])
+        for key,value in [('--network','none'),('--platform','linux/amd64'),('--cap-drop','ALL'),('--security-opt','no-new-privileges')]:
+            self.assertEqual(args[args.index(key)+1],value)
+        self.assertIn('--read-only',args)
+        self.assertNotIn('--privileged',args)
+        self.assertNotIn('docker.sock',' '.join(args))
+        mounts=[args[i+1] for i,v in enumerate(args) if v=='--mount']
+        self.assertEqual(len(mounts),4)
+        self.assertEqual(sum(x.endswith(',readonly') for x in mounts),3)
+        self.assertTrue(next(x for x in mounts if not x.endswith(',readonly')).endswith(',target=/output'))
+        dockerfile=(ROOT/'scripts/frozen_narration.Dockerfile').read_text()
+        self.assertIn('FROM python@sha256:6dc02694c53fde08b0e39de9273a708d2f2a612f77dc173a64835c3f7a40ee35',dockerfile)
+        self.assertIn('ffmpeg=7:7.1.5-0+deb13u1',dockerfile)
+        self.assertIn('libmp3lame0=3.100-6+b3',dockerfile)
+        for forbidden in ['--allow-unauthenticated','trusted=yes','COPY','ADD','--privileged']:
+            self.assertNotIn(forbidden,dockerfile)
+    def test_runtime_diagnostic_omits_unknown_fields(self):
+        with tempfile.TemporaryDirectory() as td:
+            old=os.getcwd()
+            try:
+                os.chdir(td);p.OUT.mkdir()
+                p.save(p.OUT/'encoder-runtime.json',{'status':'RUNTIME_IDENTITIES_VERIFIED',
+                    'base_image_reference':'python@sha256:'+'a'*64,
+                    'packages':{'ffmpeg':'7:7.1.5-0+deb13u1','private':'MEDIA_SENTINEL'},
+                    'binaries_sha256':{'ffmpeg':'b'*64},'media':'MEDIA_SENTINEL'})
+                result=p.encoder_runtime_diagnostic()
+                self.assertEqual(result['packages'],{'ffmpeg':'7:7.1.5-0+deb13u1'})
+                self.assertNotIn('MEDIA_SENTINEL',json.dumps(result))
+            finally:os.chdir(old)
     def test_regeneration_diagnostic_is_bounded_allowlist(self):
         with tempfile.TemporaryDirectory() as td:
             old = os.getcwd()
@@ -118,8 +180,8 @@ class Guards(unittest.TestCase):
                 Path('state/episode1-factual-contract.json').write_text('{}')
                 p.OUT.mkdir()
                 def fake_command(args):
-                    self.assertEqual(args[args.index('--source')+1],str(p.ORIGINAL_AUDIO))
-                    target=Path(args[args.index('--output-dir')+1]);target.mkdir()
+                    self.assertIn('target=/input/original.mp3,readonly',' '.join(args))
+                    target=p.OUT/'regeneration-work/result';target.mkdir()
                     (target/'narration-currency-edit-candidate.mp3').write_bytes(b'generated fixture')
                     (target/'narration-currency-edit-candidate.wav').write_bytes(b'wav fixture')
                     p.save(target/'regeneration-receipt.json',{'status':'FROZEN_BYTES_REPRODUCED'})

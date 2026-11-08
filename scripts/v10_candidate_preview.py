@@ -112,10 +112,35 @@ def generated_identity():
     require(contract.is_file() and digest(contract) == digest('state/episode1-factual-contract.json'),
             'Isolated contract differs from reviewed draft')
 
+def reconstruction_container_args(work):
+    return ['docker', 'run', '--rm', '--platform', 'linux/amd64',
+            '--network', 'none', '--read-only', '--cap-drop', 'ALL',
+            '--security-opt', 'no-new-privileges', '--pids-limit', '128',
+            '--memory', '2g', '--cpus', '2', '--user', str(os.getuid()) + ':' + str(os.getgid()),
+            '--mount', 'type=bind,source=' + str(ORIGINAL_AUDIO.resolve()) + ',target=/input/original.mp3,readonly',
+            '--mount', 'type=bind,source=' + str(Path('scripts/regenerate_frozen_narration.py').resolve()) + ',target=/input/regenerate.py,readonly',
+            '--mount', 'type=bind,source=' + str(Path('scripts/frozen_narration_runtime.py').resolve()) + ',target=/input/runtime.py,readonly',
+            '--mount', 'type=bind,source=' + str(work.resolve()) + ',target=/output',
+            'v10-frozen-narration:local']
+
 def regenerate_audio():
     generated = OUT / 'regenerated-audio'
-    command([sys.executable, 'scripts/regenerate_frozen_narration.py',
-             '--source', str(ORIGINAL_AUDIO), '--output-dir', str(generated)])
+    # Dedicated reconstruction-only container: no browser, secrets, host socket or network.
+    # The only writable mount is a new output directory; original media/helper are read-only.
+    work = OUT / 'regeneration-work'
+    work.mkdir(exist_ok=False)
+    args = reconstruction_container_args(work)
+    try:
+        command(args)
+    finally:
+        # Preserve bounded runtime and failure diagnostics even if reconstruction fails.
+        runtime = work / 'runtime.json'
+        if runtime.is_file() and not runtime.is_symlink():
+            runtime.rename(OUT / 'encoder-runtime.json')
+        result = work / 'result'
+        if result.is_dir() and not result.is_symlink():
+            require(not generated.exists(), 'Refusing to replace regeneration output')
+            result.rename(generated)
     receipt = json.loads((generated / 'regeneration-receipt.json').read_text())
     require(receipt.get('status') == 'FROZEN_BYTES_REPRODUCED', 'Exact regeneration did not pass')
     mp3 = generated / 'narration-currency-edit-candidate.mp3'
@@ -176,6 +201,26 @@ def run():
     gate('mobile', [sys.executable, 'scripts/free_mobile_compat_qa.py', '--video', str(VIDEO), '--output', str(OUT / 'mobile.json')], OUT / 'mobile.json')
     gate('audio', [sys.executable, 'scripts/free_audio_qa.py', '--video', str(VIDEO), '--output', str(OUT / 'audio.json')], OUT / 'audio.json', 'verdict')
     sources()
+
+def encoder_runtime_diagnostic():
+    path = OUT / 'encoder-runtime.json'
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > 16384:
+        return {'status': 'NO_VALID_RUNTIME_RECEIPT'}
+    try:
+        raw = json.loads(path.read_text())
+        require(isinstance(raw, dict), 'Invalid runtime receipt')
+    except (OSError, ValueError):
+        return {'status': 'INVALID_RUNTIME_RECEIPT'}
+    result = {'status': raw.get('status') if raw.get('status') in {'BLOCKED', 'RUNTIME_IDENTITIES_VERIFIED'} else 'INVALID_STATUS'}
+    base = raw.get('base_image_reference')
+    if isinstance(base, str) and re.fullmatch('python@sha256:[0-9a-f]{64}', base):
+        result['base_image_reference'] = base
+    for key, pattern in [('packages', r'[0-9A-Za-z.:+~_-]{1,64}'), ('binaries_sha256', '[0-9a-f]{64}')]:
+        allowed = {'ffmpeg', 'libavcodec61', 'libavdevice61', 'libavfilter10', 'libavformat61',
+                   'libavutil59', 'libpostproc58', 'libswresample5', 'libswscale8', 'libmp3lame0'} if key == 'packages' else {'ffmpeg', 'libmp3lame'}
+        values = raw.get(key, {})
+        result[key] = {k: v for k, v in values.items() if k in allowed and isinstance(v, str) and re.fullmatch(pattern, v)} if isinstance(values, dict) else {}
+    return result
 
 def regeneration_diagnostic():
     """Bounded, scalar-only allowlist. No transcript, recipe, file contents or full receipt."""
@@ -257,6 +302,7 @@ def manifest():
     compact['gates'] = {name: result['status'] for name, result in gates.items()}
     compact['manifest_sha256'] = digest(OUT / 'manifest.json')
     compact['regeneration'] = regeneration_diagnostic()
+    compact['encoder_runtime'] = encoder_runtime_diagnostic()
     text = json.dumps(compact, sort_keys=True, separators=(',', ':'))
     print(text)
     summary = os.environ.get('GITHUB_STEP_SUMMARY')

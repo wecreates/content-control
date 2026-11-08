@@ -55,6 +55,10 @@ jobs:
           sudo apt-get install -y -qq ffmpeg
           npm ci --ignore-scripts --no-audit --fund=false
           python -m pip install -r requirements-transcription.txt numpy==2.3.5
+      - name: Build isolated official Debian narration encoder
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 --pull --no-cache --tag v10-frozen-narration:local - < scripts/frozen_narration.Dockerfile
       - name: Fresh ASR render and technical checks
         run: python scripts/v10_candidate_preview.py run
       - name: Seal exact bytes and emit compact diagnostic summary
