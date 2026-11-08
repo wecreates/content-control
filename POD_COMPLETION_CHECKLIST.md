@@ -31,6 +31,11 @@ No item is complete merely because code or a test exists. This registry preserve
 
 ## Current code additions
 
+The operations dashboard offers a key-free, read-only configured storage cutoff
+check. It deliberately labels acceptance unverified; no backup/recovery, provider
+retention or owner-phone acceptance row is closed by this display. See the
+[r504 receipt](docs/pod/POD_RUN_RECEIPT_R504.md) for verification and limits.
+
 The repository already contains dedicated queue migrations, durable hash-addressed artifacts, worker leases, technical QA, review holds, read-only deployment preflight, production container/deployment tooling, internal outbox delivery and exact review-package restoration. Current-grant renewal now requests a fresh scoped grant from the existing Money Factory authority interface instead of relying only on an aging queue envelope. None of these additions creates credentials, paid resources, legal clearance or marketplace permission.
 
 ## External blockers
@@ -47,8 +52,13 @@ preflight has not run with the live bridge, operations and signing authorities;
 the scheduled execution environment could not independently open the public TLS
 socket; the free database is capped at 1 GiB with a six-hour restore window; and
 no separately retained backup exists beyond the provider snapshot. The conservative
-operational cutoff remains November 1, 2026 at 00:00:00 UTC, the end of the current
-verified quota period, not a claim that Neon deletes data then. On November 2 the
+operational cutoff is December 1, 2026 at 00:00:00 UTC, the end of the quota
+period freshly returned by Neon on November 6. It is not a provider deletion
+date or permission to run production. The stale November 1 cutoff was replaced
+only after this fresh provider evidence; the service, production, outbox and both
+publication flags remain false. The same inspection found no retained snapshots;
+replacement snapshot `snap-broad-fog-arr61fmj` was created and listed, but no new
+restore or independent backup was verified. See the r502 receipt. On November 2 the
 free Render build quota reset and the existing worker reached `live` after rollout
 liveness was separated from accepted-evidence readiness. The current review artifact
 is still unaccepted, `/readyz` is not verified green and

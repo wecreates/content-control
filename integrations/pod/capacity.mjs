@@ -18,7 +18,16 @@ function ordinaryRecord(value){
  }catch{return false;}
 }
 function snapshotTimestamp(value){
- if(typeof value==='string'&&value.length<=35)return value;
+ // pg returns native Dates. String adapters must provide exact UTC seconds or
+ // milliseconds; Date.parse must not normalize calendar errors or lose precision.
+ if(typeof value==='string'){
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value))throw Error('CAPACITY_REPORT_INVALID');
+  const millis=Date.parse(value);
+  if(!Number.isFinite(millis))throw Error('CAPACITY_REPORT_INVALID');
+  const canonical=new Date(millis).toISOString();
+  if(value!==canonical&&value!==canonical.replace('.000Z','Z'))throw Error('CAPACITY_REPORT_INVALID');
+  return canonical;
+ }
  if(value===null||typeof value!=='object'||utilTypes.isProxy(value)||!utilTypes.isDate(value))
   throw Error('CAPACITY_REPORT_INVALID');
  let millis;
@@ -53,7 +62,9 @@ function snapshotCapacityRow(result){
 // current QA readiness, publication permission or production acceptance.
 export async function productionActivity(db,{signal}={}){
  const deadline=diagnosticDeadline(signal);
- const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>late.release(true)});
+ const client=await diagnosticStep(()=>db.pool.connect(),deadline,{onLate:late=>{
+  try{Promise.resolve(late.release(true)).catch(()=>{});}catch{}
+ }});
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
  let bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
@@ -98,5 +109,10 @@ export async function productionActivity(db,{signal}={}){
   else if(began)try{await query('ROLLBACK');}catch{bad=true;}
   else if(beginAttempted)bad=true;
   throw error;
- }finally{client.release(bad);}
+ }finally{
+  // Cleanup is part of verification, even after cancellation. Never return a
+  // report while asynchronous release is failed or still unverified.
+  const releasing=Promise.resolve(client.release(bad));releasing.catch(()=>{});
+  await diagnosticStep(()=>releasing,deadline);
+ }
 }

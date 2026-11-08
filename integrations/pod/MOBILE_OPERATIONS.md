@@ -41,6 +41,16 @@ page waiting indefinitely even if it fails to propagate an abort. Timeout displa
 "POD request timed out. Try again." Completed metrics/activity panels remain
 visible when a peer request times out; incomplete or late previews never appear.
 
+The server applies the same fixed 30-second ceiling to every authenticated
+read-only route, independently of the caller. Its request signal combines that
+ceiling with client disconnect cancellation and is forwarded through database
+pool admission and SQL. A connected non-dashboard client therefore cannot retain
+one of the bounded database slots indefinitely. Before returning a successful
+read, the server also checks the absolute monotonic deadline so completion at or
+beyond the boundary cannot win when timer dispatch was delayed. Mutation routes
+retain their separate transaction and settlement boundaries; disconnecting a
+caller must not turn an outcome-defining commit into an ambiguous result.
+
 Stream cancellation and reader release are best effort and never delay or
 replace a size-limit, authentication or timeout result. Timers and abort listeners
 are removed on completion, replacement, session clearing and page exit. Clearing

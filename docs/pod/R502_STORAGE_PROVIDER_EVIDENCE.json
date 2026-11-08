@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "observed_on": "2026-11-06",
+  "source": "authenticated_neon_connector_metadata",
+  "project_id": "damp-base-09108632",
+  "subscription_type": "free_v3",
+  "consumption_period_start": "2026-11-01T00:00:00Z",
+  "consumption_period_end": "2026-12-01T00:00:00Z",
+  "branch_logical_size_limit_bytes": 1073741824,
+  "history_retention_seconds": 21600,
+  "production_branch": {
+    "id": "br-orange-sun-arizhns5",
+    "current_state": "ready",
+    "logical_size": 40009728,
+    "compute_state": "idle",
+    "compute_disabled": false
+  },
+  "snapshots_before": [],
+  "created_and_listed_snapshot": {
+    "id": "snap-broad-fog-arr61fmj",
+    "name": "pod-r502-20261106-free-recovery",
+    "source_branch_id": "br-orange-sun-arizhns5",
+    "created_at": "2026-11-06T16:27:56Z",
+    "manual": true,
+    "expiry_returned": false
+  },
+  "sql_admin_retried": false,
+  "restore_verified_this_run": false,
+  "independent_backup_verified": false,
+  "live_acceptance_verified": false,
+  "publication_enabled": false
+}

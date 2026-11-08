@@ -12,6 +12,30 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 const env={POD_DATABASE_URL:'postgresql://secret:secret@example.invalid/db',POD_BRIDGE_PATH:'bridge',
  POD_UPSTREAM_KEY:'a'.repeat(32),POD_QA_KEY:'b'.repeat(32),INTERNAL_OPERATIONS_KEY:'c'.repeat(32),
  POD_STORAGE_EXPIRES_AT:'2030-01-01T00:00:00Z',PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
+test('pre-aborted preflight starts no bridge or database work',async()=>{
+ const controller=new AbortController();controller.abort();let invoked=0;
+ const r=await preflight({env,signal:controller.signal,readBridge:()=>{invoked++;},connect:()=>{invoked++;}});
+ assert.equal(invoked,0);assert.equal(r.status,'BLOCKED');
+});
+for(const stage of ['bridge','factory','acquisition','query','rollback','shutdown'])test(`preflight cancellation bounds stalled ${stage}`,async()=>{
+ const controller=new AbortController(),never=new Promise(()=>{}),releases=[];let ended=0,settle;
+ const stall=()=>{controller.abort();return never;};
+ const client={query:async sql=>{
+  if(stage==='query'||stage==='rollback'&&sql==='ROLLBACK')return stall();
+  if(sql==='BEGIN READ ONLY')return {rows:[]};
+  throw Error('private backend failure');
+ },release:bad=>releases.push(bad)};
+ const pool={connect:()=>stage==='acquisition'?new Promise(resolve=>{settle=resolve;controller.abort();}):client,
+  end:()=>{ended++;return stage==='shutdown'?stall():Promise.resolve();}};
+ const r=await preflight({env,signal:controller.signal,readBridge:()=>stage==='bridge'?stall():bridge,
+  connect:()=>stage==='factory'?new Promise(resolve=>{settle=resolve;controller.abort();}):pool});
+ assert.equal(r.status,'BLOCKED');assert.equal(r.publication_enabled,false);
+ assert.equal(JSON.stringify(r).includes('private backend'),false);
+ if(stage==='factory'){settle(pool);await new Promise(resolve=>setImmediate(resolve));assert.equal(ended,1);}
+ if(stage==='acquisition'){settle(client);await new Promise(resolve=>setImmediate(resolve));assert.deepEqual(releases,[true]);assert.equal(ended,1);}
+ if(['query','rollback'].includes(stage)){assert.deepEqual(releases,[true]);assert.equal(ended,1);}
+ if(stage==='shutdown')assert.equal(ended,1);
+});
 async function bridgeWorkspace(t){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-bridge-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));
@@ -31,6 +55,28 @@ function fixture(overrides={}){
   return output({rows:[]});},release(discard){released=true;releases.push(discard);}};
  return {options:{env,now:0,readFile:async p=>p==='bridge'?JSON.stringify(bridge):'sql',connect:async()=>({connect:async()=>client,end:async()=>{ended=true;}})},queries,releases,closed:()=>released&&ended};
 }
+for(const failure of ['throw','reject','stall'])test(`preflight redacts ${failure} from client release and still closes its pool`,async()=>{
+ const f=fixture(),pool=await f.options.connect(),client=await pool.connect();
+ const controller=new AbortController();let attempts=0,ended=0;
+ client.release=()=>{attempts++;if(failure==='throw')throw Error('private release detail');
+  if(failure==='reject')return Promise.reject(Error('private release detail'));
+  controller.abort();return new Promise(()=>{});};
+ pool.end=async()=>{ended++;};
+ const report=await preflight({...f.options,signal:controller.signal,connect:async()=>pool});
+ assert.equal(report.status,'BLOCKED');assert.equal(report.publication_enabled,false);
+ assert.equal(report.checks.find(c=>c.code==='DATABASE_READABLE').status,'BLOCKED');
+ assert.equal(attempts,1);assert.equal(ended,1);
+ assert.equal(JSON.stringify(report).includes('private release'),false);
+});
+for(const failure of ['throw','reject'])test(`late preflight acquisition consumes ${failure} from client release`,async()=>{
+ const controller=new AbortController();let settle,releases=0,ended=0;
+ const pool={connect:()=>new Promise(resolve=>{settle=resolve;controller.abort();}),end:async()=>{ended++;}};
+ const report=await preflight({env,signal:controller.signal,readBridge:()=>bridge,connect:()=>pool});
+ assert.equal(report.status,'BLOCKED');assert.equal(ended,1);
+ settle({release:bad=>{assert.equal(bad,true);releases++;if(failure==='throw')throw Error('private late release');
+  return Promise.reject(Error('private late release'));}});
+ await new Promise(resolve=>setImmediate(resolve));assert.equal(releases,1);
+});
 for(const remaining of [86400001,86400000,86399999])test('preflight reports storage lifetime after cleanup: '+remaining,async t=>{
  let now=1800000000000;t.mock.method(Date,'now',()=>now);
  const f=fixture(),settings={...env,POD_STORAGE_EXPIRES_AT:new Date(now+86400002).toISOString()};
@@ -40,6 +86,19 @@ for(const remaining of [86400001,86400000,86399999])test('preflight reports stor
  assert.equal(r.status,remaining>86400000?'CONFIGURATION_VERIFIED':'BLOCKED');
  assert.deepEqual(r.checks.filter(c=>c.code==='STORAGE_LIFETIME'),[{code:'STORAGE_LIFETIME',status:remaining>86400000?'PASS':'BLOCKED'}]);
  assert.ok(f.closed());assert.equal(r.publication_enabled,false);
+});
+for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test('preflight requires explicit false '+flag+' before and after cleanup',async()=>{
+ for(const value of [undefined,null,false,true,0,'','FALSE','False',' false','false ','true','disabled']){
+  for(const stage of ['initial','cleanup']){
+   const f=fixture(),settings={...env},pool=await f.options.connect(),end=pool.end;
+   if(stage==='initial')settings[flag]=value;
+   pool.end=async()=>{await end();settings[flag]=stage==='cleanup'?value:'false';};
+   const r=await preflight({...f.options,env:settings,connect:async()=>pool});
+   assert.equal(r.status,'BLOCKED',`${flag}: ${String(value)} at ${stage}`);
+   assert.deepEqual(r.checks.filter(c=>c.code==='PUBLICATION_DISABLED'),[{code:'PUBLICATION_DISABLED',status:'BLOCKED'}]);
+   assert.equal(r.publication_enabled,false);assert.ok(f.closed());
+  }
+ }
 });
 for(const flag of ['PUBLICATION_ENABLED','POD_PUBLICATION_ENABLED'])test('preflight rejects '+flag+' enabled during cleanup',async()=>{
  const f=fixture(),settings={...env},pool=await f.options.connect(),end=pool.end;

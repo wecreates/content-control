@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {performance} from 'node:perf_hooks';
 import {operationalHealth} from '../integrations/pod/operational-health.mjs';
 import {metrics} from '../integrations/pod/metrics.mjs';
 import {operationsSnapshot} from '../scripts/pod_operations_snapshot.mjs';
@@ -105,6 +106,60 @@ test('metrics reject executable database results without invocation',async()=>{
   assert.equal(reads,0,target);
  }
 });
+for(const failure of ['throw','reject','stall'])test('metrics cannot return success after '+failure+' from client release',async()=>{
+ const f=fixture(),client=await f.db.pool.connect(),controller=new AbortController();let attempts=0;
+ client.release=bad=>{attempts++;assert.equal(bad,false);
+  if(failure==='throw')throw Error('private release failure');
+  if(failure==='reject'){const pending=Promise.reject(Error('private release failure'));pending.catch(()=>{});return pending;}
+  controller.abort();return new Promise(()=>{});
+ };
+ await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now,signal:controller.signal}),
+  failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
+ assert.equal(attempts,1);assert.equal(f.queries.at(-1),'COMMIT');
+});
+test('metrics consume asynchronous rejection when destroying a late client',async()=>{
+ const controller=new AbortController();let complete,consumed=0;
+ const task=metrics({pool:{connect:()=>new Promise(resolve=>{complete=resolve;})}},{signal:controller.signal});
+ controller.abort();await assert.rejects(task,/POD_DIAGNOSTIC_TIMEOUT/);
+ complete({release:bad=>{assert.equal(bad,true);return {then(_resolve,reject){consumed++;reject(Error('private late release'));}};}});
+ await new Promise(r=>setImmediate(r));assert.equal(consumed,1);
+});
+for(const failure of ['reject','stall'])test('manual snapshot closes owned pool after '+failure+' from client release',async()=>{
+ const f=fixture(),client=await f.db.pool.connect(),controller=new AbortController();
+ client.release=()=>{
+  if(failure==='reject'){const pending=Promise.reject(Error('private release failure'));pending.catch(()=>{});return pending;}
+  controller.abort();return new Promise(()=>{});
+ };
+ await assert.rejects(operationsSnapshot({connect:()=>f.db.pool,env:healthy.env,clock:()=>now,signal:controller.signal}),
+  failure==='stall'?/POD_DIAGNOSTIC_TIMEOUT/:/private release failure/);
+ assert.equal(f.ended,true);
+});
+for(const stage of ['commit','release','pool shutdown']){
+ const prepare=async remaining=>{
+  let current=now;const f=fixture(),client=await f.db.pool.connect(),query=client.query,release=client.release,end=f.db.pool.end;
+  f.db.expiresAt=now+remaining;
+  client.query=async sql=>{const result=await query(sql);if(stage==='commit'&&sql==='COMMIT')current++;return result;};
+  client.release=async bad=>{release(bad);if(stage==='release')current++;};
+  f.db.pool.end=async()=>{await end();if(stage==='pool shutdown')current++;};
+  const invoke=()=>stage==='pool shutdown'?operationsSnapshot({env:{...healthy.env,POD_STORAGE_EXPIRES_AT:new Date(f.db.expiresAt).toISOString()},
+   clock:()=>current,connect:()=>f.db.pool}):metrics(f.db,{env:healthy.env,clock:()=>current});
+  return {f,invoke,setClock:value=>{current=value;},client};
+ };
+ for(const [remaining,lifetime] of [[86400001,'BLOCKED'],[1,'EXPIRED']])test('storage alerts reflect '+stage+' crossing '+lifetime,async()=>{
+  const {f,invoke}=await prepare(remaining),report=await invoke();
+  assert.equal(report.health.storage.lifetime,lifetime);assert.equal(report.health.observed_at,new Date(now+1).toISOString());
+  assert.equal(report.health.acceptance_verified,false);assert.equal(report.publication_enabled,false);
+  assert.equal(f.released,false);if(stage==='pool shutdown')assert.equal(f.ended,true);
+ });
+ test('invalid clock after '+stage+' cannot return stale health',async()=>{
+  const {f,invoke,setClock,client}=await prepare(86400001);
+  if(stage==='commit'){const query=client.query;client.query=async sql=>{const result=await query(sql);if(sql==='COMMIT')setClock(NaN);return result;};}
+  if(stage==='release'){const release=client.release;client.release=async bad=>{await release(bad);setClock(NaN);};}
+  if(stage==='pool shutdown'){const end=f.db.pool.end;f.db.pool.end=async()=>{await end();setClock(NaN);};}
+  await assert.rejects(invoke(),/^Error: OPERATIONAL_CLOCK_INVALID$/);
+  assert.equal(f.released,false);if(stage==='pool shutdown')assert.equal(f.ended,true);
+ });
+}
 test('metrics errors roll back and discard a connection if rollback itself fails',async()=>{
  for(const rollbackFails of [false,true]){
   const f=fixture({fail:true,rollbackFails});await assert.rejects(metrics(f.db),/private database error/);
@@ -149,6 +204,51 @@ test('metrics abort a stalled pool acquisition and destroy a late client',async(
  connect({release:bad=>releases.push(bad)});
  await new Promise(resolve=>setImmediate(resolve));
  assert.deepEqual(releases,[true]);
+});
+test('metrics discard a query completing at the absolute deadline without rollback',async t=>{
+ let monotonic=0,complete;const queries=[],releases=[];
+ t.mock.method(performance,'now',()=>monotonic);
+ t.mock.method(AbortSignal,'timeout',()=>new AbortController().signal);
+ const db={pool:{connect:async()=>({
+  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return new Promise(resolve=>{complete=resolve;});return {rows:[]};},
+  release:bad=>releases.push(bad),
+ })}};
+ const result=metrics(db);
+ while(!complete)await new Promise(resolve=>setImmediate(resolve));
+ monotonic=40000;complete({rows:[]});
+ await assert.rejects(result,/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
+ assert.equal(queries.includes('ROLLBACK'),false);assert.deepEqual(releases,[true]);
+});
+async function snapshotResult(task){
+ const stalled=(async()=>{for(let i=0;i<100;i++)await new Promise(r=>setImmediate(r));throw Error('UNBOUNDED_SNAPSHOT');})();
+ return Promise.race([task,stalled]);
+}
+test('manual diagnostics validate cancellation before allocating an owned timer',async t=>{
+ let timers=0;const set=globalThis.setTimeout;
+ t.mock.method(globalThis,'setTimeout',(...args)=>{timers++;return set(...args);});
+ await assert.rejects(operationsSnapshot({signal:{},connect:()=>{throw Error('must not connect');}}),TypeError);
+ assert.equal(timers,0);
+});
+test('manual diagnostics start no work after cancellation',async()=>{
+ const controller=new AbortController();controller.abort();let calls=0;
+ await assert.rejects(snapshotResult(operationsSnapshot({signal:controller.signal,connect:()=>{calls++;return fixture().db.pool;}})),/POD_DIAGNOSTIC_TIMEOUT/);
+ assert.equal(calls,0);
+});
+for(const failure of ['throw','reject'])test('manual diagnostics destroy a late pool and consume '+failure+' from shutdown',async()=>{
+ const controller=new AbortController();let complete,ended=0;
+ const task=operationsSnapshot({signal:controller.signal,connect:()=>new Promise(resolve=>{complete=resolve;controller.abort();})});
+ await assert.rejects(snapshotResult(task),/POD_DIAGNOSTIC_TIMEOUT/);
+ complete({end:()=>{ended++;if(failure==='throw')throw Error('private shutdown');return Promise.reject(Error('private shutdown'));}});
+ await new Promise(r=>setImmediate(r));assert.equal(ended,1);
+});
+test('manual diagnostics cannot return success when owned-pool shutdown stalls',async()=>{
+ const controller=new AbortController(),f=fixture();let ended=0,finish;
+ f.db.pool.end=()=>{ended++;controller.abort();return new Promise(resolve=>{finish=resolve;});};
+ try{
+  await assert.rejects(snapshotResult(operationsSnapshot({signal:controller.signal,connect:()=>f.db.pool,
+   env:healthy.env,clock:()=>now})),/POD_DIAGNOSTIC_TIMEOUT/);
+  assert.equal(ended,1);assert.equal(f.released,false);
+ }finally{finish?.();}
 });
 test('manual diagnostics close their pool on success and failure without starting workers',async()=>{
  for(const fail of [false,true]){

@@ -3,6 +3,31 @@
 This is deployment tooling, not evidence of live production or marketplace publication.
 Existing Render service: content-control-render-worker. Do not create a duplicate service.
 
+Outbox Date results are reduced to inert canonical UTC strings from their internal
+instant before validation/signing. Object-supplied getTime/toISOString/toJSON are
+never called. Invalid, forged or proxy Dates fail inside the per-event boundary;
+authorized continuation and the separate PostgreSQL microsecond cursor remain
+unchanged. This is signed-envelope hardening, not live Money Factory acceptance.
+
+Manual `scripts/pod_operations_snapshot.mjs` diagnostics share one 40-second
+deadline across pool creation, read-only metrics and owned-pool shutdown. A stalled
+dependency must produce a redacted BLOCKED CLI receipt, not an indefinite wait or
+a successful snapshot before cleanup completes. A late pool is closed best effort;
+cancellation does not prove remote I/O stops. This command does not start workers,
+migrate, enable publication or verify the live acceptance checklist.
+Metrics also await client release within their existing diagnostic deadline.
+A rejected or stalled asynchronous release cannot produce a successful metrics
+report; late-client destruction errors are consumed without exposing backend detail.
+Expiry health is observed again after commit/client release and, for manual
+snapshots, after owned-pool shutdown. Counts remain the original read-only
+transaction snapshot; a refreshed health timestamp is not a new database read.
+Recorded production activity also requires successful client release within its
+diagnostic deadline. Historical counts and numeric targets never establish
+measured capacity, current QA readiness or launch acceptance.
+Its observation timestamps accept native PostgreSQL Dates or exact UTC seconds /
+three-digit milliseconds from string adapters. Ambiguous zones, normalized calendar
+dates and precision-losing sub-millisecond strings fail closed, not rounded windows.
+
 ## Runtime dependencies
 
 `Dockerfile` installs Node 22, Python 3.12, the pinned print libraries, English
@@ -42,6 +67,10 @@ plan. Do not use platform rollout success as evidence readiness: only `/readyz`
 returns a success status for an accepted, hash-bound review artifact.
 Runtime deployment success does not imply that the POD database is initialized.
 The dashboard source update triggers deployment; do not trigger a duplicate deploy.
+Its Check storage cutoff control needs no operations key and reads only public
+configuration telemetry. It clears protected panels, sends no authorization or
+cookies, and labels storage acceptance unverified. This display is not a provider
+retention check, restore drill or permission to activate production/publication.
 Rollback uses the previous Node runtime/build/start configuration.
 
 ## Database migration without Render Shell
@@ -60,6 +89,10 @@ Environment variables:
 - POD_STORAGE_EXPIRES_AT: actual provider expiry as canonical UTC
   `YYYY-MM-DDTHH:mm:ssZ` or exact millisecond ISO text, never a fictitious future
   date. Date-only, offset or otherwise normalized text is rejected.
+
+Preflight publication-off evidence requires both PUBLICATION_ENABLED and
+POD_PUBLICATION_ENABLED to be literal `false` strings, including at final cleanup.
+Missing, malformed or ambiguous values cannot produce CONFIGURATION_VERIFIED.
 
 Default dispatch is check-only. Selecting apply runs the existing checksum-guarded,
 advisory-locked, transactional migration and then verifies access using the runtime
@@ -94,10 +127,29 @@ Neon project `damp-base-09108632`, production branch
 `br-orange-sun-arizhns5`, database `content_control_state`. Its verified free-plan
 limits are 1 GiB of logical storage and a six-hour restore window. No provider
 project-deletion date was found. Until a longer-lived arrangement is approved, use
-the current verified quota-period boundary, November 1, 2026 at 00:00:00 UTC, as a
+the current verified quota-period boundary, December 1, 2026 at 00:00:00 UTC, as a
 conservative operational cutoff rather than representing it as a deletion date.
 An approved independently retained backup arrangement is still required before
 relying on this database for ongoing production. No paid resources are created here.
+
+## November 6 provider refresh (r502)
+
+Read-only Neon project metadata returned consumption period November 1 through
+December 1, 2026 UTC, free_v3 plan, 1 GiB branch limit and six-hour history retention.
+Production branch br-orange-sun-arizhns5 was ready with logical_size 40,009,728
+bytes; its compute was idle and not disabled. These metadata reads did not execute
+SQL, disclose credentials or establish a changed database-administration path.
+The stale November 1 operational cutoff was updated in the existing Render service
+to `2026-12-01T00:00:00Z`, with service/production/outbox and both publication
+flags explicitly false. Existing variables were merged, not replaced.
+
+The provider listed zero snapshots before refresh. New free-project snapshot
+`snap-broad-fog-arr61fmj` (`pod-r502-20261106-free-recovery`) was created from
+production at `2026-11-06T16:27:56Z` and independently listed afterward. No
+expiry field was returned, so no retention duration is claimed. No restore,
+production overwrite or independently retained backup was performed. The October
+26 snapshot/recovery observations below are historical, not proof that the old
+snapshot is still recoverable. All 24 acceptance areas remain OPEN.
 
 ## October 26 Neon replacement and recovery drill
 

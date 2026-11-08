@@ -21,6 +21,7 @@ on:
       - 'tests/test_watchdog_scope.py'
       - 'tests/test_security_repair_dispatch.py'
       - 'tests/test_watchdog_routing.py'
+      - 'tests/test_watchdog_routing_history.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -85,7 +86,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_security_repair_dispatch.py -v
           python -m unittest discover -s tests -p test_watchdog_routing.py -v
-          python -m unittest tests/test_watchdog_scope.py
+          python -m unittest tests.test_watchdog_scope tests.test_watchdog_routing_history
           python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
         run: |

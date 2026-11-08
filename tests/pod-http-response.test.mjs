@@ -48,6 +48,32 @@ test('failed response cancellation cannot mask the delivery failure',async()=>{
  await assert.rejects(deliverOutbox(db,{url:'https://authority.example/events',key,fetchImpl:async()=>response}),/^Error: OUTBOX_DELIVERY_FAILED$/);
  assert.deepEqual(db.updated,[]);assert.equal(body.locked,false);
 });
+test('failed reader release cannot replace a body result or primary failure',async()=>{
+ const response=chunks=>({ok:true,headers:new Headers({'content-type':'application/json'}),body:{
+  getReader(){return {read:async()=>chunks.shift()||{done:true},cancel(){},releaseLock(){throw Error('private remote detail');}};}
+ }});
+ assert.deepEqual(await readBridgeJSON(response([{done:false,value:Buffer.from('{}')}]),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),{});
+ await assert.rejects(readBridgeJSON(response([{done:false,value:Buffer.from('123')}]),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: SIZE$/);
+});
+test('failed abort-listener cleanup cannot replace a bridge result or primary failure',async()=>{
+ const signal={
+  throwIfAborted(){},addEventListener(){},
+  removeEventListener(){throw Error('private signal detail');},
+ };
+ const response=await fetchBridgeResponse(async()=>new Response('{}'),'https://authority.example',{signal});
+ assert.deepEqual(await response.json(),{});
+ await assert.rejects(readBridgeJSON(new Response('123'),
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE',signal}),/^Error: SIZE$/);
+});
+test('failed body access during cleanup cannot replace a primary failure',async()=>{
+ const response={ok:false,get body(){throw Error('private remote detail');}};
+ await assert.rejects(readBridgeJSON(response,
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: STATUS$/);
+ await assert.rejects(readBridgeJSON(response,
+  {maxBytes:2,statusError:'STATUS',sizeError:'SIZE',signal:AbortSignal.abort()}),{name:'AbortError'});
+});
 test('malformed JSON, invalid UTF-8 and absent body cannot acknowledge an event',async()=>{
  for(const response of [new Response('{'),new Response(Buffer.from([0xff])),new Response(null,{status:204})]){
   const db=dbFixture();
@@ -191,6 +217,62 @@ test('response abort interrupts an uncooperative read and releases a stalled can
  await assert.rejects(bounded(operation),{name:'AbortError'});
  assert.equal(cancelled,1);assert.equal(body.locked,false);
 });
+for(const phase of ['headers','body']){
+ test(`abort reason access cannot stall an uncooperative ${phase} wait`,async()=>{
+  let abort,entered,cancelled=0;
+  const started=new Promise(resolve=>entered=resolve);
+  const signal={
+   throwIfAborted(){},
+   addEventListener(_type,listener){abort=listener;},
+   removeEventListener(){},
+   get reason(){throw Error('private signal detail');},
+  };
+  let operation;
+  if(phase==='headers'){
+   operation=fetchBridgeResponse(()=>{entered();return new Promise(()=>{});},
+    'https://authority.example',{signal});
+  }else{
+   const body={getReader(){return {
+    read(){entered();return new Promise(()=>{});},
+    cancel(){cancelled++;return new Promise(()=>{});},
+    releaseLock(){},
+   };}};
+   operation=readBridgeJSON({ok:true,headers:new Headers(),body},
+    {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal});
+  }
+  await started;abort();
+  await assert.rejects(bounded(operation),{name:'AbortError'});
+  assert.equal(cancelled,phase==='body'?1:0);
+ });
+}
+for(const phase of ['headers','body']){
+ test(`synchronous abort registration prevents an uncooperative ${phase} start`,async()=>{
+  let started=0,cancelled=0;
+  const reason=new DOMException('stopped','AbortError');
+  const signal={
+   throwIfAborted(){},
+   addEventListener(_type,listener){listener();},
+   removeEventListener(){},
+   reason,
+  };
+  let operation;
+  if(phase==='headers'){
+   operation=fetchBridgeResponse(()=>{started++;return new Promise(()=>{});},
+    'https://authority.example',{signal});
+  }else{
+   const body={getReader(){return {
+    read(){started++;return new Promise(()=>{});},
+    cancel(){cancelled++;return new Promise(()=>{});},
+    releaseLock(){},
+   };}};
+   operation=readBridgeJSON({ok:true,headers:new Headers(),body},
+    {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal});
+  }
+  await assert.rejects(bounded(operation),error=>error===reason);
+  assert.equal(started,0);
+  assert.equal(cancelled,phase==='body'?1:0);
+ });
+}
 for(const caller of ['grant','outbox']){
  test(`${caller} forwards cancellation to a body that ignores fetch's signal`,async()=>{
   const controller=new AbortController();let reading,cancelled=0;
@@ -308,6 +390,28 @@ test('synchronous transport failures release admission and preserve the error',a
  let calls=0;const failure=Error('transport failed'),fetchImpl=()=>{calls++;throw failure;};
  for(let i=0;i<40;i++)await assert.rejects(fetchBridgeResponse(fetchImpl,'https://authority.example',{}),error=>error===failure);
  assert.equal(calls,40);
+});
+test('failed abort-listener registration does not consume transport admission',async()=>{
+ let calls=0;const failure=Error('signal listener failed');
+ const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+ const fetchImpl=async()=>{calls++;return new Response('{}');};
+ for(let i=0;i<40;i++)await assert.rejects(
+  fetchBridgeResponse(fetchImpl,'https://authority.example',{signal}),error=>error===failure);
+ assert.equal(calls,0);
+ const response=await fetchBridgeResponse(fetchImpl,'https://authority.example',{});
+ assert.deepEqual(await response.json(),{});assert.equal(calls,1);
+});
+test('failed abort-listener registration does not start a response-body read',async()=>{
+ let reads=0,cancelled=0;const failure=Error('signal listener failed');
+ const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+ const body={getReader(){return {
+  read(){reads++;return new Promise(()=>{});},
+  cancel(){cancelled++;return new Promise(()=>{});},
+  releaseLock(){},
+ };}};
+ await assert.rejects(bounded(readBridgeJSON({ok:true,headers:new Headers(),body},
+  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal})),error=>error===failure);
+ assert.equal(reads,0);assert.equal(cancelled,1);
 });
 test('outbox shutdown drains a header wait without accepting a late acknowledgement',async()=>{
  const db=dbFixture();let entered,respond,cancelled=0;

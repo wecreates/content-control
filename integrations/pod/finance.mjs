@@ -33,7 +33,7 @@ function snapshotMutationCount(result){
  if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>1)throw Error('FINANCIAL_QUERY_UNVERIFIED');
  return count.value;
 }
-function verifyAuditMutation(result,expected){
+function verifyMutation(result,expected){
  if(!inertQueryResult(result))throw Error('FINANCIAL_QUERY_UNVERIFIED');
  const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
  if(!count.valid||count.value!==1||!rows.valid||!Array.isArray(rows.value)||utilTypes.isProxy(rows.value))
@@ -46,7 +46,7 @@ function verifyAuditMutation(result,expected){
  }catch{throw Error('FINANCIAL_QUERY_UNVERIFIED');}
  if(length!==1||!rowDescriptor||!Object.hasOwn(rowDescriptor,'value')||!ordinaryRecord(rowDescriptor.value))
   throw Error('FINANCIAL_QUERY_UNVERIFIED');
- for(const field of ['id','job_id','kind']){
+ for(const field of Object.keys(expected)){
   const capability=dataProperty(rowDescriptor.value,field);
   if(!capability.valid||capability.value!==expected[field])throw Error('FINANCIAL_QUERY_UNVERIFIED');
  }
@@ -108,11 +108,11 @@ function snapshotFinancialTotals(result){
  return Object.freeze(snapshots);
 }
 
-export async function recordFinancialEvent(db,envelope,key){
+export async function recordFinancialEvent(db,envelope,key,{signal}={}){
  const e=verifyEnvelope(envelope,key,'content-control:pod:finance');
  if(e.verified!==true||!['authority_event_id','provider_event_id','provider','job_id'].every(k=>validOpaqueText(e[k]))||
   !Number.isSafeInteger(e.amount_minor)||!['royalty','refund','fee','production_cost','generation_cost','tax','adjustment'].includes(e.kind)||
-  !/^[A-Z]{3}$/.test(e.currency)||!validEvidenceTime(e.occurred_at)||
+  typeof e.currency!=='string'||!/^[A-Z]{3}$/.test(e.currency)||!validEvidenceTime(e.occurred_at)||
   typeof e.evidence_sha256!=='string'||!/^[a-f0-9]{64}$/.test(e.evidence_sha256))throw Error('FINANCIAL_EVIDENCE_REQUIRED');
  if((e.kind==='royalty'&&e.amount_minor<0)||(['refund','fee','production_cost','generation_cost','tax'].includes(e.kind)&&e.amount_minor>0))throw Error('FINANCIAL_SIGN_INVALID');
  return db.tx(async c=>{
@@ -134,19 +134,21 @@ export async function recordFinancialEvent(db,envelope,key){
     [e.provider,e.provider_event_id,e.authority_event_id,e.occurred_at]));
    db.active();
    const previous=matches[0];
-   if(matches.length!==1||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
-    String(previous.amount_minor)!==String(e.amount_minor)||previous.occurred_at_matches!==true)throw Error('FINANCIAL_REPLAY_CONFLICT');
+   if(matches.length!==1||!validOpaqueText(previous.id)||!['job_id','provider','provider_event_id','kind','currency','evidence_sha256','authority_event_id'].every(k=>previous[k]===e[k])||
+    (!Object.is(previous.amount_minor,e.amount_minor)&&previous.amount_minor!==String(e.amount_minor))||
+    previous.occurred_at_matches!==true)throw Error('FINANCIAL_REPLAY_CONFLICT');
    verifyEnvelope(envelope,key,'content-control:pod:finance');
    return {id:previous.id,duplicate:true};
   }
+  verifyMutation(result,{id});
   const audit={id:crypto.randomUUID(),job_id:e.job_id,kind:'pod.finance.verified'};
-  verifyAuditMutation(await c.query(`INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)
+  verifyMutation(await c.query(`INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)
    RETURNING id,job_id,kind`,[audit.id,audit.job_id,audit.kind,
    {financial_event_id:id,authority_event_id:e.authority_event_id}]),audit);
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:finance');
   return {id,duplicate:false};
- });
+ },{signal});
 }
 export async function financialTotals(db){
  return snapshotFinancialTotals(await db.read(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count

@@ -118,10 +118,10 @@ export class ArtifactStore {
    !Number.isSafeInteger(maxBatchBytes)||maxBatchBytes<1||maxBatchBytes>MAX_PACKAGE_BYTES)throw Error('ARTIFACT_LIMIT_INVALID');
   Object.assign(this,{db,budgetBytes,maxObjectBytes,maxBatchBytes});
  }
- async put(body,mediaType){
-  return (await this.putMany([{body,mediaType}]))[0];
+ async put(body,mediaType,{signal}={}){
+  return (await this.putMany([{body,mediaType}],{signal}))[0];
  }
- async putMany(artifacts){
+ async putMany(artifacts,{signal}={}){
   const inputs=snapshotArtifactInputs(artifacts);
   const unique=new Map(),hashes=[];let total=0;
   for(const {body,mediaType} of inputs){
@@ -168,7 +168,7 @@ export class ArtifactStore {
     this.db.active();
    }
    return hashes;
-  });
+  },{signal});
  }
  async get(sha){
   this.db.active();if(typeof sha!=='string'||!/^[a-f0-9]{64}$/.test(sha))throw Error('ARTIFACT_HASH_INVALID');

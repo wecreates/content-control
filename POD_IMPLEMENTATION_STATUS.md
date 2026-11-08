@@ -48,8 +48,10 @@ do not re-sign stale approvals simply to extend their lifetime.
 
 Setting POD_SERVICE_ENABLED=true checks existing migration checksums; it never
 auto-creates storage. A POD failure blocks this lane without killing unrelated
-Content Control services. `/api/print/dashboard` loads the read-only dashboard;
-all data endpoints require a bearer operations key. Keep that key off URLs/logs.
+Content Control services. `/api/print/dashboard` loads the read-only dashboard.
+Protected operations data requires a bearer operations key; the explicit storage
+cutoff check uses only public configuration telemetry without credentials. Keep
+the key off URLs/logs. Configuration telemetry is not storage acceptance.
 
 The free-tier-first package provides no always-on hosting guarantee. Queue
 backpressure stops before storage/quota exhaustion. No paid resources, platform
@@ -57,6 +59,11 @@ accounts, marketplace listings or live revenue were created by this change.
 
 
 ## Evidence history and current acceptance
+
+R504 adds a key-free, bounded configured-cutoff display to the read-only
+operations dashboard. Live cloud-browser checking and reset behavior are recorded
+in [the r504 receipt](docs/pod/POD_RUN_RECEIPT_R504.md); they do not substitute for
+owner-phone, storage recovery or production acceptance.
 
 All 24 live acceptance areas remain OPEN. Publication remains disabled. See
 [POD_COMPLETION_CHECKLIST.md](POD_COMPLETION_CHECKLIST.md) for the current full

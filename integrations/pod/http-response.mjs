@@ -7,6 +7,12 @@ const MAX_PENDING_REQUESTS=32;
 function cancelBody(response){
  try{if(response?.body&&!response.body.locked)Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
 }
+function abortReason(signal){
+ try{
+  const reason=signal.reason;
+  return reason===undefined?new DOMException('Bridge request aborted','AbortError'):reason;
+ }catch{return new DOMException('Bridge request aborted','AbortError');}
+}
 
 // Timers interrupt stalled I/O; elapsed-time checks reject late completion even
 // when the event loop has not dispatched a timeout callback yet.
@@ -24,13 +30,19 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
  assertBridgeRequest(signal,deadline);
  const count=pendingRequests.get(fetchImpl)||0;
  if(count>=MAX_PENDING_REQUESTS)throw Error('BRIDGE_REQUEST_BUSY');
- pendingRequests.set(fetchImpl,count+1);
  let onAbort;
  try{
-  const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>reject(signal.reason);
+  let aborted,abortObserved=false;
+  if(signal){
+   let rejectAbort;
+   aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
    signal.addEventListener('abort',onAbort,{once:true});
-  });
+   if(abortObserved)return await aborted;
+  }
+  // Do not consume admission or start the transport unless cancellation
+  // control was established successfully.
+  pendingRequests.set(fetchImpl,count+1);
   const pending=Promise.resolve().then(()=>{
    assertBridgeRequest(signal,deadline);
    return fetchImpl(url,options);
@@ -44,7 +56,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
   // Promise.race also consumes a late rejection after cancellation has won.
   return await (aborted?Promise.race([pending,aborted]):pending);
  }finally{
-  if(onAbort)signal.removeEventListener('abort',onAbort);
+  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
  }
 }
 
@@ -52,7 +64,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
 // Body reads share the request deadline even if a transport does not propagate
 // aborts. Best-effort cancellation must not delay a result or replace its error.
 export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,mediaTypeError,signal,deadline}){
- let reader,onAbort;
+ let reader,onAbort,abortObserved=false;
  try{
   assertBridgeRequest(signal,deadline);
   if(!response.ok)throw Error(statusError);
@@ -63,10 +75,15 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(Number(response.headers.get('content-length'))>maxBytes)throw Error(sizeError);
   if(!response.body)throw Error('BRIDGE_RESPONSE_BODY_REQUIRED');
   reader=response.body.getReader();
-  const aborted=signal&&new Promise((_,reject)=>{
-   onAbort=()=>reject(signal.reason);
-   signal.addEventListener('abort',onAbort,{once:true});
-  });
+  let aborted;
+  if(signal){
+   let rejectAbort;
+   aborted=new Promise((_,reject)=>{rejectAbort=reject;});
+   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
+   try{signal.addEventListener('abort',onAbort,{once:true});}
+   catch(error){if(!abortObserved)throw error;}
+   if(abortObserved)return await aborted;
+  }
   const chunks=[];let size=0;
   while(true){
    assertBridgeRequest(signal,deadline);
@@ -84,14 +101,17 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   assertBridgeRequest(signal,deadline);
   return result;
  }finally{
-  if(onAbort)signal.removeEventListener('abort',onAbort);
+  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
   // A remote/custom stream may never settle cancel(). Invoke it and consume
   // rejection, but release the reader without awaiting transport cleanup.
   if(reader){
    try{Promise.resolve(reader.cancel()).catch(()=>{});}catch{}
-   reader.releaseLock();
-  }else if(response.body&&!response.body.locked){
-   try{Promise.resolve(response.body.cancel()).catch(()=>{});}catch{}
+   try{reader.releaseLock();}catch{}
+  }else{
+   try{
+    const body=response?.body;
+    if(body&&!body.locked)Promise.resolve(body.cancel()).catch(()=>{});
+   }catch{}
   }
  }
 }

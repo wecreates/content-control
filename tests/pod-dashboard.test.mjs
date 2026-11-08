@@ -14,7 +14,7 @@ const record=bytes=>{
  manifest.package_sha256=sha(Buffer.from(canonical(manifest)));
  return {id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest,manifest_sha256:sha(Buffer.from(canonical(manifest)))};
 };
-function harness(fetcher,timers={setTimeout,clearTimeout}){
+function harness(fetcher,timers={setTimeout,clearTimeout},AbortControllerImpl=AbortController){
  class Element{
   constructor(){this.value='';this.textContent='';this.hidden=false;this.listeners={};this.children=[];}
   addEventListener(name,fn){this.listeners[name]=fn;}
@@ -26,7 +26,7 @@ function harness(fetcher,timers={setTimeout,clearTimeout}){
  const nodes=new Map(),urls=[],revoked=[],requests=[],events={};
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id);};
  const context=vm.createContext({document:{getElementById:get,createElement:()=>new Element()},window:{addEventListener:(k,v)=>events[k]=v},
-  AbortController,TextDecoder,TextEncoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
+  AbortController:AbortControllerImpl,TextDecoder,TextEncoder,Uint8Array,DataView,Blob,crypto:crypto.webcrypto,
   setTimeout:timers.setTimeout,clearTimeout:timers.clearTimeout,performance:timers.performance||performance,
   URL:{createObjectURL:blob=>{urls.push(blob);return 'blob:fixture-'+urls.length;},revokeObjectURL:url=>revoked.push(url)},
   fetch:async(url,options)=>{requests.push({url,options});return fetcher(url,options);}});
@@ -39,6 +39,50 @@ const activity=()=>({schema_version:1,scope:'recorded_production_activity',
  counts:{registered_concept_records:'120',generated_concept_records:'100',generated_jobs:'150',generated_package_hashes:'140',jobs_with_pass_event:'80',jobs_with_fail_event:'20'},
  targets:{baseline_unique_concepts_per_day:100,scale_unique_concepts_per_day:1000},capacity_verified:false,acceptance_verified:false,publication_enabled:false});
 const submit=h=>h.get('form').listeners.submit({preventDefault(){}});
+const storageReport=()=>({publication_enabled:false,storage_lifetime:{status:'CONFIGURED_WINDOW_VALID',
+ operational_cutoff:'2026-12-01T00:00:00.000Z',scope:'configured_cutoff_only',acceptance_verified:false}});
+test('storage cutoff check needs no key, sends no credentials and clears protected views',async()=>{
+ const h=harness(()=>response(storageReport()));h.get('key').value='';h.get('result').textContent='protected fixture';
+ await h.get('storage-check').listeners.click();
+ assert.equal(h.requests.length,1);assert.equal(h.requests[0].url,'/api/print/status');
+ assert.equal(h.requests[0].options.headers.Authorization,undefined);assert.equal(h.requests[0].options.credentials,'omit');
+ assert.equal(h.requests[0].options.cache,'no-store');assert.equal(h.requests[0].options.redirect,'error');
+ assert.match(h.get('storage-window').textContent,/Within configured window.*2026-12-01T00:00:00.000Z.*unverified/);
+ assert.equal(h.get('result').textContent,'Authenticate to load metrics.');
+});
+test('storage display accepts explicit warnings but rejects malformed or approval-claiming reports',async()=>{
+ for(const status of ['UNCONFIGURED','INVALID','CLOCK_INVALID','EXPIRED','EXPIRING']){
+  const report=storageReport();report.storage_lifetime.status=status;
+  if(['UNCONFIGURED','INVALID'].includes(status))report.storage_lifetime.operational_cutoff=null;
+  const h=harness(()=>response(report));await h.get('storage-check').listeners.click();
+  assert.match(h.get('storage-window').textContent,/Storage acceptance remains unverified/);
+ }
+ for(const mutate of [r=>r.publication_enabled=true,r=>r.storage_lifetime.acceptance_verified=true,
+  r=>r.storage_lifetime.scope='provider_retention',r=>r.storage_lifetime.status='APPROVED',
+  r=>r.storage_lifetime.operational_cutoff='<img onerror=bad>',r=>r.storage_lifetime.operational_cutoff='2026-12-01',
+  r=>r.storage_lifetime.operational_cutoff=null,r=>delete r.storage_lifetime]){
+  const report=storageReport();mutate(report);const h=harness(()=>response(report));
+  await h.get('storage-check').listeners.click();assert.match(h.get('storage-window').textContent,/unavailable.*No readiness/);
+ }
+});
+test('storage checks redact errors and bound public response size',async()=>{
+ for(const reply of [()=>new Response('private backend detail',{status:503}),()=>new Response('x'.repeat(8193)),
+  ()=>new Response('{"storage_lifetime":{},"storage_lifetime":{}}')]){
+  const h=harness(reply);await h.get('storage-check').listeners.click();
+  assert.equal(h.requests.length,1);assert.match(h.get('storage-window').textContent,/unavailable/);
+  assert.doesNotMatch(h.get('storage-window').textContent,/private|backend/);
+ }
+});
+test('clearing or replacing a session prevents delayed public storage repaint',async()=>{
+ for(const action of ['clear','key','pagehide']){
+  let release;const pending=new Promise(resolve=>release=resolve);
+  const h=harness(async()=>{await pending;return response(storageReport());});
+  const task=h.get('storage-check').listeners.click();
+  if(action==='pagehide')h.events.pagehide();else h.get(action).listeners[action==='clear'?'click':'input']();
+  release();await task;assert.equal(h.requests[0].options.signal.aborted,true);
+  assert.equal(h.get('storage-window').textContent,'Check the configured cutoff without an operations key.');
+ }
+});
 test('dashboard lists jobs using authenticated bounded GET routes and text nodes',async()=>{
  const h=harness(url=>response(url.endsWith('/capacity')?activity():url.includes('/metrics')?{publication_enabled:false}:{jobs:[{id:'fixture-job',platform:'<img onerror=bad>',state:'review_required',attempt:1,can_preview:true}]}));
  await h.get('form').listeners.submit({preventDefault(){}});
@@ -226,6 +270,17 @@ for(const stage of ['fetch','body'])test('shared preview deadline bounds stalled
  assert.equal(h.urls.length,0);assert.equal(h.requests[0].options.signal.aborted,true);
  assert.equal(timers.pending.size,0);if(stage==='body')assert.equal(cancelled,1);
 });
+for(const stage of ['fetch','body'])test('public storage check shares bounded '+stage+' deadline without credentials',async()=>{
+ const timers=controlledTimers();let cancelled=0;
+ const h=harness(()=>stage==='fetch'?new Promise(()=>{}):new Response(new ReadableStream({
+  pull(){return new Promise(()=>{});},cancel(){cancelled++;return new Promise(()=>{});}
+ })),timers);
+ const operation=h.get('storage-check').listeners.click();await flush();timers.fire();await operation;
+ assert.match(h.get('storage-window').textContent,/unavailable.*No readiness/);
+ assert.equal(h.requests[0].options.headers.Authorization,undefined);assert.equal(h.requests[0].options.credentials,'omit');
+ assert.equal(h.requests[0].options.signal.aborted,true);assert.equal(timers.pending.size,0);
+ if(stage==='body')assert.equal(cancelled,1);
+});
 test('timeout retains completed operations panels while bounding a stalled peer',async()=>{
  const timers=controlledTimers();
  const h=harness(url=>url.includes('/jobs')?new Promise(()=>{}):response(url.endsWith('/capacity')?activity():{health:{status:'CRITICAL'}}),timers);
@@ -261,4 +316,41 @@ test('late completion cannot beat an overdue deadline when its timer callback wa
  now=30000;release(response(record(png)));await operation;
  assert.equal(h.get('notice').textContent,'POD request timed out. Try again.');
  assert.equal(h.requests.length,1);assert.equal(h.urls.length,0);assert.equal(timers.pending.size,0);
+});
+
+test('dashboard does not start protected work when cancellation listener setup fails',async()=>{
+ class SetupFailureController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){},
+   addEventListener(){throw Error('private listener failure');},removeEventListener(){}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(()=>response(record(png)),undefined,SetupFailureController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,0);assert.equal(h.urls.length,0);
+ assert.equal(h.get('notice').textContent,'Unable to verify this preview or response.');
+});
+
+test('dashboard does not start protected work after synchronous cancellation admission',async()=>{
+ class SynchronousAbortController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){if(this.aborted)throw this.reason;},
+   addEventListener(_type,listener){this.aborted=true;this.reason=Error('private cancellation detail');listener();},
+   removeEventListener(){}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(()=>response(record(png)),undefined,SynchronousAbortController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,0);assert.equal(h.urls.length,0);
+ assert.equal(h.get('notice').textContent,'Unable to verify this preview or response.');
+});
+
+test('dashboard listener cleanup failure cannot replace a verified preview',async()=>{
+ class CleanupFailureController{
+  constructor(){this.signal={aborted:false,reason:undefined,throwIfAborted(){if(this.aborted)throw this.reason;},
+   addEventListener(){},removeEventListener(){throw Error('private cleanup failure');}};}
+  abort(reason){this.signal.aborted=true;this.signal.reason=reason;}
+ }
+ const h=harness(url=>url.includes('/package')?response(record(png)):new Response(png),undefined,CleanupFailureController);
+ await h.context.openPreview('fixture-job');
+ assert.equal(h.requests.length,2);assert.equal(h.urls.length,1);
+ assert.equal(h.get('notice').textContent,'Preview loaded. This does not grant QA or publication approval.');
 });

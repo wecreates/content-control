@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {request as httpRequest} from 'node:http';
 import express from 'express';
+import {performance} from 'node:perf_hooks';
 import {operationalAuth} from '../integrations/pod/auth.mjs';
 import {createPodRouter} from '../integrations/pod/router.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
@@ -132,6 +134,24 @@ for(const [name,path] of [
   assert.equal(response.headers.get('cache-control'),'no-store');
  }finally{await new Promise(r=>server.close(r));}
 });
+test('operation errors cannot execute or steer the storage-cutoff classifier',async()=>{
+ let messageReads=0,proxyReads=0;
+ const error=Error('private-error');
+ Object.defineProperty(error,'message',{configurable:true,get(){messageReads++;return 'POD_STORAGE_EXPIRING';}});
+ const errors=[error,new Proxy({}, {get(){proxyReads++;throw Error('message proxy trap executed');}})];
+ const db={listOperationsJobs:async()=>{throw errors.shift();}};
+ const app=express();app.use(createPodRouter({db,env:{},authorize:operationalAuth(key)}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  for(let i=0;i<2;i++){
+   const response=await fetch(`http://127.0.0.1:${server.address().port}/jobs`,{
+    headers:{Authorization:`Bearer ${key}`}});
+   assert.equal(response.status,409);
+   assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+  }
+  assert.equal(messageReads,0);assert.equal(proxyReads,0);assert.equal(errors.length,0);
+ }finally{await new Promise(r=>server.close(r));}
+});
 test('authenticated mutations report the exact storage cutoff as unavailable',async()=>{
  const unavailable=async()=>{throw Error('POD_STORAGE_EXPIRING');};
  const db={tx:unavailable,requeueRepair:unavailable,acceptReview:unavailable,registerIntake:unavailable,enqueue:unavailable};
@@ -194,6 +214,240 @@ test('job inspection route authenticates and forwards only its filter',async()=>
   assert.match(result.headers.get('content-security-policy'),/img-src blob:/);
  }finally{await new Promise(r=>server.close(r));}
 });
+test('disconnecting during owner authorization aborts the pending authority check',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const authorize=async(_req,options)=>{
+  observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return true;
+ };
+ const app=express();app.use(createPodRouter({authorize,env:{},db:{listOperationsJobs:async()=>[]}}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('authorization cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
+test('a request disconnected before POD routing cannot start owner authorization',async()=>{
+ let entered,release,aborted,clientRequest,authorizationCalls=0,databaseCalls=0;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  disconnected=new Promise(resolve=>{aborted=resolve;});
+ const app=express();
+ app.use(async(req,_res,next)=>{
+  req.once('aborted',aborted);entered(req);await pending;next();
+ });
+ app.use(createPodRouter({
+  authorize(){authorizationCalls++;return true;},env:{},
+  db:new Proxy({}, {get(){databaseCalls++;throw Error('database must not be touched');}}),
+ }));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  clientRequest=httpRequest({host:'127.0.0.1',port:server.address().port,path:'/jobs'});
+  clientRequest.once('error',()=>{});clientRequest.end();
+  const serverRequest=await started;clientRequest.destroy();
+  await Promise.race([disconnected,new Promise((_,reject)=>setTimeout(()=>reject(Error('server did not observe disconnect')),1000))]);
+  assert.equal(serverRequest.aborted,true);release();
+  await new Promise(resolve=>setImmediate(resolve));await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(authorizationCalls,0);assert.equal(databaseCalls,0);
+ }finally{release();clientRequest?.destroy();await new Promise(r=>server.close(r));}
+});
+test('owner authorization and protected work share one request lifecycle signal',async()=>{
+ let authorizationSignal,operationSignal;
+ const authorize=async(_req,options)=>{authorizationSignal=options?.signal;return true;};
+ const db={listOperationsJobs:async(_state,options)=>{operationSignal=options?.signal;return [];}};
+ const app=express();app.use(createPodRouter({authorize,env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const response=await fetch(`http://127.0.0.1:${server.address().port}/jobs`);
+  assert.equal(response.status,200);assert.ok(authorizationSignal instanceof AbortSignal);
+  assert.equal(operationSignal,authorizationSignal);assert.equal(operationSignal.aborted,false);
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('authenticated body parsing cannot outlive the fixed request deadline',async t=>{
+ const deadline=new AbortController();let authorized,serverRequest,clientRequest,databaseCalls=0;
+ const entered=new Promise(resolve=>{authorized=resolve;});
+ t.mock.method(AbortSignal,'timeout',()=>deadline.signal);
+ const authorize=req=>{serverRequest=req;authorized();return true;};
+ const db=new Proxy({}, {get(){databaseCalls++;throw Error('database must not be touched');}});
+ const app=express();app.use(createPodRouter({authorize,env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const closed=new Promise(resolve=>{
+   clientRequest=httpRequest({host:'127.0.0.1',port:server.address().port,path:'/jobs',method:'POST',headers:{
+    'Content-Type':'application/json','Content-Length':'2'}},response=>{
+     response.resume();resolve({response:response.statusCode});
+    });
+   clientRequest.once('error',error=>resolve({error:error.code||error.message}));
+   clientRequest.once('close',()=>resolve({closed:true}));
+   clientRequest.write('{');
+  });
+  await entered;
+  for(let i=0;i<100&&serverRequest.listenerCount('data')===0;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(serverRequest.listenerCount('data')>0,'body parser did not start');
+  deadline.abort(new DOMException('deadline','TimeoutError'));
+  const outcome=await Promise.race([closed,new Promise((_,reject)=>setTimeout(()=>reject(Error('body parser outlived request deadline')),1000))]);
+  assert.ok(outcome.error||outcome.closed);assert.equal(databaseCalls,0);
+ }finally{clientRequest?.destroy();deadline.abort();await new Promise(r=>server.close(r));}
+});
+test('authenticated review routes forward a native request lifecycle signal',async()=>{
+ const calls=[],body=Buffer.from('fixture');
+ const db={
+  listOperationsJobs:async(state,options)=>{calls.push(['jobs',state,options?.signal]);return [];},
+  reviewPackage:async(id,options)=>{calls.push(['package',id,options?.signal]);return {id};},
+  reviewArtifact:async(id,sha,options)=>{calls.push(['artifact',id,sha,options?.signal]);return {body,media_type:'image/png'};},
+  listReady:async options=>{calls.push(['ready',options?.signal]);return [];},
+ };
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const base=`http://127.0.0.1:${server.address().port}`,headers={Authorization:`Bearer ${key}`};
+  assert.equal((await fetch(base+'/jobs?state=blocked',{headers})).status,200);
+  assert.equal((await fetch(base+'/jobs/fixture-job/package',{headers})).status,200);
+  assert.equal((await fetch(base+'/jobs/fixture-job/artifacts/'+'a'.repeat(64),{headers})).status,200);
+  assert.equal((await fetch(base+'/ready',{headers})).status,200);
+  assert.deepEqual(calls.map(call=>call.slice(0,-1)),[
+   ['jobs','blocked'],['package','fixture-job'],['artifact','fixture-job','a'.repeat(64)],['ready']]);
+  for(const call of calls){const signal=call.at(-1);assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,false);}
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('disconnecting an authenticated read aborts its pending database operation',async()=>{
+ let entered,aborted;const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{aborted=resolve;});
+ const db={listOperationsJobs:async(_state,{signal}={})=>{
+  entered();
+  return new Promise((resolve,reject)=>{
+   const stop=()=>{aborted(signal);reject(signal.reason);};
+   if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});
+  });
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{
+   headers:{Authorization:`Bearer ${key}`},signal:controller.signal});
+  await started;controller.abort();
+  await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('request cancellation not forwarded')),1000))]);
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{controller.abort();await new Promise(r=>server.close(r));}
+});
+for(const [name,path,method] of [
+ ['repair retry','/jobs/fixture-job/retry','requeueRepair'],
+ ['review acceptance','/jobs/fixture-job/review','acceptReview'],
+])test('disconnecting authenticated '+name+' aborts its pending database mutation',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const db={[method]:async(_id,_body,options)=>{
+  observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return {status:'fixture'};
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}`+path,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:'{}',signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('mutation cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
+const mutationEnvelope={
+ market:()=>sign({audience:'content-control:pod:market',platform:'redbubble',source_url:'https://example.org/fixture',
+  country:'US',category:'shirt',observed_at:'2026-01-01T00:00:00Z',collection_authorized:true,source_sha256:'a'.repeat(64)}),
+ listing:()=>sign({audience:'content-control:pod:listing-observation',account_id:'account',evidence_sha256:'a'.repeat(64),
+  job_id:'job',package_sha256:'b'.repeat(64),platform:'redbubble',provider_event_id:'event',provider_id:'listing',provider_verified:true,status:'LIVE'}),
+ financial:()=>sign({audience:'content-control:pod:finance',verified:true,authority_event_id:'authority',provider_event_id:'event',
+  provider:'redbubble',job_id:'job',amount_minor:1,kind:'royalty',currency:'USD',occurred_at:'2026-01-01T00:00:00Z',evidence_sha256:'a'.repeat(64)}),
+};
+for(const fixture of [
+ {name:'artifact upload',path:'/artifacts',type:'image/png',body:Buffer.from('fixture'),operation:'tx'},
+ {name:'market observation',path:'/market',type:'application/json',body:mutationEnvelope.market(),operation:'tx'},
+ {name:'listing observation',path:'/listing-observations',type:'application/json',body:mutationEnvelope.listing(),operation:'tx'},
+ {name:'financial event',path:'/financial-events',type:'application/json',body:mutationEnvelope.financial(),operation:'tx'},
+ {name:'concept intake',path:'/intake',type:'application/json',body:{},operation:'registerIntake'},
+ {name:'job enqueue',path:'/jobs',type:'application/json',body:{},operation:'enqueue'},
+])test('disconnecting authenticated '+fixture.name+' aborts its pending database mutation',async()=>{
+ let entered,release,observed,observedSignal;
+ const started=new Promise(resolve=>{entered=resolve;}),pending=new Promise(resolve=>{release=resolve;}),
+  cancelled=new Promise(resolve=>{observed=resolve;});
+ const operation=async(...args)=>{
+  const options=args.at(-1);observedSignal=options?.signal;entered();
+  if(!(observedSignal instanceof AbortSignal))observed();
+  else if(observedSignal.aborted)observed(observedSignal);
+  else observedSignal.addEventListener('abort',()=>observed(observedSignal),{once:true});
+  await pending;return fixture.operation==='tx'?[]:{id:'fixture'};
+ };
+ const db={active(){},[fixture.operation]:operation};
+ const env={POD_MARKET_KEY:key,POD_PROVIDER_KEY:key,POD_FINANCE_KEY:key};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env,db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ const controller=new AbortController();
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}`+fixture.path,{method:'POST',
+   headers:{Authorization:`Bearer ${key}`,'Content-Type':fixture.type},
+   body:fixture.type==='application/json'?JSON.stringify(fixture.body):fixture.body,signal:controller.signal});
+  await started;controller.abort();await assert.rejects(request,error=>error?.name==='AbortError');
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('mutation cancellation not forwarded')),1000))]);
+  assert.ok(signal instanceof AbortSignal);assert.equal(signal.aborted,true);
+  assert.equal(signal.reason?.message,'POD_REQUEST_CANCELLED');
+ }finally{release();controller.abort();await new Promise(r=>server.close(r));}
+});
+test('authenticated reads enforce one fixed server deadline while the client stays connected',async t=>{
+ const deadline=new AbortController();let timeoutMs,entered,observed;
+ const started=new Promise(resolve=>{entered=resolve;}),cancelled=new Promise(resolve=>{observed=resolve;});
+ t.mock.method(AbortSignal,'timeout',ms=>{timeoutMs=ms;return deadline.signal;});
+ const db={listOperationsJobs:async(_state,{signal}={})=>{
+  entered();
+  return new Promise((resolve,reject)=>{
+   const stop=()=>{observed(signal);reject(signal.reason);};
+   if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});
+  });
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{headers:{Authorization:`Bearer ${key}`}});
+  await started;assert.equal(timeoutMs,30000);
+  deadline.abort(new DOMException('deadline','TimeoutError'));
+  const signal=await Promise.race([cancelled,new Promise((_,reject)=>setTimeout(()=>reject(Error('request deadline not forwarded')),1000))]);
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.name,'TimeoutError');
+  const response=await request;assert.equal(response.status,409);
+  assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+ }finally{deadline.abort();await new Promise(r=>server.close(r));}
+});
+test('late read completion cannot beat a delayed server deadline callback',async t=>{
+ let now=100,timeoutMs,entered,release,signal;
+ const started=new Promise(resolve=>{entered=resolve;}),timeout=new AbortController();
+ t.mock.method(performance,'now',()=>now);
+ t.mock.method(AbortSignal,'timeout',ms=>{timeoutMs=ms;return timeout.signal;});
+ const db={listOperationsJobs:async(_state,options)=>{
+  signal=options?.signal;entered();return new Promise(resolve=>{release=resolve;});
+ }};
+ const app=express();app.use(createPodRouter({authorize:operationalAuth(key),env:{},db}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  const request=fetch(`http://127.0.0.1:${server.address().port}/jobs`,{headers:{Authorization:`Bearer ${key}`}});
+  await started;assert.equal(timeoutMs,30000);assert.equal(signal.aborted,false);
+  now=30100;release([]);
+  const response=await request;assert.equal(response.status,409);
+  assert.deepEqual(await response.json(),{error:'JOB_LIST_UNAVAILABLE'});
+  assert.equal(signal.aborted,true);assert.equal(signal.reason?.message,'POD_REQUEST_TIMEOUT');
+ }finally{timeout.abort();await new Promise(r=>server.close(r));}
+});
 test('template safe box uses x y width height consistently with Python QA',()=>{
  const record={audience:'pod:template',product:'shirt',country:'US',official_source_verified:true,source_url:'https://example.org/template',source_sha256:'a'.repeat(64),observed_at:new Date().toISOString(),template:{platform:'redbubble',dpi:300,size_inches:[2,2],safe_box_px:[400,400,100,100]}};
  assert.deepEqual(validateTemplate(sign(record),key,{platform:'redbubble',product:'shirt',country:'US'}).safe_box_px,[400,400,100,100]);
@@ -207,5 +461,43 @@ test('requested publication cannot masquerade as enabled without an adapter',asy
  try{const r=await fetch(`http://127.0.0.1:${server.address().port}/status`);const state=await r.json();
   assert.equal(state.publication_enabled,false);assert.equal(state.publication_requested,true);
   assert.equal(state.production_status,'BLOCKED_PRODUCTION_CONFIGURATION');
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('public POD status exposes only inert bounded health fields',async()=>{
+ let privateReads=0;
+ const state={status:'DISABLED',database_health:{idle_connection_failures:2,
+  last_idle_connection_failure_at:'2026-11-06T08:00:00.000Z',last_error_code:'POD_DATABASE_IDLE_CONNECTION_FAILED',
+  private_database_url:'postgresql://private'},production_status:'STOPPED',
+  production_health:{status:'STOPPED',cycles:3,consecutive_failures:1,
+   last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
+   last_error_code:'QA_FAILED',last_result:'QA_FAILED',private_worker_key:'private'},
+  outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null,private_outbox_key:'private'},
+  private_top_level:'private'};
+ Object.defineProperty(state,'private_accessor',{enumerable:true,get(){privateReads++;return 'private';}});
+ const app=express();app.use(createPodRouter({env:{},status:()=>state}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
+  assert.equal(response.status,200);assert.equal(privateReads,0);
+  assert.deepEqual(observed,{status:'DISABLED',database_health:{idle_connection_failures:2,
+   last_idle_connection_failure_at:'2026-11-06T08:00:00.000Z',last_error_code:'POD_DATABASE_IDLE_CONNECTION_FAILED'},
+   production_status:'STOPPED',production_health:{status:'STOPPED',cycles:3,consecutive_failures:1,
+    last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
+    last_error_code:'QA_FAILED',last_result:'QA_FAILED'},
+   outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null},publication_enabled:false,
+   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+    scope:'configured_cutoff_only',acceptance_verified:false}});
+  assert.doesNotMatch(JSON.stringify(observed),/private|postgresql/i);
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('public POD status rejects executable health fields without invoking them',async()=>{
+ let reads=0;const state={database_health:null,production_status:'DISABLED',production_health:null,outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null}};
+ Object.defineProperty(state,'status',{enumerable:true,get(){reads++;return 'DISABLED';}});
+ const app=express();app.use(createPodRouter({env:{},status:()=>state}));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
+  assert.equal(response.status,503);assert.equal(reads,0);
+  assert.deepEqual(observed,{status:'BLOCKED_STATUS_UNAVAILABLE',publication_enabled:false,
+   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+    scope:'configured_cutoff_only',acceptance_verified:false}});
  }finally{await new Promise(r=>server.close(r));}
 });

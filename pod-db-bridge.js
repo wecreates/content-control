@@ -554,7 +554,7 @@ export class PodDB {
   }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
- async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100}){
+ async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100},{signal}={}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
   const intake=verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
   if(!validOpaqueText(id)||!validOpaqueText(businessId)||intake.concept_id!==id||intake.business_id!==businessId||
@@ -595,9 +595,9 @@ export class PodDB {
    // Revalidate after all database waits so expiry rolls back budget and writes.
    verifyEnvelope(envelope,intakeKey,'content-control:pod:intake');
    return {id};
-  });
+  },{signal});
  }
- async requeueRepair(jobId,upstream){
+ async requeueRepair(jobId,upstream,{signal}={}){
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   // A current grant may authorize only its exact repair target. Reject wrong
   // or lossy route identities before acquiring or locking database rows.
@@ -619,7 +619,7 @@ export class PodDB {
    const queued=await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,lease_until=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1 RETURNING id,state,reason_code",[jobId,upstream]);
    assertExactMutation(queued,{id:jobId,state:'raw',reason_code:null});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
-  });
+  },{signal});
  }
  async tx(fn,{signal}={}){
   const checkpoint=()=>signal?.throwIfAborted();
@@ -693,7 +693,7 @@ export class PodDB {
   }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
- async enqueue({job,upstream,conceptId,revision}) {
+ async enqueue({job,upstream,conceptId,revision},{signal}={}) {
   const grant=verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   const brief=enforceBrief(grant,job);
   // Validate queue-only scope before connection acquisition. PostgreSQL uuid
@@ -709,13 +709,13 @@ export class PodDB {
    if(exactEmptyMutation(r))throw Error('DUPLICATE_JOB');
    assertExactMutation(r,{id:job.id});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');return {id:job.id};
-  });
+  },{signal});
  }
  async listReady({signal}={}){this.active();
   const rows=readyListQuerySnapshot(await this.read("SELECT q.id,q.platform,q.state FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id WHERE q.state='qa_passed' AND p.rights_state='PASS' AND NOT p.permanently_unpublished ORDER BY q.created_at LIMIT 20",[],{signal}));
   this.active();return rows;
  }
- async listOperationsJobs(state='review_required'){
+ async listOperationsJobs(state='review_required',{signal}={}){
   if(!['review_required','raw','processing','qa_failed','qa_passed','blocked','publishing','ambiguous','submitted','published'].includes(state))throw Error('JOB_FILTER_INVALID');
   this.active();
   const rows=operationsListQuerySnapshot(await this.read(`SELECT q.id,q.platform,
@@ -728,7 +728,7 @@ export class PodDB {
     AND p.rights_state='PASS' AND NOT p.permanently_unpublished AS can_preview
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE CASE WHEN q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE q.state END=$1
-   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state]),state);
+   ORDER BY q.created_at DESC,q.id DESC LIMIT 50`,[state],{signal}),state);
   const listed=rows.map(row=>{
    const {manifest,manifest_sha256,...listed}=row;
    let canPreview=listed.can_preview;
@@ -791,7 +791,7 @@ export class PodDB {
    {package_sha256:manifest.package_sha256,manifest_sha256:manifestSha256,publication_enabled:false}]),
    {id:eventId,job_id:job.id,kind:eventKind});
  });}
- async acceptReview(jobId,qaEnvelope){
+ async acceptReview(jobId,qaEnvelope,{signal}={}){
   verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
   // Authenticate first, then reject malformed route identities before a
   // connection or query parameter. Review artifacts already use this bound.
@@ -821,9 +821,9 @@ export class PodDB {
     {id:eventId,job_id:jobId,kind:eventKind});
    verifyEnvelope(qaEnvelope,this.qaKey,'content-control:pod:qa');
    return {status:'QA_PASSED',publication_enabled:false};
-  });
+  },{signal});
  }
- async reviewPackage(jobId){this.active();
+ async reviewPackage(jobId,{signal}={}){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId))throw Error('PACKAGE_UNAVAILABLE');
   const row=reviewPackageQuerySnapshot(await this.read(`SELECT q.id,q.platform,q.state,q.reason_code,q.manifest,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
@@ -831,13 +831,13 @@ export class PodDB {
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
    FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
-   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId]),jobId);
+   AND p.rights_state='PASS' AND NOT p.permanently_unpublished`,[jobId],{signal}),jobId);
   if(!row?.manifest||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||!PLATFORMS.includes(row.platform))throw Error('PACKAGE_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
   this.active();
   return row;
  }
- async reviewArtifact(jobId,sha){this.active();
+ async reviewArtifact(jobId,sha,{signal}={}){this.active();
   if(typeof jobId!=='string'||!REVIEW_JOB.test(jobId)||typeof sha!=='string'||!SHA256.test(sha))throw Error('ARTIFACT_UNAVAILABLE');
   // Resolve the hold, manifest and bytes in one database snapshot. A bearer
   // key and a known content hash alone must not expose unrelated stored data.
@@ -851,7 +851,7 @@ export class PodDB {
    WHERE q.id=$1 AND q.state='qa_failed' AND q.reason_code='REVIEW_REQUIRED'
    AND p.rights_state='PASS' AND NOT p.permanently_unpublished
    AND octet_length(a.body) BETWEEN 1 AND $3 AND a.media_type=ANY($4::text[])`,
-   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES]),jobId);
+   [jobId,sha,16777216,ARTIFACT_MEDIA_TYPES],{signal}),jobId);
   if(!row||row.id!==jobId||row.state!=='qa_failed'||row.reason_code!=='REVIEW_REQUIRED'||
    !Buffer.isBuffer(row.body)||!row.body.length||row.body.length>16777216||!artifactMediaTypes.has(row.media_type))throw Error('ARTIFACT_UNAVAILABLE');
   assertStoredManifest(row.manifest,row.platform,row.manifest_sha256);
