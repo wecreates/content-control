@@ -1,6 +1,13 @@
 name: Visual analysis and comparison
 on:
   workflow_dispatch:
+    inputs:
+      candidate_lane:
+        description: 'Analysis only: historical V2 or health-bound canonical V10'
+        type: choice
+        required: true
+        default: v2
+        options: [v2, canonical-v10]
   schedule:
     - cron: '31 * * * *'
   push:
@@ -9,6 +16,9 @@ on:
       - 'public-review/v2-draft.mp4'
       - 'reference/frames/**'
       - 'state/visual-analysis/frame-review.json'
+      - 'scripts/run_visual_analysis.py'
+      - 'scripts/review_smoke_inputs.py'
+      - 'tests/test_run_visual_analysis.py'
       - 'scripts/rendered_visual_parity.py'
       - 'scripts/visual_motion_analysis.py'
       - 'scripts/reference_frame_manifest.py'
@@ -19,7 +29,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: visual-analysis
+  group: visual-analysis-${{ inputs.candidate_lane || 'v2' }}
   cancel-in-progress: true
 jobs:
   analyze:
@@ -32,28 +42,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Test candidate and receipt boundaries without media dependencies
+        run: python -m unittest tests.test_run_visual_analysis
       - name: Install free CPU analysis runtime
         run: python -m pip install opencv-python-headless==5.0.0.93 numpy==2.3.5
       - name: Test real decode and evidence boundaries
         run: python -m unittest tests.test_rendered_visual_parity tests.test_visual_motion_analysis tests.test_reference_frame_manifest
-      - name: Analyze actual candidate and compare reference images
-        run: |
-          python scripts/rendered_visual_parity.py --reference-dir reference/frames --candidate-video public-review/v2-draft.mp4 --out state/visual-analysis-run/comparison.json --visual-review state/visual-analysis/frame-review.json --analysis-only
-          python scripts/visual_motion_analysis.py --video public-review/v2-draft.mp4 --out state/visual-analysis-run/motion.json
-          python - <<'PY'
-          import hashlib,json,os
-          from pathlib import Path
-          root=Path('state/visual-analysis-run')
-          digest=hashlib.sha256(Path('public-review/v2-draft.mp4').read_bytes()).hexdigest()
-          for name in ('comparison','motion'):
-              r=json.loads((root/(name+'.json')).read_text())
-              assert r['analysis_status']=='COMPLETE' and r['candidate_sha256']==digest
-          review=root/'frame-review.json'
-          if review.exists() and json.loads(review.read_text()).get('candidate_sha256')!=digest:
-              review.unlink()
-          manifest={'schema_version':1,'run_id':int(os.environ['GITHUB_RUN_ID']),'source_commit':os.environ['GITHUB_SHA'],'candidate_sha256':digest,'analysis_status':'COMPLETE','production_approved':False,'publication_enabled':False,'scope':'Visual measurements and comparison evidence; not full audiovisual or creative approval','files':{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in root.rglob('*') if p.is_file() and p.name!='run.json'}}
-          (root/'run.json').write_text(json.dumps(manifest,indent=2)+'\n')
-          PY
+      - name: Analyze explicit candidate lane and bind evidence
+        env:
+          CANDIDATE_LANE: ${{ inputs.candidate_lane || 'v2' }}
+        run: python scripts/run_visual_analysis.py --lane "$CANDIDATE_LANE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -64,7 +62,7 @@ jobs:
         run: |
           python - <<'PY'
           import json,os
-          c=json.load(open('state/visual-analysis-run/comparison.json'));m=json.load(open('state/visual-analysis-run/motion.json'))
+          c=json.load(open('state/visual-analysis-run/run.json'));m=json.load(open('state/visual-analysis-run/motion.json'))
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
-              f.write(f"Visual analysis: {c['analysis_status']}\n\nDecoded {m['decoded_frames']} frames. Comparison contact sheets and measurements are attached. Creative approval remains separate; publication disabled.\n")
+              f.write(f"Visual analysis ({c['candidate_lane']}): {c['analysis_status']}\nReview: {c['review']['status']}; blocker: {c['review']['blocker']}\n\nDecoded {m['decoded_frames']} frames. Comparison contact sheets and measurements are attached. Creative approval remains separate; publication disabled.\n")
           PY
