@@ -1,8 +1,8 @@
 {
-  "audio_duration_seconds": 30.058667,
+  "audio_duration_seconds": 30.016,
   "audio_start_relative_seconds": 0.0,
   "audio_start_tolerance_seconds": 0.05,
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "channels": 2,
   "checks": {
     "analysis_complete": true,
@@ -24,8 +24,8 @@
     "volume_metrics_present": true
   },
   "codec": "aac",
-  "decoded_audio_duration_seconds": 30.058666666666667,
-  "duration_seconds": 30.058667,
+  "decoded_audio_duration_seconds": 30.016,
+  "duration_seconds": 30.016,
   "duration_tolerance_seconds": 0.5,
   "engine": "ffmpeg-free-audio-qa-v1",
   "expected_duration_seconds": 30.0,
@@ -33,7 +33,7 @@
   "long_silence_durations_seconds": [],
   "max_long_silence_seconds": 0.0,
   "max_volume_db": -4.4,
-  "mean_volume_db": -28.1,
+  "mean_volume_db": -28.0,
   "production_approved": false,
   "publication_enabled": false,
   "sample_peak_dbfs": -4.397956,

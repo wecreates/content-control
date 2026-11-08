@@ -2,16 +2,16 @@
   "analysis_status": "COMPLETE",
   "artistic_acceptance": "UNASSESSED",
   "best_reference_similarity_by_candidate": [
-    0.42704087495803833,
-    0.45013362169265747,
-    0.39411085844039917,
-    0.43755924701690674,
-    0.38390159606933594,
-    0.38086435198783875,
-    0.4747011959552765,
-    0.3992650508880615,
-    0.4028263986110687,
-    0.3972346782684326
+    0.4262845814228058,
+    0.4262736439704895,
+    0.392361044883728,
+    0.42835062742233276,
+    0.38324838876724243,
+    0.3824005126953125,
+    0.46689197421073914,
+    0.38921058177948,
+    0.4050176739692688,
+    0.40829533338546753
   ],
   "checks": {
     "florence_completed": true,
@@ -29,11 +29,11 @@
           "file": "cand-01.jpg"
         },
         {
-          "caption": "The image is a simple illustration of a stick figure with a red cross over its head and arms. The stick figure is standing on four legs and has a sad expression on its face. Above the stick figure, there is text that reads \"Points Monk interrupts.\" The background is white.",
+          "caption": "The image is a simple illustration of a stick figure with a sad expression on its face. The stick figure is standing on four legs and is facing towards the right side of the image. On the left side, there is a red circle with a diagonal line through it, indicating that the person is not allowed to enter or exit the circle. Above the circle, there are black text that reads \"Points Monk interrupts.\" The background is white.",
           "file": "cand-05.jpg"
         },
         {
-          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue circle around them. Above the figures, there is text that reads \"One rule. REAL",
+          "caption": "The image is a graphic that shows two stick figures, Dave and Points Monk, standing side by side with their arms stretched out in front of them. Dave is on the left side of the image and points monk is in the center. Both figures are drawn in a simple, cartoon-like style with simple lines and minimalistic details. The background is white and there is a blue border around the image. Above the figures, there is text that reads \"One rule.",
           "file": "cand-10.jpg"
         }
       ],
@@ -58,62 +58,62 @@
   "frame_matches": [
     {
       "candidate": "cand-01.jpg",
-      "cosine_similarity": 0.42704087495803833,
+      "cosine_similarity": 0.4262845814228058,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-02.jpg",
-      "cosine_similarity": 0.45013362169265747,
+      "cosine_similarity": 0.4262736439704895,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-03.jpg",
-      "cosine_similarity": 0.39411085844039917,
+      "cosine_similarity": 0.392361044883728,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-04.jpg",
-      "cosine_similarity": 0.43755924701690674,
+      "cosine_similarity": 0.42835062742233276,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-05.jpg",
-      "cosine_similarity": 0.38390159606933594,
-      "reference": "ref-01.jpg"
+      "cosine_similarity": 0.38324838876724243,
+      "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-06.jpg",
-      "cosine_similarity": 0.38086435198783875,
+      "cosine_similarity": 0.3824005126953125,
       "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-07.jpg",
-      "cosine_similarity": 0.4747011959552765,
+      "cosine_similarity": 0.46689197421073914,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-08.jpg",
-      "cosine_similarity": 0.3992650508880615,
+      "cosine_similarity": 0.38921058177948,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-09.jpg",
-      "cosine_similarity": 0.4028263986110687,
+      "cosine_similarity": 0.4050176739692688,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-10.jpg",
-      "cosine_similarity": 0.3972346782684326,
+      "cosine_similarity": 0.40829533338546753,
       "reference": "ref-01.jpg"
     }
   ],
-  "global_similarity": 0.631574273109436,
+  "global_similarity": 0.6240619421005249,
   "limitations": [
     "Embedding similarity is descriptive, not calibrated artistic parity.",
     "Sampled frames do not establish timing, animation quality, or full-video parity.",
     "Captions may omit details or hallucinate; they are not visual approval."
   ],
-  "mean_best_frame_similarity": 0.41476383805274963,
+  "mean_best_frame_similarity": 0.4108334481716156,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "openclip_status": "COMPLETE",
   "production_ready": false,
@@ -122,43 +122,43 @@
     "candidate_frames": [
       {
         "file": "cand-01.jpg",
-        "sha256": "a24af53e882a8fa3ce9c378c56a827afd53888392c0241de1a2e1e120944938c"
+        "sha256": "26757c234ab09a0c7344bb70fda2a9057b7fa753ee1b972b40757ae1dbcae889"
       },
       {
         "file": "cand-02.jpg",
-        "sha256": "8f8071a5f43820270a98e66fc9810a02a404ed99daa46bd6f067b8267412f8c0"
+        "sha256": "f60ec5053fbea2fa9513de567097b6fd0b4c430c04e5243ad97d2a8649ab4ada"
       },
       {
         "file": "cand-03.jpg",
-        "sha256": "f6a92d32dc8a677ab4c33e6910e22d68808e032d30a181aa8e5fecfc902d5564"
+        "sha256": "cbd63d9a0019db053eed648f7df160663b2677184d71e898c95766595a509c5a"
       },
       {
         "file": "cand-04.jpg",
-        "sha256": "2afd11712c85ccf93231ed4c9fd84a6cb6a37d8c1bbab68e65bcf9f893be45bf"
+        "sha256": "371d4deb30798c5e7c33a58c48077683880d663c7cf364c024bacbeaa98db670"
       },
       {
         "file": "cand-05.jpg",
-        "sha256": "9b747cd809506d7ba05f35680c416f0a97a5d6e654c839e138aacae1b4e5452f"
+        "sha256": "9f0b4a6b3f2078a1ce045635525aa79bb6310e9acf27bfa32805d82cd942e8dc"
       },
       {
         "file": "cand-06.jpg",
-        "sha256": "19aa65ad9f998f0f7775ab272a57161c26efcccc07dc7899a717e2ab12dd3b30"
+        "sha256": "6d244f130354641691d8b7010111d5bf798968b60e7ee3f0e071d545d1bd708f"
       },
       {
         "file": "cand-07.jpg",
-        "sha256": "057b6305ab2565f684d0d21c30978adffa6a9f0e5a0567934604523bfb29af21"
+        "sha256": "7808437659955a3bc143fb41c61bd83327d6292319068a58a5d81254a3aebb68"
       },
       {
         "file": "cand-08.jpg",
-        "sha256": "62f5199db5dd8f168af0f1cbbc88821645d01856872eb9370bbda51367cd87e5"
+        "sha256": "807d0035b1c354d6cf3bf02ed0a49dca0f929cf3b8bf8b621ce203a8f97dca1a"
       },
       {
         "file": "cand-09.jpg",
-        "sha256": "c5f323f4847b46ad81c5b68ac50dfb01dd310368e179c9be65239590c295a184"
+        "sha256": "7fe97c9c9e68a996ac7abb9116395e1541a36418fb680d29465d0ee4a953720a"
       },
       {
         "file": "cand-10.jpg",
-        "sha256": "36bb40c3c2c6c7fc48239f2cc5a441dc21f52b381385b732b5c8b008a6f29ce6"
+        "sha256": "3e1266288a775c52bed534a475f9fce3f5c754e3d54e577b27e11b3cfe6cd641"
       }
     ],
     "candidate_frames_video_binding_verified": false,
@@ -204,12 +204,12 @@
         "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
       }
     ],
-    "run_id": "42507071850",
-    "source_revision": "3b2c9d0a27680e31175edff15972c7c8e850197c"
+    "run_id": "42515033105",
+    "source_revision": "d36ad150094f4f8c35ad49cd6aba63b177b50bab"
   },
   "publication_enabled": false,
   "runtime_versions": {
-    "Pillow": "12.3.0",
+    "Pillow": "13.0.0",
     "open_clip_torch": "3.3.0",
     "torch": "2.14.0",
     "torchvision": "0.29.0",
