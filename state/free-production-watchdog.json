@@ -1,17 +1,17 @@
 {
-  "actual_video_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "actual_video_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "candidate_converged": false,
   "candidate_hashes": {
     "captions": null,
-    "health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-    "ledger": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
-    "ledger_health": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+    "health": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
+    "ledger": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
+    "ledger_health": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
     "live_deployment": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-    "receipt": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+    "receipt": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
     "smoke": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127"
   },
-  "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
     "review_server_smoke_green": false,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,7 +55,6 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
@@ -68,23 +67,7 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [
-    {
-      "actual": "7ee2bbf928f98846905dec41c0ae18fbbbefba71efd437228b038c6da1f43cf6",
-      "expected": "15143bb161a3f958d9ef09430c8d74b52555741aade672652ba26446e7f74f9f",
-      "path": "package-lock.json"
-    },
-    {
-      "actual": "c8bd0286ca32b1c012b0591b432dd2f08dcdffd7743c85b5e07b6c8cc99d8597",
-      "expected": "b82ebc9e178e34a915c094d9f806d00548a7b1772c45b766d3fcd63941a1960b",
-      "path": "package.json"
-    },
-    {
-      "actual": "b675e082cad676073102c6d9211a463b397a89399e4bfe0431bc7d5d981c4960",
-      "expected": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6",
-      "path": "requirements-free-qa.lock.txt"
-    }
-  ],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
