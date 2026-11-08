@@ -1,5 +1,5 @@
 {
-  "current_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "current_candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "entries": [
     {
       "accepted": true,
@@ -50,10 +50,20 @@
       "publication_enabled": false,
       "qa_receipt_sha256": "ded5364226addbcc55f0ffd94d6a1babde1c3a8e94d2ccb1ef73976065b25056",
       "repository_commit": "406e56a46f393e16b24996c30eb5fa1168e6f1c2"
+    },
+    {
+      "accepted": true,
+      "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
+      "git_blob_sha1": "b90a1b6fec117cc15f7f36c8b6ca560e89180aae",
+      "health_sha256": "0fe4da1d10c2976a8ecc1e47b3d22bf7870d3a68824195ba7c5a76fc1578897d",
+      "media_path": "public-review/episode1-v10-free.mp4",
+      "publication_enabled": false,
+      "qa_receipt_sha256": "336f84b1f3840572cd54d4c670843ebfc173e06bcd1c0d74bd89110ec2555595",
+      "repository_commit": "fb8da4b9398793019d360e18801be8ea2ac849e0"
     }
   ],
   "max_entries": 20,
   "publication_enabled": false,
-  "rollback_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "schema_version": 1
 }
