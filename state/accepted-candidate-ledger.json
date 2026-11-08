@@ -1,5 +1,5 @@
 {
-  "current_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
+  "current_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
   "entries": [
     {
       "accepted": true,
@@ -33,16 +33,6 @@
     },
     {
       "accepted": true,
-      "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-      "git_blob_sha1": "85020b250511b1d07dfd602ea99fc2428f2c67ae",
-      "health_sha256": "e7bbb347c7bc78ec19f61f21b2f2ae7a13a14d36088205b8ef392e3cfa9f4ba4",
-      "media_path": "public-review/episode1-v10-free.mp4",
-      "publication_enabled": false,
-      "qa_receipt_sha256": "057ca5e4aac9d27c0a355e24b90835e08aea1ade4db60cfb9f4187682b61e484",
-      "repository_commit": "3bac26a28c9a1ce8054dce2640898778bbe95f63"
-    },
-    {
-      "accepted": true,
       "candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
       "git_blob_sha1": "27743430928ba2052de424ff194aa9356a729a3a",
       "health_sha256": "cf9ec6943990aaac0e5a5855d46fe50c72ef74982f9c95b4013093efdcef1857",
@@ -50,10 +40,20 @@
       "publication_enabled": false,
       "qa_receipt_sha256": "16f60a4fbb9870c8953d42b2d872d2cd3c344d6e185d259394bf821b6619487f",
       "repository_commit": "54f66c8a30a5bcbf64918336828e21b8c0956e39"
+    },
+    {
+      "accepted": true,
+      "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+      "git_blob_sha1": "85020b250511b1d07dfd602ea99fc2428f2c67ae",
+      "health_sha256": "e7bbb347c7bc78ec19f61f21b2f2ae7a13a14d36088205b8ef392e3cfa9f4ba4",
+      "media_path": "public-review/episode1-v10-free.mp4",
+      "publication_enabled": false,
+      "qa_receipt_sha256": "12bd8d0ca60c57bafcf1d1060865baff599da76882142ef804262bbeba4bae92",
+      "repository_commit": "0b58c0e4010e3934ce6e2071178ace71731d85d8"
     }
   ],
   "max_entries": 20,
   "publication_enabled": false,
-  "rollback_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+  "rollback_candidate_sha256": "59b662688952addf932c2ced9c438aa1499e282039055e71eeb5109d8e86134e",
   "schema_version": 1
 }
