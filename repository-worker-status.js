@@ -11,14 +11,39 @@ const expected = new Map([
   ['youtube-automation-agent', ['audit']],
 ]);
 
+// Only fixed codes cross the public boundary; upstream errors can contain private data.
+const validationErrors = new Set(['INVALID_SOURCE_SNAPSHOT', 'INVALID_REGISTRY',
+  'INVALID_WORKFLOW', 'INVALID_EVIDENCE', 'INVALID_RECEIPT']);
+class EvidenceReadError extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+function evidenceErrorCode(error) {
+  if (error instanceof EvidenceReadError) return error.code;
+  if (error instanceof Error && validationErrors.has(error.message)) return error.message;
+  return 'UNCLASSIFIED_EVIDENCE_FAILURE';
+}
+
 export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs=60000}={}) {
   let cached, expires=0, inflight;
   async function json(url, optional=false) {
-    const response=await fetchImpl(url, {signal:AbortSignal.timeout(10000),
-      headers:{Accept:'application/json','User-Agent':'CYZOR-Content-Control'}});
-    if(optional && response.status===404)return null;
-    if(!response.ok)throw Error('HOSTED_EVIDENCE_UNAVAILABLE');
-    return response.json();
+    try {
+      const response=await fetchImpl(url, {signal:AbortSignal.timeout(10000),
+        headers:{Accept:'application/json','User-Agent':'CYZOR-Content-Control'}});
+      if(optional && response.status===404)return null;
+      const rateLimited=response.status===429 || (response.status===403 &&
+        (response.headers?.get('x-ratelimit-remaining')==='0' || !!response.headers?.get('retry-after')));
+      if(!response.ok)throw new EvidenceReadError(rateLimited?'UPSTREAM_RATE_LIMITED':
+        response.status>=500?'UPSTREAM_UNAVAILABLE':'UPSTREAM_REQUEST_REJECTED');
+      try { return await response.json(); }
+      catch (error) {
+        if(error instanceof SyntaxError)throw new EvidenceReadError('INVALID_UPSTREAM_JSON');
+        throw error;
+      }
+    } catch (error) {
+      if(error instanceof EvidenceReadError)throw error;
+      throw new EvidenceReadError(error?.name==='AbortError'||error?.name==='TimeoutError'
+        ?'UPSTREAM_TIMEOUT':'UPSTREAM_NETWORK_FAILURE');
+    }
   }
   async function read(independentEvidence) {
     const ref=await json(`https://api.github.com/repos/${repository}/git/ref/heads/main`);
@@ -79,7 +104,8 @@ export function createHostedWorkerStatus({fetchImpl=fetch, now=Date.now, cacheMs
     if(cached&&now()<expires)return cached;
     if(inflight)return inflight;
     const independentEvidence={};
-    inflight=read(independentEvidence).catch(()=>({...independentEvidence,backend:'github-actions',status:'HOSTED_EVIDENCE_UNAVAILABLE',
+    inflight=read(independentEvidence).catch(error=>({...independentEvidence,backend:'github-actions',status:'HOSTED_EVIDENCE_UNAVAILABLE',
+      evidence_error_code:evidenceErrorCode(error),
       production_ready:false,publication_enabled:false,paid_generation_enabled:false}))
       .then(result=>{
         const required=result.additional_tools?.filter(entry=>entry.required_for_aggregate);
