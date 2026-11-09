@@ -7,17 +7,17 @@
     },
     {
       "offset": 32,
-      "size": 22636,
+      "size": 22198,
       "type": "moov"
     },
     {
-      "offset": 22668,
+      "offset": 22230,
       "size": 8,
       "type": "free"
     },
     {
-      "offset": 22676,
-      "size": 4029848,
+      "offset": 22238,
+      "size": 3339491,
       "type": "mdat"
     }
   ],
