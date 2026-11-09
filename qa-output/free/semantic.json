@@ -2,16 +2,16 @@
   "analysis_status": "COMPLETE",
   "artistic_acceptance": "UNASSESSED",
   "best_reference_similarity_by_candidate": [
-    0.4262845814228058,
+    0.42628443241119385,
     0.4262736439704895,
-    0.392361044883728,
-    0.42835062742233276,
-    0.38324838876724243,
-    0.3824005126953125,
-    0.46689197421073914,
-    0.38921058177948,
-    0.4050176739692688,
-    0.40829533338546753
+    0.3923609256744385,
+    0.4283502697944641,
+    0.38177773356437683,
+    0.38113975524902344,
+    0.4671013653278351,
+    0.3892102837562561,
+    0.405017614364624,
+    0.4076361358165741
   ],
   "checks": {
     "florence_completed": true,
@@ -47,7 +47,7 @@
           "file": "ref-05.jpg"
         },
         {
-          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
           "file": "ref-10.jpg"
         }
       ]
@@ -58,7 +58,7 @@
   "frame_matches": [
     {
       "candidate": "cand-01.jpg",
-      "cosine_similarity": 0.4262845814228058,
+      "cosine_similarity": 0.42628443241119385,
       "reference": "ref-09.jpg"
     },
     {
@@ -68,52 +68,52 @@
     },
     {
       "candidate": "cand-03.jpg",
-      "cosine_similarity": 0.392361044883728,
+      "cosine_similarity": 0.3923609256744385,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-04.jpg",
-      "cosine_similarity": 0.42835062742233276,
+      "cosine_similarity": 0.4283502697944641,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-05.jpg",
-      "cosine_similarity": 0.38324838876724243,
+      "cosine_similarity": 0.38177773356437683,
       "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-06.jpg",
-      "cosine_similarity": 0.3824005126953125,
+      "cosine_similarity": 0.38113975524902344,
       "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-07.jpg",
-      "cosine_similarity": 0.46689197421073914,
+      "cosine_similarity": 0.4671013653278351,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-08.jpg",
-      "cosine_similarity": 0.38921058177948,
+      "cosine_similarity": 0.3892102837562561,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-09.jpg",
-      "cosine_similarity": 0.4050176739692688,
+      "cosine_similarity": 0.405017614364624,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-10.jpg",
-      "cosine_similarity": 0.40829533338546753,
+      "cosine_similarity": 0.4076361358165741,
       "reference": "ref-01.jpg"
     }
   ],
-  "global_similarity": 0.6240619421005249,
+  "global_similarity": 0.6238457560539246,
   "limitations": [
     "Embedding similarity is descriptive, not calibrated artistic parity.",
     "Sampled frames do not establish timing, animation quality, or full-video parity.",
     "Captions may omit details or hallucinate; they are not visual approval."
   ],
-  "mean_best_frame_similarity": 0.4108334481716156,
+  "mean_best_frame_similarity": 0.4105152189731598,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "openclip_status": "COMPLETE",
   "production_ready": false,
@@ -138,15 +138,15 @@
       },
       {
         "file": "cand-05.jpg",
-        "sha256": "9f0b4a6b3f2078a1ce045635525aa79bb6310e9acf27bfa32805d82cd942e8dc"
+        "sha256": "9b135ede598d68e4ee336e78455c52edc2d277a704aa825b6c84e75060c086c3"
       },
       {
         "file": "cand-06.jpg",
-        "sha256": "6d244f130354641691d8b7010111d5bf798968b60e7ee3f0e071d545d1bd708f"
+        "sha256": "123e57df0123d6a22ee702246065804d49da8afa665217e25323c1f86842d9d6"
       },
       {
         "file": "cand-07.jpg",
-        "sha256": "7808437659955a3bc143fb41c61bd83327d6292319068a58a5d81254a3aebb68"
+        "sha256": "107082cf1935d799c1a29aea8882454b6e62032ea89e845254743d774a7b373f"
       },
       {
         "file": "cand-08.jpg",
@@ -158,7 +158,7 @@
       },
       {
         "file": "cand-10.jpg",
-        "sha256": "3e1266288a775c52bed534a475f9fce3f5c754e3d54e577b27e11b3cfe6cd641"
+        "sha256": "46ebef02a74169676638c5341ff7119f76e61df64e2b6fc7a54d9f1d4581d1dc"
       }
     ],
     "candidate_frames_video_binding_verified": false,
@@ -204,8 +204,8 @@
         "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
       }
     ],
-    "run_id": "42515033105",
-    "source_revision": "d36ad150094f4f8c35ad49cd6aba63b177b50bab"
+    "run_id": "42696333822",
+    "source_revision": "f9727d95c5c99ea7678ea7b7b0b370bcca8e7b1e"
   },
   "publication_enabled": false,
   "runtime_versions": {
