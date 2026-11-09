@@ -80,5 +80,9 @@ test('task inputs are bound to the authoritative grant',()=>{
  assert.throws(()=>enforceBrief(grant,job),/TASK_SCOPE_MISMATCH/);
  grant.task_sha256=job.task_sha256;
  assert.equal(enforceBrief(grant,job).task_sha256,job.task_sha256);
+ const {task_sha256,...unbound}=job;
+ assert.throws(()=>enforceBrief(grant,unbound),/TASK_SCOPE_MISMATCH/);
+ for(const invalid of [null,[task_sha256],task_sha256.toUpperCase(),'b'.repeat(64)])
+  assert.throws(()=>enforceBrief(grant,{...job,task_sha256:invalid}),/TASK_SCOPE_MISMATCH/);
 });
 

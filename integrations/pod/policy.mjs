@@ -66,7 +66,8 @@ export function enforceBrief(grant,job,{publishing=false}={}) {
  if((job.mode==='LAUNCH'||publishing)&&grant.launch_content_allowed!==true) throw Error('LAUNCH_BLOCKED');
  if(publishing&&(job.mode!=='LAUNCH'||typeof job.package_sha256!=='string'||
   !/^[a-f0-9]{64}$/.test(job.package_sha256)||grant.package_sha256!==job.package_sha256)) throw Error('RELEASE_SCOPE_MISMATCH');
- if(job.task_sha256!==undefined&&(!/^[a-f0-9]{64}$/.test(job.task_sha256)||grant.task_sha256!==job.task_sha256))throw Error('TASK_SCOPE_MISMATCH');
+ if((job.task_sha256!==undefined||grant.task_sha256!==undefined)&&
+  (typeof job.task_sha256!=='string'||!/^[a-f0-9]{64}$/.test(job.task_sha256)||grant.task_sha256!==job.task_sha256))throw Error('TASK_SCOPE_MISMATCH');
  const facts=grant.verified_facts&&typeof grant.verified_facts==='object'&&!Array.isArray(grant.verified_facts)?grant.verified_facts:{};
  // Downstream metadata comes ONLY from the signed upstream allowlist, never arbitrary client text.
  const forbidden=new Set(Array.isArray(grant.forbidden_claims)?grant.forbidden_claims:[]);
