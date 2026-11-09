@@ -2,9 +2,9 @@
 import argparse, hashlib, json, math
 from pathlib import Path
 try:
- from scripts.free_transcription_qa import decode_transcription_audio, norm
+ from scripts.free_transcription_qa import decode_transcription_audio, norm, spoken_number_suppression
 except ModuleNotFoundError:
- from free_transcription_qa import decode_transcription_audio, norm
+ from free_transcription_qa import decode_transcription_audio, norm, spoken_number_suppression
 
 def transcribe_windows(ccsd, receipt, audio, samples, observe):
  digest=hashlib.sha256(Path(audio).read_bytes()).hexdigest()
@@ -41,19 +41,25 @@ def transcribe_windows(ccsd, receipt, audio, samples, observe):
   observations.append({'scene_id':scene['id'],'speaker':line['speaker'],'assembly_start':window['start'],'assembly_end':window['end'],'sample_start':first,'sample_end':last,'sample_rate':16000,'actual_transcript':' '.join(w['word'] for w in local)})
  return {'schema_version':1,'status':'PASS','publication_enabled':False,'word_timestamps':True,'audio_sha256':digest,'words':words,'windows':observations,'actual_transcript':' '.join(w['word'] for w in words),'timing_source':'Independent ASR on decoded assembly windows; original observed times plus exact sample offset','scope':'Exact normalized text and speech-window bounds; ASR accuracy and full audiovisual review remain separate'}
 
+def observe_clip(model, clip, spoken_numbers=False):
+ options = dict(language='en', beam_size=5, word_timestamps=True, vad_filter=False, condition_on_previous_text=False)
+ if spoken_numbers:
+  options['suppress_tokens'] = spoken_number_suppression(model.hf_tokenizer)
+ segments,_=model.transcribe(clip, **options)
+ return [{'word':w.word,'start':float(w.start),'end':float(w.end),'probability':float(w.probability)} for s in segments for w in (s.words or [])]
+
 def main():
  p=argparse.ArgumentParser()
  for arg in ('ccsd','assembly','audio','out'):p.add_argument('--'+arg,required=True)
- p.add_argument('--model',default='small.en');a=p.parse_args()
+ p.add_argument('--model',default='small.en');p.add_argument('--spoken-numbers',action='store_true');a=p.parse_args()
  try:
   from faster_whisper import WhisperModel
   samples,_=decode_transcription_audio(a.audio)
   model=WhisperModel(a.model,device='cpu',compute_type='int8')
   def observe(clip):
-   segments,_=model.transcribe(clip,language='en',beam_size=5,word_timestamps=True,vad_filter=False,condition_on_previous_text=False)
-   return [{'word':w.word,'start':float(w.start),'end':float(w.end),'probability':float(w.probability)} for s in segments for w in (s.words or [])]
+   return observe_clip(model,clip,a.spoken_numbers)
   result=transcribe_windows(json.loads(Path(a.ccsd).read_text()),json.loads(Path(a.assembly).read_text()),a.audio,samples,observe)
-  result.update(engine='faster-whisper',model=a.model)
+  result.update(engine='faster-whisper',model=a.model,spoken_number_decoding=a.spoken_numbers)
  except (ValueError,KeyError,TypeError,OSError,RuntimeError) as e:result={'status':'BLOCKED','publication_enabled':False,'words':[],'reason':str(e)}
  out=Path(a.out);out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(result,indent=2)+'\n')
  print(json.dumps({'status':result['status'],'words':len(result['words']),'reason':result.get('reason')}))
