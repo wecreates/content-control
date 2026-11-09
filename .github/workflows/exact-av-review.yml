@@ -34,6 +34,7 @@ on:
       - 'scripts/review_smoke_inputs.py'
       - 'tests/test_review_smoke_inputs.py'
       - 'tests/review-readiness.test.mjs'
+      - 'tests/review-caption-identity.test.mjs'
       - 'scripts/hosted_comparison_receipt.mjs'
       - 'tests/comparison-fixtures.mjs'
       - 'scripts/comparison_sessions.mjs'
@@ -72,7 +73,7 @@ jobs:
       - run: node --test tests/comparison-pipeline.test.mjs tests/comparison-bound-entrypoints.test.mjs tests/comparison-input-safety.test.mjs tests/comparison-admission.test.mjs
       - run: python -m unittest discover -s tests -p test_creator_parity_compare.py
       - run: python -m unittest tests.test_review_smoke_inputs
-      - run: node --test tests/review-readiness.test.mjs
+      - run: node --test tests/review-readiness.test.mjs tests/review-caption-identity.test.mjs
       - run: python -m unittest discover -s tests -p test_gemini_free_av_review.py
       - run: python -m unittest discover -s tests -p test_free_review_guards.py
       - run: python -m unittest discover -s tests -p test_offline_av_review.py
