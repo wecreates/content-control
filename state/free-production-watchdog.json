@@ -21,7 +21,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": false,
     "caption_health_green": false,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -39,12 +39,12 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": true,
+    "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
     "review_server_smoke_green": false,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,6 +55,9 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
+    "dependency_security_clean",
+    "python_dependency_security_clean",
     "live_deployment_green",
     "caption_candidate_match",
     "caption_health_green",
@@ -65,7 +68,13 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "1d667f8375e42b9e7d86d35160306dad6821cf83bfee3d46c24bd664aecb6de9",
+      "expected": "838e95dd3ca6a4bf0aa970b6c459237825c43713db2bd5e38c1f5a867ed039f8",
+      "path": "server-lowmem.js"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
