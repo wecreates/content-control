@@ -10,6 +10,49 @@ test('fresh authority grant replaces expired queue envelope',async()=>{
  const resolve=createGrantResolver({env,fetchImpl:async(_url,options)=>{assert.deepEqual(JSON.parse(options.body),{job_id:'job'});assert.equal(options.redirect,'error');return response();}});
  const result=await resolve({id:'job',brief,upstream_envelope:{expired:true}});assert.equal(JSON.parse(result.payload).publication_permission,false);
 });
+test('authority response cannot follow a job or task scope changed during lookup',async()=>{
+ for(const change of ['job','task']){
+  const originalTask='a'.repeat(64);
+  const job={id:'job',brief:{...brief,task_sha256:originalTask}};
+  let requested;
+  const resolve=createGrantResolver({env,fetchImpl:async(_url,options)=>{
+   requested=JSON.parse(options.body);
+   if(change==='job'){
+    job.id='other';job.brief={...job.brief,id:'other'};
+    return response({job_id:'other',task_sha256:originalTask});
+   }
+   job.brief.task_sha256='b'.repeat(64);
+   return response({task_sha256:job.brief.task_sha256});
+  }});
+  await assert.rejects(resolve(job),change==='job'?/^Error: GRANT_SCOPE_MISMATCH$/:/^Error: TASK_SCOPE_MISMATCH$/);
+  assert.deepEqual(requested,{job_id:'job'});
+ }
+});
+test('a valid grant is checked against the original scope without rereading the caller',async()=>{
+ const job={id:'job',brief:{...brief}};let reads=0;
+ const resolve=createGrantResolver({env,fetchImpl:async()=>{
+  Object.defineProperty(job,'brief',{get(){reads++;throw Error('late caller property read');}});
+  return response();
+ }});
+ assert.equal(JSON.parse((await resolve(job)).payload).job_id,'job');
+ assert.equal(reads,0);
+});
+test('grant scope rejects getters, proxies, and inherited identity before dispatch',async()=>{
+ let reads=0,calls=0;
+ const resolve=createGrantResolver({env,fetchImpl:async()=>{calls++;return response();}});
+ const trap=()=>{reads++;throw Error('scope trap executed');};
+ const jobs=[
+  {get id(){return trap();},brief},
+  {id:'job',get brief(){return trap();}},
+  new Proxy({id:'job',brief},{get:trap,getOwnPropertyDescriptor:trap}),
+  {id:'job',brief:new Proxy(brief,{get:trap,getOwnPropertyDescriptor:trap})},
+  {id:'job',brief:{...brief,get account_id(){return trap();}}},
+  {id:'job',brief:{...brief,get task_sha256(){return trap();}}},
+  {id:'job',brief:Object.create(brief)}
+ ];
+ for(const job of jobs)await assert.rejects(resolve(job),/^Error: GRANT_REQUEST_INVALID$/);
+ assert.equal(reads,0);assert.equal(calls,0);
+});
 test('authority lookup requires an exact primitive durable job scope before dispatch',async()=>{
  for(const job of [
   {id:{toJSON:()=>brief.id},brief},
