@@ -53,6 +53,37 @@ function fixture(now=Date.now(),platform='redbubble',editorial){
   adapters:{[platform]:{authorized:true,submit:async()=>{events.push('submit');return {id:'fixture-receipt'};}}}};
  return {options,events,release,manifest,qa};
 }
+test('release admission rejects contradictory or malformed claims before callbacks',async t=>{
+ const original=await fixture().options.db.claimPublish();
+ const cases=[
+  ['undefined',undefined],['false',false],['zero',0],['empty string',''],
+  ['requested account',{...original,account_id:'different-account',brief:{...original.brief,account_id:'different-account'}}],
+  ['destination',{...original,brief:{...original.brief,destination_platform:'kdp'}}],
+  ['unsupported platform',{...original,platform:'unsupported',brief:{...original.brief,platform:'unsupported',destination_platform:'unsupported'}}],
+  ['zero fence',{...original,fencing_token:0}],['negative fence',{...original,fencing_token:-1}],
+  ['fractional fence',{...original,fencing_token:1.5}],['unsafe fence',{...original,fencing_token:Number.MAX_SAFE_INTEGER+1}],
+  ['empty fence',{...original,fencing_token:''}],['leading-zero fence',{...original,fencing_token:'01'}],
+  ['out-of-range fence',{...original,fencing_token:'9223372036854775808'}]
+ ];
+ for(const [name,claim] of cases)await t.test(name,async()=>{
+  const f=fixture();let callbacks=0;
+  f.options.db.claimPublish=async()=>claim;
+  const record=async()=>{callbacks++;return {};};
+  f.options.db.finish=record;f.options.db.assertPublishable=record;
+  f.options.verifyArtifacts=record;f.options.resolveGrant=record;
+  f.options.adapters.redbubble.submit=record;
+  await assert.rejects(publishOnce(f.options),/^Error: RELEASE_SETTLEMENT_UNCERTAIN$/);
+  assert.equal(callbacks,0);assert.deepEqual(f.events,[]);
+ });
+});
+test('release admission accepts supported positive fencing representations',async()=>{
+ for(const fencing_token of [1,Number.MAX_SAFE_INTEGER,'1','9223372036854775807']){
+  const f=fixture(),original=await f.options.db.claimPublish();
+  f.options.db.claimPublish=async()=>({...original,fencing_token});
+  assert.equal((await publishOnce(f.options)).status,'SUBMITTED');
+  assert.deepEqual(f.events,['submit','submitted']);
+ }
+});
 test('publication gates reject executable descriptors without invoking them',async()=>{
  for(const kind of ['proxy','accessor']){
   const f=fixture();let invoked=0;
