@@ -46,6 +46,7 @@ export async function verifyProductionRecovery(pool,bridge){
    ['pod_events','INSERT',`NEW.job_id='${id}' AND NEW.kind='pod.repair.archived'`,"NEW.payload:=NEW.payload-'manifest'"],
    ['pod_production_queue','UPDATE',`NEW.id='${id}' AND NEW.state='raw'`,'NEW.manifest:=OLD.manifest'],
    ['pod_production_queue','UPDATE',`NEW.id='${id}' AND NEW.state='raw'`,'NEW.attempt:=OLD.attempt-1'],
+   ['pod_production_queue','UPDATE',`NEW.id='${id}' AND NEW.state='raw'`,'NEW.upstream_envelope:=OLD.upstream_envelope'],
   ]){
    try{
     await pool.query(`CREATE FUNCTION pod_test_alter_repair() RETURNS trigger LANGUAGE plpgsql AS $$
