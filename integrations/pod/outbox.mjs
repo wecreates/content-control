@@ -142,7 +142,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  // microsecond value separately or rejected rows can repeat forever on page 2.
  const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
  let delivered=0,failed=0;
- for(const {event:rowEvent} of events){
+ for(const {event:rowEvent,cursor_created_at:storedCreatedAt} of events){
   if(signal?.aborted)break;
   // Selection and earlier deliveries may cross the storage safety cutoff.
   // This is a batch-wide stop, not a skippable per-event delivery failure.
@@ -169,7 +169,14 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   if(ack===null||typeof ack!=='object'||Array.isArray(ack)||Object.getPrototypeOf(ack)!==Object.prototype||
    Object.keys(ack).length!==1||!Object.hasOwn(ack,'accepted_event_id')||ack.accepted_event_id!==event.id)throw Error('OUTBOX_ACK_INVALID');
   assertBridgeRequest(requestSignal,deadline);
-  await db.tx(async c=>assertDeliveryMutation(await c.query('UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL RETURNING id',[event.id]),event.id),{signal});delivered++;
+  // A receipt is for the bytes sent, not a replacement row with the same ID.
+  // Compare the signed payload, and use the selected PostgreSQL timestamp
+  // text instead of the wire Date, which lost sub-millisecond precision.
+  await db.tx(async c=>assertDeliveryMutation(await c.query(
+   `UPDATE pod_events SET delivered_at=now() WHERE id=$1 AND delivered_at IS NULL
+    AND job_id IS NOT DISTINCT FROM $2::uuid AND kind=$3
+    AND payload=($4::jsonb #> '{event,payload}') AND created_at=$5::timestamptz RETURNING id`,
+   [event.id,event.job_id,event.kind,payload,storedCreatedAt]),event.id),{signal});delivered++;
   }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
  }
  // Check empty pages and expiry during the final response/commit as well.

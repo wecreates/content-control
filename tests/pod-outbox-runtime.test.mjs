@@ -80,6 +80,30 @@ test('acknowledged events require a verified one-row durable delivery mutation',
  }
  assert.equal(reads,0);
 });
+test('an acknowledgement cannot settle different content under the same outbox ID',async()=>{
+ const event={id:'12b4c678-1234-4321-abcd-123456789abc',job_id:null,kind:'pod.test.settle',
+  payload:{nested:{revision:1}},created_at:'2026-01-01T00:00:00.000Z',
+  cursor_created_at:'2026-01-01 00:00:00.000123+00'};
+ let updated=false;
+ const db={active(){},read:async()=>({rows:[event]}),tx:async fn=>fn({query:async(sql,args)=>{
+  // Model the SQL predicate, not a production database. The postgres gate
+  // independently exercises the same mutation while the request is in flight.
+  if(sql.includes('payload=')&&JSON.parse(args[3]).event.payload.nested.revision!==event.payload.nested.revision)
+   return {rowCount:0,rows:[]};
+  updated=true;return {rowCount:1,rows:[{id:event.id}]};
+ }})};
+ const result=await deliverOutbox(db,{url:env.POD_OUTBOX_URL,key:env.POD_OUTBOX_KEY,continueOnError:true,
+  fetchImpl:async(_url,request)=>{
+   const sent=JSON.parse(JSON.parse(request.body).payload).event;
+   assert.equal(sent.payload.nested.revision,1);
+   assert.equal(Object.hasOwn(sent,'cursor_created_at'),false);
+   event.payload.nested.revision=2;
+   return jsonResponse({accepted_event_id:event.id});
+  }});
+ assert.equal(result.delivered,0);
+ assert.equal(result.failed,1);
+ assert.equal(updated,false);
+});
 test('direct delivery enforces receiver byte ceilings before network access',async t=>{
  const now=1800000000000;t.mock.method(Date,'now',()=>now);
  const encoded=event=>JSON.stringify({schema_version:1,audience:'money-factory:pod:event',issued_at_ms:now,event});
