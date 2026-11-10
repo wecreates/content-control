@@ -35,6 +35,28 @@ test('encrypted artifacts recover across isolated PostgreSQL databases with rest
    target=new PodDB({pool:restricted(pools[1]),bridge,expiresAt:new Date(Date.now()+7*86400000).toISOString()});
   const store=new ArtifactStore(source),contents=[Buffer.from('first exact fixture bytes'),Buffer.from('second exact fixture bytes')];
   const hashes=await Promise.all(contents.map(body=>store.put(body,'application/json')));
+  for(const [phase,expectedTag] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK']]){
+   const failedDirectory=path.join(root,'unverified-'+phase.toLowerCase()),queries=[],releases=[];
+   let observed;
+   const pool={connect:async()=>{
+    const client=await source.pool.connect();
+    return {release:discard=>{releases.push(discard);client.release(discard);},query:async(sql,...args)=>{
+     queries.push(sql);
+     if(sql.startsWith(phase)){
+      if(phase==='COMMIT')await assert.rejects(client.query('SELECT 1/0'),error=>error.code==='22012');
+      const result=await client.query(phase==='BEGIN'?'SELECT 1':sql,...args);
+      observed=result.command;return result;
+     }
+     return client.query(sql,...args);
+    }};
+   }};
+   await assert.rejects(exportArtifactLibrary({pool},{directory:failedDirectory,key,env}),
+    new RegExp('^Error: POD_'+phase+'_UNVERIFIED$'));
+   assert.equal(observed,expectedTag);assert.deepEqual(releases,[true]);
+   assert.equal(queries.at(-1),phase==='BEGIN'?'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY':'COMMIT');
+   if(phase==='BEGIN')assert.equal(queries.length,1);
+   await assert.rejects(fs.stat(path.join(failedDirectory,'catalog.pod')),{code:'ENOENT'});
+  }
   const receipt=await exportArtifactLibrary(source,{directory,key,env});assert.equal(receipt.objects,2);
   const verified=await verifyArtifactLibrary({directory,key});assert.equal(verified.objects,2);
   assert.equal(verified.archive_sha256,crypto.createHash('sha256').update(await fs.readFile(path.join(directory,'catalog.pod'))).digest('hex'));

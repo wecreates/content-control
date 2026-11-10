@@ -31,7 +31,9 @@ function database(values=[]){
    rows.set(args[0],{body:args[1],media_type:args[2]});
    return {rowCount:1,rows:[{sha256:args[0],media_type:args[2],bytes:args[1].length,body_sha256:sha(args[1])}]};
   }
-  if(/^(BEGIN|COMMIT|ROLLBACK|SET LOCAL|SELECT pg_advisory)/.test(sql))return {rows:[]};
+  if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
+  if(sql==='COMMIT')return {command:'COMMIT'};
+  if(/^(ROLLBACK|SET LOCAL|SELECT pg_advisory)/.test(sql))return {rows:[]};
   throw Error('UNEXPECTED_QUERY');
  };
  return {rows,queries,pool:{connect:async()=>({query,release(){}})},tx:async fn=>{
@@ -529,6 +531,18 @@ test('FIFO catalog and artifact entries fail promptly without a writer',async t=
  }
 });
 
+
+for(const [phase,tag] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK']])test('artifact export refuses unverified '+phase+' before sealing a catalog',async t=>{
+ const db=database([Buffer.from('transaction fixture')]),directory=await workspace(t);
+ const client=await db.pool.connect(),query=client.query.bind(client),calls=[],releases=[];
+ client.query=async(sql,...args)=>{calls.push(sql);return sql.startsWith(phase)?{command:tag}:query(sql,...args);};
+ client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
+ await assert.rejects(exportArtifactLibrary(db,{directory,key,env}),new RegExp('^Error: POD_'+phase+'_UNVERIFIED$'));
+ if(phase==='BEGIN')assert.deepEqual(calls,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+ else{assert.equal(calls.at(-1),'COMMIT');assert.equal(calls.includes('ROLLBACK'),false);}
+ assert.deepEqual(releases,[true]);
+ await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),{code:'ENOENT'});
+});
 
 for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false,true]){
  test(`artifact export ${phase} failure with broken rollback=${brokenRollback}`,async t=>{

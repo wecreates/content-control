@@ -19,6 +19,8 @@ async function emptySource(){
  const queries=[];
  const client={release(){},async query(sql,args=[]){
   queries.push(sql);
+  if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
+  if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('FROM public.pod_schema_version'))return {rows:versions};
   if(sql.includes('FROM pg_attribute'))return {rows:[{name:'id',type:'uuid',required:true}]};
   if(sql.includes('COALESCE(sum'))return {rows:[{bytes:'0'}]};

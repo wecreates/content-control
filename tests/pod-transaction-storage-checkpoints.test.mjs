@@ -227,7 +227,6 @@ test('transaction scrubs committed session state before returning the pooled cli
   if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   if(text==='DISCARD ALL')applicationName='pool-default';
-  if(text==='BEGIN')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

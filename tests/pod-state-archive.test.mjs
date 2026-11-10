@@ -23,6 +23,8 @@ async function fixture(t){
  let table,cursor=0;
  const client={release(){},query:async(sql,args)=>{
   queries.push(sql);
+  if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
+  if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('FROM public.pod_schema_version'))return {rows:versions};
   if(sql.includes('FROM pg_attribute')){
    const name=args[0].slice(7),names=name==='pod_artifacts'?['sha256','body','media_type']:name==='pod_financial_events'?['id','amount_minor']:['id'];
@@ -351,6 +353,18 @@ test('state restore forwards cancellation into its managed transaction',async t=
  await exportStateArchive(f.db,{...f,key,env});
  const target={tx:async(_fn,options)=>{assert.equal(options.signal,controller.signal);throw reason;}};
  await assert.rejects(restoreStateArchive(target,{directory:f.directory,key,env,signal:controller.signal}),error=>error===reason);
+});
+
+for(const [phase,tag] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK']])test('state export refuses unverified '+phase+' before sealing a catalog',async t=>{
+ const {db,directory}=await fixture(t);
+ const client=await db.pool.connect(),query=client.query.bind(client),calls=[],releases=[];
+ client.query=async(sql,...args)=>{calls.push(sql);return sql.startsWith(phase)?{command:tag}:query(sql,...args);};
+ client.release=discard=>releases.push(discard);db.pool.connect=async()=>client;
+ await assert.rejects(exportStateArchive(db,{directory,key,env}),new RegExp('^Error: POD_'+phase+'_UNVERIFIED$'));
+ if(phase==='BEGIN')assert.deepEqual(calls,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);
+ else{assert.equal(calls.at(-1),'COMMIT');assert.equal(calls.includes('ROLLBACK'),false);}
+ assert.deepEqual(releases,[true]);
+ await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),{code:'ENOENT'});
 });
 
 for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false,true]){
