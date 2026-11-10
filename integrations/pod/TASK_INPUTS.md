@@ -267,3 +267,12 @@ archive is still never selected automatically. Download-origin authority, barcod
 mapping, final CMYK handling, calibrated
 independent review and actual preview/print acceptance remain open. Final-cover
 strict geometry is unchanged by the guide's separate whole-point policy.
+Production settlement adapters must invoke the supplied synchronous
+`beforeStateChange` guard immediately before their durable write. Review holds
+resolve with no value; QA completion resolves with exactly one own boolean
+`pass` field. A missing guard or malformed receipt is uncertain, not success.
+After the final guard has passed, a rejected acknowledgment cannot establish
+rollback: the worker cleans its workspace, emits the fixed uncertainty signal
+and does not attempt a second failure settlement. Inspect durable state or use
+the existing fenced lease recovery; do not infer that production should rerun.
+

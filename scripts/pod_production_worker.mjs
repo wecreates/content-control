@@ -227,7 +227,30 @@ export async function produceOnce(options={}){
   enabled();
   return envelope;
  };
- let result,primaryError;
+ let result,primaryError,settlementUncertain=false;
+ const settle=async(method,args,beforeStateChange,completion=false)=>{
+  let guarded=false;
+  const guard=()=>{
+   if(guarded){settlementUncertain=true;throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');}
+   beforeStateChange();guarded=true;
+  };
+  let value;
+  try{value=await Reflect.apply(method,databaseReceiver,[...args,{beforeStateChange:guard}]);}
+  catch(error){
+   // Once the final write boundary has passed, a lost acknowledgment does
+   // not establish rollback. Leave the exact row to durable recovery.
+   if(guarded)settlementUncertain=true;
+   throw error;
+  }
+  const receipt=completion?snapshotData(value):value;
+  if(!guarded||(completion?
+   !receipt||typeof receipt!=='object'||Array.isArray(receipt)||
+    Object.keys(receipt).length!==1||!Object.hasOwn(receipt,'pass')||typeof receipt.pass!=='boolean':
+   receipt!==undefined)){
+   settlementUncertain=true;throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
+  }
+  return receipt;
+ };
  try{result=await (async()=>{
  try{
   enabled();
@@ -382,7 +405,7 @@ export async function produceOnce(options={}){
     enabled();
     enforceBrief(verifyEnvelope(reviewGrant,upstreamKey,'content-control:pod'),job.brief);
    };
-   await Reflect.apply(holdProduction,databaseReceiver,[jobCopy(),manifest,{beforeStateChange}]);
+   await settle(holdProduction,[jobCopy(),manifest],beforeStateChange);
    return {status:'REVIEW_REQUIRED',job_id:job.id,package_sha256:manifest.package_sha256};
   }
   // Bind every resolver-authorized QA input before the caller-owned reviewer can
@@ -447,9 +470,10 @@ export async function produceOnce(options={}){
    enabled();
    enforceBrief(verifyEnvelope(completionGrant,upstreamKey,'content-control:pod'),job.brief);
   };
-  const result=await Reflect.apply(completeProduction,databaseReceiver,[jobCopy(),manifest,qa,{beforeStateChange}]);
+  const result=await settle(completeProduction,[jobCopy(),manifest,qa],beforeStateChange,true);
   return {status:result.pass?'QA_PASSED':'QA_FAILED',job_id:job.id};
  }catch(error){
+  if(settlementUncertain)throw Error('PRODUCTION_SETTLEMENT_UNCERTAIN');
   const reason=productionFailure(error);
   await Reflect.apply(failProduction,databaseReceiver,[jobCopy(),reason]);
   return {status:'BLOCKED',job_id:job.id,reason_code:reason};
