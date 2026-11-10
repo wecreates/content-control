@@ -32,7 +32,7 @@ async function exercise(kind,duplicate,expired){
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
    if(sql.startsWith('INSERT INTO pod_market_intelligence'))return duplicate?rows():rows({id:args[0]});
-   if(sql.startsWith('INSERT INTO pod_financial_events'))return duplicate?rows():rows({id:args[0]});
+   if(sql.startsWith('INSERT INTO pod_financial_events'))return duplicate?rows():rows({id:args[0],statement_matches:true});
    if(sql.includes('FROM pod_market_intelligence'))return rows({...e,id:'record-fixture',observed_at_matches:true,
     image_sha256:e.image_sha256??null,price_minor:e.price_minor??null,currency:e.currency??null,
     observed_rank:e.observed_rank??null,rank_evidence_sha256:e.rank_evidence_sha256??null});
@@ -46,7 +46,7 @@ async function exercise(kind,duplicate,expired){
    if(sql.startsWith('UPDATE pod_production_queue'))return rows({job_id:e.job_id,state:'published',
     provider_id:e.provider_id,reason_code:null,lease_until:null});
    if(sql.startsWith('INSERT INTO pod_events'))return rows({id:args[0],job_id:e.job_id,
-    kind:kind==='finance'?'pod.finance.verified':'pod.published'});
+    kind:kind==='finance'?'pod.finance.verified':'pod.published',...(kind==='finance'?{payload_matches:true}:{})});
    return rows();
   }};
   const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

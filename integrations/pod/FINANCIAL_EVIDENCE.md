@@ -64,3 +64,15 @@ must not decide financial identity. Equivalent offsets for the same instant are
 accepted; a one-microsecond difference or truncated fractional value is a conflict.
 Historical rows are not rewritten. Fresh signatures and stored proof are still
 required for every replay. This establishes timestamp identity, not verified profit.
+
+## New statement and outbox write verification
+
+For a newly inserted statement, PostgreSQL must confirm that the inserted row
+matches the signed statement fields, not just the generated ID. The insert
+compares amount and timestamp before decoding, preserving exact minor-unit and
+microsecond values. The outbox insert independently confirms its stored JSONB
+linkage to that statement and authority event. If either check is missing or
+differs, the same transaction rolls back both writes and returns no receipt.
+Exact replay semantics and the outbox wire format are unchanged.
+
+See the [financial insert verification receipt](../../docs/pod/POD_RUN_RECEIPT_20261110_FINANCIAL_INSERT_SCOPE.md).

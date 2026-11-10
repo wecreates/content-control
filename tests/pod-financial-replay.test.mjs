@@ -56,10 +56,10 @@ function fixture(previous=[],corrupt=false){
     // The old targeted conflict handler had no upstream-identity uniqueness.
     // Model that path too so the regression exposes the actual double count.
     rows.push({id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id});
-    return result({rowCount:1,rows:[{id}]});
+    return result({rowCount:1,rows:[{id,statement_matches:true}]});
    }
    if(sql.includes('FROM pod_financial_events'))return result({rows:rows.filter(r=>(r.provider===args[0]&&r.provider_event_id===args[1])||(args[2]&&r.authority_event_id===args[2])).map(r=>({...r,occurred_at_matches:new Date(r.occurred_at).getTime()===Date.parse(args[3])}))});
-   if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[{id:args[0],job_id:args[1],kind:args[2]}]};}
+   if(sql.startsWith('INSERT INTO pod_events')){outbox.push(args);return {rowCount:1,rows:[{id:args[0],job_id:args[1],kind:args[2],payload_matches:true}]};}
    throw Error('UNEXPECTED_QUERY');
   }});}catch(e){rows.length=size;outbox.length=events;throw e;}
  }};
@@ -142,19 +142,19 @@ test('financial intake rejects unverified audit event mutations and rolls back t
  }});
  const attempts=[
   ()=>Object.defineProperty({},'rowCount',{get(){reads++;throw Error('audit rowCount getter executed');}}),
-  id=>resultProxy({rowCount:1,rows:[{id,job_id:e.job_id,kind:'pod.finance.verified'}]}),
+  id=>resultProxy({rowCount:1,rows:[{id,job_id:e.job_id,kind:'pod.finance.verified',payload_matches:true}]}),
   ()=>({rowCount:0,rows:[]}),
   ()=>({rowCount:1,rows:[]}),
-  ()=>({rowCount:1,rows:[{id:'wrong',job_id:e.job_id,kind:'pod.finance.verified'}]}),
-  id=>({rowCount:1,rows:[{id,job_id:'wrong',kind:'pod.finance.verified'}]}),
-  id=>({rowCount:1,rows:[{id,job_id:e.job_id,kind:'wrong'}]}),
+  ()=>({rowCount:1,rows:[{id:'wrong',job_id:e.job_id,kind:'pod.finance.verified',payload_matches:true}]}),
+  id=>({rowCount:1,rows:[{id,job_id:'wrong',kind:'pod.finance.verified',payload_matches:true}]}),
+  id=>({rowCount:1,rows:[{id,job_id:e.job_id,kind:'wrong',payload_matches:true}]}),
  ];
  for(const attempt of attempts){
   let ledgerWrites=0,auditWrites=0,rolledBack=false;
   const db={active(){},tx:async fn=>{
    try{return await fn({query:async(sql,args)=>{
     if(sql.includes('FROM pod_artifacts'))return validEvidence;
-    if(sql.startsWith('INSERT INTO pod_financial_events')){ledgerWrites++;return {rowCount:1,rows:[{id:args[0]}]};}
+    if(sql.startsWith('INSERT INTO pod_financial_events')){ledgerWrites++;return {rowCount:1,rows:[{id:args[0],statement_matches:true}]};}
     if(sql.startsWith('INSERT INTO pod_events')){
      auditWrites++;return attempt(args[0]);
     }
@@ -168,8 +168,8 @@ test('financial intake rejects unverified audit event mutations and rolls back t
 });
 test('financial insertion requires the exact returned ledger ID before writing its audit event',async()=>{
  const e=event();let reads=0;
- for(const insert of [{rowCount:1},{rowCount:1,rows:[]},{rowCount:1,rows:[{id:'other'}]},
-  {rowCount:1,rows:[{get id(){reads++;throw Error('private ID getter');}}]}]){
+ for(const insert of [{rowCount:1},{rowCount:1,rows:[]},{rowCount:1,rows:[{id:'other',statement_matches:true}]},
+  {rowCount:1,rows:[{get id(){reads++;throw Error('private ID getter');},statement_matches:true}]}]){
   let audits=0;
   const db={active(){},tx:fn=>fn({query:async(sql,args)=>{
    if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
@@ -248,6 +248,30 @@ test('new scoped event is recorded once with one outbox observation',async()=>{
  assert.equal(r.duplicate,false);assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);
  assert.deepEqual(await recordFinancialEvent(f.db,sign(event()),key),{id:r.id,duplicate:true});
  assert.equal(f.rows.length,1);assert.equal(f.outbox.length,1);
+});
+
+test('new financial evidence rolls back when the ledger or audit content does not match',async()=>{
+ const e=event();
+ for(const [stage,value] of [['ledger',false],['ledger','true'],['audit',false],['audit','true']]){
+  let pendingLedger=0,pendingAudit=0,commits=0,rollbacks=0;
+  const db={active(){},tx:async fn=>{
+   try{
+    const receipt=await fn({query:async(sql,args)=>{
+     if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:e.evidence_sha256,media_type:'application/json',body_sha256:e.evidence_sha256}]};
+     if(sql.startsWith('INSERT INTO pod_financial_events')){
+      pendingLedger++;return {rowCount:1,rows:[{id:args[0],statement_matches:stage==='ledger'?value:true}]};
+     }
+     if(sql.startsWith('INSERT INTO pod_events')){
+      pendingAudit++;return {rowCount:1,rows:[{id:args[0],job_id:e.job_id,kind:'pod.finance.verified',payload_matches:stage==='audit'?value:true}]};
+     }
+     assert.fail('unexpected query');
+    }});
+    commits++;return receipt;
+   }catch(error){pendingLedger=0;pendingAudit=0;rollbacks++;throw error;}
+  }};
+  await assert.rejects(recordFinancialEvent(db,sign(e),key),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+  assert.deepEqual({pendingLedger,pendingAudit,commits,rollbacks},{pendingLedger:0,pendingAudit:0,commits:0,rollbacks:1});
+ }
 });
 
 test('database timestamp mismatch cannot be hidden by millisecond Date decoding',async()=>{
