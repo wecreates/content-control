@@ -8,6 +8,14 @@ import {reconcilePublication} from '../integrations/pod/reconcile.mjs';
 import {economicsFixture} from './pod-economics-fixture.mjs';
 
 const key='synthetic-release-freshness-key-'.repeat(2);
+test('publisher release checkpoints do not invoke shadowed signal methods',async()=>{
+ const f=fixture(),controller=new AbortController();let reads=0;
+ Object.defineProperty(controller.signal,'aborted',{get(){reads++;return false;}});
+ Object.defineProperty(controller.signal,'throwIfAborted',{get(){reads++;return ()=>{};}});
+ f.options.signal=controller.signal;
+ assert.deepEqual(await publishOnce(f.options),{status:'SUBMITTED',job_id:'fixture-job'});
+ assert.equal(reads,0);assert.deepEqual(f.events,['submit','submitted']);
+});
 const sign=p=>{const payload=JSON.stringify(p);return {payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};};
 const canonical=value=>Array.isArray(value)?`[${value.map(canonical).join(',')}]`:
  value&&typeof value==='object'?`{${Object.keys(value).sort().map(name=>`${JSON.stringify(name)}:${canonical(value[name])}`).join(',')}}`:
@@ -768,4 +776,5 @@ test('direct submitted transition preserves a valid opaque listing ID',async()=>
  assert.equal(queries.find(q=>q.sql.startsWith('UPDATE')).args[1],id);
  assert.equal(queries.at(-2).sql,'COMMIT');
 });
+
 

@@ -5,6 +5,32 @@ import {types as utilTypes} from 'node:util';
 import {verifyEnvelope,enforceBrief,enforceQA} from '../integrations/pod/policy.mjs';
 import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/economics.mjs';
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
+const signalAbortedGetter=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
+const signalThrowIfAborted=AbortSignal.prototype.throwIfAborted;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
+function signalAborted(signal){
+ if(signal===undefined)return false;
+ try{
+  if(signal===null||typeof signal!=='object'||utilTypes.isProxy(signal)||
+   typeof signalAbortedGetter!=='function')throw Error();
+  return Reflect.apply(signalAbortedGetter,signal,[]);
+ }catch{throw Error('PUBLISH_SIGNAL_UNVERIFIED');}
+}
+function checkpoint(signal){
+ if(signalAborted(signal))Reflect.apply(signalThrowIfAborted,signal,[]);
+}
+async function publisherPause(signal){
+ if(signal===undefined)return pause(15000);
+ // Timer APIs inspect public signal members. Forward native cancellation into
+ // an owned signal instead of letting shadowed members run during the wait.
+ const controller=new AbortController(),abort=()=>controller.abort();
+ Reflect.apply(addAbortListener,signal,['abort',abort,{once:true}]);
+ try{
+  if(signalAborted(signal))abort();
+  await pause(15000,undefined,{signal:controller.signal});
+ }finally{Reflect.apply(removeAbortListener,signal,['abort',abort]);}
+}
 function snapshotManifest(value){
  try{
   const state={nodes:0};
@@ -124,15 +150,23 @@ function providerReceiptId(receipt){
   return descriptor.value;
  }catch{return null;}
 }
-export async function publishOnce({db,env=process.env,accountId,adapters={},resolveGrant,
- verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}) {
+function snapshotPublisherOptions(options){
+ // Options are capabilities, not executable field reads. In particular the
+ // publication-off path must not invoke accessors before checking its gate.
+ const keys=['db','env','accountId','adapters','resolveGrant','verifyArtifacts','upstreamKey','qaKey','log','signal'];
+ const values=keys.map(key=>dataProperty(options,key));
+ if(values.some(value=>!value.valid))throw Error('PUBLISH_OPTIONS_UNVERIFIED');
+ return Object.freeze(Object.fromEntries(keys.map((key,index)=>[key,values[index].value])));
+}
+export async function publishOnce(options={}) {
+ const {db,env=process.env,accountId,adapters={},resolveGrant,verifyArtifacts,upstreamKey,qaKey,log=console.log,signal}=snapshotPublisherOptions(options);
  const publicationEnabled=()=>publicationGatesEnabled(env);
- if(signal?.aborted)return {status:'STOPPED'};
+ if(signalAborted(signal))return {status:'STOPPED'};
  // Dry run uses no leases, writes, artifact access, adapters or platform calls.
  if(!publicationEnabled()) {
   const listReady=dataProperty(db,'listReady');
   if(!listReady.valid||typeof listReady.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
-  const jobs=await Reflect.apply(listReady.value,db,[{signal}]);if(signal?.aborted)return {status:'STOPPED'};
+  const jobs=await Reflect.apply(listReady.value,db,[{signal}]);if(signalAborted(signal))return {status:'STOPPED'};
   log(JSON.stringify({status:'DRY_RUN',count:jobs.length,publication_enabled:false}));
   return {status:'DRY_RUN',count:jobs.length};
  }
@@ -148,7 +182,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   typeof claimCapability.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
  const finish=finishCapability.value,assertPublishable=assertCapability.value;
  const claimedJob=await Reflect.apply(claimCapability.value,db,[accountId,crypto.randomInt(45,181),{signal}]);
- if(!claimedJob)return {status:signal?.aborted||!publicationEnabled()?'STOPPED':'IDLE'};
+ if(!claimedJob)return {status:signalAborted(signal)||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
  const releaseSnapshot=snapshotClaimedRelease(claimedJob);
@@ -163,7 +197,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  try{
   if(typeof finish!=='function')throw Error('SETTLEMENT_REQUIRED');
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
-  signal?.throwIfAborted();
+  checkpoint(signal);
   // Inspect only own data descriptors. Proxy/accessor-backed authorization or
   // submit capabilities can execute code during policy checks and fail closed.
   const adapterAuthorization=authorizedAdapter(adapters,job.platform);
@@ -178,7 +212,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const manifest=snapshotManifest(verifiedManifest);
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
   if(!manifest||manifest.package_sha256!==job.manifest?.package_sha256||manifest.release_checks_passed!==true)throw Error('ARTIFACT_VERIFICATION_FAILED');
-  signal?.throwIfAborted();
+  checkpoint(signal);
   // Artifact checks may outlive a grant or overlap revocation. Fetch authority
   // afterward, then recheck local lease/account/rights after that network wait.
   const resolvedReleaseEnvelope=await resolveGrant(claimedJob,{signal});
@@ -187,7 +221,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   const releaseEnvelope=snapshotManifest(resolvedReleaseEnvelope);
   if(!releaseEnvelope)throw Error('GRANT_ENVELOPE_INVALID');
   if(!publicationEnabled())throw Error('PUBLICATION_DISABLED');
-  signal?.throwIfAborted();
+  checkpoint(signal);
   // The database guard receives an isolated plain-data snapshot. Its awaited
   // implementation must not be able to rewrite the publisher's claimed
   // platform, fencing or idempotency identity before adapter submission.
@@ -202,7 +236,7 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   enforceQA(qa,manifest.package_sha256,manifest.template_sha256,job.platform);
   enforceKdpListPrice(qa,brief.price,job.platform);
   brief.economics=enforceReleaseEconomics(release,brief);
-  signal?.throwIfAborted();
+  checkpoint(signal);
   // Recheck local kill switches and the exact adapter's current registry
   // authorization immediately before the external side effect. No await may
   // separate these checks from submission.
@@ -230,9 +264,12 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
   return {status:submitted?'AMBIGUOUS':'BLOCKED',job_id:job.id};
  }
 }
-export async function runPublisher(options){
- while(!options.signal?.aborted){
+export async function runPublisher(options={}){
+ options=snapshotPublisherOptions(options);
+ while(!signalAborted(options.signal)){
   await publishOnce(options);
-  try{await pause(15000,undefined,{signal:options.signal});}catch(e){if(e.name!=='AbortError')throw e;}
+  if(signalAborted(options.signal))break;
+  try{await publisherPause(options.signal);}catch(e){if(e.name!=='AbortError')throw e;}
  }
 }
+
