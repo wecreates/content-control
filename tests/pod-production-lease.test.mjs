@@ -52,6 +52,25 @@ for(const valid of [true,false])test('production stage guard checks live lease a
  assert.ok(lock>=0&&clock>lock);
  assert.equal(f.queries.at(-2),valid?'COMMIT':'ROLLBACK');
 });
+for(const [name,run] of [
+ ['stage', (db,claim)=>db.assertProducible(claim)],
+ ['failure', (db,claim)=>db.failProduction(claim,'QA_FAILED')],
+ ['hold', (db,claim)=>db.holdProduction(claim,manifest)],
+ ['completion', (db,claim)=>db.completeProduction(claim,manifest,qa())],
+])test('production '+name+' binds the exact durable claim scope',async()=>{
+ const claim={...job,account_id:'fixture-account',brief:{id:job.id,task_sha256:'f'.repeat(64)}};
+ const db=new PodDB({pool:{},bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+ let queried=0;
+ db.tx=fn=>fn({query:async(sql,params)=>{
+  queried++;
+  assert.match(sql,/\baccount_id=\$3\b/);assert.match(sql,/\bplatform=\$4\b/);
+  assert.match(sql,/\bbrief=\$5::jsonb\b/);
+  assert.deepEqual(params,[claim.id,claim.fencing_token,claim.account_id,claim.platform,claim.brief]);
+  return {rows:[]};
+ }});
+ await assert.rejects(run(db,claim),name==='stage'?/^Error: LOCAL_PRODUCTION_BLOCKED$/:/^Error: LEASE_LOST$/);
+ assert.equal(queried,1);
+});
 for(const [label,run] of [
  ['failure',(db)=>db.failProduction(job,'QA_FAILED')],
  ['review hold',(db)=>db.holdProduction(job,manifest)],

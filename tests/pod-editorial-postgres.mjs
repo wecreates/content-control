@@ -7,7 +7,7 @@ export async function verifyEditorialGate(pool,bridge){
  const id=crypto.randomUUID(),concept=crypto.randomUUID(),account=crypto.randomUUID();
  const key='synthetic-editorial-db-key-'.repeat(2);
  const db=new PodDB({pool,bridge,qaKey:key,expiresAt:'2099-01-01T00:00:00Z'});
- const job={id,platform:'kdp',fencing_token:1};
+ const job={id,platform:'kdp',fencing_token:1,account_id:account,brief:{}};
  const manifest={schema_version:1,platform:'kdp',publication_enabled:false,
   package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
    'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64),

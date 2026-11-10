@@ -499,7 +499,11 @@ async function conceptBudgetDay(client){
  return day;
 }
 async function lockProductionLease(client,job){
- const current=producibleQuerySnapshot(await client.query("SELECT id FROM pod_production_queue WHERE id=$1 AND fencing_token=$2 AND state='processing' FOR UPDATE",[job.id,job.fencing_token]),job);
+ // A lease covers the exact claimed production input. A changed account,
+ // platform or brief must not inherit the older worker's fence.
+ const current=producibleQuerySnapshot(await client.query(`SELECT id FROM pod_production_queue
+  WHERE id=$1 AND fencing_token=$2 AND account_id=$3 AND platform=$4 AND brief=$5::jsonb
+  AND state='processing' FOR UPDATE`,[job.id,job.fencing_token,job.account_id,job.platform,job.brief]),job);
  if(!current)throw Error('LEASE_LOST');
  // Evaluate wall time in a separate statement after acquiring the row lock.
  // now() is fixed at BEGIN, and a SELECT expression can run before a lock wait.
@@ -781,9 +785,9 @@ export class PodDB {
  },{signal});}
  async assertProducible(job){return this.tx(async c=>{
   const current=producibleQuerySnapshot(await c.query(`SELECT q.id FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
-   WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4
+   WHERE q.id=$1 AND q.fencing_token=$2 AND q.account_id=$3 AND q.platform=$4 AND q.brief=$5::jsonb
    AND q.state='processing' AND p.rights_state='PASS' AND NOT p.permanently_unpublished
-   FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform]),job);
+   FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform,job.brief]),job);
   if(!current)throw Error('LOCAL_PRODUCTION_BLOCKED');
   // A queued lock acquisition must not preserve an expired production lease.
   const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AND isfinite(lease_until) AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);

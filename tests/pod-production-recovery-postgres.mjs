@@ -8,7 +8,7 @@ export async function verifyProductionRecovery(pool,bridge){
  const key='synthetic-recovery-authority-'.repeat(2);
  const db=new PodDB({pool,bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
  const brief={id,account_id:account,business_id:business,platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
- const old={...brief,fencing_token:'1'};
+ const old={...brief,brief,fencing_token:'1'};
  const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,
   package_sha256:'a'.repeat(64),template_sha256:'b'.repeat(64),files:{
    'art-mask.png':'c'.repeat(64),'print.png':'d'.repeat(64),'text-mask.png':'e'.repeat(64)}};
