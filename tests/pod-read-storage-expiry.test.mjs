@@ -168,6 +168,27 @@ test('guarded read preserves query failure and discards a client whose rollback 
  assert.equal(queries.at(-1),'ROLLBACK');assert.deepEqual(releases,[true]);
 });
 
+for(const phase of ['commit','scrub','release','abort','release failure'])test('guarded read rechecks result after '+phase,async()=>{
+ const controller=new AbortController(),reason=Error('POD_READ_CANCELLED_FIXTURE'),releaseError=Error('POD_RELEASE_FAILED_FIXTURE');
+ let db;const calls=[],releases=[];
+ const client={query:async sql=>{
+  const text=typeof sql==='string'?sql:sql.text;calls.push(text);
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='COMMIT'){if(phase==='commit')db.expiresAt=0;return {command:'COMMIT'};}
+  if(text==='DISCARD ALL'){if(phase==='scrub')db.expiresAt=0;return {command:'DISCARD'};}
+  return {rows:[{value:1}]};
+ },release:async bad=>{
+  releases.push(bad);await new Promise(resolve=>setImmediate(resolve));
+  if(phase==='release')db.expiresAt=0;
+  if(phase==='abort')controller.abort(reason);
+  if(phase==='release failure')throw releaseError;
+ }};
+ db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
+ await assert.rejects(db.read('SELECT fixture',[],{signal:controller.signal}),
+  phase==='abort'?e=>e===reason:phase==='release failure'?e=>e===releaseError:/^Error: POD_STORAGE_EXPIRING$/);
+ assert.deepEqual(calls.slice(-2),['COMMIT','DISCARD ALL']);assert.deepEqual(releases,[false]);
+});
+
 test('guarded read discards an uncertain client when opening the transaction fails',async()=>{
  const original=Error('BEGIN_FAILURE'),queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{

@@ -227,6 +227,23 @@ test('transaction query capability closes before the pooled client is released',
  assert.deepEqual(releases,[false]);
 });
 
+test('a reasonless query rejection forces rollback even if the callback handles it',async()=>{
+ for(const rejection of [undefined,null,false,0,'',NaN]){
+  const {db,calls,releases}=fixture(),client=await db.pool.connect(),query=client.query.bind(client);
+  client.query=async sql=>{
+   if(sql?.text==='SELECT reasonless_fixture'){calls.push(sql);throw rejection;}
+   return query(sql);
+  };
+  await assert.rejects(db.tx(async c=>{
+   await c.query('SELECT successful_fixture');
+   await c.query('SELECT reasonless_fixture').catch(()=>{});
+   return 'must not commit';
+  }),/^Error: POD_TRANSACTION_QUERY_FAILED$/);
+  assert.equal(calls.includes('COMMIT'),false);
+  assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);assert.deepEqual(releases,[false]);
+ }
+});
+
 test('transaction scrubs committed session state before returning the pooled client',async()=>{
  const calls=[],releases=[];let applicationName='pool-default';
  const client={release:bad=>releases.push(bad),query:async query=>{

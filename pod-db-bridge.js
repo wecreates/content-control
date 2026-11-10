@@ -7,7 +7,7 @@ import {productionReason} from './integrations/pod/failure-reasons.mjs';
 import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
-import {databaseWait} from './integrations/pod/database-wait.mjs';
+import {databaseWait,releaseDatabaseClient} from './integrations/pod/database-wait.mjs';
 import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome,assertDiscardOutcome} from './integrations/pod/transaction-outcome.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
@@ -539,9 +539,9 @@ export class PodDB {
  async read(sql,values,{signal}={}){
   const checkpoint=()=>signal?.throwIfAborted();
   this.active();checkpoint();const waiting=databaseWait(signal);
-  let c,bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
+  let c,result,failed=false,bad=false,began=false,beginAttempted=false,commitPending=false,ended=false;
   try{
-   c=await waiting.step(()=>this.pool.connect(),{onLate:late=>late.release(true)});
+   c=await waiting.step(()=>this.pool.connect(),{onLate:late=>{releaseDatabaseClient(late,true,waiting).catch(()=>{});}});
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
    // mistaken future caller cannot mutate durable state through this helper.
@@ -556,12 +556,18 @@ export class PodDB {
    // COMMIT or ROLLBACK, so reject transaction control before PostgreSQL can
    // end the managed read transaction early.
    assertManagedTransactionStatement(sql);
-   const result=await waiting.step(()=>c.query({text:sql,values:values??[],queryMode:'extended'}));this.active();checkpoint();
+   result=await waiting.step(()=>c.query({text:sql,values:values??[],queryMode:'extended'}));this.active();checkpoint();
    // COMMIT must settle so a completed read has a known outcome. Cancellation
    // is applied immediately after it, matching the managed write boundary.
-   commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return result;
-  }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{assertRollbackOutcome(await c.query('ROLLBACK'));ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
-  }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
+   commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();
+  }catch(error){failed=true;if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{assertRollbackOutcome(await c.query('ROLLBACK'));ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
+  }finally{if(c){
+   if(ended&&!bad)bad=await sanitizePooledClient(c);
+   try{await releaseDatabaseClient(c,bad,waiting);}catch(error){if(!failed)throw error;}
+  }}
+  // Read-only completion has no durable mutation to acknowledge. Never
+  // return data after expiry or cancellation during COMMIT/session cleanup.
+  checkpoint();this.active();return result;
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100},{signal}={}){
   if(!Number.isInteger(dailyLimit)||dailyLimit<1||dailyLimit>1000)throw Error('CONCEPT_LIMIT_INVALID');
@@ -655,7 +661,7 @@ export class PodDB {
    // including parameterless statements. The simple-query protocol accepts a
    // multi-command string that could COMMIT early and run a later command
    // outside this helper's transaction and retention checks.
-   const pendingQueries=new Set();let queryFailure=null,acceptingQueries=true;
+   const pendingQueries=new Set();let queryFailure,acceptingQueries=true;
    const guardedQuery=(query,values)=>{
     if(!acceptingQueries)throw Error('POD_TRANSACTION_CLIENT_CLOSED');
     this.active();checkpoint();
@@ -678,7 +684,7 @@ export class PodDB {
     pendingQueries.add(operation);
     operation.then(
      ()=>pendingQueries.delete(operation),
-     error=>{pendingQueries.delete(operation);queryFailure??=error;}
+     error=>{pendingQueries.delete(operation);queryFailure??={error};}
     );
     return operation;
    };
@@ -701,7 +707,9 @@ export class PodDB {
     acceptingQueries=false;
    }
    while(pendingQueries.size)await Promise.allSettled([...pendingQueries]);
-   if(queryFailure)throw queryFailure;
+   // Rejection does not require an Error value. A falsy adapter rejection
+   // must still prevent earlier successful writes from being committed.
+   if(queryFailure)throw queryFailure.error||Error('POD_TRANSACTION_QUERY_FAILED');
    // COMMIT must settle so its outcome is known. The managed transaction's
    // ten-second statement timeout bounds this control statement; cancellation
    // is applied at the checkpoint immediately after it completes.
