@@ -57,8 +57,20 @@ export async function verifyStoredEvidence(pool,db){
   await client.query("SELECT set_config('TimeZone',$1,true)",[zone]);
   return fn(client);
  })});
+ const withChangedResult=(prefix,change)=>({active:()=>db.active(),tx:fn=>db.tx(client=>fn({query:async(sql,args)=>{
+  const result=await client.query(sql,args);
+  if(!sql.startsWith(prefix))return result;
+  assert.equal(result.rows.length,1);
+  return {...result,rows:[{...result.rows[0],...change}]};
+ }}))});
+ const wrongId=crypto.randomUUID();
+ await assert.rejects(recordMarketObservation(withChangedResult('INSERT INTO pod_market_intelligence',{id:wrongId}),
+  sign('market',observation),key),{message:'MARKET_QUERY_UNVERIFIED'});
+ assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_market_intelligence WHERE source_url=$1',[source])).rows[0].n,0);
  const first=await recordMarketObservation(inZone('Pacific/Honolulu'),sign('market',observation),key);
- assert.equal(first.inserted,true);
+ assert.equal(first.inserted,true);assert.notEqual(first.id,wrongId);
+ await assert.rejects(recordMarketObservation(withChangedResult('SELECT id,platform,source_url',{observed_at_matches:false}),
+  sign('market',observation),key),{message:'MARKET_REPLAY_CONFLICT'});
  const replay=await recordMarketObservation(inZone('Asia/Tokyo'),sign('market',{
   ...observation,observed_at:'2026-01-01T01:00:00.123456+01:00'}),key);
  assert.deepEqual(replay,{inserted:false,id:first.id});

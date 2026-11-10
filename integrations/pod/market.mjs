@@ -5,7 +5,7 @@ import {assertStoredEvidence} from './stored-evidence.mjs';
 import {validEvidenceTime} from './evidence-time.mjs';
 import {validPostgresText} from './text-identity.mjs';
 const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
-const REPLAY_FIELDS=Object.freeze(['id','country','category','image_sha256','price_minor','currency',
+const REPLAY_FIELDS=Object.freeze(['id','platform','source_url','observed_at_matches','country','category','image_sha256','price_minor','currency',
  'observed_rank','source_sha256','observations','rank_evidence_sha256']);
 function dataProperty(target,key){
  try{
@@ -48,12 +48,12 @@ function snapshotRows(result,fields,maxRows){
  }
  return Object.freeze(snapshots);
 }
-function snapshotInsertResult(result){
+function snapshotInsertResult(result,expectedId){
  const count=dataProperty(result,'rowCount');
  if(!count.valid||!Number.isSafeInteger(count.value)||count.value<0||count.value>1)
   throw Error('MARKET_QUERY_UNVERIFIED');
  const rows=snapshotRows(result,['id'],1);
- if(rows.length!==count.value||(count.value===1&&!validPostgresText(rows[0].id)))
+ if(rows.length!==count.value||(count.value===1&&rows[0].id!==expectedId))
   throw Error('MARKET_QUERY_UNVERIFIED');
  return Object.freeze({count:count.value,id:rows[0]?.id});
 }
@@ -100,7 +100,8 @@ function snapshotReplayRows(result){
   const priceValid=row.price_minor===null||Number.isSafeInteger(row.price_minor)&&row.price_minor>=0||
    typeof row.price_minor==='string'&&/^(0|[1-9][0-9]{0,15})$/.test(row.price_minor)&&
     Number.isSafeInteger(Number(row.price_minor));
-  if(!validPostgresText(row.id)||!row.id||typeof row.country!=='string'||!/^[A-Z]{2}$/.test(row.country)||
+  if(!validPostgresText(row.id)||!row.id||!PLATFORMS.includes(row.platform)||!validPostgresText(row.source_url)||
+   typeof row.observed_at_matches!=='boolean'||typeof row.country!=='string'||!/^[A-Z]{2}$/.test(row.country)||
    !validPostgresText(row.category)||!row.category||(row.image_sha256!==null&&!hash(row.image_sha256))||!priceValid||
    !(row.currency===null||typeof row.currency==='string'&&/^[A-Z]{3}$/.test(row.currency))||
    !(row.observed_rank===null||Number.isInteger(row.observed_rank)&&row.observed_rank>0&&row.observed_rank<=2147483647)||
@@ -144,18 +145,19 @@ export async function recordMarketObservation(db,envelope,key,{signal}={}){
   const hashes=[...new Set([o.source_sha256,o.image_sha256,o.rank_evidence_sha256].filter(v=>v!=null))];
   await assertStoredEvidence(c,hashes,'MARKET_EVIDENCE_MISSING');
   db.active();
+  const id=crypto.randomUUID();
   const inserted=snapshotInsertResult(await c.query(`INSERT INTO pod_market_intelligence(id,platform,source_url,observed_at,country,category,image_sha256,price_minor,currency,observed_rank,source_sha256,observations,rank_evidence_sha256)
    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) ON CONFLICT(platform,source_url,observed_at) DO NOTHING RETURNING id`,
-   [crypto.randomUUID(),o.platform,o.source_url,o.observed_at,o.country,o.category,o.image_sha256??null,o.price_minor??null,o.currency??null,o.observed_rank??null,o.source_sha256,observations,o.rank_evidence_sha256??null]));
+   [id,o.platform,o.source_url,o.observed_at,o.country,o.category,o.image_sha256??null,o.price_minor??null,o.currency??null,o.observed_rank??null,o.source_sha256,observations,o.rank_evidence_sha256??null]),id);
   db.active();
   if(inserted.count===1){verifyEnvelope(envelope,key,'content-control:pod:market');return {inserted:true,id:inserted.id};}
   // ON CONFLICT waits for concurrent writers. A following statement sees the
   // committed immutable row; refreshed envelope times do not change its identity.
-  const previous=snapshotReplayRows(await c.query(`SELECT id,country,category,image_sha256,price_minor,currency,
+  const previous=snapshotReplayRows(await c.query(`SELECT id,platform,source_url,observed_at=$3::timestamptz AS observed_at_matches,country,category,image_sha256,price_minor,currency,
    observed_rank,source_sha256,observations,rank_evidence_sha256 FROM pod_market_intelligence
    WHERE platform=$1 AND source_url=$2 AND observed_at=$3`,[o.platform,o.source_url,o.observed_at]))[0];
   db.active();
-  if(!previous||!['country','category','image_sha256','currency','observed_rank','source_sha256','rank_evidence_sha256'].every(k=>(previous[k]??null)===(o[k]??null))||
+  if(!previous||!previous.observed_at_matches||!['platform','source_url','country','category','image_sha256','currency','observed_rank','source_sha256','rank_evidence_sha256'].every(k=>(previous[k]??null)===(o[k]??null))||
    (previous.price_minor==null?null:String(previous.price_minor))!==(o.price_minor==null?null:String(o.price_minor))||
    !isDeepStrictEqual(previous.observations,observations))throw Error('MARKET_REPLAY_CONFLICT');
   verifyEnvelope(envelope,key,'content-control:pod:market');

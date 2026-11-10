@@ -31,9 +31,9 @@ async function exercise(kind,duplicate,expired){
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
-   if(sql.startsWith('INSERT INTO pod_market_intelligence'))return duplicate?rows():rows({id:'record-fixture'});
+   if(sql.startsWith('INSERT INTO pod_market_intelligence'))return duplicate?rows():rows({id:args[0]});
    if(sql.startsWith('INSERT INTO pod_financial_events'))return duplicate?rows():rows({id:args[0]});
-   if(sql.includes('FROM pod_market_intelligence'))return rows({...e,id:'record-fixture',
+   if(sql.includes('FROM pod_market_intelligence'))return rows({...e,id:'record-fixture',observed_at_matches:true,
     image_sha256:e.image_sha256??null,price_minor:e.price_minor??null,currency:e.currency??null,
     observed_rank:e.observed_rank??null,rank_evidence_sha256:e.rank_evidence_sha256??null});
    if(sql.includes('FROM pod_financial_events'))return rows({...e,id:'record-fixture',occurred_at:new Date(e.occurred_at),occurred_at_matches:true});

@@ -15,8 +15,8 @@ function fixture(previous=null,missing=[],corrupt=[]){
  const writes=[];
  const db={active(){},tx:async fn=>fn({query:async(sql,args)=>{
   if(sql.includes('FROM pod_artifacts'))return {rows:args[0].filter(sha=>!missing.includes(sha)).map(sha=>({sha256:sha,media_type:'application/json',body_sha256:corrupt.includes(sha)?'0'.repeat(64):sha}))};
-  if(sql.startsWith('INSERT INTO pod_market_intelligence')){writes.push(args);return {rowCount:previous?0:1,rows:previous?[]:[{id:'stored-id'}]};}
-  if(sql.includes('FROM pod_market_intelligence'))return {rows:previous?[previous]:[]};
+  if(sql.startsWith('INSERT INTO pod_market_intelligence')){writes.push(args);return {rowCount:previous?0:1,rows:previous?[]:[{id:args[0]}]};}
+  if(sql.includes('FROM pod_market_intelligence'))return {rows:previous?[{observed_at_matches:true,...previous}]:[]};
   throw Error('UNEXPECTED_QUERY');
  }})};
  return {db,writes};
@@ -40,12 +40,29 @@ test('source, image and rank evidence must each exist before intake',async()=>{
  }
 });
 test('rank evidence is retained beside the observed rank',async()=>{
- const o=observation(),f=fixture();assert.deepEqual(await recordMarketObservation(f.db,sign(o),key),{inserted:true,id:'stored-id'});
+ const o=observation(),f=fixture();const result=await recordMarketObservation(f.db,sign(o),key);
+ assert.deepEqual(result,{inserted:true,id:f.writes[0][0]});
  assert.ok(f.writes[0].includes(o.rank_evidence_sha256));
 });
 test('identical refreshed evidence returns the original observation ID',async()=>{
  const o=observation(),f=fixture({...o,id:'original-id',price_minor:'1200',observed_at:new Date(o.observed_at)});
  assert.deepEqual(await recordMarketObservation(f.db,sign({...o,observations:{layout:{color:'blue'},tags:['fixture']}}),key),{inserted:false,id:'original-id'});
+});
+test('market intake does not acknowledge an unrelated insert ID',async()=>{
+ const o=observation(),f=fixture();
+ const db={...f.db,tx:fn=>f.db.tx(c=>fn({query:async(sql,args)=>{
+  const result=await c.query(sql,args);
+  if(sql.startsWith('INSERT INTO pod_market_intelligence'))result.rows[0].id=crypto.randomUUID();
+  return result;
+ }}))};
+ await assert.rejects(recordMarketObservation(db,sign(o),key),{message:'MARKET_QUERY_UNVERIFIED'});
+});
+test('market replay must independently match its platform, exact URL and database instant',async()=>{
+ const o=observation();
+ for(const change of [{platform:'teepublic'},{source_url:o.source_url+'?other=1'},{observed_at_matches:false}]){
+  const f=fixture({...o,id:'original-id',observed_at_matches:true,...change});
+  await assert.rejects(recordMarketObservation(f.db,sign(o),key),{message:'MARKET_REPLAY_CONFLICT'});
+ }
 });
 test('conflicting retries cannot silently change scope, price, rank or proof',async()=>{
  for(const change of [{country:'CA'},{category:'mug'},{price_minor:999},{currency:'CAD'},{observed_rank:1},
@@ -68,7 +85,8 @@ test('unsupported destinations and malformed optional evidence never write',asyn
 });
 test('unpriced unranked observations remain valid with stored source evidence',async()=>{
  const o=observation();for(const key of ['price_minor','currency','observed_rank','rank_evidence_sha256','image_sha256','observations'])delete o[key];
- const f=fixture();assert.deepEqual(await recordMarketObservation(f.db,sign(o),key),{inserted:true,id:'stored-id'});
+ const f=fixture();const result=await recordMarketObservation(f.db,sign(o),key);
+ assert.deepEqual(result,{inserted:true,id:f.writes[0][0]});
 });
 
 test('observation timestamps require explicit timezone and full time before database access',async()=>{
@@ -153,7 +171,8 @@ test('market intake rejects executable and malformed query results before replay
  const evidence={rows:[{sha256:o.source_sha256,media_type:'application/json',body_sha256:o.source_sha256},
   {sha256:o.image_sha256,media_type:'application/json',body_sha256:o.image_sha256},
   {sha256:o.rank_evidence_sha256,media_type:'application/json',body_sha256:o.rank_evidence_sha256}]};
- const previous={id:'original-id',country:o.country,category:o.category,image_sha256:o.image_sha256,
+ const previous={id:'original-id',platform:o.platform,source_url:o.source_url,observed_at_matches:true,
+  country:o.country,category:o.category,image_sha256:o.image_sha256,
   price_minor:String(o.price_minor),currency:o.currency,observed_rank:o.observed_rank,
   source_sha256:o.source_sha256,observations:o.observations,rank_evidence_sha256:o.rank_evidence_sha256};
  const cases=[
@@ -164,6 +183,7 @@ test('market intake rejects executable and malformed query results before replay
   ['replay rows getter',()=>({rowCount:0,rows:[]}),()=>Object.defineProperty({},'rows',{get(){throw Error('replay rows getter executed');}})],
   ['replay row proxy',()=>({rowCount:0,rows:[]}),()=>({rows:[new Proxy(previous,{get(){throw Error('replay row proxy executed');}})]})],
   ['replay field getter',()=>({rowCount:0,rows:[]}),()=>({rows:[Object.defineProperty({...previous},'country',{get(){throw Error('replay country getter executed');}})]})],
+  ['replay instant non-boolean',()=>({rowCount:0,rows:[]}),()=>({rows:[{...previous,observed_at_matches:'true'}]})],
   ['replay nested getter',()=>({rowCount:0,rows:[]}),()=>({rows:[{...previous,observations:{
    get tags(){throw Error('replay observations getter executed');}}}]})],
   ['replay sparse rows',()=>({rowCount:0,rows:[]}),()=>({rows:new Array(1)})],
