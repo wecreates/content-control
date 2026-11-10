@@ -101,6 +101,38 @@ test('PostgreSQL SELECT substituted for BEGIN cannot cause an autocommit write',
   }
  });
 
+test('a reasonless client rejection rolls back an earlier real PostgreSQL write',
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+  const url=new URL(process.env.POD_TEST_DATABASE_URL);
+  assert.ok(['localhost','127.0.0.1','[::1]'].includes(url.hostname)&&url.pathname==='/pod_test','disposable local PostgreSQL only');
+  assert.equal(process.env.PUBLICATION_ENABLED,'false');assert.equal(process.env.POD_PUBLICATION_ENABLED,'false');
+  const {default:pg}=await import('pg');const pool=new pg.Pool({connectionString:url.toString(),max:1});
+  const table='pod_reasonless_'+randomBytes(8).toString('hex'),calls=[];
+  try{
+   await pool.query(`CREATE TABLE ${table}(id integer PRIMARY KEY)`);
+   const broken=new PodDB({bridge,expiresAt,pool:{connect:async()=>{
+    const client=await pool.connect();
+    return {release:bad=>client.release(bad),query:async(...args)=>{
+     const sql=typeof args[0]==='string'?args[0]:args[0].text;calls.push(sql);
+     // No SQL failure is sent to PostgreSQL; without a client-side failure
+     // latch the server would accept COMMIT for the earlier insert.
+     if(sql==='SELECT 2')return Promise.reject();
+     return client.query(...args);
+    }};
+   }}});
+   const insert=`INSERT INTO ${table} VALUES ($1) RETURNING id`;
+   await assert.rejects(broken.tx(async c=>{
+    assert.deepEqual((await c.query(insert,[1])).rows,[{id:1}]);
+    await c.query('SELECT 2').catch(()=>{});
+   }),/^Error: POD_TRANSACTION_QUERY_FAILED$/);
+   assert.equal(calls.includes('COMMIT'),false);assert.deepEqual(calls.slice(-2),['ROLLBACK','DISCARD ALL']);
+   assert.equal((await pool.query(`SELECT id FROM ${table}`)).rowCount,0);
+   const healthy=new PodDB({pool,bridge,expiresAt});
+   await healthy.tx(c=>c.query(insert,[1]));
+   assert.deepEqual((await healthy.read(`SELECT id FROM ${table}`)).rows,[{id:1}]);
+  }finally{try{await pool.query(`DROP TABLE IF EXISTS ${table}`);}finally{await pool.end();}}
+ });
+
 test('real PostgreSQL cleanup tags keep poisoned sessions out of the managed pool',
  {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
   const url=new URL(process.env.POD_TEST_DATABASE_URL);
