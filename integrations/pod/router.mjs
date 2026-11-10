@@ -72,8 +72,10 @@ function publicStatus(status){
   production_status:production.value,production_health:optionalHealth(report,'production_health',productionHealth),
   outbox:optionalHealth(report,'outbox',outboxHealth)};
 }
-function publicationRequested(env){
- return ownData(env,'PUBLICATION_ENABLED').value==='true'&&ownData(env,'POD_PUBLICATION_ENABLED').value==='true';
+function publicationStatus(env){
+ const global=ownData(env,'PUBLICATION_ENABLED').value,pod=ownData(env,'POD_PUBLICATION_ENABLED').value;
+ return {publication_requested:global==='true'&&pod==='true',
+  publication_flags_disabled:global==='false'&&pod==='false'};
 }
 function verifyRequestJSON(_req,_res,body){parseSignedJSON(requestDecoder.decode(body));}
 function storageFailure(res,error,status,code){
@@ -123,13 +125,13 @@ function boundedBody(parser){
   }catch(error){finished=true;remove();lifecycle.dispose();next(error);}
  };
 }
-export function createPodRouter({db,authorize,env=process.env,status}) {
+export function createPodRouter({db,authorize,env=process.env,publicationEnv=env,status}) {
  const router=express.Router();
  router.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:; form-action 'self'; frame-ancestors 'none'");next();});
  router.get('/dashboard',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.html',import.meta.url))));
  router.get('/dashboard.js',(_req,res)=>res.sendFile(fileURLToPath(new URL('./dashboard.js',import.meta.url))));
  router.get('/status',(_req,res)=>{
-  const publication_requested=publicationRequested(env),fixed={publication_enabled:false,publication_requested,adapters_verified:false,
+  const fixed={publication_enabled:false,...publicationStatus(publicationEnv),adapters_verified:false,
    storage_lifetime:storageLifetimeStatus(ownData(env,'POD_STORAGE_EXPIRES_AT').value)};
   try{res.json({...publicStatus(status),...fixed});}
   catch{res.status(503).json({status:'BLOCKED_STATUS_UNAVAILABLE',...fixed});}

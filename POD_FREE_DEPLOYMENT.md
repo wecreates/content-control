@@ -44,6 +44,10 @@ gate, and no cloud credentials are supplied when building or testing it.
 The local startup probe waits at most 60 seconds for `/api/print/status`, rejects
 redirects and invalid or oversized responses, and requires the service, production
 loop and outbox to be DISABLED with publication neither enabled nor requested.
+It also requires `publication_flags_disabled: true` from the public status
+route: both publication flags must be explicitly `false`. A single enabled,
+missing, or malformed flag cannot pass as a verified hold. This non-secret
+configuration signal is not launch approval, database health or acceptance.
 It checks image defaults without injecting enabling flags or cloud credentials.
 Each probe attempt owns a referenced timer, so standalone Node cannot exit while
 awaiting an unreferenced transport. Header and body waits share that attempt's

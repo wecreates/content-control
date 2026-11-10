@@ -37,11 +37,11 @@ export async function waitForDisabledPod({url='http://127.0.0.1:10000/api/print/
   }catch{throw Error('POD_SMOKE_INVALID_RESPONSE');}
   if(performance.now()>=deadline)throw Error('POD_SMOKE_STARTUP_TIMEOUT');
   if(status?.status!=='DISABLED'||status.publication_enabled!==false||
-   status.publication_requested!==false||status.production_status!=='DISABLED'||
+   status.publication_requested!==false||status.publication_flags_disabled!==true||status.production_status!=='DISABLED'||
    status.outbox?.status!=='DISABLED'||status.adapters_verified!==false){
    throw Error('POD_SMOKE_UNSAFE_STATE');
   }
-  return {status:'PASS',publication_enabled:false,production_status:'DISABLED',outbox_status:'DISABLED'};
+  return {status:'PASS',publication_enabled:false,publication_flags_disabled:true,production_status:'DISABLED',outbox_status:'DISABLED'};
   }finally{clearTimeout(timer);}
  }
  throw Error('POD_SMOKE_STARTUP_TIMEOUT');

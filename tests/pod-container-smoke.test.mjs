@@ -4,7 +4,7 @@ import http from 'node:http';
 import {spawnSync} from 'node:child_process';
 import {waitForDisabledPod} from '../scripts/pod_container_smoke.mjs';
 
-const disabled={status:'DISABLED',publication_enabled:false,publication_requested:false,
+const disabled={status:'DISABLED',publication_enabled:false,publication_requested:false,publication_flags_disabled:true,
  production_status:'DISABLED',outbox:{status:'DISABLED'},adapters_verified:false};
 async function serve(t,handler){
  const server=http.createServer(handler);
@@ -16,12 +16,16 @@ test('POD smoke checks only the POD route and accepts strictly disabled defaults
  const {url}=await serve(t,(req,res)=>{
   assert.equal(req.url,'/api/print/status');res.end(JSON.stringify(disabled));
  });
- assert.equal((await waitForDisabledPod({url})).status,'PASS');
+ assert.deepEqual(await waitForDisabledPod({url}),{status:'PASS',publication_enabled:false,
+  publication_flags_disabled:true,production_status:'DISABLED',outbox_status:'DISABLED'});
 });
 for(const [name,patch] of [
  ['service active',{status:'DATABASE_CONNECTED_UNVERIFIED_ADAPTERS'}],
  ['publication enabled',{publication_enabled:true}],
  ['publication requested',{publication_requested:true}],
+ ['one or both flags not explicitly disabled',{publication_flags_disabled:false}],
+ ['missing confirmation of disabled flags',{publication_flags_disabled:undefined}],
+ ['string confirmation of disabled flags',{publication_flags_disabled:'true'}],
  ['production active',{production_status:'RUNNING'}],
  ['outbox active',{outbox:{status:'RUNNING'}}],
  ['adapters unexpectedly verified',{adapters_verified:true}],

@@ -74,6 +74,6 @@ export async function initializePodService(options={}){
  const status=()=>({...state,database_health:pool?.podConnectionHealth?.()??null,
   production_status:worker.status(),production_health:worker.health(),outbox:outbox.status()});
  return {status,router:createPodRouter({db,authorize:authorize||operationalAuth(serviceEnv.INTERNAL_OPERATIONS_KEY),
-   env:serviceEnv,status}),
+   env:serviceEnv,publicationEnv:env,status}),
   stop:async()=>{await Promise.all([worker.stop(),outbox.stop()]);if(db)await db.close();}};
 }

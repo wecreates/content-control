@@ -460,7 +460,37 @@ test('requested publication cannot masquerade as enabled without an adapter',asy
  const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
  try{const r=await fetch(`http://127.0.0.1:${server.address().port}/status`);const state=await r.json();
   assert.equal(state.publication_enabled,false);assert.equal(state.publication_requested,true);
+  assert.equal(state.publication_flags_disabled,false);
   assert.equal(state.production_status,'BLOCKED_PRODUCTION_CONFIGURATION');
+ }finally{await new Promise(r=>server.close(r));}
+});
+test('public POD status confirms only explicitly false own publication flags',async()=>{
+ let reads=0;
+ const inherited=Object.assign(Object.create({PUBLICATION_ENABLED:'false'}),{POD_PUBLICATION_ENABLED:'false'});
+ const accessor={POD_PUBLICATION_ENABLED:'false',get PUBLICATION_ENABLED(){reads++;return 'false';}};
+ const opaque=new Proxy({},{getOwnPropertyDescriptor(){reads++;throw Error('proxy trap');}});
+ const cases=[
+  [{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},true],
+  [{PUBLICATION_ENABLED:'true',POD_PUBLICATION_ENABLED:'false'},false],
+  [{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'true'},false],
+  [{PUBLICATION_ENABLED:'false'},false],
+  [{PUBLICATION_ENABLED:false,POD_PUBLICATION_ENABLED:'false'},false],
+  [inherited,false],[accessor,false],[opaque,false]
+ ];
+ const app=express();
+ cases.forEach(([env],i)=>app.use('/'+i,createPodRouter({env,
+  status:()=>({status:'DISABLED',production_status:'DISABLED'})})));
+ const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));
+ try{
+  for(const [i,[,disabled]] of cases.entries()){
+   const r=await fetch(`http://127.0.0.1:${server.address().port}/${i}/status`);
+   assert.equal(r.status,200);
+   const state=await r.json();
+   assert.equal(state.publication_flags_disabled,disabled,`case ${i}`);
+   assert.equal(state.publication_requested,false,`case ${i}`);
+   assert.equal(state.publication_enabled,false,`case ${i}`);
+  }
+  assert.equal(reads,0);
  }finally{await new Promise(r=>server.close(r));}
 });
 test('public POD status exposes only inert bounded health fields',async()=>{
@@ -484,7 +514,7 @@ test('public POD status exposes only inert bounded health fields',async()=>{
     last_started_at:'2026-11-06T08:00:00.000Z',last_completed_at:'2026-11-06T08:00:01.000Z',
     last_error_code:'QA_FAILED',last_result:'QA_FAILED'},
    outbox:{status:'DISABLED',delivered:0,failures:0,last_success_at:null},publication_enabled:false,
-   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+   publication_requested:false,publication_flags_disabled:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
     scope:'configured_cutoff_only',acceptance_verified:false}});
   assert.doesNotMatch(JSON.stringify(observed),/private|postgresql/i);
  }finally{await new Promise(r=>server.close(r));}
@@ -497,7 +527,7 @@ test('public POD status rejects executable health fields without invoking them',
  try{const response=await fetch(`http://127.0.0.1:${server.address().port}/status`),observed=await response.json();
   assert.equal(response.status,503);assert.equal(reads,0);
   assert.deepEqual(observed,{status:'BLOCKED_STATUS_UNAVAILABLE',publication_enabled:false,
-   publication_requested:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
+   publication_requested:false,publication_flags_disabled:false,adapters_verified:false,storage_lifetime:{status:'UNCONFIGURED',operational_cutoff:null,
     scope:'configured_cutoff_only',acceptance_verified:false}});
  }finally{await new Promise(r=>server.close(r));}
 });
