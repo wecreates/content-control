@@ -6,6 +6,7 @@ import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {databaseWait} from './database-wait.mjs';
+import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 // Dependency order is fixed in code, never taken from an archive or request.
@@ -184,7 +185,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   checkpoint();
   client=await waiting.step(()=>db.pool.connect(),{onLate:late=>late.release(true)});checkpoint();
   query=(...args)=>waiting.step(()=>client.query(...args));
-  beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;checkpoint();
+  beginAttempted=true;assertBeginOutcome(await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'));began=true;checkpoint();
   await query("SET LOCAL statement_timeout='10s'");checkpoint();
   await query("SET LOCAL lock_timeout='2s'");checkpoint();
   await query("SET LOCAL timezone='UTC'");checkpoint();
@@ -213,7 +214,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   // COMMIT must settle so its outcome is known. The transaction's 10-second
   // statement timeout still bounds this control statement; apply caller
   // cancellation at the checkpoint immediately after it completes.
-  checkpoint();commitPending=true;await client.query('COMMIT');commitPending=false;began=false;beginAttempted=false;checkpoint();
+  checkpoint();commitPending=true;assertCommitOutcome(await client.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;checkpoint();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encrypted);checkpoint();
   await assertArchiveDirectory(directory,opened);checkpoint();await syncArchiveDirectory(directory,opened);checkpoint();
@@ -229,7 +230,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){
-  // COMMIT rejection has an indeterminate outcome: never issue later SQL or
+  // Unverified COMMIT has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
   if(client&&(waiting.interrupted||commitPending))bad=true;
   else if(client&&began)try{await query('ROLLBACK');}catch{bad=true;}
