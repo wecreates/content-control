@@ -301,6 +301,10 @@ integrations/pod/ARTIFACT_RECOVERY.md before configuring a separately held archi
 key or retention destination. Restore requires both publication flags explicitly
 false and the existing complete read-only preflight. No archive job or upload is
 enabled by deployment. Do not place archives only on ephemeral Render storage.
+The archive CLIs keep the existing ten-minute deadline active through restore
+preflight, pool creation and pool shutdown. An in-flight COMMIT still settles
+under the database timeout. A timeout or changed safety flag after COMMIT is
+not proof of rollback: verify the archive or target before retrying.
 
 This is not queue/account/ledger recovery, provider expiry extension, verified
 independent backup retention or a completed production restoration drill. No live
