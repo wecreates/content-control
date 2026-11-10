@@ -238,6 +238,40 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
     {headers:{'content-type':'application/json'}})});
   assert.equal(delivery.failed,0);assert.equal(delivery.delivered,1);
   assert.equal((await pool.query('SELECT delivered_at IS NOT NULL AS delivered FROM pod_events WHERE job_id=$1',[job])).rows[0].delivered,true);
+  // The real SQL marker must not settle a same-ID observation changed while
+  // the signed request was in flight. Restore only the disposable fixture.
+  const markerStamp='2026-01-01T00:00:00.000123Z';
+  const markerChanges=[
+   ['UPDATE pod_events SET payload=\'{"revision":2}\' WHERE id=$1',[]],
+   ['UPDATE pod_events SET created_at=$2::timestamptz WHERE id=$1',['2026-01-01T00:00:00.000124Z']],
+   ["UPDATE pod_events SET kind='pod.test.changed' WHERE id=$1",[]],
+   ['UPDATE pod_events SET job_id=$2 WHERE id=$1',[job]],
+  ];
+  for(const [sql,args] of markerChanges){
+   const markerId=crypto.randomUUID();
+   await pool.query("INSERT INTO pod_events(id,kind,payload,created_at) VALUES($1,'pod.test.marker',$2,$3)",
+    [markerId,{revision:1},markerStamp]);
+   const ack=async(_url,request)=>{
+    const sent=JSON.parse(JSON.parse(request.body).payload).event;
+    assert.equal(sent.id,markerId);assert.equal(sent.created_at,'2026-01-01T00:00:00.000Z');
+    assert.deepEqual(sent.payload,{revision:1});
+    return new Response(JSON.stringify({accepted_event_id:markerId}),{headers:{'content-type':'application/json'}});
+   };
+   const markerOptions={url:'https://authority.example/events',key:'e'.repeat(32),continueOnError:true};
+   const changed=await deliverOutbox(db,{...markerOptions,fetchImpl:async(...request)=>{
+    const response=await ack(...request);
+    assert.equal((await pool.query(sql,[markerId,...args])).rowCount,1);
+    return response;
+   }});
+   assert.deepEqual(changed,{delivered:0,failed:1,nextCursor:null});
+   assert.equal((await pool.query('SELECT delivered_at FROM pod_events WHERE id=$1',[markerId])).rows[0].delivered_at,null);
+   await pool.query("UPDATE pod_events SET job_id=NULL,kind='pod.test.marker',payload=$2,created_at=$3 WHERE id=$1",
+    [markerId,{revision:1},markerStamp]);
+   const restored=await deliverOutbox(db,{...markerOptions,fetchImpl:ack});
+   assert.deepEqual(restored,{delivered:1,failed:0,nextCursor:null});
+   assert.ok((await pool.query('SELECT delivered_at FROM pod_events WHERE id=$1',[markerId])).rows[0].delivered_at);
+   await pool.query('DELETE FROM pod_events WHERE id=$1',[markerId]);
+  }
   // pg's default timestamptz parser drops microseconds. Twenty rejected rows
   // sharing an instant must not trap the cursor ahead of later pending events.
   const pageIds=Array.from({length:45},()=>crypto.randomUUID());
