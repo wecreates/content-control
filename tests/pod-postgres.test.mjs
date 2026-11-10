@@ -533,6 +533,45 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.deepEqual(total,{n:2,total:'1000'});
   assert.equal((await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.finance.verified'",[releaseJob])).rows[0].n,2);
   await assert.rejects(pool.query('UPDATE pod_financial_events SET amount_minor=99999 WHERE id=$1',[receipts[0].id]),/POD_APPEND_ONLY/);
+  // Only in this disposable test DB, emulate misconfigured BEFORE INSERT
+  // triggers that keep the generated IDs but change the row being acknowledged.
+  const newLine=()=>({...financial,provider_event_id:crypto.randomUUID(),authority_event_id:crypto.randomUUID()});
+  const changedAmount=newLine(),changedTime=newLine(),changedAudit=newLine();
+  const auditCount=async()=>(await pool.query("SELECT count(*)::int AS n FROM pod_events WHERE job_id=$1 AND kind='pod.finance.verified'",[releaseJob])).rows[0].n;
+  try{
+   await pool.query(`CREATE FUNCTION pod_test_change_financial_statement() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+     IF NEW.provider_event_id='${changedAmount.provider_event_id}' THEN NEW.amount_minor:=NEW.amount_minor+1; END IF;
+     IF NEW.provider_event_id='${changedTime.provider_event_id}' THEN NEW.occurred_at:=NEW.occurred_at+interval '1 microsecond'; END IF;
+     RETURN NEW;
+    END; $$;
+    CREATE TRIGGER pod_test_change_financial_statement BEFORE INSERT ON pod_financial_events
+    FOR EACH ROW EXECUTE FUNCTION pod_test_change_financial_statement();
+    CREATE FUNCTION pod_test_change_financial_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+     IF NEW.kind='pod.finance.verified' AND NEW.payload->>'authority_event_id'='${changedAudit.authority_event_id}'
+      THEN NEW.payload:=jsonb_set(NEW.payload,'{financial_event_id}','"different-ledger-id"'); END IF;
+     RETURN NEW;
+    END; $$;
+    CREATE TRIGGER pod_test_change_financial_audit BEFORE INSERT ON pod_events
+    FOR EACH ROW EXECUTE FUNCTION pod_test_change_financial_audit();`);
+   for(const line of [changedAmount,changedTime,changedAudit]){
+    await assert.rejects(recordFinancialEvent(db,signedFinancial(line),financeKey),/^Error: FINANCIAL_QUERY_UNVERIFIED$/);
+    assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_financial_events WHERE authority_event_id=$1',[line.authority_event_id])).rows[0].n,0);
+    assert.equal(await auditCount(),2);
+   }
+  }finally{
+   await pool.query(`DROP TRIGGER IF EXISTS pod_test_change_financial_statement ON pod_financial_events;
+    DROP TRIGGER IF EXISTS pod_test_change_financial_audit ON pod_events;
+    DROP FUNCTION IF EXISTS pod_test_change_financial_statement();
+    DROP FUNCTION IF EXISTS pod_test_change_financial_audit();`);
+  }
+  const retried=await recordFinancialEvent(db,signedFinancial(changedAudit),financeKey);
+  assert.equal(retried.duplicate,false);
+  assert.deepEqual(await recordFinancialEvent(db,signedFinancial(changedAudit),financeKey),{id:retried.id,duplicate:true});
+  assert.equal(await auditCount(),3);
+  assert.deepEqual((await pool.query("SELECT payload FROM pod_events WHERE kind='pod.finance.verified' AND payload->>'authority_event_id'=$1",[changedAudit.authority_event_id])).rows,
+   [{payload:{financial_event_id:retried.id,authority_event_id:changedAudit.authority_event_id}}]);
   // A legacy duplicate set must cause the additive index migration to fail,
   // not silently discard history. Use a temporary table, never production data.
   const historical=await pool.connect();

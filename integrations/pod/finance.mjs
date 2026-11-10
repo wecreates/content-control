@@ -119,8 +119,13 @@ export async function recordFinancialEvent(db,envelope,key,{signal}={}){
   await assertStoredEvidence(c,[e.evidence_sha256],'FINANCIAL_EVIDENCE_MISSING');
   db.active();
   const id=crypto.randomUUID();
+  // A generated ID does not establish that PostgreSQL wrote the signed
+  // statement. Compare inside PostgreSQL to retain bigint and timestamp
+  // precision, including when a BEFORE INSERT trigger rewrites the row.
   const result=await c.query(`INSERT INTO pod_financial_events(id,job_id,provider,provider_event_id,kind,amount_minor,currency,occurred_at,evidence_sha256,authority_event_id)
-   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING RETURNING id`,
+   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING
+   RETURNING id,(job_id=$2 AND provider=$3 AND provider_event_id=$4 AND kind=$5 AND amount_minor=$6
+    AND currency=$7 AND occurred_at=$8 AND evidence_sha256=$9 AND authority_event_id=$10) AS statement_matches`,
    [id,e.job_id,e.provider,e.provider_event_id,e.kind,e.amount_minor,e.currency,e.occurred_at,e.evidence_sha256,e.authority_event_id]);
   db.active();
   if(snapshotMutationCount(result)===0){
@@ -140,11 +145,11 @@ export async function recordFinancialEvent(db,envelope,key,{signal}={}){
    verifyEnvelope(envelope,key,'content-control:pod:finance');
    return {id:previous.id,duplicate:true};
   }
-  verifyMutation(result,{id});
+  verifyMutation(result,{id,statement_matches:true});
   const audit={id:crypto.randomUUID(),job_id:e.job_id,kind:'pod.finance.verified'};
   verifyMutation(await c.query(`INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4)
-   RETURNING id,job_id,kind`,[audit.id,audit.job_id,audit.kind,
-   {financial_event_id:id,authority_event_id:e.authority_event_id}]),audit);
+   RETURNING id,job_id,kind,payload=$4::jsonb AS payload_matches`,[audit.id,audit.job_id,audit.kind,
+   {financial_event_id:id,authority_event_id:e.authority_event_id}]),{...audit,payload_matches:true});
   db.active();
   verifyEnvelope(envelope,key,'content-control:pod:finance');
   return {id,duplicate:false};
