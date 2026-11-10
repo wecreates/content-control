@@ -7,18 +7,20 @@ import {productionActivity} from '../integrations/pod/capacity.mjs';
 // Run before other queue fixtures. No live credentials, account or market calls.
 export async function verifyMonitoring(pool,bridge){
  const concept=crypto.randomUUID(),account=crypto.randomUUID(),job=crypto.randomUUID(),event=crypto.randomUUID(),late=crypto.randomUUID();
- const invalidLeases=[['processing',null],['publishing','infinity'],['publishing','-infinity']].map(([state,lease])=>({id:crypto.randomUUID(),state,lease}));
+ const invalidLeases=[['processing',null],['publishing','infinity'],['publishing','-infinity']]
+  .map(([state,lease])=>({id:crypto.randomUUID(),account:crypto.randomUUID(),state,lease}));
+ const accounts=[account,...invalidLeases.map(x=>x.account)];
  const expiresAt=Date.now()+3600000;let checked=false;
  try{
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'monitor-fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
-  await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[account]);
+  await pool.query("INSERT INTO pod_accounts(id,platform) SELECT id,'redbubble' FROM unnest($1::uuid[]) AS account(id)",[accounts]);
   await pool.query(`INSERT INTO pod_production_queue
    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,lease_until)
    VALUES($1,$2,$3,'redbubble',1,'{}','{}',$4,'processing',clock_timestamp()-interval '1 second')`,[job,concept,account,crypto.randomUUID()]);
-  for(const [index,{id,state,lease}] of invalidLeases.entries())await pool.query(`INSERT INTO pod_production_queue
+  for(const [index,{id,account:fixtureAccount,state,lease}] of invalidLeases.entries())await pool.query(`INSERT INTO pod_production_queue
    (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,lease_until,attempt,fencing_token)
    VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,$6,$7::timestamptz,1,7)`,
-   [id,concept,account,index+2,crypto.randomUUID(),state,lease]);
+   [id,concept,fixtureAccount,index+2,crypto.randomUUID(),state,lease]);
   await pool.query("INSERT INTO pod_events(id,job_id,kind,payload,created_at) VALUES($1,$2,'pod.fixture','{\"private\":\"do-not-report\"}',clock_timestamp()-interval '20 minutes')",[event,job]);
   const db=new PodDB({bridge,expiresAt:new Date(expiresAt).toISOString(),pool:{connect:async()=>{
    const client=await pool.connect();return {release:bad=>client.release(bad),query:async(sql,args)=>{
@@ -79,8 +81,8 @@ export async function verifyMonitoring(pool,bridge){
   assert.equal(heldReport.incident_count,'4');
  }finally{
   await pool.query('DELETE FROM pod_events WHERE job_id=$1',[job]);
-  await pool.query('DELETE FROM pod_production_queue WHERE account_id=$1',[account]);
-  await pool.query('DELETE FROM pod_accounts WHERE id=$1',[account]);
+  await pool.query('DELETE FROM pod_production_queue WHERE account_id=ANY($1::uuid[])',[accounts]);
+  await pool.query('DELETE FROM pod_accounts WHERE id=ANY($1::uuid[])',[accounts]);
   await pool.query('DELETE FROM pod_concepts WHERE id=$1',[concept]);
  }
 }
