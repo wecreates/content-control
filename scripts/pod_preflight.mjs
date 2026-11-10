@@ -9,6 +9,7 @@ import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {isolatedRuntimeKeys,REQUIRED_RUNTIME_KEYS} from '../integrations/pod/key-policy.mjs';
 import {parseStorageExpiry,validDateMs} from '../integrations/pod/storage-expiry.mjs';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from '../integrations/pod/diagnostic-deadline.mjs';
+import {assertBeginOutcome,assertRollbackOutcome} from '../integrations/pod/transaction-outcome.mjs';
 
 const TABLES=['pod_concepts','pod_market_intelligence','pod_daily_concept_budget','pod_accounts','pod_production_queue','pod_quota_reservations','pod_events','pod_provider_inbox','pod_artifacts','pod_financial_events'];
 function dataProperty(target,key){
@@ -101,7 +102,7 @@ async function preflightChecks({env=process.env,connect,readFile=fs.readFile,rea
   }});
   const acquired=client;
   client={query:(...args)=>step(()=>acquired.query(...args)),release:bad=>acquired.release(bad)};
-  beginAttempted=true;await client.query('BEGIN READ ONLY');began=true;
+  beginAttempted=true;assertBeginOutcome(await client.query('BEGIN READ ONLY'));began=true;
   await client.query("SET LOCAL statement_timeout='5s'");
   await client.query("SET LOCAL lock_timeout='2s'");
   const searchPathRow=queryRow(await client.query('SELECT current_schemas(false)::text[] AS search_path'),['search_path']);
@@ -173,9 +174,9 @@ async function preflightChecks({env=process.env,connect,readFile=fs.readFile,rea
  finally{
   if(client){
    // Startup may borrow a service-owned pool. Never probe a client again after
-   // BEGIN rejects; its protocol state is uncertain. A confirmed transaction
+   // BEGIN is unverified; its protocol state is uncertain. A confirmed transaction
    // still uses rollback, whose failure also invalidates and destroys it.
-   if(began&&!bad)try{await client.query('ROLLBACK');}catch{readable=false;bad=true;}
+   if(began&&!bad)try{assertRollbackOutcome(await client.query('ROLLBACK'));}catch{readable=false;bad=true;}
    else if(beginAttempted)bad=true;
    try{
     // Release must run even after cancellation. Its outcome still belongs to

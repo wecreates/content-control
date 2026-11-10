@@ -10,8 +10,9 @@ for(const stage of ['BEGIN','lock','safety'])for(const rollbackFails of [false,t
   const queries=[],releases=[];
   const client={query:async sql=>{
    queries.push(sql);
-   if(sql==='ROLLBACK'){if(rollbackFails)throw cleanup;return {rows:[]};}
+   if(sql==='ROLLBACK'){if(rollbackFails)throw cleanup;return {command:'ROLLBACK'};}
    if(sql===stage||(stage==='lock'&&sql.includes('pg_advisory_xact_lock')))throw original;
+   if(sql==='BEGIN')return {command:'BEGIN'};
    return {rows:[]};
   },release:destroy=>releases.push(Boolean(destroy))};
   await assert.rejects(migrate({connect:async()=>client},'pod_runtime',undefined,
@@ -38,6 +39,7 @@ test('successful privileged migration destroys its pooled owner client after com
  const queries=[],releases=[];
  const client={query:async sql=>{
   queries.push(sql);
+  if(sql==='BEGIN'||sql==='COMMIT')return {command:sql};
   if(sql.startsWith('SELECT rolsuper'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false}]};
   if(sql==='SELECT current_user AS name')return {rows:[{name:'migration_owner'}]};
   if(sql.startsWith('SELECT EXISTS'))return {rows:[{elevated:false}]};
@@ -54,6 +56,7 @@ for(const rollbackFails of [false,true])test(`migration discards an ambiguous co
  const queries=[],releases=[];
  const client={query:async sql=>{
   queries.push(sql);
+  if(sql==='BEGIN')return {command:'BEGIN'};
   if(sql==='COMMIT')throw original;
   if(sql==='ROLLBACK'){
    if(rollbackFails)throw Error('synthetic rollback failure');

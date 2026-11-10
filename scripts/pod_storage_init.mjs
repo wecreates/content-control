@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {fileURLToPath} from 'node:url';
 import {createPodPool} from '../pod-db-bridge.js';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from '../integrations/pod/transaction-outcome.mjs';
 
 function queryRows(result,fields){
  const fail=()=>{throw Error('POD_MIGRATION_QUERY_UNVERIFIED');};
@@ -41,7 +42,7 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
  const client=await pool.connect();
  let discard=false,began=false,beginAttempted=false,commitAttempted=false;
  try {
-  beginAttempted=true;await client.query('BEGIN');began=true;
+  beginAttempted=true;assertBeginOutcome(await client.query('BEGIN'));began=true;
   await client.query("SET LOCAL lock_timeout='10s'");
   await client.query('SELECT pg_advisory_xact_lock($1)',[543210]);
   // Recheck deployment safety after connection and lock waits, before DDL.
@@ -90,17 +91,17 @@ export async function migrate(pool, runtimeRole, directory=new URL('../migration
   await client.query(`GRANT SELECT ON pod_schema_version TO "${runtimeRole}"`);
   // Any safety change during migration must roll back the entire transaction.
   assertActive();
-  commitAttempted=true;await client.query('COMMIT');
+  commitAttempted=true;assertCommitOutcome(await client.query('COMMIT'));
   // Migration SQL is intentionally extensible and runs with the owner role.
   // Even a confirmed transaction may have changed session-scoped state, so a
   // privileged migration client is never returned for unrelated pooled work.
   discard=true;
  }catch(error){
-  // Rejected transaction boundaries leave transport/protocol state uncertain.
-  // Do not send follow-up SQL after BEGIN or COMMIT rejects; destroy that
+  // Unverified transaction boundaries leave transport/protocol state uncertain.
+  // Do not send follow-up SQL after an unverified BEGIN or COMMIT; destroy that
   // client. Before COMMIT is attempted, normal rollback remains safe cleanup.
   if(commitAttempted)discard=true;
-  else if(began)try{await client.query('ROLLBACK');}catch{discard=true;}
+  else if(began)try{assertRollbackOutcome(await client.query('ROLLBACK'));}catch{discard=true;}
   else if(beginAttempted)discard=true;
   throw error;
  }finally{client.release(discard);}

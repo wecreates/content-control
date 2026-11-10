@@ -101,6 +101,10 @@ expiry within 24 hours, disabled TLS settings, or publication flags that aren't 
 A migration alone is not success: all six runtime database checks must pass. The
 receipt includes no connection URLs, passwords, database content, or signing keys.
 It does not create or rotate credentials or expand database network access.
+Owner migration requires verified BEGIN before locking or DDL and verified
+COMMIT before runtime inspection. A PostgreSQL ROLLBACK tag from COMMIT blocks
+the receipt. Runtime preflight also requires verified BEGIN READ ONLY and
+ROLLBACK; uncertain connections are discarded rather than reused.
 
 If the GitHub runner cannot reach PostgreSQL under existing restrictions, stop with
 BLOCKED. Do not open the database to the internet to make the workflow pass. This
