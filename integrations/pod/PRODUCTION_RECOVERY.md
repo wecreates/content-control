@@ -41,3 +41,9 @@ lease retry route. Ambiguous publication still requires authorized
 provider reconciliation; it must never be automatically resubmitted.
 The read-only operations snapshot reports `UNVERIFIED_WORKER_LEASES` both
 before recovery and while such holds remain unresolved.
+
+The production stage check and all three settlement paths bind the durable
+account, platform and exact JSON brief to the claim under the row lock. A
+scope change does not inherit an existing lease, even when its job ID,
+deadline and fence remain unchanged. A stale worker cannot write failure,
+review-hold or QA state for the changed row. Lease recovery remains separate.

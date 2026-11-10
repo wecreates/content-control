@@ -120,6 +120,28 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    expires_at_ms:Date.now()+60000,verdict:'PASS',...manifest,
    checks:Object.fromEntries(['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance','template_provenance','manuscript_provenance','source_font','font_rights','book_details'].map(k=>[k,true]))});
   const qa={payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
+  const scopeOtherAccount=crypto.randomUUID(),scopeOtherPlatform=crypto.randomUUID();
+  await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble'),($2,'teepublic')",[scopeOtherAccount,scopeOtherPlatform]);
+  const mismatches=[
+   [account,'redbubble',{...claimed.brief,task_sha256:'d'.repeat(64)}],
+   [scopeOtherAccount,'redbubble',claimed.brief],
+   [scopeOtherPlatform,'teepublic',claimed.brief],
+  ];
+  const updateScope=(id,platform,brief)=>pool.query('UPDATE pod_production_queue SET account_id=$2,platform=$3,brief=$4 WHERE id=$1',[job,id,platform,brief]);
+  const claimState=async()=> (await pool.query(`SELECT account_id,platform,brief,state,attempt,fencing_token,lease_until,manifest,qa_envelope,reason_code
+   FROM pod_production_queue WHERE id=$1`,[job])).rows[0];
+  assert.equal(await db.assertProducible(claimed),true);
+  for(const scope of mismatches){
+   await updateScope(...scope);const unchanged=await claimState();
+   await assert.rejects(db.assertProducible(claimed),/^Error: LOCAL_PRODUCTION_BLOCKED$/);
+   await assert.rejects(db.failProduction(claimed,'QA_FAILED'),/^Error: LEASE_LOST$/);
+   await assert.rejects(db.holdProduction(claimed,manifest),/^Error: LEASE_LOST$/);
+   await assert.rejects(db.completeProduction(claimed,manifest,qa),/^Error: LEASE_LOST$/);
+   assert.deepEqual(await claimState(),unchanged);
+   assert.equal((await pool.query('SELECT id FROM pod_events WHERE job_id=$1',[job])).rowCount,0);
+  }
+  await updateScope(account,'redbubble',claimed.brief);
+  await pool.query('DELETE FROM pod_accounts WHERE id=ANY($1::uuid[])',[[scopeOtherAccount,scopeOtherPlatform]]);
   assert.deepEqual(await db.completeProduction(claimed,manifest,qa),{pass:true});
   await verifyProductionRecovery(pool,bridge);
   await verifyOperationsListing(pool,db);
@@ -156,7 +178,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
    (target,j)=>target.completeProduction(j,manifest,qa),
    (target,j)=>target.completeProduction(j,manifest,failedQA)
   ].entries()){
-   const leaseJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble'};
+   const leaseJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble',account_id:leaseAccount,brief:{}};
    await pool.query(`INSERT INTO pod_production_queue
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until)
     VALUES($1,$2,$3,'redbubble',$4,'{}','{}',$5,'processing',1,clock_timestamp()+interval '1 minute')`,
@@ -192,7 +214,7 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   // even when the worker lease remains valid. Advance only the application clock
   // once PostgreSQL confirms the wait; do not depend on short real-time sleeps.
   for(const [index,review] of [true,false].entries()){
-   const qaJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble'};
+   const qaJob={id:crypto.randomUUID(),fencing_token:1,platform:'redbubble',account_id:leaseAccount,brief:{}};
    const state=review?'qa_failed':'processing',reason=review?'REVIEW_REQUIRED':null;
    await pool.query(`INSERT INTO pod_production_queue
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,fencing_token,lease_until,manifest,reason_code)

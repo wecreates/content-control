@@ -4,9 +4,9 @@ import {PodDB} from '../pod-db-bridge.js';
 
 // Disposable CI database only. Production permission is not synthesized here.
 export async function verifyProductionGuard(pool,bridge){
- for(const kind of ['lease','rights','tombstone']){
+ for(const kind of ['lease','brief','rights','tombstone']){
   const concept=crypto.randomUUID(),account=crypto.randomUUID(),id=crypto.randomUUID();
-  const job={id,account_id:account,platform:'redbubble',fencing_token:1};
+  const job={id,account_id:account,platform:'redbubble',fencing_token:1,brief:{}};
   await pool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,$2,$3,'PASS')",[concept,crypto.randomUUID(),crypto.randomUUID()]);
   // NEW accounts may produce internal packages; publication requires ACTIVE.
   await pool.query("INSERT INTO pod_accounts(id,platform) VALUES($1,'redbubble')",[account]);
@@ -19,10 +19,10 @@ export async function verifyProductionGuard(pool,bridge){
   }},bridge,expiresAt:'2099-01-01T00:00:00Z'});
   try{
    assert.equal(await db.assertProducible(job),true);
-   for(const patch of [{fencing_token:2},{account_id:crypto.randomUUID()},{platform:'zazzle'}])
+   for(const patch of [{fencing_token:2},{account_id:crypto.randomUUID()},{platform:'zazzle'},{brief:{changed:true}}])
     await assert.rejects(db.assertProducible({...job,...patch}),/LOCAL_PRODUCTION_BLOCKED/);
    await blocker.query('BEGIN');
-   if(kind==='lease')await blocker.query('SELECT id FROM pod_production_queue WHERE id=$1 FOR UPDATE',[id]);
+   if(kind==='lease'||kind==='brief')await blocker.query('SELECT id FROM pod_production_queue WHERE id=$1 FOR UPDATE',[id]);
    else await blocker.query('SELECT id FROM pod_concepts WHERE id=$1 FOR UPDATE',[concept]);
    workerPid=undefined;
    pending=db.assertProducible(job).then(value=>({value}),error=>({error}));
@@ -33,6 +33,7 @@ export async function verifyProductionGuard(pool,bridge){
    }
    assert.equal(waiting,true,kind+' reached the lock barrier');
    if(kind==='lease')await blocker.query("UPDATE pod_production_queue SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[id]);
+   else if(kind==='brief')await blocker.query('UPDATE pod_production_queue SET brief=$2 WHERE id=$1',[id,{changed:true}]);
    else if(kind==='rights')await blocker.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
    else await blocker.query('UPDATE pod_concepts SET permanently_unpublished=true WHERE id=$1',[concept]);
    await blocker.query('COMMIT');
