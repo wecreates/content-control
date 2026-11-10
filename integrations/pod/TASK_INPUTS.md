@@ -84,6 +84,12 @@ platform or end-to-end acceptance.
 
 ## Current execution authority
 
+Before requesting a grant or reading task inputs, the worker checks that the
+claimed job ID, account and supported marketplace match the embedded brief and
+destination. A contradictory or malformed claim does not trigger settlement;
+the existing lease-recovery path owns that row. Only an explicit null claim
+means the queue was idle.
+
 The built-in stored-task resolver requires POD_GRANT_URL, a separate
 POD_GRANT_AUTH_KEY and POD_UPSTREAM_KEY. It validates the existing HTTPS grant
 client configuration and exposes authorityReady=false when missing or invalid.
