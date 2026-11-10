@@ -1,5 +1,6 @@
 import {types as utilTypes} from 'node:util';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from './diagnostic-deadline.mjs';
+import {assertCommitOutcome} from './transaction-outcome.mjs';
 
 const COUNT_FIELDS=Object.freeze(['registered_concept_records','generated_concept_records','generated_jobs',
  'generated_package_hashes','jobs_with_pass_event','jobs_with_fail_event']);
@@ -98,7 +99,7 @@ export async function productionActivity(db,{signal}={}){
   }
   const start=new Date(row.window_start),end=new Date(row.window_end);
   if(!Number.isFinite(start.getTime())||end-start!==86400000)throw Error('CAPACITY_REPORT_INVALID');
-  commitPending=true;await query('COMMIT');commitPending=false;began=false;beginAttempted=false;
+  commitPending=true;assertCommitOutcome(await query('COMMIT'));commitPending=false;began=false;beginAttempted=false;
   return {schema_version:1,scope:'recorded_production_activity',window:{start:start.toISOString(),end:end.toISOString(),hours:24},
    counts,targets:{baseline_unique_concepts_per_day:100,scale_unique_concepts_per_day:1000},
    evidence_limitations:['concept_records_do_not_prove_unique_artwork','jobs_include_variants_and_revisions',

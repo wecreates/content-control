@@ -7,10 +7,22 @@ function fixture(patch={}){
   generated_package_hashes:'3000',jobs_with_pass_event:'1500',jobs_with_fail_event:'20',...patch};
  const queries=[],released=[];
  const db={active(){throw Error('POD_STORAGE_EXPIRING');},pool:{connect:async()=>({
-  query:async sql=>{queries.push(sql);return {rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>released.push(bad)
+  query:async sql=>{queries.push(sql);return sql==='COMMIT'?{command:'COMMIT'}:{rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>released.push(bad)
  })}};
  return {db,queries,released};
 }
+test('recorded activity refuses an unverified commit and discards the connection',async()=>{
+ let commandReads=0;
+ for(const outcome of [{command:'ROLLBACK'},undefined,Object.create({command:'COMMIT'}),
+  {get command(){commandReads++;return 'COMMIT';}},Object.assign([],{command:'COMMIT'})]){
+  const f=fixture(),client=await f.db.pool.connect(),query=client.query.bind(client);
+  client.query=async sql=>{if(sql==='COMMIT'){f.queries.push(sql);return outcome;}return query(sql);};
+  f.db.pool.connect=async()=>client;
+  await assert.rejects(productionActivity(f.db),/^Error: POD_COMMIT_UNVERIFIED$/);
+  assert.equal(f.queries.at(-1),'COMMIT');assert.equal(f.queries.includes('ROLLBACK'),false);assert.deepEqual(f.released,[true]);
+ }
+ assert.equal(commandReads,0);
+});
 test('meeting numeric targets never manufactures measured capacity or launch acceptance',async()=>{
  const f=fixture({generated_jobs:'9007199254740993'}),r=await productionActivity(f.db);
  assert.equal(r.counts.generated_jobs,'9007199254740993');assert.equal(r.counts.generated_concept_records,'1000');

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {PodDB} from '../pod-db-bridge.js';
 import {metrics} from '../integrations/pod/metrics.mjs';
+import {productionActivity} from '../integrations/pod/capacity.mjs';
 
 // Run before other queue fixtures. No live credentials, account or market calls.
 export async function verifyMonitoring(pool,bridge){
@@ -37,6 +38,22 @@ export async function verifyMonitoring(pool,bridge){
   assert.ok(report.health.alerts.some(a=>a.code==='OUTBOX_DELIVERY_OVERDUE'));
   const text=JSON.stringify(report);for(const secret of [job,event,late,concept,'do-not-report'])assert.equal(text.includes(secret),false);
   assert.equal(report.publication_enabled,false);assert.equal(report.health.acceptance_verified,false);
+  // Force an actual aborted read-only transaction after collecting valid rows.
+  // PostgreSQL resolves COMMIT with ROLLBACK; neither report may return success.
+  for(const run of [metrics,productionActivity]){
+   let commitTag,discarded;
+   const fault={expiresAt,pool:{connect:async()=>{
+    const client=await pool.connect();
+    return {release:bad=>{discarded=bad;client.release(bad);},query:async(...args)=>{
+     if(args[0]==='COMMIT')await assert.rejects(client.query('SELECT 1/0'),error=>error.code==='22012');
+     const result=await client.query(...args);
+     if(args[0]==='COMMIT')commitTag=result.command;
+     return result;
+    }};
+   }}};
+   await assert.rejects(run(fault),/^Error: POD_COMMIT_UNVERIFIED$/);
+   assert.equal(commitTag,'ROLLBACK');assert.equal(discarded,true);
+  }
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[job])).rows[0].state,'qa_failed');
   assert.equal((await pool.query('SELECT business_id FROM pod_concepts WHERE id=$1',[concept])).rows[0].business_id,'monitor-fixture');
   await assert.rejects(db.recover(),/POD_STORAGE_EXPIRING/);
