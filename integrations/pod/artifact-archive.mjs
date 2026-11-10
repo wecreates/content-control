@@ -79,7 +79,7 @@ function config(directory,key,budgetBytes){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32||
   !Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('ARCHIVE_CONFIG_INVALID');
 }
-function assertPublicationDisabled(env){
+export function assertPublicationDisabled(env){
  if(env.PUBLICATION_ENABLED!=='false'||env.POD_PUBLICATION_ENABLED!=='false')throw Error('ARCHIVE_PUBLICATION_MUST_BE_DISABLED');
 }
 const aad=item=>`pod:artifact:v1:${item.sha256}:${item.media_type}:${item.bytes}`;

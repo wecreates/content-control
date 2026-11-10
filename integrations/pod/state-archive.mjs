@@ -91,6 +91,7 @@ function disabled(env,restoring=false){
   (restoring&&(env.POD_PRODUCTION_ENABLED!=='false'||env.POD_OUTBOX_ENABLED!=='false')))
   throw Error('STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED');
 }
+export {disabled as assertStateArchiveDisabled};
 function config(directory,key){
  if(typeof directory!=='string'||!path.isAbsolute(directory)||!Buffer.isBuffer(key)||key.length!==32)
   throw Error('STATE_ARCHIVE_CONFIG_INVALID');

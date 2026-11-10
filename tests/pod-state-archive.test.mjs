@@ -40,6 +40,13 @@ async function fixture(t){
  }};
  return {root,directory,queries,data,versions,db:{pool:{connect:async()=>client}}};
 }
+test('state CLI refuses success when publication changes during pool shutdown',async t=>{
+ const f=await fixture(t),settings={...env,POD_ARCHIVE_KEY:key.toString('hex')};let ended=0;
+ const pool={...f.db.pool,end:async()=>{ended++;settings.PUBLICATION_ENABLED='true';}};
+ await assert.rejects(stateArchiveCLI(['export',f.directory],settings,{connect:async()=>pool}),/STATE_ARCHIVE_WORKERS_MUST_BE_DISABLED/);
+ assert.equal(ended,1);
+ assert.equal((await verifyStateArchive({directory:f.directory,key})).status,'VERIFIED');
+});
 for(const phase of ['commit','catalog','parent'])test('state export rejects cancellation during '+phase,async t=>{
  const f=await fixture(t);
  await verifyExportCancellation(t,{...f,phase,

@@ -42,6 +42,13 @@ function database(values=[]){
  }};
 }
 async function workspace(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return path.join(root,'archive');}
+test('artifact CLI refuses success when publication changes during pool shutdown',async t=>{
+ const directory=await workspace(t),db=database(),settings={...env,POD_ARCHIVE_KEY:key.toString('hex')};let ended=0;
+ const pool={...db.pool,end:async()=>{ended++;settings.POD_PUBLICATION_ENABLED='true';}};
+ await assert.rejects(archiveCLI(['export',directory],settings,{connect:async()=>pool}),/ARCHIVE_PUBLICATION_MUST_BE_DISABLED/);
+ assert.equal(ended,1);
+ assert.equal((await verifyArtifactLibrary({directory,key})).status,'VERIFIED');
+});
 for(const phase of ['commit','catalog','parent'])test('artifact export rejects cancellation during '+phase,async t=>{
  const directory=await workspace(t),db=database([Buffer.from('cancellation fixture')]);
  await verifyExportCancellation(t,{db,directory,phase,
