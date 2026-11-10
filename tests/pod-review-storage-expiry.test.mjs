@@ -13,8 +13,9 @@ test('review package rechecks storage lifetime after its database wait',async()=
  const manifest={schema_version:1,platform:'redbubble',publication_enabled:false,package_sha256:'a'.repeat(64),
   files:{'art-mask.png':'b'.repeat(64),'print.png':'c'.repeat(64),'text-mask.png':'d'.repeat(64)}};
  let db;
- const client={release(){},query:async()=>{
+ const client={release(){},query:async sql=>{
   db.expiresAt=Date.now();
+  if(sql==='BEGIN READ ONLY')return {command:'BEGIN'};
   return {rows:[{id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',manifest,
    manifest_sha256:crypto.createHash('sha256').update(canonical(manifest)).digest('hex')}]};
  }};const pool={connect:async()=>client};
@@ -42,7 +43,7 @@ for(const [name,read] of [
   let db;
   const row={id:'fixture-job',platform:'redbubble',state:'qa_failed',reason_code:'REVIEW_REQUIRED',
    manifest:plain,manifest_sha256:manifestSha256,...(name==='review artifact'?{body,media_type:'image/png'}:{})};
-  const client={release(){},query:async sql=>sql==='COMMIT'?{command:'COMMIT'}:{rows:[row]}};
+  const client={release(){},query:async sql=>sql==='BEGIN'||sql==='BEGIN READ ONLY'?{command:'BEGIN'}:sql==='COMMIT'?{command:'COMMIT'}:{rows:[row]}};
   const pool={connect:async()=>client};
   db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
   const active=db.active.bind(db);let checks=0;

@@ -12,6 +12,7 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  const queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async(sql,args)=>{
   queries.push({sql,args});
+  if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if((typeof sql==='string'?sql:sql.text)==='SELECT fixture')return {rows:[{value:1}]};
   return {rows:[]};
@@ -49,6 +50,7 @@ test('guarded read cancellation interrupts a stalled query and destroys its clie
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text==='SELECT fixture'){entered();return stalled;}
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -66,6 +68,7 @@ test('guarded read cancellation between statements rolls back and reuses a scrub
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text==='SELECT fixture')controller.abort(reason);
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -102,6 +105,7 @@ test('guarded reads scrub committed session state before returning the pooled cl
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text.startsWith('SELECT set_config'))applicationName='read-poison';
+  if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   if(text==='DISCARD ALL')applicationName='pool-default';
   return {rows:[{application_name:applicationName}]};
@@ -116,7 +120,8 @@ test('guarded reads scrub committed session state before returning the pooled cl
 for(const sql of ['COMMIT',' -- reader must not own completion\nROLLBACK'])test(`guarded read rejects managed transaction control: ${sql.trim()}`,async()=>{
  const queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async query=>{
-  queries.push(typeof query==='string'?query:query.text);return {rows:[]};
+  const text=typeof query==='string'?query:query.text;queries.push(text);
+  return text==='BEGIN READ ONLY'?{command:'BEGIN'}:{rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read(sql),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
@@ -131,6 +136,7 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
   if((expiryStage==='begin'&&text==='BEGIN READ ONLY')||
    (expiryStage==='timeout'&&text.startsWith('SET LOCAL'))||
    (expiryStage==='query'&&text==='SELECT fixture'))db.expiresAt=Date.now();
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
   return {rows:[]};
  }};
  db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -143,7 +149,7 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
 test('guarded read preserves query failure and discards a client whose rollback fails',async()=>{
  const original=Error('ORIGINAL_READ_FAILURE'),queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async sql=>{
-  const text=typeof sql==='string'?sql:sql.text;queries.push(text);if(text==='SELECT fixture')throw original;if(text==='ROLLBACK')throw Error('ROLLBACK_FAILURE');return {rows:[]};
+  const text=typeof sql==='string'?sql:sql.text;queries.push(text);if(text==='SELECT fixture')throw original;if(text==='ROLLBACK')throw Error('ROLLBACK_FAILURE');return text==='BEGIN READ ONLY'?{command:'BEGIN'}:{rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read('SELECT fixture'),error=>error===original);
@@ -166,6 +172,7 @@ for(const rollbackFails of [false,true])test(`guarded read discards without clea
   const text=typeof sql==='string'?sql:sql.text;queries.push(text);
   if(text==='COMMIT')throw original;
   if(text==='ROLLBACK'&&rollbackFails)throw Error('ROLLBACK_FAILURE');
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -210,7 +217,7 @@ for(const [name,read] of [
 ]){
  test(name+' rechecks storage lifetime after its database wait',async()=>{
   let db;
-  const client={release(){},query:async()=>{db.expiresAt=Date.now();return {rows:[]};}};
+  const client={release(){},query:async sql=>{db.expiresAt=Date.now();return sql==='BEGIN READ ONLY'?{command:'BEGIN'}:{rows:[]};}};
   const pool={connect:async()=>client};
   db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
   await assert.rejects(read(db),/POD_STORAGE_EXPIRING/);
@@ -220,7 +227,7 @@ for(const [name,read] of [
 test('financial totals recheck storage lifetime after their database wait',async()=>{
  let db;
  const expected=[{currency:'USD',verified_net_recorded_minor:'125',evidence_count:'2'}];
- const client={release(){},query:async()=>{db.expiresAt=Date.now();return {rows:expected};}};
+ const client={release(){},query:async sql=>{db.expiresAt=Date.now();return sql==='BEGIN READ ONLY'?{command:'BEGIN'}:{rows:expected};}};
  const pool={connect:async()=>client};
  db=new PodDB({pool,bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(financialTotals(db),/POD_STORAGE_EXPIRING/);

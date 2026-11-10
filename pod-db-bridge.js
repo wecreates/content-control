@@ -8,7 +8,7 @@ import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
 import {databaseWait} from './integrations/pod/database-wait.mjs';
-import {assertCommitOutcome} from './integrations/pod/transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome} from './integrations/pod/transaction-outcome.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -538,7 +538,8 @@ export class PodDB {
    // Pool acquisition and transaction setup can cross the retention cutoff.
    // Keep every shared read in a database-enforced read-only transaction so a
    // mistaken future caller cannot mutate durable state through this helper.
-   this.active();checkpoint();beginAttempted=true;await waiting.step(()=>c.query('BEGIN READ ONLY'));began=true;this.active();checkpoint();
+   this.active();checkpoint();beginAttempted=true;
+   assertBeginOutcome(await waiting.step(()=>c.query('BEGIN READ ONLY')));began=true;this.active();checkpoint();
    await waiting.step(()=>c.query("SET LOCAL statement_timeout='10s'"));this.active();checkpoint();
    // Force the extended protocol even for parameterless reads. PostgreSQL's
    // simple-query protocol accepts multiple statements, which could otherwise
@@ -630,7 +631,8 @@ export class PodDB {
    c=await waiting.step(()=>this.pool.connect(),{onLate:late=>late.release(true)});
    // Connection acquisition and transaction setup are asynchronous too. Do
    // not let a retention cutoff crossed in those waits reach business SQL.
-   this.active();checkpoint();beginAttempted=true;await waiting.step(()=>c.query('BEGIN'));began=true;this.active();checkpoint();
+   this.active();checkpoint();beginAttempted=true;
+   assertBeginOutcome(await waiting.step(()=>c.query('BEGIN')));began=true;this.active();checkpoint();
    await waiting.step(()=>c.query("SET LOCAL lock_timeout='2s'"));this.active();checkpoint();
    await waiting.step(()=>c.query("SET LOCAL statement_timeout='10s'"));this.active();checkpoint();
    // A callback may await non-database work between statements (for example,

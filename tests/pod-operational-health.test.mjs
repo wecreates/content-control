@@ -45,6 +45,7 @@ function fixture({fail=false,rollbackFails=false}={}){
  const client={release:bad=>{released=bad;},query:async sql=>{
   sql=typeof sql==='string'?sql:sql.text;
   queries.push(sql);if(sql==='ROLLBACK'&&rollbackFails)throw Error('rollback unavailable');
+  if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('FROM pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
   if(sql.includes('FROM pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};
@@ -56,6 +57,12 @@ function fixture({fail=false,rollbackFails=false}={}){
  return {queries,get released(){return released;},get ended(){return ended;},
   db:{active(){throw Error('POD_STORAGE_EXPIRING');},expiresAt:now+3600000,pool:{connect:async()=>client,end:async()=>{ended=true;}}}};
 }
+test('metrics never reads a snapshot when the read-only start is unverified',async()=>{
+ const f=fixture(),client=await f.db.pool.connect();
+ client.query=async sql=>{f.queries.push(sql);return {command:'SELECT'};};
+ await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now}),/^Error: POD_BEGIN_UNVERIFIED$/);
+ assert.deepEqual(f.queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);assert.equal(f.released,true);
+});
 test('metrics reject unverified commit results and discard the connection',async()=>{
  let commandReads=0;
  for(const outcome of [{command:'ROLLBACK'},undefined,Object.create({command:'COMMIT'}),
@@ -106,7 +113,7 @@ test('metrics reject executable database results without invocation',async()=>{
    const client={release:bad=>{released=bad;},query:async sql=>{
     sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
     const stage=stageFor(sql);
-    if(!stage)return {rows:[]};
+    if(!stage)return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};
     if(stage===target)return attempt;
     const safe=stages.find(([name])=>name===stage)[1];
     return Object.assign(Object.create({driver_result:true}),{rows:[safe]});
@@ -198,7 +205,7 @@ test('metrics abort a stalled diagnostic transaction and discard its client',asy
  const controller=new AbortController(),queries=[],releases=[];let entered;
  const stalled=new Promise(resolve=>{entered=resolve;}).then(()=>new Promise(()=>{}));
  const db={pool:{connect:async()=>({
-  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return stalled;return {rows:[]};},
+  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return stalled;return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},
   release:bad=>releases.push(bad),
  })}};
  const result=metrics(db,{signal:controller.signal});
@@ -222,7 +229,7 @@ test('metrics discard a query completing at the absolute deadline without rollba
  t.mock.method(performance,'now',()=>monotonic);
  t.mock.method(AbortSignal,'timeout',()=>new AbortController().signal);
  const db={pool:{connect:async()=>({
-  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return new Promise(resolve=>{complete=resolve;});return {rows:[]};},
+  query:async sql=>{queries.push(sql);if(sql.includes('GROUP BY platform'))return new Promise(resolve=>{complete=resolve;});return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},
   release:bad=>releases.push(bad),
  })}};
  const result=metrics(db);

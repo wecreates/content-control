@@ -11,6 +11,7 @@ function fixture(days,{duplicate=false,full=false,budgetResult,conceptResult,clo
  const client={release(){},query:async(sql,args=[])=>{
   if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
   queries.push({sql,args});
+  if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('AS budget_day'))return clockResult??{rows:[{budget_day:days.shift()}]};
   if(sql.includes('FROM pod_concepts WHERE fingerprint'))return {rows:duplicate?[{id:'existing',business_id:'business',rights_state:'PASS',permanently_unpublished:false}]:[]};

@@ -31,6 +31,12 @@ No item is complete merely because code or a test exists. This registry preserve
 
 ## Current code additions
 
+Managed POD reads, writes, and database diagnostics require exact BEGIN
+evidence before executing dependent SQL. The
+[transaction-start receipt](docs/pod/POD_RUN_RECEIPT_20261110_TRANSACTION_START.md)
+records regression coverage and deployment limits; it does not close a live
+acceptance area.
+
 The operations dashboard offers a key-free, read-only configured storage cutoff
 check. It deliberately labels acceptance unverified; no backup/recovery, provider
 retention or owner-phone acceptance row is closed by this display. See the

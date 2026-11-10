@@ -10,6 +10,7 @@ function fixture({currentResult={rows:[{id:job.id}]},leaseResult={rows:[{valid:t
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.includes("q.state='processing'")&&sql.includes('FOR SHARE OF q,p'))return currentResult;

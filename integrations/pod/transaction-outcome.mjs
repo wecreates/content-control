@@ -1,9 +1,17 @@
 import {types as utilTypes} from 'node:util';
 
-export function assertCommitOutcome(result){
- // PostgreSQL can resolve COMMIT with a ROLLBACK tag when the transaction
- // aborted. Only an own data property on the driver result is evidence.
+function assertOutcome(result,expected,error){
+ // Only an own data property on a single driver result is evidence.
  const command=result&&typeof result==='object'&&!utilTypes.isProxy(result)&&!Array.isArray(result)
   ?Object.getOwnPropertyDescriptor(result,'command'):null;
- if(!command||!Object.hasOwn(command,'value')||command.value!=='COMMIT')throw Error('POD_COMMIT_UNVERIFIED');
+ if(!command||!Object.hasOwn(command,'value')||command.value!==expected)throw Error(error);
+}
+
+export function assertBeginOutcome(result){
+ assertOutcome(result,'BEGIN','POD_BEGIN_UNVERIFIED');
+}
+
+export function assertCommitOutcome(result){
+ // PostgreSQL can resolve COMMIT with a ROLLBACK tag after an abort.
+ assertOutcome(result,'COMMIT','POD_COMMIT_UNVERIFIED');
 }

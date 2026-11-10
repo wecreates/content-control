@@ -7,6 +7,23 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const expiresAt='2099-01-01T00:00:00Z';
 
+test('managed reads and writes stop before any dependent SQL without a verified BEGIN',async()=>{
+ let executableReads=0;
+ const outcomes=[{command:'SELECT'},undefined,{},Object.create({command:'BEGIN'}),
+  Object.assign([],{command:'BEGIN'}),{get command(){executableReads++;return 'BEGIN';}},
+  new Proxy({command:'BEGIN'},{getOwnPropertyDescriptor(){executableReads++;return {};}})];
+ for(const method of ['read','tx'])for(const outcome of outcomes){
+  const begin=method==='read'?'BEGIN READ ONLY':'BEGIN',queries=[],releases=[];
+  const client={query:async sql=>{const text=typeof sql==='string'?sql:sql.text;queries.push(text);
+   return text===begin?outcome:text==='COMMIT'?{command:'COMMIT'}:{rows:[{value:1}]};},
+  release:bad=>releases.push(bad)};
+  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt});
+  await assert.rejects(method==='read'?db.read('SELECT 1'):db.tx(c=>c.query('SELECT 1')),/^Error: POD_BEGIN_UNVERIFIED$/);
+  assert.deepEqual(queries,[begin]);assert.deepEqual(releases,[true]);
+ }
+ assert.equal(executableReads,0);
+});
+
 test('managed reads and writes cannot report success after unverified COMMIT',async()=>{
  let executableReads=0;
  const outcomes=[{command:'ROLLBACK'},undefined,{},Object.create({command:'COMMIT'}),
@@ -15,7 +32,7 @@ test('managed reads and writes cannot report success after unverified COMMIT',as
  for(const method of ['read','tx'])for(const outcome of outcomes){
   const queries=[],releases=[];
   const client={query:async sql=>{const text=typeof sql==='string'?sql:sql.text;queries.push(text);
-   return text==='COMMIT'?outcome:{rows:[{value:1}]};},release:bad=>releases.push(bad)};
+   return text==='COMMIT'?outcome:text.startsWith('BEGIN')?{command:'BEGIN'}:{rows:[{value:1}]};},release:bad=>releases.push(bad)};
   const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt});
   await assert.rejects(method==='read'?db.read('SELECT 1'):db.tx(c=>c.query('SELECT 1')),/POD_COMMIT_UNVERIFIED/);
   assert.deepEqual(queries.slice(-2),['SELECT 1','COMMIT']);
@@ -23,6 +40,45 @@ test('managed reads and writes cannot report success after unverified COMMIT',as
  }
  assert.equal(executableReads,0);
 });
+
+test('PostgreSQL SELECT substituted for BEGIN cannot cause an autocommit write',
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+  const connectionString=process.env.POD_TEST_DATABASE_URL;
+  const url=new URL(connectionString);
+  assert.ok(['localhost','127.0.0.1','[::1]'].includes(url.hostname),'disposable local PostgreSQL only');
+  assert.equal(url.pathname,'/pod_test');
+  assert.equal(process.env.PUBLICATION_ENABLED,'false');
+  assert.equal(process.env.POD_PUBLICATION_ENABLED,'false');
+  const {default:pg}=await import('pg');
+  const pool=new pg.Pool({connectionString,max:1});
+  const table='pod_begin_evidence_'+randomBytes(8).toString('hex');
+  try{
+   await pool.query(`CREATE TABLE ${table}(id int PRIMARY KEY)`);
+   for(const method of ['read','tx']){
+    const begin=method==='read'?'BEGIN READ ONLY':'BEGIN',queries=[],releases=[];
+    let tag;
+    const faulty=new PodDB({bridge,expiresAt,pool:{connect:async()=>{
+     const client=await pool.connect();
+     return {release:bad=>{releases.push(bad);client.release(bad);},query:async(...args)=>{
+      const sql=typeof args[0]==='string'?args[0]:args[0].text;
+      queries.push(sql);
+      if(sql!==begin)return client.query(...args);
+      const result=await client.query('SELECT 1');tag=result.command;return result;
+     }};
+    }}});
+    const insert=`INSERT INTO ${table} VALUES ($1) RETURNING id`;
+    await assert.rejects(method==='read'?faulty.read(insert,[1]):faulty.tx(c=>c.query(insert,[1])),/^Error: POD_BEGIN_UNVERIFIED$/);
+    assert.equal(tag,'SELECT');assert.deepEqual(queries,[begin]);assert.deepEqual(releases,[true]);
+    assert.equal((await pool.query(`SELECT id FROM ${table}`)).rowCount,0);
+   }
+   const healthy=new PodDB({pool,bridge,expiresAt});
+   await assert.rejects(healthy.read(`INSERT INTO ${table} VALUES (1)`),error=>error.code==='25006');
+   await healthy.tx(c=>c.query(`INSERT INTO ${table} VALUES (1)`));
+   assert.deepEqual((await healthy.read(`SELECT id FROM ${table}`)).rows,[{id:1}]);
+  }finally{
+   try{await pool.query(`DROP TABLE IF EXISTS ${table}`);}finally{await pool.end();}
+  }
+ });
 
 test('PostgreSQL rollback tag leaves a managed write uncommitted and retryable',
  {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{

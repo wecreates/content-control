@@ -31,6 +31,7 @@ async function exercise(stage,verdict,run,expired){
   const client={release(){},query:async(sql,args)=>{
    if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    queries.push(sql);
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(stage==='rights'&&sql.includes('FOR SHARE OF p'))advance();
    if(stage==='event'&&sql.startsWith('INSERT INTO pod_events'))advance();

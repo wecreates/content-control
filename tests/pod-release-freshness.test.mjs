@@ -595,7 +595,7 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
 });
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
-const readPool=query=>({connect:async()=>({query:async(sql,...args)=>sql==='COMMIT'?{command:'COMMIT'}:query(sql,...args),release(){}})});
+const readPool=query=>({connect:async()=>({query:async(sql,...args)=>sql==='BEGIN'||sql==='BEGIN READ ONLY'?{command:'BEGIN'}:sql==='COMMIT'?{command:'COMMIT'}:query(sql,...args),release(){}})});
 test('operations list retains revoked review records without advertising preview access',async()=>{
  const pool=readPool(async sql=>{
   const text=typeof sql==='string'?sql:sql.text;
@@ -743,6 +743,7 @@ test('direct submitted transition preserves a valid opaque listing ID',async()=>
  const queries=[],id=' Provider/Case-A ';
  const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>({
   query:async(sql,args)=>{if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}queries.push({sql,args});
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql.includes("state='publishing' FOR UPDATE"))return {rows:[{id:'fixture-job'}]};
    if(sql.startsWith('SELECT lease_until>clock_timestamp()'))return {rows:[{valid:true}]};
