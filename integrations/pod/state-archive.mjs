@@ -5,7 +5,7 @@ import {types as utilTypes} from 'node:util';
 import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,openArchiveDirectory,createArchiveDirectory,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
-import {databaseWait} from './database-wait.mjs';
+import {databaseWait,releaseDatabaseClient} from './database-wait.mjs';
 import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
@@ -75,6 +75,28 @@ function verifySafetyMutation(result){
   !/^(0|[1-9][0-9]*)$/.test(rows[0].changed)||rows[0].changed.length>String(MAX_ROWS).length||
   Number(rows[0].changed)>MAX_ROWS||rows[0].exact!==true)throw Error('STATE_ARCHIVE_QUERY_UNVERIFIED');
  return Number(rows[0].changed);
+}
+async function holdRestoredLeases(client,{from,to,finiteReason,unverifiedReason,expireFinite}){
+ // Archive recovery must not convert a missing/non-finite lease into evidence
+ // of ordinary expiry. Such a row is not eligible for expiry-based repair.
+ return verifySafetyMutation(await client.query(`WITH expected AS MATERIALIZED (
+   SELECT original.id,original.attempt AS prior_attempt,original.fencing_token AS prior_fence,
+    CASE WHEN COALESCE(isfinite(original.lease_until),false) THEN $3::text ELSE $4::text END AS expected_reason,
+    CASE WHEN COALESCE(isfinite(original.lease_until),false) THEN
+     CASE WHEN $5::boolean THEN clock_timestamp()-interval '1 second' ELSE NULL END
+     ELSE original.lease_until END AS expected_deadline
+   FROM public.pod_production_queue original WHERE original.state=$1
+  ), changed AS (
+   UPDATE public.pod_production_queue q SET state=$2,reason_code=e.expected_reason,
+    lease_until=e.expected_deadline,fencing_token=e.prior_fence+1,updated_at=clock_timestamp()
+   FROM expected e WHERE q.id=e.id AND q.state=$1
+   RETURNING q.state,q.reason_code,q.lease_until,q.attempt,q.fencing_token,
+    e.expected_reason,e.expected_deadline,e.prior_attempt,e.prior_fence
+  ) SELECT count(*)::text AS changed,count(*)=(SELECT count(*) FROM expected)
+   AND COALESCE(bool_and(state=$2 AND reason_code IS NOT DISTINCT FROM expected_reason
+    AND lease_until IS NOT DISTINCT FROM expected_deadline
+    AND attempt=prior_attempt AND fencing_token=prior_fence+1),true) AS exact FROM changed`,
+  [from,to,finiteReason,unverifiedReason,expireFinite]));
 }
 function verifyRestoredRecord(result){
  const count=dataProperty(result,'rowCount'),rows=snapshotRows(result,['inserted','exact'],1);
@@ -181,10 +203,10 @@ export async function verifyStateArchive({directory,key,signal,budgetBytes=13421
 export async function exportStateArchive(db,{directory,key,signal,env=process.env}={}){
  const checkpoint=()=>{signal?.throwIfAborted();disabled(env);};
  config(directory,key);checkpoint();const budget=artifactBudgetBytes(env);
- const opened=await createArchiveDirectory(directory),waiting=databaseWait(signal);let client,query,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false,commitPending=false;
+ const opened=await createArchiveDirectory(directory),waiting=databaseWait(signal);let client,query,bytes=0,artifacts=0,bad=false,began=false,beginAttempted=false,commitPending=false,failed=false;
  try{
   checkpoint();
-  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>late.release(true)});checkpoint();
+  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>{releaseDatabaseClient(late,true,waiting).catch(()=>{});}});checkpoint();
   query=(...args)=>waiting.step(()=>client.query(...args));
   beginAttempted=true;assertBeginOutcome(await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'));began=true;checkpoint();
   await query("SET LOCAL statement_timeout='10s'");checkpoint();
@@ -215,7 +237,10 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   // COMMIT must settle so its outcome is known. The transaction's 10-second
   // statement timeout still bounds this control statement; apply caller
   // cancellation at the checkpoint immediately after it completes.
-  checkpoint();commitPending=true;assertCommitOutcome(await client.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;checkpoint();
+  checkpoint();commitPending=true;assertCommitOutcome(await client.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;
+  // As with artifact-only export, catalog creation requires completed release.
+  const committedClient=client;client=undefined;
+  await releaseDatabaseClient(committedClient,false,waiting);checkpoint();
   const encrypted=seal(body,key,'pod:state-catalog:v1');
   await writeNew(path.join(opened.base,'catalog.pod'),encrypted);checkpoint();
   await assertArchiveDirectory(directory,opened);checkpoint();await syncArchiveDirectory(directory,opened);checkpoint();
@@ -231,13 +256,17 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   return {status:'EXPORTED',scope:catalog.scope,snapshot_id:catalog.snapshot_id,archive_sha256:hash(encrypted),
    records:catalog.items.length,bytes,artifact_bytes:artifacts,publication_enabled:false};
  }catch(error){
+  failed=true;
   // Unverified COMMIT has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
   if(client&&(waiting.interrupted||commitPending))bad=true;
   else if(client&&began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
- }finally{client?.release(bad);await closeArchiveDirectory(opened);}
+ }finally{
+  if(client)try{await releaseDatabaseClient(client,bad,waiting);}catch{/* Preserve the export failure. */}
+  try{await closeArchiveDirectory(opened);}catch(error){if(!failed)throw error;}
+ }
 }
 
 export async function restoreStateArchive(db,{directory,key,signal,env=process.env}={}){
@@ -278,19 +307,11 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
    UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED' RETURNING state
   ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='DISABLED'),true) AS exact FROM changed`));
   checkpoint();
-  const production=verifySafetyMutation(await client.query(`WITH changed AS (
-   UPDATE public.pod_production_queue SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',
-    lease_until=clock_timestamp()-interval '1 second',fencing_token=fencing_token+1,updated_at=clock_timestamp()
-   WHERE state='processing' RETURNING state,reason_code,lease_until
-  ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='blocked' AND reason_code='PRODUCTION_LEASE_EXPIRED'
-   AND lease_until<clock_timestamp()),true) AS exact FROM changed`));
+  const production=await holdRestoredLeases(client,{from:'processing',to:'blocked',
+   finiteReason:'PRODUCTION_LEASE_EXPIRED',unverifiedReason:'PRODUCTION_LEASE_UNVERIFIED',expireFinite:true});
   checkpoint();
-  const publishing=verifySafetyMutation(await client.query(`WITH changed AS (
-   UPDATE public.pod_production_queue SET state='ambiguous',reason_code='RECOVERY_RECONCILIATION_REQUIRED',
-    lease_until=NULL,fencing_token=fencing_token+1,updated_at=clock_timestamp()
-   WHERE state='publishing' RETURNING state,reason_code,lease_until
-  ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='ambiguous'
-   AND reason_code='RECOVERY_RECONCILIATION_REQUIRED' AND lease_until IS NULL),true) AS exact FROM changed`));
+  const publishing=await holdRestoredLeases(client,{from:'publishing',to:'ambiguous',
+   finiteReason:'RECOVERY_RECONCILIATION_REQUIRED',unverifiedReason:'PUBLISH_LEASE_UNVERIFIED',expireFinite:false});
   checkpoint();
   const receipt={...verified,status:'RESTORED',accounts_disabled:accounts,production_held:production,publishing_ambiguous:publishing};
   const eventId=crypto.randomUUID(),eventKind='pod.recovery.restored';

@@ -11,7 +11,7 @@ import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {archiveCLI} from '../scripts/pod_artifact_archive.mjs';
 import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
-import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
+import {verifyExportCancellation,verifyExportRelease} from './pod-archive-cancellation.mjs';
 const key=Buffer.alloc(32,7),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'};
 const exportArtifactLibrary=(db,options={})=>exportArtifactLibraryImpl(db,{env,...options});
 const sha=body=>crypto.createHash('sha256').update(body).digest('hex');
@@ -42,6 +42,10 @@ function database(values=[]){
  }};
 }
 async function workspace(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return path.join(root,'archive');}
+for(const phase of ['success','rejection','abort','rollback'])test('artifact export release: '+phase,async t=>{
+ const directory=await workspace(t),db=database([Buffer.from('release fixture')]);
+ await verifyExportRelease(t,{db,directory,phase,run:signal=>exportArtifactLibrary(db,{directory,key,signal})});
+});
 test('artifact CLI refuses success when publication changes during pool shutdown',async t=>{
  const directory=await workspace(t),db=database(),settings={...env,POD_ARCHIVE_KEY:key.toString('hex')};let ended=0;
  const pool={...db.pool,end:async()=>{ended++;settings.POD_PUBLICATION_ENABLED='true';}};

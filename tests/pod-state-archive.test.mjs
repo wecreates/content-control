@@ -9,7 +9,7 @@ import {ARTIFACT_MEDIA_TYPES} from '../integrations/pod/artifacts.mjs';
 import {seal,unseal} from '../integrations/pod/archive-codec.mjs';
 import {stateArchiveCLI} from '../scripts/pod_state_archive.mjs';
 import {verifyExportFlush} from './pod-archive-flush.mjs';
-import {verifyExportCancellation} from './pod-archive-cancellation.mjs';
+import {verifyExportCancellation,verifyExportRelease} from './pod-archive-cancellation.mjs';
 
 const key=Buffer.alloc(32,31),env={PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false',POD_PRODUCTION_ENABLED:'false',POD_OUTBOX_ENABLED:'false'};
 const digest=body=>crypto.createHash('sha256').update(body).digest('hex');
@@ -35,11 +35,15 @@ async function fixture(t){
   if(sql.startsWith('FETCH')){const rows=data[table]||[];return {rows:cursor<rows.length?[{record:rows[cursor++]}]:[]};}
   if(sql.startsWith('WITH source AS'))return {rowCount:1,rows:[{inserted:'1',exact:true}]};
   if(sql.startsWith('WITH restored_event AS'))return {rowCount:1,rows:[{id:args[0],kind:args[1],exact:true}]};
-  if(sql.startsWith('WITH changed AS'))return {rowCount:1,rows:[{changed:'0',exact:true}]};
+  if(sql.startsWith('WITH changed AS')||sql.startsWith('WITH expected AS MATERIALIZED'))return {rowCount:1,rows:[{changed:'0',exact:true}]};
   return {rows:[]};
  }};
  return {root,directory,queries,data,versions,db:{pool:{connect:async()=>client}}};
 }
+for(const phase of ['success','rejection','abort','rollback'])test('state export release: '+phase,async t=>{
+ const {db,directory}=await fixture(t);
+ await verifyExportRelease(t,{db,directory,phase,run:signal=>exportStateArchive(db,{directory,key,env,signal})});
+});
 test('state CLI refuses success when publication changes during pool shutdown',async t=>{
  const f=await fixture(t),settings={...env,POD_ARCHIVE_KEY:key.toString('hex')};let ended=0;
  const pool={...f.db.pool,end:async()=>{ended++;settings.PUBLICATION_ENABLED='true';}};
@@ -472,7 +476,7 @@ test('state archive rejects executable database results without invoking them',a
  await t.test('restore snapshots bounded mutation counts',async t=>{
   const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
   const client=await f.db.pool.connect(),query=client.query.bind(client),counts=['3','1','1'];
-  client.query=async(sql,...args)=>sql.startsWith('WITH changed AS')?
+  client.query=async(sql,...args)=>sql.startsWith('WITH changed AS')||sql.startsWith('WITH expected AS MATERIALIZED')?
    {rowCount:1,rows:[{changed:counts.shift(),exact:true}]}:query(sql,...args);
   const receipt=await restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env});
   assert.equal(receipt.accounts_disabled,3);assert.equal(receipt.production_held,1);assert.equal(receipt.publishing_ambiguous,1);
@@ -515,4 +519,23 @@ test('state restore rejects unverified recovery safety mutations',async t=>{
   await assert.rejects(restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env}),
    /^Error: STATE_ARCHIVE_QUERY_UNVERIFIED$/);
  });
+});
+
+test('state restore preserves unverified lease evidence rather than treating it as an expired lease',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const client=await f.db.pool.connect(),query=client.query.bind(client),holds=[];
+ client.query=async(sql,args)=>{
+  if(sql.includes('UPDATE public.pod_production_queue'))holds.push({sql,args});
+  return query(sql,args);
+ };
+ await restoreStateArchive({tx:fn=>fn(client)},{directory:f.directory,key,env});
+ assert.deepEqual(holds.map(({args})=>args?.slice(0,4)),[
+  ['processing','blocked','PRODUCTION_LEASE_EXPIRED','PRODUCTION_LEASE_UNVERIFIED'],
+  ['publishing','ambiguous','RECOVERY_RECONCILIATION_REQUIRED','PUBLISH_LEASE_UNVERIFIED']
+ ]);
+ for(const {sql} of holds){
+  assert.match(sql,/COALESCE\(isfinite\(original\.lease_until\),false\)/);
+  assert.match(sql,/lease_until IS NOT DISTINCT FROM expected_deadline/);
+  assert.match(sql,/attempt=prior_attempt AND fencing_token=prior_fence\+1/);
+ }
 });

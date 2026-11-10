@@ -16,7 +16,10 @@ a directory without a valid catalog is incomplete. Files are mode 0600 in a new
 prevent archive-controlled SQL identifiers. Reads reject symlinks and nonregular
 files, authenticate each record and check hashes. Catalogs bind migration
 checksums and ordered column definitions. A schema change requires an explicit
-supported-format update; migration history is checked, not overwritten.
+supported-format update; migration history is checked, not overwritten. Both
+export modes finish releasing the source database client before writing the
+catalog. Release shares the CLI deadline; failure or cancellation at this
+boundary may leave partial files, but no completed catalog.
 Catalog and row JSON use strict UTF-8 parsing and reject duplicate decoded keys
 at every nesting level before any schema decision or database access. Catalog,
 row-descriptor and column-descriptor objects must also contain exactly the ordered
@@ -83,11 +86,17 @@ target is no longer empty; it cannot silently roll live state backward.
 Restoration deliberately holds operations:
 
 - Every restored account becomes DISABLED.
-- Processing jobs become blocked with PRODUCTION_LEASE_EXPIRED, an expired
-  lease and an incremented fencing token. Existing bounded repair still requires
-  current authority and rights; attempt counts are preserved.
-- Publishing jobs become ambiguous with RECOVERY_RECONCILIATION_REQUIRED, no
-  lease and an incremented fencing token. They cannot be automatically resubmitted.
+- Processing jobs with finite leases become blocked with PRODUCTION_LEASE_EXPIRED,
+  an expired lease and an incremented fencing token. Existing bounded repair
+  still requires current authority and rights; attempt counts are preserved.
+- Publishing jobs with finite leases become ambiguous with
+  RECOVERY_RECONCILIATION_REQUIRED, no lease and an incremented fencing token.
+  They cannot be automatically resubmitted.
+- Missing or non-finite leases retain their exact stored deadline, move to the
+  same blocked/ambiguous states with PRODUCTION_LEASE_UNVERIFIED or
+  PUBLISH_LEASE_UNVERIFIED, and keep their attempt counts while fencing out the
+  prior owner. This evidence stays visible to monitoring and does not authorize
+  ordinary expiry repair.
 - Other job states, tombstones, immutable proof/financial rows, provider inbox
   identities, quotas, event IDs and delivery markers are preserved. One
   pod.recovery.restored audit event records the archive digest and hold counts.

@@ -5,7 +5,7 @@ import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
-import {databaseWait} from './database-wait.mjs';
+import {databaseWait,releaseDatabaseClient} from './database-wait.mjs';
 import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
@@ -136,9 +136,9 @@ export async function verifyArtifactLibrary({directory,key,budgetBytes=134217728
 export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){
  config(directory,key,budgetBytes);signal?.throwIfAborted();assertPublicationDisabled(env);
  const opened=await createArchiveDirectory(directory); // No overwrite or reuse of an existing directory.
- const waiting=databaseWait(signal);let client,query;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false,commitPending=false;
+ const waiting=databaseWait(signal);let client,query;const items=[];let bytes=0,bad=false,began=false,beginAttempted=false,commitPending=false,failed=false;
  try{
-  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>late.release(true)});
+  client=await waiting.step(()=>db.pool.connect(),{onLate:late=>{releaseDatabaseClient(late,true,waiting).catch(()=>{});}});
   query=(...args)=>waiting.step(()=>client.query(...args));
   beginAttempted=true;assertBeginOutcome(await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'));began=true;
   await query("SET LOCAL statement_timeout='10s'");
@@ -163,6 +163,10 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   // statement timeout still bounds this control statement; apply caller
   // cancellation at the checkpoint immediately after it completes.
   assertPublicationDisabled(env);commitPending=true;assertCommitOutcome(await client.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;
+  // The catalog marks a complete export. Do not seal it while the source
+  // client is still checked out or release has an unverified outcome.
+  const committedClient=client;client=undefined;
+  await releaseDatabaseClient(committedClient,false,waiting);
   signal?.throwIfAborted();assertPublicationDisabled(env);
   // Written last: an interrupted export without this catalog is not restorable.
   const encryptedCatalog=seal(catalog,key,'pod:artifact-catalog:v1');
@@ -181,13 +185,17 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   assertPublicationDisabled(env);
   return {status:'EXPORTED',scope:'artifacts_only',objects:items.length,bytes,publication_enabled:false};
  }catch(error){
+  failed=true;
   // Unverified COMMIT has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
   if(client&&(waiting.interrupted||commitPending))bad=true;
   else if(client&&began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
- }finally{client?.release(bad);await closeArchiveDirectory(opened);}
+ }finally{
+  if(client)try{await releaseDatabaseClient(client,bad,waiting);}catch{/* Preserve the export failure. */}
+  try{await closeArchiveDirectory(opened);}catch(error){if(!failed)throw error;}
+ }
 }
 
 export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=134217728,env=process.env,signal}={}){

@@ -41,3 +41,11 @@ export function databaseWait(signal){
  };
  return Object.freeze({step,get interrupted(){return interrupted;}});
 }
+
+// Initiate release even if the operation's deadline already expired. Bound
+// the caller's wait without allowing a later release rejection to go unhandled.
+export async function releaseDatabaseClient(client,discard,waiting){
+ const pending=Promise.resolve(client.release(discard));
+ pending.catch(()=>{});
+ await waiting.step(()=>pending);
+}
