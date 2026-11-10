@@ -356,6 +356,28 @@ test('production callbacks cannot redirect fenced settlement identity',async()=>
  assert.deepEqual([claimed.id,claimed.account_id,claimed.platform,claimed.fencing_token,claimed.brief.id],['j','a','redbubble','7','j']);
 });
 
+test('contradictory production claims stop before authority lookup, task reads or settlement',async t=>{
+ const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};
+ const claim=productionClaim(brief);
+ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,
+  job_id:'j',account_id:'a',business_id:'b',platform:'redbubble',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false});
+ const grant={payload,signature:crypto.createHmac('sha256',key).update(payload).digest('hex')};
+ for(const [name,claimed] of [
+  ['job',{...claim,id:'other-job'}],['account',{...claim,account_id:'other-account'}],
+  ['platform',{...claim,platform:'kdp'}],['destination',{...claim,brief:{...brief,destination_platform:'kdp'}}],
+  ['missing brief identity',{...claim,brief:{}}],['unsupported marketplace',{...claim,platform:'etsy',brief:{...brief,platform:'etsy',destination_platform:'etsy'}}],
+  ['false',false],['undefined',undefined]
+ ])await t.test(name,async()=>{
+  let calls=0;
+  const record=()=>{calls++;};
+  await assert.rejects(produceOnce({env:{POD_PRODUCTION_ENABLED:'true'},upstreamKey:key,
+   db:{claimProduction:async()=>claimed,failProduction:record,assertProducible:record,holdProduction:record,completeProduction:record},
+   resolveGrant:async()=>{calls++;return grant;},resolveTask:async()=>{calls++;return {rights_verified:false};}}),
+  /^Error: PRODUCTION_SETTLEMENT_UNCERTAIN$/,name);
+  assert.equal(calls,0,name);
+ });
+});
+
 
 test('production database settlement is bound before the claim callback',async()=>{
  const key='k'.repeat(48),brief={id:'j',account_id:'a',business_id:'b',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'};

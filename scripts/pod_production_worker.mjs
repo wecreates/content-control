@@ -2,7 +2,7 @@ import {runPythonStage as python} from '../integrations/pod/python-stage.mjs';
 import {ArtifactStore} from '../integrations/pod/artifacts.mjs';
 import {artifactBudgetBytes} from '../integrations/pod/storage-budget.mjs';
 import {readPackageSnapshot} from '../integrations/pod/package-artifacts.mjs';
-import {verifyEnvelope,enforceBrief} from '../integrations/pod/policy.mjs';
+import {verifyEnvelope,enforceBrief,PLATFORMS} from '../integrations/pod/policy.mjs';
 import {readSignedJSONFile} from '../integrations/pod/signed-file.mjs';
 import {validateTemplate,validateInteriorTemplate,kdpCalculatorProfile} from '../integrations/pod/templates.mjs';
 import {productionFailure} from '../integrations/pod/failure-reasons.mjs';
@@ -74,10 +74,16 @@ function snapshotClaimedProduction(value){
    Object.defineProperty(result,key,{value:descriptor.value,enumerable:true,writable:true,configurable:true});
   }
   const snapshot=snapshotData(result);
-  if(!snapshot||typeof snapshot.id!=='string'||typeof snapshot.account_id!=='string'||
-   typeof snapshot.platform!=='string'||!validFencingToken(snapshot.fencing_token)||
+  if(!snapshot||!validOpaqueText(snapshot.id)||!validOpaqueText(snapshot.account_id)||
+   !PLATFORMS.includes(snapshot.platform)||!validFencingToken(snapshot.fencing_token)||
    snapshot.brief===null||typeof snapshot.brief!=='object'||
    Array.isArray(snapshot.brief))return null;
+  // The signed brief must describe this exact claimed row. Even a valid
+  // grant for another identity must never drive work or settle this lease.
+  const brief=snapshot.brief;
+  if(!['id','account_id','platform','destination_platform'].every(key=>Object.hasOwn(brief,key))||
+   brief.id!==snapshot.id||brief.account_id!==snapshot.account_id||
+   brief.platform!==snapshot.platform||brief.destination_platform!==snapshot.platform)return null;
   return snapshot;
  }catch{return null;}
 }
@@ -203,7 +209,7 @@ export async function produceOnce(options={}){
   const capability=dataProperty(env,'POD_PRODUCTION_ENABLED');
   return capability.valid&&capability.value==='true';
  };
- if(!claimedJob)return {status:signalAborted(signal)||!productionEnabled()?'STOPPED':'IDLE'};
+ if(claimedJob===null)return {status:signalAborted(signal)||!productionEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact fenced identity before authority, task or database callbacks
  // can retain and mutate caller-visible objects.
  const job=snapshotClaimedProduction(claimedJob);
