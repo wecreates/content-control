@@ -4,6 +4,47 @@ import crypto from 'node:crypto';
 import pg from 'pg';
 import {migrate} from '../scripts/pod_storage_init.mjs';
 
+test('real PostgreSQL transaction tags prevent false migration success and owner-client reuse',
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+ const url=new URL(process.env.POD_TEST_DATABASE_URL);
+ assert.ok(['localhost','127.0.0.1','[::1]'].includes(url.hostname)&&url.pathname==='/pod_test','disposable local PostgreSQL only');
+ assert.equal(process.env.PUBLICATION_ENABLED,'false');
+ assert.equal(process.env.POD_PUBLICATION_ENABLED,'false');
+ const pool=new pg.Pool({connectionString:url.toString(),max:1});
+ const role='pod_tx_evidence_'+crypto.randomBytes(5).toString('hex');
+ const original=Error('STORAGE_EXPIRING');
+ try{
+  for(const [phase,expected] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK'],['ROLLBACK','SELECT']]){
+   let tag,checks=0;const queries=[],released=[];
+   const borrowed={connect:async()=>{
+    const client=await pool.connect();
+    return {release:discard=>{released.push(discard);client.release(discard);},query:async(sql,...args)=>{
+     queries.push(sql);
+     if(sql!==phase)return client.query(sql,...args);
+     if(phase==='COMMIT')await assert.rejects(client.query('SELECT 1/0'),e=>e.code==='22012');
+     const result=await client.query(phase==='COMMIT'?'COMMIT':'SELECT 1');
+     tag=result.command;return result;
+    }};
+   }};
+   await assert.rejects(migrate(borrowed,role,undefined,{
+    provisionPassword:'fixture-tx-evidence-password-'.repeat(2),
+    assertActive:()=>{if(phase==='ROLLBACK'&&++checks===2)throw original;},
+   }),e=>phase==='ROLLBACK'?e===original:e.message==='POD_'+phase+'_UNVERIFIED');
+   assert.equal(tag,expected);assert.deepEqual(released,[true]);assert.equal(pool.totalCount,0);
+   assert.equal(queries.at(-1),phase);
+   if(phase==='BEGIN')assert.deepEqual(queries,['BEGIN']);
+   if(phase==='COMMIT')assert.equal(queries.includes('ROLLBACK'),false);
+   assert.equal((await pool.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount,0);
+  }
+ }finally{
+  // Clean up only the randomly named fixture if a regression committed it.
+  if((await pool.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount){
+   await pool.query(`DROP OWNED BY "${role}"`);await pool.query(`DROP ROLE "${role}"`);
+  }
+  await pool.end();
+ }
+});
+
 for(const rollbackFails of [false,true])test(`migration ${rollbackFails?'discards an unrolled-back backend':'reuses a successfully rolled-back backend'}`,
  {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
  const pool=new pg.Pool({connectionString:process.env.POD_TEST_DATABASE_URL,max:1});

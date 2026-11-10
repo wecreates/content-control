@@ -15,3 +15,7 @@ export function assertCommitOutcome(result){
  // PostgreSQL can resolve COMMIT with a ROLLBACK tag after an abort.
  assertOutcome(result,'COMMIT','POD_COMMIT_UNVERIFIED');
 }
+
+export function assertRollbackOutcome(result){
+ assertOutcome(result,'ROLLBACK','POD_ROLLBACK_UNVERIFIED');
+}

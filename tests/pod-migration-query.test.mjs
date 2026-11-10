@@ -20,11 +20,26 @@ function fixture({match,wrap,provisionPassword,directory=emptyDirectory}={}){
   else if(sql==='SELECT sha256 FROM pod_schema_version WHERE version=$1'){
    const body=await fs.readFile(new URL(args[0],directory),'utf8');
    result={rows:[{sha256:crypto.createHash('sha256').update(body).digest('hex')}]};
-  }else result={rows:[]};
+  }else if(['BEGIN','COMMIT','ROLLBACK'].includes(sql))result={command:sql};
+  else result={rows:[]};
   return match?.(sql)?wrap(result):result;
  },release:discard=>releases.push(Boolean(discard))};
  return {pool:{connect:async()=>client},queries,releases,options:{provisionPassword},directory};
 }
+
+for(const [phase,tag] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK']])test('privileged migration refuses unverified '+phase,async()=>{
+ const f=fixture({match:sql=>sql===phase,wrap:()=>({command:tag})});
+ await assert.rejects(migrate(f.pool,'pod_runtime',f.directory),new RegExp('^Error: POD_'+phase+'_UNVERIFIED$'));
+ if(phase==='BEGIN')assert.deepEqual(f.queries,['BEGIN']);
+ else{assert.equal(f.queries.at(-1),'COMMIT');assert.equal(f.queries.includes('ROLLBACK'),false);}
+ assert.deepEqual(f.releases,[true]);
+});
+
+test('unverified migration rollback discards the client and preserves the original error',async()=>{
+ const original=Error('STORAGE_EXPIRING'),f=fixture({match:sql=>sql==='ROLLBACK',wrap:()=>({command:'SELECT'})});
+ await assert.rejects(migrate(f.pool,'pod_runtime',f.directory,{assertActive:()=>{throw original;}}),error=>error===original);
+ assert.equal(f.queries.at(-1),'ROLLBACK');assert.deepEqual(f.releases,[true]);
+});
 
 for(const variant of [
  {name:'runtime-role result rows accessor',match:sql=>sql.startsWith('SELECT rolsuper'),wrap:(result,reads)=>Object.defineProperty({},'rows',{get(){reads.count++;return result.rows;}})},

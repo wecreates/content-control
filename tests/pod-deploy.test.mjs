@@ -19,6 +19,7 @@ for(const boundary of ['connect','lock','commit'])for(const change of ['storage'
    statements.push(sql);
    if(boundary==='lock'&&sql.includes('pg_advisory_xact_lock'))invalidate();
    if(boundary==='commit'&&sql.startsWith('GRANT SELECT ON pod_schema_version'))invalidate();
+   if(sql==='BEGIN'||sql==='ROLLBACK')return {command:sql};
    if(sql.startsWith('SELECT rolsuper'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false}]};
    if(sql==='SELECT current_user AS name')return {rows:[{name:'owner'}]};
    if(sql.includes('AS elevated'))return {rows:[{elevated:false}]};
@@ -41,6 +42,27 @@ for(const boundary of ['connect','lock','commit'])for(const change of ['storage'
   }
  });
 }
+test('apply cannot turn a rolled-back commit into a verified database receipt',async()=>{
+ let inspected=0,closed=0;const statements=[],released=[];
+ const client={query:async(sql,params)=>{
+  statements.push(sql);
+  if(sql==='BEGIN')return {command:'BEGIN'};
+  if(sql==='COMMIT')return {command:'ROLLBACK'};
+  if(sql.startsWith('SELECT rolsuper'))return {rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false}]};
+  if(sql==='SELECT current_user AS name')return {rows:[{name:'owner'}]};
+  if(sql.includes('AS elevated'))return {rows:[{elevated:false}]};
+  if(sql.startsWith("SELECT format('REVOKE TEMPORARY"))return {rows:[{sql:'REVOKE TEMPORARY ON DATABASE pod FROM PUBLIC'}]};
+  if(sql.startsWith('SELECT sha256')){
+   const bytes=await fs.readFile(new URL('../migrations/'+params[0],import.meta.url));
+   return {rows:[{sha256:crypto.createHash('sha256').update(bytes).digest('hex')}]};
+  }
+  return {rows:[]};
+ },release:bad=>released.push(bad)};
+ await assert.rejects(deployDatabase({env,apply:true,connect:async()=>({connect:async()=>client,end:async()=>{closed++;}}),
+  inspect:async()=>{inspected++;return databasePass();}}),/^Error: POD_COMMIT_UNVERIFIED$/);
+ assert.equal(inspected,0);assert.equal(closed,1);assert.deepEqual(released,[true]);
+ assert.equal(statements.at(-1),'COMMIT');assert.equal(statements.includes('ROLLBACK'),false);
+});
 test('check-only cannot report database verification after storage crosses its safety cutoff',async t=>{
  let now=1800000000000;t.mock.method(Date,'now',()=>now);
  const settings={...env,POD_STORAGE_EXPIRES_AT:new Date(now+86400001).toISOString()};

@@ -22,7 +22,7 @@ for(const stage of ['bridge','factory','acquisition','query','rollback','shutdow
  const stall=()=>{controller.abort();return never;};
  const client={query:async sql=>{
   if(stage==='query'||stage==='rollback'&&sql==='ROLLBACK')return stall();
-  if(sql==='BEGIN READ ONLY')return {rows:[]};
+  if(sql==='BEGIN READ ONLY')return {command:'BEGIN'};
   throw Error('private backend failure');
  },release:bad=>releases.push(bad)};
  const pool={connect:()=>stage==='acquisition'?new Promise(resolve=>{settle=resolve;controller.abort();}):client,
@@ -46,6 +46,8 @@ function fixture(overrides={}){
  const client={async query(sql,args){queries.push(sql);
   const output=result=>overrides.queryResult?overrides.queryResult(sql,result):result;
   if((overrides.throwOn&&sql.includes(overrides.throwOn))||(overrides.rollbackFails&&sql==='ROLLBACK'))throw Error('secret password internal-url');
+  if(sql==='BEGIN READ ONLY')return output({command:'BEGIN'});
+  if(sql==='ROLLBACK')return output({command:'ROLLBACK'});
   if(sql.includes('current_schemas(false)'))return output({rows:[{search_path:overrides.searchPath??['pg_catalog','public']}]});
   if(sql.includes('FROM pg_roles r'))return output({rows:[{rolsuper:false,rolcreatedb:false,rolcreaterole:false,rolreplication:false,rolbypassrls:false,db_create:false,db_temp:false,elevated_membership:false,schema_create:false,...overrides.role}]});
   if(sql.includes('pg_stat_ssl'))return output({rows:[{ssl:overrides.tls??true}]});
@@ -209,6 +211,14 @@ test('failed preflight transaction open destroys its client without follow-up SQ
  assert.deepEqual(f.queries,['BEGIN READ ONLY']);
  assert.deepEqual(f.releases,[true]);
  assert.ok(f.closed());
+});
+for(const phase of ['BEGIN READ ONLY','ROLLBACK'])test('preflight blocks an unverified '+phase+' result',async()=>{
+ const f=fixture({queryResult:(sql,result)=>sql===phase?{command:'SELECT'}:result}),r=await preflight(f.options);
+ assert.equal(r.status,'BLOCKED');
+ assert.deepEqual(r.checks.find(c=>c.code==='DATABASE_READABLE'),{code:'DATABASE_READABLE',status:'BLOCKED'});
+ if(phase==='BEGIN READ ONLY')assert.deepEqual(f.queries,[phase]);
+ else assert.equal(f.queries.at(-1),phase);
+ assert.deepEqual(f.releases,[true]);assert.ok(f.closed());
 });
 test('expiry and enabled publishing block deployment preflight',async()=>{
  const f=fixture(),r=await preflight({...f.options,env:{...env,POD_STORAGE_EXPIRES_AT:'invalid',PUBLICATION_ENABLED:'true'}});
