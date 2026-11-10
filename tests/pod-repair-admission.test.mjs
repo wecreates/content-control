@@ -54,7 +54,7 @@ test('the exact signed repair target reaches the database boundary unchanged',as
 for(const stage of ['rows','brief'])test('repair query rejects accessor-backed '+stage+' evidence without invocation',async()=>{
  let reads=0,writes=0;
  const row={id:jobId,brief:{id:jobId,business_id:'fixture-business',account_id:'fixture-account',
-  platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},attempt:1,
+  platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},attempt:1,fencing_token:'1',
   manifest:{},qa_envelope:{},reason_code:'REVIEW_REQUIRED'};
  const executable=stage==='rows'?Object.defineProperty({},'rows',{enumerable:true,get(){reads++;return [row];}}):
   {rows:[Object.defineProperty({...row},'brief',{enumerable:true,get(){reads++;return row.brief;}})]};
@@ -76,9 +76,9 @@ test('repair query accepts a legacy null reason and archives only the fixed fall
  db.tx=fn=>fn({query:async(sql,args=[])=>{
   if(sql.startsWith('SELECT'))return {rows:[{id:jobId,brief:{id:jobId,business_id:'fixture-business',
    account_id:'fixture-account',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},
-   attempt:1,manifest:{},qa_envelope:{},reason_code:null}]};
-  if(sql.startsWith('INSERT')){archived=args[3];return {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived'}]};}
-  if(sql.startsWith('UPDATE'))return {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null}]};
+   attempt:1,fencing_token:'1',manifest:{},qa_envelope:{},reason_code:null}]};
+  if(sql.startsWith('INSERT')){archived=args[3];return {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived',payload_matches:true}]};}
+  if(sql.startsWith('UPDATE'))return {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null,reset_matches:true}]};
   throw Error('unexpected repair query');
  }});
  await db.requeueRepair(jobId,signed());
@@ -100,15 +100,34 @@ test('repair requeue rejects unverified archive and queue mutation receipts',asy
   db.tx=fn=>fn({query:async(sql,args)=>{
    if(sql.startsWith('SELECT'))return {rows:[{id:jobId,brief:{id:jobId,business_id:'fixture-business',
     account_id:'fixture-account',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},
-    attempt:1,manifest:{},qa_envelope:{},reason_code:'REVIEW_REQUIRED'}]};
+    attempt:1,fencing_token:'1',manifest:{},qa_envelope:{},reason_code:'REVIEW_REQUIRED'}]};
    writes+=1;
    if(sql.startsWith('INSERT'))return stage==='archive'?attempt:
-    {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived'}]};
+    {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived',payload_matches:true}]};
    if(sql.startsWith('UPDATE'))return stage==='queue'?attempt:
-    {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null}]};
+    {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null,reset_matches:true}]};
    throw Error('unexpected repair query');
   }});
   await assert.rejects(db.requeueRepair(jobId,signed()),/POD_MUTATION_UNVERIFIED/);
   assert.equal(writes,stage==='archive'?1:2);
+ }
+});
+
+test('repair cannot acknowledge a mismatched archived attempt or an incomplete reset',async()=>{
+ for(const [stage,evidence] of [['archive',false],['archive','true'],['reset',false],['reset','true']]){
+  const db=new PodDB({bridge,upstreamKey:key,expiresAt:'2099-01-01T00:00:00Z'});
+  let resets=0;
+  db.tx=fn=>fn({query:async(sql,args)=>{
+   if(sql.startsWith('SELECT'))return {rows:[{id:jobId,brief:{id:jobId,business_id:'fixture-business',
+    account_id:'fixture-account',platform:'redbubble',destination_platform:'redbubble',mode:'PRELAUNCH'},
+    attempt:1,fencing_token:'1',manifest:{files:{proof:'original'}},qa_envelope:{payload:'original'},reason_code:'REVIEW_REQUIRED'}]};
+   if(sql.startsWith('INSERT'))return {rowCount:1,rows:[{id:args[0],job_id:jobId,kind:'pod.repair.archived',
+    ...(sql.includes('AS payload_matches')?{payload_matches:stage==='archive'?evidence:true}:{})}]};
+   if(sql.startsWith('UPDATE')){resets++;return {rowCount:1,rows:[{id:jobId,state:'raw',reason_code:null,
+    ...(sql.includes('AS reset_matches')?{reset_matches:stage==='reset'?evidence:true}:{})}]};}
+   throw Error('unexpected repair query');
+  }});
+  await assert.rejects(db.requeueRepair(jobId,signed()),/^Error: POD_MUTATION_UNVERIFIED$/);
+  assert.equal(resets,stage==='archive'?0:1);
  }
 });

@@ -44,15 +44,15 @@ async function exercise(spec,stage,expired){
    if(sql.startsWith('INSERT INTO pod_concepts'))return {rowCount:1,rows:[{
     id:args[0],business_id:args[1],fingerprint:args[2],rights_state:args[3],permanently_unpublished:args[4]}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,job_id,kind'))return {rowCount:1,
-    rows:[{id:args[0],job_id:args[1],kind:args[2]}]};
+    rows:[{id:args[0],job_id:args[1],kind:args[2],...(spec.repair?{payload_matches:true}:{})}]};
    if(sql.startsWith('INSERT INTO pod_events')&&sql.includes('RETURNING id,kind'))return {rowCount:1,
     rows:[{id:args[0],kind:args[1]}]};
    if(sql.startsWith('UPDATE pod_production_queue')&&sql.includes('RETURNING id,state,reason_code'))return {rowCount:1,
-    rows:[{id:args[0],state:'raw',reason_code:null}]};
+    rows:[{id:args[0],state:'raw',reason_code:null,...(spec.repair?{reset_matches:true}:{})}]};
    if(sql.startsWith('INSERT INTO pod_production_queue'))return {rowCount:1,rows:[{id:args[0]}]};
    if(sql.includes('FROM pod_concepts WHERE id='))return {rows:[{business_id:job.business_id,rights_state:'PASS',permanently_unpublished:false}]};
    if(sql.includes('SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code'))
-    return {rows:[{id:job.id,brief:job,attempt:1,manifest:{},qa_envelope:{},reason_code:'QA_FAILED'}]};
+    return {rows:[{id:job.id,brief:job,attempt:1,fencing_token:'1',manifest:{},qa_envelope:{},reason_code:'QA_FAILED'}]};
    return {rows:[{id:job.id,used:1}]};
   }};
   const db=new PodDB({pool:{connect:async()=>{if(stage==='connection')advance();return client;}},

@@ -308,17 +308,19 @@ function productionRightsQuerySnapshot(result){
  return row;
 }
 function repairableQuerySnapshot(result,jobId){
- const row=exactQueryRow(result,['id','brief','attempt','manifest','qa_envelope','reason_code']);
+ const row=exactQueryRow(result,['id','brief','attempt','manifest','qa_envelope','reason_code','fencing_token']);
  if(row===null)return null;
  const brief=snapshotClaimData(row.brief),
   manifest=row.manifest===null?null:snapshotClaimData(row.manifest),
   qaEnvelope=row.qa_envelope===null?null:snapshotClaimData(row.qa_envelope);
  if(row.id!==jobId||!validOpaqueText(row.id)||!Number.isSafeInteger(row.attempt)||row.attempt<0||row.attempt>=3||
+  typeof row.fencing_token!=='string'||!/^(0|[1-9][0-9]{0,18})$/.test(row.fencing_token)||
+  (row.fencing_token.length===19&&row.fencing_token>'9223372036854775807')||
   brief===null||typeof brief!=='object'||Array.isArray(brief)||
   (row.manifest!==null&&(manifest===null||typeof manifest!=='object'||Array.isArray(manifest)))||
   (row.qa_envelope!==null&&(qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope)))||
   (row.reason_code!==null&&!validOpaqueText(row.reason_code)))throw Error('POD_QUERY_UNVERIFIED');
- return {id:row.id,brief,attempt:row.attempt,manifest,qa_envelope:qaEnvelope,reason_code:row.reason_code};
+ return {id:row.id,brief,attempt:row.attempt,manifest,qa_envelope:qaEnvelope,reason_code:row.reason_code,fencing_token:row.fencing_token};
 }
 function reviewableQuerySnapshot(result,jobId){
  const row=exactQueryRow(result,['id','platform','manifest','manifest_sha256']);
@@ -612,19 +614,25 @@ export class PodDB {
   return this.tx(async c=>{
    // Only an expired internal production lease is recoverable from blocked.
    // Publication ambiguity and other blocked reasons must never become raw.
-   const j=repairableQuerySnapshot(await c.query(`SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code
+   const j=repairableQuerySnapshot(await c.query(`SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code,q.fencing_token::text AS fencing_token
     FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
-    WHERE q.id=$1 AND (q.state='qa_failed' OR (q.state='blocked' AND q.reason_code='PRODUCTION_LEASE_EXPIRED'
-      AND q.lease_until<=clock_timestamp() AND q.provider_id IS NULL))
+    WHERE q.id=$1 AND q.provider_id IS NULL AND (q.state='qa_failed' OR (q.state='blocked' AND q.reason_code='PRODUCTION_LEASE_EXPIRED'
+      AND q.lease_until<=clock_timestamp()))
     AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished
     FOR UPDATE OF q FOR SHARE OF p`,[jobId]),jobId);
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
    const eventId=crypto.randomUUID(),eventKind='pod.repair.archived';
-   const archived=await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',
+   // The archive is the only retained copy of the outgoing attempt here.
+   // A matching event ID cannot prove its manifest or QA evidence survived.
+   const archived=await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind,payload=$4::jsonb AS payload_matches',
     [eventId,j.id,eventKind,{attempt:j.attempt,manifest:j.manifest,qa_envelope:j.qa_envelope,reason_code:productionReason(j.reason_code)}]);
-   assertExactMutation(archived,{id:eventId,job_id:j.id,kind:eventKind});
-   const queued=await c.query("UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,lease_until=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1 RETURNING id,state,reason_code",[jobId,upstream]);
-   assertExactMutation(queued,{id:jobId,state:'raw',reason_code:null});
+   assertExactMutation(archived,{id:eventId,job_id:j.id,kind:eventKind,payload_matches:true});
+   const queued=await c.query(`UPDATE pod_production_queue SET state='raw',reason_code=NULL,manifest=NULL,qa_envelope=NULL,
+    lease_until=NULL,upstream_envelope=$2,next_attempt_at=now(),updated_at=now() WHERE id=$1
+    RETURNING id,state,reason_code,(manifest IS NULL AND qa_envelope IS NULL AND lease_until IS NULL AND provider_id IS NULL
+     AND upstream_envelope=$2::jsonb AND attempt=$3::integer AND fencing_token=$4::bigint AND brief=$5::jsonb
+     AND next_attempt_at=now()) AS reset_matches`,[jobId,upstream,j.attempt,j.fencing_token,j.brief]);
+   assertExactMutation(queued,{id:jobId,state:'raw',reason_code:null,reset_matches:true});
    verifyEnvelope(upstream,this.upstreamKey,'content-control:pod');
   },{signal});
  }
