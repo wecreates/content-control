@@ -45,6 +45,7 @@ function fixture({fail=false,rollbackFails=false}={}){
  const client={release:bad=>{released=bad;},query:async sql=>{
   sql=typeof sql==='string'?sql:sql.text;
   queries.push(sql);if(sql==='ROLLBACK'&&rollbackFails)throw Error('rollback unavailable');
+  if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('FROM pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
   if(sql.includes('FROM pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};
   if(sql.includes('GROUP BY platform'))return {rows:[{platform:'redbubble',state:'raw',count:'1'}]};
@@ -55,6 +56,17 @@ function fixture({fail=false,rollbackFails=false}={}){
  return {queries,get released(){return released;},get ended(){return ended;},
   db:{active(){throw Error('POD_STORAGE_EXPIRING');},expiresAt:now+3600000,pool:{connect:async()=>client,end:async()=>{ended=true;}}}};
 }
+test('metrics reject unverified commit results and discard the connection',async()=>{
+ let commandReads=0;
+ for(const outcome of [{command:'ROLLBACK'},undefined,Object.create({command:'COMMIT'}),
+  {get command(){commandReads++;return 'COMMIT';}},Object.assign([],{command:'COMMIT'})]){
+  const f=fixture(),client=await f.db.pool.connect(),query=client.query.bind(client);
+  client.query=async sql=>{if(sql==='COMMIT'){f.queries.push(sql);return outcome;}return query(sql);};
+  await assert.rejects(metrics(f.db,{env:healthy.env,clock:()=>now}),/^Error: POD_COMMIT_UNVERIFIED$/);
+  assert.equal(f.queries.at(-1),'COMMIT');assert.equal(f.queries.includes('ROLLBACK'),false);assert.equal(f.released,true);
+ }
+ assert.equal(commandReads,0);
+});
 test('metrics remain read-only and available inside the write-blocking expiry window',async()=>{
  const f=fixture(),result=await metrics(f.db,{env:healthy.env,clock:()=>now});
  assert.equal(result.health.storage.lifetime,'BLOCKED');assert.equal(result.health.status,'CRITICAL');

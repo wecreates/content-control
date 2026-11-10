@@ -8,6 +8,7 @@ import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
 import {databaseWait} from './integrations/pod/database-wait.mjs';
+import {assertCommitOutcome} from './integrations/pod/transaction-outcome.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -31,13 +32,6 @@ function dataProperty(target,key){
   const descriptor=Object.getOwnPropertyDescriptor(target,key);
   return descriptor&&Object.hasOwn(descriptor,'value')?{valid:true,value:descriptor.value}:{valid:false};
  }catch{return {valid:false};}
-}
-function assertCommitOutcome(result){
- // PostgreSQL may resolve COMMIT with a ROLLBACK command tag on an aborted
- // transaction. Do not return read or write evidence from that transaction.
- const command=dataProperty(result,'command');
- if(!command.valid||typeof result!=='object'||Array.isArray(result)||command.value!=='COMMIT')
-  throw Error('POD_COMMIT_UNVERIFIED');
 }
 function assertExactMutation(result,expected){
  const count=dataProperty(result,'rowCount'),rows=dataProperty(result,'rows');
