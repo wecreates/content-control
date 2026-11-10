@@ -35,12 +35,38 @@ export async function verifyProductionRecovery(pool,bridge){
    await assert.rejects(db.requeueRepair(id,grant(change)));
    assert.equal((await row()).state,'blocked');assert.equal(await eventCount(),0);
   }
+  // Preserve the only retained outgoing attempt if an INSERT or UPDATE
+  // returns the expected ID and state but rewrites evidence. Triggers exist
+  // solely in this disposable database and target only this fixture's UUID.
+  const oldQA={payload:'test-only-archived-qa',signature:'test-only'};
+  await pool.query('UPDATE pod_production_queue SET manifest=$2,qa_envelope=$3 WHERE id=$1',[id,manifest,oldQA]);
+  const readEvidence=async()=>(await pool.query('SELECT manifest,qa_envelope,upstream_envelope FROM pod_production_queue WHERE id=$1',[id])).rows[0];
+  const beforeRow=await row(),beforeEvidence=await readEvidence();
+  for(const [table,operation,condition,rewrite] of [
+   ['pod_events','INSERT',`NEW.job_id='${id}' AND NEW.kind='pod.repair.archived'`,"NEW.payload:=NEW.payload-'manifest'"],
+   ['pod_production_queue','UPDATE',`NEW.id='${id}' AND NEW.state='raw'`,'NEW.manifest:=OLD.manifest'],
+   ['pod_production_queue','UPDATE',`NEW.id='${id}' AND NEW.state='raw'`,'NEW.attempt:=OLD.attempt-1'],
+  ]){
+   try{
+    await pool.query(`CREATE FUNCTION pod_test_alter_repair() RETURNS trigger LANGUAGE plpgsql AS $$
+     BEGIN IF ${condition} THEN ${rewrite}; END IF; RETURN NEW; END; $$;
+     CREATE TRIGGER pod_test_alter_repair BEFORE ${operation} ON ${table} FOR EACH ROW EXECUTE FUNCTION pod_test_alter_repair();`);
+    await assert.rejects(db.requeueRepair(id,grant()),/^Error: POD_MUTATION_UNVERIFIED$/);
+    assert.deepEqual(await row(),beforeRow);
+    assert.deepEqual(await readEvidence(),beforeEvidence);
+    assert.equal(await eventCount(),0);
+   }finally{
+    await pool.query(`DROP TRIGGER IF EXISTS pod_test_alter_repair ON ${table}; DROP FUNCTION IF EXISTS pod_test_alter_repair();`);
+   }
+  }
   const outcomes=await Promise.allSettled([db.requeueRepair(id,grant()),db.requeueRepair(id,grant())]);
   assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,1);
   assert.equal(outcomes.filter(x=>x.status==='rejected'&&x.reason.message==='REPAIR_BLOCKED').length,1);
   assert.deepEqual(await row(),{state:'raw',reason_code:null,attempt:1,fencing_token:'1',lease_until:null});
   const event=(await pool.query("SELECT payload FROM pod_events WHERE job_id=$1 AND kind='pod.repair.archived'",[id])).rows[0].payload;
   assert.equal(event.reason_code,'PRODUCTION_LEASE_EXPIRED');assert.equal(event.attempt,1);assert.equal(await eventCount(),1);
+  assert.deepEqual(event.manifest,manifest);assert.deepEqual(event.qa_envelope,oldQA);
+  assert.equal((await readEvidence()).manifest,null);assert.equal((await readEvidence()).qa_envelope,null);
   await assert.rejects(db.failProduction(old,'QA_FAILED'),/LEASE_LOST/);
   // Invoke before other queue fixtures so the real claim API selects this sole raw job.
   const retry=await db.claimProduction();assert.equal(retry.id,id);assert.equal(retry.attempt,2);assert.equal(retry.fencing_token,'2');
@@ -65,7 +91,9 @@ export async function verifyProductionRecovery(pool,bridge){
   await assert.rejects(db.requeueRepair(id,grant()),/REPAIR_BLOCKED/);
   await expire();await pool.query("UPDATE pod_production_queue SET provider_id='synthetic-existing-listing' WHERE id=$1",[id]);
   await assert.rejects(db.requeueRepair(id,grant()),/REPAIR_BLOCKED/);
-  await pool.query('UPDATE pod_production_queue SET provider_id=NULL WHERE id=$1',[id]);
+  await pool.query("UPDATE pod_production_queue SET state='qa_failed' WHERE id=$1",[id]);
+  await assert.rejects(db.requeueRepair(id,grant()),/REPAIR_BLOCKED/);
+  await pool.query("UPDATE pod_production_queue SET state='blocked',provider_id=NULL WHERE id=$1",[id]);
   await pool.query("UPDATE pod_concepts SET rights_state='UNKNOWN',permanently_unpublished=true WHERE id=$1",[concept]);
   await assert.rejects(db.requeueRepair(id,grant()),/REPAIR_BLOCKED/);
   assert.equal(await eventCount(),2);

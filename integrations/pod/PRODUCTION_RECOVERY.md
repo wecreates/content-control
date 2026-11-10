@@ -6,6 +6,13 @@ Eligibility requires a recorded expired lease, no provider listing ID, current P
 
 The row lock serializes retries. Exactly one concurrent retry archives the failed attempt and clears the old lease, manifest and QA envelope. The attempt counter is retained. The next normal claim increments the attempt and fencing token, so an old worker cannot finish or overwrite the replacement job. Grant expiry is checked again after database waits and writes; failure rolls back the transition and archival event. The production worker still checks current authority and rights at its existing stage boundaries.
 
+Before resetting the queue, PostgreSQL must confirm that the archive payload
+matches the attempt number, manifest, QA envelope and fixed reason that were
+selected. The reset must then confirm the cleared fields, unchanged brief,
+attempt and fencing token, and exact replacement grant. A mismatch rolls back
+both changes. A job with an existing provider listing is ineligible even if its
+row reports a QA failure. These safeguards do not regenerate or approve a job.
+
 No automatic approval, production activation, publication, adapter call, migration or historical deletion is introduced. Request a current upstream grant through the established authority flow; do not sign one with invented clearance or reuse an expired queued envelope. Both publication switches stay false. This recovery implementation and disposable PostgreSQL tests do not establish a production restart drill, permanent backup retention or always-on hosting.
 
 ## Recovery sweep clock
