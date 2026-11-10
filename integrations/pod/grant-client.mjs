@@ -16,6 +16,39 @@ function dataProperty(target,key){
  }catch{return {valid:false};}
 }
 
+// Bind the response to the same inert job scope used to dispatch the request.
+// Never run brief accessors or read the caller's objects again after I/O.
+function grantScope(job){
+ const fail=()=>{throw Error('GRANT_REQUEST_INVALID');};
+ const record=value=>{
+  if(value===null||typeof value!=='object'||utilTypes.isProxy(value))fail();
+  const prototype=Object.getPrototypeOf(value);
+  if(prototype!==Object.prototype&&prototype!==null)fail();
+  return value;
+ };
+ const own=(value,key,optional=false)=>{
+  const field=Object.getOwnPropertyDescriptor(value,key);
+  if(!field&&optional)return undefined;
+  if(!field?.enumerable||!Object.hasOwn(field,'value'))fail();
+  return field.value;
+ };
+ job=record(job);
+ const id=own(job,'id'),brief=record(own(job,'brief')),scope=Object.create(null);
+ if(typeof id!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(id))fail();
+ for(const key of ['id','business_id','account_id','platform','destination_platform','mode']){
+  const value=own(brief,key);
+  if(typeof value!=='string')fail();
+  scope[key]=value;
+ }
+ if(scope.id!==id)fail();
+ for(const key of ['task_sha256','package_sha256']){
+  const value=own(brief,key,true);
+  if(value!==undefined&&value!==null&&typeof value!=='string')fail();
+  scope[key]=value;
+ }
+ return scope;
+}
+
 export function createGrantResolver(options={}){
  const envCapability=dataProperty(options,'env'),fetchCapability=dataProperty(options,'fetchImpl');
  if(!envCapability.valid||!fetchCapability.valid)throw Error('GRANT_OPTIONS_UNVERIFIED');
@@ -35,21 +68,19 @@ export function createGrantResolver(options={}){
  // Bind the validated authority identity at construction. A caller-owned env
  // object must not replace either credential after this resolver is trusted.
  return async(job,{signal}={})=>{
-  const jobId=job?.id;
-  if(typeof jobId!=='string'||!/^[-a-zA-Z0-9_]{1,100}$/.test(jobId)||job?.brief?.id!==jobId)
-   throw Error('GRANT_REQUEST_INVALID');
+  const scope=grantScope(job);
   const deadline=performance.now()+10000;
   const timeout=AbortSignal.timeout(10000);
   const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
-   headers:{'content-type':'application/json',authorization:'Bearer '+authKey},body:JSON.stringify({job_id:jobId})},{deadline});
+   headers:{'content-type':'application/json',authorization:'Bearer '+authKey},body:JSON.stringify({job_id:scope.id})},{deadline});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
    sizeError:'GRANT_TOO_LARGE',mediaTypeError:'GRANT_MEDIA_TYPE_INVALID'});
   if(envelope===null||typeof envelope!=='object'||Array.isArray(envelope)||
    Object.getPrototypeOf(envelope)!==Object.prototype||Object.keys(envelope).length!==2||
    !Object.hasOwn(envelope,'payload')||!Object.hasOwn(envelope,'signature'))throw Error('GRANT_RESPONSE_INVALID');
   const grant=verifyEnvelope(envelope,upstreamKey,'content-control:pod');
-  enforceBrief(grant,job.brief);
+  enforceBrief(grant,scope);
   // Recheck wall-clock validity after signature/scope work. A nonfinite or
   // rolled-back second clock read must not turn the lifetime comparison into
   // a false result and authorize a grant from the apparent future.
