@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 from decimal import Decimal, InvalidOperation
 from html.parser import HTMLParser
+from itertools import islice
 from pathlib import Path
 import cv2
 import numpy as np
@@ -42,6 +43,17 @@ def fetch_market(url, approved_hosts):
         raise ValueError('SOURCE_TOO_LARGE')
     return data.decode('utf-8', errors='strict')
 
+def source_members(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('SOURCE_DUPLICATE_KEY')
+        result[key] = value
+    return result
+
+def invalid_source_constant(_token):
+    raise ValueError('SOURCE_NON_JSON_NUMBER')
+
 class ProductParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -62,8 +74,9 @@ class ProductParser(HTMLParser):
                 # Preserve numeric price tokens before they can be rounded or
                 # overflow/underflow through binary floating point. Extraction
                 # emits decimal strings; source bytes remain independently bound.
-                self.records.append(json.loads(''.join(self.text), parse_float=Decimal))
-            except json.JSONDecodeError:
+                self.records.append(json.loads(''.join(self.text), parse_float=Decimal,
+                    object_pairs_hook=source_members, parse_constant=invalid_source_constant))
+            except (ValueError, InvalidOperation, RecursionError):
                 pass
 
 def products(value):
@@ -77,6 +90,46 @@ def products(value):
         for key in ('@graph', 'itemListElement', 'item'):
             if key in value:
                 yield from products(value[key])
+
+SOURCE_DECIMAL = re.compile(r'[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?')
+
+def observed_price(value):
+    if isinstance(value, str):
+        if not SOURCE_DECIMAL.fullmatch(value):
+            return None
+    elif type(value) is not int and not isinstance(value, Decimal):
+        return None
+    try:
+        price = Decimal(value)
+        return str(price) if price.is_finite() and price >= 0 else None
+    except InvalidOperation:
+        return None
+
+def observed_text(value):
+    if not isinstance(value, str) or '\x00' in value:
+        return None
+    try:
+        value.encode('utf-8', errors='strict')
+    except UnicodeEncodeError:
+        return None
+    return value
+
+def observed_product(item):
+    offer = item.get('offers')
+    if isinstance(offer, list):
+        offer = offer[0] if offer else None
+    if not isinstance(offer, dict):
+        offer = {}
+    currency = offer.get('priceCurrency')
+    if not isinstance(currency, str) or not re.fullmatch(r'[A-Z]{3}', currency):
+        currency = None
+    tags = item.get('keywords')
+    if isinstance(tags, list):
+        tags = tags if all(observed_text(tag) is not None for tag in tags) else None
+    else:
+        tags = observed_text(tags)
+    return {'name': observed_text(item.get('name')), 'price_decimal': observed_price(offer.get('price')),
+            'currency': currency, 'tags': tags, 'rank': None, 'search_volume': None}
 
 def normalize(text):
     return unicodedata.normalize('NFC', str(text)).casefold().strip()
@@ -187,24 +240,9 @@ def run(args):
         html = fetch_market(args.url, sources.get('approved_hosts', []))
     parser = ProductParser()
     parser.feed(html)
-    found = list(products(parser.records))
-    if not found:
+    extracted = [observed_product(item) for item in islice(products(parser.records), 50)]
+    if not extracted:
         raise ValueError('SOURCE_SCHEMA_UNSUPPORTED')
-    extracted = []
-    for item in found[:50]:
-        offer = item.get('offers', {})
-        if isinstance(offer, list):
-            offer = offer[0] if offer else {}
-        try:
-            # Preserve source decimal/currency; no universal two-decimal currency assumption.
-            price = str(Decimal(str(offer['price'])))
-            if not Decimal(price).is_finite() or Decimal(price) < 0:
-                price = None
-        except (KeyError, InvalidOperation):
-            price = None
-        extracted.append({'name': item.get('name'), 'price_decimal': price,
-                          'currency': offer.get('priceCurrency'), 'tags': item.get('keywords'),
-                          'rank': None, 'search_volume': None})
     # Analyze and identify exactly the same bounded byte snapshot. The path may
     # be replaced, overwritten or removed during vision work; never rehash it.
     with open_regular_binary(args.reference) as source:
