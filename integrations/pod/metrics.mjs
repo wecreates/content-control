@@ -9,6 +9,7 @@ const QUEUE_STATES=Object.freeze(['review_required','raw','processing','qa_faile
 const queueStates=new Set(QUEUE_STATES),platforms=new Set(PLATFORMS);
 const STATE_FIELDS=Object.freeze(['platform','state','count']);
 const COUNT_FIELDS=Object.freeze(['count']);
+const LEASE_FIELDS=Object.freeze(['count','unverified_count']);
 const STORAGE_FIELDS=Object.freeze(['bytes']);
 const FINANCIAL_FIELDS=Object.freeze(['currency','verified_net_recorded_minor','evidence_count']);
 const EVENT_FIELDS=Object.freeze(['count','oldest_seconds']);
@@ -82,15 +83,21 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   const storage=snapshotRows(await query('SELECT COALESCE(sum(octet_length(body)),0)::text AS bytes FROM pod_artifacts'),STORAGE_FIELDS,{exactRows:1});
   const financials=snapshotRows(await query(`SELECT currency,sum(amount_minor)::text AS verified_net_recorded_minor,count(*)::text AS evidence_count
    FROM pod_financial_events GROUP BY currency ORDER BY currency`),FINANCIAL_FIELDS,{maxRows:26**3});
-  const leases=snapshotRows(await query("SELECT count(*)::text AS count FROM pod_production_queue WHERE state IN ('processing','publishing') AND lease_until<=clock_timestamp()"),COUNT_FIELDS,{exactRows:1});
+  const leases=snapshotRows(await query(`SELECT
+   (count(*) FILTER (WHERE state IN ('processing','publishing') AND isfinite(lease_until) AND lease_until<=clock_timestamp()))::text AS count,
+   (count(*) FILTER (WHERE (state IN ('processing','publishing') AND (lease_until IS NULL OR NOT isfinite(lease_until)))
+    OR (state='blocked' AND reason_code='PRODUCTION_LEASE_UNVERIFIED')
+    OR (state='ambiguous' AND reason_code='PUBLISH_LEASE_UNVERIFIED')))::text AS unverified_count
+   FROM pod_production_queue WHERE state IN ('processing','publishing','blocked','ambiguous')`),LEASE_FIELDS,{exactRows:1});
   const events=snapshotRows(await query(`SELECT count(*)::text AS count,
    COALESCE(GREATEST(0,FLOOR(EXTRACT(EPOCH FROM clock_timestamp()-min(created_at)))),0)::bigint::text AS oldest_seconds
    FROM pod_events WHERE delivered_at IS NULL`),EVENT_FIELDS,{exactRows:1});
   if(!validStateRows(states)||!canonicalUnsigned(failures[0].count)||!canonicalUnsigned(storage[0].bytes)||
-   !validFinancialRows(financials)||!canonicalUnsigned(leases[0].count)||!canonicalUnsigned(events[0].count)||
+   !validFinancialRows(financials)||!canonicalUnsigned(leases[0].count)||!canonicalUnsigned(leases[0].unverified_count)||!canonicalUnsigned(events[0].count)||
    !canonicalUnsigned(events[0].oldest_seconds))throw Error('POD_METRICS_QUERY_UNVERIFIED');
   readHealth=()=>operationalHealth({expiresAt:db.expiresAt,artifactBytes:storage[0].bytes,
-   expiredLeases:leases[0].count,pendingEvents:events[0].count,oldestEventSeconds:events[0].oldest_seconds,now:clock(),env});
+   expiredLeases:leases[0].count,unverifiedLeases:leases[0].unverified_count,
+   pendingEvents:events[0].count,oldestEventSeconds:events[0].oldest_seconds,now:clock(),env});
   readHealth(); // Preserve validation before commit, without returning stale time.
   commitPending=true;assertCommitOutcome(await query('COMMIT'));commitPending=false;began=false;beginAttempted=false;
   report={queues:states,incident_count:failures[0].count,artifact_bytes:storage[0].bytes,financials};

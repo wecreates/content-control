@@ -5,8 +5,8 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const outcomes=[
- {state:'ambiguous',reason_code:'LEASE_EXPIRED'},
- {state:'blocked',reason_code:'PRODUCTION_LEASE_EXPIRED'},
+ {state:'ambiguous',classification_matches:true},
+ {state:'blocked',classification_matches:true},
 ];
 
 function result(outcome,ids=[]){
@@ -33,7 +33,8 @@ test('lease recovery accepts exact bounded mutation receipts',async()=>{
  for(const sql of queries){
   assert.match(sql,/FOR UPDATE SKIP LOCKED/);
   assert.match(sql,/LIMIT 100/);
-  assert.match(sql,/RETURNING q\.id,q\.state,q\.reason_code/);
+  assert.match(sql,/RETURNING q\.id,q\.state/);
+  assert.match(sql,/AS classification_matches/);
  }
 });
 
@@ -42,12 +43,21 @@ test('lease recovery accepts exact empty mutation receipts',async()=>{
  assert.equal(await db.recover(),undefined);
 });
 
+test('lease recovery selects missing and non-finite deadlines for safe quarantine',async()=>{
+ const {db,queries}=fixture(outcomes.map(outcome=>result(outcome)));
+ await db.recover();
+ for(const sql of queries){
+  assert.match(sql,/lease_until IS NULL OR NOT isfinite\(lease_until\)/);
+  assert.match(sql,/lease_until<=clock_timestamp\(\)/);
+ }
+});
+
 test('lease recovery rejects malformed or mismatched mutation receipts',async()=>{
  const proxyRows=new Proxy([],{get(){throw Error('rows proxy trap executed');}});
  const proxyRow=new Proxy({id:'job',...outcomes[0]},{get(){throw Error('row proxy trap executed');}});
  const sparse=[];sparse.length=1;
  const extraRows=[{id:'job',...outcomes[0]}];extraRows.extra=true;
- const accessorRow={id:'job',reason_code:outcomes[0].reason_code};
+ const accessorRow={id:'job',classification_matches:true};
  Object.defineProperty(accessorRow,'state',{enumerable:true,get(){throw Error('row getter executed');}});
  const attempts=[
   undefined,{},
@@ -61,6 +71,8 @@ test('lease recovery rejects malformed or mismatched mutation receipts',async()=
   {rowCount:1,rows:[{id:'',...outcomes[0]}]},
   {rowCount:1,rows:[{id:'job',...outcomes[0],extra:true}]},
   {rowCount:1,rows:[{id:'job',state:'blocked',reason_code:'LEASE_EXPIRED'}]},
+  {rowCount:1,rows:[{id:'job',state:'ambiguous',classification_matches:false}]},
+  {rowCount:1,rows:[{id:'job',state:'ambiguous',classification_matches:'true'}]},
   {rowCount:2,rows:[{id:'same',...outcomes[0]},{id:'same',...outcomes[0]}]},
   {rowCount:101,rows:Array.from({length:101},(_,index)=>({id:`job-${index}`,...outcomes[0]}))},
   Object.defineProperty({},'rowCount',{get(){throw Error('result getter executed');}}),
