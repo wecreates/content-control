@@ -5,6 +5,28 @@
 is an observation interface, not permission to collect from a marketplace. The
 authority must establish permitted collection separately. Etsy is excluded.
 
+## Source authorization before acquisition
+
+The `pod_market_intake.py` collector requires a current signed
+`pod:source-policy` envelope from the existing source authority. In addition to
+`collection_authorized: true` and an HTTPS host in `approved_hosts`, the policy
+must bind the exact `platform`, `country`, `category`, `source_url` (including
+its path and query) and `collection_mode`. A host permission alone does not
+authorize sibling URLs, another marketplace or a different collection method.
+
+- `offline_snapshot` requires `--html` and a signed `snapshot` with the same
+  `source_url` and the SHA-256 of the exact source bytes.
+- `live_url` requires no `--html` and no `snapshot` claim. Existing HTTPS,
+  redirect and response-size checks still apply. Removing `--html` from a
+  snapshot invocation cannot authorize a live fetch.
+
+Missing, malformed or mismatched scopes fail before any source file or network
+request. Unscoped legacy envelopes must not be treated as grants; only the
+existing authority can issue a new scoped policy from current authorization.
+Successful collector evidence retains the mode and policy digest. These checks
+are not real marketplace permissions, source verification, rights clearance
+or live acceptance of area 7.
+
 Upload the permitted evidence to the existing bounded artifact store first.
 `source_sha256` is mandatory; optional `image_sha256` and ranked observations'
 `rank_evidence_sha256` must also name stored immutable artifacts. All references

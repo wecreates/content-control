@@ -224,19 +224,28 @@ def run(args):
     if sources.get('collection_authorized') is not True:
         raise ValueError('SOURCE_NOT_AUTHORIZED')
     validate_source_url(args.url, sources.get('approved_hosts'))
-    if args.html:
+    offline = args.html is not None
+    collection_mode = 'offline_snapshot' if offline else 'live_url'
+    scope = {'platform': args.platform, 'country': args.country, 'category': args.category,
+             'collection_mode': collection_mode, 'source_url': args.url}
+    if any(sources.get(field) != expected for field, expected in scope.items()):
+        raise ValueError('SOURCE_SCOPE_MISMATCH')
+    if offline:
         # Offline imports need the same authorization as live collection, plus
         # a trusted binding of the exact saved bytes to their original URL.
+        snapshot = sources.get('snapshot')
+        if not isinstance(snapshot, dict) or snapshot.get('source_url') != args.url:
+            raise ValueError('SOURCE_SNAPSHOT_MISMATCH')
         with open_regular_binary(args.html) as source:
             data = source.read(MAX_SOURCE_BYTES + 1)
         if len(data) > MAX_SOURCE_BYTES:
             raise ValueError('SOURCE_TOO_LARGE')
-        snapshot = sources.get('snapshot')
-        if (not isinstance(snapshot, dict) or snapshot.get('source_url') != args.url
-                or snapshot.get('sha256') != hashlib.sha256(data).hexdigest()):
+        if snapshot.get('sha256') != hashlib.sha256(data).hexdigest():
             raise ValueError('SOURCE_SNAPSHOT_MISMATCH')
         html = data.decode('utf-8', errors='strict')
     else:
+        if 'snapshot' in sources:
+            raise ValueError('SOURCE_SCOPE_MISMATCH')
         html = fetch_market(args.url, sources.get('approved_hosts', []))
     parser = ProductParser()
     parser.feed(html)
@@ -253,7 +262,7 @@ def run(args):
         raise ValueError('REFERENCE_EMPTY')
     with io.BytesIO(reference) as snapshot:
         visual = analyze_reference(snapshot)
-    result.update({'observations': extracted, 'source_url': args.url,
+    result.update({'observations': extracted, 'source_url': args.url, 'collection_mode': collection_mode,
                    'collection_authorized': True,
                    'source_policy_sha256': hashlib.sha256(canonical(sources).encode()).hexdigest(),
                    'source_sha256': hashlib.sha256(html.encode()).hexdigest(),
