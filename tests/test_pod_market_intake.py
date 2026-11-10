@@ -209,6 +209,8 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
             'non_trademark_rights_verified': True,
         })
         self.source = {'collection_authorized': True, 'approved_hosts': ['approved.example'],
+            'platform': 'redbubble', 'country': 'US', 'category': 'apparel',
+            'collection_mode': 'offline_snapshot', 'source_url': self.args.url,
             'snapshot': {'source_url': self.args.url, 'sha256': hashlib.sha256(self.body).hexdigest()}}
         self.write_source()
         self.visual = patch('pod_market_intake.analyze_reference', return_value={'fixture': True})
@@ -230,6 +232,78 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         Path(self.args.source_policy).unlink()
         with self.assertRaises((ValueError, FileNotFoundError)):
             run(self.args)
+
+    def test_source_policy_cannot_cross_marketplace_country_or_category(self):
+        for field, other in [('platform', 'teepublic'), ('country', 'CA'), ('category', 'books')]:
+            with self.subTest(field=field):
+                self.source.update(platform='redbubble', country='US', category='apparel',
+                                   collection_mode='offline_snapshot', source_url=self.args.url)
+                self.source[field] = other
+                self.write_source()
+                with patch('pod_market_intake.open_regular_binary', side_effect=lambda path: Path(path).open('rb')) as opened:
+                    with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
+                        run(self.args)
+                    opened.assert_not_called()
+
+    def test_offline_authority_cannot_be_used_for_a_live_fetch(self):
+        self.source.update(platform='redbubble', country='US', category='apparel',
+                           collection_mode='offline_snapshot', source_url=self.args.url)
+        self.write_source()
+        self.args.html = None
+        with patch('pod_market_intake.fetch_market', return_value=self.body.decode()) as fetch:
+            with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
+                run(self.args)
+            fetch.assert_not_called()
+
+    def test_live_authority_cannot_fetch_another_path_on_the_same_host(self):
+        self.source.update(platform='redbubble', country='US', category='apparel',
+                           collection_mode='live_url', source_url=self.args.url)
+        del self.source['snapshot']
+        self.write_source()
+        self.args.html = None
+        self.args.url += '?other=1'
+        with patch('pod_market_intake.fetch_market', return_value=self.body.decode()) as fetch:
+            with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
+                run(self.args)
+            fetch.assert_not_called()
+
+    def test_legacy_and_malformed_source_scopes_fail_before_acquisition(self):
+        for field in ('platform', 'country', 'category', 'collection_mode', 'source_url'):
+            expected = self.source[field]
+            for value in (None, [expected]):
+                with self.subTest(field=field, value=value):
+                    if value is None:
+                        del self.source[field]
+                    else:
+                        self.source[field] = value
+                    self.write_source()
+                    with patch('pod_market_intake.open_regular_binary') as opened:
+                        with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
+                            run(self.args)
+                        opened.assert_not_called()
+                    self.source[field] = expected
+
+    def test_live_policy_cannot_contain_offline_snapshot_binding(self):
+        self.args.html = None
+        self.source['collection_mode'] = 'live_url'
+        self.write_source()
+        with patch('pod_market_intake.fetch_market') as fetch:
+            with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
+                run(self.args)
+            fetch.assert_not_called()
+
+    def test_out_of_scope_source_cannot_produce_passing_signed_intake(self):
+        self.source['platform'] = 'teepublic'
+        self.write_source()
+        with patch.dict(os.environ, {'POD_INTAKE_KEY': 'i' * 48}), \
+             patch.object(sys, 'argv', self.cli_args()), patch('sys.stdout', new_callable=io.StringIO):
+            self.assertEqual(main(), 2)
+            evidence = verified(json.loads((self.root / 'signed.json').read_text()),
+                                'POD_INTAKE_KEY', 'content-control:pod:intake')
+        self.assertEqual(evidence['rights_state'], 'UNKNOWN')
+        self.assertTrue(evidence['permanently_unpublished'])
+        self.assertFalse(evidence['publication_enabled'])
+        self.assertNotIn('observations', evidence)
 
     def test_numeric_source_prices_preserve_decimal_identity(self):
         for literal, expected in [('1234567890123456.78', '1234567890123456.78'),
@@ -320,8 +394,14 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
 
     def test_offline_snapshot_requires_exact_url(self):
         self.args.url = 'https://approved.example/another-product'
-        with self.assertRaisesRegex(ValueError, 'SOURCE_SNAPSHOT_MISMATCH'):
+        with self.assertRaisesRegex(ValueError, 'SOURCE_SCOPE_MISMATCH'):
             run(self.args)
+        self.source['source_url'] = self.args.url
+        self.write_source()
+        with patch('pod_market_intake.open_regular_binary') as opened:
+            with self.assertRaisesRegex(ValueError, 'SOURCE_SNAPSHOT_MISMATCH'):
+                run(self.args)
+            opened.assert_not_called()
 
     def test_offline_snapshot_requires_approved_url(self):
         for url in ('http://approved.example/product', 'https://unapproved.example/product',
@@ -341,6 +421,7 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         result = run(self.args)
         self.assertEqual(result['rights_state'], 'PASS')
         self.assertFalse(result['publication_enabled'])
+        self.assertEqual(result['collection_mode'], 'offline_snapshot')
         self.assertEqual(result['source_sha256'], hashlib.sha256(self.body).hexdigest())
         self.assertEqual(result['observations'][0]['name'], 'Fixture')
 
@@ -371,11 +452,13 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
     def test_authorized_online_source_still_uses_existing_fetch_contract(self):
         self.args.html = None
         del self.source['snapshot']
+        self.source['collection_mode'] = 'live_url'
         self.write_source()
         with patch('pod_market_intake.fetch_market', return_value=self.body.decode()) as fetch:
             result = run(self.args)
         fetch.assert_called_once_with(self.args.url, ['approved.example'])
         self.assertTrue(result['collection_authorized'])
+        self.assertEqual(result['collection_mode'], 'live_url')
         self.assertEqual(len(result['source_policy_sha256']), 64)
 
     def test_cli_cannot_sign_pass_after_unauthorized_import(self):
