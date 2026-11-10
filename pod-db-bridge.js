@@ -351,13 +351,15 @@ function reviewArtifactQuerySnapshot(result,jobId){
   manifest,manifest_sha256:row.manifest_sha256,body,media_type:row.media_type};
 }
 function publishableQuerySnapshot(result,job){
- const row=exactQueryRow(result,['id','platform','manifest','qa_envelope','manifest_sha256']);
+ const row=exactQueryRow(result,['id','platform','brief','idempotency_key','manifest','qa_envelope','manifest_sha256']);
  if(row===null)return null;
- const manifest=snapshotClaimData(row.manifest),qaEnvelope=snapshotClaimData(row.qa_envelope);
+ const manifest=snapshotClaimData(row.manifest),qaEnvelope=snapshotClaimData(row.qa_envelope),brief=snapshotClaimData(row.brief);
  if(row.id!==job.id||row.platform!==job.platform||!SHA256.test(row.manifest_sha256||'')||
+  !validOpaqueText(row.idempotency_key)||brief===null||typeof brief!=='object'||Array.isArray(brief)||
   manifest===null||typeof manifest!=='object'||Array.isArray(manifest)||
   qaEnvelope===null||typeof qaEnvelope!=='object'||Array.isArray(qaEnvelope))throw Error('POD_QUERY_UNVERIFIED');
- return {id:row.id,platform:row.platform,manifest,qa_envelope:qaEnvelope,manifest_sha256:row.manifest_sha256};
+ return {id:row.id,platform:row.platform,brief,idempotency_key:row.idempotency_key,
+  manifest,qa_envelope:qaEnvelope,manifest_sha256:row.manifest_sha256};
 }
 function publishAccountLockQuerySnapshot(result,accountId){
  const row=exactQueryRow(result,['id']);
@@ -478,9 +480,12 @@ function assertStoredQA(envelope,key,manifest,platform){
 }
 function assertCurrentReleaseSnapshot(current,claimed,key){
  try{
+  const brief=snapshotClaimData(claimed.brief);
   assertStoredManifest(current.manifest,current.platform,current.manifest_sha256);
   assertStoredQA(current.qa_envelope,key,current.manifest,current.platform);
-  if(durableManifestIdentity(claimed.manifest,claimed.platform)!==current.manifest_sha256||
+  if(brief===null||typeof brief!=='object'||Array.isArray(brief)||canonical(brief)!==canonical(current.brief)||
+   claimed.idempotency_key!==current.idempotency_key||
+   durableManifestIdentity(claimed.manifest,claimed.platform)!==current.manifest_sha256||
    current.qa_envelope.payload!==claimed.qa_envelope?.payload||
    current.qa_envelope.signature!==claimed.qa_envelope?.signature)throw Error('RELEASE_SNAPSHOT_CHANGED');
  }catch{throw Error('LOCAL_RELEASE_BLOCKED');}
@@ -978,7 +983,7 @@ export class PodDB {
   return claimed;
  },{signal});}
  async assertPublishable(job){return this.tx(async c=>{
-  const current=publishableQuerySnapshot(await c.query(`SELECT q.id,q.platform,q.manifest,q.qa_envelope,
+  const current=publishableQuerySnapshot(await c.query(`SELECT q.id,q.platform,q.brief,q.idempotency_key,q.manifest,q.qa_envelope,
    (SELECT e.payload->>'manifest_sha256' FROM pod_events e WHERE e.job_id=q.id
     AND e.kind='pod.production.qa_passed' AND e.payload ? 'manifest_sha256'
     ORDER BY e.created_at DESC,e.id DESC LIMIT 1) AS manifest_sha256
@@ -989,7 +994,7 @@ export class PodDB {
    FOR SHARE OF q,p,a`,[job.id,job.fencing_token,job.account_id,job.platform]),job);
   if(!current)throw Error('LOCAL_RELEASE_BLOCKED');
   // The claim transaction releases its locks before artifact/grant resolution.
-  // Rebind the final local guard to the exact durable manifest and signed QA
+  // Rebind the final local guard to the durable brief, submission key, manifest and signed QA
   // snapshot that was claimed so a restored or altered publishing row cannot
   // submit stale in-memory evidence after those waits.
   assertCurrentReleaseSnapshot(current,job,this.qaKey);
