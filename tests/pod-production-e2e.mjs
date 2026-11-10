@@ -72,6 +72,27 @@ test('stored task -> real Python production -> durable review hold -> signed QA 
   await assert.rejects(db.acceptReview(id,qa),/REVIEW_NOT_PENDING/);
   await assert.rejects(db.reviewPackage(id),/PACKAGE_UNAVAILABLE/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[id])).rows[0].state,'qa_passed');
+  // A real committed hold followed by a lost adapter acknowledgment is not
+  // proof of rollback. The worker must not attempt a second failure write.
+  const uncertainId=crypto.randomUUID(),uncertainGrant=sign({...JSON.parse(grant.payload),job_id:uncertainId});
+  await db.enqueue({job:{...job,id:uncertainId},upstream:uncertainGrant,conceptId:concept,revision:7});
+  approve(uncertainId,uncertainGrant);
+  let secondWrites=0;
+  const uncertainDB=Object.create(db);
+  uncertainDB.holdProduction=async function(...args){
+   await PodDB.prototype.holdProduction.apply(this,args);
+   throw Error('fixture lost hold acknowledgment');
+  };
+  uncertainDB.failProduction=async()=>{secondWrites++;};
+  await assert.rejects(produceOnce({db:uncertainDB,...resolvers(),upstreamKey:key,root:process.cwd(),
+   env:{...process.env,POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key}}),
+   /^Error: PRODUCTION_SETTLEMENT_UNCERTAIN$/);
+  assert.equal(secondWrites,0);
+  const uncertain=await db.reviewPackage(uncertainId);
+  assert.equal(uncertain.reason_code,'REVIEW_REQUIRED');
+  assert.equal(uncertain.manifest.package_sha256,saved.manifest.package_sha256);
+  assert.deepEqual((await pool.query('SELECT kind FROM pod_events WHERE job_id=$1',[uncertainId])).rows,
+   [{kind:'pod.production.review_required'}]);
   // Real stored inputs and signed grants must not bypass provenance or scope.
   for(const [index,change] of [{official_source_verified:false},{country:'CA'}].entries()){
    const badTemplate=await store.put(Buffer.from(JSON.stringify(sign({...templateRecord,...change}))),'application/json');

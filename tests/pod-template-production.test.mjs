@@ -41,7 +41,7 @@ const record=(platform='redbubble')=>({audience:'pod:template',...scope,
   ...(platform==='kdp'?{...kdpCover(),binding:'paperback',ink_type:'black',paper_type:'white',interior_type:'text_no_bleed',page_count:24,
    trim_inches:[6,9],margins_inches:{inside:.375,outside:.25,top:.25,bottom:.25},font_size_pt:10}:{})}});
 
-async function exercise({template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateReviewCapabilityDuringAuthority=false,mutateQaInputs=false,mutateQaInputsDuringAuthority=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,mutateOutputInput=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
+async function exercise({settlementProbe,template=record(),templateText,templateLink=false,templateScope=scope,platform='redbubble',interior,interiorText,bookDetails=true,templateSource=true,sourceBytes=retainedSource,interiorTemplateSource=true,interiorSourceBytes=retainedSource,guideFailure,interiorGuideFailure,denyGrantAt,grantPatch={revoked:true},localPolicy,review=false,reviewPolicy,detailed=false,captureQaArgs=false,assetRoot=false,disableAfterCoverRead=false,disableAfterInteriorRead=false,disableDuringCoverGuide=false,disableDuringFinalStage=false,disableDuringQaStage=false,disableDuringQaOutputRead=false,disableDuringCompletion=false,expireGrantDuringCompletion=false,expireGrantDuringHold=false,replaceInterpreter=false,mutateEvaluatorAuthority=false,mutateReviewCapabilityDuringAuthority=false,mutateQaInputs=false,mutateQaInputsDuringAuthority=false,mutateGenerationInputs=false,mutateTemplateInput=false,mutateKdpInputs=false,mutateOutputInput=false,captureAssetArgs=false,captureKdpArgs=false,executableReviewCapability=false,executableCleanupCapability=false,executableRightsCapability=false,executableStageWorkspaceCapability=false,executableTemplateScopeCapability=false,invalidManifestHash=false,invalidTemplateHash=false,wrongManifestTemplate=false,wrongManifestSource=false,wrongManifestTextLayers=false,wrongManifestInterior=false,rightsPatch={}}={}){
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-template-gate-'));
  const originalNow=Date.now;
  try{
@@ -154,10 +154,12 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   const result=await produceOnce({root,env,signal:controller.signal,upstreamKey:key,
    db:{active(){},claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),failProduction:async()=>{blocked++;},
     holdProduction:async(_job,_manifest,{beforeStateChange}={})=>{
+     if(settlementProbe)return settlementProbe(beforeStateChange);
      if(expireGrantDuringHold)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();held++;
     },
     completeProduction:async(_job,_manifest,_qa,{beforeStateChange}={})=>{
+     if(settlementProbe)return settlementProbe(beforeStateChange);
      if(disableDuringCompletion)env.POD_PRODUCTION_ENABLED='false';
      if(expireGrantDuringCompletion)Date.now=()=>originalNow()+120000;
      beforeStateChange?.();completed++;return {pass:true};
@@ -168,7 +170,8 @@ async function exercise({template=record(),templateText,templateLink=false,templ
    resolveGrant:async()=>{grantCalls++;if(replaceInterpreter)env.POD_PYTHON=replacementInterpreter;return sign({audience:'content-control:pod',job_id:brief.id,account_id:brief.account_id,
     business_id:brief.business_id,platform,max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,
     ...(grantCalls===denyGrantAt?grantPatch:{})});},
-   resolveTask:async()=>resolvedTask});
+   resolveTask:async()=>resolvedTask}).catch(error=>{if(!settlementProbe)throw error;return {error};});
+  if(settlementProbe)return {result,blocked,cleaned};
   const started=await fs.stat(path.join(root,'started')).then(()=>true,()=>false);
   const bookStarted=await fs.stat(path.join(root,'book-started')).then(()=>true,()=>false);
   const qaStarted=await fs.stat(path.join(root,'qa-started')).then(()=>true,()=>false);
@@ -186,6 +189,28 @@ async function exercise({template=record(),templateText,templateLink=false,templ
   return {status:result.status,blocked,held,cleaned,started,...(replaceInterpreter?{replacementInterpreterUsed}:{}),...(captureQaArgs?{qaArgs}:{}),...(captureAssetArgs?{assetArgs}:{}),...(captureKdpArgs?{kdpArgs}:{}),...(detailed?{reason:result.reason_code,bookStarted,qaStarted,guideStarted,interiorGuideStarted,guideProfile,completed,grantCalls,localChecks,reviewCalls,...(mutateReviewCapabilityDuringAuthority?{replacementReviewCalls}:{}),...(executableReviewCapability?{reviewCapabilityAccessed}:{}),...(executableCleanupCapability?{cleanupCapabilityAccessed}:{}),...(executableRightsCapability?{rightsCapabilityAccessed}:{}),...(executableStageWorkspaceCapability?{stageWorkspaceCapabilityAccessed}:{}),...(executableTemplateScopeCapability?{templateScopeCapabilityAccessed}:{}),...(disableAfterCoverRead?{templateReads,interiorReads}:{}),...(disableAfterInteriorRead?{coverSourceReads,interiorTemplateReads}:{}),...(disableDuringCoverGuide?{interiorSourceReads}:{}),...(disableDuringFinalStage?{outputReads}:{}),...(disableDuringQaStage||disableDuringQaOutputRead?{qaOutputReads}:{})}:{})};
  }finally{Date.now=originalNow;await fs.rm(root,{recursive:true,force:true});}
 }
+
+test('uncertain production settlement never attempts a second write or reports success',async t=>{
+ let reads=0;
+ const accessor=Object.defineProperty({},'pass',{enumerable:true,get(){reads++;return true;}});
+ // Promise assimilation reads "then" before the adapter value is delivered.
+ const proxy=new Proxy({pass:true},{get(_target,key){if(key==='then')return undefined;reads++;return true;}});
+ for(const [name,review,probe] of [
+  ['hold acknowledgment lost',false,guard=>{guard();throw Error('private transport detail');}],
+  ['QA acknowledgment lost',true,guard=>{guard();throw null;}],
+  ['unverified hold receipt',false,guard=>{guard();return {ok:true};}],
+  ['hold omitted guard',false,()=>undefined],
+  ['QA omitted guard',true,()=>({pass:true})],
+  ['truthy but not boolean',true,guard=>{guard();return {pass:'false'};}],
+  ['accessor',true,guard=>{guard();return accessor;}],
+  ['proxy',true,guard=>{guard();return proxy;}],
+  ['inherited receipt',true,guard=>{guard();return Object.create({pass:true});}]
+ ])await t.test(name,async()=>{
+  const {result,blocked,cleaned}=await exercise({review,settlementProbe:probe});
+  assert.equal(result.error?.message,'PRODUCTION_SETTLEMENT_UNCERTAIN');
+  assert.equal(blocked,0);assert.equal(cleaned,1);assert.equal(reads,0);
+ });
+});
 
 test('production snapshots child-stage environment before authority callbacks',async()=>{
  const result=await exercise({replaceInterpreter:true,detailed:true});

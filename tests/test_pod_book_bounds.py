@@ -608,7 +608,7 @@ const brief={id:'fixture',account_id:'a',business_id:'b',platform:'kdp',destinat
 let held=0,cleaned=0;
 const result=await produceOnce({root,upstreamKey:key,env:{...process.env,POD_PYTHON:process.argv[5],
  POD_PRODUCTION_ENABLED:'true',POD_TEMPLATE_KEY:key,POD_RIGHTS_KEY:key,PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
- db:{claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async()=>{held++;},completeProduction:async()=>({pass:false}),
+ db:{claimProduction:async()=>({id:brief.id,account_id:brief.account_id,platform:brief.platform,fencing_token:1,brief}),assertProducible:async()=>{},failProduction:async()=>{},holdProduction:async(_job,_manifest,{beforeStateChange})=>{beforeStateChange();held++;},completeProduction:async(_job,_manifest,_qa,{beforeStateChange})=>{beforeStateChange();return {pass:false};},
   active(){},
   tx:async fn=>fn({query:async(sql,args)=>sql.includes('sum(')?{rows:[{bytes:'0'}]}:
    sql.startsWith('INSERT INTO pod_artifacts')?{rowCount:1,rows:[{sha256:args[0],media_type:args[2],
