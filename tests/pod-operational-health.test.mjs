@@ -5,7 +5,7 @@ import {operationalHealth} from '../integrations/pod/operational-health.mjs';
 import {metrics} from '../integrations/pod/metrics.mjs';
 import {operationsSnapshot} from '../scripts/pod_operations_snapshot.mjs';
 const now=Date.parse('2026-01-01T00:00:00Z');
-const healthy={now,expiresAt:now+8*86400000,artifactBytes:'0',expiredLeases:'0',pendingEvents:'0',oldestEventSeconds:'0',env:{POD_ARTIFACT_BUDGET_BYTES:'100'}};
+const healthy={now,expiresAt:now+8*86400000,artifactBytes:'0',expiredLeases:'0',unverifiedLeases:'0',pendingEvents:'0',oldestEventSeconds:'0',env:{POD_ARTIFACT_BUDGET_BYTES:'100'}};
 test('operational snapshots reject invalid wall clocks with a fixed error',()=>{
  for(const clock of [NaN,Infinity,-1,0.5,8640000000000001,Number.MAX_SAFE_INTEGER+1,'0'])
   assert.throws(()=>operationalHealth({...healthy,now:clock}),/OPERATIONAL_CLOCK_INVALID/);
@@ -40,6 +40,14 @@ test('expired leases and overdue feedback are observable without inventing accep
  assert.equal(operationalHealth({...healthy,pendingEvents:'0',oldestEventSeconds:'900'}).status,'NO_ALERTS');
  for(const artifactBytes of ['-1','1.2','1e3',null,1])assert.throws(()=>operationalHealth({...healthy,artifactBytes}),/OPERATIONAL_METRIC_INVALID/);
 });
+test('unverified leases produce a distinct critical alert even with no expired lease',()=>{
+ const report=operationalHealth({...healthy,unverifiedLeases:'2'});
+ assert.equal(report.status,'CRITICAL');
+ assert.equal(report.expired_leases,'0');
+ assert.equal(report.unverified_leases,'2');
+ assert.deepEqual(report.alerts,[{code:'UNVERIFIED_WORKER_LEASES',severity:'critical'}]);
+ assert.equal(report.acceptance_verified,false);
+});
 function fixture({fail=false,rollbackFails=false,wrongRollback=false}={}){
  const queries=[];let released,ended=false;
  const client={release:bad=>{released=bad;},query:async sql=>{
@@ -52,6 +60,7 @@ function fixture({fail=false,rollbackFails=false,wrongRollback=false}={}){
   if(sql.includes('FROM pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};
   if(sql.includes('GROUP BY platform'))return {rows:[{platform:'redbubble',state:'raw',count:'1'}]};
   if(sql.includes('FROM pod_events'))return {rows:[{count:'1',oldest_seconds:'900'}]};
+  if(sql.includes('AS unverified_count'))return {rows:[{count:'0',unverified_count:'1'}]};
   if(sql.startsWith('SELECT'))return {rows:[{count:'0'}]};
   return {rows:[]};
  }};
@@ -78,6 +87,7 @@ test('metrics reject unverified commit results and discard the connection',async
 test('metrics remain read-only and available inside the write-blocking expiry window',async()=>{
  const f=fixture(),result=await metrics(f.db,{env:healthy.env,clock:()=>now});
  assert.equal(result.health.storage.lifetime,'BLOCKED');assert.equal(result.health.status,'CRITICAL');
+ assert.equal(result.health.unverified_leases,'1');
  assert.equal(result.financials[0].verified_net_recorded_minor,'9007199254740993');
  assert.equal(f.queries[0],'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');assert.equal(f.queries.at(-1),'COMMIT');
  assert.ok(f.queries.every(q=>!/^(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE)/.test(q)));assert.equal(f.released,false);
@@ -89,7 +99,7 @@ test('metrics reject executable database results without invocation',async()=>{
   ['failures',{count:'0'}],
   ['storage',{bytes:'90'}],
   ['financials',{currency:'USD',verified_net_recorded_minor:'1',evidence_count:'1'}],
-  ['leases',{count:'0'}],
+  ['leases',{count:'0',unverified_count:'0'}],
   ['events',{count:'0',oldest_seconds:'0'}],
  ];
  const stageFor=sql=>sql.includes('GROUP BY platform')?'states':sql.includes('AND NOT')?'failures':

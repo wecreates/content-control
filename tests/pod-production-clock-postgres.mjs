@@ -71,6 +71,10 @@ export async function verifyProductionClock(pool,bridge){
   const claims=await Promise.all([dbFor(pool).claimProduction(),dbFor(pool).claimProduction()]);
   assert.equal(claims.filter(Boolean).length,1);assert.equal(claims.find(Boolean).id,first);
   for(const id of [first,second])assert.deepEqual((await pool.query('SELECT attempt,fencing_token FROM pod_production_queue WHERE id=$1',[id])).rows[0],{attempt:1,fencing_token:'1'});
+  const activeClaim=claims.find(Boolean);
+  await pool.query("UPDATE pod_production_queue SET lease_until='infinity' WHERE id=$1",[activeClaim.id]);
+  await assert.rejects(dbFor(pool).assertProducible(activeClaim),/^Error: LOCAL_PRODUCTION_BLOCKED$/);
+  await pool.query("UPDATE pod_production_queue SET lease_until=clock_timestamp()+interval '1 hour' WHERE id=$1",[activeClaim.id]);
 
   // Recovery must use the clock after a real relation-lock wait, not BEGIN.
   // No production adapter or privileged production database is involved.

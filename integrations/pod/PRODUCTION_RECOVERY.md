@@ -30,3 +30,14 @@ already recovered rows alone. A disposable PostgreSQL test uses real relation
 locks and a database-clock barrier to cover expiry during waits, already expired
 leases, future leases, transition timestamps and repeated recovery for both
 processing and publishing. These tests are not a live recovery drill.
+
+Missing or non-finite PostgreSQL deadlines (including either infinity) are
+not evidence of a valid or expired lease. Production and publication guards
+refuse them. Recovery holds affected production as blocked with
+`PRODUCTION_LEASE_UNVERIFIED` and publication as ambiguous with
+`PUBLISH_LEASE_UNVERIFIED`, preserving the actual stored deadline, attempt
+and fence. An unverified production lease does not qualify for the expired
+lease retry route. Ambiguous publication still requires authorized
+provider reconciliation; it must never be automatically resubmitted.
+The read-only operations snapshot reports `UNVERIFIED_WORKER_LEASES` both
+before recovery and while such holds remain unresolved.

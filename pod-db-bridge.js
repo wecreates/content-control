@@ -503,7 +503,7 @@ async function lockProductionLease(client,job){
  if(!current)throw Error('LEASE_LOST');
  // Evaluate wall time in a separate statement after acquiring the row lock.
  // now() is fixed at BEGIN, and a SELECT expression can run before a lock wait.
- const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
+ const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AND isfinite(lease_until) AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
  if(lease?.valid!==true)throw Error('LEASE_LOST');
 }
 async function lockPublishingLease(client,job){
@@ -511,7 +511,7 @@ async function lockPublishingLease(client,job){
  if(!current)throw Error('LEASE_LOST');
  // The provider call can outlive its release lease. Check wall time only after
  // acquiring the row lock so a stale publisher cannot commit a late outcome.
- const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
+ const lease=exactQueryRow(await client.query('SELECT lease_until>clock_timestamp() AND isfinite(lease_until) AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
  if(lease?.valid!==true)throw Error('LEASE_LOST');
 }
 export async function createPodPool(env=process.env) {
@@ -617,7 +617,7 @@ export class PodDB {
    const j=repairableQuerySnapshot(await c.query(`SELECT q.id,q.brief,q.attempt,q.manifest,q.qa_envelope,q.reason_code,q.fencing_token::text AS fencing_token
     FROM pod_production_queue q JOIN pod_concepts p ON p.id=q.concept_id
     WHERE q.id=$1 AND q.provider_id IS NULL AND (q.state='qa_failed' OR (q.state='blocked' AND q.reason_code='PRODUCTION_LEASE_EXPIRED'
-      AND q.lease_until<=clock_timestamp()))
+      AND isfinite(q.lease_until) AND q.lease_until<=clock_timestamp()))
     AND q.attempt<3 AND p.rights_state='PASS' AND NOT p.permanently_unpublished
     FOR UPDATE OF q FOR SHARE OF p`,[jobId]),jobId);
    if(!j)throw Error('REPAIR_BLOCKED');enforceBrief(grant,j.brief);
@@ -757,7 +757,7 @@ export class PodDB {
  async failProduction(job,reason){return this.tx(async c=>{
   await lockProductionLease(c,job);
   const reasonCode=productionReason(reason);
-  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code",[reasonCode,job.id,job.fencing_token]),
+  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() AND isfinite(lease_until) RETURNING id,state,reason_code",[reasonCode,job.id,job.fencing_token]),
    {id:job.id,state:'qa_failed',reason_code:reasonCode});
  });}
  async claimProduction({signal}={}){return this.tx(async c=>{
@@ -778,7 +778,7 @@ export class PodDB {
    FOR SHARE OF q,p`,[job.id,job.fencing_token,job.account_id,job.platform]),job);
   if(!current)throw Error('LOCAL_PRODUCTION_BLOCKED');
   // A queued lock acquisition must not preserve an expired production lease.
-  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
+  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AND isfinite(lease_until) AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
   if(lease?.valid!==true)throw Error('LOCAL_PRODUCTION_BLOCKED');
   return true;
  });}
@@ -800,7 +800,7 @@ export class PodDB {
   if(!current)throw Error('LEASE_LOST');
   if(current.rights_state!=='PASS'||current.permanently_unpublished)throw Error('RIGHTS_BLOCKED');
   beforeStateChange?.();
-  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code",[manifest,job.id,job.fencing_token]),
+  assertExactMutation(await c.query("UPDATE pod_production_queue SET state='qa_failed',reason_code='REVIEW_REQUIRED',manifest=$1,lease_until=NULL,updated_at=now() WHERE id=$2 AND fencing_token=$3 AND state='processing' AND lease_until>clock_timestamp() AND isfinite(lease_until) RETURNING id,state,reason_code",[manifest,job.id,job.fencing_token]),
    {id:job.id,state:'qa_failed',reason_code:'REVIEW_REQUIRED'});
   const eventId=crypto.randomUUID(),eventKind='pod.production.review_required';
   assertExactMutation(await c.query('INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,$3,$4) RETURNING id,job_id,kind',[eventId,job.id,eventKind,
@@ -907,7 +907,7 @@ export class PodDB {
    beforeStateChange?.();
    const nextState=pass?'qa_passed':'qa_failed',nextReason=pass?null:'QA_FAILED';
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,reason_code=CASE WHEN $1='qa_passed' THEN NULL ELSE 'QA_FAILED' END,manifest=$2,qa_envelope=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() RETURNING id,state,reason_code`,
+    WHERE id=$4 AND fencing_token=$5 AND state='processing' AND lease_until>clock_timestamp() AND isfinite(lease_until) RETURNING id,state,reason_code`,
     [nextState,manifest,qaEnvelope,job.id,job.fencing_token]);
    assertExactMutation(r,{id:job.id,state:nextState,reason_code:nextReason});
    const eventId=crypto.randomUUID(),eventKind=`pod.production.${nextState}`;
@@ -1007,7 +1007,7 @@ export class PodDB {
   // submit stale in-memory evidence after those waits.
   assertCurrentReleaseSnapshot(current,job,this.qaKey);
   // Evaluate the live clock after row-lock waits, not transaction-start now().
-  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
+  const lease=exactQueryRow(await c.query('SELECT lease_until>clock_timestamp() AND isfinite(lease_until) AS valid FROM pod_production_queue WHERE id=$1',[job.id]),['valid']);
   if(lease?.valid!==true)throw Error('LOCAL_RELEASE_BLOCKED');
   return true;
  });}
@@ -1022,7 +1022,7 @@ export class PodDB {
   return this.tx(async c=>{
    await lockPublishingLease(c,job);
    const r=await c.query(`UPDATE pod_production_queue SET state=$1,provider_id=$2,reason_code=$3,lease_until=NULL,updated_at=now()
-    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp()
+    WHERE id=$4 AND fencing_token=$5 AND state='publishing' AND lease_until>clock_timestamp() AND isfinite(lease_until)
     RETURNING id,state,provider_id,reason_code`,[state,providerId,reason,job.id,job.fencing_token]);
    assertExactMutation(r,{id:job.id,state,provider_id:providerId,reason_code:reason});
    const eventId=crypto.randomUUID(),eventKind='pod.'+state;
@@ -1036,20 +1036,20 @@ export class PodDB {
   // not defer already-expired work to another sweep or misdate its transition.
   // Bound each sweep so RETURNING can prove every transition without allowing
   // an unbounded result to consume worker memory. Later cycles drain backlog.
-  const publishing=await c.query(`WITH candidates AS (
-   SELECT id FROM pod_production_queue WHERE state='publishing' AND lease_until<clock_timestamp()
+  // Missing or non-finite deadlines carry no expiry proof. Quarantine them
+  // without minting a timestamp or making the production retry route eligible.
+  const recoverState=async(from,to,expired,unverified)=>assertExactMutationBatch(await c.query(`WITH candidates AS (
+   SELECT id,lease_until,CASE WHEN lease_until IS NULL OR NOT isfinite(lease_until)
+    THEN $4::text ELSE $3::text END AS reason
+   FROM pod_production_queue WHERE state=$1 AND
+    (lease_until IS NULL OR NOT isfinite(lease_until) OR lease_until<=clock_timestamp())
    ORDER BY id FOR UPDATE SKIP LOCKED LIMIT ${RECOVERY_BATCH_LIMIT}
-  ) UPDATE pod_production_queue q SET state='ambiguous',reason_code='LEASE_EXPIRED',updated_at=clock_timestamp()
-   FROM candidates c WHERE q.id=c.id RETURNING q.id,q.state,q.reason_code`);
-  const publishingIds=assertExactMutationBatch(publishing,
-   {state:'ambiguous',reason_code:'LEASE_EXPIRED'},RECOVERY_BATCH_LIMIT);
-  const processing=await c.query(`WITH candidates AS (
-   SELECT id FROM pod_production_queue WHERE state='processing' AND lease_until<clock_timestamp()
-   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT ${RECOVERY_BATCH_LIMIT}
-  ) UPDATE pod_production_queue q SET state='blocked',reason_code='PRODUCTION_LEASE_EXPIRED',updated_at=clock_timestamp()
-   FROM candidates c WHERE q.id=c.id RETURNING q.id,q.state,q.reason_code`);
-  const processingIds=assertExactMutationBatch(processing,
-   {state:'blocked',reason_code:'PRODUCTION_LEASE_EXPIRED'},RECOVERY_BATCH_LIMIT);
+  ) UPDATE pod_production_queue q SET state=$2,reason_code=c.reason,updated_at=clock_timestamp()
+   FROM candidates c WHERE q.id=c.id RETURNING q.id,q.state,
+    (q.reason_code=c.reason AND q.lease_until IS NOT DISTINCT FROM c.lease_until) AS classification_matches`,
+   [from,to,expired,unverified]),{state:to,classification_matches:true},RECOVERY_BATCH_LIMIT);
+  const publishingIds=await recoverState('publishing','ambiguous','LEASE_EXPIRED','PUBLISH_LEASE_UNVERIFIED');
+  const processingIds=await recoverState('processing','blocked','PRODUCTION_LEASE_EXPIRED','PRODUCTION_LEASE_UNVERIFIED');
   for(const id of processingIds)if(publishingIds.has(id))throw Error('POD_MUTATION_UNVERIFIED');
  },{signal});}
  async close(){await this.pool.end();}

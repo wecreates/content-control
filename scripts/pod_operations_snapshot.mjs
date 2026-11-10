@@ -32,7 +32,7 @@ export async function operationsSnapshot({env=process.env,connect=createPodPool,
  }
  // Owned-pool shutdown is another asynchronous boundary after metrics release.
  return {...report,health:operationalHealth({expiresAt:parseStorageExpiry(env.POD_STORAGE_EXPIRES_AT),
-  artifactBytes:report.artifact_bytes,expiredLeases:report.health.expired_leases,
+  artifactBytes:report.artifact_bytes,expiredLeases:report.health.expired_leases,unverifiedLeases:report.health.unverified_leases,
   pendingEvents:report.health.outbox.pending,oldestEventSeconds:report.health.outbox.oldest_pending_seconds,
   now:clock(),env})};
 }

@@ -36,6 +36,7 @@ timestamp contract. Invalid expiry remains observable as critical
 | ARTIFACT_STORAGE_EXHAUSTED | Used bytes meet or exceed the configured budget; critical |
 | ARTIFACT_STORAGE_LOW | At least 90% of budget used; warning |
 | EXPIRED_WORKER_LEASES | Processing/publishing rows with expired leases; critical |
+| UNVERIFIED_WORKER_LEASES | Missing or non-finite active lease, or an unresolved quarantine for that condition; critical |
 | OUTBOX_DELIVERY_OVERDUE | Undelivered feedback exists with oldest age at least 15 minutes; warning |
 
 Counts, age and byte totals remain decimal strings, including values beyond
