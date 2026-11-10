@@ -33,6 +33,7 @@ function database(values=[]){
   }
   if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
+  if(sql==='ROLLBACK')return {command:'ROLLBACK'};
   if(/^(ROLLBACK|SET LOCAL|SELECT pg_advisory)/.test(sql))return {rows:[]};
   throw Error('UNEXPECTED_QUERY');
  };
@@ -544,13 +545,14 @@ for(const [phase,tag] of [['BEGIN','SELECT'],['COMMIT','ROLLBACK']])test('artifa
  await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),{code:'ENOENT'});
 });
 
-for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false,true]){
+for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of phase==='FETCH'?[false,true,'wrong tag']:[false,true]){
  test(`artifact export ${phase} failure with broken rollback=${brokenRollback}`,async t=>{
   const directory=await workspace(t),db=database([Buffer.from('transaction fixture')]);
   const client=await db.pool.connect(),query=client.query.bind(client),calls=[],releases=[];
   const failure=Error('EXPORT_FIXTURE_FAILURE');
   client.query=async(sql,...args)=>{calls.push(sql);
    if(sql.startsWith(phase))throw failure;
+   if(sql==='ROLLBACK'&&brokenRollback==='wrong tag')return {command:'SELECT'};
    if(sql==='ROLLBACK'&&brokenRollback)throw Error('ROLLBACK_FIXTURE_FAILURE');
    return query(sql,...args);
   };
@@ -563,7 +565,7 @@ for(const phase of ['BEGIN','FETCH','COMMIT'])for(const brokenRollback of [false
    assert.equal(calls.at(-1),'COMMIT');assert.equal(calls.includes('ROLLBACK'),false);
    assert.deepEqual(releases,[true]);
   }else{
-   assert.deepEqual(releases,[brokenRollback]);assert.equal(calls.at(-1),'ROLLBACK');
+   assert.deepEqual(releases,[Boolean(brokenRollback)]);assert.equal(calls.at(-1),'ROLLBACK');
   }
   await assert.rejects(fs.stat(path.join(directory,'catalog.pod')),error=>error.code==='ENOENT');
  });

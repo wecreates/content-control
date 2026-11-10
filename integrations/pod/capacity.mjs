@@ -1,6 +1,6 @@
 import {types as utilTypes} from 'node:util';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from './diagnostic-deadline.mjs';
-import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 
 const COUNT_FIELDS=Object.freeze(['registered_concept_records','generated_concept_records','generated_jobs',
  'generated_package_hashes','jobs_with_pass_event','jobs_with_fail_event']);
@@ -107,7 +107,7 @@ export async function productionActivity(db,{signal}={}){
    capacity_verified:false,acceptance_verified:false,publication_enabled:false};
  }catch(error){
   if(isDiagnosticDeadline(error)||commitPending)bad=true;
-  else if(began)try{await query('ROLLBACK');}catch{bad=true;}
+  else if(began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(beginAttempted)bad=true;
   throw error;
  }finally{

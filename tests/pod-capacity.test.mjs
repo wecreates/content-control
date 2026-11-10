@@ -8,6 +8,7 @@ function fixture(patch={}){
  const queries=[],released=[];
  const db={active(){throw Error('POD_STORAGE_EXPIRING');},pool:{connect:async()=>({
   query:async sql=>{queries.push(sql);if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
+   if(sql==='ROLLBACK')return {command:'ROLLBACK'};
    return sql==='COMMIT'?{command:'COMMIT'}:{rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>released.push(bad)
  })}};
  return {db,queries,released};
@@ -59,7 +60,7 @@ test('capacity reporting rejects executable query results without invocation',as
  for(const result of attempts){
   let released;
   const db={pool:{connect:async()=>({
-   query:async sql=>sql.startsWith('BEGIN ')?{command:'BEGIN'}:sql.startsWith('WITH')?result:{rows:[]},
+   query:async sql=>sql.startsWith('BEGIN ')?{command:'BEGIN'}:sql==='ROLLBACK'?{command:'ROLLBACK'}:sql.startsWith('WITH')?result:{rows:[]},
    release:bad=>{released=bad},
   })}};
   await assert.rejects(productionActivity(db),/^Error: CAPACITY_REPORT_INVALID$/);
@@ -126,9 +127,9 @@ test('activity preserves canonical UTC milliseconds and native database Date ins
   assert.equal(report.publication_enabled,false);assert.equal(f.queries.at(-1),'COMMIT');
  }
 });
-test('failed rollback discards the connection and preserves the original failure',async()=>{
+for(const wrongTag of [false,true])test('failed rollback discards the connection and preserves the original failure; wrong tag='+wrongTag,async()=>{
  const releases=[];
- const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK')throw Error('rollback');return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},release:bad=>releases.push(bad)})}};
+ const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK'){if(wrongTag)return {command:'SELECT'};throw Error('rollback');}return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},release:bad=>releases.push(bad)})}};
  await assert.rejects(productionActivity(db),/^Error: original$/);assert.deepEqual(releases,[true]);
 });
 test('capacity reporting discards an uncertain connection when transaction open fails',async()=>{

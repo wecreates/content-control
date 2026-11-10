@@ -8,7 +8,7 @@ import {monitorPodPool} from './integrations/pod/pool-health.mjs';
 import {validOpaqueText} from './integrations/pod/text-identity.mjs';
 import {parseStorageExpiry,validDateMs} from './integrations/pod/storage-expiry.mjs';
 import {databaseWait} from './integrations/pod/database-wait.mjs';
-import {assertBeginOutcome,assertCommitOutcome} from './integrations/pod/transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome,assertDiscardOutcome} from './integrations/pod/transaction-outcome.mjs';
 const REVIEW_FILE=/^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,99}$/;
 const REVIEW_JOB=/^[a-zA-Z0-9_-]{1,100}$/;
 const SHA256=/^[a-f0-9]{64}$/;
@@ -441,7 +441,7 @@ async function sanitizePooledClient(client){
  // a different fixed path here would contaminate caller-supplied pools. Any
  // cleanup failure makes the client unsafe to reuse.
  try{
-  await client.query('DISCARD ALL');
+  assertDiscardOutcome(await client.query('DISCARD ALL'));
   return false;
  }catch{return true;}
 }
@@ -553,7 +553,7 @@ export class PodDB {
    // COMMIT must settle so a completed read has a known outcome. Cancellation
    // is applied immediately after it, matching the managed write boundary.
    commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return result;
-  }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
+  }catch(error){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{assertRollbackOutcome(await c.query('ROLLBACK'));ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw error;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
  async registerIntake({id,businessId,envelope,intakeKey,dailyLimit=100},{signal}={}){
@@ -693,7 +693,7 @@ export class PodDB {
    // ten-second statement timeout bounds this control statement; cancellation
    // is applied at the checkpoint immediately after it completes.
    this.active();checkpoint();commitPending=true;assertCommitOutcome(await c.query('COMMIT'));commitPending=false;began=false;beginAttempted=false;ended=true;checkpoint();return r;
-  }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{await c.query('ROLLBACK');ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
+  }catch(e){if(c&&(waiting.interrupted||commitPending))bad=true;else if(c&&began)try{assertRollbackOutcome(await c.query('ROLLBACK'));ended=true;}catch{bad=true;}else if(c&&beginAttempted)bad=true;throw e;
   }finally{if(c){if(ended&&!bad)bad=await sanitizePooledClient(c);c.release(bad);}}
  }
  async enqueue({job,upstream,conceptId,revision},{signal}={}) {

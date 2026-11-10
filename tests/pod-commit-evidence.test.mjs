@@ -7,6 +7,27 @@ import {BRIDGE_RULES} from '../integrations/pod/policy.mjs';
 const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}};
 const expiresAt='2099-01-01T00:00:00Z';
 
+for(const phase of ['ROLLBACK','DISCARD ALL'])test('managed transactions destroy clients after unverified '+phase,async()=>{
+ const original=Error('fixture business failure');
+ for(const method of ['read','tx']){
+  const queries=[],releases=[];
+  const client={query:async sql=>{
+   const text=typeof sql==='string'?sql:sql.text;queries.push(text);
+   if(text===phase)return {command:'SELECT'};
+   if(text.startsWith('BEGIN'))return {command:'BEGIN'};
+   if(text==='COMMIT')return {command:'COMMIT'};
+   if(text==='SELECT fixture'&&phase==='ROLLBACK')throw original;
+   return {rows:[{value:1}]};
+  },release:discard=>releases.push(discard)};
+  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt});
+  const operation=method==='read'?db.read('SELECT fixture'):db.tx(c=>c.query('SELECT fixture'));
+  if(phase==='ROLLBACK')await assert.rejects(operation,e=>e===original);
+  else assert.deepEqual((await operation).rows,[{value:1}]);
+  assert.equal(queries.at(-1),phase);
+  assert.deepEqual(releases,[true]);
+ }
+});
+
 test('managed reads and writes stop before any dependent SQL without a verified BEGIN',async()=>{
  let executableReads=0;
  const outcomes=[{command:'SELECT'},undefined,{},Object.create({command:'BEGIN'}),
@@ -78,6 +99,42 @@ test('PostgreSQL SELECT substituted for BEGIN cannot cause an autocommit write',
   }finally{
    try{await pool.query(`DROP TABLE IF EXISTS ${table}`);}finally{await pool.end();}
   }
+ });
+
+test('real PostgreSQL cleanup tags keep poisoned sessions out of the managed pool',
+ {skip:!process.env.POD_TEST_DATABASE_URL},async()=>{
+  const url=new URL(process.env.POD_TEST_DATABASE_URL);
+  assert.ok(['localhost','127.0.0.1','[::1]'].includes(url.hostname)&&url.pathname==='/pod_test','disposable local PostgreSQL only');
+  assert.equal(process.env.PUBLICATION_ENABLED,'false');assert.equal(process.env.POD_PUBLICATION_ENABLED,'false');
+  const {default:pg}=await import('pg');
+  const pool=new pg.Pool({connectionString:url.toString(),max:1,application_name:'pod-cleanup-fixture'});
+  try{
+   for(const phase of ['ROLLBACK','DISCARD ALL',null]){
+    let observed;const queries=[],releases=[];
+    const db=new PodDB({bridge,expiresAt,pool:{connect:async()=>{
+     const client=await pool.connect();
+     return {release:bad=>{releases.push(bad);client.release(bad);},query:async(...args)=>{
+      const sql=typeof args[0]==='string'?args[0]:args[0].text;queries.push(sql);
+      if(sql===phase){const result=await client.query('SELECT 1');observed=result.command;return result;}
+      const result=await client.query(...args);
+      if(!phase&&sql==='DISCARD ALL')observed=result.command;
+      return result;
+     }};
+    }}});
+    const original=Error('fixture callback failure');
+    const work=db.tx(async c=>{
+     const result=await c.query("SELECT set_config('application_name','pod-poisoned-fixture',false) AS name");
+     if(phase==='ROLLBACK')throw original;
+     return result.rows[0].name;
+    });
+    if(phase==='ROLLBACK')await assert.rejects(work,e=>e===original);
+    else assert.equal(await work,'pod-poisoned-fixture');
+    assert.equal(observed,phase?'SELECT':'DISCARD');assert.deepEqual(releases,[Boolean(phase)]);
+    assert.equal(queries.at(-1),phase??'DISCARD ALL');
+    assert.equal(pool.totalCount,phase?0:1);
+    assert.equal((await pool.query('SHOW application_name')).rows[0].application_name,'pod-cleanup-fixture');
+   }
+  }finally{await pool.end();}
  });
 
 test('PostgreSQL rollback tag leaves a managed write uncommitted and retryable',

@@ -16,6 +16,7 @@ function fixture(valid,{rightsState='PASS',permanentlyUnpublished=false}={}){
  const writes=[],queries=[];
  const client={release(){},query:async(sql,args=[])=>{if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}queries.push(sql);
   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(sql==='ROLLBACK'||sql==='DISCARD ALL')return {command:sql.split(' ')[0]};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('clock_timestamp()')&&sql.startsWith('SELECT'))return {rows:[{valid}]};
   if(sql.includes("q.state='processing'")&&sql.includes('FOR SHARE OF q,p'))return {rows:[{id:job.id}]};

@@ -40,11 +40,12 @@ test('expired leases and overdue feedback are observable without inventing accep
  assert.equal(operationalHealth({...healthy,pendingEvents:'0',oldestEventSeconds:'900'}).status,'NO_ALERTS');
  for(const artifactBytes of ['-1','1.2','1e3',null,1])assert.throws(()=>operationalHealth({...healthy,artifactBytes}),/OPERATIONAL_METRIC_INVALID/);
 });
-function fixture({fail=false,rollbackFails=false}={}){
+function fixture({fail=false,rollbackFails=false,wrongRollback=false}={}){
  const queries=[];let released,ended=false;
  const client={release:bad=>{released=bad;},query:async sql=>{
   sql=typeof sql==='string'?sql:sql.text;
   queries.push(sql);if(sql==='ROLLBACK'&&rollbackFails)throw Error('rollback unavailable');
+  if(sql==='ROLLBACK')return {command:wrongRollback?'SELECT':'ROLLBACK'};
   if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if(sql.includes('FROM pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
@@ -113,7 +114,7 @@ test('metrics reject executable database results without invocation',async()=>{
    const client={release:bad=>{released=bad;},query:async sql=>{
     sql=typeof sql==='string'?sql:sql.text;queries.push(sql);
     const stage=stageFor(sql);
-    if(!stage)return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};
+    if(!stage)return sql.startsWith('BEGIN ')?{command:'BEGIN'}:sql==='ROLLBACK'?{command:'ROLLBACK'}:{rows:[]};
     if(stage===target)return attempt;
     const safe=stages.find(([name])=>name===stage)[1];
     return Object.assign(Object.create({driver_result:true}),{rows:[safe]});
@@ -180,9 +181,9 @@ for(const stage of ['commit','release','pool shutdown']){
  });
 }
 test('metrics errors roll back and discard a connection if rollback itself fails',async()=>{
- for(const rollbackFails of [false,true]){
-  const f=fixture({fail:true,rollbackFails});await assert.rejects(metrics(f.db),/private database error/);
-  assert.equal(f.queries.at(-1),'ROLLBACK');assert.equal(f.released,rollbackFails);assert.ok(!f.queries.includes('COMMIT'));
+ for(const [rollbackFails,wrongRollback] of [[false,false],[true,false],[false,true]]){
+  const f=fixture({fail:true,rollbackFails,wrongRollback});await assert.rejects(metrics(f.db),/private database error/);
+  assert.equal(f.queries.at(-1),'ROLLBACK');assert.equal(f.released,rollbackFails||wrongRollback);assert.ok(!f.queries.includes('COMMIT'));
  }
 });
 test('metrics discard an uncertain connection when transaction open fails',async()=>{

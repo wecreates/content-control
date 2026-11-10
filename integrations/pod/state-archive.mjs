@@ -6,7 +6,7 @@ import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,
  assertArchiveDirectory,syncArchiveDirectory,closeArchiveDirectory} from './archive-codec.mjs';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {databaseWait} from './database-wait.mjs';
-import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 // Dependency order is fixed in code, never taken from an archive or request.
@@ -233,7 +233,7 @@ export async function exportStateArchive(db,{directory,key,signal,env=process.en
   // Unverified COMMIT has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
   if(client&&(waiting.interrupted||commitPending))bad=true;
-  else if(client&&began)try{await query('ROLLBACK');}catch{bad=true;}
+  else if(client&&began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}

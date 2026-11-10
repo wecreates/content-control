@@ -6,7 +6,7 @@ import {seal,unseal,parseArchiveJSON,validArchiveTimestamp,readBounded,writeNew,
 import path from 'node:path';
 import {artifactBudgetBytes} from './storage-budget.mjs';
 import {databaseWait} from './database-wait.mjs';
-import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 import {ARTIFACT_MEDIA_TYPES} from './artifacts.mjs';
 
 const MAX_OBJECT=16777216,MAX_CATALOG=2097152,MAX_ITEMS=10000;
@@ -184,7 +184,7 @@ export async function exportArtifactLibrary(db,{directory,key,budgetBytes=134217
   // Unverified COMMIT has an indeterminate outcome: never issue later SQL or
   // return that connection to the pool. Preserve the original export failure.
   if(client&&(waiting.interrupted||commitPending))bad=true;
-  else if(client&&began)try{await query('ROLLBACK');}catch{bad=true;}
+  else if(client&&began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(client&&beginAttempted)bad=true;
   throw error;
  }finally{client?.release(bad);await closeArchiveDirectory(opened);}
