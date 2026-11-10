@@ -19,3 +19,8 @@ export function assertCommitOutcome(result){
 export function assertRollbackOutcome(result){
  assertOutcome(result,'ROLLBACK','POD_ROLLBACK_UNVERIFIED');
 }
+
+export function assertDiscardOutcome(result){
+ // node-postgres exposes the first word of the DISCARD ALL command tag.
+ assertOutcome(result,'DISCARD','POD_DISCARD_UNVERIFIED');
+}

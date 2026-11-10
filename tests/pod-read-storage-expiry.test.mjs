@@ -13,6 +13,8 @@ test('guarded reads use a database-enforced read-only transaction',async()=>{
  const client={release:bad=>releases.push(bad),query:async(sql,args)=>{
   queries.push({sql,args});
   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(sql==='ROLLBACK')return {command:'ROLLBACK'};
+  if(sql==='DISCARD ALL')return {command:'DISCARD'};
   if(sql==='COMMIT')return {command:'COMMIT'};
   if((typeof sql==='string'?sql:sql.text)==='SELECT fixture')return {rows:[{value:1}]};
   return {rows:[]};
@@ -51,6 +53,8 @@ test('guarded read cancellation interrupts a stalled query and destroys its clie
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text==='SELECT fixture'){entered();return stalled;}
   if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
+  if(text==='DISCARD ALL')return {command:'DISCARD'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -69,6 +73,8 @@ test('guarded read cancellation between statements rolls back and reuses a scrub
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text==='SELECT fixture')controller.abort(reason);
   if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
+  if(text==='DISCARD ALL')return {command:'DISCARD'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -106,8 +112,9 @@ test('guarded reads scrub committed session state before returning the pooled cl
   const text=typeof query==='string'?query:query.text;queries.push(text);
   if(text.startsWith('SELECT set_config'))applicationName='read-poison';
   if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
   if(text==='COMMIT')return {command:'COMMIT'};
-  if(text==='DISCARD ALL')applicationName='pool-default';
+  if(text==='DISCARD ALL'){applicationName='pool-default';return {command:'DISCARD'};}
   return {rows:[{application_name:applicationName}]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -121,7 +128,10 @@ for(const sql of ['COMMIT',' -- reader must not own completion\nROLLBACK'])test(
  const queries=[],releases=[];
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;queries.push(text);
-  return text==='BEGIN READ ONLY'?{command:'BEGIN'}:{rows:[]};
+  if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
+  if(text==='DISCARD ALL')return {command:'DISCARD'};
+  return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
  await assert.rejects(db.read(sql),/POD_TRANSACTION_CONTROL_FORBIDDEN/);
@@ -137,6 +147,8 @@ for(const expiryStage of ['begin','timeout','query'])test(`guarded read rolls ba
    (expiryStage==='timeout'&&text.startsWith('SET LOCAL'))||
    (expiryStage==='query'&&text==='SELECT fixture'))db.expiresAt=Date.now();
   if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
+  if(text==='DISCARD ALL')return {command:'DISCARD'};
   return {rows:[]};
  }};
  db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -173,6 +185,8 @@ for(const rollbackFails of [false,true])test(`guarded read discards without clea
   if(text==='COMMIT')throw original;
   if(text==='ROLLBACK'&&rollbackFails)throw Error('ROLLBACK_FAILURE');
   if(text==='BEGIN READ ONLY')return {command:'BEGIN'};
+  if(text==='ROLLBACK')return {command:'ROLLBACK'};
+  if(text==='DISCARD ALL')return {command:'DISCARD'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

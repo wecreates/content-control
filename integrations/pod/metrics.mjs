@@ -2,7 +2,7 @@ import {types as utilTypes} from 'node:util';
 import {operationalHealth} from './operational-health.mjs';
 import {PLATFORMS} from './policy.mjs';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from './diagnostic-deadline.mjs';
-import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome,assertRollbackOutcome} from './transaction-outcome.mjs';
 
 const QUEUE_STATES=Object.freeze(['review_required','raw','processing','qa_failed','qa_passed','blocked',
  'publishing','ambiguous','submitted','published']);
@@ -99,7 +99,7 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   // no confirmed transaction to roll back. Destroy that pooled client rather
   // than issuing cleanup SQL on it or returning it for unrelated work.
   if(isDiagnosticDeadline(error)||commitPending)bad=true;
-  else if(began)try{await query('ROLLBACK');}catch{bad=true;}
+  else if(began)try{assertRollbackOutcome(await query('ROLLBACK'));}catch{bad=true;}
   else if(beginAttempted)bad=true;
   throw error;
  }finally{

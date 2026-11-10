@@ -27,6 +27,7 @@ async function exercise(kind,duplicate,expired){
    if(typeof sql!=='string'){args=sql.values;sql=sql.text;}
    queries.push(sql);
    if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
+   if(sql==='ROLLBACK'||sql==='DISCARD ALL')return {command:sql.split(' ')[0]};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(/^(SELECT|INSERT|UPDATE)/.test(sql))now=issued+(expired?1000:999);
    if(sql.includes('FROM pod_artifacts'))return rows({sha256:hash,media_type:'application/json',body_sha256:hash});
