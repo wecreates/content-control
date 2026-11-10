@@ -13,6 +13,7 @@ function fixture({expireOnConnect=false,expireOnQuery=null}={}){
   async query(sql){
    calls.push(sql);
    if((typeof sql==='string'?sql:sql.text)===expireOnQuery)db.expiresAt=0;
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    return {rows:[]};
   },
@@ -64,6 +65,7 @@ test('transaction cancellation interrupts a stalled query and destroys its clien
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='STALLED_QUERY'){entered();return stalled;}
+  if(text==='BEGIN')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -173,6 +175,7 @@ test('transaction waits for a callback query even when the callback does not awa
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='UNAWAITED_WRITE')return pending;
+  if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   return {rows:[]};
  }};
@@ -194,6 +197,7 @@ test('transaction propagates an unawaited query failure even when callback code 
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='UNAWAITED_FAILURE')throw original;
+  if(text==='BEGIN')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -220,8 +224,10 @@ test('transaction scrubs committed session state before returning the pooled cli
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text.startsWith('SELECT set_config'))applicationName='transaction-poison';
+  if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   if(text==='DISCARD ALL')applicationName='pool-default';
+  if(text==='BEGIN')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});
@@ -235,6 +241,7 @@ test('transaction scrubs session state after rollback before returning the poole
  const original=Error('CALLBACK_FAILED'),calls=[],releases=[];let applicationName='pool-default';
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
+  if(text==='BEGIN')return {command:'BEGIN'};
   if(text.startsWith('SELECT set_config'))applicationName='transaction-poison';
   if(text==='DISCARD ALL')applicationName='pool-default';
   return {rows:[]};
@@ -262,6 +269,7 @@ test('transaction preserves a committed result but discards a client when sessio
  const client={release:bad=>releases.push(bad),query:async query=>{
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='DISCARD ALL')throw Error('SESSION_CLEANUP_FAILED');
+  if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   return {rows:[]};
  }};
@@ -286,6 +294,7 @@ for(const rollbackFails of [false,true])test(`transaction discards without clean
   const text=typeof query==='string'?query:query.text;calls.push(text);
   if(text==='COMMIT')throw original;
   if(text==='ROLLBACK'&&rollbackFails)throw Error('ROLLBACK_FAILURE');
+  if(text==='BEGIN')return {command:'BEGIN'};
   return {rows:[]};
  }};
  const db=new PodDB({pool:{connect:async()=>client},bridge,expiresAt:'2099-01-01T00:00:00Z'});

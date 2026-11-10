@@ -2,7 +2,7 @@ import {types as utilTypes} from 'node:util';
 import {operationalHealth} from './operational-health.mjs';
 import {PLATFORMS} from './policy.mjs';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from './diagnostic-deadline.mjs';
-import {assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
 
 const QUEUE_STATES=Object.freeze(['review_required','raw','processing','qa_failed','qa_passed','blocked',
  'publishing','ambiguous','submitted','published']);
@@ -75,7 +75,7 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
  let bad=false,began=false,beginAttempted=false,commitPending=false,report,readHealth;
  try{
-  beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
+  beginAttempted=true;assertBeginOutcome(await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'));began=true;
   await query("SET LOCAL lock_timeout='2s'");await query("SET LOCAL statement_timeout='5s'");
   const states=snapshotRows(await query("SELECT platform,CASE WHEN state='qa_failed' AND reason_code='REVIEW_REQUIRED' THEN 'review_required' ELSE state END AS state,count(*)::text AS count FROM pod_production_queue GROUP BY platform,2 ORDER BY platform,2"),STATE_FIELDS,{maxRows:PLATFORMS.length*QUEUE_STATES.length});
   const failures=snapshotRows(await query("SELECT count(*)::text AS count FROM pod_production_queue WHERE state IN ('blocked','qa_failed','ambiguous') AND NOT (state='qa_failed' AND reason_code IS NOT DISTINCT FROM 'REVIEW_REQUIRED')"),COUNT_FIELDS,{exactRows:1});
@@ -95,7 +95,7 @@ export async function metrics(db,{env=process.env,clock=Date.now,signal}={}){
   commitPending=true;assertCommitOutcome(await query('COMMIT'));commitPending=false;began=false;beginAttempted=false;
   report={queues:states,incident_count:failures[0].count,artifact_bytes:storage[0].bytes,financials};
  }catch(error){
-  // A rejected BEGIN leaves transport/protocol state uncertain and there is
+  // An unverified BEGIN leaves transport/protocol state uncertain and there is
   // no confirmed transaction to roll back. Destroy that pooled client rather
   // than issuing cleanup SQL on it or returning it for unrelated work.
   if(isDiagnosticDeadline(error)||commitPending)bad=true;

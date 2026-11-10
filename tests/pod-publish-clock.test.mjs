@@ -18,7 +18,7 @@ test('invalid publishing delays fail before any database access',async()=>{
 test('both allowed delay boundaries retain empty-account behavior',async()=>{
  let connections=0;
  const db=new PodDB({bridge,expiresAt:'2099-01-01T00:00:00Z',pool:{connect:async()=>{
-  connections++;return {query:async sql=>sql==='COMMIT'?{command:'COMMIT'}:{rows:[]},release(){}};
+  connections++;return {query:async sql=>sql==='BEGIN'||sql==='BEGIN READ ONLY'?{command:'BEGIN'}:sql==='COMMIT'?{command:'COMMIT'}:{rows:[]},release(){}};
  }}});
  for(const delay of [45,180])assert.equal(await db.claimPublish('missing-account',delay),null);
  assert.equal(connections,2);

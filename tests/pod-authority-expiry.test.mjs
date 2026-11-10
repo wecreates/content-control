@@ -30,6 +30,7 @@ async function exercise(spec,stage,expired){
   const client={release(){},query:async(sql,args=[])=>{
    if(typeof sql!=='string'){args=sql.values??args;sql=sql.text;}
    queries.push(sql);
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(stage==='database'&&/^(SELECT|UPDATE|INSERT)/.test(sql))advance();
    if(sql.includes('AS budget_day'))return {rows:[{budget_day:'2026-10-16'}]};

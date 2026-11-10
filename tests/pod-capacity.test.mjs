@@ -7,10 +7,18 @@ function fixture(patch={}){
   generated_package_hashes:'3000',jobs_with_pass_event:'1500',jobs_with_fail_event:'20',...patch};
  const queries=[],released=[];
  const db={active(){throw Error('POD_STORAGE_EXPIRING');},pool:{connect:async()=>({
-  query:async sql=>{queries.push(sql);return sql==='COMMIT'?{command:'COMMIT'}:{rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>released.push(bad)
+  query:async sql=>{queries.push(sql);if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
+   return sql==='COMMIT'?{command:'COMMIT'}:{rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>released.push(bad)
  })}};
  return {db,queries,released};
 }
+test('capacity never reads a snapshot when the read-only start is unverified',async()=>{
+ const queries=[],releases=[];
+ const db={pool:{connect:async()=>({query:async sql=>{queries.push(sql);return {command:'SELECT'};},
+  release:bad=>releases.push(bad)})}};
+ await assert.rejects(productionActivity(db),/^Error: POD_BEGIN_UNVERIFIED$/);
+ assert.deepEqual(queries,['BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY']);assert.deepEqual(releases,[true]);
+});
 test('recorded activity refuses an unverified commit and discards the connection',async()=>{
  let commandReads=0;
  for(const outcome of [{command:'ROLLBACK'},undefined,Object.create({command:'COMMIT'}),
@@ -51,7 +59,7 @@ test('capacity reporting rejects executable query results without invocation',as
  for(const result of attempts){
   let released;
   const db={pool:{connect:async()=>({
-   query:async sql=>sql.startsWith('WITH')?result:{rows:[]},
+   query:async sql=>sql.startsWith('BEGIN ')?{command:'BEGIN'}:sql.startsWith('WITH')?result:{rows:[]},
    release:bad=>{released=bad},
   })}};
   await assert.rejects(productionActivity(db),/^Error: CAPACITY_REPORT_INVALID$/);
@@ -120,7 +128,7 @@ test('activity preserves canonical UTC milliseconds and native database Date ins
 });
 test('failed rollback discards the connection and preserves the original failure',async()=>{
  const releases=[];
- const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK')throw Error('rollback');return {rows:[]};},release:bad=>releases.push(bad)})}};
+ const db={pool:{connect:async()=>({query:async sql=>{if(sql.startsWith('WITH'))throw Error('original');if(sql==='ROLLBACK')throw Error('rollback');return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},release:bad=>releases.push(bad)})}};
  await assert.rejects(productionActivity(db),/^Error: original$/);assert.deepEqual(releases,[true]);
 });
 test('capacity reporting discards an uncertain connection when transaction open fails',async()=>{
@@ -139,7 +147,7 @@ test('capacity reporting discards an uncertain connection when commit fails',asy
   registered_concept_records:'1',generated_concept_records:'1',generated_jobs:'1',generated_package_hashes:'1',
   jobs_with_pass_event:'1',jobs_with_fail_event:'0'};
  const db={pool:{connect:async()=>({query:async sql=>{queries.push(sql);if(sql==='COMMIT')throw original;
-  return {rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>releases.push(bad)})}};
+  return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:sql.startsWith('WITH')?[row]:[]};},release:bad=>releases.push(bad)})}};
  await assert.rejects(productionActivity(db),error=>error===original);
  assert.equal(queries.at(-1),'COMMIT');assert.equal(queries.includes('ROLLBACK'),false);
  assert.deepEqual(releases,[true]);
@@ -147,7 +155,7 @@ test('capacity reporting discards an uncertain connection when commit fails',asy
 test('capacity reporting aborts a stalled diagnostic query and discards its client',async()=>{
  const controller=new AbortController(),queries=[],releases=[];
  const db={pool:{connect:async()=>({
-  query:async sql=>{queries.push(sql);if(sql.startsWith('WITH'))return new Promise(()=>{});return {rows:[]};},
+  query:async sql=>{queries.push(sql);if(sql.startsWith('WITH'))return new Promise(()=>{});return sql.startsWith('BEGIN ')?{command:'BEGIN'}:{rows:[]};},
   release:bad=>releases.push(bad),
  })}};
  const result=productionActivity(db,{signal:controller.signal});

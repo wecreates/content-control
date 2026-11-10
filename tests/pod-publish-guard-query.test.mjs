@@ -26,6 +26,7 @@ function fixture({currentResult={rows:[current]},leaseResult={rows:[{valid:true}
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))return currentResult;

@@ -26,6 +26,7 @@ function fixture(expireOn){
   async query(sql){
    sql=typeof sql==='string'?sql:sql.text;
    calls.push(sql);
+   if(sql==='BEGIN')return {command:'BEGIN'};
    let rows=[];
    if(sql.startsWith('SELECT id FROM pod_accounts'))rows=[{id:'account'}];
    else if(sql.startsWith('SELECT id,platform,daily_cap FROM pod_accounts'))rows=[{id:'account',platform:'redbubble',daily_cap:10}];

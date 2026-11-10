@@ -261,6 +261,7 @@ for(const phase of ['select','empty-select','response','commit','last-response',
     if(phase.endsWith('commit')&&acknowledged)expire();
     return {command:'COMMIT'};
    }
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    return {rows:[]};
   }};
   const db=new PodDB({bridge:{producer:'CYZOR Money Factory',consumer:'Content Control',contract:{fail_closed_rules:BRIDGE_RULES}},

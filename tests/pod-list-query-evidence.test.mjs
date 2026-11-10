@@ -8,6 +8,7 @@ const bridge={producer:'CYZOR Money Factory',consumer:'Content Control',contract
 function database(result){
  const client={release(){},query:async query=>{
   const text=typeof query==='string'?query:query.text;
+  if(text==='BEGIN'||text==='BEGIN READ ONLY')return {command:'BEGIN'};
   if(text==='COMMIT')return {command:'COMMIT'};
   return text.startsWith('SELECT ')?result:{rows:[]};
  }};

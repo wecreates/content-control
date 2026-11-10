@@ -30,6 +30,7 @@ for(const [name,manifest,manifest_sha256] of [
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
@@ -62,6 +63,7 @@ for(const [name,qa_envelope] of [
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;calls.push(sql);
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.startsWith('SELECT id FROM pod_accounts'))return {rows:[{id:'account'}]};
@@ -96,6 +98,7 @@ test('final local release guard rejects a changed durable manifest or QA snapsho
  const client={
   async query(query){
    const sql=typeof query==='string'?query:query.text;
+   if(sql==='BEGIN'||sql==='BEGIN READ ONLY')return {command:'BEGIN'};
    if(sql==='COMMIT')return {command:'COMMIT'};
    if(sql==='BEGIN'||sql==='ROLLBACK'||sql==='DISCARD ALL'||sql.startsWith('SET LOCAL'))return {rows:[]};
    if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))return {rows:[current]};

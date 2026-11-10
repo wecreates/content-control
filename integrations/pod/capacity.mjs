@@ -1,6 +1,6 @@
 import {types as utilTypes} from 'node:util';
 import {diagnosticDeadline,diagnosticStep,isDiagnosticDeadline} from './diagnostic-deadline.mjs';
-import {assertCommitOutcome} from './transaction-outcome.mjs';
+import {assertBeginOutcome,assertCommitOutcome} from './transaction-outcome.mjs';
 
 const COUNT_FIELDS=Object.freeze(['registered_concept_records','generated_concept_records','generated_jobs',
  'generated_package_hashes','jobs_with_pass_event','jobs_with_fail_event']);
@@ -69,7 +69,7 @@ export async function productionActivity(db,{signal}={}){
  const query=(...args)=>diagnosticStep(()=>client.query(...args),deadline);
  let bad=false,began=false,beginAttempted=false,commitPending=false;
  try{
-  beginAttempted=true;await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');began=true;
+  beginAttempted=true;assertBeginOutcome(await query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'));began=true;
   await query("SET LOCAL lock_timeout='2s'");
   await query("SET LOCAL statement_timeout='5s'");
   const row=snapshotCapacityRow(await query(`WITH observation_window AS (
