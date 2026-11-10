@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "8e79bce7e32af12c05fee35ec9707ef473d475a01981a929553c4fa8ed376979",
+  "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "component_checks_passed": false,
   "components": {
     "accepted_candidate_rollback_ledger": true,

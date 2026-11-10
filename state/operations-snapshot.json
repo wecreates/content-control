@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "8e79bce7e32af12c05fee35ec9707ef473d475a01981a929553c4fa8ed376979",
+  "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "caption_sha256": null,
   "caption_status": "FAIL",
   "checks": {
@@ -73,7 +73,7 @@
   "python_security_status": "ERROR",
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
+  "rollback_candidate_sha256": "8e79bce7e32af12c05fee35ec9707ef473d475a01981a929553c4fa8ed376979",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",
