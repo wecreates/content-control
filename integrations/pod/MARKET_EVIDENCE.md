@@ -79,7 +79,12 @@ tokens and emitted as strings. They never pass through binary floating point:
 exponent must not become zero. String prices and integer prices remain supported;
 negative and nonfinite prices remain unassessed (`null`). Decimal scale can be
 preserved, while exponent spelling may be normalized without changing its value.
-The independently bound source bytes retain the original spelling.
+The independently bound source bytes retain the original spelling. Ambiguous
+JSON-LD blocks (including duplicate decoded keys or bare NaN/Infinity) are
+ignored rather than letting one value silently overwrite another. A malformed
+offer leaves price and currency unknown and does not suppress other products
+in the approved snapshot. Extracted optional text must be losslessly
+serializable; malformed values remain unknown.
 
 These are observed source prices, not approved release economics or verified
 revenue. No currency conversion, minor-unit rounding, plausibility approval or

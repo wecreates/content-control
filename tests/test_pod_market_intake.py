@@ -269,6 +269,44 @@ class MarketSourceAuthorizationTests(unittest.TestCase):
         self.assertEqual(evidence['source_sha256'], hashlib.sha256(self.body).hexdigest())
         self.assertFalse(evidence['publication_enabled'])
 
+    def parse_source_fixture(self, *records):
+        self.body = b''.join(b'<script type="application/ld+json">' + record + b'</script>'
+                             for record in records)
+        self.html.write_bytes(self.body)
+        self.source['snapshot']['sha256'] = hashlib.sha256(self.body).hexdigest()
+        self.write_source()
+        result = run(self.args)
+        self.assertEqual(result['source_sha256'], hashlib.sha256(self.body).hexdigest())
+        self.assertFalse(result['publication_enabled'])
+        json.dumps(result, allow_nan=False, ensure_ascii=False).encode('utf-8')
+        return result['observations']
+
+    def test_ambiguous_jsonld_blocks_do_not_supply_prices_or_override_valid_siblings(self):
+        records = self.parse_source_fixture(
+            br'{"@type":"Product","name":"Ambiguous","offers":{"price":10,"pr\u0069ce":99,"priceCurrency":"USD"}}',
+            b'{"@type":"Product","name":"Non-JSON","offers":{"price":NaN,"priceCurrency":"USD"}}',
+            b'{"@type":"Product","name":"Valid","offers":{"price":19.9900,"priceCurrency":"USD"}}')
+        self.assertEqual([(item['name'], item['price_decimal']) for item in records],
+                         [('Valid', '19.9900')])
+
+    def test_non_object_offer_does_not_abort_the_authorized_snapshot(self):
+        for offer in (None, 7, 'unknown', [None], [[]]):
+            with self.subTest(offer=offer):
+                first = json.dumps({'@type': 'Product', 'name': 'Unknown offer', 'offers': offer}).encode()
+                second = b'{"@type":"Product","name":"Valid","offers":[{"price":12.50,"priceCurrency":"USD"}]}'
+                records = self.parse_source_fixture(first, second)
+                self.assertEqual([(item['price_decimal'], item['currency']) for item in records],
+                                 [(None, None), ('12.50', 'USD')])
+
+    def test_observed_metadata_is_json_safe_and_strings_cannot_invent_decimal_prices(self):
+        first = br'{"@type":"Product","name":"\ud800","keywords":[1.25],"offers":{"price":"1_0","priceCurrency":{"code":"USD"}}}'
+        second = b'{"@type":"Product","name":"Valid","keywords":["one","two"],"offers":{"price":"12.500","priceCurrency":"USD"}}'
+        first, second = self.parse_source_fixture(first, second)
+        self.assertEqual((first['name'], first['tags'], first['price_decimal'], first['currency']),
+                         (None, None, None, None))
+        self.assertEqual((second['name'], second['tags'], second['price_decimal'], second['currency']),
+                         ('Valid', ['one', 'two'], '12.500', 'USD'))
+
     def test_offline_snapshot_requires_collection_authorization(self):
         self.source['collection_authorized'] = False
         self.write_source()
