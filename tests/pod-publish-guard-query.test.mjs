@@ -18,8 +18,10 @@ const payload=JSON.stringify({schema_version:1,audience:'content-control:pod:qa'
  template_sha256:manifest.template_sha256,checks:Object.fromEntries(
   ['text','geometry','resolution','rights','competitive','print_preflight','original_source','text_provenance'].map(key=>[key,true]))});
 const qaEnvelope={payload,signature:crypto.createHmac('sha256',qaKey).update(payload).digest('hex')};
-const job={id:'job',account_id:'account',platform:'redbubble',fencing_token:'1',manifest,qa_envelope:qaEnvelope};
-const current={id:job.id,platform:job.platform,manifest,qa_envelope:qaEnvelope,manifest_sha256:manifestSha256};
+const job={id:'job',account_id:'account',platform:'redbubble',fencing_token:'1',brief:{mode:'LAUNCH'},
+ idempotency_key:'job-attempt',manifest,qa_envelope:qaEnvelope};
+const current={id:job.id,platform:job.platform,brief:job.brief,idempotency_key:job.idempotency_key,
+ manifest,qa_envelope:qaEnvelope,manifest_sha256:manifestSha256};
 
 function fixture({currentResult={rows:[current]},leaseResult={rows:[{valid:true}]}}={}){
  const calls=[];
@@ -71,6 +73,8 @@ test('final publish guard accepts only exact inert durable snapshot query eviden
   {rows:[{...current,id:'other'}]},
   {rows:[{...current,platform:'kdp'}]},
   {rows:[{...current,manifest_sha256:'bad'}]},
+  {rows:[{...current,idempotency_key:['coercible']}]},
+  {rows:[{...current,brief:new Proxy(job.brief,{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})}]},
   {rows:[{...current,manifest:new Proxy(manifest,{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})}]},
   {rows:[{...current,qa_envelope:new Proxy(qaEnvelope,{get(target,key,receiver){if(key!=='then')reads++;return Reflect.get(target,key,receiver);}})}]},
  ];

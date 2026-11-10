@@ -92,8 +92,8 @@ test('final local release guard rejects a changed durable manifest or QA snapsho
  const changedIdentity=crypto.createHash('sha256').update(canonical(changedManifest)).digest('hex');
  const changedQA=signedQA({issued_at_ms:now-100,expires_at_ms:now+60000});
  const job={id:'job',account_id:'account',platform:'redbubble',fencing_token:'1',
-  manifest:validManifest,qa_envelope:originalQA};
- let current={id:'job',platform:'redbubble',manifest:validManifest,
+  brief:{mode:'LAUNCH'},idempotency_key:'job-attempt',manifest:validManifest,qa_envelope:originalQA};
+ let current={id:'job',platform:'redbubble',brief:job.brief,idempotency_key:job.idempotency_key,manifest:validManifest,
   manifest_sha256:validIdentity,qa_envelope:originalQA};
  const client={
   async query(query){
@@ -113,4 +113,29 @@ test('final local release guard rejects a changed durable manifest or QA snapsho
  await assert.rejects(db.assertPublishable(job),/^Error: LOCAL_RELEASE_BLOCKED$/);
  current={...current,manifest:validManifest,manifest_sha256:validIdentity,qa_envelope:changedQA};
  await assert.rejects(db.assertPublishable(job),/^Error: LOCAL_RELEASE_BLOCKED$/);
+});
+
+test('final local release guard rejects changed durable brief or idempotency key',async()=>{
+ const qa=signedQA(),brief={id:'job',account_id:'account',platform:'redbubble',mode:'LAUNCH',facts:{name:'Original'}};
+ const job={id:'job',account_id:'account',platform:'redbubble',fencing_token:'1',brief,
+  idempotency_key:'original-idempotency',manifest:validManifest,qa_envelope:qa};
+ const original={id:job.id,platform:job.platform,manifest:validManifest,manifest_sha256:validIdentity,qa_envelope:qa};
+ let durable={brief,idempotency_key:job.idempotency_key},leaseReads=0;
+ const client={async query(query){
+  const sql=typeof query==='string'?query:query.text;
+  if(sql==='BEGIN')return {command:'BEGIN'};
+  if(sql==='COMMIT'||sql==='ROLLBACK'||sql==='DISCARD ALL')return {command:sql.split(' ')[0]};
+  if(sql.startsWith('SET LOCAL'))return {rows:[]};
+  if(sql.includes("q.state='publishing'")&&sql.includes('FOR SHARE OF q,p,a'))
+   return {rows:[{...original,...durable}]};
+  if(sql.startsWith('SELECT lease_until>clock_timestamp()')){leaseReads++;return {rows:[{valid:true}]};}
+  throw Error('UNEXPECTED_QUERY: '+sql);
+ },release(){}};
+ const db=new PodDB({pool:{connect:async()=>client},bridge,qaKey,expiresAt:'2099-01-01T00:00:00Z'});
+ assert.equal(await db.assertPublishable(job),true);
+ durable={brief:{...brief,facts:{name:'Changed'}},idempotency_key:job.idempotency_key};
+ await assert.rejects(db.assertPublishable(job),{message:'LOCAL_RELEASE_BLOCKED'});
+ durable={brief,idempotency_key:'replacement-idempotency'};
+ await assert.rejects(db.assertPublishable(job),{message:'LOCAL_RELEASE_BLOCKED'});
+ assert.equal(leaseReads,1);
 });

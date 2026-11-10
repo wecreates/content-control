@@ -155,7 +155,9 @@ export async function publishOnce({db,env=process.env,accountId,adapters={},reso
  // A claimed lease whose identity cannot be snapshotted must never be passed to
  // settlement. Durable recovery owns the uncertainty because no safe row identity
  // exists for an immediate blocked transition.
- if(!releaseSnapshot)throw Error('RELEASE_SETTLEMENT_UNCERTAIN');
+ if(!releaseSnapshot||![releaseSnapshot.id,releaseSnapshot.account_id,releaseSnapshot.idempotency_key].every(value=>validOpaqueText(value))||
+  releaseSnapshot.brief?.id!==releaseSnapshot.id||releaseSnapshot.brief?.account_id!==releaseSnapshot.account_id||
+  releaseSnapshot.brief?.platform!==releaseSnapshot.platform)throw Error('RELEASE_SETTLEMENT_UNCERTAIN');
  const job=releaseSnapshot;
  let submitted=false,submittedSettlementAttempted=false;
  try{

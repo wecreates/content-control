@@ -340,6 +340,18 @@ test('submission preserves claimed idempotency identity across local eligibility
  assert.deepEqual(f.events,['submitted']);
 });
 
+test('a contradictory claimed row cannot submit or settle using a different signed brief identity',async()=>{
+ for(const changed of [{id:'other-job'},{account_id:'other-account'},{platform:'teepublic'}]){
+  const f=fixture(),claimed=await f.options.db.claimPublish();
+  f.options.db.claimPublish=async()=>({...claimed,...changed});
+  f.options.adapters.teepublic=f.options.adapters.redbubble;
+  let artifactReads=0;
+  f.options.verifyArtifacts=async()=>{artifactReads++;return f.manifest;};
+  await assert.rejects(publishOnce(f.options),{message:'RELEASE_SETTLEMENT_UNCERTAIN'});
+  assert.equal(artifactReads,0);assert.deepEqual(f.events,[]);
+ }
+});
+
 test('submission preserves claimed idempotency identity across resolver mutation',async()=>{
  const f=fixture(),claimed=f.options.db.claimPublish,original='fixture-idempotency';
  let claimedJob;

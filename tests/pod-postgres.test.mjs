@@ -425,6 +425,13 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   await pool.query("INSERT INTO pod_events(id,job_id,kind,payload) VALUES($1,$2,'pod.production.qa_passed',$3)",
    [crypto.randomUUID(),releaseJob,{manifest_sha256:releaseManifestIdentity,publication_enabled:false}]);
   assert.equal(await db.assertPublishable(releaseClaim),true);
+  await pool.query('UPDATE pod_production_queue SET brief=$2 WHERE id=$1',[releaseJob,{mode:'PRELAUNCH'}]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query('UPDATE pod_production_queue SET brief=$2,idempotency_key=$3 WHERE id=$1',
+   [releaseJob,releaseClaim.brief,crypto.randomUUID()]);
+  await assert.rejects(db.assertPublishable(releaseClaim),/LOCAL_RELEASE_BLOCKED/);
+  await pool.query('UPDATE pod_production_queue SET idempotency_key=$2 WHERE id=$1',[releaseJob,releaseClaim.idempotency_key]);
+  assert.equal(await db.assertPublishable(releaseClaim),true);
   const changedQaPayload=JSON.stringify({...JSON.parse(qa.payload),issued_at_ms:Date.now()-2});
   const changedQa={payload:changedQaPayload,signature:crypto.createHmac('sha256',qaKey).update(changedQaPayload).digest('hex')};
   await pool.query('UPDATE pod_production_queue SET qa_envelope=$2 WHERE id=$1',[releaseJob,changedQa]);
