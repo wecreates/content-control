@@ -14,7 +14,9 @@ function database(value,seen,state='submitted',corrupt=false,jobProviderId=value
   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:value.job_id,account_id:value.account_id,
    platform:value.platform,state,provider_id:jobProviderId,reason_code:reasonCode,manifest:{package_sha256:value.package_sha256}}]};
   if(sql.includes('FROM pod_artifacts'))return {rowCount:1,rows:[{sha256:value.evidence_sha256,media_type:'application/json',body_sha256:corrupt?'0'.repeat(64):value.evidence_sha256}]};
-  if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[seen]:[]};
+  if(sql.includes('FROM pod_provider_inbox'))return {rowCount:seen?1:0,rows:seen?[{
+   provider:value.platform,account_id:value.account_id,provider_event_id:value.provider_event_id,...seen
+  }]:[]};
   writes.push({sql,args});
   if(sql.startsWith('INSERT INTO pod_provider_inbox'))return {rowCount:1,rows:[{provider:value.platform,
    account_id:value.account_id,provider_event_id:value.provider_event_id,evidence_sha256:value.evidence_sha256}]};
@@ -73,6 +75,32 @@ test('exact replay ignores refreshed envelope times and never mutates state',asy
  const db=database(observation,{evidence_sha256:observation.evidence_sha256,payload:{...observation,issued_at_ms:1,expires_at_ms:2}},'published');
  assert.deepEqual(await reconcilePublication(db,sign(observation),key),{duplicate:true});assert.equal(db.writes.length,0);
 });
+test('listing reconciliation rejects a different locked job with the same account and listing',async()=>{
+ for(const replay of [false,true]){
+  const next={...observation,provider_event_id:replay?observation.provider_event_id:'new-readback'};
+  const db=database({...next,job_id:'other-job'},
+   replay?{evidence_sha256:next.evidence_sha256,payload:next}:null,'published');
+  await assert.rejects(reconcilePublication(db,sign(next),key),{message:'LISTING_SCOPE_INVALID'});
+  assert.equal(db.writes.length,0);
+ }
+});
+test('listing reconciliation rejects a replay whose inbox key disagrees with its signed payload',async()=>{
+ for(const [field,value] of [['provider','teepublic'],['account_id','other-account'],['provider_event_id','other-event']]){
+  const seen={provider:observation.platform,account_id:observation.account_id,
+   provider_event_id:observation.provider_event_id,evidence_sha256:observation.evidence_sha256,payload:observation};
+  const db=database(observation,{...seen,[field]:value},'published');
+  await assert.rejects(reconcilePublication(db,sign(observation),key),{message:'LISTING_REPLAY_CONFLICT'},field);
+  assert.equal(db.writes.length,0);
+ }
+});
+test('listing reconciliation rejects a proxy row before its prototype trap runs',async()=>{
+ let traps=0;
+ const db={active(){},tx:fn=>fn({query:async()=>({rows:[new Proxy({},{
+  getPrototypeOf(){traps++;throw Error('prototype trap executed');}
+ })]})})};
+ await assert.rejects(reconcilePublication(db,sign(observation),key),{message:'LISTING_QUERY_UNVERIFIED'});
+ assert.equal(traps,0);
+});
 test('exact replay cannot acknowledge an event whose queue row is not published',async()=>{
  const seen={evidence_sha256:observation.evidence_sha256,payload:observation};
  const db=database(observation,seen,'ambiguous',false,null,'SUBMISSION_UNCERTAIN');
@@ -114,7 +142,7 @@ test('listing reconciliation rejects unverified durable mutation results without
   let executed=0;
   const unverified=Object.defineProperty({},'rowCount',{get(){executed++;throw Error('mutation getter executed');}});
   const db={active(){},tx:async fn=>fn({query:async(sql,args)=>{
-   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{account_id:observation.account_id,
+   if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:observation.job_id,account_id:observation.account_id,
     platform:observation.platform,state:'submitted',provider_id:null,reason_code:null,lease_until:null,
     manifest:{package_sha256:observation.package_sha256}}]};
    if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:observation.evidence_sha256,
