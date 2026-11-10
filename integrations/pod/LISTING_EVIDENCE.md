@@ -25,6 +25,12 @@ row remains published. The inbox write and publication transition are one
 transaction, so a retained event attached to a submitted or ambiguous row is an
 invalid durable state and fails closed rather than being acknowledged. Changed
 content under the same provider event ID is a conflict, not a correction mechanism.
+The locked query result must itself return the signed job ID. Replay also checks
+the returned inbox provider, account and event key against the signed observation
+before treating its stored payload as a duplicate. Misattributed results fail
+before evidence is recorded or acknowledged; executable proxy rows are rejected
+without inspecting their prototypes. Disposable PostgreSQL tests exercise the
+rejection and a clean retry. This does not verify any live listing.
 
 A genuinely new observation of an already published listing may carry a new
 provider event ID and a new stored proof. It is retained in the provider inbox,

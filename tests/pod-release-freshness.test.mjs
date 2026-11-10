@@ -576,7 +576,7 @@ test('malformed receipt can reconcile from synthetic signed readback without sub
   provider_id:providerId,provider_event_id:'fixture-observation',evidence_sha256:proof};
  const writes=[];
  const db={active(){},tx:async fn=>fn({query:async(sql,args)=>{
-  if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{account_id:observation.account_id,
+  if(sql.startsWith('SELECT * FROM pod_production_queue'))return {rows:[{id:observation.job_id,account_id:observation.account_id,
    platform:observation.platform,manifest:f.manifest,state,provider_id:savedId}]};
   if(sql.includes('FROM pod_artifacts'))return {rows:[{sha256:proof,media_type:'application/json',body_sha256:proof}]};
   if(sql.includes('FROM pod_provider_inbox'))return {rowCount:0,rows:[]};

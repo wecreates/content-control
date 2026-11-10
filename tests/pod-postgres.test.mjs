@@ -295,6 +295,26 @@ test('PostgreSQL migration isolation, artifact durability and concurrent claims'
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[0]])).rows[0].state,'submitted');
   assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=$1',[observed.provider_event_id])).rows[0].n,0);
   assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{published:true});
+  // Misattributed driver results must not create evidence or acknowledge a
+  // replay even though the underlying SQL and matching listing are genuine.
+  const withChangedListingRead=(matches,change)=>({active:()=>db.active(),tx:fn=>db.tx(client=>fn({
+   query:async(sql,args)=>{
+    const result=await client.query(sql,args);
+    if(!matches(sql))return result;
+    assert.equal(result.rows.length,1);
+    return {...result,rows:[{...result.rows[0],...change}]};
+   }
+  }))});
+  const wrongLockedJob=withChangedListingRead(sql=>sql.includes('FROM pod_production_queue')&&sql.includes('FOR UPDATE'),
+   {id:listingJobs[1]});
+  const unexpectedReadback={...observed,provider_event_id:crypto.randomUUID()};
+  for(const candidate of [observed,unexpectedReadback])
+   await assert.rejects(reconcilePublication(wrongLockedJob,signedObservation(candidate),providerKey),{message:'LISTING_SCOPE_INVALID'});
+  const wrongInboxKey=withChangedListingRead(sql=>sql.includes('FROM pod_provider_inbox'),
+   {provider_event_id:unexpectedReadback.provider_event_id});
+  await assert.rejects(reconcilePublication(wrongInboxKey,signedObservation(observed),providerKey),{message:'LISTING_REPLAY_CONFLICT'});
+  assert.equal((await pool.query('SELECT count(*)::int AS n FROM pod_provider_inbox WHERE provider_event_id=$1',
+   [unexpectedReadback.provider_event_id])).rows[0].n,0);
   assert.deepEqual(await reconcilePublication(db,signedObservation(observed),providerKey),{duplicate:true});
   await assert.rejects(reconcilePublication(db,signedObservation({...observed,job_id:listingJobs[1]}),providerKey),/LISTING_REPLAY_CONFLICT/);
   assert.equal((await pool.query('SELECT state FROM pod_production_queue WHERE id=$1',[listingJobs[1]])).rows[0].state,'submitted');

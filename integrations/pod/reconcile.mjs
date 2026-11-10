@@ -6,8 +6,8 @@ import {validOpaqueText} from './text-identity.mjs';
 
 const LISTING_FIELDS=Object.freeze(['account_id','evidence_sha256','job_id','package_sha256','platform',
  'provider_event_id','provider_id','provider_verified','status']);
-const JOB_FIELDS=Object.freeze(['account_id','lease_until','manifest','platform','provider_id','reason_code','state']);
-const INBOX_FIELDS=Object.freeze(['evidence_sha256','payload']);
+const JOB_FIELDS=Object.freeze(['id','account_id','lease_until','manifest','platform','provider_id','reason_code','state']);
+const INBOX_FIELDS=Object.freeze(['provider','account_id','provider_event_id','evidence_sha256','payload']);
 const SIGNED_LISTING_FIELDS=Object.freeze([...LISTING_FIELDS,'audience','expires_at_ms','issued_at_ms','schema_version'].sort());
 function dataProperty(target,key){
  try{
@@ -23,10 +23,11 @@ function dataProperty(target,key){
  }catch{return {valid:false};}
 }
 function snapshotRecord(value,fields){
+ if(value===null||(typeof value!=='object'&&typeof value!=='function')||utilTypes.isProxy(value))
+  throw Error('LISTING_QUERY_UNVERIFIED');
  let prototype;
  try{prototype=Object.getPrototypeOf(value);}catch{throw Error('LISTING_QUERY_UNVERIFIED');}
- if(value===null||(typeof value!=='object'&&typeof value!=='function')||utilTypes.isProxy(value)||
-  (prototype!==Object.prototype&&prototype!==null))throw Error('LISTING_QUERY_UNVERIFIED');
+ if(prototype!==Object.prototype&&prototype!==null)throw Error('LISTING_QUERY_UNVERIFIED');
  const snapshot={};
  for(const field of fields){
   const capability=dataProperty(value,field);
@@ -95,19 +96,20 @@ export async function reconcilePublication(db,envelope,key,{signal}={}){
   const jobRow=snapshotQueryRows(await c.query('SELECT * FROM pod_production_queue WHERE id=$1 FOR UPDATE',[e.job_id]),JOB_FIELDS,1)[0];
   const job=jobRow?Object.freeze({...jobRow,package_sha256:snapshotRecord(jobRow.manifest,['package_sha256']).package_sha256}):null;
   db.active();
-  if(!job||job.account_id!==e.account_id||job.platform!==e.platform||job.package_sha256!==e.package_sha256||
+  if(!job||job.id!==e.job_id||job.account_id!==e.account_id||job.platform!==e.platform||job.package_sha256!==e.package_sha256||
    !['submitted','ambiguous','published'].includes(job.state)||
    (job.state==='published'?(job.provider_id!==e.provider_id||job.reason_code!=null||job.lease_until!=null):
     job.provider_id!=null&&job.provider_id!==e.provider_id))throw Error('LISTING_SCOPE_INVALID');
   await assertStoredEvidence(c,[e.evidence_sha256],'LISTING_EVIDENCE_MISSING');
   db.active();
-  const seen=snapshotQueryRows(await c.query('SELECT evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]),INBOX_FIELDS,1);
+  const seen=snapshotQueryRows(await c.query('SELECT provider,account_id,provider_event_id,evidence_sha256,payload FROM pod_provider_inbox WHERE provider=$1 AND account_id=$2 AND provider_event_id=$3',[e.platform,e.account_id,e.provider_event_id]),INBOX_FIELDS,1);
   db.active();
   if(seen.length){
    const previous=seen[0],previousPayload=snapshotRecord(previous.payload,LISTING_FIELDS);
    // Refreshed envelope times may differ, but the observed listing and its proof
    // must remain identical. A shared evidence file does not identify one job.
-   if(previous.evidence_sha256!==e.evidence_sha256||!LISTING_FIELDS.every(k=>previousPayload[k]===e[k]))throw Error('LISTING_REPLAY_CONFLICT');
+   if(previous.provider!==e.platform||previous.account_id!==e.account_id||previous.provider_event_id!==e.provider_event_id||
+    previous.evidence_sha256!==e.evidence_sha256||!LISTING_FIELDS.every(k=>previousPayload[k]===e[k]))throw Error('LISTING_REPLAY_CONFLICT');
    // The inbox insert and published transition commit atomically. A retained
    // event attached to any other queue state is corruption, not a safe retry.
    if(job.state!=='published')throw Error('LISTING_REPLAY_STATE_INVALID');
