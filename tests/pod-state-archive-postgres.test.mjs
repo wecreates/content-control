@@ -35,16 +35,19 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   }
   const [sourcePool,targetPool]=pools,source=dbFor(sourcePool),target=dbFor(targetPool);
   const proof=await new ArtifactStore(source).put(Buffer.from('synthetic proof only'),'application/json');
-  const concept=crypto.randomUUID(),tombstone=crypto.randomUUID(),accounts=Array.from({length:3},()=>crypto.randomUUID()),jobs=accounts.map(()=>crypto.randomUUID());
+  const active=['processing','publishing','published','processing','processing','publishing','publishing'];
+  const invalidDeadlines=[null,'infinity',null,'-infinity'];
+  const concept=crypto.randomUUID(),tombstone=crypto.randomUUID(),accounts=active.map(()=>crypto.randomUUID()),jobs=accounts.map(()=>crypto.randomUUID());
   const event=crypto.randomUUID(),lateEvent=crypto.randomUUID(),financial=crypto.randomUUID();
   await sourcePool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state) VALUES($1,'fixture',$2,'PASS')",[concept,crypto.randomUUID()]);
   await sourcePool.query("INSERT INTO pod_concepts(id,business_id,fingerprint,rights_state,permanently_unpublished) VALUES($1,'fixture',$2,'UNKNOWN',true)",[tombstone,crypto.randomUUID()]);
-  for(const [i,state] of ['processing','publishing','published'].entries()){
+  for(const [i,state] of active.entries()){
    await sourcePool.query("INSERT INTO pod_accounts(id,platform,state,daily_cap) VALUES($1,'redbubble','ACTIVE',10)",[accounts[i]]);
    await sourcePool.query(`INSERT INTO pod_production_queue
     (id,concept_id,account_id,platform,revision,brief,upstream_envelope,idempotency_key,state,attempt,fencing_token,lease_until,provider_id)
-    VALUES($1,$2,$3,'redbubble',1,'{"synthetic":true}','{}',$4,$5,1,9007199254740993,clock_timestamp()+interval '30 minutes',$6)`,
-    [jobs[i],concept,accounts[i],crypto.randomUUID(),state,i===2?'fixture-listing':null]);
+    VALUES($1,$2,$3,'redbubble',1,'{"synthetic":true}','{}',$4,$5,1,9007199254740993,
+     CASE WHEN $7::boolean THEN clock_timestamp()+interval '30 minutes' ELSE $8::timestamptz END,$6)`,
+    [jobs[i],concept,accounts[i],crypto.randomUUID(),state,i===2?'fixture-listing':null,i<3,invalidDeadlines[i-3]??null]);
   }
   await sourcePool.query("INSERT INTO pod_daily_concept_budget VALUES('fixture','2026-01-01',7)");
   await sourcePool.query(`INSERT INTO pod_market_intelligence
@@ -66,8 +69,8 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
    }};
   }}};
   const exported=await exportStateArchive(exporting,{directory,key,env});
-  assert.equal(changed,true);assert.equal(exported.records,15);
-  assert.equal((await verifyStateArchive({directory,key})).records,15);
+  assert.equal(changed,true);assert.equal(exported.records,23);
+  assert.equal((await verifyStateArchive({directory,key})).records,23);
   const catalog=JSON.parse(unseal(await fs.readFile(path.join(directory,'catalog.pod')),key,'pod:state-catalog:v1'));
   const last=catalog.items.at(-1),file=path.join(directory,String(last.index).padStart(5,'0')+'.pod');
   const original=await fs.readFile(file),corrupt=Buffer.from(original);corrupt[40]^=1;
@@ -90,13 +93,19 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   await assert.rejects(restoreStateArchive(target,{directory,key,env}),/STATE_ARCHIVE_SCHEMA_MISMATCH/);
   await targetPool.query('ALTER TABLE pod_accounts DROP COLUMN unexpected');await assertEmpty();
   const restored=await restoreStateArchive(target,{directory,key,env});
-  assert.equal(restored.accounts_disabled,3);assert.equal(restored.production_held,1);assert.equal(restored.publishing_ambiguous,1);
+  assert.equal(restored.accounts_disabled,7);assert.equal(restored.production_held,3);assert.equal(restored.publishing_ambiguous,3);
   assert.equal(restored.archive_sha256,exported.archive_sha256);
-  assert.equal((await targetPool.query('SELECT count(*)::int AS n FROM pod_accounts WHERE state=\'DISABLED\'')).rows[0].n,3);
+  assert.equal((await targetPool.query('SELECT count(*)::int AS n FROM pod_accounts WHERE state=\'DISABLED\'')).rows[0].n,7);
   const states=(await targetPool.query('SELECT id,state,fencing_token,reason_code FROM pod_production_queue ORDER BY id')).rows;
   assert.deepEqual(states.find(j=>j.id===jobs[0]),{id:jobs[0],state:'blocked',fencing_token:'9007199254740994',reason_code:'PRODUCTION_LEASE_EXPIRED'});
   assert.deepEqual(states.find(j=>j.id===jobs[1]),{id:jobs[1],state:'ambiguous',fencing_token:'9007199254740994',reason_code:'RECOVERY_RECONCILIATION_REQUIRED'});
   assert.equal(states.find(j=>j.id===jobs[2]).state,'published');
+  for(const [i,deadline] of invalidDeadlines.entries()){
+   const row=(await targetPool.query(`SELECT state,reason_code,lease_until::text AS deadline,attempt,fencing_token
+    FROM pod_production_queue WHERE id=$1`,[jobs[i+3]])).rows[0];
+   assert.deepEqual(row,{state:i<2?'blocked':'ambiguous',reason_code:i<2?'PRODUCTION_LEASE_UNVERIFIED':'PUBLISH_LEASE_UNVERIFIED',
+    deadline,attempt:1,fencing_token:'9007199254740994'});
+  }
   for(const table of ['pod_artifacts','pod_concepts','pod_daily_concept_budget','pod_market_intelligence','pod_quota_reservations','pod_provider_inbox','pod_financial_events']){
    const query=`SELECT row_to_json(t)::text AS record FROM public.${table} t ORDER BY row_to_json(t)::text`;
    assert.deepEqual((await targetPool.query(query)).rows,(await sourcePool.query(query)).rows,table+' exact restored values');
@@ -113,7 +122,7 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   const cancelPool=pools[2],cancelTarget=dbFor(cancelPool),transact=cancelTarget.tx.bind(cancelTarget);
   cancelTarget.tx=async fn=>{const result=await transact(fn);controller.abort(cancelled);return result;};
   await assert.rejects(restoreStateArchive(cancelTarget,{directory,key,env,signal:controller.signal}),error=>error===cancelled);
-  assert.equal((await cancelPool.query("SELECT count(*)::int AS n FROM pod_accounts WHERE state='DISABLED'")).rows[0].n,3);
+  assert.equal((await cancelPool.query("SELECT count(*)::int AS n FROM pod_accounts WHERE state='DISABLED'")).rows[0].n,7);
   assert.equal((await cancelPool.query('SELECT amount_minor::text AS amount FROM pod_financial_events WHERE id=$1',[financial])).rows[0].amount,'9007199254740993');
   assert.equal((await cancelPool.query("SELECT count(*)::int AS n FROM pod_events WHERE kind='pod.recovery.restored'")).rows[0].n,1);
   await assert.rejects(restoreStateArchive(dbFor(cancelPool),{directory,key,env}),/STATE_ARCHIVE_TARGET_NOT_EMPTY/);
@@ -121,7 +130,7 @@ test('POD state snapshot restores all ten tables atomically under restricted rol
   await Promise.all(pools.map(p=>p.end()));pools.length=0;
   const reopenedURL=new URL(url);reopenedURL.pathname='/'+names[1];const reopened=new pg.Pool({connectionString:reopenedURL.toString(),max:1});pools.push(reopened);
   assert.equal((await reopened.query('SELECT amount_minor::text AS amount FROM pod_financial_events WHERE id=$1',[financial])).rows[0].amount,'9007199254740993');
-  assert.equal((await reopened.query('SELECT count(*)::int AS n FROM pod_production_queue')).rows[0].n,3);
+  assert.equal((await reopened.query('SELECT count(*)::int AS n FROM pod_production_queue')).rows[0].n,7);
  }finally{
   await Promise.all(pools.map(p=>p.end()));
   for(const name of created.reverse())await owner.query(`DROP DATABASE "${name}"`);
