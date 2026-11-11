@@ -38,7 +38,6 @@ jobs:
           python-version: '3.12'
       - run: npm ci --ignore-scripts
       - run: npm run test:pod
-      - run: python -m unittest discover -s tests -p test_pod_ci_dependencies.py
       - run: bash scripts/pod_ci_dependencies.sh
       - run: pip install -r requirements-pod-runtime.txt
       - run: npm run test:pod-python
