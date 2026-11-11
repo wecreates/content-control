@@ -11,7 +11,12 @@ import {diagnosticDeadline,diagnosticStep} from '../integrations/pod/diagnostic-
 export async function operationsSnapshot({env=process.env,connect=createPodPool,clock=Date.now,signal}={}){
  // Keep a standalone CLI alive long enough to emit its bounded failure receipt.
  const controller=new AbortController();
- const deadline=diagnosticDeadline(signal===undefined?controller.signal:AbortSignal.any([signal,controller.signal]));
+ // Admit external cancellation before native composition. Only private native
+ // signals reach AbortSignal.any, including on Node 22. Preserve the original
+ // absolute deadline while adding the standalone CLI keepalive cancellation.
+ const admitted=diagnosticDeadline(signal);
+ const deadline=Object.freeze({expiresAt:admitted.expiresAt,
+  signal:AbortSignal.any([admitted.signal,controller.signal])});
  const timer=setTimeout(()=>controller.abort(),40000);
  const step=operation=>diagnosticStep(operation,deadline);
  let pool,report;
@@ -42,3 +47,4 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   console.log(JSON.stringify(await operationsSnapshot()));
  }catch{console.error(JSON.stringify({status:'BLOCKED',reason:'POD_OPERATIONS_SNAPSHOT_UNAVAILABLE'}));process.exitCode=1;}
 }
+

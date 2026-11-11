@@ -256,7 +256,7 @@ async function snapshotResult(task){
 test('manual diagnostics validate cancellation before allocating an owned timer',async t=>{
  let timers=0;const set=globalThis.setTimeout;
  t.mock.method(globalThis,'setTimeout',(...args)=>{timers++;return set(...args);});
- await assert.rejects(operationsSnapshot({signal:{},connect:()=>{throw Error('must not connect');}}),TypeError);
+ await assert.rejects(operationsSnapshot({signal:{},connect:()=>{throw Error('must not connect');}}),/^Error: POD_DIAGNOSTIC_TIMEOUT$/);
  assert.equal(timers,0);
 });
 test('manual diagnostics start no work after cancellation',async()=>{
@@ -298,3 +298,4 @@ test('manual diagnostics expose ambiguous storage expiry as unknown',async()=>{
   assert.ok(result.health.alerts.some(alert=>alert.code==='STORAGE_EXPIRY_UNKNOWN'));
  }
 });
+
