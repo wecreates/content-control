@@ -31,6 +31,19 @@ function dataProperty(target,key){
  }catch{return {valid:false};}
 }
 
+function snapshotDeliveryResult(result){
+ const delivered=dataProperty(result,'delivered'),failed=dataProperty(result,'failed'),
+  cursor=dataProperty(result,'nextCursor');
+ if(!delivered.valid||!failed.valid||!cursor.valid)throw Error('OUTBOX_RESULT_UNVERIFIED');
+ const failures=failed.value===undefined?0:failed.value;
+ // deliverOutbox reads at most twenty events. Never coerce a result into
+ // monitoring totals or advance its cursor before both counts are verified.
+ const count=value=>Number.isSafeInteger(value)&&value>=0&&value<=20&&!Object.is(value,-0);
+ if(!count(delivered.value)||!count(failures)||delivered.value+failures>20)
+  throw Error('OUTBOX_RESULT_UNVERIFIED');
+ return {delivered:delivered.value,failed:failures,nextCursor:cursor.value||null};
+}
+
 // Internal business feedback only; this runtime never calls a marketplace.
 export function startOutboxRuntime(options={}){
  const dbCapability=dataProperty(options,'db'),envCapability=dataProperty(options,'env'),
@@ -67,9 +80,9 @@ export function startOutboxRuntime(options={}){
     let consecutiveFailures=0,cursor=null;
     while(!stopped()){
      try{
-      const result=await deliver(db,{url,key,signal:controller.signal,continueOnError:true,cursor});
-      cursor=result.nextCursor||null;
-      delivered+=result.delivered;failures+=result.failed||0;
+      const result=snapshotDeliveryResult(await deliver(db,{url,key,signal:controller.signal,continueOnError:true,cursor}));
+      cursor=result.nextCursor;
+      delivered+=result.delivered;failures+=result.failed;
       // A drained batch may have committed acknowledgements before shutdown.
       // Retain those counts without turning cancellation into a healthy cycle.
       if(stopped())break;
