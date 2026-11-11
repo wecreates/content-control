@@ -1,9 +1,52 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import {getEventListeners} from 'node:events';
 import {createGrantResolver} from '../integrations/pod/grant-client.mjs';
 const env={POD_GRANT_URL:'https://authority.example/grant',POD_GRANT_AUTH_KEY:'a'.repeat(32),POD_UPSTREAM_KEY:'s'.repeat(32)};
 const brief={id:'job',business_id:'business',account_id:'account',platform:'kdp',destination_platform:'kdp',mode:'PRELAUNCH'};
+test('grant call rejects executable cancellation options without invoking them',async()=>{
+ let reads=0,calls=0;const trap=()=>{reads++;throw Error('private option getter');};
+ const resolve=createGrantResolver({env,fetchImpl:async()=>{calls++;return response();}});
+ for(const options of [{get signal(){return trap();}},new Proxy({},{get:trap,getOwnPropertyDescriptor:trap})])
+  await assert.rejects(resolve({id:'job',brief},options),/^Error: GRANT_OPTIONS_UNVERIFIED$/);
+ assert.equal(reads,0);assert.equal(calls,0);
+});
+test('grant call rejects forged and Proxy signals before dispatch without traps',async()=>{
+ let reads=0,calls=0;const trap=()=>{reads++;throw Error('private signal getter');};
+ const resolve=createGrantResolver({env,fetchImpl:async()=>{calls++;return response();}});
+ for(const signal of [{get aborted(){return trap();}},new Proxy(new AbortController().signal,{get:trap})])
+  await assert.rejects(resolve({id:'job',brief},{signal}),TypeError);
+ assert.equal(reads,0);assert.equal(calls,0);
+});
+test('already cancelled grant retains native reason despite shadowed members',async()=>{
+ const controller=new AbortController(),reason=Error('stopped');controller.abort(reason);
+ Object.defineProperty(controller.signal,'aborted',{get(){assert.fail('public flag read');}});
+ const resolve=createGrantResolver({env,fetchImpl:()=>assert.fail('transport started')});
+ await assert.rejects(resolve({id:'job',brief},{signal:controller.signal}),e=>e===reason);
+ assert.equal(getEventListeners(controller.signal,'abort').length,0);
+});
+test('valid grant ignores shadowed public signal members and releases its relay',async()=>{
+ const controller=new AbortController();
+ for(const key of ['aborted','reason','addEventListener','removeEventListener','throwIfAborted'])
+  Object.defineProperty(controller.signal,key,{get(){assert.fail('public signal member read');}});
+ const result=await createGrantResolver({env,fetchImpl:async()=>response()})({id:'job',brief},{signal:controller.signal});
+ assert.equal(JSON.parse(result.payload).publication_permission,false);
+ assert.equal(getEventListeners(controller.signal,'abort').length,0);
+});
+for(const phase of ['headers','body'])test(`grant ${phase} wait ignores synthetic events but honors native abort`,{timeout:2000},async()=>{
+ const controller=new AbortController();let entered,finish,cancelled=0;
+ const started=new Promise(r=>entered=r),pending=new Promise(r=>finish=r);
+ const fetchImpl=phase==='headers'?()=>{entered();return pending;}:async()=>({ok:true,headers:new Headers({'content-type':'application/json'}),body:{getReader(){return {read(){entered();return pending;},cancel(){cancelled++;},releaseLock(){}};}}});
+ const operation=createGrantResolver({env,fetchImpl})({id:'job',brief},{signal:controller.signal});
+ let settled=false;operation.then(()=>settled=true,()=>settled=true);
+ try{
+  await started;controller.signal.dispatchEvent(new Event('abort'));await new Promise(r=>setImmediate(r));assert.equal(settled,false);
+  Object.defineProperty(controller.signal,'aborted',{value:false});controller.abort();
+  await assert.rejects(operation,{name:'AbortError'});
+  assert.equal(getEventListeners(controller.signal,'abort').length,0);assert.equal(cancelled,phase==='body'?1:0);
+ }finally{controller.abort();finish(phase==='headers'?response():{done:true});}
+});
 function response(extra={}){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:Date.now()-1,expires_at_ms:Date.now()+60000,job_id:'job',business_id:'business',account_id:'account',platform:'kdp',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,...extra});return new Response(JSON.stringify({payload,signature:crypto.createHmac('sha256',env.POD_UPSTREAM_KEY).update(payload).digest('hex')}),{headers:{'content-type':'application/json'}});}
 function responseAt(now,extra={}){const payload=JSON.stringify({schema_version:1,audience:'content-control:pod',issued_at_ms:now-1,expires_at_ms:now+60000,job_id:'job',business_id:'business',account_id:'account',platform:'kdp',max_mode:'PRELAUNCH',production_permission:true,publication_permission:false,revoked:false,...extra});return new Response(JSON.stringify({payload,signature:crypto.createHmac('sha256',env.POD_UPSTREAM_KEY).update(payload).digest('hex')}),{headers:{'content-type':'application/json'}});}
 test('fresh authority grant replaces expired queue envelope',async()=>{
