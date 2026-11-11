@@ -2,12 +2,25 @@ import {setTimeout as pause} from 'node:timers/promises';
 import {types as utilTypes} from 'node:util';
 
 const abortSignalAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
 function signalAborted(signal){
  try{
   if(signal===null||typeof signal!=='object'||utilTypes.isProxy(signal)||
    typeof abortSignalAborted!=='function')throw Error();
   return Reflect.apply(abortSignalAborted,signal,[]);
  }catch{throw Error('WORKER_SIGNAL_UNVERIFIED');}
+}
+async function waitForNextCycle(pollMs,signal){
+ // Timer APIs inspect public signal properties. A recovery/production callback
+ // receives this lifecycle signal and may shadow those properties. Forward its
+ // native cancellation into an owned signal rather than invoking caller code.
+ const controller=new AbortController(),abort=()=>controller.abort();
+ Reflect.apply(addAbortListener,signal,['abort',abort,{once:true}]);
+ try{
+  if(signalAborted(signal))abort();
+  await pause(pollMs,undefined,{signal:controller.signal});
+ }finally{Reflect.apply(removeAbortListener,signal,['abort',abort]);}
 }
 function dataProperty(target,key){
  try{
@@ -50,6 +63,6 @@ export async function runPodWorker(options={}){
    onCycle({phase:'completed',result});
   }catch{if(active())onError({code:'POD_WORKER_CYCLE_FAILED'});}
   if(!active())break;
-  try{await pause(pollMs,undefined,{signal});}catch(e){if(e.name!=='AbortError')throw e;}
+  try{await waitForNextCycle(pollMs,signal);}catch(e){if(e.name!=='AbortError')throw e;}
  }
 }
