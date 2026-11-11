@@ -28,3 +28,10 @@ Tests/disposable databases do not close production acceptance. Independent retai
 recovery, current owner-authorized accounts/rights/templates/adapters, phone
 acceptance and measured 100/1,000 concepts/day remain unfinished. Publication
 flags stay false; no continuously running self-hosted worker is claimed.
+
+Initial hosted candidate 01e01792053b401a40c5af75fd00bd757a855c18 failed
+integration run 42983199225: three delivery regressions exposed Node 22's public
+aborted read during AbortSignal.any composition (local Node 24 did not read it).
+The repaired candidate composes request deadlines from an owned native-state
+mirror and removes its source listener in finally. The original signal is still
+passed to database I/O. Superseded CI is not counted as acceptance.

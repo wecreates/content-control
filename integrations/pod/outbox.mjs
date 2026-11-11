@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
 const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
 function signalAborted(signal){
  if(signal===undefined||signal===null)return false;
  if(utilTypes.isProxy(signal))throw new TypeError('OUTBOX_SIGNAL_INVALID');
@@ -144,6 +146,13 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  const endpoint=new URL(url);
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
  if(signalAborted(signal))return continueOnError?{delivered:0,failed:0,nextCursor:null}:{delivered:0};
+ // Node 22 signal composition can read the source's public aborted member.
+ // Compose requests from an owned mirror; keep the original signal for DB I/O.
+ const requestController=new AbortController();
+ const onAbort=()=>{if(signalAborted(signal))requestController.abort();};
+ if(signal)Reflect.apply(addAbortListener,signal,['abort',onAbort]);
+ try{
+ if(signalAborted(signal))onAbort();
  // pg decodes timestamptz to a millisecond Date. Preserve the database's full
  // microsecond value separately or rejected rows can repeat forever on page 2.
  const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
@@ -168,7 +177,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
   if(Buffer.byteLength(body)>MAX_EVENT_REQUEST_BYTES)throw Error('OUTBOX_EVENT_TOO_LARGE');
   const deadline=performance.now()+15000;
   const timeout=AbortSignal.timeout(15000);
-  const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
+  const requestSignal=AbortSignal.any([requestController.signal,timeout]);
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,headers:{'content-type':'application/json','idempotency-key':event.id},body},{deadline});
   const ack=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:4096,statusError:'OUTBOX_DELIVERY_FAILED',
    sizeError:'OUTBOX_ACK_TOO_LARGE',mediaTypeError:'OUTBOX_ACK_MEDIA_TYPE_INVALID'});
@@ -190,6 +199,7 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
  const last=events.at(-1);
  const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.event.id}:null;
  return continueOnError?{delivered,failed,nextCursor}:{delivered};
+ }finally{if(signal)Reflect.apply(removeAbortListener,signal,['abort',onAbort]);}
 }
 
 
