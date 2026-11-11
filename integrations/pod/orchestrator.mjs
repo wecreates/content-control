@@ -15,8 +15,10 @@ async function waitForNextCycle(pollMs,signal){
  // Timer APIs inspect public signal properties. A recovery/production callback
  // receives this lifecycle signal and may shadow those properties. Forward its
  // native cancellation into an owned signal rather than invoking caller code.
- const controller=new AbortController(),abort=()=>controller.abort();
- Reflect.apply(addAbortListener,signal,['abort',abort,{once:true}]);
+ const controller=new AbortController(),abort=()=>{if(signalAborted(signal))controller.abort();};
+ // dispatchEvent can forge an "abort" event without changing native state.
+ // Do not consume the listener until genuine cancellation or wait completion.
+ Reflect.apply(addAbortListener,signal,['abort',abort]);
  try{
   if(signalAborted(signal))abort();
   await pause(pollMs,undefined,{signal:controller.signal});

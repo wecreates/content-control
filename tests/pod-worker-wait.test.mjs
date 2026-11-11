@@ -59,3 +59,15 @@ test('worker removes its forwarding listener after an ordinary polling interval'
   assert.equal(getEventListeners(controller.signal,'abort').length,0);
  }finally{controller.abort();}
 });
+
+test('synthetic abort events cannot accelerate worker polling or consume cancellation',{timeout:3000},async()=>{
+ const controller=new AbortController();let recoveries=0,fakeTimer,abortTimer;
+ try{
+  fakeTimer=setTimeout(()=>controller.signal.dispatchEvent(new Event('abort')),10);
+  abortTimer=setTimeout(()=>controller.abort(),40);
+  await runPodWorker({signal:controller.signal,pollMs:1000,db:{recover:async()=>{recoveries++;}},
+   produce:async()=>({status:'IDLE'}),publish:async()=>{}});
+  assert.equal(recoveries,1);
+  assert.equal(getEventListeners(controller.signal,'abort').length,0);
+ }finally{clearTimeout(fakeTimer);clearTimeout(abortTimer);controller.abort();}
+});

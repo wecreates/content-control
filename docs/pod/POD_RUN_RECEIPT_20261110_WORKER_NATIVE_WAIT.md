@@ -6,6 +6,9 @@ the timer API, which reads overridable public properties. A recovery callback
 could shadow those members and turn a healthy idle runtime into FAILED.
 
 The polling wait now forwards native abort events into an owned timer signal.
+An additional regression found synthetic abort events could accelerate both
+worker and publisher polling. Both forwarding listeners now recheck native state
+and ignore forged events without consuming the real cancellation listener.
 It rechecks native state after registering and removes the forwarding listener
 in finally, on cancellation and ordinary interval completion. Existing cycle
 error reporting remains redacted; no extra production/publication call is added.
