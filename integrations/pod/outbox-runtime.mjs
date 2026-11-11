@@ -2,6 +2,21 @@ import {setTimeout as pause} from 'node:timers/promises';
 import {types as utilTypes} from 'node:util';
 import {deliverOutbox} from './outbox.mjs';
 
+const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
+const signalAborted=signal=>Reflect.apply(nativeAborted,signal,[]);
+async function waitForNextBatch(wait,delay,signal){
+ // Delivery receives the lifecycle signal, so its public members are not
+ // trusted by either lifecycle checks or the timer API.
+ const controller=new AbortController(),abort=()=>{if(signalAborted(signal))controller.abort();};
+ Reflect.apply(addAbortListener,signal,['abort',abort]);
+ try{
+  if(signalAborted(signal))abort();
+  await wait(delay,undefined,{signal:controller.signal});
+ }finally{Reflect.apply(removeAbortListener,signal,['abort',abort]);}
+}
+
 function dataProperty(target,key){
  try{
   if(target===null||(typeof target!=='object'&&typeof target!=='function')||utilTypes.isProxy(target))return {valid:false};
@@ -29,7 +44,7 @@ export function startOutboxRuntime(options={}){
   clock=clockCapability.value===undefined?Date.now:clockCapability.value;
  const controller=new AbortController();
  const enabled=()=>{const capability=dataProperty(env,'POD_OUTBOX_ENABLED');return capability.valid&&capability.value==='true';};
- const stopped=()=>controller.signal.aborted||!enabled();
+ const stopped=()=>signalAborted(controller.signal)||!enabled();
  let loop=Promise.resolve(),status='DISABLED',delivered=0,failures=0,lastSuccessAt=null;
  const enabledCapability=dataProperty(env,'POD_OUTBOX_ENABLED');
  if(!enabledCapability.valid){status='BLOCKED_OUTBOX_CONFIGURATION';}
@@ -64,7 +79,7 @@ export function startOutboxRuntime(options={}){
       if(stopped())break;
       failures++;consecutiveFailures++;status='RETRYING';
      }
-     try{await wait(Math.min(300000,pollMs*2**Math.min(consecutiveFailures,5)),undefined,{signal:controller.signal});}
+     try{await waitForNextBatch(wait,Math.min(300000,pollMs*2**Math.min(consecutiveFailures,5)),controller.signal);}
      catch{if(!stopped())throw Error('OUTBOX_WAIT_FAILED');}
     }
     status='STOPPED';
