@@ -56,10 +56,10 @@ function fixture({fail=false,rollbackFails=false,wrongRollback=false}={}){
   if(sql==='ROLLBACK')return {command:wrongRollback?'SELECT':'ROLLBACK'};
   if(sql.startsWith('BEGIN '))return {command:'BEGIN'};
   if(sql==='COMMIT')return {command:'COMMIT'};
-  if(sql.includes('FROM pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
-  if(sql.includes('FROM pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};
+  if(sql.includes('FROM public.pod_artifacts')){if(fail)throw Error('private database error');return {rows:[{bytes:'90'}]};}
+  if(sql.includes('FROM public.pod_financial_events'))return {rows:[{currency:'USD',verified_net_recorded_minor:'9007199254740993',evidence_count:'1'}]};
   if(sql.includes('GROUP BY platform'))return {rows:[{platform:'redbubble',state:'raw',count:'1'}]};
-  if(sql.includes('FROM pod_events'))return {rows:[{count:'1',oldest_seconds:'900'}]};
+  if(sql.includes('FROM public.pod_events'))return {rows:[{count:'1',oldest_seconds:'900'}]};
   if(sql.includes('AS unverified_count'))return {rows:[{count:'0',unverified_count:'1'}]};
   if(sql.startsWith('SELECT'))return {rows:[{count:'0'}]};
   return {rows:[]};
@@ -103,8 +103,8 @@ test('metrics reject executable database results without invocation',async()=>{
   ['events',{count:'0',oldest_seconds:'0'}],
  ];
  const stageFor=sql=>sql.includes('GROUP BY platform')?'states':sql.includes('AND NOT')?'failures':
-  sql.includes('FROM pod_artifacts')?'storage':sql.includes('FROM pod_financial_events')?'financials':
-  sql.includes('lease_until<=')?'leases':sql.includes('FROM pod_events')?'events':null;
+  sql.includes('FROM public.pod_artifacts')?'storage':sql.includes('FROM public.pod_financial_events')?'financials':
+  sql.includes('lease_until<=')?'leases':sql.includes('FROM public.pod_events')?'events':null;
  for(const [target,row] of stages){
   let reads=0;
   const resultProxy=value=>new Proxy(value,{get(object,property,receiver){
@@ -298,4 +298,3 @@ test('manual diagnostics expose ambiguous storage expiry as unknown',async()=>{
   assert.ok(result.health.alerts.some(alert=>alert.code==='STORAGE_EXPIRY_UNKNOWN'));
  }
 });
-

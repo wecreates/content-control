@@ -77,8 +77,8 @@ export async function productionActivity(db,{signal}={}){
    -- against the same exact boundaries exposed in the activity receipt.
    SELECT date_trunc('milliseconds',transaction_timestamp()) AS finish,date_trunc('milliseconds',transaction_timestamp())-interval '24 hours' AS start
   ), events AS (
-   SELECT e.kind,e.payload,q.id AS job_id,q.concept_id FROM pod_events e
-   JOIN pod_production_queue q ON q.id=e.job_id CROSS JOIN observation_window w
+   SELECT e.kind,e.payload,q.id AS job_id,q.concept_id FROM public.pod_events e
+   JOIN public.pod_production_queue q ON q.id=e.job_id CROSS JOIN observation_window w
    WHERE e.created_at>=w.start AND e.created_at<w.finish
    AND q.platform IN ('kdp','redbubble','teepublic','zazzle','spreadshirt')
    AND e.payload->>'package_sha256' ~ '^[a-f0-9]{64}$'
@@ -88,7 +88,7 @@ export async function productionActivity(db,{signal}={}){
        AND payload->>'fencing_token' ~ '^[0-9]+$')
   ) SELECT
    (SELECT start FROM observation_window) AS window_start,(SELECT finish FROM observation_window) AS window_end,
-   (SELECT count(*)::text FROM pod_concepts c CROSS JOIN observation_window w WHERE c.created_at>=w.start AND c.created_at<w.finish) AS registered_concept_records,
+   (SELECT count(*)::text FROM public.pod_concepts c CROSS JOIN observation_window w WHERE c.created_at>=w.start AND c.created_at<w.finish) AS registered_concept_records,
    (SELECT count(DISTINCT concept_id)::text FROM generated) AS generated_concept_records,
    (SELECT count(DISTINCT job_id)::text FROM generated) AS generated_jobs,
    (SELECT count(DISTINCT (payload->>'package_sha256'))::text FROM generated) AS generated_package_hashes,
