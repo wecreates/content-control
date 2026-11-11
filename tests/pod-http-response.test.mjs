@@ -57,11 +57,9 @@ test('failed reader release cannot replace a body result or primary failure',asy
  await assert.rejects(readBridgeJSON(response([{done:false,value:Buffer.from('123')}]),
   {maxBytes:2,statusError:'STATUS',sizeError:'SIZE'}),/^Error: SIZE$/);
 });
-test('failed abort-listener cleanup cannot replace a bridge result or primary failure',async()=>{
- const signal={
-  throwIfAborted(){},addEventListener(){},
-  removeEventListener(){throw Error('private signal detail');},
- };
+test('shadowed abort-listener cleanup cannot replace a bridge result or primary failure',async()=>{
+ const signal=new AbortController().signal;
+ Object.defineProperty(signal,'removeEventListener',{get(){assert.fail('public cleanup member read');}});
  const response=await fetchBridgeResponse(async()=>new Response('{}'),'https://authority.example',{signal});
  assert.deepEqual(await response.json(),{});
  await assert.rejects(readBridgeJSON(new Response('123'),
@@ -219,14 +217,10 @@ test('response abort interrupts an uncooperative read and releases a stalled can
 });
 for(const phase of ['headers','body']){
  test(`abort reason access cannot stall an uncooperative ${phase} wait`,async()=>{
-  let abort,entered,cancelled=0;
+  let entered,cancelled=0;
   const started=new Promise(resolve=>entered=resolve);
-  const signal={
-   throwIfAborted(){},
-   addEventListener(_type,listener){abort=listener;},
-   removeEventListener(){},
-   get reason(){throw Error('private signal detail');},
-  };
+  const controller=new AbortController(),signal=controller.signal;
+  Object.defineProperty(signal,'reason',{get(){assert.fail('public reason member read');}});
   let operation;
   if(phase==='headers'){
    operation=fetchBridgeResponse(()=>{entered();return new Promise(()=>{});},
@@ -240,21 +234,17 @@ for(const phase of ['headers','body']){
    operation=readBridgeJSON({ok:true,headers:new Headers(),body},
     {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal});
   }
-  await started;abort();
+  await started;controller.abort();
   await assert.rejects(bounded(operation),{name:'AbortError'});
   assert.equal(cancelled,phase==='body'?1:0);
  });
 }
 for(const phase of ['headers','body']){
- test(`synchronous abort registration prevents an uncooperative ${phase} start`,async()=>{
+ test(`already aborted native signal prevents an uncooperative ${phase} start`,async()=>{
   let started=0,cancelled=0;
   const reason=new DOMException('stopped','AbortError');
-  const signal={
-   throwIfAborted(){},
-   addEventListener(_type,listener){listener();},
-   removeEventListener(){},
-   reason,
-  };
+  const controller=new AbortController();controller.abort(reason);
+  const signal=controller.signal;
   let operation;
   if(phase==='headers'){
    operation=fetchBridgeResponse(()=>{started++;return new Promise(()=>{});},
@@ -270,7 +260,7 @@ for(const phase of ['headers','body']){
   }
   await assert.rejects(bounded(operation),error=>error===reason);
   assert.equal(started,0);
-  assert.equal(cancelled,phase==='body'?1:0);
+  assert.equal(cancelled,0);
  });
 }
 for(const caller of ['grant','outbox']){
@@ -391,27 +381,27 @@ test('synchronous transport failures release admission and preserve the error',a
  for(let i=0;i<40;i++)await assert.rejects(fetchBridgeResponse(fetchImpl,'https://authority.example',{}),error=>error===failure);
  assert.equal(calls,40);
 });
-test('failed abort-listener registration does not consume transport admission',async()=>{
- let calls=0;const failure=Error('signal listener failed');
- const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+test('forged signal cannot execute members or consume transport admission',async()=>{
+ let calls=0;
+ const signal={throwIfAborted(){assert.fail('forged abort check');},addEventListener(){assert.fail('forged listener');},removeEventListener(){assert.fail('forged cleanup');}};
  const fetchImpl=async()=>{calls++;return new Response('{}');};
  for(let i=0;i<40;i++)await assert.rejects(
-  fetchBridgeResponse(fetchImpl,'https://authority.example',{signal}),error=>error===failure);
+  fetchBridgeResponse(fetchImpl,'https://authority.example',{signal}),TypeError);
  assert.equal(calls,0);
  const response=await fetchBridgeResponse(fetchImpl,'https://authority.example',{});
  assert.deepEqual(await response.json(),{});assert.equal(calls,1);
 });
-test('failed abort-listener registration does not start a response-body read',async()=>{
- let reads=0,cancelled=0;const failure=Error('signal listener failed');
- const signal={throwIfAborted(){},addEventListener(){throw failure;},removeEventListener(){}};
+test('forged signal cannot start a response-body read',async()=>{
+ let reads=0,cancelled=0;
+ const signal={throwIfAborted(){assert.fail('forged abort check');},addEventListener(){assert.fail('forged listener');},removeEventListener(){assert.fail('forged cleanup');}};
  const body={getReader(){return {
   read(){reads++;return new Promise(()=>{});},
   cancel(){cancelled++;return new Promise(()=>{});},
   releaseLock(){},
  };}};
  await assert.rejects(bounded(readBridgeJSON({ok:true,headers:new Headers(),body},
-  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal})),error=>error===failure);
- assert.equal(reads,0);assert.equal(cancelled,1);
+  {maxBytes:32,statusError:'STATUS',sizeError:'SIZE',signal})),TypeError);
+ assert.equal(reads,0);assert.equal(cancelled,0);
 });
 test('outbox shutdown drains a header wait without accepting a late acknowledgement',async()=>{
  const db=dbFixture();let entered,respond,cancelled=0;
