@@ -15,9 +15,29 @@ function deadlineError(){
 }
 
 export function diagnosticDeadline(signal){
+ if(signal!==undefined){
+  try{if(utilTypes.isProxy(signal))throw Error();signalAborted(signal);}
+  catch{throw deadlineError();}
+ }
  const expiresAt=performance.now()+DEFAULT_DIAGNOSTIC_TIMEOUT_MS;
  const timeout=AbortSignal.timeout(DEFAULT_DIAGNOSTIC_TIMEOUT_MS);
- return Object.freeze({signal:signal===undefined?timeout:AbortSignal.any([signal,timeout]),expiresAt});
+ if(signal===undefined)return Object.freeze({signal:timeout,expiresAt});
+ // Node 22 composition can consult public source members. Keep composition
+ // private and use native state/listeners; do not retain the source beyond
+ // cancellation or the existing timeout window.
+ const controller=new AbortController();
+ const cleanup=()=>{
+  Reflect.apply(removeAbortListener,signal,['abort',cancel]);
+  Reflect.apply(removeAbortListener,timeout,['abort',cancel]);
+ };
+ const cancel=()=>{
+  if(!signalAborted(signal)&&!signalAborted(timeout))return;
+  cleanup();controller.abort();
+ };
+ Reflect.apply(addAbortListener,signal,['abort',cancel]);
+ Reflect.apply(addAbortListener,timeout,['abort',cancel]);
+ cancel();
+ return Object.freeze({signal:controller.signal,expiresAt});
 }
 
 export function isDiagnosticDeadline(error){return error!==null&&typeof error==='object'&&deadlineErrors.has(error);}
