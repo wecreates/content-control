@@ -2,7 +2,7 @@
 import crypto from 'node:crypto';
 import {setTimeout as pause} from 'node:timers/promises';
 import {types as utilTypes} from 'node:util';
-import {verifyEnvelope,enforceBrief,enforceQA} from '../integrations/pod/policy.mjs';
+import {verifyEnvelope,enforceBrief,enforceQA,PLATFORMS} from '../integrations/pod/policy.mjs';
 import {enforceKdpListPrice,enforceReleaseEconomics} from '../integrations/pod/economics.mjs';
 import {validOpaqueText} from '../integrations/pod/text-identity.mjs';
 const signalAbortedGetter=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted')?.get;
@@ -68,6 +68,11 @@ function snapshotManifest(value){
  }catch{return null;}
 }
 const CLAIMED_RELEASE_FIELDS=Object.freeze(['id','platform','account_id','fencing_token','brief','manifest','qa_envelope','idempotency_key']);
+function validReleaseFence(value){
+ if(Number.isSafeInteger(value))return value>0;
+ return typeof value==='string'&&/^[1-9][0-9]{0,18}$/.test(value)&&
+  (value.length<19||value<='9223372036854775807');
+}
 function snapshotClaimedRelease(value){
  try{
   if(value===null||typeof value!=='object'||Array.isArray(value)||utilTypes.isProxy(value)||
@@ -182,7 +187,7 @@ export async function publishOnce(options={}) {
   typeof claimCapability.value!=='function')throw Error('PUBLISH_DATABASE_UNVERIFIED');
  const finish=finishCapability.value,assertPublishable=assertCapability.value;
  const claimedJob=await Reflect.apply(claimCapability.value,db,[accountId,crypto.randomInt(45,181),{signal}]);
- if(!claimedJob)return {status:signalAborted(signal)||!publicationEnabled()?'STOPPED':'IDLE'};
+ if(claimedJob===null)return {status:signalAborted(signal)||!publicationEnabled()?'STOPPED':'IDLE'};
  // Preserve the exact release-critical queue identity before any caller-owned
  // verifier or authority resolver can retain and mutate the claimed row.
  const releaseSnapshot=snapshotClaimedRelease(claimedJob);
@@ -190,8 +195,10 @@ export async function publishOnce(options={}) {
  // settlement. Durable recovery owns the uncertainty because no safe row identity
  // exists for an immediate blocked transition.
  if(!releaseSnapshot||![releaseSnapshot.id,releaseSnapshot.account_id,releaseSnapshot.idempotency_key].every(value=>validOpaqueText(value))||
+  releaseSnapshot.account_id!==accountId||!PLATFORMS.includes(releaseSnapshot.platform)||!validReleaseFence(releaseSnapshot.fencing_token)||
   releaseSnapshot.brief?.id!==releaseSnapshot.id||releaseSnapshot.brief?.account_id!==releaseSnapshot.account_id||
-  releaseSnapshot.brief?.platform!==releaseSnapshot.platform)throw Error('RELEASE_SETTLEMENT_UNCERTAIN');
+  releaseSnapshot.brief?.platform!==releaseSnapshot.platform||
+  releaseSnapshot.brief?.destination_platform!==releaseSnapshot.platform)throw Error('RELEASE_SETTLEMENT_UNCERTAIN');
  const job=releaseSnapshot;
  let submitted=false,submittedSettlementAttempted=false;
  try{
