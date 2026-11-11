@@ -108,10 +108,17 @@ async function readArtifact(item,{base,key,signal}){
 }
 async function assertCatalogEntries(catalog,{base,signal}){
  signal?.throwIfAborted();
- const actual=(await fs.readdir(base)).sort();
+ const expected=new Set(['catalog.pod',...catalog.items.map(item=>item.sha256+'.pod')]);
+ // Only the authenticated catalog is bounded. Stream names through the pinned
+ // root, rejecting the first unknown entry without retaining a full listing.
+ // Async iteration closes the directory on rejection or cancellation as well.
+ const directory=await fs.opendir(base);
+ for await(const entry of directory){
+  signal?.throwIfAborted();
+  if(!expected.delete(entry.name))throw Error('ARCHIVE_DIRECTORY_CONTENT_INVALID');
+ }
  signal?.throwIfAborted();
- const expected=['catalog.pod',...catalog.items.map(item=>item.sha256+'.pod')].sort();
- if(actual.length!==expected.length||actual.some((name,index)=>name!==expected[index]))throw Error('ARCHIVE_DIRECTORY_CONTENT_INVALID');
+ if(expected.size)throw Error('ARCHIVE_DIRECTORY_CONTENT_INVALID');
 }
 async function verifyItems(catalog,options){
  for(const item of catalog.items)await readArtifact(item,options);
@@ -256,4 +263,5 @@ export async function restoreArtifactLibrary(db,{directory,key,budgetBytes=13421
  return restored;
  }finally{await closeArchiveDirectory(opened);}
 }
+
 

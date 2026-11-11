@@ -122,6 +122,13 @@ a new approval or verified profit. No activation or publication follows restore.
 
 ## Acceptance evidence
 
+State and artifact-only directory membership checks stream names through the
+held root and retain only the authenticated, bounded catalog's expected names.
+Unexpected names reject immediately without reading their contents or collecting
+an unbounded directory listing. Iteration closes on rejection and cancellation.
+These are checkpoint observations, not filesystem locks or a promise against
+later external mutations; a post-COMMIT failure does not prove rollback.
+
 Disposable PostgreSQL tests exercise restricted-role restoration, all ten tables,
 concurrent source changes, exact large integers/microsecond timestamps, late-file
 corruption rollback, nonempty/schema-drift rejection, preserved tombstones and
