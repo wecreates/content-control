@@ -1,6 +1,12 @@
 import crypto from 'node:crypto';
 import {types as utilTypes} from 'node:util';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
+const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+function signalAborted(signal){
+ if(signal===undefined||signal===null)return false;
+ if(utilTypes.isProxy(signal))throw new TypeError('OUTBOX_SIGNAL_INVALID');
+ return Reflect.apply(nativeAborted,signal,[]);
+}
 const MAX_EVENT_PAYLOAD_BYTES=262144;
 const MAX_EVENT_REQUEST_BYTES=524288;
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
@@ -137,13 +143,13 @@ function assertEventShape(event,issuedAt){
 export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueOnError=false,cursor=null}){
  const endpoint=new URL(url);
  if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password||endpoint.search||endpoint.hash||typeof key!=='string'||Buffer.byteLength(key)<32)throw Error('OUTBOX_CONFIG_INVALID');
- if(signal?.aborted)return continueOnError?{delivered:0,failed:0,nextCursor:null}:{delivered:0};
+ if(signalAborted(signal))return continueOnError?{delivered:0,failed:0,nextCursor:null}:{delivered:0};
  // pg decodes timestamptz to a millisecond Date. Preserve the database's full
  // microsecond value separately or rejected rows can repeat forever on page 2.
  const events=snapshotQueryRows(await db.read('SELECT id,job_id,kind,payload,created_at,created_at::text AS cursor_created_at FROM pod_events WHERE delivered_at IS NULL AND ($1::timestamptz IS NULL OR (created_at,id)>($1::timestamptz,$2::uuid)) ORDER BY created_at,id LIMIT 20',[cursor?.created_at||null,cursor?.id||null],{signal}));
  let delivered=0,failed=0;
  for(const {event:rowEvent,cursor_created_at:storedCreatedAt} of events){
-  if(signal?.aborted)break;
+  if(signalAborted(signal))break;
   // Selection and earlier deliveries may cross the storage safety cutoff.
   // This is a batch-wide stop, not a skippable per-event delivery failure.
   db.active();
@@ -177,10 +183,10 @@ export async function deliverOutbox(db,{url,key,fetchImpl=fetch,signal,continueO
     AND job_id IS NOT DISTINCT FROM $2::uuid AND kind=$3
     AND payload=($4::jsonb #> '{event,payload}') AND created_at=$5::timestamptz RETURNING id`,
    [event.id,event.job_id,event.kind,payload,storedCreatedAt]),event.id),{signal});delivered++;
-  }catch(error){if(signal?.aborted)break;if(!continueOnError)throw error;failed++;}
+  }catch(error){if(signalAborted(signal))break;if(!continueOnError)throw error;failed++;}
  }
  // Check empty pages and expiry during the final response/commit as well.
- if(!signal?.aborted)db.active();
+ if(!signalAborted(signal))db.active();
  const last=events.at(-1);
  const nextCursor=events.length===20?{created_at:last.cursor_created_at,id:last.event.id}:null;
  return continueOnError?{delivered,failed,nextCursor}:{delivered};
