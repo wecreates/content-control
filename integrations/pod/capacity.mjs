@@ -73,7 +73,9 @@ export async function productionActivity(db,{signal}={}){
   await query("SET LOCAL lock_timeout='2s'");
   await query("SET LOCAL statement_timeout='5s'");
   const row=snapshotCapacityRow(await query(`WITH observation_window AS (
-   SELECT transaction_timestamp() AS finish,transaction_timestamp()-interval '24 hours' AS start
+   -- pg Date values preserve milliseconds, not PostgreSQL microseconds. Count
+   -- against the same exact boundaries exposed in the activity receipt.
+   SELECT date_trunc('milliseconds',transaction_timestamp()) AS finish,date_trunc('milliseconds',transaction_timestamp())-interval '24 hours' AS start
   ), events AS (
    SELECT e.kind,e.payload,q.id AS job_id,q.concept_id FROM pod_events e
    JOIN pod_production_queue q ON q.id=e.job_id CROSS JOIN observation_window w
