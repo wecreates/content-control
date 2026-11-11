@@ -13,6 +13,12 @@ function fixture(patch={}){
  })}};
  return {db,queries,released};
 }
+test('activity counts against the exact millisecond window returned by the driver',async()=>{
+ const f=fixture();await productionActivity(f.db);
+ const sql=f.queries.find(q=>q.startsWith('WITH'));
+ assert.match(sql,/date_trunc\('milliseconds',transaction_timestamp\(\)\) AS finish/);
+ assert.match(sql,/date_trunc\('milliseconds',transaction_timestamp\(\)\)-interval '24 hours' AS start/);
+});
 test('capacity never reads a snapshot when the read-only start is unverified',async()=>{
  const queries=[],releases=[];
  const db={pool:{connect:async()=>({query:async sql=>{queries.push(sql);return {command:'SELECT'};},
