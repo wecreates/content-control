@@ -31,6 +31,24 @@ function dataProperty(target,key){
  }catch{return {valid:false};}
 }
 
+function snapshotCursor(cursor){
+ if(cursor===undefined||cursor===null)return null;
+ const fail=()=>{throw Error('OUTBOX_RESULT_UNVERIFIED');};
+ if(typeof cursor!=='object'||Array.isArray(cursor)||utilTypes.isProxy(cursor))fail();
+ const prototype=Object.getPrototypeOf(cursor),keys=Reflect.ownKeys(cursor);
+ if((prototype!==Object.prototype&&prototype!==null)||keys.length!==2||
+  !keys.includes('id')||!keys.includes('created_at'))fail();
+ const id=Object.getOwnPropertyDescriptor(cursor,'id'),created=Object.getOwnPropertyDescriptor(cursor,'created_at');
+ if(!id?.enumerable||!Object.hasOwn(id,'value')||!created?.enumerable||!Object.hasOwn(created,'value'))fail();
+ if(typeof id.value!=='string'||id.value.length!==36||
+  !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id.value)||
+  typeof created.value!=='string'||created.value.length>128||!created.value.trim()||
+  created.value.includes('\0')||Buffer.from(created.value,'utf8').toString('utf8')!==created.value)fail();
+ // Preserve PostgreSQL's exact sub-millisecond timestamp text. Never coerce
+ // it through Date or retain a delivery-owned object across polling callbacks.
+ return Object.freeze({id:id.value,created_at:created.value});
+}
+
 function snapshotDeliveryResult(result){
  const delivered=dataProperty(result,'delivered'),failed=dataProperty(result,'failed'),
   cursor=dataProperty(result,'nextCursor');
@@ -41,7 +59,7 @@ function snapshotDeliveryResult(result){
  const count=value=>Number.isSafeInteger(value)&&value>=0&&value<=20&&!Object.is(value,-0);
  if(!count(delivered.value)||!count(failures)||delivered.value+failures>20)
   throw Error('OUTBOX_RESULT_UNVERIFIED');
- return {delivered:delivered.value,failed:failures,nextCursor:cursor.value||null};
+ return {delivered:delivered.value,failed:failures,nextCursor:snapshotCursor(cursor.value)};
 }
 
 // Internal business feedback only; this runtime never calls a marketplace.

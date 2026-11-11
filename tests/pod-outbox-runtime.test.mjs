@@ -212,11 +212,11 @@ test('retry backoff is bounded, uses pagination and recovers',async()=>{
  let calls=0;const delays=[],cursors=[];let runtime;
  const completed=new Promise(resolve=>{
   runtime=startOutboxRuntime({db:{},env,deliver:async(_db,options)=>{
-   cursors.push(options.cursor);calls++;return calls===1?{delivered:0,failed:20,nextCursor:{id:'next'}}:{delivered:1,failed:0,nextCursor:null};
+   cursors.push(options.cursor);calls++;return calls===1?{delivered:0,failed:20,nextCursor:{id:'12b4c678-1234-4321-abcd-123456789abc',created_at:'2026-01-01 00:00:00.000123+00'}}:{delivered:1,failed:0,nextCursor:null};
   },wait:async ms=>{delays.push(ms);if(calls===2){resolve();await new Promise(r=>setImmediate(r));} }});
  });
  await completed;await runtime.stop();assert.deepEqual(delays.slice(0,2),[30000,15000]);
- assert.deepEqual(cursors.slice(0,2),[null,{id:'next'}]);assert.equal(runtime.status().delivered,1);
+ assert.deepEqual(cursors.slice(0,2),[null,{id:'12b4c678-1234-4321-abcd-123456789abc',created_at:'2026-01-01 00:00:00.000123+00'}]);assert.equal(runtime.status().delivered,1);
  assert.equal(runtime.status().status,'STOPPED');assert.ok(runtime.status().last_success_at);
 });
 test('shutdown aborts in-flight delivery and drains before returning',async()=>{
