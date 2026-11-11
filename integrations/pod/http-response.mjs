@@ -1,6 +1,14 @@
 // Retain admission until the underlying fetch settles, even after its caller
 // aborts. A broken/custom transport must not accumulate unlimited header waits.
 import {parseSignedJSON} from './signed-json.mjs';
+import {types as utilTypes} from 'node:util';
+
+const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+const nativeReason=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'reason').get;
+const nativeThrowIfAborted=AbortSignal.prototype.throwIfAborted;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
+const signalAborted=signal=>Reflect.apply(nativeAborted,signal,[]);
 
 const pendingRequests=new WeakMap();
 const MAX_PENDING_REQUESTS=32;
@@ -9,7 +17,7 @@ function cancelBody(response){
 }
 function abortReason(signal){
  try{
-  const reason=signal.reason;
+  const reason=Reflect.apply(nativeReason,signal,[]);
   return reason===undefined?new DOMException('Bridge request aborted','AbortError'):reason;
  }catch{return new DOMException('Bridge request aborted','AbortError');}
 }
@@ -17,7 +25,10 @@ function abortReason(signal){
 // Timers interrupt stalled I/O; elapsed-time checks reject late completion even
 // when the event loop has not dispatched a timeout callback yet.
 export function assertBridgeRequest(signal,deadline){
- signal?.throwIfAborted();
+ if(signal!==undefined&&signal!==null){
+  if(utilTypes.isProxy(signal))throw new TypeError('BRIDGE_SIGNAL_INVALID');
+  Reflect.apply(nativeThrowIfAborted,signal,[]);
+ }
  if(deadline!==undefined){
   const now=performance.now();
   if(!Number.isFinite(deadline)||!Number.isFinite(now)||now>=deadline)
@@ -36,8 +47,11 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
   if(signal){
    let rejectAbort;
    aborted=new Promise((_,reject)=>{rejectAbort=reject;});
-   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
-   signal.addEventListener('abort',onAbort,{once:true});
+   // Synthetic events are not cancellation. Keep listening so they cannot
+   // consume the real abort; dependency-owned public members are not trusted.
+   onAbort=()=>{if(signalAborted(signal)){abortObserved=true;rejectAbort(abortReason(signal));}};
+   Reflect.apply(addAbortListener,signal,['abort',onAbort]);
+   if(signalAborted(signal))onAbort();
    if(abortObserved)return await aborted;
   }
   // Do not consume admission or start the transport unless cancellation
@@ -56,7 +70,7 @@ export async function fetchBridgeResponse(fetchImpl,url,options,{deadline}={}){
   // Promise.race also consumes a late rejection after cancellation has won.
   return await (aborted?Promise.race([pending,aborted]):pending);
  }finally{
-  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
+  try{if(onAbort)Reflect.apply(removeAbortListener,signal,['abort',onAbort]);}catch{}
  }
 }
 
@@ -79,8 +93,8 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   if(signal){
    let rejectAbort;
    aborted=new Promise((_,reject)=>{rejectAbort=reject;});
-   onAbort=()=>{abortObserved=true;rejectAbort(abortReason(signal));};
-   try{signal.addEventListener('abort',onAbort,{once:true});}
+   onAbort=()=>{if(signalAborted(signal)){abortObserved=true;rejectAbort(abortReason(signal));}};
+   try{Reflect.apply(addAbortListener,signal,['abort',onAbort]);if(signalAborted(signal))onAbort();}
    catch(error){if(!abortObserved)throw error;}
    if(abortObserved)return await aborted;
   }
@@ -101,7 +115,7 @@ export async function readBridgeJSON(response,{maxBytes,statusError,sizeError,me
   assertBridgeRequest(signal,deadline);
   return result;
  }finally{
-  try{if(onAbort)signal.removeEventListener('abort',onAbort);}catch{}
+  try{if(onAbort)Reflect.apply(removeAbortListener,signal,['abort',onAbort]);}catch{}
   // A remote/custom stream may never settle cancel(). Invoke it and consume
   // rejection, but release the reader without awaiting transport cleanup.
   if(reader){
