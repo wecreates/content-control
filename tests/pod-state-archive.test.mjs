@@ -539,3 +539,45 @@ test('state restore preserves unverified lease evidence rather than treating it 
   assert.match(sql,/attempt=prior_attempt AND fencing_token=prior_fence\+1/);
  }
 });
+
+for(const kind of ['regular','hidden','record','directory','symlink'])test('state archive directory rejects uncatalogued '+kind,async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});
+ const extra=path.join(f.directory,kind==='hidden'?'.unexpected':kind==='record'?'00099.pod':'unexpected');
+ if(kind==='directory')await fs.mkdir(extra);
+ else if(kind==='symlink')await fs.symlink(path.join(f.directory,'00000.pod'),extra);
+ else await fs.writeFile(extra,'not authenticated');
+ await assert.rejects(verifyStateArchive({...f,key}),/^Error: STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID$/);
+ let opened=false;
+ await assert.rejects(restoreStateArchive({tx(){opened=true;throw Error('UNEXPECTED_DATABASE_ACCESS');}},{...f,key,env}),
+  /^Error: STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID$/);
+ assert.equal(opened,false);
+ assert.equal((await fs.lstat(extra)).isSymbolicLink(),kind==='symlink','rejected files are preserved, not removed');
+});
+test('state export rejects an unexpected entry after source release',async t=>{
+ const f=await fixture(t),client=await f.db.pool.connect();let released=0;
+ client.release=async()=>{released++;await fs.writeFile(path.join(f.directory,'unexpected'),'unbound');};
+ await assert.rejects(exportStateArchive(f.db,{...f,key,env}),/^Error: STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID$/);
+ assert.equal(released,1);assert.equal(f.queries.includes('COMMIT'),true);
+ assert.equal(f.queries.includes('ROLLBACK'),false,'a completed source commit is not rolled back');
+ assert.equal(await fs.readFile(path.join(f.directory,'unexpected'),'utf8'),'unbound');
+});
+test('state restore rejects an unexpected entry inside the transaction boundary',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});let rolledBack=false;
+ const target={tx:async fn=>{
+  await fs.writeFile(path.join(f.directory,'unexpected'),'unbound');
+  try{return await fn(await f.db.pool.connect());}catch(error){rolledBack=true;throw error;}
+ }};
+ await assert.rejects(restoreStateArchive(target,{...f,key,env}),/^Error: STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID$/);
+ assert.equal(rolledBack,true);
+ assert.equal(f.queries.some(sql=>sql.startsWith('WITH changed AS')),false,'reject before safety mutation');
+});
+test('state restore rejects an unexpected entry after committed return without claiming rollback',async t=>{
+ const f=await fixture(t);await exportStateArchive(f.db,{...f,key,env});let committed=false;
+ const target={tx:async fn=>{
+  const result=await fn(await f.db.pool.connect());committed=true;
+  await fs.writeFile(path.join(f.directory,'unexpected'),'unbound');return result;
+ }};
+ await assert.rejects(restoreStateArchive(target,{...f,key,env}),/^Error: STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID$/);
+ assert.equal(committed,true,'committed rows require reconciliation rather than a blind retry');
+});
+

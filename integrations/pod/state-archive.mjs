@@ -182,11 +182,27 @@ async function recordFor(item,catalog,{base,key,signal}){
  if(body.length!==item.bytes||hash(body)!==item.sha256)throw Error('STATE_ARCHIVE_RECORD_INVALID');
  return {body,artifactBytes:inspectRecord(body,item.table,catalog.columns[item.table])};
 }
+async function assertCatalogEntries(catalog,{base,signal}){
+ signal?.throwIfAborted();
+ const expected=new Set(['catalog.pod',...catalog.items.map(item=>recordFile(item.index))]);
+ // Stream only directory names through the held root. An unexpected entry
+ // rejects immediately without reading its contents or collecting an unbounded
+ // listing; async iteration closes the directory even on rejection.
+ const directory=await fs.opendir(base);
+ for await(const entry of directory){
+  signal?.throwIfAborted();
+  if(!expected.delete(entry.name))throw Error('STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID');
+ }
+ signal?.throwIfAborted();
+ if(expected.size)throw Error('STATE_ARCHIVE_DIRECTORY_CONTENT_INVALID');
+}
 async function verifyStateArchiveAt({directory,key,signal,budgetBytes,base}){
  if(!Number.isSafeInteger(budgetBytes)||budgetBytes<1||budgetBytes>134217728)throw Error('STATE_ARCHIVE_CONFIG_INVALID');
  const options={directory,key,signal,base},result=await catalogFor(options);let artifacts=0;
+ await assertCatalogEntries(result.catalog,options);
  for(const item of result.catalog.items){artifacts+=(await recordFor(item,result.catalog,options)).artifactBytes;
   if(artifacts>budgetBytes)throw Error('STATE_ARCHIVE_BUDGET_EXCEEDED');}
+ await assertCatalogEntries(result.catalog,options);
  signal?.throwIfAborted();
  return {status:'VERIFIED',scope:'pod_tables_only',archive_sha256:result.archive_sha256,
   snapshot_id:result.catalog.snapshot_id,records:result.catalog.items.length,bytes:result.bytes,artifact_bytes:artifacts,publication_enabled:false};
@@ -303,6 +319,7 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   // requested pathname must still identify that same snapshot at commit time.
   // Check before safety-state mutations so replacement rolls back every row.
   checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
+  await assertCatalogEntries(catalog,options);checkpoint();
   const accounts=verifySafetyMutation(await client.query(`WITH changed AS (
    UPDATE public.pod_accounts SET state='DISABLED' WHERE state<>'DISABLED' RETURNING state
   ) SELECT count(*)::text AS changed,COALESCE(bool_and(state='DISABLED'),true) AS exact FROM changed`));
@@ -318,12 +335,14 @@ export async function restoreStateArchive(db,{directory,key,signal,env=process.e
   verifyRecoveryEvent(await client.query(`WITH restored_event AS (
    INSERT INTO public.pod_events(id,kind,payload) VALUES($1,$2,$3) RETURNING id::text AS id,kind,payload
   ) SELECT id,kind,payload=$3::jsonb AS exact FROM restored_event`,[eventId,eventKind,receipt]),eventId,eventKind);
-  checkpoint();return receipt;
+  checkpoint();await assertCatalogEntries(catalog,options);checkpoint();return receipt;
  },{signal});
  // COMMIT and pool release are asynchronous. A completed transaction cannot
  // be undone here; reject a late source replacement, cancellation or flag
  // change without claiming rollback or encouraging a blind retry.
  checkpoint();await assertArchiveDirectory(directory,opened);checkpoint();
+ await assertCatalogEntries(catalog,options);checkpoint();
  return restored;
  }finally{if(opened)await closeArchiveDirectory(opened);}
 }
+
