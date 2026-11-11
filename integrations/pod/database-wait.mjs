@@ -1,3 +1,10 @@
+import {types as utilTypes} from 'node:util';
+const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+const nativeReason=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'reason').get;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
+const abortedState=signal=>Reflect.apply(nativeAborted,signal,[]);
+const abortReason=signal=>Reflect.apply(nativeReason,signal,[]);
 // Race a database wait against the caller's existing cancellation signal.
 // The signal reason is preserved exactly. Late settlement is consumed, and a
 // client acquired after cancellation can be destroyed by the caller-supplied
@@ -8,20 +15,23 @@ export function databaseWait(signal){
   if(signal===undefined){
    try{return Promise.resolve(operation());}catch(error){return Promise.reject(error);}
   }
-  if(signal.aborted){interrupted=true;return Promise.reject(signal.reason);}
+  // Validate inside step so callers retain their existing cleanup boundary.
+  try{if(utilTypes.isProxy(signal))throw Error();abortedState(signal);}
+  catch{return Promise.reject(new TypeError('POD_DATABASE_SIGNAL_INVALID'));}
+  if(abortedState(signal)){interrupted=true;return Promise.reject(abortReason(signal));}
   return new Promise((resolve,reject)=>{
    let settled=false,starting=false,abortDuringStart=false;
-   const remove=()=>{try{signal.removeEventListener('abort',aborted);}catch{}};
+   const remove=()=>{try{Reflect.apply(removeAbortListener,signal,['abort',aborted]);}catch{}};
    const settleAbort=()=>{
     if(!settled){settled=true;interrupted=true;remove();
-     try{reject(signal.reason);}catch(error){reject(error);}}
+     try{reject(abortReason(signal));}catch(error){reject(error);}}
    };
-   const aborted=()=>{if(starting)abortDuringStart=true;else settleAbort();};
-   try{signal.addEventListener('abort',aborted,{once:true});}
+   const aborted=()=>{if(!abortedState(signal))return;if(starting)abortDuringStart=true;else settleAbort();};
+   try{Reflect.apply(addAbortListener,signal,['abort',aborted]);}
    catch(error){if(!settled){settled=true;reject(error);}return;}
-   // A custom signal may invoke its listener during registration. Do not start
-   // database work after cancellation has already won.
-   if(settled){remove();return;}
+   // Synthetic events do not consume the listener; recheck native cancellation
+   // before work without consulting replaceable source properties.
+   if(abortedState(signal)){settleAbort();return;}
    let pending;
    try{starting=true;pending=Promise.resolve(operation());}
    catch(error){settled=true;remove();reject(error);return;}
@@ -49,3 +59,4 @@ export async function releaseDatabaseClient(client,discard,waiting){
  pending.catch(()=>{});
  await waiting.step(()=>pending);
 }
+
