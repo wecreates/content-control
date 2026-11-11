@@ -4,6 +4,15 @@ import {publishOnce,runPublisher} from '../scripts/pod_stealth_publisher.mjs';
 
 const disabled=()=>({env:{PUBLICATION_ENABLED:'false',POD_PUBLICATION_ENABLED:'false'},
  db:{listReady:async()=>[]},log:()=>{}});
+test('synthetic abort events do not accelerate publisher polling',{timeout:3000},async()=>{
+ const controller=new AbortController();let reads=0,fakeTimer,abortTimer;
+ try{
+  fakeTimer=setTimeout(()=>controller.signal.dispatchEvent(new Event('abort')),10);
+  abortTimer=setTimeout(()=>controller.abort(),40);
+  await runPublisher({...disabled(),signal:controller.signal,db:{listReady:async()=>{reads++;return [];}}});
+  assert.equal(reads,1);
+ }finally{clearTimeout(fakeTimer);clearTimeout(abortTimer);controller.abort();}
+});
 
 for(const entry of [publishOnce,runPublisher])
 test(entry.name+' rejects executable outer options before dry-run reads',async t=>{

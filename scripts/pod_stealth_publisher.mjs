@@ -24,8 +24,8 @@ async function publisherPause(signal){
  if(signal===undefined)return pause(15000);
  // Timer APIs inspect public signal members. Forward native cancellation into
  // an owned signal instead of letting shadowed members run during the wait.
- const controller=new AbortController(),abort=()=>controller.abort();
- Reflect.apply(addAbortListener,signal,['abort',abort,{once:true}]);
+ const controller=new AbortController(),abort=()=>{if(signalAborted(signal))controller.abort();};
+ Reflect.apply(addAbortListener,signal,['abort',abort]);
  try{
   if(signalAborted(signal))abort();
   await pause(15000,undefined,{signal:controller.signal});
