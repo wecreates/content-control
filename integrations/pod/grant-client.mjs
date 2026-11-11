@@ -1,6 +1,10 @@
 import {types as utilTypes} from 'node:util';
 import {verifyEnvelope,enforceBrief} from './policy.mjs';
 import {assertBridgeRequest,fetchBridgeResponse,readBridgeJSON} from './http-response.mjs';
+const nativeAborted=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'aborted').get;
+const nativeReason=Object.getOwnPropertyDescriptor(AbortSignal.prototype,'reason').get;
+const addAbortListener=EventTarget.prototype.addEventListener;
+const removeAbortListener=EventTarget.prototype.removeEventListener;
 
 function dataProperty(target,key){
  try{
@@ -67,11 +71,22 @@ export function createGrantResolver(options={}){
   throw Error('GRANT_AUTHORITY_INVALID');
  // Bind the validated authority identity at construction. A caller-owned env
  // object must not replace either credential after this resolver is trusted.
- return async(job,{signal}={})=>{
+ return async(job,callOptions={})=>{
+  const signalCapability=dataProperty(callOptions,'signal');
+  if(!signalCapability.valid)throw Error('GRANT_OPTIONS_UNVERIFIED');
+  const signal=signalCapability.value;
+  assertBridgeRequest(signal);
   const scope=grantScope(job);
+  // Node 22 composition reads public source members. Only compose owned
+  // signals; use native state/reason and preserve genuine cancellation.
+  const controller=new AbortController();
+  const onAbort=()=>{if(Reflect.apply(nativeAborted,signal,[]))controller.abort(Reflect.apply(nativeReason,signal,[]));};
+  if(signal)Reflect.apply(addAbortListener,signal,['abort',onAbort]);
+  try{
+  if(signal&&Reflect.apply(nativeAborted,signal,[]))onAbort();
   const deadline=performance.now()+10000;
   const timeout=AbortSignal.timeout(10000);
-  const requestSignal=signal?AbortSignal.any([signal,timeout]):timeout;
+  const requestSignal=AbortSignal.any([controller.signal,timeout]);
   const response=await fetchBridgeResponse(fetchImpl,endpoint,{method:'POST',redirect:'error',signal:requestSignal,
    headers:{'content-type':'application/json',authorization:'Bearer '+authKey},body:JSON.stringify({job_id:scope.id})},{deadline});
   const envelope=await readBridgeJSON(response,{signal:requestSignal,deadline,maxBytes:262144,statusError:'GRANT_AUTHORITY_BLOCKED',
@@ -89,5 +104,6 @@ export function createGrantResolver(options={}){
   if(grant.expires_at_ms-current<30000)throw Error('GRANT_LIFETIME_TOO_SHORT');
   assertBridgeRequest(requestSignal,deadline);
   return envelope;
+  }finally{if(signal)Reflect.apply(removeAbortListener,signal,['abort',onAbort]);}
  };
 }
