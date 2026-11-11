@@ -52,7 +52,9 @@ export async function runPodWorker(options={}){
   onCycle=cycleCapability.value===undefined?()=>{}:cycleCapability.value,
   shouldContinue=continueCapability.value===undefined?()=>true:continueCapability.value,
   recoverCapability=dataProperty(db,'recover');
- if(!Number.isInteger(pollMs)||pollMs<1000||typeof produce!=='function'||typeof publish!=='function'||
+ // Node clamps delays above the signed 32-bit timer range to 1 ms.
+ // Reject them before any callback or database work can start a hot loop.
+ if(!Number.isInteger(pollMs)||pollMs<1000||pollMs>2147483647||typeof produce!=='function'||typeof publish!=='function'||
   typeof shouldContinue!=='function'||typeof onError!=='function'||typeof onCycle!=='function'||
   !recoverCapability.valid||typeof recoverCapability.value!=='function')throw Error('WORKER_CONFIG_INVALID');
  signalAborted(signal);
