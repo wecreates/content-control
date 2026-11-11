@@ -26,6 +26,17 @@ row-descriptor and column-descriptor objects must also contain exactly the order
 fields emitted by this format; authenticated extensions are not accepted as a
 canonical snapshot.
 
+The directory must contain exactly `catalog.pod` and the indexed record files
+named by that authenticated catalog. Unknown files, hidden entries, extra records,
+subdirectories and symlinks with unknown names reject verification; they are not
+read or deleted. Membership is streamed through the held directory descriptor
+before and after record verification, before restore safety-state mutations, at
+the transaction's final checkpoint and after its return. An extra entry detected
+after COMMIT rejects the receipt but does not prove rollback or authorize a retry.
+These checks observe filesystem state at their checkpoints; they do not lock the
+directory against every later external mutation or establish retained backup
+acceptance.
+
 The bounded backend permits at most 10,000 rows, 40 MiB serialized JSON per row,
 320 MiB serialized JSON in total and 4 MiB for the catalog. Artifact bytes remain
 subject to POD_ARTIFACT_BUDGET_BYTES (maximum 128 MiB). Bytea uses hex, so archive
@@ -110,6 +121,13 @@ IDs are retained for Money Factory deduplication. Nothing in a backup constitute
 a new approval or verified profit. No activation or publication follows restore.
 
 ## Acceptance evidence
+
+State and artifact-only directory membership checks stream names through the
+held root and retain only the authenticated, bounded catalog's expected names.
+Unexpected names reject immediately without reading their contents or collecting
+an unbounded directory listing. Iteration closes on rejection and cancellation.
+These are checkpoint observations, not filesystem locks or a promise against
+later external mutations; a post-COMMIT failure does not prove rollback.
 
 Disposable PostgreSQL tests exercise restricted-role restoration, all ten tables,
 concurrent source changes, exact large integers/microsecond timestamps, late-file
@@ -200,3 +218,4 @@ instead of returned to the two-slot pool. Cancellation observed between complete
 statements uses the ordinary rollback and session scrub. COMMIT still settles
 under the existing ten-second statement timeout so the reconciliation boundary
 above remains authoritative.
+

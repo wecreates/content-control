@@ -42,6 +42,38 @@ function database(values=[]){
  }};
 }
 async function workspace(t){const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-archive-test-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));return path.join(root,'archive');}
+test('artifact membership never materializes an unbounded directory listing',async t=>{
+ const directory=await workspace(t),body=Buffer.from('bounded membership');
+ const listing=t.mock.method(fs,'readdir',async()=>{throw Error('UNBOUNDED_DIRECTORY_LISTING');});
+ assert.equal((await exportArtifactLibrary(database([body]),{directory,key})).status,'EXPORTED');
+ assert.equal((await verifyArtifactLibrary({directory,key})).objects,1);
+ assert.equal((await restoreArtifactLibrary(database(),{directory,key,env})).inserted,1);
+ assert.equal(listing.mock.callCount(),0);
+});
+for(const fault of ['unknown','missing','cancel'])test('artifact membership stream closes on '+fault,async t=>{
+ const directory=await workspace(t),body=Buffer.from('stream boundary');
+ await exportArtifactLibrary(database([body]),{directory,key});
+ const controller=new AbortController(),reason=Error('MEMBERSHIP_CANCELLED');
+ let closed=0,advanced=0;
+ t.mock.method(fs,'opendir',async base=>{
+  assert.match(base,/^\/proc\/self\/fd\/\d+$/);
+  return {[Symbol.asyncIterator]:async function*(){
+   try{
+    yield {name:'catalog.pod'};
+    if(fault==='missing')return;
+    if(fault==='cancel')controller.abort(reason);
+    yield {name:fault==='unknown'?'unexpected':sha(body)+'.pod'};
+    advanced++;
+    throw Error('STREAM_ADVANCED_AFTER_REJECTION');
+   }finally{closed++;}
+  }};
+ });
+ const target=database();
+ await assert.rejects(restoreArtifactLibrary(target,{directory,key,env,signal:controller.signal}),
+  fault==='cancel'?error=>error===reason:/ARCHIVE_DIRECTORY_CONTENT_INVALID/);
+ assert.equal(closed,1);assert.equal(advanced,0);
+ assert.equal(target.queries.length,0,'reject before database admission');
+});
 for(const phase of ['success','rejection','abort','rollback'])test('artifact export release: '+phase,async t=>{
  const directory=await workspace(t),db=database([Buffer.from('release fixture')]);
  await verifyExportRelease(t,{db,directory,phase,run:signal=>exportArtifactLibrary(db,{directory,key,signal})});
@@ -590,3 +622,4 @@ test('artifact successful export returns a clean connection without rollback',as
  assert.deepEqual(releases,[false]);assert.equal(calls.at(-1),'COMMIT');
  assert.equal(calls.includes('ROLLBACK'),false);
 });
+

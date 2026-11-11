@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
       - run: npm ci --ignore-scripts
       - run: npm run test:pod
-      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr fonts-dejavu-core
+      - run: bash scripts/pod_ci_dependencies.sh
       - run: pip install -r requirements-pod-runtime.txt
       - run: npm run test:pod-python
       - run: node --test tests/pod-production-e2e.mjs
