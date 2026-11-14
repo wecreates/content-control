@@ -9,7 +9,7 @@
     "live_deployment": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
     "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "receipt": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
-    "smoke": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127"
+    "smoke": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf"
   },
   "candidate_sha256": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf",
   "checks": {
@@ -42,7 +42,7 @@
     "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
-    "review_server_smoke_candidate_match": false,
+    "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": false,
     "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
@@ -60,7 +60,6 @@
     "live_deployment_green",
     "caption_candidate_match",
     "caption_health_green",
-    "review_server_smoke_candidate_match",
     "review_server_smoke_green",
     "provenance_candidate_match",
     "provenance_inputs_current",
