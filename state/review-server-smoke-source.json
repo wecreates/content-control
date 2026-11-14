@@ -13,12 +13,13 @@
     "caption_binding_missing_or_mismatched",
     "caption_candidate_binding_missing_or_mismatched"
   ],
-  "scope": "Latest actual smoke receipt, copied byte-for-byte. Accepted-route and corruption checks were skipped; no production acceptance.",
+  "scope": "Observed smoke receipt from run 43623772472, copied byte-for-byte. Accepted-route and corruption checks were skipped; no production acceptance.",
   "publication_enabled": false,
   "superseded_receipt": {
     "git_blob_sha1": "a8c879db5e24d5cce8ba263214c8a702ee7e7db2",
     "persisted_commit": "4613613ca06cf1cba805b943f43dc66ea8097ba7",
     "claimed_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "historical_execution_verified": false
-  }
+  },
+  "reasons_source": "GitHub job 132534999292 logs, Require exact candidate and caption evidence, 2026-11-14T17:56:28.6813386Z"
 }
