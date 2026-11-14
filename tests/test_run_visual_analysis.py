@@ -244,7 +244,7 @@ class VisualAnalysisLaneTests(unittest.TestCase):
         text = (Path(__file__).resolve().parents[1] / '.github/workflows/visual-analysis.yml').read_text()
         self.assertIn('default: v2', text)
         self.assertIn("CANDIDATE_LANE: ${{ inputs.candidate_lane || 'v2' }}", text)
-        self.assertIn('options: [v2, canonical-v10]', text)
+        self.assertIn('options: [v2, canonical-v10, explicit]', text)
         self.assertIn("- cron: '31 * * * *'", text)
         self.assertIn("- 'public-review/v2-draft.mp4'", text)
         self.assertNotIn("- 'public-review/episode1-v10-free.mp4'", text)
@@ -253,5 +253,71 @@ class VisualAnalysisLaneTests(unittest.TestCase):
         self.assertNotIn('git push', text)
 
 
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from scripts import run_visual_analysis as r
+
+class ExplicitTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name); self.video=self.root/'r3.mp4'
+        self.video.write_bytes(b'fixture not media'); self.digest=hashlib.sha256(self.video.read_bytes()).hexdigest()
+        self.calls=[]
+    def execute(self,cmd,cwd,check):
+        self.calls.append(cmd)
+        r.write_json(Path(cmd[cmd.index('--out')+1]), {'analysis_status':'COMPLETE','candidate_sha256':self.digest,'publication_enabled':False,'production_approved':False})
+    def run_case(self,**kw):
+        args={'candidate_video':'r3.mp4','candidate_sha256':self.digest};args.update(kw)
+        return r.run(self.root,'explicit',self.root/'out',1,'a'*40,self.execute,**args)
+    def test_exact_candidate_no_inherited_review(self):
+        result=self.run_case();self.assertEqual(result['candidate_sha256'],self.digest)
+        self.assertEqual(result['review']['blocker'],'MISSING_VISUAL_REVIEW')
+        self.assertFalse(result['production_approved']);self.assertNotIn('--visual-review',self.calls[0])
+    def test_bad_hash_blocks(self):
+        with self.assertRaises(ValueError):self.run_case(candidate_sha256='0'*64)
+        self.assertFalse(self.calls)
+    def test_missing_hash_blocks(self):
+        with self.assertRaises(ValueError):self.run_case(candidate_sha256=None)
+    def test_traversal_blocks(self):
+        with self.assertRaises(ValueError):self.run_case(candidate_video='../outside.mp4')
+    def test_absolute_blocks(self):
+        with self.assertRaises(ValueError):self.run_case(candidate_video=str(self.video))
+    def test_symlink_escape_blocks(self):
+        (self.root/'escape.mp4').symlink_to('/etc/hosts')
+        with self.assertRaises(ValueError):self.run_case(candidate_video='escape.mp4')
+    def test_contract_routed_and_bound(self):
+        (self.root/'contract.json').write_text('{}')
+        result=self.run_case(reference_contract='contract.json')
+        self.assertIn('--reference-contract',self.calls[0]);self.assertEqual(result['reference_contract']['sha256'],hashlib.sha256(b'{}').hexdigest())
+    def test_contract_mutation_blocks_receipt(self):
+        path=self.root/'contract.json';path.write_text('{}');original=self.execute
+        def changed(*args,**kwargs):original(*args,**kwargs);path.write_text('{"changed":true}')
+        self.execute=changed
+        with self.assertRaisesRegex(ValueError,'Reference contract changed'):self.run_case(reference_contract='contract.json')
+        self.assertFalse((self.root/'out/run.json').exists())
+    def test_other_lane_rejects_override(self):
+        with self.assertRaises(ValueError):r.run(self.root,'v2',self.root/'out',1,'a'*40,self.execute,candidate_video='r3.mp4')
+    def test_candidate_mutation_blocks(self):
+        original=self.execute
+        def changed(*args,**kwargs):original(*args,**kwargs);self.video.write_bytes(b'changed')
+        self.execute=changed
+        with self.assertRaises(ValueError):self.run_case()
+        self.assertFalse((self.root/'out/run.json').exists())
+
+class ExplicitWorkflowTests(unittest.TestCase):
+    def test_dispatch_inputs_pass_only_through_environment(self):
+        text=(Path(__file__).resolve().parents[1]/'.github/workflows/visual-analysis.yml').read_text()
+        for key in ('candidate_video', 'candidate_sha256', 'reference_contract'):
+            self.assertIn('      '+key+':',text)
+        self.assertIn('python scripts/run_visual_analysis.py "${args[@]}"',text)
+        self.assertNotIn('--candidate-video ${{',text)
+        self.assertNotIn('--reference-contract ${{',text)
+        self.assertIn('contents: read',text)
+
 if __name__ == '__main__':
     unittest.main()
+
+
