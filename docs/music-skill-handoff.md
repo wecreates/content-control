@@ -2,7 +2,7 @@
 
 The optional adapter `scripts/music_skill_mix.py` connects an already rendered local music-skill master to the existing `v2_sound_mix` pipeline. It does not install or execute upstream code, call a model/provider, upload media, or enable publishing. Render the original score separately with the approved pinned music-skill installation.
 
-Supply the master WAV, upstream `report.json`, `project.json`, and SHA-256 of each exact file; existing local narration and two effects; a publication-disabled CCSD; and a **new** output directory. The upstream project receipt uses canonical JSON hashing, which is checked separately from the caller's exact file hash. All inputs are bounded regular-file snapshots.
+Supply the master WAV, upstream `report.json`, `project.json`, and SHA-256 of each exact file; existing local narration and two effects; a publication-disabled CCSD; and a **new** output directory. The upstream project receipt uses canonical JSON hashing, which is checked separately from the caller's exact file hash. All inputs are bounded regular-file snapshots. Every audio input must be self-contained uncompressed PCM WAV (mono/stereo, 16/24/32-bit, 24/44.1/48 kHz, at most 10 minutes); playlists and references are rejected before decoding. The output directory is atomically reserved without replacement; its parent must already exist. A failed mix may leave a reserved partial directory, which must be inspected rather than automatically reused.
 
 ```
 python scripts/music_skill_mix.py --music /path/master.wav --music-sha256 HASH \
