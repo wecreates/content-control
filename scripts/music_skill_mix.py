@@ -5,6 +5,8 @@ No downloads, synthesis, network or publishing. Numeric QA is not audition.
 import argparse
 import hashlib
 import json
+import io
+import wave
 from pathlib import Path
 import tempfile
 
@@ -29,6 +31,19 @@ def snapshot(path, expected, limit):
     return data
 
 
+def validate_pcm(data):
+    # Prevent playlist/protocol autodetection in ffmpeg. Only self-contained PCM.
+    try:
+        with wave.open(io.BytesIO(data), 'rb') as w:
+            channels, width, rate, frames = w.getnchannels(), w.getsampwidth(), w.getframerate(), w.getnframes()
+            if w.getcomptype() != 'NONE' or channels not in (1, 2) or width not in (2, 3, 4) or rate not in (24000, 44100, 48000):
+                raise ValueError('Bounded PCM WAV required')
+            if not 0 < frames <= rate * 600 or len(w.readframes(frames)) != frames * channels * width:
+                raise ValueError('Truncated or oversized WAV')
+    except (wave.Error, EOFError) as exc:
+        raise ValueError('Self-contained PCM WAV required') from exc
+
+
 def handoff(*, music, music_sha256, report, report_sha256, project,
             project_sha256, voice, ccsd, sfx, out_dir):
     """Use declared local render evidence; does not authenticate authorship/rights."""
@@ -46,7 +61,8 @@ def handoff(*, music, music_sha256, report, report_sha256, project,
     canonical_sha = hashlib.sha256(json.dumps(project_object, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()).hexdigest()
     if record.get('project_sha256') != canonical_sha:
         raise ValueError('Project receipt mismatch')
-    if not all(record.get('checks', {}).get(key) is True for key in REQUIRED):
+    checks = record.get('checks')
+    if not isinstance(checks, dict) or not all(checks.get(key) is True for key in REQUIRED):
         raise ValueError('Required music checks did not pass')
     if not isinstance(json.loads(project_bytes), dict):
         raise ValueError('Project must be an object')
@@ -55,6 +71,10 @@ def handoff(*, music, music_sha256, report, report_sha256, project,
     # Snapshot inputs before ffmpeg reads them. Special files/oversize inputs fail.
     voices = read_audio(voice, MAX_FILE)
     effects = [read_audio(p, MAX_FILE) for p in sfx]
+    for data in [music_bytes, voices, *effects]:
+        validate_pcm(data)
+    # Atomic reservation: parallel jobs cannot overwrite one another.
+    out.mkdir(mode=0o700, parents=False, exist_ok=False)
     with tempfile.TemporaryDirectory(prefix='music-skill-handoff-') as td:
         root = Path(td)
         files = [root / name for name in ('music.audio', 'voice.audio', 'fx1.audio', 'fx2.audio')]
