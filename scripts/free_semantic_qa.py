@@ -2,20 +2,19 @@
 """Free CPU visual analysis. Execution success is never artistic approval."""
 import argparse
 import gc
-import hashlib
 import importlib.metadata
 import json
 import os
 import subprocess
 from pathlib import Path
+try:
+    from scripts.review_smoke_inputs import observed_hash
+except ModuleNotFoundError:
+    from review_smoke_inputs import observed_hash
 
 
 def sha256(path):
-    h = hashlib.sha256()
-    with Path(path).open('rb') as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
-            h.update(chunk)
-    return h.hexdigest()
+    return observed_hash(Path(path), 512 * 1024 * 1024)
 
 
 def sample(paths, limit):
@@ -28,12 +27,20 @@ def extract_candidate(video, directory):
     directory = Path(directory)
     if directory.exists() and any(directory.iterdir()):
         raise ValueError('candidate extraction directory must be empty')
+    if directory.is_symlink():
+        raise ValueError('candidate extraction directory must not be a symlink')
+    before = sha256(video)
     directory.mkdir(parents=True, exist_ok=True)
     subprocess.run(['ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error',
                     '-i', str(Path(video).resolve()), '-vf', 'fps=1/3', '-q:v', '2',
+                    '-frames:v', '64',
                     str(directory / 'cand-%06d.jpg')], check=True, timeout=300)
+    if sha256(video) != before:
+        raise ValueError('candidate video changed during extraction')
     return {'engine': 'ffmpeg', 'filter': 'fps=1/3', 'sequence_start': 1,
-            'sample_interval_seconds': 3, 'derived_from_candidate_video': True}
+            'sample_interval_seconds': 3, 'derived_from_candidate_video': True,
+            'candidate_video_sha256': before,
+            'candidate_frames': manifest(sorted(directory.glob('cand-*.jpg')))}
 
 
 def manifest(paths):
@@ -139,6 +146,29 @@ def analyze(reference_dir, candidate_dir, candidate_video=None, batch_size=2, ma
     return report
 
 
+
+def bind_extraction(report, extraction, video, directory):
+    """Bind measurements only to unchanged extracted bytes; never approve art."""
+    provenance = report['provenance']
+    provenance['candidate_extraction'] = extraction
+    provenance['candidate_frames_video_binding_verified'] = False
+    if extraction is None:
+        return
+    try:
+        digest = sha256(video)
+        frames = manifest(sorted(Path(directory).glob('cand-*.jpg')))
+        if (digest != extraction['candidate_video_sha256']
+                or digest != provenance.get('candidate_video', {}).get('sha256')
+                or not frames or frames != extraction['candidate_frames']
+                or frames != provenance['candidate_frames']):
+            raise ValueError('candidate video or frames changed after extraction')
+        provenance['candidate_frames_video_binding_verified'] = True
+    except (OSError, ValueError, KeyError) as exc:
+        report['analysis_status'] = 'INCOMPLETE'
+        report['verdict'] = 'ANALYSIS_INCOMPLETE'
+        report['errors'].append('Candidate binding: ' + str(exc))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--reference-dir', required=True)
@@ -156,8 +186,7 @@ def main():
             ap.error('--extract-candidate requires --candidate-video')
         extraction = extract_candidate(a.candidate_video, a.candidate_dir)
     report = analyze(a.reference_dir, a.candidate_dir, a.candidate_video, a.batch_size, a.max_frames, a.analysis_only)
-    report['provenance']['candidate_extraction'] = extraction
-    report['provenance']['candidate_frames_video_binding_verified'] = extraction is not None
+    bind_extraction(report, extraction, a.candidate_video, a.candidate_dir)
     path = Path(a.output)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + '\n')
