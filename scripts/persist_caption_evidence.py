@@ -9,8 +9,10 @@ import tempfile
 
 try:
     from scripts.caption_contract import object_from, sha, snapshot
+    from scripts.segment_observed_words import derive
 except ModuleNotFoundError:
     from caption_contract import object_from, sha, snapshot
+    from segment_observed_words import derive
 
 
 COMMON_INPUTS = (
@@ -18,6 +20,7 @@ COMMON_INPUTS = (
     'state/episode1-factual-contract.json', 'scripts/caption_contract.py',
     'scripts/build_verified_captions.py', 'scripts/verify_captions.py',
     'scripts/free_transcription_qa.py', 'scripts/persist_caption_evidence.py',
+    'scripts/segment_observed_words.py',
     'requirements-transcription.txt',
 )
 INPUTS = {
@@ -25,12 +28,14 @@ INPUTS = {
     'reconcile': COMMON_INPUTS + (
         '.github/workflows/candidate-state-reconcile.yml',
         'state/narration-transcription-health.json', 'public-review/episode1-v10-free.mp4',
+        'state/narration-transcription-raw.json',
         'qa-output/free/final-receipt.json', 'scripts/update_acceptance_ledger.py',
         'scripts/verify_acceptance_ledger.py',
     ),
 }
 OUTPUTS = {
     'narration': ('state/caption-health.json', 'state/narration-transcription-health.json',
+                  'state/narration-transcription-raw.json',
                   'public-review/episode1-v10-free.vtt'),
     'reconcile': ('state/caption-health.json', 'public-review/episode1-v10-free.vtt',
                   'state/accepted-candidate-ledger.json', 'state/acceptance-ledger-health.json'),
@@ -104,6 +109,10 @@ def payload_for(repo, kind, source_bytes):
     for check in ('source_identity_bound', 'approved_words_match', 'observed_timing_bound', 'candidate_health_green'):
         if checks.get(check) is not True:
             raise ValueError('Passing caption provenance checks required')
+    raw = read('state/narration-transcription-raw.json')
+    derived = derive(raw, read('public/audio/episode1-narration.mp3'))
+    if object_from(read('state/narration-transcription-health.json')) != derived:
+        raise ValueError('Canonical transcription must exactly derive from retained raw ASR')
     for path in OUTPUTS[kind]:
         payload[path] = read(path)
     if kind == 'reconcile':
@@ -177,3 +186,4 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
+

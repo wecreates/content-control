@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_PENDING_LISTENING_AND_INTEGRATION_REVIEW",
+  "publication_enabled": false,
+  "educational_example": true,
+  "narration_path": "public/audio/episode1-narration.mp3",
+  "narration_sha256": "c2b633f1c509fec43be6fd75d365b6335ca273e8beb6be6c5552bbb3cd24cd57",
+  "narration_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. $80 minus $20 is $60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "claims": {
+    "annual_fee_example_usd": 695,
+    "spend_example_usd": 80,
+    "credit_example_usd": 20,
+    "net_spend_example_usd": 60,
+    "decision_rule": "REAL VALUE > FEE"
+  },
+  "arithmetic": [
+    {
+      "expression": "80-20",
+      "expected": 60
+    }
+  ],
+  "required_visual_tokens": [
+    "$80 \u2212 $20",
+    "$60",
+    "REAL VALUE > FEE"
+  ],
+  "prohibited_named_products": [
+    "American Express",
+    "Amex",
+    "Chase",
+    "Citi",
+    "Capital One",
+    "Discover",
+    "Wells Fargo",
+    "Bank of America"
+  ],
+  "prohibited_risky_phrases": [
+    "guaranteed return",
+    "risk-free",
+    "apply now",
+    "you must get this card",
+    "free money",
+    "guaranteed savings"
+  ],
+  "notes": [
+    "Review-only contract: approved narration_text unchanged; timing from explicit spoken-word ASR.",
+    "Nine sentence cues regroup independent word punctuation without changing recognized words or timestamps. See parent receipt and segmentation derivation.",
+    "Pending independent listening and rendered video integration review."
+  ],
+  "expected_duration_seconds": 27.503945578231292,
+  "caption_cues": [
+    {
+      "end": 2.86,
+      "start": 0.0,
+      "text": "Dave's card charged him six hundred ninety five dollars again."
+    },
+    {
+      "end": 7.12,
+      "start": 3.7,
+      "text": "Chad points to a twenty dollar credit after an eighty dollar purchase."
+    },
+    {
+      "end": 8.9,
+      "start": 8.08,
+      "text": "But the math is simple."
+    },
+    {
+      "end": 12.36,
+      "start": 9.58,
+      "text": "Eighty dollars minus twenty dollars is sixty dollars."
+    },
+    {
+      "end": 15.7,
+      "start": 12.82,
+      "text": "Points monk counts only benefits Dave would have bought anyway."
+    },
+    {
+      "end": 18.78,
+      "start": 16.62,
+      "text": "Then he compares that real value with the annual fee."
+    },
+    {
+      "end": 21.64,
+      "start": 19.36,
+      "text": "If the value is higher, the card may make sense."
+    },
+    {
+      "end": 24.6,
+      "start": 22.48,
+      "text": "If the fee is higher, rethink it."
+    },
+    {
+      "end": 27.02,
+      "start": 25.52,
+      "text": "Ignore the flex and keep the math."
+    }
+  ]
+}
