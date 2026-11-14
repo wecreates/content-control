@@ -31,6 +31,27 @@ def read_object(path):
     return value, digest
 
 
+def confined_path(root, value):
+    path = Path(value)
+    if path.is_absolute() or '..' in path.parts or not path.parts:
+        raise ValueError('Input path must be repository-relative')
+    resolved = (root / path).resolve()
+    if not resolved.is_relative_to(root.resolve()):
+        raise ValueError('Input path escapes repository')
+    return path.as_posix()
+
+
+def bind_explicit_candidate(root, video, expected):
+    video = confined_path(root, video)
+    if not isinstance(expected, str) or not re.fullmatch('[0-9a-f]{64}', expected):
+        raise ValueError('Explicit candidate requires expected SHA-256')
+    digest = observed_hash(root / video, MEDIA_LIMIT)
+    if digest != expected:
+        raise ValueError('Explicit candidate hash mismatch')
+    return {'candidate_lane': 'explicit', 'candidate_path': video,
+            'candidate_sha256': digest}
+
+
 def bind_candidate(root, lane):
     if lane not in LANES:
         raise ValueError('Unknown candidate lane')
@@ -78,7 +99,8 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n', encoding='utf-8')
 
 
-def run(root, lane, output, run_id, source_commit, execute=subprocess.run):
+def run(root, lane, output, run_id, source_commit, execute=subprocess.run, *,
+        candidate_video=None, candidate_sha256=None, reference_contract=None):
     root = Path(root).resolve()
     output = Path(output).resolve()
     if type(run_id) is not int or run_id <= 0 or not re.fullmatch('[0-9a-f]{40}', source_commit):
@@ -87,8 +109,24 @@ def run(root, lane, output, run_id, source_commit, execute=subprocess.run):
     output.mkdir(parents=True, exist_ok=True)
     if any(output.iterdir()):
         raise ValueError('Analysis output directory must be empty')
-    initial = bind_candidate(root, lane)
-    review = review_binding(root, lane, initial['candidate_sha256'])
+    if lane == 'explicit':
+        if not candidate_video:
+            raise ValueError('Explicit candidate path required')
+        bind = lambda: bind_explicit_candidate(root, candidate_video, candidate_sha256)
+        review_now = lambda: {'path': None, 'status': 'BLOCKED',
+                             'blocker': 'MISSING_VISUAL_REVIEW', 'review_sha256': None}
+    else:
+        if candidate_video is not None or candidate_sha256 is not None:
+            raise ValueError('Candidate overrides require explicit lane')
+        bind = lambda: bind_candidate(root, lane)
+        review_now = lambda: review_binding(root, lane, initial['candidate_sha256'])
+    contract = None
+    if reference_contract is not None:
+        reference_contract = confined_path(root, reference_contract)
+        _, contract_hash = read_object(root / reference_contract)
+        contract = {'path': reference_contract, 'sha256': contract_hash}
+    initial = bind()
+    review = review_now()
     original_review_binding = dict(review)
     write_json(output / 'candidate-binding.json', initial)
     write_json(output / 'review-binding.json', review)
@@ -96,14 +134,16 @@ def run(root, lane, output, run_id, source_commit, execute=subprocess.run):
     comparison = [sys.executable, 'scripts/rendered_visual_parity.py',
                   '--reference-dir', 'reference/frames', '--candidate-video', video,
                   '--out', str(output / 'comparison.json'), '--analysis-only']
+    if contract:
+        comparison.extend(['--reference-contract', reference_contract])
     if review['status'] == 'IDENTITY_BOUND':
         comparison.extend(['--visual-review', review['path']])
     execute(comparison, cwd=root, check=True)
     execute([sys.executable, 'scripts/visual_motion_analysis.py', '--video', video,
              '--out', str(output / 'motion.json')], cwd=root, check=True)
-    if bind_candidate(root, lane) != initial:
+    if bind() != initial:
         raise ValueError('Candidate or canonical health changed during analysis')
-    if review_binding(root, lane, initial['candidate_sha256']) != review:
+    if review_now() != review:
         raise ValueError('Visual review changed during analysis')
     reports = {}
     for name in ('comparison', 'motion'):
@@ -127,23 +167,33 @@ def run(root, lane, output, run_id, source_commit, execute=subprocess.run):
                 'files': {str(p.relative_to(output)): observed_hash(p, MEDIA_LIMIT)
                           for p in output.rglob('*') if p.is_file()}}
     # Last check before sealing the receipt, including the health snapshot.
-    if bind_candidate(root, lane) != initial:
+    if bind() != initial:
         raise ValueError('Candidate or canonical health changed before receipt')
-    if review_binding(root, lane, initial['candidate_sha256']) != original_review_binding:
+    if review_now() != original_review_binding:
         raise ValueError('Visual review changed before receipt')
+    if contract:
+        if read_object(root / reference_contract)[1] != contract['sha256']:
+            raise ValueError('Reference contract changed during analysis')
+        manifest['reference_contract'] = contract
     write_json(output / 'run.json', manifest)
     return manifest
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--lane', choices=LANES, default='v2')
+    parser.add_argument('--lane', choices=[*LANES, 'explicit'], default='v2')
     parser.add_argument('--root', default='.')
     parser.add_argument('--out', default='state/visual-analysis-run')
+    parser.add_argument('--candidate-video')
+    parser.add_argument('--candidate-sha256')
+    parser.add_argument('--reference-contract')
     args = parser.parse_args()
-    result = run(args.root, args.lane, args.out, int(os.environ['GITHUB_RUN_ID']), os.environ['GITHUB_SHA'])
+    result = run(args.root, args.lane, args.out, int(os.environ['GITHUB_RUN_ID']), os.environ['GITHUB_SHA'],
+                 candidate_video=args.candidate_video, candidate_sha256=args.candidate_sha256,
+                 reference_contract=args.reference_contract)
     print(json.dumps(result, sort_keys=True))
 
 
 if __name__ == '__main__':
     main()
+

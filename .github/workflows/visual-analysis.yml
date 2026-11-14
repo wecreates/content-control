@@ -3,11 +3,23 @@ on:
   workflow_dispatch:
     inputs:
       candidate_lane:
-        description: 'Analysis only: historical V2 or health-bound canonical V10'
+        description: 'Analysis only: V2, health-bound V10, or exact-hash explicit candidate'
         type: choice
         required: true
         default: v2
-        options: [v2, canonical-v10]
+        options: [v2, canonical-v10, explicit]
+      candidate_video:
+        description: 'Explicit lane only: repository-relative media path'
+        type: string
+        required: false
+      candidate_sha256:
+        description: 'Explicit lane only: expected lowercase SHA-256'
+        type: string
+        required: false
+      reference_contract:
+        description: 'Optional repository-relative comparison alignment contract'
+        type: string
+        required: false
   schedule:
     - cron: '31 * * * *'
   push:
@@ -51,7 +63,15 @@ jobs:
       - name: Analyze explicit candidate lane and bind evidence
         env:
           CANDIDATE_LANE: ${{ inputs.candidate_lane || 'v2' }}
-        run: python scripts/run_visual_analysis.py --lane "$CANDIDATE_LANE"
+          CANDIDATE_VIDEO: ${{ inputs.candidate_video }}
+          CANDIDATE_SHA256: ${{ inputs.candidate_sha256 }}
+          REFERENCE_CONTRACT: ${{ inputs.reference_contract }}
+        run: |
+          args=(--lane "$CANDIDATE_LANE")
+          if [[ -n "$CANDIDATE_VIDEO" ]]; then args+=(--candidate-video "$CANDIDATE_VIDEO"); fi
+          if [[ -n "$CANDIDATE_SHA256" ]]; then args+=(--candidate-sha256 "$CANDIDATE_SHA256"); fi
+          if [[ -n "$REFERENCE_CONTRACT" ]]; then args+=(--reference-contract "$REFERENCE_CONTRACT"); fi
+          python scripts/run_visual_analysis.py "${args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -66,3 +86,4 @@ jobs:
           with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
               f.write(f"Visual analysis ({c['candidate_lane']}): {c['analysis_status']}\nReview: {c['review']['status']}; blocker: {c['review']['blocker']}\n\nDecoded {m['decoded_frames']} frames. Comparison contact sheets and measurements are attached. Creative approval remains separate; publication disabled.\n")
           PY
+
