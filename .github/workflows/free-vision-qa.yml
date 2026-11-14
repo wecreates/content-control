@@ -95,7 +95,9 @@ jobs:
           python scripts/free_vision_qa.py --reference-dir reference/frames --candidate-video public-review/episode1-v10-free.mp4 --candidate-dir qa-output/free/candidate-frames --output qa-output/free/deterministic.json
       - name: OpenCLIP and Florence-2 semantic QA
         run: |
-          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir qa-output/free/candidate-frames --output qa-output/free/semantic.json
+          frames=$(mktemp -d)
+          trap 'rm -rf "$frames"' EXIT
+          python scripts/free_semantic_qa.py --reference-dir reference/frames --candidate-dir "$frames" --candidate-video public-review/episode1-v10-free.mp4 --extract-candidate --output qa-output/free/semantic.json
       - name: Bind zero-credit receipt
         run: |
           python - <<'PY'
@@ -105,6 +107,12 @@ jobs:
           s=json.loads(Path("qa-output/free/semantic.json").read_text())
           a=json.loads(Path("qa-output/free/audio.json").read_text())
           m=json.loads(Path("qa-output/free/mobile.json").read_text())
+          from scripts.review_smoke_inputs import observed_hash
+          if s.get("provenance",{}).get("candidate_frames_video_binding_verified") is not True:
+              raise SystemExit("Semantic candidate frame binding required")
+          current = observed_hash(Path("public-review/episode1-v10-free.mp4"), 512 * 1024 * 1024)
+          if not (s["provenance"]["candidate_video"]["sha256"] == d["candidate_sha256"] == a["candidate_sha256"] == current):
+              raise SystemExit("Current candidate and QA identities differ")
           ok=d["verdict"]=="PASS" and s["verdict"]=="PASS" and a["verdict"]=="PASS" and m["status"]=="PASS"
           r={
             "schema_version":1,
