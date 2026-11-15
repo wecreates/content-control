@@ -10,8 +10,12 @@ except ImportError:
 
 
 def build_queue(progress):
-    count = len(progress.get('capabilities', {})) if isinstance(progress, dict) else 0
+    caps = progress.get('capabilities') if isinstance(progress, dict) else None
+    count = len(caps) if isinstance(caps, dict) else 0
     plan = build_plan(progress, shards=1, limit=max(1, count))
+    if not isinstance(progress, dict) or progress.get('publication_enabled') is not False:
+        plan['blockers'].append('publication_must_remain_disabled')
+        plan['status'] = 'BLOCKED'
     for position, task in enumerate(plan['tasks'], 1):
         task.update(position=position, status='QUEUED')
     plan.update(mode='ORDERED_COMPLETION', total_tasks=len(plan['tasks']))
