@@ -1,0 +1,37 @@
+{
+  "id": "psykeeu-DeW0nnZtQsX",
+  "source_url": "https://www.instagram.com/reel/DeW0nnZtQsX/",
+  "creator": "Psy Kee (@psykeeu)",
+  "title": "Psychology of People Who Stay Single",
+  "evidence": {
+    "script": "complete automatic speech transcript available",
+    "visual_sequence": "not inspected",
+    "audio_delivery": "not independently verified"
+  },
+  "status": "script_verified_visuals_pending",
+  "script_pattern": [
+    "recognition hook",
+    "assumption reversal",
+    "emotional backstory",
+    "value contrast",
+    "identity validation",
+    "closing reframe"
+  ],
+  "finance_example": {
+    "topic": "Why some people stop trying to look rich",
+    "structure": [
+      "Recognize the behavior",
+      "Challenge the assumption",
+      "Explain the emotional cost",
+      "Contrast status with stability",
+      "End with financial self-respect"
+    ]
+  },
+  "comparisons": {
+    "zenn": "explanation clarity",
+    "steely": "emotional narrative",
+    "fireship": "concise hook and payoff"
+  },
+  "originality": "Adapt structural techniques only; no copied narration or assets",
+  "publication_enabled": false
+}
