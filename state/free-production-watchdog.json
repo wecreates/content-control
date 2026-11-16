@@ -21,7 +21,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": false,
     "caption_health_green": false,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -55,6 +55,7 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
     "caption_candidate_match",
