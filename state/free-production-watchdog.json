@@ -21,7 +21,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": false,
     "caption_health_green": false,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -39,7 +39,7 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": false,
+    "python_dependency_security_clean": true,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
@@ -55,8 +55,6 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "dependency_security_clean",
-    "python_dependency_security_clean",
     "live_deployment_green",
     "caption_candidate_match",
     "caption_health_green",
