@@ -11,6 +11,10 @@ on:
       - 'scripts/verify_captions.py'
       - 'scripts/caption_contract.py'
       - 'scripts/persist_caption_evidence.py'
+      - 'scripts/segment_observed_words.py'
+      - 'tests/test_observed_sentence_segments.py'
+      - 'tests/test_word_timed_workflow.py'
+      - 'tests/test_transcription_audio_identity.py'
       - 'tests/test_caption_provenance.py'
       - 'tests/test_persist_caption_evidence.py'
       - 'tests/test_narration_transcription_workflow.py'
@@ -55,8 +59,11 @@ jobs:
           }
           # Replace historical PASS before setup/install or any ASR import can fail.
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          raw_output = Path('state/narration-transcription-raw.json')
+          raw_output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
           report['audio_sha256'] = hashlib.sha256(Path('public/audio/episode1-narration.mp3').read_bytes()).hexdigest()
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+          raw_output.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
           PY
       - uses: actions/setup-python@v5
         with:
@@ -81,10 +88,14 @@ jobs:
           python scripts/free_transcription_qa.py \
             --audio public/audio/episode1-narration.mp3 \
             --contract state/episode1-factual-contract.json \
-            --output state/narration-transcription-health.json \
-            --model base.en
+            --output state/narration-transcription-raw.json \
+            --model base.en --spoken-numbers --full-audio
+          python scripts/segment_observed_words.py \
+            --receipt state/narration-transcription-raw.json \
+            --audio public/audio/episode1-narration.mp3 \
+            --output state/narration-transcription-health.json
       - name: Test canonical caption provenance
-        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_narration_transcription_workflow
+        run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_narration_transcription_workflow tests.test_observed_sentence_segments tests.test_word_timed_workflow tests.test_transcription_audio_identity
       - name: Build and verify synchronized VTT captions
         if: ${{ !cancelled() }}
         run: |
@@ -132,6 +143,8 @@ jobs:
           name: narration-transcription-health
           path: |
             state/narration-transcription-health.json
+            state/narration-transcription-raw.json
             state/caption-health.json
             public-review/episode1-v10-free.vtt
           retention-days: 30
+

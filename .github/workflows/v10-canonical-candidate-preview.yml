@@ -1,0 +1,68 @@
+name: V10 canonical candidate diagnostic (compute only)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: v10-candidate-preview-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  preview:
+    if: ${{ github.event.repository.private == false && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'candidate/v10-canonical-preview-20261108' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+      SOURCE_REF: ${{ github.event.pull_request.head.ref }}
+      SOURCE_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+      BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      PUBLICATION_ENABLED: 'false'
+      PRODUCTION_READY: 'false'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - name: Reject incorrect source before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_EVENT_NAME" = pull_request
+          test "$GITHUB_REPOSITORY" = wecreates/content-control
+          test "$SOURCE_REPOSITORY" = "$GITHUB_REPOSITORY"
+          test "$BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+          test "$BASE_REF" = main
+          test "$SOURCE_REF" = candidate/v10-canonical-preview-20261108
+          [[ "$EXPECTED_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check sources and initialize fresh evidence
+        id: guard
+        run: python3 scripts/v10_candidate_preview.py guard
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.14'
+      - name: Install ordinary hosted runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          npm ci --ignore-scripts --no-audit --fund=false
+          python -m pip install -r requirements-transcription.txt numpy==2.3.5
+      - name: Build isolated official Debian narration encoder
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 --pull --no-cache --tag v10-frozen-narration:local - < scripts/frozen_narration.Dockerfile
+      - name: Fresh ASR render and technical checks
+        run: python scripts/v10_candidate_preview.py run
+      - name: Seal exact bytes and emit compact diagnostic summary
+        if: ${{ always() && steps.guard.outcome == 'success' }}
+        env:
+          PREVIEW_JOB_STATUS: ${{ job.status }}
+        run: python scripts/v10_candidate_preview.py manifest
