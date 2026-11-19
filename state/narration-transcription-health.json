@@ -1,150 +1,16 @@
 {
-  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase. But the math is simple. 80 minus 20 is 60. Points-monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "actual_transcript": "",
+  "audio_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "checks": {
-    "content_token_recall_ok": true,
-    "duration_plausible": true,
-    "no_post_narration_hallucination": true,
-    "publication_disabled": true,
-    "semantic_recall_ok": true,
-    "sequence_similarity_ok": true,
-    "transcript_coverage_ok": true,
-    "transcript_nonempty": true
+    "fresh_transcription_completed": false
   },
-  "content_token_recall": 1.0,
-  "engine": "faster-whisper",
-  "expected_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. $80 minus $20 is $60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
-  "failed_checks": [],
-  "faster_whisper_version": "1.2.1",
-  "language": "en",
-  "language_probability": 1,
-  "media_duration_seconds": 26.184,
-  "model": "base.en",
+  "failed_checks": [
+    "fresh_transcription_completed"
+  ],
   "publication_enabled": false,
+  "reason": "This run has not completed transcription; dependency or transcription failure leaves this receipt blocked.",
   "schema_version": 1,
-  "segments": [
-    {
-      "end": 3.84,
-      "start": 0.0,
-      "text": "Dave's card charged him $695 again."
-    },
-    {
-      "end": 8.04,
-      "start": 3.84,
-      "text": "Chad points to a $20 credit after an $80 purchase."
-    },
-    {
-      "end": 9.56,
-      "start": 8.04,
-      "text": "But the math is simple."
-    },
-    {
-      "end": 11.84,
-      "start": 9.56,
-      "text": "80 minus 20 is 60."
-    },
-    {
-      "end": 15.2,
-      "start": 11.84,
-      "text": "Points-monk counts only benefits Dave would have bought anyway."
-    },
-    {
-      "end": 18.12,
-      "start": 15.2,
-      "text": "Then he compares that real value with the annual fee."
-    },
-    {
-      "end": 21.36,
-      "start": 18.12,
-      "text": "If the value is higher, the card may make sense."
-    },
-    {
-      "end": 23.96,
-      "start": 21.36,
-      "text": "If the fee is higher, rethink it."
-    },
-    {
-      "end": 26.12,
-      "start": 23.96,
-      "text": "Ignore the flex and keep the math."
-    }
-  ],
-  "semantic_hits": [
-    {
-      "pass": true,
-      "terms": [
-        "dave's"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "card"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "charged"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "again"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "chad"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "points"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "credit"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "after"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "purchase"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "math"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "simple"
-      ]
-    },
-    {
-      "pass": true,
-      "terms": [
-        "minus"
-      ]
-    }
-  ],
-  "semantic_recall": 1.0,
-  "sequence_similarity": 1.0,
-  "status": "PASS",
-  "transcribed_duration_seconds": 26.12,
-  "transcript_coverage_ratio": 0.997556
+  "segments": [],
+  "status": "FAIL",
+  "words": []
 }
