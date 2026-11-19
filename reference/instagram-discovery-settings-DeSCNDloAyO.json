@@ -1,0 +1,48 @@
+{
+  "id": "instagram-reel-discovery-settings",
+  "source_url": "https://www.instagram.com/reel/DeSCNDloAyO/",
+  "creator": "Maximilian Tornow (@max_tornow)",
+  "evidence": "complete automatic spoken transcript; exact current Instagram UI and effects unverified",
+  "type": "prepublication_checklist",
+  "recommendations": [
+    {
+      "setting": "translate_reel",
+      "guidance": "Use only if feature available and translations checked for meaning",
+      "automatic": false
+    },
+    {
+      "setting": "highest_quality_upload",
+      "guidance": "Enable where available; verify encoded media quality",
+      "automatic": false
+    },
+    {
+      "setting": "flag_for_review",
+      "guidance": "Do not automatically disable moderation or safety controls",
+      "automatic": false
+    },
+    {
+      "setting": "search_engine_visibility",
+      "guidance": "Enable only for intended public business posts",
+      "automatic": false
+    },
+    {
+      "setting": "sharing_and_reuse",
+      "guidance": "Enable shareability as desired; reuse/remix rights require separate consent decision",
+      "automatic": false
+    },
+    {
+      "setting": "website_embeds",
+      "guidance": "Enable for public content when appropriate",
+      "automatic": false
+    }
+  ],
+  "measurement": [
+    "reach from non-followers",
+    "qualified profile visits",
+    "link clicks",
+    "leads",
+    "verified sales"
+  ],
+  "claim_policy": "No claim that toggles trigger algorithmic amplification or guaranteed reach.",
+  "publication_enabled": false
+}
