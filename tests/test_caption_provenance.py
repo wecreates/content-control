@@ -267,5 +267,27 @@ class CaptionProvenanceTests(unittest.TestCase):
             self.health = saved
 
 
+
+class CurrentNarrationContractTests(unittest.TestCase):
+    """Recorded ASR consistency only, not a new ASR run or video acceptance."""
+    def test_contract_matches_recorded_narration_without_changing_money_claims(self):
+        from scripts.caption_contract import spoken
+        contract = json.loads((ROOT / 'state/episode1-factual-contract.json').read_text())
+        observed = json.loads((ROOT / 'tests/fixtures/narration-43617072204.json').read_text())
+        self.assertEqual(contract['narration_sha256'], observed['audio_sha256'])
+        self.assertEqual(spoken(contract['narration_text']), spoken(observed['actual_transcript']))
+        self.assertEqual(contract['caption_cues'], observed['segments'])
+        self.assertEqual(contract['claims']['spend_example_usd'], 80)
+        self.assertEqual(contract['claims']['credit_example_usd'], 20)
+        self.assertEqual(contract['claims']['net_spend_example_usd'], 60)
+        self.assertIn('$60', contract['required_visual_tokens'])
+        self.assertIs(contract['publication_enabled'], False)
+        self.assertEqual(contract['caption_timing_evidence']['workflow_run_url'], observed['evidence_source'])
+
+    def test_missing_spoken_currency_is_still_not_equivalent(self):
+        from scripts.caption_contract import spoken
+        self.assertNotEqual(spoken('$80 minus $20 is $60.'), spoken('80 minus 20 is 60.'))
+
+
 if __name__ == '__main__':
     unittest.main()

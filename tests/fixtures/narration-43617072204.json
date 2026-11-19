@@ -1,0 +1,55 @@
+{
+  "audio_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
+  "actual_transcript": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "expected_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. $80 minus $20 is $60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "segments": [
+    {
+      "end": 2.82,
+      "start": 0.0,
+      "text": "Dave's card charged him $695 again."
+    },
+    {
+      "end": 6.92,
+      "start": 3.96,
+      "text": "Chad points to a $20 credit after an $80 purchase,"
+    },
+    {
+      "end": 8.88,
+      "start": 8.02,
+      "text": "but the math is simple."
+    },
+    {
+      "end": 10.92,
+      "start": 9.72,
+      "text": "80 minus 20 is 60."
+    },
+    {
+      "end": 14.38,
+      "start": 12.04,
+      "text": "Points Monk counts only benefits Dave would have bought anyway."
+    },
+    {
+      "end": 17.42,
+      "start": 15.3,
+      "text": "Then he compares that real value with the annual fee."
+    },
+    {
+      "end": 20.3,
+      "start": 18.18,
+      "text": "If the value is higher, the card may make sense."
+    },
+    {
+      "end": 23.26,
+      "start": 21.26,
+      "text": "If the fee is higher, rethink it."
+    },
+    {
+      "end": 25.66,
+      "start": 24.2,
+      "text": "Ignore the flex and keep the math."
+    }
+  ],
+  "transcribed_duration_seconds": 25.66,
+  "media_duration_seconds": 26.184,
+  "evidence_source": "https://github.com/wecreates/content-control/actions/runs/43617072204"
+}

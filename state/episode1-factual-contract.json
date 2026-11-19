@@ -5,7 +5,7 @@
   "educational_example": true,
   "narration_path": "public/audio/episode1-narration.mp3",
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
-  "narration_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. $80 minus $20 is $60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "narration_text": "Dave's card charged him $695 again. Chad points to a $20 credit after an $80 purchase, but the math is simple. 80 minus 20 is 60. Points Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "claims": {
     "annual_fee_example_usd": 695,
     "spend_example_usd": 80,
@@ -48,49 +48,57 @@
   ],
   "caption_cues": [
     {
-      "start": 0,
-      "end": 3.84,
+      "end": 2.82,
+      "start": 0.0,
       "text": "Dave's card charged him $695 again."
     },
     {
-      "start": 3.84,
-      "end": 8.04,
-      "text": "Chad points to a $20 credit after an $80 purchase."
+      "end": 6.92,
+      "start": 3.96,
+      "text": "Chad points to a $20 credit after an $80 purchase,"
     },
     {
-      "start": 8.04,
-      "end": 9.56,
-      "text": "But the math is simple."
+      "end": 8.88,
+      "start": 8.02,
+      "text": "but the math is simple."
     },
     {
-      "start": 9.56,
-      "end": 11.84,
-      "text": "$80 minus $20 is $60."
+      "end": 10.92,
+      "start": 9.72,
+      "text": "80 minus 20 is 60."
     },
     {
-      "start": 11.84,
-      "end": 15.2,
+      "end": 14.38,
+      "start": 12.04,
       "text": "Points Monk counts only benefits Dave would have bought anyway."
     },
     {
-      "start": 15.2,
-      "end": 18.12,
+      "end": 17.42,
+      "start": 15.3,
       "text": "Then he compares that real value with the annual fee."
     },
     {
-      "start": 18.12,
-      "end": 21.36,
+      "end": 20.3,
+      "start": 18.18,
       "text": "If the value is higher, the card may make sense."
     },
     {
-      "start": 21.36,
-      "end": 23.96,
+      "end": 23.26,
+      "start": 21.26,
       "text": "If the fee is higher, rethink it."
     },
     {
-      "start": 23.96,
-      "end": 26.16,
+      "end": 25.66,
+      "start": 24.2,
       "text": "Ignore the flex and keep the math."
     }
-  ]
+  ],
+  "caption_timing_evidence": {
+    "workflow_run_url": "https://github.com/wecreates/content-control/actions/runs/43617072204",
+    "source_commit": "252871fc177c896d3551bae64569efb802cd49a1",
+    "artifact_id": 14122578434,
+    "observed_at": "2026-11-14T16:44:20Z",
+    "audio_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
+    "scope": "Observed narration segment timing and words only; not candidate video acceptance or publication approval."
+  }
 }
