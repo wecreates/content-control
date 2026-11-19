@@ -1,3 +1,4 @@
+import {parseStorageRetention} from './storage-retention.mjs';
 import {parseVaultKey} from './vault-key.mjs';
 import crypto from 'node:crypto';
 import pg from 'pg';
@@ -5,17 +6,16 @@ const TABLE = 'cyzor_social_vault';
 const ID = 'owner';
 // Dedicated encrypted row. No provider credentials, sessions or media are stored as plaintext SQL fields.
 export class PostgresSocialStore {
-  constructor({pool, key, expiresAt, now = Date.now}) {
+  constructor({pool, key, expiresAt, retentionPolicy, now = Date.now}) {
     if (!pool) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
-    const expiry = Date.parse(expiresAt);
-    if (!Number.isFinite(expiry)) throw Error('STORAGE_EXPIRY_REQUIRED');
-    Object.assign(this, {pool, key: parseVaultKey(key), expiry, now});
+    const retention = parseStorageRetention({retentionPolicy, expiresAt});
+    Object.assign(this, {pool, key: parseVaultKey(key), ...retention, now});
     this.serial = Promise.resolve(); this.closed = false;
   }
   active() {
     if (this.closed) throw Error('PRIVATE_STORE_UNAVAILABLE');
     // Stop accepting authorization before a free database reaches its deletion deadline.
-    if (this.expiry - this.now() <= 86400000) throw Error('STORAGE_EXPIRING');
+    if (this.retentionPolicy === 'fixed_expiry' && this.expiry - this.now() <= 86400000) throw Error('STORAGE_EXPIRING');
   }
   seal(data) {
     const iv = crypto.randomBytes(12), cipher = crypto.createCipheriv('aes-256-gcm', this.key, iv);
@@ -74,16 +74,30 @@ export class PostgresSocialStore {
   async close() {this.closed = true; await this.serial.catch(() => {}); await this.pool.end();}
 }
 export function postgresPoolOptions(connectionString) {
-  let url;
-  try {url = new URL(connectionString);} catch {throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');}
-  // Parse fields explicitly so connection-string SSL flags cannot disable certificate verification.
-  if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname || !url.username || !url.password || url.pathname.length < 2 || url.hash || [...url.searchParams.keys()].some(k => k !== 'sslmode') || url.searchParams.has('sslmode') && !['require', 'verify-full'].includes(url.searchParams.get('sslmode'))) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
-  return {host: url.hostname, port: Number(url.port || 5432), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password), database: decodeURIComponent(url.pathname.slice(1)), ssl: {rejectUnauthorized: true}, max: 2, connectionTimeoutMillis: 10000, query_timeout: 20000, idleTimeoutMillis: 10000, application_name: 'cyzor-social-read-only'};
+  let url, fields;
+  try {
+    url = new URL(connectionString);
+    fields = {host: url.hostname, port: Number(url.port || 5432), user: decodeURIComponent(url.username), password: decodeURIComponent(url.password), database: decodeURIComponent(url.pathname.slice(1))};
+  } catch {throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');}
+  // Explicit fields prevent driver connection-string options from replacing verified TLS.
+  const keys = [...url.searchParams.keys()];
+  if (!['postgres:', 'postgresql:'].includes(url.protocol) || !fields.host || !fields.user || !fields.password || !fields.database || url.hash || keys.some(k => !['sslmode', 'channel_binding'].includes(k)) || new Set(keys).size !== keys.length || url.searchParams.has('sslmode') && !['require', 'verify-full'].includes(url.searchParams.get('sslmode'))) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
+  if (url.searchParams.has('channel_binding')) {
+    if (!['require', 'prefer', 'disable'].includes(url.searchParams.get('channel_binding'))) throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');
+    // pg 8.23.1 enableChannelBinding is opportunistic, not enforcement of "require".
+    // Do not silently drop or downgrade an explicitly requested security option.
+    throw Error('PRIVATE_STORE_CHANNEL_BINDING_UNSUPPORTED');
+  }
+  return {...fields, ssl: {rejectUnauthorized: true}, max: 2, connectionTimeoutMillis: 10000, query_timeout: 20000, idleTimeoutMillis: 10000, application_name: 'cyzor-social-read-only'};
 }
 export function createPostgresStore(env) {
+  // Validate policy and key before constructing a driver pool.
+  const retentionPolicy = env.SOCIAL_STORAGE_RETENTION_POLICY, expiresAt = env.SOCIAL_STORAGE_EXPIRES_AT;
+  parseStorageRetention({retentionPolicy, expiresAt});
+  parseVaultKey(env.SOCIAL_VAULT_KEY);
   const pool = new pg.Pool(postgresPoolOptions(env.SOCIAL_DATABASE_URL));
   pool.on('error', () => {}); // Request paths report sanitized availability; never log connection strings.
-  try {return new PostgresSocialStore({pool, key: env.SOCIAL_VAULT_KEY, expiresAt: env.SOCIAL_STORAGE_EXPIRES_AT});}
+  try {return new PostgresSocialStore({pool, key: env.SOCIAL_VAULT_KEY, expiresAt, retentionPolicy});}
   catch (error) {void pool.end(); throw error;}
 }
 // Explicit operator initialization only; hosted startup calls this solely with SOCIAL_STORAGE_INITIALIZE=true.

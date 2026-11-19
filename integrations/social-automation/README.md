@@ -169,10 +169,37 @@ Reference: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/author
 ## Encrypted PostgreSQL storage — October 13, 2026
 
 The hosted service now supports SOCIAL_STORAGE_MODE=postgres_encrypted. It
-requires SOCIAL_DATABASE_URL, SOCIAL_VAULT_KEY and SOCIAL_STORAGE_EXPIRES_AT.
+requires SOCIAL_DATABASE_URL, SOCIAL_VAULT_KEY and an explicit
+SOCIAL_STORAGE_RETENTION_POLICY. There is no default retention policy:
+
+- `fixed_expiry` also requires the provider's actual SOCIAL_STORAGE_EXPIRES_AT.
+  Existing fixed-deadline deployments must add this policy value when upgrading;
+  do not change or extend their real deadline. Reads, writes and initialization
+  still stop during the final 24 hours, including a deadline crossed mid-write.
+- `no_fixed_expiry` is an explicit operator assertion that the selected provider
+  has no fixed deletion deadline (for example an appropriately verified Neon
+  plan). SOCIAL_STORAGE_EXPIRES_AT must be absent, not blank or a fabricated
+  future date. Any supplied deadline conflicts and blocks activation.
+
+Missing or unknown policies, invalid fixed deadlines and conflicting values fail
+closed before constructing a pool. Public readiness reports only the validated
+policy and sanitized reason codes; no-fixed-expiry health reports
+`storage_expires_at: null`, not an invented timestamp. This setting does not
+promise unlimited retention, perpetual free service, available quota, backups,
+live database availability or verified durability. All existing verification and
+publication locks remain in place.
+
 The URL is parsed into explicit connection fields and certificate verification
-cannot be disabled with URL parameters. The full vault is encrypted with the
-same AES-256-GCM envelope as the file store. Database transactions lock the
+cannot be disabled with URL parameters. Duplicate parameters and unknown SSL
+options are rejected. The pinned pg 8.23.1 driver can request opportunistic
+channel binding but does not enforce `channel_binding=require`; explicit
+`channel_binding` parameters currently fail with
+`PRIVATE_STORE_CHANNEL_BINDING_UNSUPPORTED`. Do not strip a required binding
+option or map it to `enableChannelBinding=true`: that silently weakens the
+requested guarantee. A URL requiring it remains blocked pending separately
+reviewed support; this patch does not upgrade or replace the driver.
+
+The full vault is encrypted with the same AES-256-GCM envelope as the file store. Database transactions lock the
 single owner row, serialize writers across processes, and roll back failures.
 Database errors are sanitized; no connection string or decrypted record is
 written to logs. Startup refuses a missing table/row instead of inventing a

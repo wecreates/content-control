@@ -1,3 +1,4 @@
+import {parseStorageRetention} from './storage-retention.mjs';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -16,7 +17,12 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   let worker,oauth,store;
   let activationStage = 'policy';
   let storageReadAt = null;
-  const expiry = Date.parse(env.SOCIAL_STORAGE_EXPIRES_AT);
+  let retention = null, retentionError = null;
+  if (env.SOCIAL_STORAGE_MODE === 'postgres_encrypted') {
+    try {retention = parseStorageRetention({retentionPolicy:env.SOCIAL_STORAGE_RETENTION_POLICY,expiresAt:env.SOCIAL_STORAGE_EXPIRES_AT});}
+    catch (error) {retentionError = error.message;}
+  }
+  const expiry = retention?.expiry;
   const normalizedExpiry = Number.isFinite(expiry) ? new Date(expiry).toISOString() : null;
   const shutdown = new AbortController();
   const status = {...socialRuntimeReadiness(env), configured_storage_mode: 'unconfigured', providers:providerReadiness()};
@@ -37,13 +43,13 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       const expired = postgres && Number.isFinite(expiry) && expiry <= current;
       const cutoff = postgres && Number.isFinite(expiry) && expiry - current <= 86400000;
       const storageFailed = status.status === 'ACTIVATION_BLOCKED' && ['policy','storage_configuration','storage_bootstrap','storage_read','storage_probe'].includes(status.activation_stage);
-      const healthStatus = shutdown.signal.aborted ? 'STOPPED' : storageFailed ? 'BLOCKED' : postgres && !Number.isFinite(expiry) ? 'CONFIGURATION_REQUIRED' : expired ? 'EXPIRED' : cutoff ? 'EXPIRING' : storageReadAt !== null ? 'STARTUP_OBSERVATION_ONLY' : 'NOT_VERIFIED';
+      const healthStatus = shutdown.signal.aborted ? 'STOPPED' : storageFailed ? 'BLOCKED' : postgres && retentionError ? 'CONFIGURATION_REQUIRED' : expired ? 'EXPIRED' : cutoff ? 'EXPIRING' : storageReadAt !== null ? 'STARTUP_OBSERVATION_ONLY' : 'NOT_VERIFIED';
       return {...status, storage_bootstrap:{...status.storage_bootstrap}, storage_expires_at:normalizedExpiry,
         storage_health:{status:healthStatus, live_database_checked:false, availability_verified:false,
           last_read_verified_at:storageReadAt === null ? null : new Date(storageReadAt).toISOString(),
           observation_age_ms:storageReadAt === null ? null : Math.max(0,current-storageReadAt),
-          operations_blocked:shutdown.signal.aborted || storageFailed || storageReadAt === null || cutoff || (postgres && !Number.isFinite(expiry)),
-          reason_code:storageFailed ? status.reason_code : expired || cutoff ? 'STORAGE_EXPIRING' : postgres && !Number.isFinite(expiry) ? 'STORAGE_EXPIRY_REQUIRED' : null,
+          operations_blocked:shutdown.signal.aborted || storageFailed || storageReadAt === null || cutoff || Boolean(postgres && retentionError),
+          reason_code:storageFailed ? status.reason_code : expired || cutoff ? 'STORAGE_EXPIRING' : postgres && retentionError ? retentionError : null,
           scope:'Storage policy and recorded startup failures; operations_blocked=false does not verify live availability; no database polling',publication_enabled:false},
         ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})};
     },
@@ -61,6 +67,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error('PUBLICATION_POLICY_BLOCKED');
     activationStage = 'storage_configuration';
     if(env.SOCIAL_STORAGE_MODE === 'postgres_encrypted') {
+      if (retentionError) throw Error(retentionError);
       store=postgresStoreFactory(env);
       if(bootstrapRequested) {
         activationStage = 'storage_bootstrap';
@@ -127,19 +134,19 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     }
     if(typeof authorizeOwner==='function')oauth=new SocialOAuthCoordinator({store,runtime,providers:oauthProviders,authorizeOwner,shutdownSignal:shutdown.signal});
     service.ownerAuth = ownerAuth;
-    Object.assign(status, {oauth_routes_enabled: Boolean(ownerAuth), owner_login_enabled: Boolean(ownerAuth), oauth_providers: Object.keys(oauthProviders), configured_storage_mode: env.SOCIAL_STORAGE_MODE, storage_expires_at: env.SOCIAL_STORAGE_EXPIRES_AT || null, status: 'OAUTH_READY', reason: 'Owner authorization routes configured; live grants and durable storage are not independently verified.'});
+    Object.assign(status, {oauth_routes_enabled: Boolean(ownerAuth), owner_login_enabled: Boolean(ownerAuth), oauth_providers: Object.keys(oauthProviders), configured_storage_mode: env.SOCIAL_STORAGE_MODE, storage_expires_at: normalizedExpiry, status: 'OAUTH_READY', reason: 'Owner authorization routes configured; live grants and durable storage are not independently verified.'});
     if (env.SOCIAL_WORKER_ENABLED !== 'true') return service;
     worker = new SocialReadWorker({runtime});
     Object.assign(status, {status: 'READ_WORKER_STARTED', configured_storage_mode: env.SOCIAL_STORAGE_MODE, provider_adapters_registered: Object.keys(runtime.adapters).filter(p=>!runtime.adapters[p].blocked_reason), reason: 'Read-only worker started; account results are reported per cycle. OAuth availability is reported separately; durable storage has not been independently verified.'});
     worker.start();
   } catch (error) {
-    const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'PRIVATE_STORE_INITIALIZATION_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
+    const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'PRIVATE_STORE_CHANNEL_BINDING_UNSUPPORTED', 'STORAGE_RETENTION_POLICY_REQUIRED', 'STORAGE_RETENTION_POLICY_INVALID', 'STORAGE_RETENTION_POLICY_CONFLICT', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'PRIVATE_STORE_INITIALIZATION_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
     const reasonCode = safeCodes.has(error?.message) ? error.message : 'ACTIVATION_CONFIGURATION_INVALID';
     if(storageRequested && !status.storage_bootstrap.read_verified)status.storage_bootstrap = {status:'BLOCKED',read_verified:false,durable_storage_verified:false,reason_code:reasonCode};
     oauth = undefined;
     delete service.ownerAuth;
     if(store?.close)await store.close().catch(()=>{});
-    Object.assign(status, {status: 'ACTIVATION_BLOCKED', activation_stage: activationStage, reason_code: reasonCode, oauth_routes_enabled: false, owner_login_enabled: false, worker_running: false, reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires TLS and an unexpired storage deadline; no fallback was created.'});
+    Object.assign(status, {status: 'ACTIVATION_BLOCKED', activation_stage: activationStage, reason_code: reasonCode, oauth_routes_enabled: false, owner_login_enabled: false, worker_running: false, reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires verified TLS and an explicit valid retention policy; fixed-expiry storage must remain outside its final 24 hours. No fallback was created.'});
   }
   return service;
 }
