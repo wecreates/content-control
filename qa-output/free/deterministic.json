@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "checks": {
     "duration_30s": true,
     "motion_activity": true,
@@ -8,9 +8,9 @@
     "reference_edge_density_ratio": true
   },
   "duration_seconds": 30.0,
-  "edge_density_ratio": 0.6337667197768239,
+  "edge_density_ratio": 0.6458554231896714,
   "engine": "opencv-free-qa-v1",
-  "mean_candidate_edge_density": 0.012128146701388887,
+  "mean_candidate_edge_density": 0.012359483506944446,
   "mean_reference_edge_density": 0.019136610243055557,
   "motion_active_fraction": 1.0,
   "reference_frames": 10,

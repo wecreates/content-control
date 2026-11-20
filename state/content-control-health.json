@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "credit_cost": 0,
   "gates": {
     "audio_analysis_complete": true,
@@ -35,10 +35,10 @@
     "audio_mean_volume_db": -28.0,
     "audio_sample_rate_hz": 48000,
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.6337667197768239,
+    "edge_density_ratio": 0.6458554231896714,
     "motion_active_fraction": 1.0,
-    "openclip_global_similarity": 0.6349020004272461,
-    "openclip_mean_best_similarity": 0.40983086824417114
+    "openclip_global_similarity": 0.6425086855888367,
+    "openclip_mean_best_similarity": 0.40646806359291077
   },
   "paid_vision_dependency": false,
   "publication_enabled": false,
