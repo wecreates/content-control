@@ -1,73 +1,55 @@
 {
   "schema_version": 1,
-  "run_id": 42354745987,
-  "source_commit": "74aeaf5a3a9cb360edbcaf94f583b1fb15c952a9",
+  "run_id": 44815387032,
+  "source_commit": "eedfa68e23aae6baa821a466ee1be2f3f6804576",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-11-07T08:20:18.368736+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/42354745987",
-  "candidate_sha256": "15d3d5cb8dfaabbe762d4a9e364f63d66218374c6246982e27f93247c1f04afd",
-  "candidate_generated": true,
+  "recorded_at": "2026-11-20T20:55:44.885707+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/44815387032",
+  "candidate_sha256": null,
+  "candidate_generated": false,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "6fdfa3b15869e2473f88d717fc828c2a53fa910e7a91b52d6068dbd939038cc2"
+      "receipt_sha256": "5e8efe483817849a3e194c641016e10c4c7927719efc5f54beecc794c33e14e4"
     },
     "sound_mix": {
-      "status": "PASS",
+      "status": "BLOCKED",
       "failed_checks": [],
-      "receipt_sha256": "8e2b9bf561989f52619715deb41d46e1a2cb7d9c0af49f47ce54bc87a706eeae"
+      "receipt_sha256": "5b22a26eb658f8b4c9ab29b6ad9ea2ba4e7b8a15d0cb2f3fc2a4d47ecf3a1ca5",
+      "reason": "Mixed stem duration mismatch: {\"music.wav\": 35.041655, \"sfx.wav\": 35.041678, \"mix.wav\": 34.978345}"
     },
     "transcription": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "8e4f89ae63b38451d1df83329596004d7cd1c4546b3d362c9f5678665df0a68d"
+      "status": "NOT_RUN"
     },
     "captions": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "2f37feb40c07644e24e68c33c098046d85882ce40485cf1056608827c0d728c4"
+      "status": "NOT_RUN"
     },
     "caption_frames": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "0d9eb40d02b893f0e6d36973b0056e3bcbaac5f4ff29973a435bcde2c49a0af5"
+      "status": "NOT_RUN"
     },
     "technical_video": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "6878f3909bf60cd1329b10a6c8fd95948c368fe9d9d3679d019ec32ff789aaec"
+      "status": "NOT_RUN"
     },
     "style_parity": {
-      "status": "BLOCKED",
-      "failed_checks": [
-        "framewise_style_parity"
-      ],
-      "receipt_sha256": "a1a66b7aabc7108a1f0fd89fe46b98ccde74d6f7fe6bc853e1b6c6030fe6e0f0",
-      "reason": "Review candidate hash does not match exact video"
+      "status": "NOT_RUN"
     },
     "character_binding": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "6ba1c68be5f18168ad97dda469a2c4f4697b2cb9bbd39864c2f91073b5bc1361"
+      "status": "NOT_RUN"
     },
     "phone_viewport": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "84cc6e9e12b53b9294c824bab7ae792ca35ff26d5b62c461fc63a9c2346b3d0a"
+      "status": "NOT_RUN"
     }
   },
   "diagnostics": {
     "caption_windows": {
-      "status": "PASS",
-      "failed_checks": [],
-      "receipt_sha256": "4c435e8fb241deec68e8eea06d2b06337ff9601c208ef3be3ea5fba0e9999b21"
+      "status": "NOT_RUN"
     }
   },
-  "status": "AWAITING_REVIEW",
-  "technical_status": "PASS",
-  "review_status": "CURRENT_CANDIDATE_VISUAL_REVIEW_REQUIRED",
-  "next_action": "Review the exact existing candidate, then revalidate without regeneration. Full audiovisual and competitor approval remain mandatory.",
+  "status": "BLOCKED",
+  "technical_status": "BLOCKED",
+  "review_status": "TECHNICAL_PREREQUISITES_MISSING",
+  "next_action": "Resolve missing or failed original technical evidence; no approval inferred.",
   "production_approved": false,
   "publication_enabled": false,
   "scope": "Recorded build result; no full audiovisual or competitor approval."
