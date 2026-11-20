@@ -151,6 +151,43 @@ class CaptionProvenanceTests(unittest.TestCase):
         self.save()
         self.assertEqual(self.build().returncode, 2)
 
+    def test_observed_mode_uses_fresh_boundaries_not_runner_specific_contract_times(self):
+        self.contract['caption_timing_source'] = 'observed_segments'
+        self.transcription['segments'][0]['end'] = .8
+        self.transcription['segments'][1]['start'] = 1.2
+        self.save()
+        self.assertEqual(self.build().returncode, 0)
+        self.assertIn('00:00:00.800', self.vtt.read_text())
+        self.assertIn('00:00:01.200', self.vtt.read_text())
+        self.assertEqual(self.verify().returncode, 0)
+        # A VTT with yesterday's boundaries cannot pass against today's receipt.
+        self.vtt.write_text(self.vtt.read_text().replace('00:00:01.200', '00:00:01.100'))
+        self.assertEqual(self.verify().returncode, 2)
+
+    def test_observed_mode_preserves_word_hash_coverage_and_candidate_guards(self):
+        self.contract['caption_timing_source'] = 'observed_segments'
+        baseline = copy.deepcopy(self.transcription)
+        bad = [dict(audio_sha256='b' * 64), dict(actual_transcript='Pay twenty today.'),
+               dict(segments=[{'start': 0, 'end': 2, 'text': self.script}]),
+               dict(segments=[{'start': .8, 'end': 1, 'text': 'Pay $20 today.'}, self.cues[1]]),
+               dict(transcribed_duration_seconds=3), dict(status='FAIL')]
+        for changes in bad:
+            with self.subTest(changes=changes):
+                self.transcription = {**baseline, **changes}
+                self.save()
+                self.assertEqual(self.build().returncode, 2)
+        self.transcription = baseline
+        self.save()
+        self.assertEqual(self.build().returncode, 0)
+        self.health['status'] = 'BLOCKED'
+        self.save()
+        self.assertEqual(self.verify().returncode, 2)
+
+    def test_unknown_timing_mode_is_rejected(self):
+        self.contract['caption_timing_source'] = 'ignore_timing'
+        self.save()
+        self.assertEqual(self.build().returncode, 2)
+
     def test_failed_inputs_replace_stale_pass_receipt(self):
         self.output.write_text('{"status":"PASS"}')
         self.transcription_path.unlink()
