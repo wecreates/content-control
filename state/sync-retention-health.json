@@ -1,28 +1,119 @@
 {
+  "caption_scene_anchors": [
+    {
+      "cue_start_seconds": 0.0,
+      "matches": true,
+      "scene": 0,
+      "scene_start_seconds": 0
+    },
+    {
+      "cue_start_seconds": 3.76,
+      "matches": true,
+      "scene": 2,
+      "scene_start_seconds": 3.76
+    },
+    {
+      "cue_start_seconds": 8.12,
+      "matches": true,
+      "scene": 4,
+      "scene_start_seconds": 8.12
+    },
+    {
+      "cue_start_seconds": 9.6,
+      "matches": true,
+      "scene": 6,
+      "scene_start_seconds": 9.6
+    },
+    {
+      "cue_start_seconds": 12.02,
+      "matches": true,
+      "scene": 5,
+      "scene_start_seconds": 12.02
+    },
+    {
+      "cue_start_seconds": 15.3,
+      "matches": true,
+      "scene": 8,
+      "scene_start_seconds": 15.3
+    },
+    {
+      "cue_start_seconds": 18.2,
+      "matches": true,
+      "scene": 9,
+      "scene_start_seconds": 18.2
+    },
+    {
+      "cue_start_seconds": 21.24,
+      "matches": true,
+      "scene": 10,
+      "scene_start_seconds": 21.24
+    },
+    {
+      "cue_start_seconds": 24.2,
+      "matches": true,
+      "scene": 11,
+      "scene_start_seconds": 24.2
+    }
+  ],
   "checks": {
+    "caption_cue_scene_anchors_match": true,
     "cuts_match_contract": true,
-    "ends_at_duration": true,
     "final_rule_visible": true,
     "finance_math_visible": true,
-    "max_scene_duration_ok": true,
+    "max_scene_duration_ok": false,
+    "narration_hash_matches": true,
     "narration_semantics_present_and_ordered": true,
     "no_fullscreen_slide_marker": true,
+    "playback_scene_order_matches": true,
     "positive_scene_durations": true,
     "publication_disabled": true,
+    "renderer_uses_imported_timeline": true,
     "required_visual_tokens_present": true,
     "scene_count_matches": true,
-    "scene_headlines_present_and_ordered": true,
+    "source_scene_headlines_present_and_ordered": true,
     "starts_at_zero": true
   },
-  "failed_checks": [],
-  "max_scene_duration_seconds": 2.5,
+  "cut_frames": [
+    0,
+    44,
+    91,
+    171,
+    195,
+    231,
+    289,
+    346,
+    368,
+    437,
+    510,
+    581,
+    720
+  ],
+  "cuts_seconds": [
+    0,
+    1.8,
+    3.76,
+    7.12,
+    8.12,
+    9.6,
+    12.02,
+    14.38,
+    15.3,
+    18.2,
+    21.24,
+    24.2,
+    30
+  ],
+  "failed_checks": [
+    "max_scene_duration_ok"
+  ],
+  "max_scene_duration_seconds": 5.791667,
   "narration_positions": [
     {
       "phrase": "card charged him $695 again",
       "position": 7
     },
     {
-      "phrase": "Chad points to a $20 credit",
+      "phrase": "chad points to a $20 credit",
       "position": 36
     },
     {
@@ -34,104 +125,153 @@
       "position": 95
     },
     {
-      "phrase": "$80 minus $20 is $60",
+      "phrase": "80 minus 20 is 60",
       "position": 111
     },
     {
-      "phrase": "Points Monk",
-      "position": 133
+      "phrase": "points monk",
+      "position": 130
     },
     {
-      "phrase": "benefits Dave would have bought anyway",
-      "position": 157
+      "phrase": "benefits dave would have bought anyway",
+      "position": 154
     },
     {
       "phrase": "real value",
-      "position": 219
+      "position": 216
     },
     {
       "phrase": "annual fee",
-      "position": 239
+      "position": 236
     },
     {
       "phrase": "value is higher",
-      "position": 258
+      "position": 255
     },
     {
       "phrase": "fee is higher",
-      "position": 307
+      "position": 304
     },
     {
-      "phrase": "Ignore the flex and keep the math",
-      "position": 334
+      "phrase": "ignore the flex and keep the math",
+      "position": 331
     }
   ],
   "publication_enabled": false,
+  "retention_budget_seconds": 2.5,
+  "retention_status": "FAIL",
+  "retention_violations": [
+    {
+      "beat": "credit-purchase",
+      "duration_seconds": 3.333333,
+      "end_frame": 171,
+      "scene": 2,
+      "start_frame": 91
+    },
+    {
+      "beat": "compare-value",
+      "duration_seconds": 2.875,
+      "end_frame": 437,
+      "scene": 8,
+      "start_frame": 368
+    },
+    {
+      "beat": "value-wins",
+      "duration_seconds": 3.041667,
+      "end_frame": 510,
+      "scene": 9,
+      "start_frame": 437
+    },
+    {
+      "beat": "fee-wins",
+      "duration_seconds": 2.958333,
+      "end_frame": 581,
+      "scene": 10,
+      "start_frame": 510
+    },
+    {
+      "beat": "closing-rule",
+      "duration_seconds": 5.791667,
+      "end_frame": 720,
+      "scene": 11,
+      "start_frame": 581
+    }
+  ],
   "scene_count": 12,
   "scene_durations_seconds": [
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5,
-    2.5
+    1.833333,
+    1.958333,
+    3.333333,
+    1.0,
+    1.5,
+    2.416667,
+    2.375,
+    0.916667,
+    2.875,
+    3.041667,
+    2.958333,
+    5.791667
   ],
   "scene_positions": [
     {
       "phrase": "The fee shows up.",
-      "position": 2585
+      "position": 2654
     },
     {
       "phrase": "Again?",
-      "position": 3096
+      "position": 3165
     },
     {
       "phrase": "Chad has a \u201chack.\u201d",
-      "position": 3430
+      "position": 3499
     },
     {
       "phrase": "Here\u2019s the catch.",
-      "position": 3963
+      "position": 4032
     },
     {
       "phrase": "The receipt doesn\u2019t care.",
-      "position": 4489
+      "position": 4558
     },
     {
       "phrase": "Points Monk interrupts.",
-      "position": 5000
+      "position": 5069
     },
     {
       "phrase": "Do the actual math.",
-      "position": 5540
+      "position": 5609
     },
     {
       "phrase": "Dave checks his wallet.",
-      "position": 5993
+      "position": 6062
     },
     {
       "phrase": "Now compare real value.",
-      "position": 6503
+      "position": 6572
     },
     {
       "phrase": "Value wins?",
-      "position": 7062
+      "position": 7131
     },
     {
       "phrase": "Value loses?",
-      "position": 7358
+      "position": 7427
     },
     {
       "phrase": "One rule.",
-      "position": 7676
+      "position": 7745
     }
   ],
-  "schema_version": 1,
-  "status": "PASS"
+  "schema_version": 2,
+  "scope": "Source timeline and narration identity only; encoded-video synchronization and visual retention not verified",
+  "source_sha256": {
+    "public/audio/episode1-narration.mp3": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
+    "remotion/V9ArticulatedVisual.jsx": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58",
+    "remotion/episode1-picture-timeline.mjs": "bcd58f8e15e086b5e9ea96a90702849c1c33ce4881c59725401fe35bbae1d622",
+    "state/episode1-factual-contract.json": "1c08545af240ce7a22129a39abe333c3c9e799599a97caabd69008111b29a5fc",
+    "state/episode1-sync-contract.json": "e210018a83750be7be44cb542ecc12baa128b1ff2df88990c3ece798881671a3"
+  },
+  "source_sync_status": "PASS",
+  "status": "FAIL",
+  "verified_at": "2026-11-20T21:00:26.206404+00:00"
 }
