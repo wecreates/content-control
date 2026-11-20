@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "caption_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
   "caption_status": "PASS",
   "checks": {
@@ -7,7 +7,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": true,
+    "candidate_converged": false,
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
@@ -53,7 +53,8 @@
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "candidate_identity_consistent"
+    "candidate_identity_consistent",
+    "candidate_converged"
   ],
   "live_deployment_status": "FAIL",
   "machine_system_complete": false,
@@ -67,7 +68,7 @@
   "python_security_status": "ERROR",
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "d2ecd070e4d2c040a5faf23d0cf308beaeaa731e008c066b018179fde3a79826",
+  "rollback_candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",

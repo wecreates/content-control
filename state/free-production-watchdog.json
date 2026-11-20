@@ -1,23 +1,23 @@
 {
-  "actual_video_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-  "candidate_converged": true,
+  "actual_video_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "candidate_converged": false,
   "candidate_hashes": {
-    "captions": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "ledger": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "ledger_health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+    "captions": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "ledger": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "ledger_health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "live_deployment": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "provenance": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "receipt": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "smoke": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f"
+    "provenance": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "receipt": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "smoke": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee"
   },
-  "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": true,
+    "candidate_converged": false,
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
@@ -59,7 +59,8 @@
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "candidate_identity_consistent"
+    "candidate_identity_consistent",
+    "candidate_converged"
   ],
   "integrity_failures": [
     {
