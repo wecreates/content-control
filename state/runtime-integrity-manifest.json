@@ -99,8 +99,8 @@
       "sha256": "9882ad156a7a803800c02390411f074a57c677a0f33bc21027ba7dfc4c65f063"
     },
     "scripts/caption_contract.py": {
-      "bytes": 7219,
-      "sha256": "1b37c9c332452d6b5f513a256d49266e08259965a349a96f64cf823ddc26c75b"
+      "bytes": 7802,
+      "sha256": "54278d63c3b46b989cb44fa04f2a63925e88e5288f859f1ddd2a1eaeef8612bf"
     },
     "scripts/free_mobile_compat_qa.py": {
       "bytes": 2816,
