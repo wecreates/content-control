@@ -75,12 +75,12 @@
       "sha256": "5d7e8ac2e309f2b7c366c24273a54fb9d77a95a7c441eef274005a6b089ac5dc"
     },
     "remotion/V9ArticulatedVisual.jsx": {
-      "bytes": 9129,
-      "sha256": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58"
+      "bytes": 12448,
+      "sha256": "f64e7813e0a514e9d6dc03e027b3fb1132c8e340a7ee9ecef727a8501ac0e7da"
     },
     "remotion/episode1-picture-timeline.mjs": {
-      "bytes": 1539,
-      "sha256": "bcd58f8e15e086b5e9ea96a90702849c1c33ce4881c59725401fe35bbae1d622"
+      "bytes": 1849,
+      "sha256": "1d09327ad19611c3020b911b9a29b78fb47d3ee96355c4b7256857ae093e0eaf"
     },
     "remotion/v10-index.jsx": {
       "bytes": 312,
