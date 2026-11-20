@@ -96,9 +96,9 @@ class NarrationWorkflowTests(unittest.TestCase):
         self.prepare()
         bin_path = self.root / 'bin'
         bin_path.mkdir()
-        sudo = bin_path / 'sudo'
-        sudo.write_text('#!/bin/sh\nexit 13\n')
-        sudo.chmod(0o755)
+        (bin_path / 'bash').symlink_to('/bin/bash')
+        (self.root / 'scripts').mkdir()
+        (self.root / 'scripts/ci_media_tools.sh').write_text('exit 13\n')
         result = self.run_step('Install pinned transcription runtime', PATH=str(bin_path))
         self.assertEqual(result.returncode, 13)
         self.assert_negative()
@@ -106,9 +106,8 @@ class NarrationWorkflowTests(unittest.TestCase):
 
     def test_runtime_installs_and_checks_ffmpeg_before_transcription(self):
         shell = step('Install pinned transcription runtime')
-        self.assertIn('sudo apt-get install -y ffmpeg', shell)
-        self.assertIn('ffmpeg -version', shell)
-        self.assertLess(shell.index('ffmpeg -version'), shell.index('pip install -r'))
+        self.assertIn('bash scripts/ci_media_tools.sh', shell)
+        self.assertLess(shell.index('bash scripts/ci_media_tools.sh'), shell.index('pip install -r'))
 
     def test_narration_uses_independent_spoken_number_decoding(self):
         # Preserve spoken units instead of ASR numeric notation. The approved
