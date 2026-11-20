@@ -1,5 +1,6 @@
 import React from "react";
 import {interpolate} from "remotion";
+import {pictureSceneAtFrame} from "./episode1-picture-timeline.mjs";
 
 const K="#111111",W="#f7f1e6",R="#e53935",G="#12a8b4",Y="#d7a51c",P="#fffaf0";
 const C={extrapolateLeft:"clamp",extrapolateRight:"clamp"};
@@ -51,13 +52,8 @@ const scenes=[
 ({p})=><><Text>One rule.</Text><Text y={270} size={70} color={G}>REAL VALUE &gt; FEE</Text><Stick x={225} y={790} s={1.28} label="DAVE" face="smile" lean={I(p,0,1,-3,3)} la1={I(p,0,1,150,205)} la2={I(p,0,1,125,220)}/><Stick x={495} y={790} s={1.28} label="POINTS MONK" face="smile" lean={I(p,0,1,3,-3)} ra1={I(p,0,1,30,-25)} ra2={I(p,0,1,55,-55)}/><path d="M150 1050 Q360 1120 570 1050" fill="none" stroke={G} strokeWidth="12" strokeLinecap="round"/><Text y={1180} size={31}>Ignore the flex. Keep the math.</Text></>
 ];
 
-const cuts=[0,2.5,5,7.5,10,12.5,15,17.5,20,22.5,25,27.5,30];
-
 export const V9ArticulatedVisual=({frame})=>{
-  const t=frame/24;
-  let n=cuts.length-2;
-  for(let k=0;k<cuts.length-1;k++){if(t>=cuts[k]&&t<cuts[k+1]){n=k;break;}}
-  const start=cuts[n], end=cuts[n+1], p=Math.max(0,Math.min(1,(t-start)/(end-start)));
+  const {scene:n, progress:p}=pictureSceneAtFrame(frame);
   const Scene=scenes[n];
   const zoom=1+0.028*Math.sin(Math.PI*p);
   const shift=[0,-6,7,-5,6,-7,5,-6,6,-4,4,0][n];
