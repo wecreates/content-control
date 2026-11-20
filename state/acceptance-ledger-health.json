@@ -9,11 +9,11 @@
     "publication_disabled": true,
     "rollback_entry_recoverable": true
   },
-  "current_candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
-  "entry_count": 10,
+  "current_candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "entry_count": 11,
   "failed_checks": [],
   "publication_enabled": false,
-  "rollback_candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "rollback_candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "schema_version": 1,
   "status": "PASS"
 }
