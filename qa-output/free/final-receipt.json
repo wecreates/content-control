@@ -3,7 +3,7 @@
     "audio_duration_seconds": 30.016,
     "audio_start_relative_seconds": 0.0,
     "audio_start_tolerance_seconds": 0.05,
-    "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+    "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "channels": 2,
     "checks": {
       "analysis_complete": true,
@@ -33,11 +33,11 @@
     "full_audio_review": false,
     "long_silence_durations_seconds": [],
     "max_long_silence_seconds": 0.0,
-    "max_volume_db": -4.4,
+    "max_volume_db": -4.8,
     "mean_volume_db": -28.0,
     "production_approved": false,
     "publication_enabled": false,
-    "sample_peak_dbfs": -4.397956,
+    "sample_peak_dbfs": -4.752972,
     "sample_peak_limit_dbfs": 0.1,
     "sample_peak_scope": "Floating-point decoded sample peak before 16-bit conversion; not true/intersample peak and not proof of unclipped source history.",
     "sample_rate_hz": 48000,
@@ -46,11 +46,11 @@
     "verdict": "PASS"
   },
   "audio_source": "repository-local public/audio",
-  "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "contact_sheet": "qa-output/free/contact.jpg",
   "credit_cost": 0,
   "deterministic": {
-    "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+    "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "checks": {
       "duration_30s": true,
       "motion_activity": true,
@@ -59,9 +59,9 @@
       "reference_edge_density_ratio": true
     },
     "duration_seconds": 30.0,
-    "edge_density_ratio": 0.5939908030595986,
+    "edge_density_ratio": 0.6337667197768239,
     "engine": "opencv-free-qa-v1",
-    "mean_candidate_edge_density": 0.01136697048611111,
+    "mean_candidate_edge_density": 0.012128146701388887,
     "mean_reference_edge_density": 0.019136610243055557,
     "motion_active_fraction": 1.0,
     "reference_frames": 10,
@@ -79,17 +79,17 @@
       },
       {
         "offset": 32,
-        "size": 22197,
+        "size": 22253,
         "type": "moov"
       },
       {
-        "offset": 22229,
+        "offset": 22285,
         "size": 8,
         "type": "free"
       },
       {
-        "offset": 22237,
-        "size": 3337375,
+        "offset": 22293,
+        "size": 3342336,
         "type": "mdat"
       }
     ],
@@ -132,16 +132,16 @@
     "analysis_status": "COMPLETE",
     "artistic_acceptance": "UNASSESSED",
     "best_reference_similarity_by_candidate": [
-      0.4241468906402588,
-      0.4245685935020447,
-      0.39191994071006775,
-      0.4304236173629761,
-      0.38427335023880005,
-      0.38209718465805054,
-      0.4673026502132416,
-      0.39065998792648315,
-      0.40644973516464233,
-      0.40727800130844116
+      0.4490457773208618,
+      0.39148759841918945,
+      0.4023030400276184,
+      0.3968108296394348,
+      0.38270050287246704,
+      0.4198005497455597,
+      0.4228294789791107,
+      0.3982861638069153,
+      0.41649341583251953,
+      0.4185512065887451
     ],
     "checks": {
       "florence_completed": true,
@@ -155,11 +155,11 @@
       "captions": {
         "candidate": [
           {
-            "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head. The stick figure is standing on four legs and is holding a microphone. The background is white and there is a text above the stick figure that reads \"The fee shows up.\" Below the text, there is an envelope with a price tag of $695. The text below the envelope reads \"MAILBOX: 1 - JOY: 0\".",
+            "caption": "The image is a simple illustration of a stick figure with a speech bubble above its head. The stick figure is standing on two legs and is holding a microphone. The background is white and there is a text above the stick figure that reads \"The fee shows up.\" Below the text, there is an envelope with a price tag of $695. The text below the envelope reads \"MAILBOX: 1 - JOY: 0\".",
             "file": "cand-000001.jpg"
           },
           {
-            "caption": "The image is a simple illustration of a stick figure with a sad expression on its face. The stick figure is standing on four legs and is facing towards the right side of the image. On the left side, there is a red circle with a diagonal line through it, indicating that the person is not allowed to enter or exit the circle. Above the circle, there are black text that reads \"Points Monk interrupts.\" The background is white.",
+            "caption": "The image is a simple illustration of a stick figure with a sad expression on its face. The stick figure is standing on four legs and is holding two sticks in its hands. On the left side of the image, there is a red circle with the words \"Points Monk interrupts\" written in black text. The circle is divided into two sections, with the top section showing the text \"Certified\" and the bottom section showing \"Points monk\". The background is white.",
             "file": "cand-000005.jpg"
           },
           {
@@ -177,7 +177,7 @@
             "file": "ref-05.jpg"
           },
           {
-            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+            "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
             "file": "ref-10.jpg"
           }
         ]
@@ -188,62 +188,62 @@
     "frame_matches": [
       {
         "candidate": "cand-000001.jpg",
-        "cosine_similarity": 0.4241468906402588,
-        "reference": "ref-09.jpg"
+        "cosine_similarity": 0.4490457773208618,
+        "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-000002.jpg",
-        "cosine_similarity": 0.4245685935020447,
-        "reference": "ref-09.jpg"
+        "cosine_similarity": 0.39148759841918945,
+        "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-000003.jpg",
-        "cosine_similarity": 0.39191994071006775,
-        "reference": "ref-08.jpg"
+        "cosine_similarity": 0.4023030400276184,
+        "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-000004.jpg",
-        "cosine_similarity": 0.4304236173629761,
-        "reference": "ref-09.jpg"
+        "cosine_similarity": 0.3968108296394348,
+        "reference": "ref-07.jpg"
       },
       {
         "candidate": "cand-000005.jpg",
-        "cosine_similarity": 0.38427335023880005,
-        "reference": "ref-07.jpg"
+        "cosine_similarity": 0.38270050287246704,
+        "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-000006.jpg",
-        "cosine_similarity": 0.38209718465805054,
-        "reference": "ref-07.jpg"
+        "cosine_similarity": 0.4198005497455597,
+        "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-000007.jpg",
-        "cosine_similarity": 0.4673026502132416,
-        "reference": "ref-09.jpg"
+        "cosine_similarity": 0.4228294789791107,
+        "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-000008.jpg",
-        "cosine_similarity": 0.39065998792648315,
-        "reference": "ref-09.jpg"
-      },
-      {
-        "candidate": "cand-000009.jpg",
-        "cosine_similarity": 0.40644973516464233,
+        "cosine_similarity": 0.3982861638069153,
         "reference": "ref-08.jpg"
       },
       {
+        "candidate": "cand-000009.jpg",
+        "cosine_similarity": 0.41649341583251953,
+        "reference": "ref-01.jpg"
+      },
+      {
         "candidate": "cand-000010.jpg",
-        "cosine_similarity": 0.40727800130844116,
+        "cosine_similarity": 0.4185512065887451,
         "reference": "ref-01.jpg"
       }
     ],
-    "global_similarity": 0.6245150566101074,
+    "global_similarity": 0.6349020004272461,
     "limitations": [
       "Embedding similarity is descriptive, not calibrated artistic parity.",
       "Sampled frames do not establish timing, animation quality, or full-video parity.",
       "Captions may omit details or hallucinate; they are not visual approval."
     ],
-    "mean_best_frame_similarity": 0.4109119474887848,
+    "mean_best_frame_similarity": 0.40983086824417114,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "openclip_status": "COMPLETE",
     "production_ready": false,
@@ -252,46 +252,46 @@
         "candidate_frames": [
           {
             "file": "cand-000001.jpg",
-            "sha256": "159446c1e885ddf4643195dff86c852190a480dd3ae76573a540faefc6a65004"
+            "sha256": "7e86b8711c72d52546d1d23f1edb7a61e7da3546d86d6079c8b88ae4f9f9f704"
           },
           {
             "file": "cand-000002.jpg",
-            "sha256": "eb8490b5649e7f45d7f35d9e3289a5c3400fad990272b383a1c270e962f4dfaa"
+            "sha256": "24a3c7eee0ff38d3be9b0e50dfd5c2b09e3dd64b7a6d7502f5576571e89c28be"
           },
           {
             "file": "cand-000003.jpg",
-            "sha256": "ba44df9cf62439d9cf523c2f3bfdf8723cf2fee9c786cdbabbd549cf97fd8304"
+            "sha256": "5509209ead3888735137517f83318b681c73601566294bd6ba6c76351c7998e8"
           },
           {
             "file": "cand-000004.jpg",
-            "sha256": "f010aa19b63a725b44465b8e941f0d736a765efe93bdd43a42c59bdcc16ed8d4"
+            "sha256": "7a7b75d49237db0025b37cffaf3b41ceac7b77b57c418b0ea8216616d5351395"
           },
           {
             "file": "cand-000005.jpg",
-            "sha256": "4646d59d6b68bf3d91385206d43e057cae79d9a8bf3877f90ed8a77edf141446"
+            "sha256": "f916cfc7e4f382cad1feb53355bfe99aa897222be595ea0e37862c5302a517b7"
           },
           {
             "file": "cand-000006.jpg",
-            "sha256": "a648d777f1f8e4eb0d84fe0846c0d528dc8148bfbcceb97045af27ed8e3cd667"
+            "sha256": "4bbd60d6219691d989c7cae5d8d162d8191682e7f321cdef035615275f490ce6"
           },
           {
             "file": "cand-000007.jpg",
-            "sha256": "ca469b8272f7d7d4db9774de19887f433de0ff251cb10d4d9dc40b15d581061a"
+            "sha256": "8ef10b66f29e805aacbfb4c5871b9a82530d0e189cc1630e4302aa5c1cad1386"
           },
           {
             "file": "cand-000008.jpg",
-            "sha256": "7b768e1b955bdf56ffab4a83e3cb2d83d3ab52078f9386bb29deba5bdbe73d28"
+            "sha256": "5c11201d32aa8a93d8b46f2e650e91d0746ef663b34b8cd7eda5aea6f45a602f"
           },
           {
             "file": "cand-000009.jpg",
-            "sha256": "ae7577e1508625df359fabd67db1543e16ca58bc9ad66604f47e25f820922c2f"
+            "sha256": "d04301e0ac642cf64550d2f8e873ca6ecee82d412c214a89e0776380f811c8db"
           },
           {
             "file": "cand-000010.jpg",
-            "sha256": "c3da632c3b3668a1bf6fb3045947bca9560b569d50a46fb052a732405646de9a"
+            "sha256": "0065d0c0b2368836d15b7c49aafb88400bd7b1170f43af6e48e221f32f94bdbe"
           }
         ],
-        "candidate_video_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+        "candidate_video_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
         "derived_from_candidate_video": true,
         "engine": "ffmpeg",
         "filter": "fps=1/3",
@@ -301,49 +301,49 @@
       "candidate_frames": [
         {
           "file": "cand-000001.jpg",
-          "sha256": "159446c1e885ddf4643195dff86c852190a480dd3ae76573a540faefc6a65004"
+          "sha256": "7e86b8711c72d52546d1d23f1edb7a61e7da3546d86d6079c8b88ae4f9f9f704"
         },
         {
           "file": "cand-000002.jpg",
-          "sha256": "eb8490b5649e7f45d7f35d9e3289a5c3400fad990272b383a1c270e962f4dfaa"
+          "sha256": "24a3c7eee0ff38d3be9b0e50dfd5c2b09e3dd64b7a6d7502f5576571e89c28be"
         },
         {
           "file": "cand-000003.jpg",
-          "sha256": "ba44df9cf62439d9cf523c2f3bfdf8723cf2fee9c786cdbabbd549cf97fd8304"
+          "sha256": "5509209ead3888735137517f83318b681c73601566294bd6ba6c76351c7998e8"
         },
         {
           "file": "cand-000004.jpg",
-          "sha256": "f010aa19b63a725b44465b8e941f0d736a765efe93bdd43a42c59bdcc16ed8d4"
+          "sha256": "7a7b75d49237db0025b37cffaf3b41ceac7b77b57c418b0ea8216616d5351395"
         },
         {
           "file": "cand-000005.jpg",
-          "sha256": "4646d59d6b68bf3d91385206d43e057cae79d9a8bf3877f90ed8a77edf141446"
+          "sha256": "f916cfc7e4f382cad1feb53355bfe99aa897222be595ea0e37862c5302a517b7"
         },
         {
           "file": "cand-000006.jpg",
-          "sha256": "a648d777f1f8e4eb0d84fe0846c0d528dc8148bfbcceb97045af27ed8e3cd667"
+          "sha256": "4bbd60d6219691d989c7cae5d8d162d8191682e7f321cdef035615275f490ce6"
         },
         {
           "file": "cand-000007.jpg",
-          "sha256": "ca469b8272f7d7d4db9774de19887f433de0ff251cb10d4d9dc40b15d581061a"
+          "sha256": "8ef10b66f29e805aacbfb4c5871b9a82530d0e189cc1630e4302aa5c1cad1386"
         },
         {
           "file": "cand-000008.jpg",
-          "sha256": "7b768e1b955bdf56ffab4a83e3cb2d83d3ab52078f9386bb29deba5bdbe73d28"
+          "sha256": "5c11201d32aa8a93d8b46f2e650e91d0746ef663b34b8cd7eda5aea6f45a602f"
         },
         {
           "file": "cand-000009.jpg",
-          "sha256": "ae7577e1508625df359fabd67db1543e16ca58bc9ad66604f47e25f820922c2f"
+          "sha256": "d04301e0ac642cf64550d2f8e873ca6ecee82d412c214a89e0776380f811c8db"
         },
         {
           "file": "cand-000010.jpg",
-          "sha256": "c3da632c3b3668a1bf6fb3045947bca9560b569d50a46fb052a732405646de9a"
+          "sha256": "0065d0c0b2368836d15b7c49aafb88400bd7b1170f43af6e48e221f32f94bdbe"
         }
       ],
       "candidate_frames_video_binding_verified": true,
       "candidate_video": {
         "file": "public-review/episode1-v10-free.mp4",
-        "sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f"
+        "sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee"
       },
       "reference_frames": [
         {
@@ -387,8 +387,8 @@
           "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
         }
       ],
-      "run_id": "44794547838",
-      "source_revision": "fd6b58e9dec59d532f152dbaabd3afa375269deb"
+      "run_id": "44815386819",
+      "source_revision": "eedfa68e23aae6baa821a466ee1be2f3f6804576"
     },
     "publication_enabled": false,
     "runtime_versions": {
