@@ -21,7 +21,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -47,7 +47,7 @@
     "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
-    "sync_retention_green": true,
+    "sync_retention_green": false,
     "system_wiring_green": true,
     "video_exists": true,
     "video_hash_bound": true,
@@ -55,8 +55,10 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
+    "sync_retention_green",
     "candidate_identity_consistent"
   ],
   "integrity_failures": [],
