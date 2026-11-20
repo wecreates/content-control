@@ -1,6 +1,10 @@
 name: Runtime Provenance and SBOM
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: [Runtime Integrity Manifest]
+    types: [completed]
+    branches: [main]
   schedule:
     - cron: '41 12 * * *'
 permissions:
@@ -13,6 +17,7 @@ env:
   GH_TOKEN: ${{ github.token }}
 jobs:
   provenance:
+    if: github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
