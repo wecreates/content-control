@@ -66,6 +66,18 @@ class MuxedNarrationTests(unittest.TestCase):
             self.transcription['checks'] = {k: k != key for k in REQUIRED}
             self.assertEqual(self.run_gate()['status'], 'FAIL')
 
+    def test_missing_empty_or_non_speech_contract_and_text_cannot_pass(self):
+        for text in (None, '', '   ', '...'):
+            with self.subTest(text=text):
+                self.contract['narration_text'] = text
+                self.transcription['expected_text'] = text
+                self.transcription['actual_transcript'] = text
+                self.assertEqual(self.run_gate()['status'], 'FAIL')
+        self.contract.pop('narration_text')
+        self.transcription.pop('expected_text')
+        self.transcription.pop('actual_transcript')
+        self.assertEqual(self.run_gate()['status'], 'FAIL')
+
     def test_timing_jitter_does_not_change_word_acceptance(self):
         self.transcription['segments'] = [{'start': .14, 'end': 25.64}]
         self.assertEqual(self.run_gate()['status'], 'PASS')
