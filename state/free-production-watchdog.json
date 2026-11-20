@@ -6,7 +6,7 @@
     "health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "ledger": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "ledger_health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "live_deployment": "d2ecd070e4d2c040a5faf23d0cf308beaeaa731e008c066b018179fde3a79826",
+    "live_deployment": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
     "receipt": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "smoke": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf"
@@ -44,7 +44,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": false,
     "review_server_smoke_green": false,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,6 +55,7 @@
     "zero_credit": true
   },
   "failed_checks": [
+    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
@@ -68,7 +69,18 @@
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [],
+  "integrity_failures": [
+    {
+      "actual": "5d7e8ac2e309f2b7c366c24273a54fb9d77a95a7c441eef274005a6b089ac5dc",
+      "expected": "e3ce2d17ff231aba92ea59e824c87bef285ff1934d963db4742ca96eb81d5b8d",
+      "path": "remotion/Episode1V10FinalProof.jsx"
+    },
+    {
+      "actual": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58",
+      "expected": "95f25034a847d9a5858df43ce2a41bbbb5de811e5437e0e6e6651efdaaa58bdc",
+      "path": "remotion/V9ArticulatedVisual.jsx"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
