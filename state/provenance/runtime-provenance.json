@@ -2,8 +2,8 @@
   "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "caption_candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "caption_file_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
-  "critical_file_count": 32,
-  "critical_integrity_manifest_sha256": "ef3c71d280fc878769afecc96dcccab1151d2c59f8006896db6307d8ac06a44d",
+  "critical_file_count": 33,
+  "critical_integrity_manifest_sha256": "8777cc4c7358be07e33364696660614a4bfc98eaf9003e3f1921a2806feb1482",
   "locks": {
     "package_lock_sha256": "7ee2bbf928f98846905dec41c0ae18fbbbefba71efd437228b038c6da1f43cf6",
     "python_lock_sha256": "b675e082cad676073102c6d9211a463b397a89399e4bfe0431bc7d5d981c4960"
@@ -21,6 +21,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "365a759aafe0d96bec9dff235b9b43ee2efed519",
+  "source_commit": "73f2eed2a17b6190895187edc2fd0367e465fc91",
   "zero_credit_runtime": true
 }
