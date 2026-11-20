@@ -90,6 +90,7 @@ jobs:
           python -m unittest tests.test_watchdog_scope tests.test_watchdog_routing_history
           python scripts/verify_free_production_health.py
       - name: Refuse stale candidate persist
+        id: candidate_current
         run: |
           set -euo pipefail
           git fetch origin main
@@ -100,7 +101,7 @@ jobs:
             exit 1
           fi
       - name: Persist watchdog evidence
-        if: always()
+        if: always() && steps.candidate_current.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
@@ -108,13 +109,21 @@ jobs:
           git add state/free-production-watchdog.json state/system-completion.json state/operations-snapshot.json state/workflow-control-health.json state/system-wiring-health.json state/deployment-health.json
           git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update free production watchdog evidence')"
           for attempt in 1 2 3; do
-            if git pull --rebase origin main && git push origin HEAD:main; then exit 0; fi
+            if git pull --rebase origin main; then
+              LATEST=$(git show origin/main:state/content-control-health.json | python -c 'import json,sys; print(json.load(sys.stdin)["candidate_sha256"])')
+              if [ "$LATEST" != "$CANDIDATE_SHA" ]; then
+                echo "candidate advanced during persist; refusing stale evidence"
+                gh workflow run candidate-state-reconcile.yml --ref main || true
+                exit 1
+              fi
+              if git push origin HEAD:main; then exit 0; fi
+            fi
             git rebase --abort || true
             sleep $((attempt*4))
           done
           exit 1
       - name: Route repair by failed invariant
-        if: steps.verify.outcome == 'failure'
+        if: steps.verify.outcome == 'failure' && steps.candidate_current.outcome == 'success'
         run: |
           python - <<'PY' > /tmp/repair-workflows
           import json
