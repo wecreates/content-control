@@ -1,17 +1,17 @@
 {
-  "actual_video_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "actual_video_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "candidate_converged": false,
   "candidate_hashes": {
-    "captions": null,
-    "health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "ledger": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "ledger_health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+    "captions": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "ledger": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "ledger_health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "live_deployment": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-    "receipt": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "smoke": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf"
+    "provenance": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "receipt": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+    "smoke": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee"
   },
-  "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
@@ -19,8 +19,8 @@
     "audio_green": true,
     "candidate_converged": false,
     "candidate_identity_consistent": false,
-    "caption_candidate_match": false,
-    "caption_health_green": false,
+    "caption_candidate_match": true,
+    "caption_health_green": true,
     "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -31,10 +31,10 @@
     "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
-    "narration_transcription_green": false,
+    "narration_transcription_green": true,
     "no_paid_vision": true,
-    "provenance_candidate_match": false,
-    "provenance_inputs_current": false,
+    "provenance_candidate_match": true,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -42,9 +42,9 @@
     "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
-    "review_server_smoke_candidate_match": false,
-    "review_server_smoke_green": false,
-    "runtime_integrity_manifest": false,
+    "review_server_smoke_candidate_match": true,
+    "review_server_smoke_green": true,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -55,32 +55,13 @@
     "zero_credit": true
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "narration_transcription_green",
-    "caption_candidate_match",
-    "caption_health_green",
-    "review_server_smoke_candidate_match",
-    "review_server_smoke_green",
-    "provenance_candidate_match",
-    "provenance_inputs_current",
     "candidate_identity_consistent",
     "candidate_converged"
   ],
-  "integrity_failures": [
-    {
-      "actual": "5d7e8ac2e309f2b7c366c24273a54fb9d77a95a7c441eef274005a6b089ac5dc",
-      "expected": "e3ce2d17ff231aba92ea59e824c87bef285ff1934d963db4742ca96eb81d5b8d",
-      "path": "remotion/Episode1V10FinalProof.jsx"
-    },
-    {
-      "actual": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58",
-      "expected": "95f25034a847d9a5858df43ce2a41bbbb5de811e5437e0e6e6651efdaaa58bdc",
-      "path": "remotion/V9ArticulatedVisual.jsx"
-    }
-  ],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",

@@ -1,26 +1,26 @@
 {
-  "candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-  "caption_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-  "caption_file_sha256": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
-  "critical_file_count": 30,
-  "critical_integrity_manifest_sha256": "ff082b4553067e1756f1158daa8f998e3b65f459d25bb42057ac5d3a80849477",
+  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "caption_candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "caption_file_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+  "critical_file_count": 32,
+  "critical_integrity_manifest_sha256": "ef3c71d280fc878769afecc96dcccab1151d2c59f8006896db6307d8ac06a44d",
   "locks": {
-    "package_lock_sha256": "5bcf290df3b7f5fe3cc92ab20951e0d5f48db0b4a4422feb69ab883e1ad008cc",
-    "python_lock_sha256": "d5d94114ab0ae1e67aad00ca56a70f2d28f0b1fe46ecc98dc83042e79c36d3d6"
+    "package_lock_sha256": "7ee2bbf928f98846905dec41c0ae18fbbbefba71efd437228b038c6da1f43cf6",
+    "python_lock_sha256": "b675e082cad676073102c6d9211a463b397a89399e4bfe0431bc7d5d981c4960"
   },
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "publication_enabled": false,
-  "qa_receipt_sha256": "33099768313d4c7e8abed5fcf0b30d2b36241c0f2b5f592d03cc7560d1008477",
-  "review_server_smoke_candidate_sha256": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
-  "review_server_smoke_sha256": "ce5d4a13327b3951d0c8b2d56d37adfe8643619d9861853d4961ad9d1f07856a",
+  "qa_receipt_sha256": "da489a92cc19a97f54ae1d7680e3be7d474dc6d17ec292c172d8d137f102f756",
+  "review_server_smoke_candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "review_server_smoke_sha256": "40fae380c35aa14675280b61a8dd9e73c401f710aefaad8f641cd8ee90178378",
   "runtime": {
     "node": "22",
     "python": "3.12",
-    "remotion": "4.0.529",
-    "remotion_cli": "4.0.529"
+    "remotion": "4.0.540",
+    "remotion_cli": "4.0.540"
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "81efe4c5a192009e7b7f67b47f10f2ffcda6898e",
+  "source_commit": "365a759aafe0d96bec9dff235b9b43ee2efed519",
   "zero_credit_runtime": true
 }
