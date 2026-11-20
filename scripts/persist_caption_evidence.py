@@ -21,7 +21,7 @@ COMMON_INPUTS = (
     'requirements-transcription.txt',
 )
 INPUTS = {
-    'narration': COMMON_INPUTS + ('.github/workflows/narration-transcription-gate.yml',),
+    'narration': COMMON_INPUTS + ('.github/workflows/narration-transcription-gate.yml', 'scripts/ci_media_tools.sh'),
     'reconcile': COMMON_INPUTS + (
         '.github/workflows/candidate-state-reconcile.yml',
         'state/narration-transcription-health.json', 'public-review/episode1-v10-free.mp4',

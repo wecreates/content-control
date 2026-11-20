@@ -6,6 +6,7 @@ on:
     paths:
       - 'public/audio/episode1-narration.mp3'
       - 'state/episode1-factual-contract.json'
+      - 'scripts/ci_media_tools.sh'
       - 'scripts/free_transcription_qa.py'
       - 'scripts/build_verified_captions.py'
       - 'scripts/verify_captions.py'
@@ -69,9 +70,7 @@ jobs:
           key: faster-whisper-base-en-v1
       - name: Install pinned transcription runtime
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          ffmpeg -version
+          bash scripts/ci_media_tools.sh
           python -m pip install --upgrade pip
           python -m pip install -r requirements-transcription.txt
       - name: Transcribe actual narration and compare to approved script
@@ -82,7 +81,8 @@ jobs:
             --audio public/audio/episode1-narration.mp3 \
             --contract state/episode1-factual-contract.json \
             --output state/narration-transcription-health.json \
-            --model base.en
+            --model base.en \
+            --spoken-numbers
       - name: Test canonical caption provenance
         run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_narration_transcription_workflow
       - name: Build and verify synchronized VTT captions
