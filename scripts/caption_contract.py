@@ -121,11 +121,19 @@ def validate_sources(contract, transcription, audio):
         raise ValueError('Caption count differs from observed transcription segments')
     if spoken(' '.join(cue['text'] for cue in cues)) != expected or spoken(' '.join(segment['text'] for segment in segments)) != expected:
         raise ValueError('Caption/segment words differ from approved narration')
+    timing_source = contract.get('caption_timing_source', 'approved_cues')
+    if timing_source not in ('approved_cues', 'observed_segments'):
+        raise ValueError('Unknown caption timing source')
     for cue, segment in zip(cues, segments):
         if spoken(cue['text']) != spoken(segment['text']):
             raise ValueError('Caption words differ from their observed segment')
-        if any(abs(cue[key] - segment[key]) > TIMING_TOLERANCE + 1e-9 for key in ('start', 'end')):
+        if timing_source == 'approved_cues' and any(abs(cue[key] - segment[key]) > TIMING_TOLERANCE + 1e-9 for key in ('start', 'end')):
             raise ValueError('Caption timing differs from its observed segment')
+    if timing_source == 'observed_segments':
+        # Words remain contract-approved. Timings come only from this fresh,
+        # hash-bound ASR receipt, never from a prior runner's cue timestamps.
+        cues = [{'start': segment['start'], 'end': segment['end'], 'text': cue['text']}
+                for cue, segment in zip(cues, segments)]
     if cues[0]['start'] > .5 or cues[-1]['end'] < transcribed - .25 or abs(segments[-1]['end'] - transcribed) > TIMING_TOLERANCE + 1e-9:
         raise ValueError('Captions do not cover the observed narration')
     return cues, digest

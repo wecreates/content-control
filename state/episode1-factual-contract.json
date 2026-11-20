@@ -94,5 +94,6 @@
       "text": "Ignore the flex and keep the math."
     }
   ],
-  "transcription_window_end_seconds": 26.16
+  "transcription_window_end_seconds": 26.16,
+  "caption_timing_source": "observed_segments"
 }
