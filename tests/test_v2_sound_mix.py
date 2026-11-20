@@ -75,6 +75,22 @@ class SoundMixTests(unittest.TestCase):
    self.assertEqual(w.getnframes(),50*44100)
    for cue in self.cc['sound_design']['cue_seconds']:
     w.setpos(round((cue+.03)*44100));self.assertNotEqual(w.readframes(1000),b'\0'*4000)
+ def test_fractional_frame_timeline_preserves_final_narration_samples(self):
+  # Real V2 failure: a 35+1/24s input lost 63ms after loudness/limiter EOF.
+  import array
+  duration=35+1/24;frames=round(duration*44100)
+  with wave.open(str(self.sources[0]),'rb') as w:data=w.readframes(w.getnframes())
+  with wave.open(str(self.sources[0]),'wb') as w:
+   w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes((data*18)[:frames*4])
+  # Silence the backing track so it cannot conceal missing end-of-speech samples.
+  with wave.open(str(self.sources[1]),'wb') as w:
+   w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(b'\0'*44100*4)
+  self.cc={'publication_enabled':False,'scenes':[{'start':0,'end':duration}]}
+  result=self.call();self.assertEqual(result['status'],'PASS')
+  with wave.open(str(self.root/'out/mix.wav'),'rb') as w:
+   self.assertLessEqual(abs(w.getnframes()-frames),1)
+   w.setpos(frames-882);tail=array.array('h');tail.frombytes(w.readframes(882))
+   self.assertGreater(sum(abs(v) for v in tail)/len(tail),500)
  def test_publication_and_missing_voice_fail_closed(self):
   self.cc['publication_enabled']=True
   with self.assertRaisesRegex(ValueError,'Publication'):self.call()

@@ -51,7 +51,7 @@ env:
   PUBLICATION_ENABLED: "false"
 jobs:
   contract:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -73,7 +73,7 @@ jobs:
   visual-diagnostics:
     if: github.event_name != 'schedule'
     needs: contract
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     timeout-minutes: 15
@@ -103,7 +103,7 @@ jobs:
     if: github.event_name != 'schedule'
     timeout-minutes: 25
     needs: contract
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

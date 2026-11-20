@@ -111,7 +111,9 @@ def mix(voice,ccsd,music,sfx_files,out_dir):
     with wave.open(str(targets[1]),'wb') as w:
         w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(timeline.tobytes())
     # Narration enters exactly once. Low music/SFX stems remain separate for revision.
-    run(common+['-i',str(sources[0]),'-i',str(targets[0]),'-i',str(targets[1]),'-filter_complex','[0:a]loudnorm=I=-16:TP=-2:LRA=7[v];[v][1:a][2:a]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=false:latency=true[m]','-map','[m]']+pcm+[str(targets[2])])
+    # Loudness/limiter filters can offset output timestamps on fractional timelines.
+    # Rebuild PTS from emitted samples before -t, preserving actual tail audio.
+    run(common+['-i',str(sources[0]),'-i',str(targets[0]),'-i',str(targets[1]),'-filter_complex','[0:a]loudnorm=I=-16:TP=-2:LRA=7[v];[v][1:a][2:a]amix=inputs=3:normalize=0,alimiter=limit=0.89:level=false:latency=true,asetpts=N/SR/TB[m]','-map','[m]']+pcm+[str(targets[2])])
     for p in sources:
         if digest(p)!=before[str(p)]:raise ValueError('Source audio changed during mixing')
     durations={p.name:probe(p) for p in targets}
