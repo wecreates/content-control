@@ -1,6 +1,6 @@
 {
   "algorithm": "sha256",
-  "critical_file_count": 32,
+  "critical_file_count": 33,
   "entries": {
     "package-lock.json": {
       "bytes": 176214,
@@ -77,6 +77,10 @@
     "remotion/V9ArticulatedVisual.jsx": {
       "bytes": 9129,
       "sha256": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58"
+    },
+    "remotion/episode1-picture-timeline.mjs": {
+      "bytes": 1539,
+      "sha256": "bcd58f8e15e086b5e9ea96a90702849c1c33ce4881c59725401fe35bbae1d622"
     },
     "remotion/v10-index.jsx": {
       "bytes": 312,
