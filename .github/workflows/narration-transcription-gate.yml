@@ -82,7 +82,8 @@ jobs:
             --audio public/audio/episode1-narration.mp3 \
             --contract state/episode1-factual-contract.json \
             --output state/narration-transcription-health.json \
-            --model base.en
+            --model base.en \
+            --spoken-numbers
       - name: Test canonical caption provenance
         run: python -m unittest -v tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_narration_transcription_workflow
       - name: Build and verify synchronized VTT captions

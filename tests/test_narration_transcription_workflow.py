@@ -110,6 +110,14 @@ class NarrationWorkflowTests(unittest.TestCase):
         self.assertIn('ffmpeg -version', shell)
         self.assertLess(shell.index('ffmpeg -version'), shell.index('pip install -r'))
 
+    def test_narration_uses_independent_spoken_number_decoding(self):
+        # Preserve spoken units instead of ASR numeric notation. The approved
+        # script is never passed to the recognizer as a prompt.
+        command = shlex.split(step('Transcribe actual narration and compare to approved script').replace('\\\n', ' '))
+        self.assertIn('--spoken-numbers', command)
+        self.assertEqual(command[command.index('--model') + 1], 'base.en')
+        self.assertNotIn('--initial-prompt', command)
+
     def test_failed_skipped_or_cancelled_transcriber_cannot_reuse_pass(self):
         for outcome in ('failure', 'skipped', 'cancelled', ''):
             with self.subTest(outcome=outcome):

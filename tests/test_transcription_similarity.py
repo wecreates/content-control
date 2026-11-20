@@ -1,5 +1,5 @@
 import unittest
-from scripts.free_transcription_qa import ordered_word_similarity,duration_matches_contract,norm,spoken_number_suppression
+from scripts.free_transcription_qa import ordered_word_similarity,duration_matches_contract,norm,spoken_number_suppression,transcription_window_end
 
 class TranscriptionSimilarityTests(unittest.TestCase):
     def test_numeric_formatting_does_not_destroy_sequence_similarity(self):
@@ -37,6 +37,21 @@ class TranscriptionSimilarityTests(unittest.TestCase):
             def get_vocab(self):return {text:i for i,text in self.values.items()}
             def decode(self,ids):return self.values[ids[0]]
         self.assertEqual(spoken_number_suppression(Tokenizer()),[-1,1,2,3,5,7])
+
+    def test_explicit_window_is_stable_when_caption_end_changes(self):
+        contract = {'transcription_window_end_seconds': 26.16,
+                    'caption_cues': [{'end': 25.66}]}
+        self.assertEqual(transcription_window_end(contract, 30), 26.16)
+        contract['caption_cues'][0]['end'] = 25.58
+        self.assertEqual(transcription_window_end(contract, 30), 26.16)
+        self.assertEqual(transcription_window_end({'caption_cues': [{'end': 20}]}, 30), 20)
+        self.assertIsNone(transcription_window_end({}, 30))
+
+    def test_window_rejects_invalid_bounds_and_excluded_captions(self):
+        for end in (True, '26.16', -1, 0, float('nan'), float('inf'), 31, 19):
+            with self.subTest(end=end), self.assertRaises(ValueError):
+                transcription_window_end({'transcription_window_end_seconds': end,
+                                          'caption_cues': [{'end': 20}]}, 30)
 
     def test_reordered_words_still_fail(self):
         expected="buy first reward second"

@@ -124,6 +124,7 @@ class CaptionProvenanceTests(unittest.TestCase):
 
     def test_wrong_words_values_units_sign_and_missing_coverage_fail(self):
         for text in ('Pay twenty dollars today.',
+                     'Pay twenty today. Keep the remaining sixty.',
                      'Pay thirty dollars today. Keep the remaining sixty dollars.',
                      'Pay twenty percent today. Keep the remaining sixty dollars.',
                      'Pay minus twenty dollars today. Keep the remaining sixty dollars.',

@@ -100,6 +100,21 @@ def spoken_number_suppression(tokenizer):
     return [-1]+sorted(ids)
 
 
+def transcription_window_end(contract, media_duration):
+    """Keep the ASR window stable when observed caption cue boundaries change."""
+    cues = contract.get("caption_cues", [])
+    end = contract.get("transcription_window_end_seconds",
+                       cues[-1]["end"] if cues else None)
+    if end is None:
+        return None
+    if (isinstance(end, bool) or not isinstance(end, (int, float))
+            or not math.isfinite(end) or not 0 < end <= media_duration):
+        raise ValueError("Invalid transcription window end")
+    if cues and end < cues[-1]["end"]:
+        raise ValueError("Transcription window excludes approved captions")
+    return float(end)
+
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--audio",required=True)
@@ -114,10 +129,8 @@ def main():
 
     contract=json.loads(Path(a.contract).read_text())
     expected=contract["narration_text"]
-    cues=contract.get("caption_cues",[])
-    narration_end=float(cues[-1]["end"]) if cues else None
-
     audio_samples,media_duration=decode_transcription_audio(a.audio)
+    narration_end=transcription_window_end(contract,media_duration)
     model=WhisperModel(a.model,device="cpu",compute_type="int8")
     segments,info=model.transcribe(
         audio_samples,
