@@ -1,0 +1,43 @@
+{
+  "preview_only": true,
+  "camera_experiment_removed": true,
+  "default_false_all_pixels_unchanged": [
+    336,
+    372,
+    420,
+    450,
+    466,
+    500,
+    744,
+    768,
+    800,
+    839
+  ],
+  "typography_all_words_unchanged": [
+    336,
+    372,
+    420,
+    450,
+    466,
+    500,
+    744,
+    768,
+    800,
+    839
+  ],
+  "typography_action_pixels_below_y340_unchanged": [
+    336,
+    372,
+    420,
+    450,
+    466,
+    500,
+    744,
+    768,
+    800,
+    839
+  ],
+  "renderer": "React SSR + resvg; not Chromium MP4",
+  "publishing_enabled": false,
+  "production_approved": false
+}
