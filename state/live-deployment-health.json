@@ -1,5 +1,5 @@
 {
-  "candidate_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "checks": {
     "actual_hash_matches": true,
     "caption_hash_matches": true,
@@ -13,8 +13,8 @@
     "watch_page_present": true
   },
   "failed_checks": [],
-  "live_actual_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
-  "live_expected_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
+  "live_actual_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "live_expected_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "public_base_url": "https://content-control-render-worker.onrender.com",
   "publication_enabled": false,
   "schema_version": 1,
