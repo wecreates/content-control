@@ -24,7 +24,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": false,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -52,7 +52,6 @@
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "provenance_inputs_current",
     "candidate_identity_consistent",
     "candidate_converged"
   ],
