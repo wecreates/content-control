@@ -2,6 +2,9 @@ name: Caption and render integrity
 on:
   pull_request:
     paths:
+      - 'scripts/verify_live_caption_response.py'
+      - 'tests/test_live_caption_response.py'
+      - '.github/workflows/live-render-deployment-smoke.yml'
       - 'scripts/ci_media_tools.sh'
       - 'tests/test_ci_media_tools.py'
       - 'scripts/caption_contract.py'
@@ -55,7 +58,7 @@ jobs:
       - name: Install local media fixture tools
         run: bash scripts/ci_media_tools.sh
       - name: Test source-bound caption, audio and shard evidence offline
-        run: python -m unittest -v tests.test_ci_media_tools tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_v2_audio_integrity tests.test_v2_caption_timing_integrity tests.test_v2_clip_transcription tests.test_assemble_render_shards tests.test_v2_audio_assemble tests.test_v2_captions tests.test_v2_sound_mix
+        run: python -m unittest -v tests.test_live_caption_response tests.test_ci_media_tools tests.test_caption_provenance tests.test_persist_caption_evidence tests.test_v2_audio_integrity tests.test_v2_caption_timing_integrity tests.test_v2_clip_transcription tests.test_assemble_render_shards tests.test_v2_audio_assemble tests.test_v2_captions tests.test_v2_sound_mix
       - name: Test actual caption frame visibility
         run: node --test tests/verify-caption-frames.test.mjs tests/observed-captions.test.mjs
       - name: Check Python syntax
