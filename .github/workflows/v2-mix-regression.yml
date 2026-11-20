@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install local audio tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+        run: bash scripts/ci_media_tools.sh
       - name: Verify actual PCM duration and narration tail
         run: |
           ffmpeg -version | head -1
