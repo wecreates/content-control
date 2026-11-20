@@ -81,7 +81,8 @@ class SoundMixTests(unittest.TestCase):
   duration=35+1/24;frames=round(duration*44100)
   with wave.open(str(self.sources[0]),'rb') as w:data=w.readframes(w.getnframes())
   with wave.open(str(self.sources[0]),'wb') as w:
-   w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes((data*18)[:frames*4])
+   w.setparams((2,2,44100,0,'NONE','not compressed'))
+   signal=(data*18)[:frames*4];w.writeframes(b'\0'*(44100*4)+signal[44100*4:])
   # Silence the backing track so it cannot conceal missing end-of-speech samples.
   with wave.open(str(self.sources[1]),'wb') as w:
    w.setparams((2,2,44100,0,'NONE','not compressed'));w.writeframes(b'\0'*44100*4)
@@ -89,6 +90,10 @@ class SoundMixTests(unittest.TestCase):
   result=self.call();self.assertEqual(result['status'],'PASS')
   with wave.open(str(self.root/'out/mix.wav'),'rb') as w:
    self.assertLessEqual(abs(w.getnframes()-frames),1)
+   # Ignore the effect at t=0; narration must still begin at one second.
+   w.setpos(round(.8*44100));onset=array.array('h');onset.frombytes(w.readframes(round(.4*44100)))
+   first=next(i//2 for i,v in enumerate(onset) if abs(v)>100)
+   self.assertLessEqual(abs(first-round(.2*44100)),441)  # within 10 ms
    w.setpos(frames-882);tail=array.array('h');tail.frombytes(w.readframes(882))
    self.assertGreater(sum(abs(v) for v in tail)/len(tail),500)
  def test_publication_and_missing_voice_fail_closed(self):

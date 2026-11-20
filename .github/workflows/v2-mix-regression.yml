@@ -24,30 +24,6 @@ jobs:
           python-version: '3.12'
       - name: Install local audio tools
         run: bash scripts/ci_media_tools.sh
-      - name: Diagnose real normalization and limiter tail
-        if: matrix.os == 'ubuntu-24.04'
-        run: |
-          python - <<'PYDIAG'
-          from tests.test_v2_sound_mix import SoundMixTests
-          import scripts.v2_sound_mix as m
-          from unittest.mock import patch
-          original=m.run
-          for variant in ['current', 'no_limiter', 'resample_after', 'normalization_only']:
-            def run(args):
-              args=list(args)
-              if '-filter_complex' in args:
-                at=args.index('-filter_complex')+1
-                if variant=='no_limiter':args[at]=args[at].replace('alimiter=limit=0.89:level=false:latency=true,','')
-                if variant=='resample_after':args[at]=args[at].replace('asetpts=N/SR/TB[m]','aresample=44100,asetpts=N/SR/TB[m]')
-                if variant=='normalization_only':args[at]='[0:a]loudnorm=I=-16:TP=-2:LRA=7,aresample=44100,asetpts=N/SR/TB[m]'
-              return original(args)
-            test=SoundMixTests();test.setUp()
-            try:
-              with patch.object(m,'run',run):test.test_fractional_frame_timeline_preserves_final_narration_samples()
-              print(variant,'PASS',flush=True)
-            except Exception as exc:print(variant,type(exc).__name__,str(exc),flush=True)
-            finally:test.tearDown()
-          PYDIAG
       - name: Verify actual PCM duration and narration tail
         run: |
           ffmpeg -version | head -1
