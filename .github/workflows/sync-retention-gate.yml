@@ -8,6 +8,8 @@ on:
       - 'state/episode1-factual-contract.json'
       - 'scripts/verify_episode1_sync.py'
       - 'remotion/V9ArticulatedVisual.jsx'
+      - 'remotion/episode1-picture-timeline.mjs'
+      - 'public/audio/episode1-narration.mp3'
       - '.github/workflows/sync-retention-gate.yml'
   schedule:
     - cron: '19 13 * * *'
@@ -23,9 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
       - name: Verify V10 synchronization and retention cadence
+        id: verify
         run: python scripts/verify_episode1_sync.py
       - name: Persist synchronization health
+        if: always() && (steps.verify.outcome == 'success' || steps.verify.outcome == 'failure')
         run: |
           set -euo pipefail
           git config user.name content-control-runtime

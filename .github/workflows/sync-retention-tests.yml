@@ -1,0 +1,22 @@
+name: Episode 1 Sync Verifier Tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/verify_episode1_sync.py'
+      - 'tests/test_episode1_sync.py'
+      - 'state/episode1-sync-contract.json'
+      - 'state/episode1-factual-contract.json'
+      - 'remotion/episode1-picture-timeline.mjs'
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - '.github/workflows/sync-retention-*.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Verify source parsing and preserved retention failure
+        run: python -m unittest discover -s tests -p test_episode1_sync.py -v
