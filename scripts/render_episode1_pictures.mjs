@@ -26,7 +26,7 @@ try {
   execFileSync(process.execPath,[join(temp,'scenes.cjs')],{cwd:root,stdio:'inherit',timeout:60000});
   const python=process.env.PICTURE_PYTHON || 'python';
   execFileSync(python,['-c',`import cairosvg, pathlib\np=pathlib.Path(${JSON.stringify(temp)})\nfor s in p.glob('*.svg'): cairosvg.svg2png(url=str(s),write_to=str(s.with_suffix('.png')))\n`],{stdio:'inherit',timeout:60000});
-  const list=frames.map((f,i)=>`file '${join(temp,i+'.png')}'\nduration ${(f.end-f.start)/24}`).join('\n')+`\nfile '${join(temp,'11.png')}'\n`;
+  const list=frames.map((f,i)=>`file '${join(temp,i+'.png')}'\nduration ${(f.end-f.start)/24}`).join('\n')+`\nfile '${join(temp,(frames.length-1)+'.png')}'\n`;
   writeFileSync(join(temp,'pictures.txt'),list);
   const filters=['[1:a]volume=1[n]','[2:a]volume=0.07[m]','[3:a]volume=0.72,adelay=125|125[s1]','[4:a]volume=0.58,adelay=3792|3792[s2]','[5:a]volume=0.60,adelay=9625|9625[s3]','[n][m][s1][s2][s3]amix=inputs=5:normalize=0:duration=longest[a]'];
   const args=['-hide_banner','-loglevel','error','-nostdin','-f','concat','-safe','0','-i',join(temp,'pictures.txt'),'-i',audio,'-stream_loop','-1','-i',join(root,'public/audio/episode1-music.mp3')];
@@ -48,7 +48,7 @@ try {
   if(Number(video?.nb_frames)!==720 || Math.abs(Number(video?.duration)-30)>.05
       || Number(mixedAudio?.sample_rate)!==48000 || mixedAudio?.channels!==2
       || Math.abs(Number(mixedAudio?.duration)-30)>.05) throw new Error('Rendered picture/audio timeline is incomplete');
-  const receipt={schema_version:1,kind:'unpublished_picture_cut',video_sha256:hash(output),narration_sha256:narrationSha256,caption_sha256:captions?hash(captions):null,frames,publication_enabled:false,production_approved:false,scope:'Existing art rendered as twelve still pictures; no competitor or creative acceptance implied'};
+  const receipt={schema_version:1,kind:'unpublished_picture_cut',video_sha256:hash(output),narration_sha256:narrationSha256,caption_sha256:captions?hash(captions):null,frames,publication_enabled:false,production_approved:false,scope:'Existing characters rendered as eighteen authored picture shots; no competitor or creative acceptance implied'};
   writeFileSync(output+'.json',JSON.stringify(receipt,null,2)+'\n');
   console.log(JSON.stringify(receipt));
 } finally {rmSync(temp,{recursive:true,force:true});}

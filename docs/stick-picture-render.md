@@ -1,6 +1,6 @@
 # Unpublished stick-picture cut
 
-This path reuses the existing React/SVG artwork, original narration, music and sound effects. It creates twelve still pictures aligned to the observed narration, with a reserved caption area. It works without launching Chromium. It does not replace the animated Remotion renderer or promote any production/creative acceptance record.
+This path reuses the existing React/SVG artwork, original narration, music and sound effects. It creates eighteen still pictures aligned to the observed narration, with a reserved caption area. It works without launching Chromium. It does not replace the animated Remotion renderer or promote any production/creative acceptance record.
 
 Prerequisites: Node 22+, `npm ci --ignore-scripts`, FFmpeg/ffprobe with libass and libx264, Python 3.12+, and Cairo (`libcairo2` on Debian/Ubuntu). Install `requirements-picture-render.txt` into a virtual environment.
 

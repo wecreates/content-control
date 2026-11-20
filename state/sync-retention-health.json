@@ -60,7 +60,7 @@
     "cuts_match_contract": true,
     "final_rule_visible": true,
     "finance_math_visible": true,
-    "max_scene_duration_ok": false,
+    "max_scene_duration_ok": true,
     "narration_hash_matches": true,
     "narration_semantics_present_and_ordered": true,
     "no_fullscreen_slide_marker": true,
@@ -77,36 +77,46 @@
     0,
     44,
     91,
+    135,
     171,
     195,
     231,
     289,
     346,
     368,
+    402,
     437,
+    480,
     510,
+    548,
     581,
+    629,
+    677,
     720
   ],
   "cuts_seconds": [
     0,
     1.8,
     3.76,
+    5.6,
     7.12,
     8.12,
     9.6,
     12.02,
     14.38,
     15.3,
+    16.75,
     18.2,
+    20,
     21.24,
+    22.8,
     24.2,
+    26.2,
+    28.2,
     30
   ],
-  "failed_checks": [
-    "max_scene_duration_ok"
-  ],
-  "max_scene_duration_seconds": 5.791667,
+  "failed_checks": [],
+  "max_scene_duration_seconds": 2.416667,
   "narration_positions": [
     {
       "phrase": "card charged him $695 again",
@@ -159,58 +169,28 @@
   ],
   "publication_enabled": false,
   "retention_budget_seconds": 2.5,
-  "retention_status": "FAIL",
-  "retention_violations": [
-    {
-      "beat": "credit-purchase",
-      "duration_seconds": 3.333333,
-      "end_frame": 171,
-      "scene": 2,
-      "start_frame": 91
-    },
-    {
-      "beat": "compare-value",
-      "duration_seconds": 2.875,
-      "end_frame": 437,
-      "scene": 8,
-      "start_frame": 368
-    },
-    {
-      "beat": "value-wins",
-      "duration_seconds": 3.041667,
-      "end_frame": 510,
-      "scene": 9,
-      "start_frame": 437
-    },
-    {
-      "beat": "fee-wins",
-      "duration_seconds": 2.958333,
-      "end_frame": 581,
-      "scene": 10,
-      "start_frame": 510
-    },
-    {
-      "beat": "closing-rule",
-      "duration_seconds": 5.791667,
-      "end_frame": 720,
-      "scene": 11,
-      "start_frame": 581
-    }
-  ],
-  "scene_count": 12,
+  "retention_status": "PASS",
+  "retention_violations": [],
+  "scene_count": 18,
   "scene_durations_seconds": [
     1.833333,
     1.958333,
-    3.333333,
+    1.833333,
+    1.5,
     1.0,
     1.5,
     2.416667,
     2.375,
     0.916667,
-    2.875,
-    3.041667,
-    2.958333,
-    5.791667
+    1.416667,
+    1.458333,
+    1.791667,
+    1.25,
+    1.583333,
+    1.375,
+    2.0,
+    2.0,
+    1.791667
   ],
   "scene_positions": [
     {
@@ -260,18 +240,42 @@
     {
       "phrase": "One rule.",
       "position": 7745
+    },
+    {
+      "phrase": "Read the receipt.",
+      "position": 8341
+    },
+    {
+      "phrase": "What does the fee cost?",
+      "position": 8979
+    },
+    {
+      "phrase": "Keep it? Maybe.",
+      "position": 9547
+    },
+    {
+      "phrase": "The fee wins. Rethink.",
+      "position": 10082
+    },
+    {
+      "phrase": "Keep the math.",
+      "position": 10457
+    },
+    {
+      "phrase": "Make value prove it.",
+      "position": 11021
     }
   ],
   "schema_version": 2,
   "scope": "Source timeline and narration identity only; encoded-video synchronization and visual retention not verified",
   "source_sha256": {
     "public/audio/episode1-narration.mp3": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
-    "remotion/V9ArticulatedVisual.jsx": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58",
-    "remotion/episode1-picture-timeline.mjs": "bcd58f8e15e086b5e9ea96a90702849c1c33ce4881c59725401fe35bbae1d622",
+    "remotion/V9ArticulatedVisual.jsx": "f64e7813e0a514e9d6dc03e027b3fb1132c8e340a7ee9ecef727a8501ac0e7da",
+    "remotion/episode1-picture-timeline.mjs": "1d09327ad19611c3020b911b9a29b78fb47d3ee96355c4b7256857ae093e0eaf",
     "state/episode1-factual-contract.json": "1c08545af240ce7a22129a39abe333c3c9e799599a97caabd69008111b29a5fc",
-    "state/episode1-sync-contract.json": "e210018a83750be7be44cb542ecc12baa128b1ff2df88990c3ece798881671a3"
+    "state/episode1-sync-contract.json": "bac5dedefb38f543f0ab266bba1681d320df1f627e35cc8867c50134cbe59174"
   },
   "source_sync_status": "PASS",
-  "status": "FAIL",
-  "verified_at": "2026-11-20T21:15:32.703095+00:00"
+  "status": "PASS",
+  "verified_at": "2026-11-20T21:16:25.283552+00:00"
 }

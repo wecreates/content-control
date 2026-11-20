@@ -5,15 +5,21 @@ export const pictureTimeline = Object.freeze([
   {start: 0, scene: 0, beat: 'fee'},
   {start: 1.8, scene: 1, beat: 'again'},
   {start: 3.76, scene: 2, beat: 'credit-purchase'},
+  {start: 5.6, scene: 12, beat: 'receipt-detail'},
   {start: 7.12, scene: 3, beat: 'catch'},
   {start: 8.12, scene: 4, beat: 'math-intro'},
   {start: 9.6, scene: 6, beat: 'arithmetic'},
   {start: 12.02, scene: 5, beat: 'monk'},
   {start: 14.38, scene: 7, beat: 'wallet'},
   {start: 15.3, scene: 8, beat: 'compare-value'},
+  {start: 16.75, scene: 13, beat: 'fee-comparison-detail'},
   {start: 18.2, scene: 9, beat: 'value-wins'},
+  {start: 20, scene: 14, beat: 'keep-decision'},
   {start: 21.24, scene: 10, beat: 'fee-wins'},
+  {start: 22.8, scene: 15, beat: 'rethink-decision'},
   {start: 24.2, scene: 11, beat: 'closing-rule'},
+  {start: 26.2, scene: 16, beat: 'math-recap'},
+  {start: 28.2, scene: 17, beat: 'rule-recap'},
 ].map(Object.freeze));
 
 export function pictureSceneAtFrame(frame, fps = 24) {
