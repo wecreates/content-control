@@ -8,19 +8,25 @@
     0,
     1.8,
     3.76,
+    5.6,
     7.12,
     8.12,
     9.6,
     12.02,
     14.38,
     15.3,
+    16.75,
     18.2,
+    20,
     21.24,
+    22.8,
     24.2,
+    26.2,
+    28.2,
     30
   ],
   "max_scene_duration_seconds": 2.5,
-  "expected_scene_count": 12,
+  "expected_scene_count": 18,
   "ordered_scene_headlines": [
     "The fee shows up.",
     "Again?",
@@ -33,7 +39,13 @@
     "Now compare real value.",
     "Value wins?",
     "Value loses?",
-    "One rule."
+    "One rule.",
+    "Read the receipt.",
+    "What does the fee cost?",
+    "Keep it? Maybe.",
+    "The fee wins. Rethink.",
+    "Keep the math.",
+    "Make value prove it."
   ],
   "required_visual_tokens": [
     "$695",
@@ -69,15 +81,21 @@
     0,
     1,
     2,
+    12,
     3,
     4,
     6,
     5,
     7,
     8,
+    13,
     9,
+    14,
     10,
-    11
+    15,
+    11,
+    16,
+    17
   ],
   "caption_cue_scene_indices": [
     0,
@@ -93,6 +111,6 @@
   "notes": [
     "Cuts follow the source-bound narration cues; the 2.5-second retention budget remains unchanged.",
     "ordered_scene_headlines describes source scene definitions; playback_scene_order defines runtime order.",
-    "Source synchronization does not verify an encoded MP4. Long holds remain a retention failure."
+    "Source synchronization does not verify an encoded MP4. Retention requires authored picture changes within the unchanged 2.5-second budget."
   ]
 }

@@ -29,7 +29,27 @@ class SyncTests(unittest.TestCase):
         mutate(data)
         path.write_text(json.dumps(data))
 
+    def test_authored_inserts_meet_unchanged_retention_budget(self):
+        report=sync.verify(self.root)
+        self.assertEqual(report['source_sync_status'],'PASS')
+        self.assertEqual(report['status'],'PASS')
+        self.assertEqual(report['retention_budget_seconds'],2.5)
+        self.assertEqual(report['scene_count'],18)
+        self.assertEqual(report['retention_violations'],[])
+        self.assertLessEqual(report['max_scene_duration_seconds'],2.5)
+
     def test_imported_timeline_aligns_but_real_retention_failure_remains(self):
+        # Restore the former twelve-shot timing as a regression fixture. The
+        # verifier must still fail it rather than relaxing the cadence budget.
+        path=self.root/'remotion/episode1-picture-timeline.mjs'
+        path.write_text('\n'.join(line for line in path.read_text().splitlines()
+                                  if not any('scene: '+str(i)+',' in line for i in range(12,18))))
+        def old_contract(data):
+            data['cuts']=[0,1.8,3.76,7.12,8.12,9.6,12.02,14.38,15.3,18.2,21.24,24.2,30]
+            data['playback_scene_order']=[0,1,2,3,4,6,5,7,8,9,10,11]
+            data['ordered_scene_headlines']=data['ordered_scene_headlines'][:12]
+            data['expected_scene_count']=12
+        self.edit_json('state/episode1-sync-contract.json',old_contract)
         report=sync.verify(self.root)
         self.assertEqual(report['source_sync_status'],'PASS')
         self.assertEqual(report['status'],'FAIL')

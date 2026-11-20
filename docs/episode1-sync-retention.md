@@ -18,22 +18,17 @@ approval. File hashes and cue anchors bind each report to its source inputs.
 The main workflow persists failure reports as well as passing reports, so a
 failed retention gate cannot leave a stale PASS in state.
 
-The authored timeline currently passes source checks but fails the unchanged
-2.5-second maximum hold budget. The actual 24 fps frame windows are:
+The eighteen-shot timeline keeps every narration cue anchor unchanged and adds
+six authored detail pictures at 5.6, 16.75, 20, 22.8, 26.2, and 28.2 seconds. They
+show the purchase receipt, value/fee comparison, tentative keep decision, rethink
+decision, arithmetic recap, and final decision rule. Each changes the illustrated
+focal object and composition. They are not duplicate stills or cosmetic drift.
+The longest source hold is now 58 frames / 2.416667 seconds at 24 fps, within the
+unchanged 2.5-second limit. The former twelve-shot timeline is retained as a test
+fixture and still fails five holds, including its 5.791667-second ending.
 
-| Beat | Frames (end exclusive) | Hold seconds |
-|---|---|---|
-| Credit purchase | 91–171 | 3.333333 |
-| Compare value | 368–437 | 2.875 |
-| Value wins | 437–510 | 3.041667 |
-| Fee wins | 510–581 | 2.958333 |
-| Closing rule | 581–720 | 5.791667 |
-
-These are genuine remaining production gaps. Smooth drift or a duplicated still
-does not automatically count as a new pattern interrupt. Resolve them with
-meaningful authored framing/action changes that preserve the narration anchors,
-then render and inspect the affected windows. This verifier change does not
-alter artwork, audio, cuts, or any accepted video candidate.
+This source gate does not assert audience retention or creative approval. Inspect
+the rendered transitions and captions before promoting any new video candidate.
 
 Run regression tests with:
 
@@ -42,5 +37,5 @@ python -m unittest discover -s tests -p test_episode1_sync.py -v
 node --test tests/episode1-picture-timeline.test.mjs
 ```
 
-The tests intentionally assert the current retention failure; they do not turn
+The tests intentionally assert the former timeline’s retention failure; they do not turn
 that production failure into a passing release gate. Publishing remains disabled.
