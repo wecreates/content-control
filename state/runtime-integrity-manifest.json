@@ -107,12 +107,12 @@
       "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
     },
     "scripts/free_transcription_qa.py": {
-      "bytes": 10082,
-      "sha256": "89e7ce18f10d402142a76c5da6e66d31da6dbf5b352a521bed745b5926eb6678"
+      "bytes": 10728,
+      "sha256": "ec22e95628168c3bd76f3aefc92db3aee8ead2540b36fdbe737c9eaa985b418b"
     },
     "scripts/persist_caption_evidence.py": {
-      "bytes": 9692,
-      "sha256": "10cece4e80b8831e6ea8b3cabf928ce5ca9ed6905a960bfb59edf4cc13f6311f"
+      "bytes": 9720,
+      "sha256": "5ba13186d171615a80e6bc8562b242e46b5e04c327c443d3a0aa7410e8038bd6"
     },
     "scripts/render_episode1_mobile.sh": {
       "bytes": 557,
