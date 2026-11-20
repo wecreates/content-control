@@ -1,12 +1,12 @@
 {
   "actual_video_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
-  "candidate_converged": false,
+  "candidate_converged": true,
   "candidate_hashes": {
     "captions": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "ledger": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "ledger_health": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
-    "live_deployment": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
+    "live_deployment": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "provenance": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "receipt": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
     "smoke": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee"
@@ -17,7 +17,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
+    "candidate_converged": true,
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
@@ -58,8 +58,7 @@
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "candidate_identity_consistent"
   ],
   "integrity_failures": [],
   "production_ready": false,
