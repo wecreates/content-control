@@ -1,23 +1,20 @@
 {
   "schema_version": 1,
-  "run_id": 44815387032,
-  "source_commit": "eedfa68e23aae6baa821a466ee1be2f3f6804576",
+  "run_id": 44818804203,
+  "source_commit": "ea2d40ba0121559a3ae382216213d86fa417b9e5",
   "workflow_outcome": "failure",
-  "recorded_at": "2026-11-20T20:55:44.885707+00:00",
-  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/44815387032",
+  "recorded_at": "2026-11-20T21:19:08.407523+00:00",
+  "workflow_url": "https://github.com/wecreates/content-control/actions/runs/44818804203",
   "candidate_sha256": null,
   "candidate_generated": false,
   "checks": {
     "voices": {
       "status": "PASS",
       "failed_checks": [],
-      "receipt_sha256": "5e8efe483817849a3e194c641016e10c4c7927719efc5f54beecc794c33e14e4"
+      "receipt_sha256": "b4369e6be178c94b05dd4d867a7ffc22d3d59b61f7b2509f888ea441fc898755"
     },
     "sound_mix": {
-      "status": "BLOCKED",
-      "failed_checks": [],
-      "receipt_sha256": "5b22a26eb658f8b4c9ab29b6ad9ea2ba4e7b8a15d0cb2f3fc2a4d47ecf3a1ca5",
-      "reason": "Mixed stem duration mismatch: {\"music.wav\": 35.041655, \"sfx.wav\": 35.041678, \"mix.wav\": 34.978345}"
+      "status": "NOT_RUN"
     },
     "transcription": {
       "status": "NOT_RUN"
