@@ -1,0 +1,25 @@
+name: Stick-picture narration alignment
+on:
+  pull_request:
+    paths:
+      - 'remotion/episode1-picture-timeline.mjs'
+      - 'remotion/V9ArticulatedVisual.jsx'
+      - 'remotion/Episode1V10FinalProof.jsx'
+      - 'public/audio/episode1-narration.mp3'
+      - 'tests/episode1-picture-timeline.test.mjs'
+      - '.github/workflows/stick-picture-alignment.yml'
+permissions:
+  contents: read
+jobs:
+  alignment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify picture cuts and source narration identity
+        run: node --test tests/episode1-picture-timeline.test.mjs
