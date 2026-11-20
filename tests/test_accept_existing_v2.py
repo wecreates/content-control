@@ -22,7 +22,25 @@ class ExistingAcceptanceTests(RevalidationTests):
         self.module=types.ModuleType('scripts.rendered_visual_parity');self.module.evaluate_visual_review=lambda *args:{'status':'PASS'}
     def review(self):
         keys=['hook','story_escalation','visual_storytelling','character_consistency','voice_performance','sound_mix','pacing','phone_readability','payoff','factual_accuracy']
-        return {'candidate_sha256':self.hash,'status':'PASS','method':'rendered_video_review','full_video_review':True,'full_audio_review':True,'duration_seconds':50,'reviewed_intervals':[[0,50]],'checks':{k:{'pass':True,'evidence':'Synthetic test evidence for '+k} for k in keys},'comparisons':[{'url':f'https://example.org/{i}','full_video_review':True,'full_audio_review':True,'access_scope':'full audiovisual review','observation':'Synthetic fixture observation','applied_difference':'Synthetic fixture application'} for i in (1,2)],'unresolved_issues':[]}
+        # Synthetic contract fixture only: no actual media review is claimed.
+        return {
+            'candidate_sha256':self.hash,'status':'PASS','method':'rendered_video_review',
+            'full_video_review':True,'full_audio_review':True,'duration_seconds':50,
+            'reviewed_intervals':[[0,50]],'publication_enabled':False,
+            'reviewer':{'identity':'Synthetic test reviewer','method':'Synthetic audiovisual review',
+                        'evidence':'Synthetic fixture review session'},
+            'findings':[],'critical_count':0,'major_count':0,
+            'checks':{k:{'pass':True,'evidence':'Synthetic test evidence for '+k} for k in keys},
+            'comparisons':[
+                {'url':f'https://www.youtube.com/watch?v={video_id}',
+                 'artifact_sha256':str(index)*64,'duration_seconds':5,'reviewed_intervals':[[0,5]],
+                 'full_video_review':True,'full_audio_review':True,'access_scope':'full audiovisual review',
+                 'video_observation':'Synthetic fixture moving test pattern',
+                 'audio_observation':'Synthetic fixture continuous test tone',
+                 'observation':'Synthetic fixture observation','applied_difference':'Synthetic fixture application'}
+                for index,video_id in enumerate(('abcdefghijk','lmnopqrstuv'),start=1)
+            ],'unresolved_issues':[],
+        }
     def assessment(self):
         with patch.dict('sys.modules',{'scripts.rendered_visual_parity':self.module}):return assess(self.root,self.artifact,self.run)
     def test_missing_review_retains_existing_candidate(self):
@@ -39,6 +57,23 @@ class ExistingAcceptanceTests(RevalidationTests):
         review['full_audio_review']=False;self.write(REVIEW_PATH,review)
         self.assertEqual(self.assessment()[0]['status'],'BLOCKED')
         with self.assertRaises(ValueError):promote(self.root,candidate,health)
+    def test_incomplete_review_provenance_and_reference_evidence_cannot_promote(self):
+        for field,reason in (
+            ('publication_enabled','publication_lock_missing'),
+            ('reviewer','reviewer_provenance_missing'),
+            ('findings','findings_missing'),
+        ):
+            with self.subTest(field=field):
+                review=self.review();del review[field];self.write(REVIEW_PATH,review)
+                result,health,_=self.assessment()
+                self.assertEqual(result['status'],'BLOCKED');self.assertIn(reason,result['reasons'])
+                self.assertIsNone(health)
+        for field in ('artifact_sha256','reviewed_intervals','video_observation','audio_observation'):
+            with self.subTest(reference_field=field):
+                review=self.review();del review['comparisons'][0][field];self.write(REVIEW_PATH,review)
+                result,health,_=self.assessment()
+                self.assertEqual(result['status'],'BLOCKED')
+                self.assertIn('competitor_comparison_pending',result['reasons']);self.assertIsNone(health)
     def test_real_runtime_validator_binds_promoted_bytes_and_blocks_changed_video(self):
         self.write(REVIEW_PATH,self.review())
         _,health,candidate=self.assessment();promote(self.root,candidate,health)
