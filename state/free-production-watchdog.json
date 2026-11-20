@@ -1,15 +1,15 @@
 {
   "actual_video_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-  "candidate_converged": false,
+  "candidate_converged": true,
   "candidate_hashes": {
-    "captions": null,
+    "captions": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "ledger": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "ledger_health": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "live_deployment": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "provenance": "54f37c847c79e632e26648a3f31f11f24266d316217dd71025187b1924c1b127",
+    "provenance": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
     "receipt": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
-    "smoke": "2d6c160ffcd7be5add5de1bf5d453e245c997a96bb05e5e891519a0f7a4c71cf"
+    "smoke": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f"
   },
   "candidate_sha256": "897a207058b6f5ffa7f06d5844368dcf482a5bcf46507dba1765b6526428ea6f",
   "checks": {
@@ -17,10 +17,10 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
+    "candidate_converged": true,
     "candidate_identity_consistent": false,
-    "caption_candidate_match": false,
-    "caption_health_green": false,
+    "caption_candidate_match": true,
+    "caption_health_green": true,
     "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
@@ -31,10 +31,10 @@
     "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
-    "narration_transcription_green": false,
+    "narration_transcription_green": true,
     "no_paid_vision": true,
-    "provenance_candidate_match": false,
-    "provenance_inputs_current": false,
+    "provenance_candidate_match": true,
+    "provenance_inputs_current": true,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -42,8 +42,8 @@
     "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
-    "review_server_smoke_candidate_match": false,
-    "review_server_smoke_green": false,
+    "review_server_smoke_candidate_match": true,
+    "review_server_smoke_green": true,
     "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
@@ -59,26 +59,13 @@
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "narration_transcription_green",
-    "caption_candidate_match",
-    "caption_health_green",
-    "review_server_smoke_candidate_match",
-    "review_server_smoke_green",
-    "provenance_candidate_match",
-    "provenance_inputs_current",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "candidate_identity_consistent"
   ],
   "integrity_failures": [
     {
-      "actual": "5d7e8ac2e309f2b7c366c24273a54fb9d77a95a7c441eef274005a6b089ac5dc",
-      "expected": "e3ce2d17ff231aba92ea59e824c87bef285ff1934d963db4742ca96eb81d5b8d",
-      "path": "remotion/Episode1V10FinalProof.jsx"
-    },
-    {
-      "actual": "ce64202ac2e186b777a654360d7f72fa7e6b65350b6a33b8751e86e6be7dfb58",
-      "expected": "95f25034a847d9a5858df43ce2a41bbbb5de811e5437e0e6e6651efdaaa58bdc",
-      "path": "remotion/V9ArticulatedVisual.jsx"
+      "actual": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+      "expected": "488545502ef9d1485ece67700eab3cbf81c383e0093e14b389a51a89e236d548",
+      "path": "public-review/episode1-v10-free.vtt"
     }
   ],
   "production_ready": false,
