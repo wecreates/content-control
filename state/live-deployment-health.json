@@ -7,18 +7,16 @@
     "expected_hash_matches": true,
     "hash_bound": true,
     "health_200_and_green": true,
-    "probe_completed": false,
+    "probe_completed": true,
     "publication_disabled": true,
     "range_streaming_present": true,
     "watch_page_present": true
   },
-  "failed_checks": [
-    "probe_completed"
-  ],
+  "failed_checks": [],
   "live_actual_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "live_expected_sha256": "dacacbfe6f601118efc8e3987ffc022e3003a1ab5d4ea34726b58d1bfae33dee",
   "public_base_url": "https://content-control-render-worker.onrender.com",
   "publication_enabled": false,
   "schema_version": 1,
-  "status": "FAIL"
+  "status": "PASS"
 }
