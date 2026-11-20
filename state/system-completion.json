@@ -8,7 +8,7 @@
     "bounded_failure_retry": true,
     "candidate_identity_consistency": false,
     "cyclonedx_sbom": true,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract": true,
     "factual_compliance_gate": true,
     "florence_vision_qa": true,

@@ -11,7 +11,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -45,11 +45,17 @@
     "zero_credit": true
   },
   "component_checks_passed": false,
-  "dependency_vulnerabilities": {},
+  "dependency_vulnerabilities": {
+    "critical": 0,
+    "high": 0,
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "total": 0
+  },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
     "candidate_identity_consistent"
