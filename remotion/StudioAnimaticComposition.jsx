@@ -1,3 +1,5 @@
+import {previewAccentWord,previewWordSelected,PREVIEW_TEXT_TEAL} from './V2StylePreview.mjs';
+import {V2GroundedBeat} from './V2GroundedBeat.jsx';
 import {V2StageEnvironment} from './V2StageEnvironment.jsx';
 import {v2CameraProgress,v2ImpactAmount,v2FrameActor,v2ReactionScale} from './V2CameraPerformance.mjs';
 import React from "react";
@@ -13,24 +15,25 @@ import {fitText,fitCaption,captionTextWidth,normalizePropId,characterSlots,propS
 const C={dave:Dave,points_monk:PointsMonk,cashback_goblin:CashbackGoblin};
 const clamp=v=>Math.max(0,Math.min(1,v));
 // Caption motion uses only the currently observed cue; future words never enter the SVG.
-const TextBlock=({text,y,height=144,size=34,caption=false,age=1})=>{
+const TextBlock=({text,y,height=144,size=34,caption=false,age=1,stylePreview=false})=>{
  const layout=(caption?fitCaption:fitText)(text,592,height,size);
  const pop=caption?Math.sin(Math.min(1,Math.max(0,age)/.18)*Math.PI):0;
+ const selected=stylePreview&&caption?previewAccentWord(text):null;
  const punch=/\b(wallet|boss|budget|fee|fees|panic|broke|trap|cost|costs|value|reading|snacks|perks)\b/i.test(text);
  return <g transform={caption?`translate(360 ${y}) scale(${1-pop*.055}) translate(-360 ${-y-pop*5})`:undefined}>
   {layout.lines.map((line,i)=>{
    const baseline=y+i*layout.lineHeight;
-   const emphasize=caption&&punch&&i===layout.lines.length-1;
+   const emphasize=!stylePreview&&caption&&punch&&i===layout.lines.length-1;
    // A bounded reverse-type panel creates hierarchy without enlarging the safe caption box.
    const width=captionTextWidth(line,layout.size)+16;
    return <g key={i} transform={caption&&emphasize?`rotate(-1.5 360 ${baseline-layout.size*.35})`:undefined}>
     {emphasize?<rect x={360-width/2} y={baseline-layout.size*.86} width={width} height={layout.size*1.12} rx="8" fill="#111"/>:null}
-    <text x="360" y={baseline} textAnchor="middle" fontFamily="Arial Black,Arial,DejaVu Sans,sans-serif" fontWeight="900" fontSize={layout.size} fill={emphasize?'#fff':'#111'} stroke={caption?(emphasize?'#fff':'#111'):'none'} strokeWidth={caption?1.2:0} strokeLinejoin="round" paintOrder="stroke">{line}</text>
+    <text x="360" y={baseline} textAnchor="middle" fontFamily="Arial Black,Arial,DejaVu Sans,sans-serif" fontWeight="900" fontSize={layout.size} fill={emphasize?'#fff':'#111'} stroke={caption?(emphasize?'#fff':'#111'):'none'} strokeWidth={caption?1.2:0} strokeLinejoin="round" paintOrder="stroke">{selected?line.split(/(\s+)/).map((word,j)=><tspan key={j} fill={previewWordSelected(word,selected)?PREVIEW_TEXT_TEAL:'#111'} stroke="#111" strokeWidth={previewWordSelected(word,selected)?1.6:1.2} fontStyle={previewWordSelected(word,selected)?'italic':'normal'}>{word}</tspan>):line}</text>
    </g>;
   })}
  </g>;
 };
-export const StudioAnimaticComposition=({ccsd})=>{
+export const StudioAnimaticComposition=({ccsd,groundedPreview=false,stylePreview=false})=>{
  const frame=useCurrentFrame(),{fps}=useVideoConfig(),t=frame/fps;
  const s=(ccsd?.scenes||[]).find(scene=>t>=scene.start&&t<scene.end);
  if(!s)return <AbsoluteFill style={{background:"#fff"}}/>;
@@ -55,8 +58,9 @@ export const StudioAnimaticComposition=({ccsd})=>{
  return <AbsoluteFill style={{background:'#fff'}}>
   <svg width="100%" height="100%" viewBox="0 0 720 1280">
    <rect width="720" height="1280" fill="#fff"/>
-   <TextBlock text={battle?(observedCaption?.text||''):title} y={battle?230:105} height={175} size={battle?72:34} caption={!!battle} age={observedCaption?t-observedCaption.start:1}/>
+   <TextBlock text={battle?(observedCaption?.text||''):title} y={battle?230:105} height={175} size={battle?72:34} caption={!!battle} stylePreview={stylePreview} age={observedCaption?t-observedCaption.start:1}/>
    {!battle&&s.text?.content?<TextBlock text={s.text.content} y={255} height={78} size={26}/>:null}
+   {groundedPreview&&['fee-drain','points-summon','finish'].includes(battle)?<V2GroundedBeat beat={battle} progress={beatProgress} time={t} observedCaption={observedCaption}/>:<>
    {battle==='fee-drain'?<V2StageEnvironment beat={battle}/>:null}
    <g transform={`translate(${360+pan+shake} ${cameraAnchorY}) scale(${scale}) translate(-360 ${-cameraAnchorY})`}>
     {!battle?<Environment id={s.environment?.id||'white_stage'} width={720} height={1280} frame={local}/>:null}
@@ -100,6 +104,7 @@ export const StudioAnimaticComposition=({ccsd})=>{
       return <Character {...face} key={i} x={slot.x} y={slot.y+(m.bob||0)} s={slot.scale} lean={m.lean} arm={m.arm} leg={m.leg} leftHandTarget={m.leftHandTarget} rightHandTarget={m.rightHandTarget} mood={m.mood||emotion?.state||(id==='points_monk'?'deadpan':id==='cashback_goblin'?'smile':'shock')} label=""/>;
     })}
    </g>
+   </>}
   </svg>
  </AbsoluteFill>;
 };

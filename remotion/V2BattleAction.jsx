@@ -84,3 +84,6 @@ export function V2BattleAction({scene,scenes,time,includeEnvironment=true}) {
   </g>:null}
  </g>;
 }
+
+// Shared original artwork for isolated authored staging previews.
+export {Wallet, Sandwich, FeeJaw};
