@@ -79,5 +79,28 @@
     "ending_payoff_map",
     "transferable_patterns",
     "patterns_to_avoid_copying"
-  ]
+  ],
+  "primary_reference": {
+    "creator": "Oddsofmind",
+    "profile_url": "https://www.instagram.com/oddsofmind/",
+    "source_type": "PROFILE_NOT_REEL",
+    "priority": "USER_SELECTED_PRIMARY",
+    "recorded_at": "2026-11-21T15:08:24Z",
+    "status": "PENDING_LIVE_AV_ACCESS",
+    "access_status": "LOGIN_WALL_OBSERVED_BY_SESSION_REVIEWER",
+    "observed_reels": [],
+    "full_av_review": false,
+    "verified_style_findings": [],
+    "virality_claim": {
+      "source": "user",
+      "verification_status": "UNVERIFIED",
+      "verified_metrics": null
+    },
+    "viewing_preference": "LIVE_WATCH_WITHOUT_DOWNLOADS",
+    "download_target": false,
+    "scope": "Creative reference intent only. Profile metadata and public searches do not establish audiovisual observations, performance, or transferable style. No viral outcome is guaranteed.",
+    "production_approved": false,
+    "publication_enabled": false,
+    "source": "User direction on 2026-11-21"
+  }
 }
