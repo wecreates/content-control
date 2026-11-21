@@ -50,23 +50,29 @@ jobs:
         with: {python-version: '3.12'}
       - run: python -m unittest -v tests.test_creative_preview_artifact
   preview:
-    if: github.event_name == 'workflow_dispatch' && github.repository == 'wecreates/content-control' && github.event.repository.private == false && github.ref == 'refs/heads/main'
+    if: >-
+      github.repository == 'wecreates/content-control' && github.event.repository.private == false &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.head_ref == 'codex/creative-preview-pr-proof-20261121'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      CREATIVE_BRANCH: ${{ inputs.creative_branch }}
-      CREATIVE_SHA: ${{ inputs.creative_sha }}
+      CREATIVE_BRANCH: ${{ github.event_name == 'pull_request' && 'codex/v2-grounded-staging-20261121' || inputs.creative_branch }}
+      CREATIVE_SHA: ${{ github.event_name == 'pull_request' && '540deda50211cd5351f66374d66b4de6322e273a' || inputs.creative_sha }}
+      TRUSTED_RUNTIME_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.TRUSTED_RUNTIME_SHA }}
           path: runtime
           persist-credentials: false
       - name: Validate the exact approved creative branch head
         run: python runtime/scripts/creative_preview_artifact.py guard --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.creative_sha }}
+          ref: ${{ env.CREATIVE_SHA }}
           path: creative
           persist-credentials: false
       - name: Confirm checkout identity
@@ -89,8 +95,8 @@ jobs:
           github-token: ${{ github.token }}
       - name: Bind the unchanged observed captions and existing audio
         env:
-          GROUNDED: ${{ inputs.grounded_preview }}
-          TYPOGRAPHY: ${{ inputs.typography_preview }}
+          GROUNDED: ${{ github.event_name == 'pull_request' && 'true' || inputs.grounded_preview }}
+          TYPOGRAPHY: ${{ github.event_name == 'pull_request' && 'true' || inputs.typography_preview }}
         run: |
           set -euo pipefail
           flags=()
@@ -104,7 +110,7 @@ jobs:
       - name: Copy the approved existing encoded audio without regeneration
         run: |
           ffmpeg -v error -y -i preview/silent.mp4 -i original/render/v2-boss-fight.mp4 -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart preview/creative-preview.mp4
-          python runtime/scripts/creative_preview_artifact.py receipt --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA" --workflow-sha "$GITHUB_SHA"
+          python runtime/scripts/creative_preview_artifact.py receipt --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA" --workflow-sha "$TRUSTED_RUNTIME_SHA"
       - name: Extract phone review frames from the actual encoded video
         run: |
           mkdir -p preview/phone-frames
