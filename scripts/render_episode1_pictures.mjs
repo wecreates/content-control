@@ -17,12 +17,14 @@ const audio=join(root,'public/audio/episode1-narration.mp3');
 const hash=p=>createHash('sha256').update(readFileSync(p)).digest('hex');
 if(hash(audio)!==narrationSha256) throw new Error('Narration changed; picture timing must be reverified');
 mkdirSync(dirname(output),{recursive:true});
-const temp=mkdtempSync(join(root,'.picture-render-'));
+const temporaryRoot=process.env.PICTURE_TEMP_DIR ? resolve(process.env.PICTURE_TEMP_DIR) : root;
+mkdirSync(temporaryRoot,{recursive:true});
+const temp=mkdtempSync(join(temporaryRoot,'.picture-render-'));
 try {
   const frames=pictureTimeline.map((p,i)=>({scene:p.scene,start:Math.ceil(p.start*24),end:Math.ceil((pictureTimeline[i+1]?.start??30)*24)}));
   const entry=join(temp,'entry.jsx');
-  writeFileSync(entry,`import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {writeFileSync} from 'node:fs';import {V9ArticulatedVisual} from '../remotion/V9ArticulatedVisual.jsx';\nconst frames=${JSON.stringify(frames)};\nfor(let i=0;i<frames.length;i++){const f=frames[i]; const html=renderToStaticMarkup(React.createElement(V9ArticulatedVisual,{frame:Math.floor((f.start+f.end)/2)}));let svg=html.match(/<svg[\\s\\S]*<\\/svg>/)[0];svg=svg.replace(/ style="[^"]*"/,'').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ');svg=svg.replace(/(<svg[^>]*>)/,'$1<rect width="720" height="1280" fill="#f7f1e6"/><g transform="translate(67.5 0) scale(.8125)">').replace('</svg>','</g></svg>');writeFileSync(${JSON.stringify(temp)}+'/'+i+'.svg',svg);}`);
-  await build({entryPoints:[entry],outfile:join(temp,'scenes.cjs'),bundle:true,platform:'node',format:'cjs',logLevel:'error'});
+  writeFileSync(entry,`import React from 'react';import {renderToStaticMarkup} from 'react-dom/server';import {writeFileSync} from 'node:fs';import {V9ArticulatedVisual} from ${JSON.stringify(join(root,'remotion/V9ArticulatedVisual.jsx'))};\nconst frames=${JSON.stringify(frames)};\nfor(let i=0;i<frames.length;i++){const f=frames[i]; const html=renderToStaticMarkup(React.createElement(V9ArticulatedVisual,{frame:Math.floor((f.start+f.end)/2)}));let svg=html.match(/<svg[\\s\\S]*<\\/svg>/)[0];svg=svg.replace(/ style="[^"]*"/,'').replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ');svg=svg.replace(/(<svg[^>]*>)/,'$1<rect width="720" height="1280" fill="#f7f1e6"/><g transform="translate(67.5 0) scale(.8125)">').replace('</svg>','</g></svg>');writeFileSync(${JSON.stringify(temp)}+'/'+i+'.svg',svg);}`);
+  await build({entryPoints:[entry],outfile:join(temp,'scenes.cjs'),nodePaths:[join(root,'node_modules')],bundle:true,platform:'node',format:'cjs',logLevel:'error'});
   execFileSync(process.execPath,[join(temp,'scenes.cjs')],{cwd:root,stdio:'inherit',timeout:60000});
   const python=process.env.PICTURE_PYTHON || 'python';
   execFileSync(python,['-c',`import cairosvg, pathlib\np=pathlib.Path(${JSON.stringify(temp)})\nfor s in p.glob('*.svg'): cairosvg.svg2png(url=str(s),write_to=str(s.with_suffix('.png')))\n`],{stdio:'inherit',timeout:60000});

@@ -1,5 +1,6 @@
 name: Stick-picture narration alignment
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'remotion/episode1-picture-timeline.mjs'
@@ -7,6 +8,9 @@ on:
       - 'remotion/Episode1V10FinalProof.jsx'
       - 'public/audio/episode1-narration.mp3'
       - 'tests/episode1-picture-timeline.test.mjs'
+      - 'scripts/render_episode1_pictures.mjs'
+      - 'scripts/produce_episode1_review.py'
+      - 'tests/test_produce_episode1_review.py'
       - '.github/workflows/stick-picture-alignment.yml'
 permissions:
   contents: read
@@ -23,3 +27,52 @@ jobs:
           node-version: '22'
       - name: Verify picture cuts and source narration identity
         run: node --test tests/episode1-picture-timeline.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify bounded review packet and failure handling
+        run: python -m unittest tests.test_produce_episode1_review tests.test_muxed_narration tests.test_caption_provenance
+  review-packet:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && github.actor == github.repository_owner && github.repository == 'wecreates/content-control' && github.event.repository.private == false
+    needs: alignment
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PUBLICATION_ENABLED: 'false'
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements-transcription.txt
+            requirements-picture-render.txt
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: faster-whisper-base-en-v1
+      - name: Install existing free CPU and picture runtimes
+        run: |
+          bash scripts/ci_media_tools.sh
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libcairo2
+          npm ci --ignore-scripts
+          python -m pip install -r requirements-transcription.txt -r requirements-picture-render.txt
+      - name: Cache public speech model before offline production
+        run: python -c 'from faster_whisper import WhisperModel; WhisperModel("base.en", device="cpu", compute_type="int8")'
+      - name: Produce unpublished review packet
+        run: python scripts/produce_episode1_review.py --output /tmp/episode1-review --timeout 900
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unpublished-episode1-review-packet
+          path: /tmp/episode1-review/
+          retention-days: 30
