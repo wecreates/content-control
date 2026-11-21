@@ -1,6 +1,6 @@
-import copy,hashlib,json,math,shutil,tempfile,unittest,wave
+import sys,types,copy,hashlib,json,math,shutil,tempfile,unittest,wave
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch,MagicMock
 from scripts.v2_free_voice import generate,VOICE_ASSIGNMENTS,MAX_SPEED
 
 @unittest.skipUnless(shutil.which('ffmpeg'),'ffmpeg required')
@@ -45,6 +45,15 @@ class FreeVoiceTests(unittest.TestCase):
   (self.out/'approved-manifest.json').write_text(json.dumps(result))
   repaired=generate(self.cc,self.out,self.synth)
   self.assertEqual(len(self.calls),1);self.assertFalse(repaired['clips'][0]['reused'])
+ def test_changed_pinned_assets_or_revision_disables_reuse(self):
+  for field,value in [('model_revision','0'*40),('model_asset_sha256',{'config.json':'0'*64})]:
+   with self.subTest(field=field):
+    result=generate(self.cc,self.out,self.synth);self.calls.clear()
+    result[field]=value
+    (self.out/'approved-manifest.json').write_text(json.dumps(result))
+    repaired=generate(self.cc,self.out,self.synth)
+    self.assertEqual(len(self.calls),2)
+    self.assertFalse(any(c['reused'] for c in repaired['clips']))
  def test_changed_model_provenance_disables_reuse(self):
   result=generate(self.cc,self.out,self.synth);self.calls.clear()
   result['model_repository']='different/model'
@@ -143,4 +152,40 @@ class FreeVoiceTests(unittest.TestCase):
   self.assertEqual(self.calls,[])
  def test_silence_rejected(self):
   with self.assertRaisesRegex(ValueError,'silent'):generate(self.cc,self.out,lambda *args:([0.]*1000,24000))
+class PinnedAssetTests(unittest.TestCase):
+ def test_exact_revision_and_all_asset_hashes_before_use(self):
+  from scripts.v2_free_voice import pinned_assets,MODEL_REPO,MODEL_REVISION
+  with tempfile.TemporaryDirectory() as temporary:
+   root=Path(temporary);(root/'config.json').write_bytes(b'config');(root/'voice.pt').write_bytes(b'voice')
+   assets={name:(len((root/name).read_bytes()),hashlib.sha256((root/name).read_bytes()).hexdigest()) for name in ['config.json','voice.pt']}
+   calls=[]
+   def download(**kwargs):calls.append(kwargs);return root/kwargs['filename']
+   with patch('scripts.v2_free_voice.MODEL_ASSETS',assets):
+    self.assertEqual(set(pinned_assets(download)),set(assets))
+    self.assertEqual(calls,[dict(repo_id=MODEL_REPO,filename=n,revision=MODEL_REVISION) for n in assets])
+    (root/'voice.pt').write_bytes(b'wrong')
+    with self.assertRaisesRegex(ValueError,'hash mismatch'):pinned_assets(download)
+    (root/'voice.pt').write_bytes(b'longer')
+    with self.assertRaisesRegex(ValueError,'size mismatch'):pinned_assets(download)
+ def test_model_and_voice_loader_receive_only_verified_local_paths(self):
+  from scripts.v2_free_voice import local_synthesizer,MODEL_ASSETS,MODEL_REPO
+  assets={name:'/local/'+name for name in MODEL_ASSETS}
+  model=MagicMock();model.to.return_value=model;model.eval.return_value=model
+  pipeline=MagicMock();voices={assets['voices/'+v+'.pt']:object() for v in VOICE_ASSIGNMENTS.values()}
+  pipeline.load_voice.side_effect=voices.__getitem__
+  sample=MagicMock();sample.detach.return_value.cpu.return_value.numpy.return_value.reshape.return_value.tolist.return_value=[.1,.2]
+  pipeline.return_value=[('text','phonemes',sample)]
+  module=types.SimpleNamespace(KModel=MagicMock(return_value=model),KPipeline=MagicMock(return_value=pipeline))
+  with patch.dict(sys.modules,{'kokoro':module}),patch('scripts.v2_free_voice.pinned_assets',return_value=assets):
+   synth=local_synthesizer();self.assertEqual(synth('Hello','am_fenrir',1.1),([.1,.2],24000))
+  module.KModel.assert_called_once_with(repo_id=MODEL_REPO,config=assets['config.json'],model=assets['kokoro-v1_0.pth'])
+  module.KPipeline.assert_called_once_with(lang_code='a',repo_id=MODEL_REPO,model=model,device='cpu')
+  pipeline.assert_called_once_with('Hello',voice=voices[assets['voices/am_fenrir.pt']],speed=1.1,split_pattern=r'\n+')
+ def test_corrupt_assets_never_reach_model_deserialization(self):
+  from scripts.v2_free_voice import local_synthesizer
+  module=types.SimpleNamespace(KModel=MagicMock(),KPipeline=MagicMock())
+  with patch.dict(sys.modules,{'kokoro':module}),patch('scripts.v2_free_voice.pinned_assets',side_effect=ValueError('hash mismatch')):
+   with self.assertRaisesRegex(ValueError,'hash mismatch'):local_synthesizer()
+  module.KModel.assert_not_called();module.KPipeline.assert_not_called()
+
 if __name__=='__main__':unittest.main()

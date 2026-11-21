@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "generation": {
+    "status": "REAL_LOADER_AND_SHORT_SYNTHESIS_PASS",
+    "observed_at": "2026-11-21T14:57:12.175119+00:00",
+    "model_revision": "f3ff3571791e39611d31c381e3a41a3af07b4987",
+    "model_asset_sha256": {
+      "config.json": "5abb01e2403b072bf03d04fde160443e209d7a0dad49a423be15196b9b43c17f",
+      "kokoro-v1_0.pth": "496dba118d1a58f5f3db2efc88dbdc216e0483fc89fe6e47ee1f2c53f18ad1e4",
+      "voices/am_adam.pt": "ced7e284aba12472891be1da3ab34db84cc05cc02b5889535796dbf2d8b0cb34",
+      "voices/am_fenrir.pt": "98e507eca1db08230ae3b6232d59c10aec9630022d19accac4f5d12fcec3c37a",
+      "voices/am_michael.pt": "9a443b79a4b22489a5b0ab7c651a0bcd1a30bef675c28333f06971abbd47bd37"
+    },
+    "speaker": "dave",
+    "voice": "am_fenrir",
+    "text": "Stop attacking my wallet!",
+    "text_sha256": "f6b03ef2a26422bc9d53603496238cb668b1faae0025c5f6b2abe7f4100a55e8",
+    "audio_sha256": "0401a0dd04b7fbc0687be1a089e30f7a1ce7ff1794457038c7b39d07ef82f2ba",
+    "duration_seconds": 1.875,
+    "rms": 0.06796874709254624,
+    "elapsed_seconds": 7.783208459999969,
+    "child_max_rss_bytes": 1312395264,
+    "torch_version": "2.9.1+cpu",
+    "torch_cuda_build": null,
+    "publication_enabled": false,
+    "production_approved": false,
+    "scope": "Actual pinned Python loader plus one existing-script utterance. Not listening quality, full render or production approval."
+  },
+  "resources": {
+    "returncode": 0,
+    "elapsed_seconds": 9.880304733999992,
+    "peak_sampled_process_tree_rss_bytes": 1322422272,
+    "cpu_affinity": [
+      0,
+      1
+    ],
+    "cpu_seconds_hard_limit_per_process": 125,
+    "wall_seconds_limit": 180,
+    "rss_stop_threshold_bytes": 3221225472,
+    "rss_limit_scope": "25ms sampled PPid-tree stop threshold, not a kernel memory guarantee"
+  },
+  "generator_sha256": "24501e664095ecc9701751c9665615d8f0c0bd8dccec9e388ef2e0736aef54a8",
+  "source_base": "7a1caa4c6ffdc241681b2c69664c74e737784bd3",
+  "installed_runtime": {
+    "python": "3.12.14",
+    "kokoro": "0.9.4",
+    "torch": "2.9.1+cpu",
+    "misaki": "0.9.4",
+    "transformers": "5.24.0",
+    "huggingface_hub": "2.4.0",
+    "en_core_web_sm": "3.8.0"
+  },
+  "runtime_disk_bytes_approx": 1395864371,
+  "model_disk_bytes_approx": 329252864,
+  "setup_scope": "Isolated workspace venv and public canonical assets; no CUDA wheels, services, host settings or production assets changed. Existing model variant and existing speaker assignments retained.",
+  "inference_network": "HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1 and socket.socket.connect raises during actual loader/synthesis. Setup downloads were completed separately.",
+  "validation": {
+    "unit_regressions": "31 passed: generator and assembler tests",
+    "coverage": [
+      "immutable revision supplied for every model/config/voice download",
+      "size/hash mismatch blocks deserialization",
+      "verified model paths and voice tensors reach loader",
+      "changed model revision or asset hashes prevent cached take reuse",
+      "existing speaker assignment, timing, audio integrity and no truncation tests"
+    ]
+  },
+  "limitations": [
+    "Short synthetic utterance only; no naturalness or prosody approval.",
+    "No complete episode regeneration, caption alignment or production replacement.",
+    "Sampled memory threshold is not a kernel memory guarantee; CPU-time limit is per process.",
+    "Exact runtime versions recorded for compatibility evidence; transitive dependencies are not newly locked by this change."
+  ],
+  "upstream_sources": [
+    "https://github.com/hexgrad/kokoro/blob/dfb907a02bba8152ca444717ca5d78747ccb4bec/kokoro/model.py",
+    "https://github.com/hexgrad/kokoro/blob/dfb907a02bba8152ca444717ca5d78747ccb4bec/kokoro/pipeline.py",
+    "https://huggingface.co/hexgrad/Kokoro-82M/tree/f3ff3571791e39611d31c381e3a41a3af07b4987"
+  ],
+  "publication_enabled": false,
+  "production_approved": false
+}
