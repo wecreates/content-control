@@ -20,6 +20,42 @@ test('exact new candidate registration is metadata and sampled evidence, never p
  assert.equal(r.watch_url,null);assert.equal(r.media_url,null);
 });
 
+test('failed provider attempt is exposed as scoped diagnostics without identifiers or approval',()=>{
+ const input=record();input.provider_diagnostic.event_id='private-event';input.provider_diagnostic.signed_url='https://private.invalid';
+ const r=registeredCreativeReview(input,digest),d=r.provider_diagnostic;
+ assert.equal(r.status,'REVIEW_PENDING');assert.equal(d.status,'REMOTE_EVENT_ERROR');
+ assert.equal(d.remote_execution_status,'UNKNOWN');assert.equal(d.result_error_code,'EVENT_RESULT_NOT_FOUND');assert.equal(d.response_received,false);
+ assert.equal(d.full_av_review,false);assert.equal(d.candidate_sha256,digest);
+ assert.equal(d.decoded_audio_sha256,input.offline.files['final-mix.wav']);
+ assert.deepEqual(d.uploaded_modalities,['video','audio']);
+ assert.deepEqual(d.audio_only_control.uploaded_modalities,['audio']);
+ assert.equal(d.audio_only_control.result_error_code,'EVENT_ERROR_WITHOUT_DETAILS');
+ assert.equal(d.audio_only_control.response_received,false);
+ assert.equal(d.event_id,undefined);assert.equal(d.signed_url,undefined);
+ const previous=record();delete previous.provider_diagnostic;assert.equal(registeredCreativeReview(previous,digest).provider_diagnostic,null);
+});
+test('audio-only control cannot inherit other media, claim review or leak capability identifiers',()=>{
+ for(const change of [d=>d.candidate_sha256='a'.repeat(64),d=>d.decoded_audio_sha256='a'.repeat(64),
+  d=>d.source_application_sha256='a'.repeat(64),d=>d.source_receipt_sha256='bad',
+  d=>d.response_received=true,d=>d.full_av_review=true,d=>d.production_approved=true,
+  d=>d.publication_enabled=true,d=>d.remote_execution_status='STOPPED',d=>d.status='PASS',
+  d=>d.uploaded_modalities=['audio','video'],d=>d.finished_at='invalid']) {
+  const r=record();change(r.provider_diagnostic.audio_only_control);
+  assert.throws(()=>registeredCreativeReview(r,digest),/PROVIDER_CONTROL_DIAGNOSTIC_INVALID/);
+ }
+ const r=record();r.provider_diagnostic.audio_only_control.event_id='private';
+ assert.equal(registeredCreativeReview(r,digest).provider_diagnostic.audio_only_control.event_id,undefined);
+});
+test('provider diagnostic stale identity, wrong audio, success claims and approval flags fail closed',()=>{
+ for(const change of [d=>d.candidate_sha256='f'.repeat(64),d=>d.decoded_audio_sha256='f'.repeat(64),
+  d=>d.source_receipt_sha256='bad',d=>d.source_application_sha256='bad',d=>d.status='PASS',
+  d=>d.result_error_code='NONE',d=>d.remote_execution_status='STOPPED',d=>d.response_received=true,d=>d.full_av_review=true,
+  d=>d.production_approved=true,d=>d.publication_enabled=true,d=>d.finished_at='invalid',
+  d=>d.finished_at='2020-01-01T00:00:00Z',d=>d.uploaded_modalities=['video']]) {
+  const r=record();change(r.provider_diagnostic);assert.throws(()=>registeredCreativeReview(r,digest),/PROVIDER_DIAGNOSTIC_INVALID/);
+ }
+});
+
 test('packet registration verifies original bytes, unreviewed coverage, paths and source identity',async()=>{
  const hash=x=>createHash('sha256').update(x).digest('hex');
  for(const change of ['none','audio','candidate','gap','reviewed','path','symlink','stale']) {

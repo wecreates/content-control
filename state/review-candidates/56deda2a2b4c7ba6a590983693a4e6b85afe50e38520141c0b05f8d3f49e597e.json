@@ -245,5 +245,43 @@
   "packet_manifest_sha256": "958b57396a336f620aa780cddbe609075fc1fb30e0fa7ed06aca035966f17e7d",
   "audio_packet_count": 4,
   "publication_enabled": false,
-  "production_approved": false
+  "production_approved": false,
+  "provider_diagnostic": {
+    "provider": "PUBLIC_QWEN_DEMO_DASHSCOPE",
+    "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+    "decoded_audio_sha256": "c12033c6806f243396a0cc548c060ccde9b156981d0a30f549bb501dbb7fe954",
+    "source_application_sha256": "85649969331c5af9eb3da1af90397dbb077d19da405e298837ececa9cd485445",
+    "source_receipt_sha256": "7dfadc9f8f033fd3603c6e51ea3be4f4350f09d32c2e3520f2262ae465c58a80",
+    "started_at": "2026-11-21T01:32:54.357824+00:00",
+    "finished_at": "2026-11-21T01:35:59.774863+00:00",
+    "status": "REMOTE_EVENT_ERROR",
+    "result_error_code": "EVENT_RESULT_NOT_FOUND",
+    "uploaded_modalities": [
+      "video",
+      "audio"
+    ],
+    "response_received": false,
+    "full_av_review": false,
+    "publication_enabled": false,
+    "production_approved": false,
+    "remote_execution_status": "UNKNOWN",
+    "audio_only_control": {
+      "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+      "decoded_audio_sha256": "c12033c6806f243396a0cc548c060ccde9b156981d0a30f549bb501dbb7fe954",
+      "source_application_sha256": "85649969331c5af9eb3da1af90397dbb077d19da405e298837ececa9cd485445",
+      "source_receipt_sha256": "08b04ef9c0f8fcafdad337f6b294f4758bd083c5073ef38ac7098504bc664437",
+      "started_at": "2026-11-21T01:39:45.756860+00:00",
+      "finished_at": "2026-11-21T01:43:54.713260+00:00",
+      "status": "REMOTE_EVENT_ERROR",
+      "result_error_code": "EVENT_ERROR_WITHOUT_DETAILS",
+      "remote_execution_status": "UNKNOWN",
+      "uploaded_modalities": [
+        "audio"
+      ],
+      "response_received": false,
+      "full_av_review": false,
+      "publication_enabled": false,
+      "production_approved": false
+    }
+  }
 }
