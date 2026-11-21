@@ -78,6 +78,24 @@ class CreativePreviewTests(unittest.TestCase):
                         preview.receipt(root, root/'output', self.branch, self.commit, 'b'*40)
                 self.assertFalse((root/'output/receipt.json').exists())
 
+    def test_decoder_failure_never_issues_success_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(preview, 'INPUT_HASHES', self.fixture(root)):
+                preview.prepare(root, root/'output', self.branch, self.commit)
+                (root/'output/creative-preview.mp4').write_bytes(b'corrupt media')
+                probe = {'streams': [
+                    {'codec_type': 'video', 'width':720, 'height':1280, 'r_frame_rate':'24/1', 'nb_frames':'24'},
+                    {'codec_type': 'audio'}]}
+                with patch.object(preview.subprocess, 'check_output', return_value=json.dumps(probe)), patch.object(preview, 'audio_hash', return_value='same-audio'), patch.object(preview.subprocess, 'run', side_effect=preview.subprocess.CalledProcessError(1, 'ffmpeg')) as decoder:
+                    with self.assertRaises(preview.subprocess.CalledProcessError):
+                        preview.receipt(root, root/'output', self.branch, self.commit, 'b'*40)
+                    command = decoder.call_args.args[0]
+                    self.assertIn('-xerror', command)
+                    self.assertEqual(command[-3:], ['-f', 'null', '-'])
+                    self.assertTrue(decoder.call_args.kwargs['check'])
+                self.assertFalse((root/'output/receipt.json').exists())
+
     def test_workflow_has_no_production_mutation_or_provider_secrets(self):
         workflow = Path('.github/workflows/creative-branch-preview.yml').read_text()
         for forbidden in ('contents: write', 'actions: write', 'secrets.', 'git push', 'gh workflow', 'workflow_run:', '\n  push:', '\n  schedule:', 'persist_v2_artifacts', 'deploy'):

@@ -83,6 +83,10 @@ def receipt(artifact, out, branch, commit, workflow_sha):
     props = json.loads((out / 'props.json').read_text())
     if props.get('ccsd') != ccsd:
         raise ValueError('caption or scene inputs changed during render')
+    # Container metadata and packet identity do not prove both streams decode.
+    subprocess.run(['ffmpeg', '-v', 'error', '-xerror', '-i', str(video),
+                    '-map', '0:v:0', '-map', '0:a:0', '-f', 'null', '-'],
+                   check=True, capture_output=True, timeout=120)
     result = {
         'schema_version': 1, 'status': 'RENDERED_AWAITING_CREATIVE_REVIEW',
         'scope': 'Branch render and encoded-media integrity only; no creative acceptance',
@@ -90,7 +94,7 @@ def receipt(artifact, out, branch, commit, workflow_sha):
         'source_run_id': SOURCE_RUN, 'input_sha256': INPUT_HASHES,
         'preview_flags': {k: props[k] for k in ('groundedPreview', 'stylePreview')},
         'candidate_sha256': sha(video), 'props_sha256': sha(out / 'props.json'),
-        'encoded_audio_sha256': original_audio, 'video_frames': expected_frames,
+        'encoded_audio_sha256': original_audio, 'video_frames': expected_frames, 'full_decode_passed': True,
         'video_duration_seconds': float(visual['duration']),
         'audio_duration_seconds': float(audio['duration']),
         'publication_enabled': False, 'production_approved': False, 'provider_calls': 0,
