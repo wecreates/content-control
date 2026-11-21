@@ -16,6 +16,41 @@ import wave
 
 VOICE_ASSIGNMENTS={'dave':'am_fenrir','points_monk':'am_michael','narrator':'am_adam'}
 MODEL_REPO='hexgrad/Kokoro-82M'
+# Canonical v1.0 assets; not the separate q8 audition model.
+# https://huggingface.co/hexgrad/Kokoro-82M/tree/f3ff3571791e39611d31c381e3a41a3af07b4987
+# LFS SHA-256/size metadata plus independently hashed config.json.
+MODEL_REVISION='f3ff3571791e39611d31c381e3a41a3af07b4987'
+MODEL_ASSETS={
+    'config.json':(2351,'5abb01e2403b072bf03d04fde160443e209d7a0dad49a423be15196b9b43c17f'),
+    'kokoro-v1_0.pth':(327212226,'496dba118d1a58f5f3db2efc88dbdc216e0483fc89fe6e47ee1f2c53f18ad1e4'),
+    'voices/am_adam.pt':(523420,'ced7e284aba12472891be1da3ab34db84cc05cc02b5889535796dbf2d8b0cb34'),
+    'voices/am_fenrir.pt':(523430,'98e507eca1db08230ae3b6232d59c10aec9630022d19accac4f5d12fcec3c37a'),
+    'voices/am_michael.pt':(523435,'9a443b79a4b22489a5b0ab7c651a0bcd1a30bef675c28333f06971abbd47bd37'),
+}
+
+
+def model_identity():
+    return {'model_revision':MODEL_REVISION,
+            'model_asset_sha256':{name:value[1] for name,value in MODEL_ASSETS.items()}}
+
+
+def pinned_assets(download=None):
+    """Resolve explicit immutable assets and verify bytes before deserialization."""
+    if download is None:
+        from huggingface_hub import hf_hub_download
+        download=hf_hub_download
+    paths={}
+    for name,(size,expected) in MODEL_ASSETS.items():
+        path=Path(download(repo_id=MODEL_REPO,filename=name,revision=MODEL_REVISION))
+        digest=hashlib.sha256()
+        with path.open('rb') as source:
+            if os.fstat(source.fileno()).st_size!=size:raise ValueError('Pinned Kokoro asset size mismatch: '+name)
+            for block in iter(lambda:source.read(1024*1024),b''):digest.update(block)
+        if digest.hexdigest()!=expected:raise ValueError('Pinned Kokoro asset hash mismatch: '+name)
+        paths[name]=str(path)
+    return paths
+
+
 MAX_SPEED=1.45
 
 
@@ -24,11 +59,15 @@ def sha(file):return hashlib.sha256(Path(file).read_bytes()).hexdigest()
 
 def local_synthesizer():
     # Lazy import keeps tests independent from heavyweight model downloads.
-    from kokoro import KPipeline
-    pipeline=KPipeline(lang_code='a',repo_id=MODEL_REPO,device='cpu')
+    from kokoro import KModel,KPipeline
+    assets=pinned_assets()
+    model=KModel(repo_id=MODEL_REPO,config=assets['config.json'],model=assets['kokoro-v1_0.pth']).to('cpu').eval()
+    pipeline=KPipeline(lang_code='a',repo_id=MODEL_REPO,model=model,device='cpu')
+    # Passing verified local tensors avoids KPipeline's unpinned voice-name fetch.
+    voices={voice:pipeline.load_voice(assets[f'voices/{voice}.pt']) for voice in VOICE_ASSIGNMENTS.values()}
     def synth(text,voice,speed):
         samples=[]
-        for _,_,audio in pipeline(text,voice=voice,speed=speed,split_pattern=r'\n+'):
+        for _,_,audio in pipeline(text,voice=voices[voice],speed=speed,split_pattern=r'\n+'):
             samples.extend(audio.detach().cpu().numpy().reshape(-1).tolist())
         return samples,24000
     return synth
@@ -41,7 +80,8 @@ def cached_clips(out):
         if (not isinstance(old,dict) or old.get('publication_enabled') is not False or old.get('provider')!='kokoro'
                 or old.get('model_id')!='Kokoro-82M' or old.get('model_repository')!=MODEL_REPO
                 or old.get('voice_assignments')!=VOICE_ASSIGNMENTS
-                or old.get('generator_sha256')!=sha(__file__)):return {}
+                or old.get('generator_sha256')!=sha(__file__)
+                or any(old.get(k)!=v for k,v in model_identity().items())):return {}
         result={}
         for clip in old['clips']:
             requested=clip.get('requested_speed')
@@ -97,7 +137,7 @@ def generate(ccsd,out_dir,synth=None):
         windows.append(window)
     out=Path(out_dir).resolve();out.mkdir(parents=True,exist_ok=True)
     previous=cached_clips(out)
-    manifest={'schema_version':1,'publication_enabled':False,'provider':'kokoro','model_id':'Kokoro-82M','model_repository':MODEL_REPO,'generator_sha256':sha(__file__),'device':'cpu','voice_assignments':dict(VOICE_ASSIGNMENTS),'clips':[],'provider_calls':0,'status':'GENERATED_PENDING_LISTENING_REVIEW','scope':'Local synthesis, declared stock voice assignment, timing and file integrity; transcript/listening quality requires review'}
+    manifest={'schema_version':1,'publication_enabled':False,'provider':'kokoro','model_id':'Kokoro-82M','model_repository':MODEL_REPO,**model_identity(),'generator_sha256':sha(__file__),'device':'cpu','voice_assignments':dict(VOICE_ASSIGNMENTS),'clips':[],'provider_calls':0,'status':'GENERATED_PENDING_LISTENING_REVIEW','scope':'Local synthesis, declared stock voice assignment, timing and file integrity; transcript/listening quality requires review'}
     # Manifest is committed only after every clip succeeds; no partial success claim.
     with tempfile.TemporaryDirectory(prefix='.voice-build-',dir=out) as temp:
         stage=Path(temp)
