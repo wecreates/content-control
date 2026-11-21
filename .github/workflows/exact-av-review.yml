@@ -10,7 +10,7 @@ on:
         description: Exact candidate format
         required: true
         type: choice
-        options: [short, long, v2]
+        options: [short, long, v2, v2-preview]
       review_json_path:
         description: Optional committed reviewer JSON path; blank prepares review only
         type: string
@@ -45,6 +45,12 @@ on:
       - 'tests/comparison-browser.mjs'
       - 'scripts/build_offline_comparison.mjs'
       - 'scripts/exact_av_review.mjs'
+      - 'scripts/register_creative_review.mjs'
+      - 'creative-review-registration.js'
+      - 'production-status.js'
+      - 'tests/creative-review-registration.test.mjs'
+      - 'tests/production-status.test.mjs'
+      - 'state/review-candidates/**'
       - 'scripts/gemini_free_av_review.py'
       - 'tests/test_gemini_free_av_review.py'
       - 'control/gemini-free-av-policy.json'
@@ -61,6 +67,17 @@ permissions:
   contents: read
   actions: read
 jobs:
+  candidate-registration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --ignore-scripts
+      - run: node --test tests/creative-review-registration.test.mjs tests/production-status.test.mjs
   tests:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest

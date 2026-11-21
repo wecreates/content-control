@@ -1,9 +1,19 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import {createReviewArtifactVerifier,readReviewJson} from './review-artifacts.js';
+import {registeredCreativeReview} from './creative-review-registration.js';
 export function createProductionStatusRouter({root=process.cwd()}={}) {
  const router=express.Router();
  const artifacts=createReviewArtifactVerifier(root);
+ router.get('/review-candidates/:sha',async(req,res)=>{
+  res.setHeader('Cache-Control','no-store');
+  const locked={publication_enabled:false,production_approved:false,full_av_review:false,watch_url:null,media_url:null};
+  if(!/^[a-f0-9]{64}$/.test(req.params.sha))return res.status(400).json({status:'UNAVAILABLE',...locked,error:'INVALID_CANDIDATE_HASH'});
+  try {
+   const record=(await readReviewJson(root,`state/review-candidates/${req.params.sha}.json`)).value;
+   res.json(registeredCreativeReview(record,req.params.sha));
+  }catch(error){res.status(error.code==='ENOENT'?404:503).json({status:'UNAVAILABLE',...locked,error:'CANDIDATE_REVIEW_REGISTRATION_UNAVAILABLE'});}
+ });
  router.get('/v2/revalidation',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   const locked={publication_enabled:false,production_approved:false,full_av_review:false,watch_url:null};

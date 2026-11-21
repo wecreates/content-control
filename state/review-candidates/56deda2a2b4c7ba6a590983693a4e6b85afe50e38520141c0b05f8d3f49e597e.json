@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "status": "REVIEW_PENDING",
+  "recorded_at": "2026-11-21T01:18:03.576Z",
+  "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+  "artifact_expires_at": "2026-12-05T00:25:49Z",
+  "source_run": {
+    "id": 44843599200,
+    "repository": {
+      "full_name": "wecreates/content-control"
+    },
+    "head_repository": {
+      "full_name": "wecreates/content-control"
+    },
+    "head_sha": "0cb82f40485fbb65b2769e5d83d99e03525888a4",
+    "head_branch": "codex/creative-preview-pr-proof-20261121",
+    "path": ".github/workflows/creative-branch-preview.yml",
+    "event": "pull_request",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "render": {
+    "schema_version": 1,
+    "status": "RENDERED_AWAITING_CREATIVE_REVIEW",
+    "scope": "Branch render and encoded-media integrity only; no creative acceptance",
+    "source_branch": "codex/v2-grounded-staging-20261121",
+    "source_commit": "540deda50211cd5351f66374d66b4de6322e273a",
+    "workflow_commit": "a7ab06051575f59a345816054cd703d658c39ee6",
+    "source_run_id": 44821511267,
+    "input_sha256": {
+      "ccsd.json": "c9f74a5a1157f54ecaebac0cb9f7b0f0dd2038f9fdf89bb25f9d3c827826d4aa",
+      "captions.json": "e258408012cea9e0cfd58eda29ea32a7dfc1e73d76af67a13bb1c7f654e84462",
+      "mix/mix.wav": "aa2507be6e3c61b8149541e2449c3746ec027b80df3ba9bdb04066bcd70aad0b",
+      "render/v2-boss-fight.mp4": "feec786c87a0f811dd6793f0108d15e34b57308a83666f987c294f8cdfa2cc25"
+    },
+    "preview_flags": {
+      "groundedPreview": true,
+      "stylePreview": true
+    },
+    "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+    "props_sha256": "d31e2ea008069e8a59f26c7d27d2565c7c29856d6abe53b7a522e94f7e5a3422",
+    "encoded_audio_sha256": "759cd8653ef414ee62d3eeb485000f0dba8f310727535e7cb5ada207bebec837",
+    "video_frames": 841,
+    "full_decode_passed": true,
+    "video_duration_seconds": 35.041667,
+    "audio_duration_seconds": 35.040998,
+    "publication_enabled": false,
+    "production_approved": false,
+    "provider_calls": 0
+  },
+  "request": {
+    "schema_version": 1,
+    "status": "REVIEW_REQUIRED",
+    "publication_enabled": false,
+    "production_approved": false,
+    "media": {
+      "verified": true,
+      "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+      "duration_seconds": 35.041667,
+      "byte_length": 3527486,
+      "technical_decode": "PASS"
+    },
+    "scope": "Preparation only. No external upload, inference, creative approval, or listening certification performed.",
+    "prompt": "Review the exact supplied video AND audio end to end (35.041667 seconds; SHA256 56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e). Do not infer review from a script, contact sheet, transcript, or technical metrics. If any portion is inaccessible, report BLOCKED and describe the gap. Inspect hook, story escalation, visual storytelling, character consistency, voice performance, sound mix, pacing, phone readability, payoff and factual accuracy. Record time-located defects and full reviewed intervals. Bind candidate and each reference to its exported comparison UI review_session_id; telemetry records playback only and must not replace independent audiovisual observations. Independently review at least two distinct competitor videos with audio before claiming comparison. For each reference, record its exact SHA256, positive duration, continuous reviewed intervals covering the full duration, and separate concrete video and audio observations. Sampled frames, transcripts, metadata and inaccessible sources cannot satisfy this contract. Return JSON in this schema; only return PASS when actual complete review supports every check and there are no unresolved issues. Never invent evidence, reference access or listening.",
+    "response_schema": {
+      "review_session_id": "candidate playback session ID from exported UI receipt",
+      "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+      "duration_seconds": 35.041667,
+      "status": "PASS | REPAIR | BLOCKED",
+      "method": "rendered_video_review",
+      "full_video_review": "boolean",
+      "full_audio_review": "boolean",
+      "reviewer": {
+        "identity": "reviewer identifier",
+        "method": "actual audiovisual inspection method",
+        "evidence": "traceable review session or response identifier"
+      },
+      "reviewed_intervals": "[[start,end], ...]",
+      "checks": {
+        "hook": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "story_escalation": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "visual_storytelling": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "character_consistency": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "voice_performance": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "sound_mix": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "pacing": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "phone_readability": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "payoff": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        },
+        "factual_accuracy": {
+          "pass": "boolean",
+          "evidence": "concrete observed evidence"
+        }
+      },
+      "comparisons": [
+        {
+          "review_session_id": "reference playback session ID from exported UI receipt",
+          "url": "https://...",
+          "artifact_sha256": "SHA256 of exact reviewed reference bytes",
+          "duration_seconds": "positive number",
+          "reviewed_intervals": "[[start,end], ...] covering entire reference",
+          "video_observation": "specific observed visual action",
+          "audio_observation": "specific heard audio evidence",
+          "full_video_review": "boolean",
+          "full_audio_review": "boolean",
+          "access_scope": "full audiovisual review",
+          "observation": "specific observed evidence",
+          "applied_difference": "specific difference"
+        }
+      ],
+      "findings": [
+        {
+          "start_sec": "number",
+          "end_sec": "number",
+          "severity": "critical | major | minor",
+          "category": "string",
+          "evidence": "observed defect",
+          "repair": "required change",
+          "resolved": "boolean"
+        }
+      ],
+      "critical_count": "integer",
+      "major_count": "integer",
+      "unresolved_issues": "array",
+      "publication_enabled": false
+    }
+  },
+  "offline": {
+    "schema_version": 1,
+    "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+    "duration_seconds": 35.041667,
+    "technical_decode": "PASS",
+    "status": "REVIEW_PENDING",
+    "full_video_review": false,
+    "full_audio_review": false,
+    "production_approved": false,
+    "publication_enabled": false,
+    "frame_sampling": "1 FPS; sample n represents the fps filter output, not complete motion coverage",
+    "scope": "Local access package and decode diagnostics only; listening, motion judgment, synchronization, character identity and competitor comparison require actual review.",
+    "files": {
+      "review-packets.json": "958b57396a336f620aa780cddbe609075fc1fb30e0fa7ed06aca035966f17e7d",
+      "audio-diagnostics.log": "1994410e243b1eb34611318c075acf92ba364f9dbdf88695ee2d162954fb9c05",
+      "final-mix.wav": "c12033c6806f243396a0cc548c060ccde9b156981d0a30f549bb501dbb7fe954",
+      "decode.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "candidate.mp4": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+      "packets/0002.wav": "55c512405c218033eaa9fbb052892ee41ca329dd9822353585cd104d3e37e7cc",
+      "packets/0001.wav": "5d110e85ae0e56a243b41e586faad0a0aba45e87b896d029998b79d77e2c8f17",
+      "packets/0003.wav": "6fd7d143e45687eed43905b1f680b8c180cb9b239e9c2f051feabf86402c25f8",
+      "packets/0000.wav": "50b809e69aa9fd6c6a59d2b228c5e8c2b0508e3fb687714ade1a16af597f2453",
+      "frames/000032.jpg": "cbf65b40e78de62a5278d339685f1867394c15a9009bf019bdf8a4d692a9ebb8",
+      "frames/000026.jpg": "04d5b1dca1e6f2e5056e0a2d3f57e584d17b7284c40ddaa838ffcebb80af2c5e",
+      "frames/000003.jpg": "b6444023e4a2b3c3d0fbf83e1fd91cd060e452692e5841c49fdf7f98aa7408f7",
+      "frames/000009.jpg": "f86a15738893edbbbbd296c0a15bebd0e219ffc3ef6b8c320101fa2f53b1d70e",
+      "frames/000001.jpg": "cc864e5170bb6f6a3a91f306a048157dfd87a1ba76c029cf18ed933a98bf6ec4",
+      "frames/000007.jpg": "72cdb611412d0a6eb8206bb1e0e340f0b87dd60fa0b1f2963aa7fe48488e438e",
+      "frames/000029.jpg": "0edf3f86a83d9dbcfed6d16d38003d0477b81bcc1eb4e115cae97ff2976f101e",
+      "frames/000031.jpg": "46fa0278853932426019afa2e64c7bfcf205e13258b0de60872e6531d168d3fe",
+      "frames/000022.jpg": "b709fe2dce47d0efb0b901cec61db5aaf968ff5632a875cb3fdbaf698f878566",
+      "frames/000018.jpg": "cecf598f7f859ef5c9bb2fa7c677fe81c9e49271bce878ecaf82ae0a0cbf3a97",
+      "frames/000024.jpg": "283282beb94c308fca8e05411757b3f916dd1b24d178c974ef4eb0fba6796692",
+      "frames/000034.jpg": "902d517f78ac43b15f6d8bd3ceb51fbb9e0b67135590fcb5b3ea1ee144d80e7b",
+      "frames/000027.jpg": "9251a234dca58af85370d4f8d7658127636e6bebde2dfd24a38d448cadad6190",
+      "frames/000013.jpg": "8d93b0d06e3b7a74de724fc439bd403a57a385f389711ebf0899a8dee82da87e",
+      "frames/000017.jpg": "01aa80938328c65d6e3c7c9224b6a674f956fcbc6aa764b97a3e474522007f51",
+      "frames/000011.jpg": "3fa48f03c06a6ed62bbaf0f53b00d0710e00ed2f9746154a713be52dfb2b0a01",
+      "frames/000004.jpg": "5bf39af90f4402221af464bc3133639d29dfefb793bceda57dcd361119bbe32b",
+      "frames/000025.jpg": "281c2e2edc173b8c42e8e182250df86d02f3a8e03feefd472046d28dd1716a14",
+      "frames/000020.jpg": "0af9a1c1768733e186d7cce058502d29492d78b7bbd0e196f7db42b4d15cf9da",
+      "frames/000030.jpg": "03fd6490dfaa9730f919ef277b114e9431cf204065c8a60c3759611c7c92d177",
+      "frames/000012.jpg": "7b112d1c949ef74353503ed21559b2de816a1ec5d8da040bb8d61f6454815737",
+      "frames/000015.jpg": "ca06e5a378c3a31826fe296aad5af216aeabc28afecf0a4d4481df9001017052",
+      "frames/000033.jpg": "efa7e5fbd4ce62e6a4d2a9c72b19887111f9cad0b498a3b1ca30b0d5f5664e33",
+      "frames/000028.jpg": "90ebad9f8599b245525c3b25c3b0780d83998a5cd04ad0b1895028f74fd27233",
+      "frames/000019.jpg": "2cecfb9b701d1d9ad1faca18ca05a882ddd647156a7d56af8c11d1eb85a8f7a1",
+      "frames/000035.jpg": "6975168baaf0eb8883df20abf94f2af3377894cc89f4bcb076f2ce5a16279a87",
+      "frames/000014.jpg": "2d6fa0cf6f76df735f1f3c031696545c6bf49ea783c6cbc174b182470ee5718f",
+      "frames/000006.jpg": "70c7b59fced91fda18b5d5a422d057ed5f8a51a77e27bb966590cb8b954b3820",
+      "frames/000021.jpg": "d8126a314c18683082a72e4d7c5f24da7911e18fc659d4fecb433d78d7626c09",
+      "frames/000016.jpg": "746c4285039d5eac2d379cbbcae2bcce4e976553ef5ce44bc2a6d735cc48acdc",
+      "frames/000010.jpg": "4bd0cc4e924edd7cba05794684cbceb91681bafcbdb5837c97d5da6163d523e2",
+      "frames/000002.jpg": "c6dfd3ddf2716e0e3a24c22c15756c810f724a2dc896606f685f38466cc72ff6",
+      "frames/000008.jpg": "66a67c8e20bd2a62be3666ce9ce5f2328a6df6c18ca1bcdce9906916cda7d684",
+      "frames/000023.jpg": "b9d0a740748382ffe751920cd0497b72159eef3ae02710602a22d1f359145ab2",
+      "frames/000005.jpg": "e6fb35872c14705009050f26d2978963bf622db94ab6337a18081e1f6829164a"
+    }
+  },
+  "sample": {
+    "schema_version": 1,
+    "checked_at_utc": "2026-11-21T00:27:53.793123+00:00",
+    "review_scope": "Independent static review of ten phone-size frames extracted by the hosted workflow from the actual encoded MP4; not a full real-time audiovisual or creative approval",
+    "candidate_sha256": "56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e",
+    "source_commit": "540deda50211cd5351f66374d66b4de6322e273a",
+    "workflow_run": "https://github.com/wecreates/content-control/actions/runs/44843599200",
+    "reviewed_frames": [
+      336,
+      372,
+      420,
+      450,
+      466,
+      500,
+      744,
+      768,
+      800,
+      839
+    ],
+    "observations": [
+      "Grounded table, doorway and counter cues clearly support the fee, invitation and budget scenes.",
+      "Dark teal selected words remain legible at 360x640; no caption cropping or collision observed in the sampled frames.",
+      "INVITED sign readable and sandwich detail remains inside the frame.",
+      "Chromium text is narrower than the independently reviewed SSR preview; this review applies only to the hosted encoded candidate."
+    ],
+    "blocking_findings_in_sample": [],
+    "independent_local_file_sha256_matches_receipt": true,
+    "independent_local_ffmpeg_full_video_audio_decode": "PASS",
+    "status": "SAMPLED_FRAMES_REVIEWED_FULL_AV_REVIEW_PENDING",
+    "publication_enabled": false,
+    "production_approved": false
+  },
+  "packet_manifest_sha256": "958b57396a336f620aa780cddbe609075fc1fb30e0fa7ed06aca035966f17e7d",
+  "audio_packet_count": 4,
+  "publication_enabled": false,
+  "production_approved": false
+}
