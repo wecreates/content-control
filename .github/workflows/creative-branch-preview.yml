@@ -1,0 +1,120 @@
+name: Artifact-only creative branch preview
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/creative-branch-preview.yml'
+      - 'scripts/creative_preview_artifact.py'
+      - 'tests/test_creative_preview_artifact.py'
+  workflow_dispatch:
+    inputs:
+      creative_branch:
+        description: Approved same-repository creative branch
+        required: true
+        type: choice
+        options:
+          - codex/v2-grounded-staging-20261121
+          - codex/v2-typography-framing-preview
+      creative_sha:
+        description: Exact reviewed 40-character branch HEAD commit
+        required: true
+        type: string
+      grounded_preview:
+        description: Enable the grounded staging experiment
+        type: boolean
+        default: true
+      typography_preview:
+        description: Enable the independent typography experiment
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: creative-branch-preview
+  cancel-in-progress: false
+env:
+  PUBLICATION_ENABLED: 'false'
+  PAID_GENERATION_ENABLED: 'false'
+jobs:
+  offline-tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m unittest -v tests.test_creative_preview_artifact
+  preview:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'wecreates/content-control' && github.event.repository.private == false && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CREATIVE_BRANCH: ${{ inputs.creative_branch }}
+      CREATIVE_SHA: ${{ inputs.creative_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: runtime
+          persist-credentials: false
+      - name: Validate the exact approved creative branch head
+        run: python runtime/scripts/creative_preview_artifact.py guard --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.creative_sha }}
+          path: creative
+          persist-credentials: false
+      - name: Confirm checkout identity
+        working-directory: creative
+        run: test "$(git rev-parse HEAD)" = "$CREATIVE_SHA"
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Install only the trusted workflow revision's renderer dependencies
+        working-directory: runtime
+        run: |
+          npm ci --ignore-scripts
+          bash scripts/ci_media_tools.sh
+          ln -s "$GITHUB_WORKSPACE/runtime/node_modules" "$GITHUB_WORKSPACE/creative/node_modules"
+      - uses: actions/download-artifact@v4
+        with:
+          repository: wecreates/content-control
+          run-id: 44821511267
+          name: content-control-v2-acceptance
+          path: original
+          github-token: ${{ github.token }}
+      - name: Bind the unchanged observed captions and existing audio
+        env:
+          GROUNDED: ${{ inputs.grounded_preview }}
+          TYPOGRAPHY: ${{ inputs.typography_preview }}
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$GROUNDED" = true ]; then flags+=(--grounded); fi
+          if [ "$TYPOGRAPHY" = true ]; then flags+=(--typography); fi
+          python runtime/scripts/creative_preview_artifact.py prepare --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA" "${flags[@]}"
+      - name: Render the branch composition with the complete original timeline
+        working-directory: creative
+        run: |
+          "$GITHUB_WORKSPACE/runtime/node_modules/.bin/remotion" render remotion/studio-animatic-index.jsx StudioAnimatic "$GITHUB_WORKSPACE/preview/silent.mp4" --props="$GITHUB_WORKSPACE/preview/props.json" --codec=h264 --crf=18 --concurrency=2
+      - name: Copy the approved existing encoded audio without regeneration
+        run: |
+          ffmpeg -v error -y -i preview/silent.mp4 -i original/render/v2-boss-fight.mp4 -map 0:v:0 -map 1:a:0 -c copy -movflags +faststart preview/creative-preview.mp4
+          python runtime/scripts/creative_preview_artifact.py receipt --branch "$CREATIVE_BRANCH" --commit "$CREATIVE_SHA" --workflow-sha "$GITHUB_SHA"
+      - name: Extract phone review frames from the actual encoded video
+        run: |
+          mkdir -p preview/phone-frames
+          for frame in 336 372 420 450 466 500 744 768 800 839; do
+            ffmpeg -v error -y -i preview/creative-preview.mp4 -vf "select=eq(n\,$frame),scale=360:640" -frames:v 1 "preview/phone-frames/$frame.png"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: creative-preview-${{ github.run_id }}
+          path: preview
+          if-no-files-found: warn
+          retention-days: 14
