@@ -21,7 +21,7 @@
     "candidate_identity_consistent": true,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -39,12 +39,12 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": true,
+    "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -54,12 +54,22 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest",
+    "dependency_security_clean",
+    "python_dependency_security_clean"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "ecab65a8be899564213afb1678740363ca3f18830efa1d3dea400531b0dad9c5",
+      "expected": "1d667f8375e42b9e7d86d35160306dad6821cf83bfee3d46c24bd664aecb6de9",
+      "path": "server-lowmem.js"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
-  "status": "GREEN",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
