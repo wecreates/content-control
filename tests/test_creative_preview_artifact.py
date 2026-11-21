@@ -106,6 +106,12 @@ class CreativePreviewTests(unittest.TestCase):
         self.assertIn('run-id: 44821511267', workflow)
         self.assertIn('github.ref == \'refs/heads/main\'', workflow)
         self.assertIn('--concurrency=2', workflow)
+        self.assertIn('github.event.pull_request.head.repo.full_name == github.repository', workflow)
+        self.assertIn("github.head_ref == 'codex/creative-preview-pr-proof-20261121'", workflow)
+        self.assertIn("'540deda50211cd5351f66374d66b4de6322e273a'", workflow)
+        self.assertIn('github.event.pull_request.base.sha', workflow)
+        self.assertIn("github.base_ref == 'main'", workflow)
+        self.assertNotIn('pull_request_target', workflow)
 
 
 if __name__ == '__main__':
