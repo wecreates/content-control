@@ -165,3 +165,20 @@ test('latest verified visual repairs reach review with exact hashes and no appro
  assert.throws(()=>reviewSource(run,{...request,repository:'other/repo'}));
  assert.throws(()=>reviewSource({...run,id:38583366385},{...request,runId:'38583366385'}));
 });
+
+
+test('creative preview source is one pinned completed artifact, never arbitrary PR acceptance',()=>{
+ const run={...sourceRun(),id:44843599200,head_branch:'codex/creative-preview-pr-proof-20261121',
+  head_sha:'0cb82f40485fbb65b2769e5d83d99e03525888a4',path:'.github/workflows/creative-branch-preview.yml',
+  event:'pull_request',status:'completed',conclusion:'success'};
+ const request={...sourceRequest,runId:'44843599200',format:'v2-preview'};
+ const source=reviewSource(run,request);
+ assert.equal(source.expected_sha256,'56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e');
+ assert.equal(source.media,'creative-preview.mp4');assert.equal(source.production_approved,false);
+ for(const change of [{id:44843599201},{head_sha:'a'.repeat(40)},{head_branch:'main'},
+  {head_repository:{full_name:'fork/repo'}},{repository:{full_name:'fork/repo'}},
+  {event:'push'},{status:'in_progress'},{conclusion:'failure'},{path:'.github/workflows/content-control-v2.yml'}])
+  assert.throws(()=>reviewSource({...run,...change},request),/Untrusted/);
+ assert.throws(()=>reviewSource(run,{...request,runId:'44843599201'}));
+ assert.throws(()=>reviewSource(run,{...request,repository:'fork/repo'}));
+});

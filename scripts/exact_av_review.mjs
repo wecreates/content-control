@@ -48,6 +48,20 @@ function readReview(path) {
 export function reviewSource(run, {repository, runId, format}) {
  // This completed, independently recovered repair predates the main-branch workflow.
  // Pin its run, commit and media bytes; do not generally trust PR artifacts.
+ // Reviewed artifact-only branch render: a single explicit provenance exception,
+ // never a general grant to trust pull-request artifacts or an approval.
+ if(format==='v2-preview') {
+  if(repository!=='wecreates/content-control'||String(runId)!=='44843599200'||run?.id!==44843599200||
+     run.repository?.full_name!==repository||run.head_repository?.full_name!==repository||
+     run.head_sha!=='0cb82f40485fbb65b2769e5d83d99e03525888a4'||
+     run.head_branch!=='codex/creative-preview-pr-proof-20261121'||
+     run.path!=='.github/workflows/creative-branch-preview.yml'||run.event!=='pull_request'||
+     run.status!=='completed'||run.conclusion!=='success')throw Error('Untrusted creative preview source');
+  return {workflow:run.path,artifact:'creative-preview-44843599200',media:'creative-preview.mp4',
+   expected_sha256:'56deda2a2b4c7ba6a590983693a4e6b85afe50e38520141c0b05f8d3f49e597e',
+   run_id:String(runId),source_sha:run.head_sha,conclusion:run.conclusion,
+   publication_enabled:false,production_approved:false};
+ }
  const retained=Object.hasOwn(RETAINED_REPAIRS,String(runId))?RETAINED_REPAIRS[String(runId)]:null;
  if(retained){
   if(!['short','long'].includes(format)||run?.id!==Number(runId)||run.repository?.full_name!==repository||repository!=='wecreates/content-control'||run.head_repository?.full_name!==repository||run.head_sha!==retained.sha||run.path!==retained.workflow||run.event!=='pull_request'||run.status!=='completed'||run.conclusion!=='success')throw Error('Untrusted retained repair source');
