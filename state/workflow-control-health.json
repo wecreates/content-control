@@ -17,6 +17,7 @@
     ".github/workflows/comedy-retention-gate.yml": true,
     ".github/workflows/competitor-intelligence.yml": true,
     ".github/workflows/content-control-v2.yml": true,
+    ".github/workflows/creative-branch-preview.yml": true,
     ".github/workflows/credit-score-boss-fight-short.yml": true,
     ".github/workflows/dropbox-review-bridge.yml": true,
     ".github/workflows/episode1-first-watch-package.yml": true,
