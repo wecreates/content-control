@@ -104,6 +104,19 @@ class ReviewProductionTests(unittest.TestCase):
         time.sleep(.6)
         self.assertFalse(marker.exists())
 
+    def test_embedding_guardian_owns_source_sync_as_well_as_media_commands(self):
+        commands = []
+        def runner(command, **options):
+            commands.append((command, options))
+            if 'scripts.verify_episode1_sync import verify' in ' '.join(command):
+                raise RuntimeError('Synthetic source-sync stop')
+        with patch.object(pipeline, 'run_command', side_effect=AssertionError('unguarded command')):
+            result = pipeline.produce(self.root / 'embedded', command_runner=runner)
+        self.assertEqual(result['failed_step'], 'source-sync')
+        self.assertEqual(len(commands), 4)
+        self.assertTrue(all(options['deadline'] == commands[0][1]['deadline'] for _, options in commands))
+        self.assertEqual(result['status'], 'BLOCKED')
+
 
 if __name__ == '__main__':
     unittest.main()

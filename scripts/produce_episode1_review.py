@@ -14,10 +14,8 @@ import time
 
 try:
     from scripts.caption_contract import object_from, snapshot, validate_sources, render_vtt, parse_vtt, sha, write_atomic
-    from scripts.verify_episode1_sync import verify as verify_sync
 except ModuleNotFoundError:
     from caption_contract import object_from, snapshot, validate_sources, render_vtt, parse_vtt, sha, write_atomic
-    from verify_episode1_sync import verify as verify_sync
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES = (
@@ -106,7 +104,8 @@ def validate_bindings(directory, contract, narration, sources_before, sources_af
     return candidate
 
 
-def produce(output, *, python=sys.executable, picture_python=None, timeout=900, root=ROOT):
+def produce(output, *, python=sys.executable, picture_python=None, timeout=900, root=ROOT, command_runner=None):
+    """An embedding queue may supply its trusted process guardian, never job code."""
     output = Path(output).absolute()
     # Every run owns a new directory. Never overwrite canonical files or old PASS.
     output.mkdir(parents=True, exist_ok=False)
@@ -143,15 +142,16 @@ def produce(output, *, python=sys.executable, picture_python=None, timeout=900, 
                      'command': list(map(str, command)), 'log': name + '.log'}
             receipt['steps'].append(entry)
             write_json(output / 'run.json', receipt)
-            run_command(list(map(str, command)), cwd=root, log=output / entry['log'], deadline=deadline, env=env)
+            (command_runner or run_command)(list(map(str, command)), cwd=root, log=output / entry['log'], deadline=deadline, env=env)
             entry.update(status='PASS', finished_at=stamp())
 
         run('runtime', [python, '-c', 'import sys,importlib.metadata as m; print(sys.version); print("faster-whisper",m.version("faster-whisper"))'])
         run('node', ['node', '--version'])
         run('ffmpeg', ['ffmpeg', '-version'])
-        stage = 'source-sync'
-        sync = verify_sync(root)
-        write_json(output / 'source-sync.json', sync)
+        run('source-sync', [python, '-c',
+            'import json,sys;from pathlib import Path;from scripts.verify_episode1_sync import verify;'
+            'Path(sys.argv[1]).write_text(json.dumps(verify(),indent=2)+"\\n")', output / 'source-sync.json'])
+        sync = object_from(snapshot(output / 'source-sync.json'))
         if sync.get('status') != 'PASS':
             raise ValueError('Source timeline or retention checks failed')
         transcription = [python, 'scripts/free_transcription_qa.py', '--contract',
