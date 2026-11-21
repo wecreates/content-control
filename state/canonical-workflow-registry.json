@@ -71,6 +71,7 @@
     ".github/workflows/always-on-resolver.yml",
     ".github/workflows/bottleneck-resolver.yml",
     ".github/workflows/competitor-intelligence.yml",
+    ".github/workflows/creative-branch-preview.yml",
     ".github/workflows/dropbox-review-bridge.yml",
     ".github/workflows/episode1-first-watch-package.yml",
     ".github/workflows/episode1-max-speed.yml",
