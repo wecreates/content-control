@@ -21,7 +21,7 @@ test('both stores preserve existing ciphertext across equivalent key encodings',
  const file=path.join(directory,'vault');const old=new EncryptedSocialStore({file,key:hex});await old.update(d=>{d.marker='preserved';});
  const next=new EncryptedSocialStore({file,key:base64});assert.equal((await next.read()).marker,'preserved');await next.update(d=>{d.marker='updated';});assert.equal((await old.read()).marker,'updated');
  const options={pool:{},expiresAt:'2035-01-01T00:00:00Z'};
- const pgOld=new PostgresSocialStore({...options,key:hex}),pgNext=new PostgresSocialStore({...options,key:base64});const data={version:1,connections:{},jobs:[],marker:'preserved'};
+ const pgOld=new PostgresSocialStore({retentionPolicy:'fixed_expiry',...options,key:hex}),pgNext=new PostgresSocialStore({retentionPolicy:'fixed_expiry',...options,key:base64});const data={version:1,connections:{},jobs:[],marker:'preserved'};
  assert.deepEqual(pgNext.open(pgOld.seal(data)),data);assert.deepEqual(pgOld.open(pgNext.seal(data)),data);
- for(const key of [base64.slice(0,-1),'not-a-key']){assert.throws(()=>new EncryptedSocialStore({file,key}),/CONFIGURATION/);assert.throws(()=>new PostgresSocialStore({...options,key}),/CONFIGURATION/);}
+ for(const key of [base64.slice(0,-1),'not-a-key']){assert.throws(()=>new EncryptedSocialStore({file,key}),/CONFIGURATION/);assert.throws(()=>new PostgresSocialStore({retentionPolicy:'fixed_expiry',...options,key}),/CONFIGURATION/);}
 });
