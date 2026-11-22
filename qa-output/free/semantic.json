@@ -2,16 +2,16 @@
   "analysis_status": "COMPLETE",
   "artistic_acceptance": "UNASSESSED",
   "best_reference_similarity_by_candidate": [
-    0.4491097629070282,
-    0.386096328496933,
-    0.39850157499313354,
-    0.3978077173233032,
-    0.3830251097679138,
-    0.35640427470207214,
-    0.42337071895599365,
+    0.4491099417209625,
+    0.3860960602760315,
+    0.3985014259815216,
+    0.39780759811401367,
+    0.38283029198646545,
+    0.356983482837677,
+    0.42337095737457275,
     0.417600154876709,
-    0.4207580089569092,
-    0.43200650811195374
+    0.41903892159461975,
+    0.4335041642189026
   ],
   "checks": {
     "florence_completed": true,
@@ -47,7 +47,7 @@
           "file": "ref-05.jpg"
         },
         {
-          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in blue letters. The overall tone of the image is cheerful and playful.",
+          "caption": "The image is a simple illustration of two stick figures holding hands and smiling. The figures are drawn in a simple, cartoon-like style with thin lines and are wearing suits and ties. The background is plain white. Above the figures, there is a text that reads \"With The Habits\" in a bold, blue font. The overall tone of the image is cheerful and playful.",
           "file": "ref-10.jpg"
         }
       ]
@@ -58,37 +58,37 @@
   "frame_matches": [
     {
       "candidate": "cand-000001.jpg",
-      "cosine_similarity": 0.4491097629070282,
+      "cosine_similarity": 0.4491099417209625,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-000002.jpg",
-      "cosine_similarity": 0.386096328496933,
+      "cosine_similarity": 0.3860960602760315,
       "reference": "ref-08.jpg"
     },
     {
       "candidate": "cand-000003.jpg",
-      "cosine_similarity": 0.39850157499313354,
+      "cosine_similarity": 0.3985014259815216,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-000004.jpg",
-      "cosine_similarity": 0.3978077173233032,
+      "cosine_similarity": 0.39780759811401367,
       "reference": "ref-07.jpg"
     },
     {
       "candidate": "cand-000005.jpg",
-      "cosine_similarity": 0.3830251097679138,
+      "cosine_similarity": 0.38283029198646545,
       "reference": "ref-01.jpg"
     },
     {
       "candidate": "cand-000006.jpg",
-      "cosine_similarity": 0.35640427470207214,
+      "cosine_similarity": 0.356983482837677,
       "reference": "ref-09.jpg"
     },
     {
       "candidate": "cand-000007.jpg",
-      "cosine_similarity": 0.42337071895599365,
+      "cosine_similarity": 0.42337095737457275,
       "reference": "ref-01.jpg"
     },
     {
@@ -98,22 +98,22 @@
     },
     {
       "candidate": "cand-000009.jpg",
-      "cosine_similarity": 0.4207580089569092,
+      "cosine_similarity": 0.41903892159461975,
       "reference": "ref-01.jpg"
     },
     {
       "candidate": "cand-000010.jpg",
-      "cosine_similarity": 0.43200650811195374,
+      "cosine_similarity": 0.4335041642189026,
       "reference": "ref-09.jpg"
     }
   ],
-  "global_similarity": 0.6425086855888367,
+  "global_similarity": 0.6417751312255859,
   "limitations": [
     "Embedding similarity is descriptive, not calibrated artistic parity.",
     "Sampled frames do not establish timing, animation quality, or full-video parity.",
     "Captions may omit details or hallucinate; they are not visual approval."
   ],
-  "mean_best_frame_similarity": 0.40646806359291077,
+  "mean_best_frame_similarity": 0.40648430585861206,
   "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
   "openclip_status": "COMPLETE",
   "production_ready": false,
@@ -138,11 +138,11 @@
         },
         {
           "file": "cand-000005.jpg",
-          "sha256": "e6edf0e8ff9e0d630e07c9818dac6665d39a0f4123fee01651406069cb1d3196"
+          "sha256": "b6563a38dcc45fa6bd15ac1eb59a25e544200eab8c811d037aa4b1ca60cbbaa4"
         },
         {
           "file": "cand-000006.jpg",
-          "sha256": "285305b4b6a5c2f9aeda34256ac3de4f9e0943dadd6fd4dc50cecd48e5e151c6"
+          "sha256": "2defbbe3094911ddcb0ac6c9099a19c581b54877ccaafe47b80eaa04bc6eb662"
         },
         {
           "file": "cand-000007.jpg",
@@ -154,14 +154,14 @@
         },
         {
           "file": "cand-000009.jpg",
-          "sha256": "80fd5c34251618bd300046047f38c55f56b56353459524e62e40e902bf4cab9c"
+          "sha256": "b575505b2995981a5fa63bd2cf8ecf90966c0ee3f6fa8f813d349159fd6e6046"
         },
         {
           "file": "cand-000010.jpg",
-          "sha256": "c8adf58036a4b6dc061bfc7951ff280cd5680be00592ede00e6afe3f60900947"
+          "sha256": "bef1c5fa0d88d5515e34bbd8d97fd877276f3f15e0b7fd305758d6fbb793bf18"
         }
       ],
-      "candidate_video_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+      "candidate_video_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
       "derived_from_candidate_video": true,
       "engine": "ffmpeg",
       "filter": "fps=1/3",
@@ -187,11 +187,11 @@
       },
       {
         "file": "cand-000005.jpg",
-        "sha256": "e6edf0e8ff9e0d630e07c9818dac6665d39a0f4123fee01651406069cb1d3196"
+        "sha256": "b6563a38dcc45fa6bd15ac1eb59a25e544200eab8c811d037aa4b1ca60cbbaa4"
       },
       {
         "file": "cand-000006.jpg",
-        "sha256": "285305b4b6a5c2f9aeda34256ac3de4f9e0943dadd6fd4dc50cecd48e5e151c6"
+        "sha256": "2defbbe3094911ddcb0ac6c9099a19c581b54877ccaafe47b80eaa04bc6eb662"
       },
       {
         "file": "cand-000007.jpg",
@@ -203,17 +203,17 @@
       },
       {
         "file": "cand-000009.jpg",
-        "sha256": "80fd5c34251618bd300046047f38c55f56b56353459524e62e40e902bf4cab9c"
+        "sha256": "b575505b2995981a5fa63bd2cf8ecf90966c0ee3f6fa8f813d349159fd6e6046"
       },
       {
         "file": "cand-000010.jpg",
-        "sha256": "c8adf58036a4b6dc061bfc7951ff280cd5680be00592ede00e6afe3f60900947"
+        "sha256": "bef1c5fa0d88d5515e34bbd8d97fd877276f3f15e0b7fd305758d6fbb793bf18"
       }
     ],
     "candidate_frames_video_binding_verified": true,
     "candidate_video": {
       "file": "public-review/episode1-v10-free.mp4",
-      "sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3"
+      "sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab"
     },
     "reference_frames": [
       {
@@ -257,8 +257,8 @@
         "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
       }
     ],
-    "run_id": "44930953165",
-    "source_revision": "f6d47f16b64baf32e1b6cab397d5a7f7e3c96eb9"
+    "run_id": "45051797414",
+    "source_revision": "7d213cdd3b1bcb767dd29b8db1dd0b7201478e8d"
   },
   "publication_enabled": false,
   "runtime_versions": {

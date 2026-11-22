@@ -1,0 +1,20 @@
+{
+  "accepted": true,
+  "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
+  "credit_cost": 0,
+  "metrics": {
+    "audio_channels": 2,
+    "audio_max_long_silence_seconds": 0.0,
+    "audio_max_volume_db": -4.8,
+    "audio_mean_volume_db": -28.0,
+    "audio_sample_rate_hz": 48000,
+    "duration_seconds": 30.0,
+    "edge_density_ratio": 0.6456342883711436,
+    "motion_active_fraction": 1.0,
+    "openclip_global_similarity": 0.6417751312255859,
+    "openclip_mean_best_similarity": 0.40648430585861206
+  },
+  "publication_enabled": false,
+  "receipt_path": "qa-output/free/final-receipt.json",
+  "schema_version": 1
+}
