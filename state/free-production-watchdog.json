@@ -1,12 +1,12 @@
 {
   "actual_video_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "candidate_converged": false,
+  "candidate_converged": true,
   "candidate_hashes": {
     "captions": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "ledger": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "ledger_health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "live_deployment": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "live_deployment": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "provenance": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "receipt": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "smoke": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab"
@@ -17,8 +17,8 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
-    "candidate_identity_consistent": false,
+    "candidate_converged": true,
+    "candidate_identity_consistent": true,
     "caption_candidate_match": true,
     "caption_health_green": true,
     "dependency_security_clean": false,
@@ -28,7 +28,7 @@
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": false,
+    "live_deployment_green": true,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -56,15 +56,12 @@
   },
   "failed_checks": [
     "dependency_security_clean",
-    "python_dependency_security_clean",
-    "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "python_dependency_security_clean"
   ],
   "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "reconcile_or_refresh_live_deployment",
+  "repair_action": "route_smallest_failed_invariant",
   "schema_version": 1,
   "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
