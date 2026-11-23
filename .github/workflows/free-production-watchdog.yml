@@ -83,16 +83,52 @@ jobs:
           grep -q 'actual===expected' server-lowmem.js
           ! grep -q 'Episode1V8VerticalProof' server-lowmem.js
           ! grep -q 'Episode1V9VerticalProof' server-lowmem.js
-      - name: Verify accepted production state
-        id: verify
-        continue-on-error: true
+      - name: Run watchdog preflight tests
         run: |
           python -m unittest discover -s tests -p test_security_repair_dispatch.py -v
           python -m unittest discover -s tests -p test_watchdog_routing.py -v
           python -m unittest tests.test_watchdog_scope tests.test_watchdog_routing_history
-          python scripts/verify_free_production_health.py
+      - name: Verify accepted production state
+        id: verify
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          # Replace tracked receipts in this disposable checkout without deleting
+          # evidence paths required by dependency audit source equivalence.
+          for receipt in free-production-watchdog system-completion operations-snapshot; do
+            printf '{}\n' > "state/$receipt.json"
+          done
+          status=0
+          python scripts/verify_free_production_health.py || status=$?
+          if [[ "$status" != 0 && "$status" != 2 ]]; then exit "$status"; fi
+          WATCHDOG_VERIFY_EXIT="$status" python - <<'PY'
+          import json, os
+          from pathlib import Path
+
+          repairing = os.environ['WATCHDOG_VERIFY_EXIT'] == '2'
+          identities = {
+              'free-production-watchdog': 'REPAIR_REQUIRED' if repairing else 'GREEN',
+              'system-completion': 'REPAIR_REQUIRED' if repairing else 'COMPONENT_CHECKS_PASSED',
+              'operations-snapshot': 'REPAIR_REQUIRED' if repairing else 'COMPONENT_CHECKS_PASSED',
+          }
+          for receipt, expected_status in identities.items():
+              value = json.loads((Path('state') / (receipt + '.json')).read_text())
+              if (not isinstance(value, dict) or value.get('status') != expected_status
+                      or value.get('candidate_sha256') != os.environ['CANDIDATE_SHA']
+                      or value.get('publication_enabled') is not False
+                      or value.get('production_ready') is not False):
+                  raise SystemExit('Missing or invalid fresh watchdog evidence: ' + receipt)
+              if receipt == 'free-production-watchdog':
+                  failed = value.get('failed_checks')
+                  if (not isinstance(failed, list) or bool(failed) != repairing
+                          or any(not isinstance(check, str) or not check for check in failed)):
+                      raise SystemExit('Fresh watchdog failure set is invalid')
+          PY
+          echo 'fresh_receipt=true' >> "$GITHUB_OUTPUT"
+          exit "$status"
       - name: Refuse stale candidate persist
         id: candidate_current
+        if: steps.verify.outputs.fresh_receipt == 'true'
         run: |
           set -euo pipefail
           git fetch origin main
@@ -103,7 +139,7 @@ jobs:
             exit 1
           fi
       - name: Persist watchdog evidence
-        if: always() && steps.candidate_current.outcome == 'success'
+        if: always() && steps.verify.outputs.fresh_receipt == 'true' && steps.candidate_current.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name content-control-runtime
@@ -130,7 +166,7 @@ jobs:
           done
           exit 1
       - name: Route repair by failed invariant
-        if: steps.verify.outcome == 'failure' && steps.candidate_current.outcome == 'success'
+        if: steps.verify.outcome == 'failure' && steps.verify.outputs.fresh_receipt == 'true' && steps.candidate_current.outcome == 'success'
         run: |
           python - <<'PY' > /tmp/repair-workflows
           import json
@@ -205,7 +241,7 @@ jobs:
         if: steps.verify.outcome == 'failure'
         run: exit 2
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.verify.outputs.fresh_receipt == 'true'
         with:
           name: free-production-watchdog
           path: |

@@ -117,6 +117,69 @@ class ReviewProductionTests(unittest.TestCase):
         self.assertTrue(all(options['deadline'] == commands[0][1]['deadline'] for _, options in commands))
         self.assertEqual(result['status'], 'BLOCKED')
 
+    def test_direct_cli_supplies_a_sibling_preparation_directory(self):
+        output = self.root / 'direct'
+        with patch.object(sys, 'argv', ['producer', '--output', str(output)]), \
+                patch.object(pipeline, 'produce', return_value={'status': 'AWAITING_REVIEW'}) as produce, \
+                patch('builtins.print'):
+            self.assertEqual(pipeline.main(), 0)
+        self.assertEqual(produce.call_args.kwargs['offline_review'], output.with_name('direct-offline-av'))
+
+    def test_guarded_offline_preparation_binds_candidate_and_captions(self):
+        source = self.root / 'source'
+        for name, value in {
+            'state/episode1-factual-contract.json': json.dumps(dict(self.contract, status='ACTIVE')).encode(),
+            'public/audio/episode1-narration.mp3': self.audio,
+            'scripts/offline_av_review.py': b'fixture tool',
+        }.items():
+            target = source / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(value)
+
+        for valid in (True, False):
+            with self.subTest(valid=valid):
+                output = self.root / ('good' if valid else 'bad')
+                prepared = output.with_name(output.name + '-offline-av')
+                deadlines = set()
+
+                def runner(command, *, cwd, log, deadline, env):
+                    deadlines.add(deadline)
+                    if log.name == 'source-sync.log':
+                        (output / 'source-sync.json').write_text('{"status":"PASS"}')
+                    if log.name == 'render.log':
+                        for item in self.root.iterdir():
+                            if item.is_file():
+                                (output / item.name).write_bytes(item.read_bytes())
+                    if log.name == 'offline-av-review.log':
+                        self.assertEqual(command[-6:], ['--video', str(output / 'video.mp4'), '--captions',
+                                                       str(output / 'captions.vtt'), '--out', str(prepared)])
+                        prepared.mkdir()
+                        for name, value in {'candidate.mp4': (output / 'video.mp4').read_bytes(),
+                                            'captions.vtt': (output / 'captions.vtt').read_bytes(),
+                                            'playback-mix.wav': b'test mixer', 'review-packets.json': b'{}'}.items():
+                            (prepared / name).write_bytes(value)
+                        files = {item.name: pipeline.digest(item) for item in prepared.iterdir()}
+                        (prepared / 'evidence.json').write_text(json.dumps({
+                            'status': 'REVIEW_PENDING', 'technical_decode': 'PASS', 'files': files,
+                            'candidate_sha256': files['candidate.mp4'],
+                            'caption_sha256': files['captions.vtt'] if valid else '0'*64,
+                            **dict.fromkeys(('full_video_review', 'full_audio_review', 'production_approved',
+                                             'publication_enabled'), False)}))
+
+                with patch.object(pipeline, 'source_hashes', return_value=self.before):
+                    result = pipeline.produce(output, root=source, command_runner=runner, offline_review=prepared)
+                self.assertEqual(len(deadlines), 1)
+                self.assertEqual(result['status'], 'AWAITING_REVIEW' if valid else 'BLOCKED', result)
+                self.assertFalse(result['full_av_review'])
+                self.assertEqual(result['review_preparation']['status'], 'REVIEW_PENDING' if valid else 'BLOCKED')
+                self.assertFalse((output / 'evidence.json').exists())
+                if valid:
+                    self.assertEqual(result['review_preparation']['evidence_sha256'], pipeline.digest(prepared / 'evidence.json'))
+                    self.assertFalse(result['review_preparation']['competitor_comparison_verified'])
+                else:
+                    self.assertEqual(result['failed_step'], 'offline-av-review')
+                    self.assertEqual(result['steps'][-1]['status'], 'FAIL')
+
 
 if __name__ == '__main__':
     unittest.main()

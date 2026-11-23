@@ -104,7 +104,32 @@ def validate_bindings(directory, contract, narration, sources_before, sources_af
     return candidate
 
 
-def produce(output, *, python=sys.executable, picture_python=None, timeout=900, root=ROOT, command_runner=None):
+def bind_review_preparation(directory, candidate, captions, tool_sha):
+    evidence_path = directory / 'evidence.json'
+    evidence_bytes = snapshot(evidence_path)
+    evidence = object_from(evidence_bytes)
+    if (evidence.get('status') != 'REVIEW_PENDING' or evidence.get('technical_decode') != 'PASS'
+            or evidence.get('candidate_sha256') != candidate or evidence.get('caption_sha256') != captions
+            or any(evidence.get(flag) is not False for flag in ('full_video_review', 'full_audio_review',
+                   'production_approved', 'publication_enabled'))):
+        raise ValueError('Review preparation does not bind this unpublished candidate and captions')
+    files = evidence.get('files')
+    expected = {'candidate.mp4': candidate, 'captions.vtt': captions}
+    if not isinstance(files, dict) or any(files.get(name) != value for name, value in expected.items()):
+        raise ValueError('Review preparation is missing bound media')
+    for name in ('candidate.mp4', 'captions.vtt', 'playback-mix.wav', 'review-packets.json'):
+        path = directory / name
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > 512 * 1024 * 1024 or digest(path) != files.get(name):
+            raise ValueError('Review preparation artifact identity changed: ' + name)
+    return {'status': 'REVIEW_PENDING', 'candidate_sha256': candidate, 'caption_sha256': captions,
+            'evidence_sha256': sha(evidence_bytes), 'preparer_sha256': tool_sha,
+            'scope': 'Local playback copy, playback-clock audio and sampled frames; review and comparison remain pending.',
+            'full_video_review': False, 'full_audio_review': False, 'competitor_comparison_verified': False,
+            'publication_enabled': False, 'production_approved': False}
+
+
+def produce(output, *, python=sys.executable, picture_python=None, timeout=900, root=ROOT, command_runner=None,
+            offline_review=None):
     """An embedding queue may supply its trusted process guardian, never job code."""
     output = Path(output).absolute()
     # Every run owns a new directory. Never overwrite canonical files or old PASS.
@@ -118,10 +143,16 @@ def produce(output, *, python=sys.executable, picture_python=None, timeout=900, 
     stage = 'preflight'
     write_json(output / 'run.json', receipt)
     try:
-        if os.environ.get('PUBLICATION_ENABLED', 'false').lower() != 'false':
-            raise ValueError('PUBLICATION_ENABLED must be false')
+        if any(os.environ.get(flag, 'false').lower() != 'false' for flag in
+               ('PUBLICATION_ENABLED', 'PAID_GENERATION_ENABLED')):
+            raise ValueError('Publication and paid generation must remain disabled')
         if not 30 <= timeout <= 1800:
             raise ValueError('Deadline must be between 30 and 1800 seconds')
+        if offline_review is not None:
+            offline_review = Path(offline_review).absolute()
+            if (offline_review.exists() or offline_review.is_symlink()
+                    or offline_review.resolve().is_relative_to(output.resolve())):
+                raise ValueError('Fresh offline review directory outside the producer packet required')
         # Subcommands operate in the repository only for relative input paths;
         # all their outputs are explicit files inside this fresh directory.
         before = source_hashes(root)
@@ -170,6 +201,24 @@ def produce(output, *, python=sys.executable, picture_python=None, timeout=900, 
         candidate = validate_bindings(output, contract, snapshot(root / 'public/audio/episode1-narration.mp3', 128 * 1024 * 1024), before, source_hashes(root))
         if candidate != rendered_hash:
             raise ValueError('Candidate changed during technical verification')
+        captions_sha = digest(output / 'captions.vtt')
+        if offline_review is not None:
+            stage = 'offline-av-review'
+            receipt['review_preparation'] = {'status': 'BLOCKED', 'publication_enabled': False,
+                                             'production_approved': False}
+            tool = root / 'scripts/offline_av_review.py'
+            tool_hash = digest(tool)
+            run(stage, [sys.executable, tool, '--video', output / 'video.mp4', '--captions',
+                        output / 'captions.vtt', '--out', offline_review])
+            try:
+                preparation = bind_review_preparation(offline_review, candidate, captions_sha, tool_hash)
+                if (digest(tool) != tool_hash or digest(output / 'video.mp4') != candidate
+                        or digest(output / 'captions.vtt') != captions_sha or source_hashes(root) != before):
+                    raise ValueError('Producer inputs changed during offline review preparation')
+            except (ValueError, OSError):
+                receipt['steps'][-1].update(status='FAIL', finished_at=stamp())
+                raise
+            receipt['review_preparation'] = preparation
         if time.monotonic() > deadline:
             raise TimeoutError('Production deadline exhausted before final binding')
         write_atomic(output / 'REVIEW.md', '# Unpublished picture cut awaiting review\n\n'
@@ -179,7 +228,7 @@ def produce(output, *, python=sys.executable, picture_python=None, timeout=900, 
                      'Technical checks do not replace that review or competitor comparison. Publishing and production approval are disabled.\n\n'
                      'Approved narration:\n\n' + contract['narration_text'] + '\n')
         receipt.update(status='AWAITING_REVIEW', technical_status='PASS', candidate_sha256=candidate,
-                       caption_sha256=digest(output / 'captions.vtt'),
+                       caption_sha256=captions_sha,
                        artifacts_sha256={p.name: digest(p) for p in output.iterdir() if p.is_file() and p.name != 'run.json'},
                        source_inputs_unchanged=True)
     except (OSError, ValueError, RuntimeError, TimeoutError, KeyError, TypeError, subprocess.SubprocessError) as error:
@@ -215,8 +264,11 @@ def main():
     parser.add_argument('--picture-python', help='Existing Python with CairoSVG for the renderer')
     parser.add_argument('--timeout', type=int, default=900, help='Total wall-clock budget, 30..1800 seconds')
     args = parser.parse_args()
+    output = Path(args.output).absolute()
+    offline_review = output.with_name(output.name + '-offline-av')
     try:
-        result = produce(args.output, python=args.python, picture_python=args.picture_python, timeout=args.timeout)
+        result = produce(output, python=args.python, picture_python=args.picture_python,
+                         timeout=args.timeout, offline_review=offline_review)
     except OSError as error:
         print(json.dumps({'status': 'BLOCKED', 'reason': str(error), 'publication_enabled': False}))
         return 2
