@@ -1,6 +1,6 @@
 {
   "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "component_checks_passed": false,
+  "component_checks_passed": true,
   "components": {
     "accepted_candidate_rollback_ledger": true,
     "audio_loudness_clipping_silence_qa": true,
@@ -8,7 +8,7 @@
     "bounded_failure_retry": true,
     "candidate_identity_consistency": true,
     "cyclonedx_sbom": true,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract": true,
     "factual_compliance_gate": true,
     "florence_vision_qa": true,
@@ -26,7 +26,7 @@
     "phone_range_streaming": true,
     "phone_review_artifact": true,
     "publication_lock": true,
-    "python_dependency_security_clean": false,
+    "python_dependency_security_clean": true,
     "regression_lock": true,
     "remotion_render": true,
     "reproducible_runtime_locks": true,
@@ -45,7 +45,7 @@
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "schema_version": 1,
   "source_receipt": "qa-output/free/final-receipt.json",
-  "status": "REPAIR_REQUIRED",
+  "status": "COMPONENT_CHECKS_PASSED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",
   "watchdog_receipt": "state/free-production-watchdog.json",
   "zero_credit_runtime": true
