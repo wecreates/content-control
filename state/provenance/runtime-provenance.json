@@ -1,7 +1,7 @@
 {
-  "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "caption_candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "caption_file_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "caption_candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "caption_file_sha256": "f5c92add939c2b48f316ccf5109720569f79c7b93a67b04c7d9231cfd0b4bf1c",
   "critical_file_count": 33,
   "critical_integrity_manifest_sha256": "5c041833a860b91e66bf7bdbc55cc4902e6bbfd3cd0d8c9d5a32d64fdbb81378",
   "locks": {
@@ -10,9 +10,9 @@
   },
   "narration_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "publication_enabled": false,
-  "qa_receipt_sha256": "eac487116f403c8a00d71fd0a890934349bdecb20aecb3815dcbeee9580dc566",
-  "review_server_smoke_candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "review_server_smoke_sha256": "178e58c8a964267746d16046f8b491081847dd40cdc765c6c6a0cb0939a0eff0",
+  "qa_receipt_sha256": "42f6518d3b8923fca29a87ec8c784e894b1642a470987c8ac9762f766074d897",
+  "review_server_smoke_candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "review_server_smoke_sha256": "f69fb70e2590e8684c7362dcc370dc500a47eab74f8ce1b891d09ca77f4b0330",
   "runtime": {
     "node": "22",
     "python": "3.12",
@@ -21,6 +21,6 @@
   },
   "sbom": "state/provenance/npm-sbom.cdx.json",
   "schema_version": 1,
-  "source_commit": "f61ed9d8576ab0ab8980a96b3c35dd6e15bf1cd1",
+  "source_commit": "7898129b3fa284e15ddeeacf6aaa88fedf52f9e9",
   "zero_credit_runtime": true
 }
