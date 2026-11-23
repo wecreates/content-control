@@ -64,6 +64,72 @@ def run_regression(root, value):
     write_json(root, "qa-output/free/final-receipt.json", value)
     return subprocess.run([sys.executable, "-B", str(REGRESSION)], cwd=root, text=True, capture_output=True)
 
+class WatchdogPersistenceTests(unittest.TestCase):
+    def persist_after_main_change(self, changed_path, content=None):
+        workflow = WATCHDOG.read_text()
+        def step(name):
+            block = workflow.split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
+            return textwrap.dedent(block.split("        run: |\n", 1)[1])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            origin, writer, watchdog = [directory / name for name in ("origin", "writer", "watchdog")]
+            env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull,
+                       PYTHONDONTWRITEBYTECODE="1", GITHUB_ENV=str(directory / "github-env"))
+
+            def run(*args, cwd=directory, check=True):
+                return subprocess.run(args, cwd=cwd, env=env, text=True, capture_output=True, check=check)
+
+            run("git", "init", "--bare", "-b", "main", str(origin))
+            run("git", "clone", str(origin), str(writer))
+            run("git", "config", "user.name", "Test", cwd=writer)
+            run("git", "config", "user.email", "test@example.test", cwd=writer)
+            (writer / "scripts").mkdir()
+            for name in ("pod_deploy_commit_policy.mjs", "npm_security_source_equivalence.py"):
+                (writer / "scripts" / name).write_bytes((ROOT / "scripts" / name).read_bytes())
+            for name in ("free-production-watchdog", "system-completion", "operations-snapshot",
+                         "workflow-control-health", "system-wiring-health", "deployment-health"):
+                write_json(writer, f"state/{name}.json", {})
+            write_json(writer, "state/content-control-health.json", {"candidate_sha256": "a" * 64})
+            write_json(writer, "source.json", {"revision": 1})
+            run("git", "add", ".", cwd=writer)
+            run("git", "commit", "-m", "Validation source", cwd=writer)
+            run("git", "push", "origin", "main", cwd=writer)
+            run("git", "clone", str(origin), str(watchdog))
+            run("bash", "-e", "-c", step("Capture candidate and source identities"), cwd=watchdog)
+            env.update(line.split("=", 1) for line in Path(env["GITHUB_ENV"]).read_text().splitlines())
+            write_json(watchdog, "state/free-production-watchdog.json", {"status": "GREEN"})
+
+            if content is None:
+                write_json(writer, changed_path, {"revision": 2})
+            else:
+                (writer / changed_path).write_text(content)
+            run("git", "add", changed_path, cwd=writer)
+            run("git", "commit", "-m", "Concurrent main change", cwd=writer)
+            run("git", "push", "origin", "main", cwd=writer)
+
+            result = run("bash", "-e", "-c", step("Persist watchdog evidence"), cwd=watchdog, check=False)
+            remote_receipt = run("git", "show", "main:state/free-production-watchdog.json", cwd=origin)
+            return result, json.loads(remote_receipt.stdout)
+
+    def test_same_candidate_with_protected_source_change_refuses_push(self):
+        result, receipt = self.persist_after_main_change("source.json")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("changes protected source: source.json", result.stderr)
+        self.assertEqual(receipt, {})
+
+    def test_same_candidate_with_generated_evidence_change_can_push(self):
+        result, receipt = self.persist_after_main_change("state/system-completion.json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(receipt, {"status": "GREEN"})
+
+    def test_concurrent_module_cannot_replace_captured_policy(self):
+        path = "npm_security_source_equivalence.py"
+        result, receipt = self.persist_after_main_change(path, "def assert_source_equivalent(*args): pass\n")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"changes protected source: {path}", result.stderr)
+        self.assertEqual(receipt, {})
+
 class RepairRoutingTests(unittest.TestCase):
     def test_python_security_routes_only_to_security(self):
         self.assertEqual(run_routes(["python_dependency_security_clean"]), {"python-security-audit.yml"})
