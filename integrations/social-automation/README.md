@@ -79,10 +79,14 @@ read separate for YouTube and Instagram. It reads existing vault records and
 does not start jobs or contact providers. The response omits account IDs,
 credentials, job IDs and provider results.
 
-A completion carries the generation of the grant actually used for the read.
-Reconnecting starts a new generation, including when the account is unchanged.
-Token renewal preserves the current generation. Legacy jobs without a bound
-generation do not establish first-read evidence. Expired or revoked grants
+A job records the grant generation when queued and again after a successful
+read. First-read evidence requires both to match the current verified grant.
+Reconnecting starts a new generation, including when the account is unchanged,
+so superseded jobs cannot use the new grant or delay its first poll. Token
+renewal preserves the current generation. Previously retained jobs without an
+enqueue-generation record cannot establish first-read evidence. A legacy
+connection without a generation can still run reads but must be reconnected
+to establish attributable first-read evidence. Expired or revoked grants
 require reauthorization. This owner-only view reports retained evidence.
 Customer signup and live onboarding remain separate.
 
