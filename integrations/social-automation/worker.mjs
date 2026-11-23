@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {jobMatchesCurrentGrant} from '../../social-automation.js';
 // Private worker, not an HTTP endpoint. One cycle has at most one new read per
 // connected provider. Calls and results go through the existing encrypted queue.
 export class SocialReadWorker {
@@ -23,14 +24,20 @@ export class SocialReadWorker {
         const operation = typeof adapter?.read_media === "function" ? "read_media" : "read_profile";
         if (adapter?.blocked_reason) continue;
         if (grant.status !== 'connected' || !Number.isFinite(grant.expires_at) || (grant.expires_at <= this.now() && typeof adapter?.refresh !== 'function') || typeof adapter?.[operation] !== 'function') continue;
-        if (state.jobs.some(j => j.platform === platform && j.operation === operation && ['queued', 'retry'].includes(j.status))) continue;
+        if (state.jobs.some(j => j.platform === platform && j.operation === operation &&
+          ['queued', 'retry'].includes(j.status) && jobMatchesCurrentGrant(j, grant))) continue;
         const account = crypto.createHash('sha256').update(grant.account_id).digest('hex').slice(0, 16);
         // A newly verified grant may recover within the same polling bucket,
         // without resetting old failure history or retry counters.
         const generation = crypto.createHash('sha256').update(String(grant.generation ?? grant.verified_at ?? 'legacy')).digest('hex').slice(0, 12);
         try {
-          await this.runtime.enqueue({id: `poll_${platform}_${account}_${generation}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation});
+          // Use a fresh namespace so a previously unbound poll cannot occupy
+          // the current verified grant's first evidence slot after upgrade.
+          const prefix = grant.generation ? 'poll_v2' : 'poll';
+          await this.runtime.enqueue({id: `${prefix}_${platform}_${account}_${generation}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation},
+            {expectedGrant: {account_id: grant.account_id, generation: grant.generation}});
         } catch (error) {
+          if (error?.message === 'GRANT_CHANGED') continue;
           if (error?.message !== 'QUEUE_CAPACITY_REACHED') throw error;
           capacityBlocked = true;
         }
@@ -42,7 +49,7 @@ export class SocialReadWorker {
       const latest = new Map();
       for (const job of current.jobs) {
         const grant = current.connections[job.platform];
-        if (grant && job.account_id !== grant.account_id) continue;
+        if (!jobMatchesCurrentGrant(job, grant)) continue;
         latest.set(`${job.platform}:${job.operation}`, job);
       }
       const currentCounts = {};

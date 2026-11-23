@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {createInstagramAdapter} from '../integrations/social-automation/instagram-adapter.mjs';
 import {SocialReadWorker} from '../integrations/social-automation/worker.mjs';
-import {SocialAutomation, EncryptedSocialStore} from '../social-automation.js';
+import {SocialAutomation, EncryptedSocialStore, ownerReadProgress} from '../social-automation.js';
 const grant = {account_id:'1234',access_token:'PRIVATE',scopes:['instagram_basic'],expires_at:200000000};
 function response(data,status=200){return new Response(JSON.stringify(data),{status});}
 async function fixture(t,adapter){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'social-worker-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));const store=new EncryptedSocialStore({file:path.join(dir,'vault'),key:'b'.repeat(64)});const runtime=new SocialAutomation({store,adapters:{instagram:adapter},now:()=>100000});await runtime.connect('instagram',grant);return {runtime,store};}
@@ -97,6 +97,76 @@ test('new verified grant recovers blocked same-bucket poll without retrying old 
  let now=100000;runtime.now=()=>now;const worker=new SocialReadWorker({runtime,now:()=>now});await worker.cycle();assert.equal((await store.read()).jobs[0].status,'blocked');
  now++;await runtime.connect('instagram',grant);await worker.cycle();await worker.cycle();
  const jobs=(await store.read()).jobs;assert.equal(reads,2);assert.equal(jobs.length,2);assert.equal(jobs[0].status,'blocked');assert.equal(jobs[0].attempts,1);assert.equal(jobs[1].status,'completed');
+});
+
+test('same-account reconnect retires a pending read and runs the new grant first poll',async t=>{
+ const reads=[];
+ const adapter={
+  verify:async g=>({verified:true,account_id:g.account_id}),
+  read_media:async g=>{reads.push(g.access_token);if(reads.length===1)throw Error('provider unavailable');return {};}
+ };
+ const {runtime,store}=await fixture(t,adapter);
+ const worker=new SocialReadWorker({runtime,now:runtime.now});
+ assert.equal((await worker.cycle()).status,'CYCLE_RETRY_PENDING');
+ const old=(await store.read()).connections.instagram;
+ await runtime.connect('instagram',{...grant,access_token:'NEW_FIXTURE_GRANT'});
+ const reconnected=await store.read();
+ assert.notEqual(reconnected.connections.instagram.generation,old.generation);
+ assert.equal(ownerReadProgress(reconnected,['instagram'],runtime.now()).providers[1].status,'FIRST_READ_PENDING');
+ const result=await worker.cycle();
+ const final=await store.read();
+ assert.deepEqual(reads,[grant.access_token,'NEW_FIXTURE_GRANT']);
+ assert.equal(result.status,'CYCLE_COMPLETED');
+ assert.equal(result.counts.blocked,1);
+ assert.equal(result.pending_jobs,0);
+ assert.equal(final.jobs[0].reason,'GRANT_CHANGED');
+ assert.equal(final.jobs[0].attempts,1);
+ assert.equal(final.jobs[1].enqueued_grant_generation,final.connections.instagram.generation);
+ assert.equal(final.jobs[1].grant_generation,final.connections.instagram.generation);
+ assert.equal(ownerReadProgress(final,['instagram'],runtime.now()).providers[1].status,'FIRST_READ_RETAINED');
+});
+
+test('unbound legacy jobs cannot populate or count as evidence for a verified grant',async t=>{
+ let calls=0;
+ const {runtime,store}=await fixture(t,{
+  verify:async g=>({verified:true,account_id:g.account_id}),
+  read_media:async()=>{calls++;return {};}
+ });
+ await runtime.enqueue({id:'legacy-pending',platform:'instagram',operation:'read_media'});
+ await store.update(d=>{
+  delete d.jobs[0].enqueued_grant_generation;
+  d.jobs.push({...d.jobs[0],id:'legacy-completed',status:'completed',completed_at:runtime.now(),
+               grant_generation:d.connections.instagram.generation});
+ });
+ assert.equal(ownerReadProgress(await store.read(),['instagram'],runtime.now()).providers[1].status,'FIRST_READ_PENDING');
+ const result=await new SocialReadWorker({runtime,now:runtime.now}).cycle();
+ const final=await store.read();
+ assert.equal(calls,1);
+ assert.equal(final.jobs[0].reason,'GRANT_CHANGED');
+ assert.equal(final.jobs[1].status,'completed');
+ assert.equal(result.counts.completed,2);
+ assert.equal(result.current_counts.completed,1);
+ assert.equal(ownerReadProgress(final,['instagram'],runtime.now()).providers[1].status,'FIRST_READ_RETAINED');
+});
+
+test('poll does not attach an old snapshot identity to a reconnect committed before enqueue',async t=>{
+ let reads=0;
+ const {runtime,store}=await fixture(t,{
+  verify:async g=>({verified:true,account_id:g.account_id}),
+  read_media:async()=>{reads++;return {};}
+ });
+ const enqueue=runtime.enqueue.bind(runtime);
+ runtime.enqueue=async(...args)=>{
+  runtime.enqueue=enqueue;
+  await runtime.connect('instagram',{...grant,access_token:'NEW_FIXTURE_GRANT'});
+  return enqueue(...args);
+ };
+ const worker=new SocialReadWorker({runtime,now:runtime.now});
+ assert.equal((await worker.cycle()).status,'CYCLE_IDLE');
+ assert.equal((await store.read()).jobs.length,0);
+ assert.equal(reads,0);
+ assert.equal((await worker.cycle()).status,'CYCLE_COMPLETED');
+ assert.equal(reads,1);
 });
 
 test('worker reports retry waiting, then successful recovery without hiding history',async t=>{
