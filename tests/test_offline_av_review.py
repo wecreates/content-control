@@ -1,12 +1,43 @@
 import tempfile
+import json
+import struct
 import subprocess
 import unittest
+import wave
 from unittest.mock import patch
 from pathlib import Path
-from scripts.offline_av_review import build, sha
+from scripts.offline_av_review import build, playback_audio, sha
 
 
 class OfflineReviewTests(unittest.TestCase):
+    def test_clock_clips_priming_overlap_and_padding_and_fills_gaps(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw, playback = root / 'raw.wav', root / 'playback.wav'
+            with wave.open(str(raw), 'wb') as wav:
+                wav.setparams((1, 2, 10, 0, 'NONE', 'not compressed'))
+                wav.writeframes(struct.pack('<12h', *range(1, 13)))
+            media = {'start_time': '2.0', 'duration': '1.5'}
+            stream = {'time_base': '1/10', 'start_pts': 19, 'duration_ts': 13}
+            # First frame begins before origin, overlaps the next one and uses the old probe key.
+            frames = [
+                {'pts': 19, 'nb_samples': 4, 'pkt_duration': 4},
+                {'pts': 22, 'nb_samples': 4, 'duration': 2},
+                {'pts': 29, 'nb_samples': 4, 'duration': 4},
+            ]
+            stats = playback_audio(raw, playback, stream, media, frames)
+            with wave.open(str(playback), 'rb') as wav:
+                self.assertEqual(wav.getnframes(), 15)
+                self.assertEqual(struct.unpack('<15h', wav.readframes(15)),
+                                 (2, 3, 5, 6, 0, 0, 0, 0, 0, 9, 10, 11, 0, 0, 0))
+            self.assertEqual(stats['trimmed_source_samples'], 5)
+            self.assertEqual(stats['silence_fill_samples'], 8)
+            with self.assertRaisesRegex(ValueError, 'sample count differs'):
+                playback_audio(raw, playback, stream, media, frames[1:])
+            frames[1]['pts'] = frames[0]['pts']
+            with self.assertRaisesRegex(ValueError, 'frame metadata'):
+                playback_audio(raw, playback, stream, media, frames)
+
     def test_probe_mutation_cannot_bind_old_metadata_to_new_bytes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -47,6 +78,15 @@ class OfflineReviewTests(unittest.TestCase):
             self.assertFalse(result['full_audio_review'])
             self.assertFalse(result['production_approved'])
             self.assertFalse(result['publication_enabled'])
+            with wave.open(str(root / 'review/final-mix.wav'), 'rb') as wav:
+                rate, decoded_samples = wav.getframerate(), wav.getnframes()
+            self.assertGreaterEqual(decoded_samples, rate)
+            with wave.open(str(root / 'review/playback-mix.wav'), 'rb') as wav:
+                self.assertEqual(wav.getnframes(), rate)
+            packets = json.loads((root / 'review/review-packets.json').read_text())
+            self.assertEqual(packets['audio_source'], 'playback-mix.wav')
+            self.assertEqual(packets['audio_clock'], result['audio_clock'])
+            self.assertEqual(packets['packets'][-1]['end_sec'], 1)
             with self.assertRaises(ValueError):
                 build(video, root / 'review')
             self.assertEqual(sha(video), before)
