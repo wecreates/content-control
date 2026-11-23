@@ -87,7 +87,27 @@ class OfflineReviewTests(unittest.TestCase):
             self.assertEqual(packets['audio_source'], 'playback-mix.wav')
             self.assertEqual(packets['audio_clock'], result['audio_clock'])
             self.assertEqual(packets['packets'][-1]['end_sec'], 1)
+            self.assertNotIn('caption_sha256', result)
+            self.assertNotIn('<track ', (root / 'review/index.html').read_text())
             with self.assertRaises(ValueError):
                 build(video, root / 'review')
+            self.assertEqual(sha(video), before)
+
+            captions = root / 'source.vtt'
+            caption_bytes = b'WEBVTT\r\n\r\n1\r\n00:00:00.000 --> 00:00:00.800\r\nHello\r\n'
+            captions.write_bytes(caption_bytes)
+            caption_hash = sha(captions)
+            with_captions = root / 'caption-review'
+            caption_result = build(video, with_captions, captions=captions)
+            self.assertEqual(caption_result['candidate_sha256'], before)
+            self.assertEqual(caption_result['caption_sha256'], caption_hash)
+            self.assertEqual(caption_result['files']['captions.vtt'], caption_hash)
+            self.assertEqual((with_captions / 'captions.vtt').read_bytes(), caption_bytes)
+            self.assertEqual(json.loads((with_captions / 'evidence.json').read_text()), caption_result)
+            self.assertIn('<track kind="captions" src="captions.vtt"', (with_captions / 'index.html').read_text())
+            self.assertFalse(caption_result['full_video_review'])
+            self.assertFalse(caption_result['full_audio_review'])
+            self.assertFalse(caption_result['publication_enabled'])
+            self.assertEqual(sha(captions), caption_hash)
             self.assertEqual(sha(video), before)
 

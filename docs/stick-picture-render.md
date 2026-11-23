@@ -42,6 +42,15 @@ The command checks source timing and retention, independently transcribes the ex
 
 Successful output is `video.mp4`, `captions.vtt`, individual receipts/logs, `REVIEW.md`, and `run.json` with `status: AWAITING_REVIEW`. `technical_status: PASS` covers the listed checks only. It does not establish that captions are visually unobstructed, every visual cut matches the spoken action, the voice sounds natural, or competitor/creative review passed. `full_av_review`, `production_approved` and `publication_enabled` remain false.
 
+The direct CLI also creates the sibling `new-review-run-offline-av` within the
+same subprocess deadline. It contains the unchanged playback copy, exact
+caption track, playback-clock audio and sampled review packets. The producer
+receipt binds the preparation to the two input hashes and reports
+`REVIEW_PENDING`. A failed preparation is retained as a blocked stage. The
+embedded API keeps its existing default, since its Money Factory callers
+prepare and bind their own review. The sibling stays outside the existing
+GitHub artifact upload.
+
 One wall-clock deadline bounds subprocesses. Timeout kills their process group and removes owned renderer scratch files. Failure retains diagnostics and partial output with a `BLOCKED` receipt; it never reuses a prior PASS. Each retry needs a new directory. The command does not promote, deploy or publish its output.
 
 For an isolated CPU runner, the repository owner can manually run the existing **Stick-picture narration alignment** workflow on `main`. Its manual-only review-packet job installs the pinned runtimes, caches the public speech model, runs the same offline command, and uploads `unpublished-episode1-review-packet` for 30 days. Repository permissions are read-only and checkout credentials are not persisted. PR events run contract tests only; they do not produce or promote videos.

@@ -136,12 +136,22 @@ def review_packets(output, source_hash, segment_seconds=10, *, audio_clock=None)
     return result
 
 
-def build(video, output):
+def build(video, output, *, captions=None):
     source = Path(video).resolve(strict=True)
     output = Path(output).resolve()
     # Never overwrite originals, previous evidence, or aliases.
     if output.exists():
         raise ValueError('Output must be a new directory')
+    caption_path = None if captions is None else Path(captions).resolve(strict=True)
+    if caption_path is not None:
+        try:
+            from scripts.caption_contract import snapshot
+        except ModuleNotFoundError:
+            from caption_contract import snapshot
+        caption_bytes = snapshot(caption_path, 1024 * 1024)
+        if caption_bytes.splitlines()[0].split(maxsplit=1)[:1] != [b'WEBVTT']:
+            raise ValueError('A bounded local WebVTT file is required')
+        caption_hash = hashlib.sha256(caption_bytes).hexdigest()
     source_hash = sha(source)
     probe = json.loads(subprocess.check_output([
         'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(source)], timeout=30))
@@ -179,6 +189,10 @@ def build(video, output):
     (output / 'audio-diagnostics.log').write_text(audio.stderr)
     if audio.returncode or sha(source) != source_hash or sha(candidate) != source_hash:
         raise ValueError('Audio analysis failed or source mutated')
+    if caption_path is not None:
+        if snapshot(caption_path, 1024 * 1024) != caption_bytes:
+            raise ValueError('Captions changed during review preparation')
+        (output / 'captions.vtt').write_bytes(caption_bytes)
     review_packets(output, source_hash, audio_clock=clock)
     receipt = {'schema_version': 1, 'candidate_sha256': source_hash,
         'duration_seconds': float(probe['format']['duration']), 'technical_decode': 'PASS',
@@ -188,13 +202,16 @@ def build(video, output):
         'frame_sampling': '1 FPS; sample n represents the fps filter output, not complete motion coverage',
         'scope': 'Local access package and decode diagnostics only; listening, motion judgment, synchronization, character identity and competitor comparison require actual review.',
         'files': {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}}
+    if caption_path is not None:
+        receipt['caption_sha256'] = caption_hash
     (output / 'evidence.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    track = '' if caption_path is None else '<track kind="captions" src="captions.vtt" srclang="en" label="English">'
     (output / 'index.html').write_text('''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>Unapproved candidate — local audiovisual review</title>
 <style>body{font:18px system-ui;max-width:960px;margin:24px auto;padding:12px}video{width:100%;max-height:75vh}button{padding:12px;margin:4px}</style>
 <h1>Review pending · publication disabled</h1>
 <p>Original candidate, unchanged. Watch and listen end to end. Sampled images and successful decoding do not constitute creative approval.</p>
-<video id="v" controls playsinline preload="metadata" src="candidate.mp4"></video>
+<video id="v" controls playsinline preload="metadata" src="candidate.mp4">''' + track + '''</video>
 <p><button onclick="v.currentTime=Math.max(0,v.currentTime-5)">Back 5 seconds</button><button onclick="v.currentTime+=5">Forward 5 seconds</button>
 <button onclick="v.playbackRate=.5">Half speed</button><button onclick="v.playbackRate=1">Normal speed</button></p>
 <p id="t"></p><script>const v=document.querySelector('video');v.ontimeupdate=()=>document.querySelector('#t').textContent=v.currentTime.toFixed(3)+' seconds';</script>
@@ -207,7 +224,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--video', required=True)
     parser.add_argument('--out', required=True)
+    parser.add_argument('--captions', help='Optional exact local WebVTT for the review player')
     args = parser.parse_args()
-    result = build(args.video, args.out)
+    result = build(args.video, args.out, captions=args.captions)
     print(json.dumps({k: result[k] for k in ['candidate_sha256', 'technical_decode', 'status', 'publication_enabled']}))
 

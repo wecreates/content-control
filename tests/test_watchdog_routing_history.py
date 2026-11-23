@@ -64,13 +64,12 @@ def run_regression(root, value):
     write_json(root, "qa-output/free/final-receipt.json", value)
     return subprocess.run([sys.executable, "-B", str(REGRESSION)], cwd=root, text=True, capture_output=True)
 
+def workflow_step(name):
+    block = WATCHDOG.read_text().split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
+    return textwrap.dedent(block.split("        run: |\n", 1)[1])
+
 class WatchdogPersistenceTests(unittest.TestCase):
     def persist_after_main_change(self, changed_path, content=None):
-        workflow = WATCHDOG.read_text()
-        def step(name):
-            block = workflow.split(f"      - name: {name}\n", 1)[1].split("\n      - name:", 1)[0]
-            return textwrap.dedent(block.split("        run: |\n", 1)[1])
-
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)
             origin, writer, watchdog = [directory / name for name in ("origin", "writer", "watchdog")]
@@ -96,7 +95,7 @@ class WatchdogPersistenceTests(unittest.TestCase):
             run("git", "commit", "-m", "Validation source", cwd=writer)
             run("git", "push", "origin", "main", cwd=writer)
             run("git", "clone", str(origin), str(watchdog))
-            run("bash", "-e", "-c", step("Capture candidate and source identities"), cwd=watchdog)
+            run("bash", "-e", "-c", workflow_step("Capture candidate and source identities"), cwd=watchdog)
             env.update(line.split("=", 1) for line in Path(env["GITHUB_ENV"]).read_text().splitlines())
             write_json(watchdog, "state/free-production-watchdog.json", {"status": "GREEN"})
 
@@ -108,7 +107,7 @@ class WatchdogPersistenceTests(unittest.TestCase):
             run("git", "commit", "-m", "Concurrent main change", cwd=writer)
             run("git", "push", "origin", "main", cwd=writer)
 
-            result = run("bash", "-e", "-c", step("Persist watchdog evidence"), cwd=watchdog, check=False)
+            result = run("bash", "-e", "-c", workflow_step("Persist watchdog evidence"), cwd=watchdog, check=False)
             remote_receipt = run("git", "show", "main:state/free-production-watchdog.json", cwd=origin)
             return result, json.loads(remote_receipt.stdout)
 
@@ -129,6 +128,71 @@ class WatchdogPersistenceTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(f"changes protected source: {path}", result.stderr)
         self.assertEqual(receipt, {})
+
+class WatchdogFreshnessTests(unittest.TestCase):
+    def verify(self, mode):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            verdicts = ('free-production-watchdog', 'system-completion', 'operations-snapshot')
+            previous = dict(candidate_sha256='a' * 64, status='REPAIR_REQUIRED',
+                            production_ready=False, publication_enabled=False,
+                            failed_checks=['dependency_security_clean'])
+            for name in verdicts:
+                write_json(root, f'state/{name}.json', previous)
+            run = root / 'scripts/verify_free_production_health.py'
+            run.parent.mkdir()
+            run.write_text(textwrap.dedent("""\
+                import json, os
+                from pathlib import Path
+                mode = os.environ['TEST_MODE']
+                if mode == 'unexpected-exit':
+                    raise SystemExit(3)
+                if mode == 'missing':
+                    raise SystemExit(2)
+                repairing = mode != 'green'
+                names = ['free-production-watchdog', 'system-completion', 'operations-snapshot']
+                for name in names[:1] if mode == 'partial' else names:
+                    value = dict(candidate_sha256='b' * 64 if mode == 'wrong-candidate' else 'a' * 64,
+                                 status='REPAIR_REQUIRED' if repairing else 'GREEN' if name == names[0] else 'COMPONENT_CHECKS_PASSED',
+                                 production_ready=False, publication_enabled=False,
+                                 failed_checks=['python_dependency_security_clean'] if repairing else [])
+                    Path('state', name + '.json').write_text('{bad' if mode == 'malformed' else json.dumps(value))
+                raise SystemExit(2 if repairing else 0)
+                """))
+            marker = root / 'fresh'
+            env = dict(os.environ, GITHUB_OUTPUT=str(marker), CANDIDATE_SHA='a' * 64, TEST_MODE=mode)
+            result = subprocess.run(['bash', '-e', '-c', workflow_step('Verify accepted production state')],
+                                    cwd=root, env=env, capture_output=True, text=True, check=False)
+            current = (root / 'state/free-production-watchdog.json').read_text()
+            return result, marker.read_text() if marker.exists() else '', current
+
+    def test_no_marker_on_abort_unwritten_partial_invalid_or_stale_candidate(self):
+        for mode in ('unexpected-exit', 'missing', 'partial', 'malformed', 'wrong-candidate'):
+            with self.subTest(mode=mode):
+                result, marker, current = self.verify(mode)
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(marker, '')
+                self.assertNotIn('"dependency_security_clean"', current)
+
+    def test_current_green_or_failed_invariant_receipts_have_marker(self):
+        for mode, code in (('green', 0), ('repair', 2)):
+            with self.subTest(mode=mode):
+                result, marker, current = self.verify(mode)
+                self.assertEqual(result.returncode, code, result.stderr)
+                self.assertEqual(marker, 'fresh_receipt=true\n')
+                self.assertEqual(json.loads(current)['failed_checks'], [] if code == 0 else ['python_dependency_security_clean'])
+
+    def test_preflight_failure_is_not_treated_as_routable_evidence(self):
+        source = WATCHDOG.read_text()
+        preflight = source.split('      - name: Run watchdog preflight tests\n', 1)[1].split('\n      - name:', 1)[0]
+        self.assertIn('python -m unittest', preflight)
+        self.assertNotIn('continue-on-error', preflight)
+        self.assertNotIn('unittest', workflow_step('Verify accepted production state'))
+        for name in ('Refuse stale candidate persist', 'Persist watchdog evidence', 'Route repair by failed invariant'):
+            with self.subTest(step=name):
+                block = source.split(f'      - name: {name}\n', 1)[1].split('\n      - name:', 1)[0]
+                self.assertIn("steps.verify.outputs.fresh_receipt == 'true'", block.split('        run:', 1)[0])
+        self.assertIn("      - uses: actions/upload-artifact@v4\n        if: always() && steps.verify.outputs.fresh_receipt == 'true'", source)
 
 class RepairRoutingTests(unittest.TestCase):
     def test_python_security_routes_only_to_security(self):
