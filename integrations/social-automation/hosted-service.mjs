@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import {EncryptedSocialStore, SocialAutomation, socialRuntimeReadiness} from '../../social-automation.js';
+import {EncryptedSocialStore, SocialAutomation, ownerReadProgress, socialRuntimeReadiness} from '../../social-automation.js';
 import {createProviderAdapters,providerReadiness} from './providers.mjs';
 import {SocialReadWorker} from './worker.mjs';
 import {SocialOAuthCoordinator} from './oauth-coordinator.mjs';
@@ -46,6 +46,16 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
           reason_code:storageFailed ? status.reason_code : expired || cutoff ? 'STORAGE_EXPIRING' : postgres && !Number.isFinite(expiry) ? 'STORAGE_EXPIRY_REQUIRED' : null,
           scope:'Storage policy and recorded startup failures; operations_blocked=false does not verify live availability; no database polling',publication_enabled:false},
         ...(worker ? {worker_running: worker.active, last_cycle: worker.status()} : {})};
+    },
+    ownerOnboarding: async context => {
+      if (!service.ownerAuth || !await service.ownerAuth.authorize(context)) throw Error('OWNER_AUTH_REQUIRED');
+      if (shutdown.signal.aborted) return null;
+      try {
+        const state = await store.read();
+        return shutdown.signal.aborted ? null : ownerReadProgress(state, status.oauth_providers, now());
+      } catch {
+        return null;
+      }
     },
     beginAuthorization:async(platform,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},
     completeAuthorization:async(platform,callback,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.complete(platform,callback,context);},

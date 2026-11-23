@@ -72,6 +72,20 @@ adapters must have bounded network timeouts. This adapter does.
 Tests: `npm run test:social`. The existing social integration CI runs the worker,
 HTTP boundary, Opus and Watch bridge tests. Mock tests do not prove live access.
 
+The signed-in GitHub owner can open **Read job evidence** from
+`/social/connect`. The private, no-store `GET /api/social/onboarding` keeps
+provider configuration, account verification and the first retained successful
+read separate for YouTube and Instagram. It reads existing vault records and
+does not start jobs or contact providers. The response omits account IDs,
+credentials, job IDs and provider results.
+
+A completion carries the generation of the grant actually used for the read.
+Reconnecting starts a new generation, including when the account is unchanged.
+Token renewal preserves the current generation. Legacy jobs without a bound
+generation do not establish first-read evidence. Expired or revoked grants
+require reauthorization. This owner-only view reports retained evidence.
+Customer signup and live onboarding remain separate.
+
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
 Existing independent SDK probe: `scripts/instagram_official_read.py`.

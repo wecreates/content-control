@@ -27,7 +27,7 @@ export class SocialReadWorker {
         const account = crypto.createHash('sha256').update(grant.account_id).digest('hex').slice(0, 16);
         // A newly verified grant may recover within the same polling bucket,
         // without resetting old failure history or retry counters.
-        const generation = crypto.createHash('sha256').update(String(grant.verified_at ?? 'legacy')).digest('hex').slice(0, 12);
+        const generation = crypto.createHash('sha256').update(String(grant.generation ?? grant.verified_at ?? 'legacy')).digest('hex').slice(0, 12);
         try {
           await this.runtime.enqueue({id: `poll_${platform}_${account}_${generation}_${Math.floor(this.now() / this.intervalMs)}`, platform, operation});
         } catch (error) {

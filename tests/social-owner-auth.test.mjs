@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
-import {EncryptedSocialStore} from '../social-automation.js';
+import {EncryptedSocialStore, SocialAutomation} from '../social-automation.js';
 import {OwnerAuthentication, OWNER_COOKIE, readCookie} from '../integrations/social-automation/owner-auth.mjs';
 import {createOAuthRouter, connectionPage} from '../integrations/social-automation/oauth-router.mjs';
 import {initializeSocialService} from '../integrations/social-automation/hosted-service.mjs';
@@ -61,4 +61,58 @@ test('OAuth can initialize with empty private vault while read worker remains ex
  const {store}=await fixture(t);const env={SOCIAL_OAUTH_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:store.file,SOCIAL_VAULT_KEY:'e'.repeat(64),SOCIAL_PUBLIC_ORIGIN:'https://example.test',OWNER_GITHUB_CLIENT_ID:'client',OWNER_GITHUB_CLIENT_SECRET:'secret',OWNER_GITHUB_ID:'42'};
  const service=await initializeSocialService({env});t.after(()=>service.stop());assert.equal(service.status().status,'OAUTH_READY');assert.equal(service.status().oauth_routes_enabled,true);assert.equal(service.status().worker_running,false);assert.equal(service.status().durable_storage_verified,false);
  const blocked=await initializeSocialService({env:{...env,OWNER_GITHUB_ID:'email@example.test'}});assert.equal(blocked.status().status,'ACTIVATION_BLOCKED');assert.equal(blocked.ownerAuth,undefined);
+});
+
+test('owner onboarding endpoint reports retained read evidence without provider calls or vault writes',async t=>{
+ const {store}=await fixture(t);
+ const env={SOCIAL_OAUTH_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:store.file,
+  SOCIAL_VAULT_KEY:'e'.repeat(64),SOCIAL_PUBLIC_ORIGIN:'https://example.test',
+  OWNER_GITHUB_CLIENT_ID:'OWNER_CLIENT',OWNER_GITHUB_CLIENT_SECRET:'PRIVATE_OWNER_SECRET',OWNER_GITHUB_ID:'42',
+  YOUTUBE_OAUTH_CLIENT_ID:'YT_CLIENT',YOUTUBE_OAUTH_CLIENT_SECRET:'PRIVATE_YT_SECRET',
+  YOUTUBE_OAUTH_REDIRECT_URI:'https://example.test/api/social/oauth/youtube/callback',YOUTUBE_CHANNEL_ID:'PRIVATE_CHANNEL'};
+ let loginCalls=0;
+ const service=await initializeSocialService({env,fetchImpl:async url=>{
+  loginCalls++;
+  return new Response(JSON.stringify(String(url).endsWith('/user')?{id:42}:{access_token:'PRIVATE_LOGIN',token_type:'bearer'}));
+ }});
+ t.after(()=>service.stop());
+ const app=express();
+ app.use('/api/social',createOAuthRouter(service));
+ app.get('/social/connect',connectionPage(service));
+ const server=app.listen(0,'127.0.0.1');
+ await new Promise(resolve=>server.once('listening',resolve));
+ t.after(()=>new Promise(resolve=>server.close(resolve)));
+ const base=`http://127.0.0.1:${server.address().port}`;
+ const url=base+'/api/social/onboarding';
+ assert.equal((await fetch(url)).status,403);
+ assert.equal(loginCalls,0);
+ const begin=await service.ownerAuth.begin();
+ const session=await service.ownerAuth.complete({state:new URL(begin.url).searchParams.get('state'),code:'fake'},begin.binding);
+ const headers={cookie:`${OWNER_COOKIE}=${session}`};
+ let response=await fetch(url,{headers});
+ assert.equal(response.headers.get('cache-control'),'no-store');
+ assert.equal((await response.json()).providers[0].status,'CONNECTION_REQUIRED');
+ const local=new SocialAutomation({store,adapters:{youtube:{
+  verify:async grant=>({verified:true,account_id:grant.account_id}),
+  read_profile:async()=>({title:'PRIVATE_RESULT'})
+ }}});
+ await local.connect('youtube',{account_id:'PRIVATE_CHANNEL',access_token:'PRIVATE_ACCESS',
+  expires_at:Date.now()+3600000,scopes:[]});
+ await local.enqueue({id:'private-job-id',platform:'youtube',operation:'read_profile'});
+ await local.tick();
+ const saved=await fs.readFile(store.file);
+ response=await fetch(url,{headers});
+ assert.equal(response.status,200);
+ const output=await response.text(), progress=JSON.parse(output);
+ assert.deepEqual(progress.providers.map(p=>p.status),['FIRST_READ_RETAINED','PROVIDER_CONFIGURATION_REQUIRED']);
+ assert.equal(progress.providers[0].first_read_operation,'read_profile');
+ assert.equal(progress.publication_enabled,false);
+ assert.equal(progress.external_writes_enabled,false);
+ assert.equal(loginCalls,2);
+ assert.equal(service.status().worker_running,false);
+ for(const privateValue of ['PRIVATE_CHANNEL','PRIVATE_ACCESS','PRIVATE_RESULT','private-job-id',session]){
+  assert.ok(!output.includes(privateValue));
+ }
+ assert.deepEqual(await fs.readFile(store.file),saved);
+ assert.match(await (await fetch(base+'/social/connect',{headers})).text(),/Read job evidence/);
 });
