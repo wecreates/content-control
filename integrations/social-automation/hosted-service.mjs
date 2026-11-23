@@ -30,6 +30,16 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     const missing = keys.filter(key => !env[key]);
     return [name, {status: missing.length ? 'INCOMPLETE' : 'PRESENT_UNVERIFIED', missing_configuration: missing, live_verified: false}];
   }));
+  const workerEnabled = env.SOCIAL_WORKER_ENABLED === 'true';
+  const onboardingWorkerStatus = () => {
+    if (!workerEnabled) return 'DISABLED';
+    if (!worker?.active) return 'UNAVAILABLE';
+    const cycle = worker.status();
+    if (cycle.status === 'CYCLE_FAILED') return 'UNAVAILABLE';
+    if (cycle.last_completed_at === null) return 'AWAITING_FIRST_CYCLE';
+    // The scheduler's state is independent of each provider's retained read.
+    return 'SCHEDULER_ACTIVE';
+  };
   const service = {
     status: () => {
       const current = now();
@@ -52,7 +62,8 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       if (shutdown.signal.aborted) return null;
       try {
         const state = await store.read();
-        return shutdown.signal.aborted ? null : ownerReadProgress(state, status.oauth_providers, now());
+        if (shutdown.signal.aborted) return null;
+        return {...ownerReadProgress(state, status.oauth_providers, now()), worker_status: onboardingWorkerStatus()};
       } catch {
         return null;
       }
@@ -66,7 +77,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   const storageRequested = bootstrapRequested || checkRequested;
   const runtimeBootId = crypto.randomUUID();
   status.storage_bootstrap = {status:'NOT_REQUESTED',read_verified:false,durable_storage_verified:false};
-  if (!storageRequested && env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
+  if (!storageRequested && !workerEnabled && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
   try {
     if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error('PUBLICATION_POLICY_BLOCKED');
     activationStage = 'storage_configuration';
@@ -110,7 +121,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       storageReadAt = now();
       status.storage_bootstrap = {checked_at:new Date(storageReadAt).toISOString(),status:bootstrapRequested?'INITIALIZED_READ_VERIFIED':'EXISTING_READ_VERIFIED',read_verified:true,write_read_verified:bootstrapRequested,probe_id:expected.id,runtime_boot_id:runtimeBootId,durable_storage_verified:false,scope:bootstrapRequested?'Encrypted probe write and separate read verified; restart persistence requires independent comparison':'Existing encrypted vault and probe read only; restart persistence requires independent comparison'};
       status.configured_storage_mode = env.SOCIAL_STORAGE_MODE;
-      if(env.SOCIAL_WORKER_ENABLED !== 'true' && env.SOCIAL_OAUTH_ENABLED !== 'true') {
+      if(!workerEnabled && env.SOCIAL_OAUTH_ENABLED !== 'true') {
         await store.close();store=undefined;
         status.reason = bootstrapRequested ? 'Storage initialization and read verified; OAuth and worker remain disabled.' : 'Existing storage read verified; OAuth and worker remain disabled.';
         return service;
@@ -138,7 +149,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     if(typeof authorizeOwner==='function')oauth=new SocialOAuthCoordinator({store,runtime,providers:oauthProviders,authorizeOwner,shutdownSignal:shutdown.signal});
     service.ownerAuth = ownerAuth;
     Object.assign(status, {oauth_routes_enabled: Boolean(ownerAuth), owner_login_enabled: Boolean(ownerAuth), oauth_providers: Object.keys(oauthProviders), configured_storage_mode: env.SOCIAL_STORAGE_MODE, storage_expires_at: env.SOCIAL_STORAGE_EXPIRES_AT || null, status: 'OAUTH_READY', reason: 'Owner authorization routes configured; live grants and durable storage are not independently verified.'});
-    if (env.SOCIAL_WORKER_ENABLED !== 'true') return service;
+    if (!workerEnabled) return service;
     worker = new SocialReadWorker({runtime});
     Object.assign(status, {status: 'READ_WORKER_STARTED', configured_storage_mode: env.SOCIAL_STORAGE_MODE, provider_adapters_registered: Object.keys(runtime.adapters).filter(p=>!runtime.adapters[p].blocked_reason), reason: 'Read-only worker started; account results are reported per cycle. OAuth availability is reported separately; durable storage has not been independently verified.'});
     worker.start();

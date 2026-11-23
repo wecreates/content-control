@@ -84,7 +84,9 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  t.after(()=>new Promise(resolve=>server.close(resolve)));
  const base=`http://127.0.0.1:${server.address().port}`;
  const url=base+'/api/social/onboarding';
- assert.equal((await fetch(url)).status,403);
+ const unauthorized=await fetch(url);
+ assert.equal(unauthorized.status,403);
+ assert.equal((await unauthorized.json()).worker_status,undefined);
  assert.equal(loginCalls,0);
  const begin=await service.ownerAuth.begin();
  const session=await service.ownerAuth.complete({state:new URL(begin.url).searchParams.get('state'),code:'fake'},begin.binding);
@@ -98,6 +100,9 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  }}});
  await local.connect('youtube',{account_id:'PRIVATE_CHANNEL',access_token:'PRIVATE_ACCESS',
   expires_at:Date.now()+3600000,scopes:[]});
+ const pending=await (await fetch(url,{headers})).json();
+ assert.equal(pending.providers[0].status,'FIRST_READ_PENDING');
+ assert.equal(pending.worker_status,'DISABLED');
  await local.enqueue({id:'private-job-id',platform:'youtube',operation:'read_profile'});
  await local.tick();
  const saved=await fs.readFile(store.file);
@@ -106,13 +111,53 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  const output=await response.text(), progress=JSON.parse(output);
  assert.deepEqual(progress.providers.map(p=>p.status),['FIRST_READ_RETAINED','PROVIDER_CONFIGURATION_REQUIRED']);
  assert.equal(progress.providers[0].first_read_operation,'read_profile');
+ assert.equal(progress.worker_status,'DISABLED');
  assert.equal(progress.publication_enabled,false);
  assert.equal(progress.external_writes_enabled,false);
  assert.equal(loginCalls,2);
  assert.equal(service.status().worker_running,false);
- for(const privateValue of ['PRIVATE_CHANNEL','PRIVATE_ACCESS','PRIVATE_RESULT','private-job-id',session]){
+ for(const privateValue of ['PRIVATE_CHANNEL','PRIVATE_ACCESS','PRIVATE_RESULT','PRIVATE_OWNER_SECRET','PRIVATE_YT_SECRET','private-job-id',session]){
   assert.ok(!output.includes(privateValue));
  }
  assert.deepEqual(await fs.readFile(store.file),saved);
  assert.match(await (await fetch(base+'/social/connect',{headers})).text(),/Read job evidence/);
+});
+
+test('owner onboarding separates worker startup, idle polling and failed cycles from retained reads',async t=>{
+ for (const outcome of ['idle','failed']) {
+  await t.test(outcome,async t=>{
+   const {store}=await fixture(t);
+   const env={SOCIAL_OAUTH_ENABLED:'true',SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'postgres_encrypted',
+    SOCIAL_PUBLIC_ORIGIN:'https://example.test',OWNER_GITHUB_CLIENT_ID:'client',
+    OWNER_GITHUB_CLIENT_SECRET:'secret',OWNER_GITHUB_ID:'42'};
+   let reads=0;
+   const {promise:holdFirstCycle,resolve:release}=Promise.withResolvers();
+   const service=await initializeSocialService({env,postgresStoreFactory:()=>({
+    update:fn=>store.update(fn),
+    async read(){
+     if (++reads===2) {
+      await holdFirstCycle;
+      if(outcome==='failed') throw Error('PRIVATE_WORKER_FAILURE');
+     }
+     return store.read();
+    }
+   }),fetchImpl:async url=>{
+    assert.ok(['github.com','api.github.com'].includes(new URL(url).hostname));
+    return new Response(JSON.stringify(String(url).endsWith('/user')?{id:42}:{access_token:'PRIVATE_LOGIN',token_type:'bearer'}));
+   }});
+   t.after(async()=>{release();await service.stop();});
+   const begin=await service.ownerAuth.begin();
+   const session=await service.ownerAuth.complete({state:new URL(begin.url).searchParams.get('state'),code:'fake'},begin.binding);
+   const context={headers:{cookie:`${OWNER_COOKIE}=${session}`}};
+   const initial=await service.ownerOnboarding(context);
+   assert.equal(initial.worker_status,'AWAITING_FIRST_CYCLE');
+   release();
+   const deadline=performance.now()+5000;
+   while(service.status().last_cycle.status==='NOT_STARTED'&&performance.now()<deadline) await new Promise(resolve=>setTimeout(resolve,10));
+   const progress=await service.ownerOnboarding(context);
+   assert.equal(progress.worker_status,outcome==='idle'?'SCHEDULER_ACTIVE':'UNAVAILABLE');
+   assert.deepEqual(progress.providers,initial.providers);
+   assert.ok(!JSON.stringify(progress).includes('PRIVATE_WORKER_FAILURE'));
+  });
+ }
 });
