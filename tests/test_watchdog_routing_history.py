@@ -285,7 +285,10 @@ sys.path.insert(0, sys.argv[1])
 import load_live_npm_security_evidence as npm
 import load_live_python_security_evidence as python
 if sys.argv[3] == 'synthetic_component':
-    with patch.object(npm, 'load_live_npm_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/runtime-security-audit.json').read_text())), patch.object(python, 'load_live_python_report', side_effect=lambda root, repository: json.loads((pathlib.Path(root) / 'state/python-security-audit.json').read_text())):
+    def load_fixture(name, root, repository, *, include_identity=False):
+        assert repository == 'wecreates/content-control' and include_identity
+        return json.loads((pathlib.Path(root) / 'state' / name).read_text())
+    with patch.object(npm, 'load_live_npm_report', side_effect=lambda *args, **kw: load_fixture('runtime-security-audit.json', *args, **kw)), patch.object(python, 'load_live_python_report', side_effect=lambda *args, **kw: load_fixture('python-security-audit.json', *args, **kw)):
         runpy.run_path(sys.argv[2], run_name='__main__')
 else:
     with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
@@ -305,6 +308,24 @@ else:
             self.assertEqual(report["watchdog"]["failed_checks"], [])
             self.assertFalse(report["completion"]["production_ready"])
             self.assertFalse(report["completion"]["publication_enabled"])
+
+    def test_receipts_expose_only_supplied_verified_run_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            health_fixture(root)
+            path = root / 'state/runtime-security-audit.json'
+            npm = json.loads(path.read_text())
+            identity = {'source_sha': 'a' * 40, 'run_id': 123, 'run_attempt': 2,
+                        'artifact_id': 456, 'github_artifact_digest': 'sha256:' + 'b' * 64}
+            npm['hosted_identity'] = identity
+            path.write_text(json.dumps(npm))
+            result = self.run_health(root)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            expected = {'npm': {'status': 'PASS', 'hosted_identity': identity},
+                        'python': {'status': 'PASS', 'hosted_identity': None}}
+            for key in ('watchdog', 'operations'):
+                self.assertEqual(report[key]['dependency_audit_evidence'], expected)
 
     def test_python_security_failure_stays_red_and_nonzero(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -343,6 +364,8 @@ else:
             self.assertIn('dependency_security_clean', report['watchdog']['failed_checks'])
             self.assertIn('python_dependency_security_clean', report['watchdog']['failed_checks'])
             self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
+            self.assertEqual(report['watchdog']['dependency_audit_evidence'],
+                             dict.fromkeys(('npm', 'python'), {'status': 'ERROR', 'hosted_identity': None}))
             self.assertFalse(report['completion']['publication_enabled'])
 
     def test_real_loaders_reject_missing_or_forged_clean_local_reports(self):

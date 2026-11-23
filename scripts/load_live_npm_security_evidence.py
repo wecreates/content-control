@@ -70,7 +70,7 @@ def retrieve_verified_equivalent(checkout, expected_sha, repository, run_id, api
             'verification':'official_github_api_at_import_time_not_offline_signature'}
 
 
-def load_live_npm_report(checkout,repository,api=None):
+def load_live_npm_report(checkout,repository,api=None,*,include_identity=False):
     """Select newest equivalent main run; never mask its failure with old PASS."""
     try:
         if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+',repository):
@@ -93,6 +93,9 @@ def load_live_npm_report(checkout,repository,api=None):
             # Once an equivalent source is found, its missing/error evidence is
             # decisive. A previous PASS must not override newer failed evidence.
             bundle=retrieve_verified_equivalent(checkout,source,repository,run_id,api)
+            if include_identity:
+                identity={key:bundle[key] for key in ('source_sha','run_id','run_attempt','artifact_id','github_artifact_digest')}
+                return dict(bundle['report'],hosted_identity=identity)
             return bundle['report']
         return {'schema_version':2,'status':'ERROR','audit_errors':['No eligible authenticated hosted evidence; migration or fresh scan required']}
     except (OSError,ValueError,TypeError,AttributeError,KeyError,EOFError,RuntimeError,NotImplementedError,zipfile.BadZipFile,zlib.error,subprocess.SubprocessError):

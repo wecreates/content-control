@@ -50,6 +50,20 @@ class LivePythonTests(unittest.TestCase):
         self.assertEqual(self.load()['status'],'PASS')
         self.assertEqual(self.git('status','--porcelain'),'')
 
+    def test_identity_is_opt_in_and_requires_verified_artifact(self):
+        self.prepare()
+        value = live.load_live_python_report(self.root, 'fixture/repository', self, include_identity=True)
+        identity = value.pop('hosted_identity')
+        self.assertEqual(value, self.load())
+        self.assertEqual(set(identity), {'source_sha', 'run_id', 'run_attempt', 'artifact_id', 'github_artifact_digest'})
+        self.assertEqual(identity['source_sha'], self.source)
+        self.assertEqual(identity['run_id'], self.run['id'])
+        self.assertEqual(identity['github_artifact_digest'], 'sha256:' + exact.sha(self.archive()))
+        self.missing = True
+        value = live.load_live_python_report(self.root, 'fixture/repository', self, include_identity=True)
+        self.assertEqual(value['status'], 'ERROR')
+        self.assertNotIn('hosted_identity', value)
+
     def test_changed_manifest_or_workflow_rejected(self):
         self.prepare()
         for name in ('requirements-transcription.txt','audit-workflow.yml'):
