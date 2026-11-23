@@ -34,7 +34,7 @@ def retrieve_verified_equivalent(checkout, expected_sha, repository, run_id, api
                               lambda root: _equivalent_snapshot(root, expected_sha))
 
 
-def load_live_python_report(checkout, repository, api=None):
+def load_live_python_report(checkout, repository, api=None, *, include_identity=False):
     """Newest equivalent run is decisive, including failure or pending status."""
     try:
         if not isinstance(repository, str) or not re.fullmatch('[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
@@ -58,7 +58,12 @@ def load_live_python_report(checkout, repository, api=None):
                 continue
             # A validation-only success without raw audit evidence also fails
             # closed here; it cannot stand in for a completed advisory scan.
-            return retrieve_verified_equivalent(checkout, source, repository, run_id, api)['report']
+            bundle = retrieve_verified_equivalent(checkout, source, repository, run_id, api)
+            if include_identity:
+                identity = {key: bundle[key] for key in ('source_sha', 'run_id', 'run_attempt', 'artifact_id',
+                                                         'github_artifact_digest')}
+                return dict(bundle['report'], hosted_identity=identity)
+            return bundle['report']
         return {'schema_version': 2, 'status': 'ERROR', 'audit_errors': ['No eligible authenticated Python evidence; migration or fresh scan required']}
     except (OSError, ValueError, TypeError, AttributeError, KeyError, EOFError, RuntimeError,
             NotImplementedError, zipfile.BadZipFile, zlib.error, subprocess.SubprocessError):

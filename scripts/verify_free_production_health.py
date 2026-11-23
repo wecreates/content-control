@@ -14,8 +14,12 @@ receipt=json.loads((ROOT/"qa-output/free/final-receipt.json").read_text())
 owner=json.loads((ROOT/"control/publication-owner-gate.json").read_text())
 sep=json.loads((ROOT/"control/publication-separation.json").read_text())
 manifest=json.loads((ROOT/"state/runtime-integrity-manifest.json").read_text())
-security=load_live_npm_report(ROOT, "wecreates/content-control")
-python_security=load_live_python_report(ROOT, "wecreates/content-control")
+security=load_live_npm_report(ROOT, "wecreates/content-control", include_identity=True)
+python_security=load_live_python_report(ROOT, "wecreates/content-control", include_identity=True)
+dependency_audit_evidence={
+    "npm":{"status":security.get("status"),"hosted_identity":security.get("hosted_identity")},
+    "python":{"status":python_security.get("status"),"hosted_identity":python_security.get("hosted_identity")},
+}
 workflow_health=json.loads((ROOT/"state/workflow-control-health.json").read_text()) if (ROOT/"state/workflow-control-health.json").exists() else {"status":"MISSING"}
 wiring_health=json.loads((ROOT/"state/system-wiring-health.json").read_text()) if (ROOT/"state/system-wiring-health.json").exists() else {"status":"MISSING"}
 factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if (ROOT/"state/factual-compliance-health.json").exists() else {"status":"MISSING"}
@@ -168,6 +172,7 @@ report={
     "integrity_failures":manifest_failures,
     "repair_action":repair_action,
     "publication_enabled":False,
+    "dependency_audit_evidence":dependency_audit_evidence,
 }
 out=ROOT/"state/free-production-watchdog.json"
 out.write_text(json.dumps(report,indent=2,sort_keys=True)+"\n")
@@ -247,6 +252,7 @@ ops={
     "dependency_vulnerabilities":security.get("npm_counts",{}),
     "python_dependency_vulnerabilities":python_security.get("total_vulnerabilities"),
     "python_security_status":python_security.get("status"),
+    "dependency_audit_evidence":dependency_audit_evidence,
     "rollback_candidate_sha256":ledger_health.get("rollback_candidate_sha256"),
     "workflow_control_status":workflow_health.get("status"),
     "system_wiring_status":wiring_health.get("status"),

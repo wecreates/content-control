@@ -56,6 +56,16 @@ class LiveEvidenceTests(unittest.TestCase):
         self.assertEqual(self.load(),self.report)
         self.assertEqual(self.git('status','--porcelain'),'')
         self.assertEqual((self.root/'state/runtime-security-audit.json').read_text(),'{}')
+    def test_identity_is_opt_in_and_requires_verified_artifact(self):
+        report = live.load_live_npm_report(self.root, self.repo, self, include_identity=True)
+        identity = report.pop('hosted_identity')
+        self.assertEqual(self.report, report)
+        self.assertEqual(identity, {'source_sha': self.source, 'run_id': 123, 'run_attempt': 1,
+                                    'artifact_id': 456, 'github_artifact_digest': 'sha256:' + live.sha(self.archive())})
+        self.artifact_changes = {'expired': True}
+        report = live.load_live_npm_report(self.root, self.repo, self, include_identity=True)
+        self.assertEqual(report['status'], 'ERROR')
+        self.assertNotIn('hosted_identity', report)
     def test_bounded_listing_no_evidence_is_error(self):
         for listing in ([],[self.run]*11,[None]):
             self.listing=listing;self.assertEqual(self.load()['status'],'ERROR')
