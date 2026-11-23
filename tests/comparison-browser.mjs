@@ -76,8 +76,32 @@ try{
  assert.equal(cancelled.reference.sha256,replacementHash);assert.equal(cancelled.reference.source_url,'https://example.com/current-reference');
  // Full synthetic playback in each audio selection must be usable as telemetry,
  // while still never setting observation or approval flags.
+ await page.evaluate(()=>{
+  window.comparisonPlaybackTrace=[];
+  for(const role of ['candidate','reference']){
+   const media=document.getElementById(role);
+   for(const type of ['volumechange','seeking','seeked','play','playing','pause','waiting','stalled','timeupdate','ended'])
+    media.addEventListener(type,()=>window.comparisonPlaybackTrace.push({role,type,time:media.currentTime,
+     seeking:media.seeking,paused:media.paused,muted:media.muted,readyState:media.readyState}));
+  }
+ });
  for(const audio of ['candidate','reference']){
-  await page.selectOption('#audio',audio);await page.click('#restart');await page.click('#play');
+  const before=await page.evaluate(()=>({cursor:window.comparisonPlaybackTrace.length,
+   rewind:['candidate','reference'].filter(role=>document.getElementById(role).currentTime!==0)}));
+  await page.selectOption('#audio',audio);
+  await page.click('#restart');
+  // The tracker interrupts on asynchronous media events. Let the requested
+  // audio transition and rewind settle before anchoring the new playback.
+  await page.waitForFunction(({audio,cursor,rewind})=>{
+   const events=window.comparisonPlaybackTrace.slice(cursor);
+   return ['candidate','reference'].every(role=>{
+    const media=document.getElementById(role);
+    return media.muted===(role!==audio)&&media.paused&&!media.seeking&&media.currentTime===0&&media.readyState>=3
+     &&events.some(event=>event.role===role&&event.type==='volumechange')
+     &&(!rewind.includes(role)||events.some(event=>event.role===role&&event.type==='seeked'));
+   });
+  },{audio,...before});
+  await page.click('#play');
   await page.waitForFunction(()=>['candidate','reference'].every(n=>document.getElementById(n).ended));
  }
  const playedDownload=page.waitForEvent('download');await page.click('#export');
@@ -106,7 +130,7 @@ try{
  mkdirSync('receipts',{recursive:true});
  writeFileSync(evidencePath,JSON.stringify({status:'BLOCKED',reason:'browser_test_failed',publication_enabled:false},null,2));
  if(page){await page.screenshot({path:`receipts/comparison-failure-${mode}.png`,fullPage:true});
- const layout=await page.evaluate(()=>({viewport:{width:innerWidth,height:innerHeight,scrollY,visual:visualViewport?.height},elements:['observation','repair','add','export'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect();return {id,x:r.x,y:r.y,width:r.width,height:r.height,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML};})}));
+ const layout=await page.evaluate(()=>({viewport:{width:innerWidth,height:innerHeight,scrollY,visual:visualViewport?.height},elements:['observation','repair','add','export'].map(id=>{const e=document.getElementById(id),r=e.getBoundingClientRect();return {id,x:r.x,y:r.y,width:r.width,height:r.height,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.outerHTML};}),playbackEvents:window.comparisonPlaybackTrace?.slice(-120)??[]}));
  console.log(JSON.stringify(layout));writeFileSync(`receipts/comparison-failure-${mode}.json`,JSON.stringify(layout,null,2));}
  throw error;
 }finally{await browser?.close();await new Promise(r=>server.close(r));}
