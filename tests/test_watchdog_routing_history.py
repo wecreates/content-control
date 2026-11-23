@@ -130,6 +130,42 @@ class WatchdogPersistenceTests(unittest.TestCase):
         self.assertEqual(receipt, {})
 
 class WatchdogFreshnessTests(unittest.TestCase):
+    def test_wiring_step_blocks_stale_or_invalid_component_evidence(self):
+        fresh_pass = dict(schema_version=1, status='PASS', publication_enabled=False,
+                          checks={'fresh': True}, failed_checks=[])
+        fresh_fail = dict(fresh_pass, status='FAIL', checks={'fresh': False}, failed_checks=['fresh'])
+        for mode, content, exit_code, report_status, returned in (
+            ('crash', None, 1, 'ERROR', 1),
+            ('no report', None, 0, 'ERROR', 1),
+            ('partial write', '{unfinished', 1, 'ERROR', 1),
+            ('abort after write', json.dumps(fresh_pass), 1, 'ERROR', 1),
+            ('wrong status', json.dumps(fresh_fail), 0, 'ERROR', 1),
+            ('empty checks', json.dumps(dict(fresh_pass, checks={})), 0, 'ERROR', 1),
+            ('fresh failure', json.dumps(fresh_fail), 2, 'FAIL', 2),
+            ('fresh pass', json.dumps(fresh_pass), 0, 'PASS', 0),
+        ):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                audit = root / 'scripts/audit_system_wiring.py'
+                audit.parent.mkdir()
+                audit.write_text("from pathlib import Path\n"
+                                 + (f"Path('state/system-wiring-health.json').write_text({content!r})\n"
+                                    if content is not None else '')
+                                 + f"raise SystemExit({exit_code})\n")
+                result = subprocess.run(['bash', '-e', '-c', workflow_step('Verify complete system wiring')],
+                                        cwd=root, capture_output=True, text=True, check=False)
+                report = json.loads((root / 'state/system-wiring-health.json').read_text())
+                self.assertEqual(result.returncode, returned, result.stderr)
+                self.assertEqual(report['status'], report_status)
+                self.assertIs(report['publication_enabled'], False)
+                health = SecurityGatingTests().run_health(root)
+                checks = json.loads(health.stdout)['watchdog']
+                self.assertIs(checks['checks']['system_wiring_green'], mode == 'fresh pass')
+                self.assertEqual(health.returncode, 0 if mode == 'fresh pass' else 2, health.stderr)
+                if mode != 'fresh pass':
+                    self.assertEqual(run_routes(checks['failed_checks']), {'system-wiring-audit.yml'})
+
     def verify(self, mode):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -75,7 +75,43 @@ jobs:
       - name: Verify complete system wiring
         id: wiring
         continue-on-error: true
-        run: python scripts/audit_system_wiring.py
+        run: |
+          set -euo pipefail
+          receipt=state/system-wiring-health.json
+          unavailable='{"schema_version":1,"status":"ERROR","checks":{},"publication_enabled":false}'
+          # A crashed audit must not leave the last successful receipt in use.
+          printf '%s\n' "$unavailable" > "$receipt"
+          status=0
+          python scripts/audit_system_wiring.py || status=$?
+          if ! python - "$receipt" "$status" <<'PY'
+          import json, sys
+          from pathlib import Path
+
+          path, status = sys.argv[1:]
+          report = json.loads(Path(path).read_text())
+          if not isinstance(report, dict):
+              raise SystemExit('System-wiring receipt must be an object')
+          checks = report.get('checks')
+          reported_failed = report.get('failed_checks')
+          if (status not in ('0', '2')
+                  or type(report.get('schema_version')) is not int or report['schema_version'] != 1
+                  or report.get('publication_enabled') is not False
+                  or not isinstance(checks, dict) or not checks
+                  or not isinstance(reported_failed, list)
+                  or any(not isinstance(name, str) for name in reported_failed)
+                  or any(type(result) is not bool for result in checks.values())):
+              raise SystemExit('Missing or invalid fresh system-wiring evidence')
+          failed = [name for name, passed in checks.items() if not passed]
+          expected = 'FAIL' if failed else 'PASS'
+          if (report.get('status') != expected or (status == '0') != (not failed)
+                  or sorted(failed) != sorted(reported_failed)):
+              raise SystemExit('System-wiring receipt disagrees with the audit exit or check results')
+          PY
+          then
+            printf '%s\n' "$unavailable" > "$receipt"
+            exit 1
+          fi
+          exit "$status"
       - name: Verify hash-bound watch server contract
         run: |
           node --check server-lowmem.js
