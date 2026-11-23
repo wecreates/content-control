@@ -61,9 +61,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-      - name: Capture candidate identity
+      - name: Capture candidate and source identities
         run: |
           echo "CANDIDATE_SHA=$(python -c 'import json; print(json.load(open("state/content-control-health.json"))["candidate_sha256"])')" >> "$GITHUB_ENV"
+          source_sha=$(git rev-parse --verify HEAD)
+          echo "WATCHDOG_SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
       - name: Verify canonical deployment contract
         run: |
           python -m unittest tests.test_deployment_contract
@@ -108,6 +110,9 @@ jobs:
           git config user.email actions@users.noreply.github.com
           git add state/free-production-watchdog.json state/system-completion.json state/operations-snapshot.json state/workflow-control-health.json state/system-wiring-health.json state/deployment-health.json
           git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update free production watchdog evidence')"
+          policy_dir=$(mktemp -d)
+          trap 'rm -rf "$policy_dir"' EXIT
+          git show "$WATCHDOG_SOURCE_SHA:scripts/npm_security_source_equivalence.py" > "$policy_dir/npm_security_source_equivalence.py"
           for attempt in 1 2 3; do
             if git pull --rebase origin main; then
               LATEST=$(git show origin/main:state/content-control-health.json | python -c 'import json,sys; print(json.load(sys.stdin)["candidate_sha256"])')
@@ -116,6 +121,8 @@ jobs:
                 gh workflow run candidate-state-reconcile.yml --ref main || true
                 exit 1
               fi
+              # A matching video hash does not prove the code checked by this run is current.
+              PYTHONPATH="$policy_dir" python -P -c 'import sys; from npm_security_source_equivalence import assert_source_equivalent; assert_source_equivalent(".", sys.argv[1])' "$WATCHDOG_SOURCE_SHA"
               if git push origin HEAD:main; then exit 0; fi
             fi
             git rebase --abort || true
