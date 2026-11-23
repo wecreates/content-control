@@ -12,6 +12,37 @@ async function providerCall(operation, timeoutMs, parentSignal) {
  try{return await Promise.race([Promise.resolve().then(()=>operation(controller.signal)),bound])}finally{clearTimeout(timer);parentSignal?.removeEventListener('abort',abort)}
 }
 const platforms=new Set(['instagram','facebook','youtube','tiktok','threads','x','pinterest','linkedin','reddit']);
+const readOperations=new Set(['read_profile','read_media','read_analytics']);
+const grantGeneration = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+export function ownerReadProgress(state, configured, now) {
+ const providers = ['youtube', 'instagram'].map(platform => {
+  const result = {platform, status:'PROVIDER_CONFIGURATION_REQUIRED', provider_verified:false,
+                  first_read_completed_at:null, first_read_operation:null};
+  if (!configured.includes(platform)) return result;
+  const grant = state.connections[platform];
+  if (!grant) return {...result, status:'CONNECTION_REQUIRED'};
+  if (grant.status !== 'connected' || !Number.isFinite(grant.expires_at) || grant.expires_at <= now) {
+   return {...result, status:'REAUTHORIZATION_REQUIRED'};
+  }
+  if (typeof grant.account_id !== 'string' || !grant.account_id ||
+      !Number.isSafeInteger(grant.verified_at) || grant.verified_at <= 0 || grant.verified_at > now) {
+   return {...result, status:'VERIFICATION_REQUIRED'};
+  }
+  const completed = grantGeneration.test(grant.generation || '') ? state.jobs.reduce((first, job) => {
+   if (job.grant_generation !== grant.generation || job.platform !== platform ||
+       job.account_id !== grant.account_id || job.status !== 'completed' || !readOperations.has(job.operation) ||
+       !Number.isSafeInteger(job.completed_at) || job.completed_at < grant.verified_at || job.completed_at > now) {
+    return first;
+   }
+   return !first || job.completed_at < first.completed_at ? job : first;
+  }, null) : null;
+  return {...result, provider_verified:true, status:completed ? 'FIRST_READ_RETAINED' : 'FIRST_READ_PENDING',
+          first_read_completed_at:completed?.completed_at ?? null, first_read_operation:completed?.operation ?? null};
+ });
+ return {scope:'Owner OAuth configuration and retained evidence for the current grant.',
+         providers, publication_enabled:false, external_writes_enabled:false};
+}
 export class EncryptedSocialStore {
  constructor({file,key}) {if(!path.isAbsolute(file))throw Error('PRIVATE_STORE_CONFIGURATION_REQUIRED');this.file=file;this.key=parseVaultKey(key);this.serial=Promise.resolve();}
  async read(){let raw;try{raw=await fs.readFile(this.file,'utf8')}catch(e){if(e.code==='ENOENT')return {version:1,connections:{},jobs:[]};throw Error('PRIVATE_STORE_UNAVAILABLE')}
@@ -43,17 +74,22 @@ export class EncryptedSocialStore {
 }
 export class SocialAutomation {
  constructor({store,adapters={},now=()=>Date.now(),providerTimeoutMs=20000}){if(!Number.isInteger(providerTimeoutMs)||providerTimeoutMs<1||providerTimeoutMs>120000)throw Error('INVALID_PROVIDER_TIMEOUT');this.store=store;this.adapters=adapters;this.now=now;this.running=null;this.providerTimeoutMs=providerTimeoutMs;}
- async connect(platform,grant,{signal:connectionSignal}={}){if(!platforms.has(platform)||!grant||typeof grant.access_token!=='string'||!grant.access_token||typeof grant.account_id!=='string'||!grant.account_id||!Array.isArray(grant.scopes)||!grant.scopes.every(x=>typeof x==='string')||!Number.isFinite(grant.expires_at)||grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');if(!this.adapters[platform]?.verify)throw Error('PROVIDER_ADAPTER_REQUIRED');const proof=await providerCall(signal=>this.adapters[platform].verify({...grant},{signal}),this.providerTimeoutMs,connectionSignal);if(proof.account_id!==grant.account_id||proof.verified!==true)throw Error('ACCOUNT_VERIFICATION_FAILED');await this.store.update(d=>{if(connectionSignal?.aborted)throw Error('AUTHORIZATION_CANCELLED');if(grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');d.connections[platform]={...grant,verified_at:this.now(),status:'connected'};});}
- async enqueue({id,platform,operation,payload={}}){if(!platforms.has(platform)||!['read_profile','read_media','read_analytics'].includes(operation))throw Error('EXTERNAL_WRITE_DISABLED');if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('INVALID_JOB_ID');const digest=crypto.createHash('sha256').update(JSON.stringify({platform,operation,payload})).digest('hex');return this.store.update(d=>{const old=d.jobs.find(j=>j.id===id);if(old){if(old.digest!==digest)throw Error('IDEMPOTENCY_CONFLICT');return {id,status:old.status,created:false}}if(d.jobs.length>=1000)throw Error('QUEUE_CAPACITY_REACHED');d.jobs.push({id,platform,operation,payload,digest,account_id:d.connections[platform]?.account_id||null,status:'queued',attempts:0,due_at:this.now()});return {id,status:'queued',created:true}});}
+ async connect(platform,grant,{signal:connectionSignal}={}){if(!platforms.has(platform)||!grant||typeof grant.access_token!=='string'||!grant.access_token||typeof grant.account_id!=='string'||!grant.account_id||!Array.isArray(grant.scopes)||!grant.scopes.every(x=>typeof x==='string')||!Number.isFinite(grant.expires_at)||grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');if(!this.adapters[platform]?.verify)throw Error('PROVIDER_ADAPTER_REQUIRED');const proof=await providerCall(signal=>this.adapters[platform].verify({...grant},{signal}),this.providerTimeoutMs,connectionSignal);if(proof.account_id!==grant.account_id||proof.verified!==true)throw Error('ACCOUNT_VERIFICATION_FAILED');await this.store.update(d=>{if(connectionSignal?.aborted)throw Error('AUTHORIZATION_CANCELLED');if(grant.expires_at<=this.now())throw Error('INVALID_AUTHORIZATION');d.connections[platform]={...grant,verified_at:this.now(),generation:crypto.randomUUID(),status:'connected'};});}
+ async enqueue({id,platform,operation,payload={}}){if(!platforms.has(platform)||!readOperations.has(operation))throw Error('EXTERNAL_WRITE_DISABLED');if(typeof id!=='string'||!/^[a-zA-Z0-9_-]{1,100}$/.test(id))throw Error('INVALID_JOB_ID');const digest=crypto.createHash('sha256').update(JSON.stringify({platform,operation,payload})).digest('hex');return this.store.update(d=>{const old=d.jobs.find(j=>j.id===id);if(old){if(old.digest!==digest)throw Error('IDEMPOTENCY_CONFLICT');return {id,status:old.status,created:false}}if(d.jobs.length>=1000)throw Error('QUEUE_CAPACITY_REACHED');d.jobs.push({id,platform,operation,payload,digest,account_id:d.connections[platform]?.account_id||null,status:'queued',attempts:0,due_at:this.now()});return {id,status:'queued',created:true}});}
  tick(){if(this.running)return this.running;this.running=this.run().finally(()=>{this.running=null});return this.running;}
  async run(){return this.store.update(async d=>{for(const job of d.jobs.filter(j=>['queued','retry'].includes(j.status)&&j.due_at<=this.now()).slice(0,10)){const connection=d.connections[job.platform],adapter=this.adapters[job.platform];if(!connection||!adapter){job.status='blocked';job.reason='AUTHORIZATION_OR_ADAPTER_REQUIRED';continue}if(adapter.blocked_reason){job.status='blocked';job.reason=adapter.blocked_reason;continue}if(job.account_id!==connection.account_id){job.status='blocked';job.reason='ACCOUNT_CHANGED';continue}if(connection.status==='reauthorization_required'){job.status='blocked';job.reason='REAUTHORIZE';continue}
     job.attempts++;try{if(connection.expires_at<=this.now()||connection.expires_at-this.now()<(adapter.refresh_lead_ms??86400000)&&typeof adapter.refresh==='function'){
      if(typeof adapter.refresh!=='function'){connection.status='reauthorization_required';job.status='blocked';job.reason='REAUTHORIZE';continue}
      const renewed=await providerCall(signal=>adapter.refresh({...connection},{signal}),this.providerTimeoutMs);
      if(typeof renewed?.access_token!=='string'||!renewed.access_token||!Number.isFinite(renewed.expires_at)||renewed.expires_at<=this.now()||renewed.account_id!==connection.account_id)throw Error('REAUTHORIZE');
-     d.connections[job.platform]={...connection,...renewed};
+     d.connections[job.platform]={...connection,...renewed,generation:connection.generation,verified_at:connection.verified_at};
     }
-     const method=adapter[job.operation];if(typeof method!=='function'){job.status='blocked';job.reason='UNSUPPORTED_OPERATION';continue}const result=await providerCall(signal=>method.call(adapter,{...d.connections[job.platform]},job.payload,{idempotencyKey:job.id,signal}),this.providerTimeoutMs);if(!result||typeof result!=="object"||Array.isArray(result))throw Error("INVALID_PROVIDER_RESULT");{const encoded=JSON.stringify(result);if(encoded.length>262144)throw Error("PROVIDER_RESULT_TOO_LARGE");job.result=JSON.parse(encoded);}job.status='completed';job.completed_at=this.now();d.connections[job.platform].last_read_at=this.now();delete job.reason;
+     const method=adapter[job.operation];if(typeof method!=='function'){job.status='blocked';job.reason='UNSUPPORTED_OPERATION';continue}const result=await providerCall(signal=>method.call(adapter,{...d.connections[job.platform]},job.payload,{idempotencyKey:job.id,signal}),this.providerTimeoutMs);if(!result||typeof result!=="object"||Array.isArray(result))throw Error("INVALID_PROVIDER_RESULT");{const encoded=JSON.stringify(result);if(encoded.length>262144)throw Error("PROVIDER_RESULT_TOO_LARGE");job.result=JSON.parse(encoded);}
+     job.status='completed';
+     job.completed_at=this.now();
+     job.grant_generation=d.connections[job.platform].generation;
+     d.connections[job.platform].last_read_at=this.now();
+     delete job.reason;
     }catch(error){const permanent=['REAUTHORIZE','PERMISSION_DENIED'].includes(error.code||error.message);if(permanent){d.connections[job.platform].status='reauthorization_required';job.status='blocked';job.reason='REAUTHORIZE'}else{job.status=job.attempts>=3?'blocked':'retry';job.reason='PROVIDER_FAILED';job.due_at=this.now()+Math.min(3600000,60000*2**job.attempts)}}}
    return {publication_enabled:false,counts:d.jobs.reduce((a,j)=>(a[j.status]=(a[j.status]||0)+1,a),{})};});}
  async status(){const d=await this.store.read();return {publication_enabled:false,external_writes_enabled:false,connections:Object.entries(d.connections).map(([platform,c])=>({platform,status:c.expires_at<=this.now()?'expired':c.status,expires_at:c.expires_at,last_verified_at:c.verified_at})),jobs:d.jobs.map(j=>({id:j.id,platform:j.platform,operation:j.operation,status:j.status,attempts:j.attempts,reason:j.reason}))};}
