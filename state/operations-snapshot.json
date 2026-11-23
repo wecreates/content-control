@@ -1,24 +1,24 @@
 {
-  "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "caption_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "caption_sha256": "f5c92add939c2b48f316ccf5109720569f79c7b93a67b04c7d9231cfd0b4bf1c",
   "caption_status": "PASS",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": true,
-    "candidate_identity_consistent": true,
+    "candidate_converged": false,
+    "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -29,12 +29,12 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": true,
+    "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -44,40 +44,28 @@
     "workflow_control_green": true,
     "zero_credit": true
   },
-  "component_checks_passed": true,
+  "component_checks_passed": false,
   "dependency_audit_evidence": {
     "npm": {
-      "hosted_identity": {
-        "artifact_id": 14860063075,
-        "github_artifact_digest": "sha256:4e99de4d8304fa9c00b713c1c7299f62e0b0cb376987be6a1a7d5112fb398da8",
-        "run_attempt": 1,
-        "run_id": 45260690765,
-        "source_sha": "cca067cb988307beb893aa6f13d7e5b07be0cc17"
-      },
-      "status": "PASS"
+      "hosted_identity": null,
+      "status": "ERROR"
     },
     "python": {
-      "hosted_identity": {
-        "artifact_id": 14861410319,
-        "github_artifact_digest": "sha256:5cb2391aba067ac31e7ce1cf8e04818622612aee7cc23f18a850a33bb9950740",
-        "run_attempt": 1,
-        "run_id": 45260681095,
-        "source_sha": "cca067cb988307beb893aa6f13d7e5b07be0cc17"
-      },
-      "status": "PASS"
+      "hosted_identity": null,
+      "status": "ERROR"
     }
   },
-  "dependency_vulnerabilities": {
-    "critical": 0,
-    "high": 0,
-    "info": 0,
-    "low": 0,
-    "moderate": 0,
-    "total": 0
-  },
+  "dependency_vulnerabilities": {},
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
-  "failed_checks": [],
+  "failed_checks": [
+    "runtime_integrity_manifest",
+    "dependency_security_clean",
+    "python_dependency_security_clean",
+    "live_deployment_green",
+    "candidate_identity_consistent",
+    "candidate_converged"
+  ],
   "live_deployment_status": "PASS",
   "machine_system_complete": false,
   "mobile_playback_status": "PASS",
@@ -86,13 +74,13 @@
   "public_health_url": "https://content-control-render-worker.onrender.com/readyz",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
   "publication_enabled": false,
-  "python_dependency_vulnerabilities": 0,
-  "python_security_status": "PASS",
+  "python_dependency_vulnerabilities": null,
+  "python_security_status": "ERROR",
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "review_server_smoke_status": "PASS",
-  "rollback_candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "rollback_candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
   "schema_version": 1,
-  "status": "COMPONENT_CHECKS_PASSED",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only; not live end-to-end production readiness",
   "sync_retention_status": "PASS",
   "system_wiring_status": "PASS",

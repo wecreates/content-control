@@ -1,34 +1,34 @@
 {
-  "actual_video_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "candidate_converged": true,
+  "actual_video_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+  "candidate_converged": false,
   "candidate_hashes": {
-    "captions": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "ledger": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "ledger_health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
+    "captions": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "health": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "ledger": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "ledger_health": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
     "live_deployment": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "provenance": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "receipt": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "smoke": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab"
+    "provenance": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "receipt": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "smoke": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3"
   },
-  "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": true,
-    "candidate_identity_consistent": true,
+    "candidate_converged": false,
+    "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
     "health_green": true,
     "health_receipt_hash_match": true,
     "immutable_history_present": true,
-    "live_deployment_green": true,
+    "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
     "narration_transcription_green": true,
@@ -39,12 +39,12 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": true,
+    "python_dependency_security_clean": false,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -56,32 +56,33 @@
   },
   "dependency_audit_evidence": {
     "npm": {
-      "hosted_identity": {
-        "artifact_id": 14860063075,
-        "github_artifact_digest": "sha256:4e99de4d8304fa9c00b713c1c7299f62e0b0cb376987be6a1a7d5112fb398da8",
-        "run_attempt": 1,
-        "run_id": 45260690765,
-        "source_sha": "cca067cb988307beb893aa6f13d7e5b07be0cc17"
-      },
-      "status": "PASS"
+      "hosted_identity": null,
+      "status": "ERROR"
     },
     "python": {
-      "hosted_identity": {
-        "artifact_id": 14861410319,
-        "github_artifact_digest": "sha256:5cb2391aba067ac31e7ce1cf8e04818622612aee7cc23f18a850a33bb9950740",
-        "run_attempt": 1,
-        "run_id": 45260681095,
-        "source_sha": "cca067cb988307beb893aa6f13d7e5b07be0cc17"
-      },
-      "status": "PASS"
+      "hosted_identity": null,
+      "status": "ERROR"
     }
   },
-  "failed_checks": [],
-  "integrity_failures": [],
+  "failed_checks": [
+    "runtime_integrity_manifest",
+    "dependency_security_clean",
+    "python_dependency_security_clean",
+    "live_deployment_green",
+    "candidate_identity_consistent",
+    "candidate_converged"
+  ],
+  "integrity_failures": [
+    {
+      "actual": "f5c92add939c2b48f316ccf5109720569f79c7b93a67b04c7d9231cfd0b4bf1c",
+      "expected": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+      "path": "public-review/episode1-v10-free.vtt"
+    }
+  ],
   "production_ready": false,
   "publication_enabled": false,
-  "repair_action": "none",
+  "repair_action": "reconcile_or_refresh_live_deployment",
   "schema_version": 1,
-  "status": "GREEN",
+  "status": "REPAIR_REQUIRED",
   "status_scope": "Accepted V10 artifact and recorded component checks only"
 }
