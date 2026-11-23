@@ -14,7 +14,20 @@ The result isolates a working separate-image/audio ingestion route in this sessi
 
 ## Integration
 
-The existing offline_av_review.py now prepares separate 10-second PCM WAV packets and references to its existing 1 FPS JPEG samples. Each packet carries original candidate SHA-256, exact audio sample bounds, audio/image hashes and NOT_REVIEWED status. Audio packets partition the decoded final mix without resampling or omitted/duplicated samples. Image times are explicitly nominal filter-output times, not exact source-frame times.
+The offline reviewer prepares ten-second PCM WAV packets with references to
+its 1 FPS JPEG samples. Packet intervals follow the container's playback
+clock. Decoded samples are placed at the frame presentation timestamps.
+Padding and overlaps outside valid frame bounds are trimmed, and gaps in the
+audio stream are filled with silence. No resampling is performed. The receipt
+records the decoded, presented and silence-fill sample counts. Reviews with
+missing audio frame timestamps or track duration fail before issuing a packet
+receipt.
+
+`playback-mix.wav` is the packet source. The original contiguous decode
+remains available as `final-mix.wav` for existing hash-bound consumers. Each
+packet retains its starting and ending sample offsets, file hashes and
+`NOT_REVIEWED` status. JPEG times identify nominal filter output positions.
+The packet preparation does not verify listening or continuous motion.
 
 No additional provider, API key, paid service or automated external upload was introduced. No new render was necessary. Full native video remains in the offline package for continuous motion review. Sampled frames must not be represented as continuous motion verification.
 
