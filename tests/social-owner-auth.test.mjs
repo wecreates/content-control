@@ -80,6 +80,7 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  const env={SOCIAL_OAUTH_ENABLED:'true',SOCIAL_STORAGE_MODE:'private_durable',SOCIAL_VAULT_FILE:store.file,
   SOCIAL_VAULT_KEY:'e'.repeat(64),SOCIAL_PUBLIC_ORIGIN:'https://example.test',
   OWNER_GITHUB_CLIENT_ID:'OWNER_CLIENT',OWNER_GITHUB_CLIENT_SECRET:'PRIVATE_OWNER_SECRET',OWNER_GITHUB_ID:'42',
+  RENDER_GIT_COMMIT:'a'.repeat(40),
   YOUTUBE_OAUTH_CLIENT_ID:'YT_CLIENT',YOUTUBE_OAUTH_CLIENT_SECRET:'PRIVATE_YT_SECRET',
   YOUTUBE_OAUTH_REDIRECT_URI:'https://example.test/api/social/oauth/youtube/callback',YOUTUBE_CHANNEL_ID:'PRIVATE_CHANNEL'};
  let loginCalls=0;
@@ -125,6 +126,8 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  assert.equal(progress.providers[0].status,'CONNECTION_REQUIRED');
  assert.equal(progress.onboarding_journey.status,'CONNECTION_REQUIRED');
  assert.equal(progress.onboarding_journey.signup_status,'OWNER_IDENTITY_RETAINED');
+ assert.equal(progress.deployed_source_commit,'a'.repeat(40));
+ assert.ok(Number.isSafeInteger(progress.observed_at));
  assert.match(await page(),/YouTube<\/strong> — Connect this account to start onboarding\./);
  const local=new SocialAutomation({store,adapters:{youtube:{
   verify:async grant=>({verified:true,account_id:grant.account_id}),
@@ -157,6 +160,8 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  assert.equal(progress.worker_status,'DISABLED');
  assert.equal(progress.publication_enabled,false);
  assert.equal(progress.external_writes_enabled,false);
+ assert.equal(progress.deployed_source_commit,'a'.repeat(40));
+ assert.ok(Number.isSafeInteger(progress.observed_at));
  const ownerPage=await page();
  assert.match(ownerPage,/YouTube<\/strong> — Successful first-read evidence is available\./);
  assert.match(ownerPage,/Instagram<\/strong> — Provider configuration required\./);
