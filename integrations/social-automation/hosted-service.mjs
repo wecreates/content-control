@@ -14,6 +14,8 @@ import {createPostgresStore,initializePostgresVault} from './postgres-store.mjs'
 // Operator configuration is NOT independent proof of durable storage.
 export async function initializeSocialService({env = process.env, fetchImpl = fetch, root = process.cwd(), authorizeOwner, postgresStoreFactory = createPostgresStore, initializeVault = initializePostgresVault, now = Date.now} = {}) {
   let worker,oauth,store;
+  const deployedSourceCommit = typeof env.RENDER_GIT_COMMIT === 'string' && /^[0-9a-f]{40}$/.test(env.RENDER_GIT_COMMIT)
+    ? env.RENDER_GIT_COMMIT : null;
   let activationStage = 'policy';
   let storageReadAt = null;
   const expiry = Date.parse(env.SOCIAL_STORAGE_EXPIRES_AT);
@@ -63,7 +65,10 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       try {
         const state = await store.read();
         if (shutdown.signal.aborted) return null;
-        return {...ownerReadProgress(state, status.oauth_providers, now()), worker_status: onboardingWorkerStatus()};
+        const observedAt = now();
+        return {...ownerReadProgress(state, status.oauth_providers, observedAt),
+          worker_status: onboardingWorkerStatus(), deployed_source_commit:deployedSourceCommit,
+          observed_at:observedAt};
       } catch {
         return null;
       }
