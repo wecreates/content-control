@@ -10,6 +10,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/live_probe_identity.py'
+      - 'scripts/verify_deployed_source_identity.py'
+      - 'tests/test_deployed_source_identity.py'
       - 'scripts/verify_live_caption_response.py'
       - 'state/deployment-contract.json'
       - 'state/content-control-health.json'
@@ -19,13 +21,10 @@ on:
       - 'render.yaml'
       - '.github/workflows/live-render-deployment-smoke.yml'
 permissions:
-  contents: write
-  actions: write
+  contents: read
 concurrency:
   group: live-render-deployment-smoke
   cancel-in-progress: true
-env:
-  GH_TOKEN: ${{ github.token }}
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -38,6 +37,8 @@ jobs:
       - name: Capture review inputs and deployment URL
         run: |
           python scripts/live_probe_identity.py HEAD --capture >> "$GITHUB_ENV"
+      - name: Verify deployed-source consumer contract
+        run: python -m unittest tests.test_deployed_source_identity -v
       - name: Probe live hosted review service
         id: probe
         run: |
@@ -54,11 +55,12 @@ jobs:
             sleep $((attempt*8))
           done
           test "$ok" = "1"
-          python - "$EXPECTED" "$EXPECTED_CAPTION" <<'PY'
+          python - "$EXPECTED" "$EXPECTED_CAPTION" "$EXPECTED_SOURCE_SHA" <<'PY'
           import json,sys
           h=json.load(open("/tmp/live-probe/health.json"))
           expected=sys.argv[1]
           expected_caption=sys.argv[2]
+          expected_source=sys.argv[3]
           assert h.get("ok") is True,h
           assert h.get("publication") is False,h
           assert h.get("hashBound") is True,h
@@ -66,8 +68,10 @@ jobs:
           assert h.get("captionSha256")==expected_caption,(h.get("captionSha256"),expected_caption)
           assert h.get("expectedSha256")==expected,(h.get("expectedSha256"),expected)
           assert h.get("actualSha256")==expected,(h.get("actualSha256"),expected)
+          assert h.get("deployed_source_commit")==expected_source,(h.get("deployed_source_commit"),expected_source)
           print(h)
           PY
+          python scripts/verify_deployed_source_identity.py /tmp/live-probe/health.json "$EXPECTED_SOURCE_SHA"
           surface_ok=0
           for attempt in 1 2 3 4 5 6 7 8; do
             watch_code=$(curl -L --connect-timeout 15 --max-time 90 -sS -D /tmp/live-probe/watch.headers -o /tmp/live-probe/watch.html -w "%{http_code}" "$BASE/watch" || true)
@@ -95,9 +99,10 @@ jobs:
         if: always()
         run: |
           python - <<'PY'
-          import json,os,pathlib
+          import json,os,pathlib,re
           candidate=os.environ.get("CANDIDATE_SHA")
           caption=os.environ.get("CAPTION_SHA")
+          expected_source=os.environ.get("EXPECTED_SOURCE_SHA")
           hp=pathlib.Path("/tmp/live-probe/health.json")
           live={}
           if hp.exists():
@@ -114,6 +119,7 @@ jobs:
               "range_streaming_present":pathlib.Path("/tmp/live-probe/range.bin").exists() and pathlib.Path("/tmp/live-probe/range.bin").stat().st_size==1024,
               "captions_present":pathlib.Path("/tmp/live-probe/captions.vtt").exists() and pathlib.Path("/tmp/live-probe/captions.vtt").read_text(errors="ignore").startswith("WEBVTT"),
               "caption_hash_matches":caption is not None and live.get("captionSha256")==caption,
+              "deployed_source_commit_matches":re.fullmatch(r"[0-9a-f]{40}",expected_source or "") is not None and live.get("deployed_source_commit")==expected_source,
           }
           r={
               "schema_version":1,
@@ -123,6 +129,8 @@ jobs:
               "caption_sha256":caption,
               "live_expected_sha256":live.get("expectedSha256"),
               "live_actual_sha256":live.get("actualSha256"),
+              "expected_source_commit":expected_source,
+              "deployed_source_commit":live.get("deployed_source_commit"),
               "checks":checks,
               "failed_checks":[k for k,v in checks.items() if not v],
               "publication_enabled":False,
@@ -136,33 +144,9 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main
-          if ! python scripts/live_probe_identity.py origin/main; then
-            gh workflow run candidate-state-reconcile.yml --ref main || true
-            exit 1
-          fi
-      - name: Persist live deployment evidence
-        if: always() && steps.source_guard.outcome == 'success'
-        run: |
-          set -euo pipefail
-          git config user.name content-control-runtime
-          git config user.email actions@users.noreply.github.com
-          git add state/live-deployment-health.json
-          git diff --cached --quiet || git commit -m "$(node scripts/pod_deploy_commit_policy.mjs 'Update live Render deployment health')"
-          for attempt in 1 2 3; do
-            if git pull --rebase origin main; then
-              python scripts/live_probe_identity.py HEAD
-              python scripts/review_smoke_inputs.py
-              if git push origin HEAD:main; then exit 0; fi
-            fi
-            git rebase --abort || true
-            sleep $((attempt*4))
-          done
-          exit 1
-      - name: Refresh canonical completion after live deployment passes
-        if: success()
-        run: gh workflow run free-production-watchdog.yml --ref main
+          python scripts/live_probe_identity.py origin/main
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.source_guard.outcome == 'success'
         with:
           name: live-render-deployment-smoke
           path: |

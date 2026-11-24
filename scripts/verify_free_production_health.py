@@ -98,9 +98,23 @@ candidate_sha256=health.get("candidate_sha256")
 valid_candidate_sha256=isinstance(candidate_sha256,str) and re.fullmatch(r"[0-9a-f]{64}",candidate_sha256) is not None
 live_expected_sha256=live_deployment.get("live_expected_sha256")
 live_actual_sha256=live_deployment.get("live_actual_sha256")
+expected_source_commit=live_deployment.get("expected_source_commit")
+deployed_source_commit=live_deployment.get("deployed_source_commit")
+checks["deployed_source_commit_matches"]=all([
+    isinstance(expected_source_commit,str),
+    re.fullmatch(r"[0-9a-f]{40}",expected_source_commit or "") is not None,
+    isinstance(deployed_source_commit,str),
+    re.fullmatch(r"[0-9a-f]{40}",deployed_source_commit or "") is not None,
+    deployed_source_commit==expected_source_commit,
+])
+live_checks=live_deployment.get("checks",{})
 checks["live_deployment_green"]=all([
-    live_deployment.get("status")=="PASS",
-    all(live_deployment.get("checks",{}).values()),
+    isinstance(live_checks,dict) and bool(live_checks),
+    live_deployment.get("status")==(
+        "PASS" if isinstance(live_checks,dict) and live_checks and all(value is True for value in live_checks.values())
+        else "FAIL"),
+    all(value is True for name,value in live_checks.items()
+        if name!="deployed_source_commit_matches"),
     live_deployment.get("publication_enabled") is False,
     isinstance(deployment_url,str) and deployment_url.startswith("https://"),
     live_deployment.get("public_base_url")==deployment_url,
@@ -172,7 +186,7 @@ if status=="GREEN":
     repair_action="none"
 elif "system_wiring_green" in failed_checks:
     repair_action="audit_system_wiring"
-elif "live_deployment_green" in failed_checks or "candidate_converged" in failed_checks:
+elif "deployed_source_commit_matches" in failed_checks or "live_deployment_green" in failed_checks or "candidate_converged" in failed_checks:
     repair_action="reconcile_or_refresh_live_deployment"
 elif "review_server_smoke_green" in failed_checks:
     repair_action="refresh_review_server_smoke"
@@ -186,6 +200,8 @@ report={
     "candidate_sha256":health.get("candidate_sha256"),
     "candidate_converged":candidate_converged,
     "candidate_hashes":candidate_hashes,
+    "expected_source_commit":expected_source_commit,
+    "deployed_source_commit":deployed_source_commit,
     "actual_video_sha256":actual_hash,
     "checks":checks,
     "failed_checks":failed_checks,

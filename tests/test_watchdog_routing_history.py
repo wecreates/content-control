@@ -425,6 +425,7 @@ def health_fixture(root):
     write_json(root, "state/live-deployment-health.json", {
         "status": "PASS", "candidate_sha256": candidate, "caption_sha256": caption,
         "live_expected_sha256": candidate, "live_actual_sha256": candidate,
+        "expected_source_commit": "a" * 40, "deployed_source_commit": "a" * 40,
         "public_base_url": "https://review.synthetic.invalid",
         "publication_enabled": False, "checks": {"fixture": True},
     })
@@ -527,6 +528,30 @@ else:
                 self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
                 self.assertEqual(run_routes(report['watchdog']['failed_checks']),
                                  {'live-render-deployment-smoke.yml'})
+
+    def test_ready_hash_bound_live_service_with_wrong_or_missing_source_stays_red(self):
+        for value in (None, "b" * 40, "A" * 40):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                path = root / "state/live-deployment-health.json"
+                live = json.loads(path.read_text())
+                if value is None:
+                    live.pop("deployed_source_commit")
+                else:
+                    live["deployed_source_commit"] = value
+                live["status"] = "FAIL"
+                live["checks"]["deployed_source_commit_matches"] = False
+                path.write_text(json.dumps(live))
+                result = self.run_health(root)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["watchdog"]["failed_checks"],
+                                 ["deployed_source_commit_matches"])
+                self.assertTrue(report["watchdog"]["checks"]["live_deployment_green"])
+                self.assertTrue(report["watchdog"]["candidate_converged"])
+                self.assertEqual(run_routes(report["watchdog"]["failed_checks"]),
+                                 {"live-render-deployment-smoke.yml"})
 
     def test_receipts_expose_only_supplied_verified_run_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
