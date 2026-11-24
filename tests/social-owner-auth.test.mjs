@@ -75,6 +75,9 @@ test('owner onboarding endpoint reports retained read evidence without provider 
   loginCalls++;
   return new Response(JSON.stringify(String(url).endsWith('/user')?{id:42}:{access_token:'PRIVATE_LOGIN',token_type:'bearer'}));
  }});
+ let progressReads=0;
+ const readProgress=service.ownerOnboarding;
+ service.ownerOnboarding=async req=>{progressReads++;return readProgress(req);};
  t.after(()=>service.stop());
  const app=express();
  app.use('/api/social',createOAuthRouter(service));
@@ -84,6 +87,13 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  t.after(()=>new Promise(resolve=>server.close(resolve)));
  const base=`http://127.0.0.1:${server.address().port}`;
  const url=base+'/api/social/onboarding';
+ const connect=base+'/social/connect';
+ const signIn=await fetch(connect);
+ assert.equal(signIn.headers.get('cache-control'),'no-store');
+ const signInPage=await signIn.text();
+ assert.match(signInPage,/Sign in as owner with GitHub/);
+ assert.doesNotMatch(signInPage,/First read|Read job evidence/);
+ assert.equal(progressReads,0);
  const unauthorized=await fetch(url);
  assert.equal(unauthorized.status,403);
  assert.equal((await unauthorized.json()).worker_status,undefined);
@@ -91,9 +101,16 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  const begin=await service.ownerAuth.begin();
  const session=await service.ownerAuth.complete({state:new URL(begin.url).searchParams.get('state'),code:'fake'},begin.binding);
  const headers={cookie:`${OWNER_COOKIE}=${session}`};
+ const page=async()=>{
+  const response=await fetch(connect,{headers});
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.match(response.headers.get('content-security-policy'),/default-src 'none'/);
+  return response.text();
+ };
  let response=await fetch(url,{headers});
  assert.equal(response.headers.get('cache-control'),'no-store');
  assert.equal((await response.json()).providers[0].status,'CONNECTION_REQUIRED');
+ assert.match(await page(),/YouTube<\/strong> — Connect this account to start onboarding\./);
  const local=new SocialAutomation({store,adapters:{youtube:{
   verify:async grant=>({verified:true,account_id:grant.account_id}),
   read_profile:async()=>({title:'PRIVATE_RESULT'})
@@ -104,8 +121,10 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  assert.equal(pending.providers[0].status,'FIRST_READ_PENDING');
  assert.equal(pending.providers[0].first_read_job_status,'NOT_QUEUED');
  assert.equal(pending.worker_status,'DISABLED');
+ assert.match(await page(),/YouTube<\/strong> — The account is verified\. No read is queued yet\./);
  await local.enqueue({id:'private-job-id',platform:'youtube',operation:'read_profile'});
  assert.equal((await (await fetch(url,{headers})).json()).providers[0].first_read_job_status,'QUEUED');
+ assert.match(await page(),/YouTube<\/strong> — The first read is queued\./);
  await local.tick();
  const saved=await fs.readFile(store.file);
  response=await fetch(url,{headers});
@@ -117,13 +136,22 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  assert.equal(progress.worker_status,'DISABLED');
  assert.equal(progress.publication_enabled,false);
  assert.equal(progress.external_writes_enabled,false);
+ const ownerPage=await page();
+ assert.match(ownerPage,/YouTube<\/strong> — Successful first-read evidence is available\./);
+ assert.match(ownerPage,/Instagram<\/strong> — Provider configuration required\./);
+ assert.match(ownerPage,/The read worker is disabled\./);
+ assert.match(ownerPage,/Read job evidence/);
  assert.equal(loginCalls,2);
  assert.equal(service.status().worker_running,false);
  for(const privateValue of ['PRIVATE_CHANNEL','PRIVATE_ACCESS','PRIVATE_RESULT','PRIVATE_OWNER_SECRET','PRIVATE_YT_SECRET','private-job-id',session]){
   assert.ok(!output.includes(privateValue));
+  assert.ok(!ownerPage.includes(privateValue));
  }
+ service.ownerOnboarding=async()=>{throw Error('PRIVATE_STORE_ERROR');};
+ const unavailablePage=await page();
+ assert.match(unavailablePage,/First-read status is temporarily unavailable\./);
+ assert.doesNotMatch(unavailablePage,/PRIVATE_STORE_ERROR|Successful first-read evidence/);
  assert.deepEqual(await fs.readFile(store.file),saved);
- assert.match(await (await fetch(base+'/social/connect',{headers})).text(),/Read job evidence/);
 });
 
 test('owner onboarding separates worker startup, idle polling and failed cycles from retained reads',async t=>{
