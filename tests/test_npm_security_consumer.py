@@ -51,6 +51,9 @@ class ConsumerTests(unittest.TestCase):
         python_security = next(n for n in assignments if any(isinstance(t,ast.Name) and t.id=='python_security' for t in n.targets))
         self.assertEqual(python_security.value.func.id, 'load_live_python_report')
         self.assertEqual(python_security.value.args[1].value, 'wecreates/content-control')
+        live_deployment = next(n for n in assignments if any(isinstance(t,ast.Name) and t.id=='live_deployment' for t in n.targets))
+        self.assertEqual(live_deployment.value.func.id, 'load_live_deployment_report')
+        self.assertEqual(live_deployment.value.args[1].value, 'wecreates/content-control')
         check = next(n for n in assignments if any(isinstance(t,ast.Subscript) and isinstance(t.slice,ast.Constant) and t.slice.value=='dependency_security_clean' for t in n.targets))
         self.assertEqual(check.value.func.id, 'security_report_is_clean')
     def test_workflow_readonly_fresh_artifact_and_scans(self):

@@ -136,8 +136,10 @@ class SmokeInputTests(unittest.TestCase):
         self.assertNotIn('Persist live deployment evidence', source)
         self.assertIn('uses: actions/upload-artifact@v4', source)
         artifact = source.split('uses: actions/upload-artifact@v4', 1)[1]
-        self.assertIn("if: always() && steps.source_guard.outcome == 'success'", artifact)
-        self.assertIn('state/live-deployment-health.json', artifact)
+        self.assertIn("if: always() && steps.bundle.outcome == 'success'", artifact)
+        self.assertIn('name: live-render-deployment-smoke-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}', artifact)
+        self.assertIn("cp state/live-deployment-health.json \"$bundle/live-deployment-health.json\"", source)
+        self.assertIn("'origin':'github_actions'", source)
 
     def test_live_probe_rejects_stale_captions_or_host_for_same_video(self):
         def git(*args):
