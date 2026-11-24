@@ -33,6 +33,7 @@ def valid_inputs():
             "platform": "youtube",
             "status": "FIRST_READ_RETAINED",
             "provider_verified": True,
+            "provider_verified_at": 2000,
             "first_read_completed_at": 3000,
             "first_read_operation": "read_profile",
             "first_read_job_status": "COMPLETED",
@@ -40,6 +41,7 @@ def valid_inputs():
             "platform": "instagram",
             "status": "PROVIDER_CONFIGURATION_REQUIRED",
             "provider_verified": False,
+            "provider_verified_at": None,
             "first_read_completed_at": None,
             "first_read_operation": None,
             "first_read_job_status": None,
@@ -142,6 +144,55 @@ class OwnerOnboardingAcceptanceTests(unittest.TestCase):
                 self.assertEqual(report["status"], "FAIL")
                 self.assertIn("journey_timestamps_ordered", report["failed_checks"])
 
+    def test_journey_milestones_must_exist_at_capture_time(self):
+        onboarding, readiness = valid_inputs()
+        journey = onboarding["onboarding_journey"]
+        provider = onboarding["providers"][0]
+        journey["first_successful_job_completed_at"] = CAPTURED_AT + 1
+        provider["first_read_completed_at"] = CAPTURED_AT + 1
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("journey_milestones_observed", report["failed_checks"])
+
+        journey["signup_completed_at"] = CAPTURED_AT + 1
+        journey["provider_verified_at"] = CAPTURED_AT + 1
+        provider["provider_verified_at"] = CAPTURED_AT + 1
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("journey_milestones_observed", report["failed_checks"])
+
+        journey["signup_completed_at"] = CAPTURED_AT
+        journey["provider_verified_at"] = CAPTURED_AT
+        journey["first_successful_job_completed_at"] = CAPTURED_AT
+        provider["provider_verified_at"] = CAPTURED_AT
+        provider["first_read_completed_at"] = CAPTURED_AT
+        self.assertEqual(evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)["status"], "PASS")
+
+    def test_journey_must_bind_the_earliest_read_to_its_own_provider_verification(self):
+        onboarding, readiness = valid_inputs()
+        youtube, instagram = onboarding["providers"]
+        instagram.update(youtube, platform="instagram", provider_verified_at=2500,
+                         first_read_completed_at=2800)
+        journey = onboarding["onboarding_journey"]
+        journey["first_successful_job_completed_at"] = 2800
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIn("current_grant_first_read_retained", report["failed_checks"])
+
+        journey["provider_verified_at"] = 2500
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "PASS")
+        self.assertEqual(report["completed_provider"], "instagram")
+
+        instagram["first_read_completed_at"] = 3000
+        instagram["provider_verified_at"] = 2000
+        journey["provider_verified_at"] = 2000
+        journey["first_successful_job_completed_at"] = 3000
+        onboarding["providers"].reverse()
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "PASS")
+        self.assertEqual(report["completed_provider"], "youtube")
+
     def test_unexpected_fields_fail_closed_without_echoing_private_values(self):
         onboarding, readiness = valid_inputs()
         onboarding["account_id"] = "PRIVATE_ACCOUNT"
@@ -155,6 +206,24 @@ class OwnerOnboardingAcceptanceTests(unittest.TestCase):
         self.assertFalse(report["checks"]["provider_shapes_secret_safe"])
         for private in ("PRIVATE_ACCOUNT", "PRIVATE_TOKEN", "PRIVATE_JOB"):
             self.assertNotIn(private, encoded)
+
+    def test_nonstring_provider_platform_and_operation_fail_without_exception(self):
+        for field in ("platform", "first_read_operation"):
+            for invalid in ({}, [], 1, False):
+                with self.subTest(field=field, invalid=invalid):
+                    onboarding, readiness = valid_inputs()
+                    onboarding["providers"][0][field] = invalid
+                    report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+                    self.assertEqual(report["status"], "FAIL")
+                    self.assertIn("provider_shapes_secret_safe", report["failed_checks"])
+
+    def test_invalid_journey_status_is_not_echoed(self):
+        onboarding, readiness = valid_inputs()
+        onboarding["onboarding_journey"]["status"] = "PRIVATE_STATUS_VALUE"
+        report = evaluate(onboarding, readiness, EXPECTED, VERIFIED_AT)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertIsNone(report["onboarding_status"])
+        self.assertNotIn("PRIVATE_STATUS_VALUE", json.dumps(report))
 
     def test_enabled_write_or_approval_gate_fails(self):
         onboarding, readiness = valid_inputs()

@@ -115,7 +115,9 @@ both responses report the same exact deployed source, both server observations
 are no more than five minutes old and no more than 30 seconds apart, readiness is green,
 publishing and external writes remain disabled, the worker has completed a scheduler cycle,
 and the sanitized journey binds retained signup, provider verification and the
-first successful current-grant read in chronological order. It only prints a
+first successful current-grant read in chronological order. The completed read
+and verification timestamp must come from the same provider row. All milestones
+must be retained by the onboarding observation time. It only prints a
 secret-safe receipt; it does not sign in, call providers, enqueue work, deploy,
 publish or write files. A passing receipt is not phone, durable-delivery,
 creative or full audiovisual acceptance.

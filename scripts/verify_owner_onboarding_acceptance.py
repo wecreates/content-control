@@ -18,7 +18,8 @@ from pathlib import Path
 SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 SAFE_INTEGER_MAX = 2**53 - 1
 READ_OPERATIONS = {"read_profile", "read_media", "read_analytics"}
-PROVIDERS = {"youtube", "instagram"}
+PROVIDER_ORDER = {"youtube": 0, "instagram": 1}
+JOURNEY_STATUSES = {"SIGNUP_REQUIRED", "CONNECTION_REQUIRED", "FIRST_JOB_REQUIRED", "COMPLETE"}
 MAX_CAPTURE_AGE_MS = 300_000
 MAX_RESPONSE_SKEW_MS = 30_000
 ONBOARDING_KEYS = {
@@ -32,7 +33,7 @@ JOURNEY_KEYS = {
     "external_writes_enabled", "scope",
 }
 PROVIDER_KEYS = {
-    "platform", "status", "provider_verified", "first_read_completed_at",
+    "platform", "status", "provider_verified", "provider_verified_at", "first_read_completed_at",
     "first_read_operation", "first_read_job_status",
 }
 
@@ -76,31 +77,48 @@ def evaluate(onboarding, readiness, expected_source_commit, verification_time=No
                                 and abs(onboarding_observed_at - readiness_observed_at)
                                 <= MAX_RESPONSE_SKEW_MS)
     provider_shapes_safe = (len(providers) > 0 and all(
-        _exact_keys(provider, PROVIDER_KEYS) for provider in providers
+        _exact_keys(provider, PROVIDER_KEYS)
+        and (provider.get("first_read_operation") is None
+             or (isinstance(provider["first_read_operation"], str)
+                 and provider["first_read_operation"] in READ_OPERATIONS))
+        for provider in providers
     ))
     platforms = [provider.get("platform") for provider in providers
                  if isinstance(provider, dict)]
-    provider_set_safe = (provider_shapes_safe and len(platforms) == len(set(platforms))
-                         and all(platform in PROVIDERS for platform in platforms))
-
-    retained = []
-    if provider_set_safe:
-        retained = [provider for provider in providers
-                    if provider.get("provider_verified") is True
-                    and provider.get("status") == "FIRST_READ_RETAINED"
-                    and provider.get("first_read_job_status") == "COMPLETED"
-                    and provider.get("first_read_operation") in READ_OPERATIONS
-                    and _safe_timestamp(provider.get("first_read_completed_at"))]
+    provider_set_safe = (provider_shapes_safe
+                         and all(isinstance(platform, str) and platform in PROVIDER_ORDER
+                                 for platform in platforms)
+                         and len(platforms) == len(set(platforms)))
 
     signup_at = journey.get("signup_completed_at")
     provider_verified_at = journey.get("provider_verified_at")
     first_job_at = journey.get("first_successful_job_completed_at")
+    journey_status = journey.get("status")
     timestamps_valid = all(_safe_timestamp(value)
                            for value in (signup_at, provider_verified_at, first_job_at))
     timestamps_ordered = timestamps_valid and signup_at <= provider_verified_at <= first_job_at
-    retained_matches = (timestamps_ordered and any(
-        provider["first_read_completed_at"] == first_job_at for provider in retained
-    ))
+    milestones_observed = (timestamps_ordered and onboarding_time_valid
+                           and first_job_at <= onboarding_observed_at)
+
+    retained = []
+    if provider_set_safe and _safe_timestamp(signup_at) and onboarding_time_valid:
+        for provider in providers:
+            verification_at = provider.get("provider_verified_at")
+            completion_at = provider.get("first_read_completed_at")
+            if (provider.get("provider_verified") is True
+                    and provider.get("status") == "FIRST_READ_RETAINED"
+                    and provider.get("first_read_job_status") == "COMPLETED"
+                    and provider.get("first_read_operation") is not None
+                    and _safe_timestamp(verification_at) and _safe_timestamp(completion_at)
+                    and signup_at <= verification_at <= completion_at <= onboarding_observed_at):
+                retained.append(provider)
+    first_provider = min(retained, key=lambda provider: (
+        provider["first_read_completed_at"], provider["provider_verified_at"],
+        PROVIDER_ORDER[provider["platform"]],
+    ), default=None)
+    retained_matches = (first_provider is not None
+                        and first_provider["provider_verified_at"] == provider_verified_at
+                        and first_provider["first_read_completed_at"] == first_job_at)
 
     checks = {
         "expected_source_commit_valid": expected_valid,
@@ -124,13 +142,13 @@ def evaluate(onboarding, readiness, expected_source_commit, verification_time=No
         "journey_external_writes_disabled": journey.get("external_writes_enabled") is False,
         "scheduler_active": onboarding.get("worker_status") == "SCHEDULER_ACTIVE",
         "signup_retained": journey.get("signup_status") == "OWNER_IDENTITY_RETAINED",
-        "journey_complete": journey.get("status") == "COMPLETE",
+        "journey_complete": journey_status == "COMPLETE",
         "journey_timestamps_ordered": timestamps_ordered,
+        "journey_milestones_observed": milestones_observed,
         "current_grant_first_read_retained": retained_matches,
     }
     status = "PASS" if all(checks.values()) else "FAIL"
-    passing_provider = next((provider for provider in retained
-                             if provider["first_read_completed_at"] == first_job_at), None)
+    passing_provider = first_provider if retained_matches and milestones_observed else None
     return {
         "schema_version": 1,
         "status": status,
@@ -139,7 +157,8 @@ def evaluate(onboarding, readiness, expected_source_commit, verification_time=No
         "verified_at": verification_time if verification_time_valid else None,
         "expected_source_commit": expected_source_commit if expected_valid else None,
         "deployed_source_commit": readiness_source if SOURCE_COMMIT.fullmatch(str(readiness_source or "")) else None,
-        "onboarding_status": journey.get("status") if isinstance(journey.get("status"), str) else None,
+        "onboarding_status": (journey_status if isinstance(journey_status, str)
+                              and journey_status in JOURNEY_STATUSES else None),
         "completed_provider": passing_provider.get("platform") if passing_provider else None,
         "signup_completed_at": signup_at if _safe_timestamp(signup_at) else None,
         "provider_verified_at": provider_verified_at if _safe_timestamp(provider_verified_at) else None,

@@ -1,6 +1,7 @@
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -15,7 +16,6 @@ SCRIPT = ROOT / "scripts/verify_preview_delivery_acceptance.py"
 SOURCE = "a" * 40
 CANDIDATE = "b" * 64
 CAPTIONS = "c" * 64
-DELIVERY_ID = "d" * 64
 PACKAGE = "e" * 64
 ARCHIVE = "f" * 64
 ENTRYPOINT = "1" * 64
@@ -23,6 +23,37 @@ CAPTURED_AT = 1_800_000_000_000
 VERIFIED_AT = CAPTURED_AT + 1_000
 EVIDENCE = b"retained physical-phone screen recording fixture"
 EVIDENCE_SHA = hashlib.sha256(EVIDENCE).hexdigest()
+FALSE_GATES = {
+    "publication_enabled": False,
+    "paid_generation_enabled": False,
+    "production_ready": False,
+    "production_approved": False,
+    "full_av_review": False,
+}
+PROVENANCE = {
+    "job_id": "PRIVATE_JOB_ID",
+    "job_digest": "2" * 64,
+    "attempt": 1,
+    "completed_at_unix": 1_800_000_000.5,
+    "candidate_sha256": CANDIDATE,
+    "pipeline_receipt_sha256": "3" * 64,
+    "adapter_receipt_sha256": "4" * 64,
+    **FALSE_GATES,
+    "scope": "Verified durable queue completion; delivery is not creative or publishing approval",
+    "adapter": "content-control-cycle",
+    "brief_sha256": "5" * 64,
+    "production_brief_sha256": "6" * 64,
+    "package_sha256": PACKAGE,
+    "review_archive_sha256": ARCHIVE,
+}
+FILES = {
+    "review/video.mp4": CANDIDATE,
+    "review/captions.vtt": CAPTIONS,
+    "review/index.html": ENTRYPOINT,
+    "review/package.json": PACKAGE,
+}
+# Computed with the Money Factory export identity fields and canonical serializer.
+DELIVERY_ID = "bd9b40bf5ec62a645dcba4d2ada3ed78e033fdd4f4ad389c728b168ba721d9b9"
 
 
 def valid_inputs():
@@ -31,6 +62,7 @@ def valid_inputs():
         "deployed_source_commit": SOURCE,
         "observed_at": CAPTURED_AT,
         "production_approved": False,
+        "id": "episode1-v10-free",
         "engine": "remotion-v10-free",
         "publication": False,
         "qaStatus": "GREEN",
@@ -40,39 +72,32 @@ def valid_inputs():
         "captionReady": True,
         "captionSha256": CAPTIONS,
         "captionCandidateSha256": CANDIDATE,
+        "identityConsistent": True,
+        "identityFailedChecks": [],
+        "watchUrl": f"/watch?sha256={CANDIDATE}&caption_sha256={CAPTIONS}",
+        "mediaUrl": f"/media?sha256={CANDIDATE}",
+        "captionsUrl": f"/captions?sha256={CAPTIONS}",
         "renderStatus": "idle",
-    }
-    false_gates = {
-        "publication_enabled": False,
-        "paid_generation_enabled": False,
-        "production_ready": False,
-        "production_approved": False,
-        "full_av_review": False,
     }
     delivery = {
         "schema_version": 1,
         "status": "AWAITING_REVIEW",
-        **false_gates,
+        **FALSE_GATES,
         "candidate_sha256": CANDIDATE,
         "archive": "review-package.zip",
         "archive_sha256": ARCHIVE,
         "entrypoint": "review/index.html",
         "entrypoint_sha256": ENTRYPOINT,
         "package_sha256": PACKAGE,
-        "files_sha256": {
-            "review/video.mp4": CANDIDATE,
-            "review/captions.vtt": CAPTIONS,
-            "review/index.html": ENTRYPOINT,
-            "review/package.json": PACKAGE,
-        },
+        "files_sha256": dict(FILES),
         "delivery_identity_sha256": DELIVERY_ID,
-        "provenance": {"not_echoed": "PRIVATE_JOB_ID"},
+        "provenance": dict(PROVENANCE),
         "scope": "Exact unpublished private preview delivery; playback and creative acceptance remain unverified",
     }
     verified = {
         "schema_version": 1,
         "status": "PASS",
-        **false_gates,
+        **FALSE_GATES,
         "candidate_sha256": CANDIDATE,
         "package_sha256": PACKAGE,
         "archive_sha256": ARCHIVE,
@@ -125,6 +150,49 @@ class PreviewDeliveryAcceptanceTests(unittest.TestCase):
         self.assertTrue(report["independent_evidence_review_required"])
         self.assertNotIn("PRIVATE_JOB_ID", json.dumps(report))
 
+    @unittest.skipUnless(shutil.which("node"), "Node is required to run the readiness producer")
+    def test_canonical_readiness_producer_feeds_the_delivery_verifier(self):
+        producer = """
+            import fs from "node:fs";
+            import vm from "node:vm";
+            import {buildPreviewIdentity} from "./preview-identity.js";
+            const [candidate, captions, commit, observedAt] = process.argv.slice(1);
+            const source = fs.readFileSync("server-lowmem.js", "utf8");
+            const start = source.indexOf('app.get("/readyz"');
+            const end = source.indexOf('app.get("/status"', start);
+            const identity = buildPreviewIdentity({
+              id: "episode1-v10-free", engine: "remotion-v10-free",
+              watchPath: "/watch", mediaPath: "/media", captionsPath: "/captions",
+            }, {
+              expected: candidate, actual: candidate, captionHash: captions,
+              captionCandidateSha256: candidate, ready: true, qaStatus: "GREEN",
+              videoReady: true, captionReady: true, publicationLocked: true,
+            });
+            let status, captured;
+            const response = {
+              setHeader() {}, status(code) { status = code; return this; },
+              json(value) { captured = value; },
+            };
+            vm.runInNewContext(source.slice(start, end), {
+              app: {get(_path, handler) { handler({}, response); }},
+              canonicalPreviewIdentity: () => identity,
+              deployedSourceCommit: commit, Date: {now: () => Number(observedAt)},
+              renderState: {status: "idle"},
+            });
+            if (status !== 200) throw Error("Canonical readiness must be green in the fixture");
+            process.stdout.write(JSON.stringify(captured));
+        """
+        result = subprocess.run(
+            ["node", "--input-type=module", "--eval", producer, "--",
+             CANDIDATE, CAPTIONS, SOURCE, str(CAPTURED_AT)],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        _, delivery, verified, phone = valid_inputs()
+        report = self.evaluate((json.loads(result.stdout), delivery, verified, phone))
+        self.assertEqual(report["status"], "PASS", report["failed_checks"])
+        self.assertFalse(report["phone_playback_verified"])
+        self.assertFalse(report["full_av_verified"])
+
     def test_source_candidate_caption_and_delivery_mismatches_fail(self):
         mutations = (
             ("readiness source", lambda r, d, v, p: r.update(deployed_source_commit="9" * 40),
@@ -147,6 +215,47 @@ class PreviewDeliveryAcceptanceTests(unittest.TestCase):
                 report = self.evaluate(values)
                 self.assertEqual(report["status"], "FAIL")
                 self.assertIn(failed, report["failed_checks"])
+
+    def test_caption_map_cannot_keep_the_old_identity_when_all_other_captions_are_rebound(self):
+        values = valid_inputs()
+        readiness, delivery, _, phone = values
+        rebound_caption = "9" * 64
+        readiness["captionSha256"] = phone["caption_sha256"] = rebound_caption
+        readiness["watchUrl"] = f"/watch?sha256={CANDIDATE}&caption_sha256={rebound_caption}"
+        readiness["captionsUrl"] = f"/captions?sha256={rebound_caption}"
+        delivery["files_sha256"]["review/captions.vtt"] = rebound_caption
+        report = self.evaluate(values)
+        self.assertEqual(report["status"], "FAIL")
+        self.assertEqual(report["failed_checks"], ["delivery_identity_recomputed"])
+
+    def test_exact_readiness_rejects_stale_cross_episode_and_unbound_preview_routes(self):
+        route_mutations = {
+            "id": "episode3-cashback-casino",
+            "engine": "different-engine",
+            "watchUrl": f"/watch?sha256={CANDIDATE}&caption_sha256={'z' * 64}",
+            "mediaUrl": f"/episode3/media?sha256={CANDIDATE}",
+            "captionsUrl": f"https://example.invalid/captions?sha256={CAPTIONS}",
+        }
+        for field, value in route_mutations.items():
+            with self.subTest(field=field):
+                values = valid_inputs()
+                values[0][field] = value
+                report = self.evaluate(values)
+                self.assertEqual(report["status"], "FAIL")
+                self.assertIn("readiness_canonical_route_bound", report["failed_checks"])
+
+        for changes in ({"identityConsistent": False},
+                        {"identityFailedChecks": ["caption_candidate_exact"]}):
+            with self.subTest(changes=changes):
+                values = valid_inputs()
+                values[0].update(changes)
+                report = self.evaluate(values)
+                self.assertEqual(report["status"], "FAIL")
+                self.assertIn("readiness_identity_consistent", report["failed_checks"])
+
+        values = valid_inputs()
+        del values[0]["watchUrl"]
+        self.assertIn("readiness_shape_exact", self.evaluate(values)["failed_checks"])
 
     def test_http_green_or_synthetic_attestation_cannot_replace_phone_evidence(self):
         values = valid_inputs()

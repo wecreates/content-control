@@ -17,12 +17,32 @@ Primary policy: `production/money-factory-content-policy.json`
 Style DNA: `reference-dna.json`
 Capability queue: `capability-queue.json`
 
+## Review preview identity
+
+`/readyz` describes the exact unpublished canonical Episode 1 preview and
+`/episode3/health` describes Episode 3. A green response includes one hash-bound
+`watchUrl`, `mediaUrl`, and `captionsUrl`; the candidate and caption hashes in
+those URLs are the same identities reported in that response. Consumers must
+follow the returned watch URL rather than combining `/readyz` evidence with a
+different episode's watch route.
+
+When any Episode 3 evidence exists, Episode 3 owns the user-facing `/latest`
+selection. If its media, captions, receipt binding, or publication lock is
+invalid, `/latest` and the root review link fail closed instead of falling back
+to an older green Episode 1. Canonical deployment readiness remains independently
+observable at `/readyz`. A hash-bound watch URL returns a blocked page when
+either requested identity has changed. These checks establish byte/route
+coherence only; they are not physical-phone playback, listening, creative
+acceptance, deployment freshness, or permission to publish. Publication remains
+disabled.
+
 ## Private preview evidence binding
 
 After a Money Factory cycle export has passed its queue-independent durable
-delivery verifier, capture this deployment's `/readyz` response and retain the
-complete physical-phone screen recording plus its structured observation. Bind
-those receipts without contacting the deployment or changing any state:
+delivery verifier, capture this deployment's canonical `/readyz` response.
+Use its returned `watchUrl` to record complete playback on the physical phone,
+then retain the screen recording and structured observation. Bind those
+receipts without contacting the deployment or changing any state:
 
 ```sh
 python scripts/verify_preview_delivery_acceptance.py \
@@ -33,7 +53,9 @@ python scripts/verify_preview_delivery_acceptance.py \
 
 The command requires one fresh deployed source, candidate, caption identity,
 and externally supplied durable delivery identity across every receipt. It
-also hashes the retained recording and requires explicit complete-playback,
+recomputes the Money Factory delivery identity from the export receipt fields
+and file hashes, including the caption file. It also hashes the retained
+recording and requires explicit complete-playback,
 audio, caption, and inline-phone observations. A passing result establishes
 receipt coherence only: an independent reviewer must still watch and listen to
 the recording before phone playback, creative quality, or full audiovisual

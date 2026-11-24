@@ -35,19 +35,17 @@ function ownerOnboardingJourney(state, providers, now) {
  result.signup_status = 'OWNER_IDENTITY_RETAINED';
  result.signup_completed_at = signup.completed_at;
  result.status = 'CONNECTION_REQUIRED';
- const verified = providers.filter(provider => provider.provider_verified).map(provider => ({
-  provider, grant:state.connections[provider.platform],
- })).filter(({grant}) => Number.isSafeInteger(grant?.verified_at) && grant.verified_at >= signup.completed_at && grant.verified_at <= now)
-   .sort((a,b) => a.grant.verified_at - b.grant.verified_at);
+ const verified = providers.filter(provider => provider.provider_verified &&
+  provider.provider_verified_at >= signup.completed_at)
+  .sort((a,b) => a.provider_verified_at - b.provider_verified_at);
  if (!verified.length) return result;
- result.provider_verified_at = verified[0].grant.verified_at;
  result.status = 'FIRST_JOB_REQUIRED';
- const completed = verified.filter(({provider}) => provider.status === 'FIRST_READ_RETAINED' &&
-  Number.isSafeInteger(provider.first_read_completed_at) &&
-  provider.first_read_completed_at >= signup.completed_at && provider.first_read_completed_at <= now)
-  .sort((a,b) => a.provider.first_read_completed_at - b.provider.first_read_completed_at);
- if (!completed.length) return result;
- result.first_successful_job_completed_at = completed[0].provider.first_read_completed_at;
+ // Break equal completion times by earliest verification, then the fixed provider order.
+ const completed = verified.filter(provider => provider.status === 'FIRST_READ_RETAINED')
+  .sort((a,b) => a.first_read_completed_at - b.first_read_completed_at)[0];
+ result.provider_verified_at = (completed ?? verified[0]).provider_verified_at;
+ if (!completed) return result;
+ result.first_successful_job_completed_at = completed.first_read_completed_at;
  result.status = 'COMPLETE';
  return result;
 }
@@ -55,6 +53,7 @@ function ownerOnboardingJourney(state, providers, now) {
 export function ownerReadProgress(state, configured, now) {
  const providers = ['youtube', 'instagram'].map(platform => {
   const result = {platform, status:'PROVIDER_CONFIGURATION_REQUIRED', provider_verified:false,
+                  provider_verified_at:null,
                   first_read_completed_at:null, first_read_operation:null, first_read_job_status:null};
   if (!configured.includes(platform)) return result;
   const grant = state.connections[platform];
@@ -83,6 +82,7 @@ export function ownerReadProgress(state, configured, now) {
    phase = completed ? 'COMPLETED' : firstReadPhases.find(([status]) => visibleStatuses.has(status))?.[1] ?? 'NOT_QUEUED';
   }
   return {...result, provider_verified:true, status:completed ? 'FIRST_READ_RETAINED' : 'FIRST_READ_PENDING',
+          provider_verified_at:grant.verified_at,
           first_read_completed_at:completed?.completed_at ?? null, first_read_operation:completed?.operation ?? null,
           first_read_job_status:phase};
  });

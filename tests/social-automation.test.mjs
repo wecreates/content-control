@@ -118,6 +118,38 @@ test('onboarding journey requires retained owner identity and chronological curr
  for(const privateValue of ['private_account','PRIVATE_TOKEN','PRIVATE_RESULT','private-onboarding-job'])assert.ok(!encoded.includes(privateValue));
 });
 
+test('onboarding pairs the first completed read with its own provider verification',()=>{
+ const grant=(platform,verified_at)=>({
+  account_id:`private-${platform}`,status:'connected',expires_at:9000,
+  generation:crypto.randomUUID(),verified_at,
+ });
+ const youtube=grant('youtube',2000);
+ const instagram=grant('instagram',2500);
+ const job=(platform,connection,completed_at)=>({
+  platform,account_id:connection.account_id,status:'completed',operation:'read_profile',
+  enqueued_grant_generation:connection.generation,grant_generation:connection.generation,completed_at,
+ });
+ const state={
+  owner_onboarding:{schema_version:1,id:crypto.randomUUID(),identity_provider:'github',completed_at:1000},
+  connections:{instagram,youtube},
+  jobs:[],
+ };
+ const view=()=>ownerReadProgress(state,['instagram','youtube'],5000);
+ assert.equal(view().onboarding_journey.status,'FIRST_JOB_REQUIRED');
+ assert.equal(view().onboarding_journey.provider_verified_at,2000);
+
+ state.jobs.push(job('youtube',youtube,4000),job('instagram',instagram,3000));
+ const completed=view();
+ assert.equal(completed.onboarding_journey.status,'COMPLETE');
+ assert.equal(completed.onboarding_journey.provider_verified_at,2500);
+ assert.equal(completed.onboarding_journey.first_successful_job_completed_at,3000);
+ assert.equal(completed.providers.find(({platform})=>platform==='instagram').provider_verified_at,2500);
+
+ state.jobs[0].completed_at=3000;
+ assert.equal(view().onboarding_journey.provider_verified_at,2000);
+ assert.equal(view().onboarding_journey.first_successful_job_completed_at,3000);
+});
+
 test('owner first-read phase shows actual retries and a blocked read without exposing old grant details',async t=>{
  let reads=0;
  const x=await setup(t,{read_media:async()=>{

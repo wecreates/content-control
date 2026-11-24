@@ -18,6 +18,7 @@ from pathlib import Path
 
 SHA256 = re.compile(r"[0-9a-f]{64}")
 SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
+JOB_ID = re.compile(r"[A-Za-z0-9_-]{1,64}")
 SAFE_INTEGER_MAX = 2**53 - 1
 MAX_CAPTURE_AGE_MS = 30 * 60 * 1000
 MAX_CAPTURE_SKEW_MS = 5 * 60 * 1000
@@ -27,10 +28,11 @@ FALSE_GATES = {
     "production_approved", "full_av_review",
 }
 READINESS_KEYS = {
-    "ok", "deployed_source_commit", "observed_at", "production_approved",
+    "ok", "deployed_source_commit", "observed_at", "production_approved", "id",
     "engine", "publication", "qaStatus", "expectedSha256", "actualSha256",
     "hashBound", "captionReady", "captionSha256", "captionCandidateSha256",
-    "renderStatus",
+    "identityConsistent", "identityFailedChecks", "watchUrl", "mediaUrl",
+    "captionsUrl", "renderStatus",
 }
 DELIVERY_KEYS = {
     "schema_version", "status", *FALSE_GATES, "candidate_sha256", "archive",
@@ -68,6 +70,40 @@ def _false_gates(value):
     return all(value.get(key) is False for key in FALSE_GATES)
 
 
+def _delivery_identity(delivery):
+    """Rebuild the Money Factory cycle export identity from its canonical fields."""
+    provenance = delivery.get("provenance")
+    files = delivery.get("files_sha256")
+    if not isinstance(provenance, dict) or not isinstance(files, dict):
+        return None
+    job_id = provenance.get("job_id")
+    job_digest = provenance.get("job_digest")
+    attempt = provenance.get("attempt")
+    if (not isinstance(job_id, str) or JOB_ID.fullmatch(job_id) is None
+            or not isinstance(job_digest, str) or SHA256.fullmatch(job_digest) is None
+            or type(attempt) is not int or attempt < 1):
+        return None
+
+    identity = {
+        "job_id": job_id,
+        "job_digest": job_digest,
+        "attempt": attempt,
+        "candidate_sha256": delivery.get("candidate_sha256"),
+        "package_sha256": delivery.get("package_sha256"),
+        "archive_sha256": delivery.get("archive_sha256"),
+        "entrypoint": delivery.get("entrypoint"),
+        "entrypoint_sha256": delivery.get("entrypoint_sha256"),
+        "files_sha256": files,
+        "provenance": provenance,
+        **{key: delivery.get(key) for key in FALSE_GATES},
+    }
+    try:
+        serialized = json.dumps(identity, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+    except (TypeError, ValueError, RecursionError):
+        return None
+
+
 def evaluate(readiness, delivery, verified_delivery, phone, expected_source_commit,
              expected_delivery_identity, observed_evidence_sha256,
              verification_time=None):
@@ -85,10 +121,13 @@ def evaluate(readiness, delivery, verified_delivery, phone, expected_source_comm
                     and SOURCE_COMMIT.fullmatch(expected_source_commit) is not None)
     delivery_identity_valid = (isinstance(expected_delivery_identity, str)
                                and SHA256.fullmatch(expected_delivery_identity) is not None)
+    recomputed_delivery_identity = _delivery_identity(delivery)
     evidence_hash_valid = (isinstance(observed_evidence_sha256, str)
                            and SHA256.fullmatch(observed_evidence_sha256) is not None)
     candidate = readiness.get("actualSha256")
     captions = readiness.get("captionSha256")
+    candidate_valid = isinstance(candidate, str) and SHA256.fullmatch(candidate) is not None
+    captions_valid = isinstance(captions, str) and SHA256.fullmatch(captions) is not None
     ready_at = readiness.get("observed_at")
     phone_at = phone.get("observed_at")
     now_valid = _safe_timestamp(verification_time)
@@ -125,12 +164,22 @@ def evaluate(readiness, delivery, verified_delivery, phone, expected_source_comm
                             and readiness.get("qaStatus") == "GREEN"
                             and readiness.get("hashBound") is True
                             and readiness.get("captionReady") is True),
+        "readiness_identity_consistent": (readiness.get("identityConsistent") is True
+                                          and readiness.get("identityFailedChecks") == []),
+        "readiness_canonical_route_bound": (
+            candidate_valid and captions_valid
+            and readiness.get("id") == "episode1-v10-free"
+            and readiness.get("engine") == "remotion-v10-free"
+            and readiness.get("watchUrl") == f"/watch?sha256={candidate}&caption_sha256={captions}"
+            and readiness.get("mediaUrl") == f"/media?sha256={candidate}"
+            and readiness.get("captionsUrl") == f"/captions?sha256={captions}"
+        ),
         "readiness_publication_disabled": (readiness.get("publication") is False
                                             and readiness.get("production_approved") is False),
-        "readiness_candidate_bound": (SHA256.fullmatch(str(candidate or "")) is not None
+        "readiness_candidate_bound": (candidate_valid
                                       and candidate == readiness.get("expectedSha256")
                                       and candidate == readiness.get("captionCandidateSha256")),
-        "readiness_caption_bound": SHA256.fullmatch(str(captions or "")) is not None,
+        "readiness_caption_bound": captions_valid,
         "delivery_receipt_unpublished": (delivery.get("schema_version") == 1
                                          and delivery.get("status") == "AWAITING_REVIEW"
                                          and _false_gates(delivery)
@@ -145,6 +194,8 @@ def evaluate(readiness, delivery, verified_delivery, phone, expected_source_comm
         "delivery_identity_exact": (delivery_identity_valid
                                     and delivery.get("delivery_identity_sha256") == expected_delivery_identity
                                     and verified_delivery.get("delivery_identity_sha256") == expected_delivery_identity),
+        "delivery_identity_recomputed": (delivery_identity_valid
+                                         and recomputed_delivery_identity == expected_delivery_identity),
         "delivery_candidate_exact": (candidate is not None
                                      and delivery.get("candidate_sha256") == candidate
                                      and verified_delivery.get("candidate_sha256") == candidate
@@ -185,8 +236,8 @@ def evaluate(readiness, delivery, verified_delivery, phone, expected_source_comm
         "expected_source_commit": expected_source_commit if source_valid else None,
         "deployed_source_commit": (readiness.get("deployed_source_commit")
                                    if SOURCE_COMMIT.fullmatch(str(readiness.get("deployed_source_commit") or "")) else None),
-        "candidate_sha256": candidate if SHA256.fullmatch(str(candidate or "")) else None,
-        "caption_sha256": captions if SHA256.fullmatch(str(captions or "")) else None,
+        "candidate_sha256": candidate if candidate_valid else None,
+        "caption_sha256": captions if captions_valid else None,
         "delivery_identity_sha256": expected_delivery_identity if delivery_identity_valid else None,
         "phone_evidence_sha256": observed_evidence_sha256 if evidence_hash_valid else None,
         "checks": checks,
