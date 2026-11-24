@@ -9,6 +9,24 @@ test('continuous player progression records both modalities but never review',()
  assert.equal(s.artifact_sha256,identity.sha256);assert.equal(s.session_id,'synthetic-session');
  for(const k of ['perception_verified','full_video_review','full_audio_review'])assert.equal(s[k],false);
 });
+test('close callbacks sharing a wall clock tick preserve the previous playback anchor',()=>{
+ const t=createPlaybackTracker('synthetic');
+ t.sample(frame(0,0));t.sample(frame(.006238,6));t.sample(frame(.006366,6));
+ assert.deepEqual(t.snapshot(identity).unmuted_playback_intervals,[[0,.006238]]);
+ t.sample(frame(.19,190));
+ assert.deepEqual(t.snapshot(identity).video_playback_intervals,[[0,.19]]);
+ assert.deepEqual(t.snapshot(identity).unmuted_playback_intervals,[[0,.19]]);
+});
+test('same-tick clock deferral does not bridge a jump, rewind, or audio mode change',()=>{
+ for(const next of [frame(.09,6),frame(.0063,6),frame(.0063,7),frame(.0065,6,{audible:false})]){
+  const t=createPlaybackTracker('synthetic');
+  t.sample(frame(0,0));t.sample(frame(.006238,6));t.sample(frame(.006366,6));t.sample(next);
+  t.sample(frame(.19,190,{audible:next.audible}));
+  assert.deepEqual(t.snapshot(identity).video_playback_intervals,[[0,.006238],[next.time,.19]]);
+  assert.deepEqual(t.snapshot(identity).unmuted_playback_intervals,
+   next.audible?[[0,.006238],[next.time,.19]]:[[0,.006238]]);
+ }
+});
 test('seeks, long callbacks, hidden and paused periods never fill gaps',()=>{
  for(const second of [frame(4,250),frame(2,2000),frame(.25,250,{visible:false}),frame(.25,250,{playing:false})]){
   const t=createPlaybackTracker('synthetic');t.sample(frame(0,0));t.sample(second);assert.deepEqual(t.snapshot(identity).video_playback_intervals,[]);

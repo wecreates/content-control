@@ -43,7 +43,7 @@ class MediaToolsTests(unittest.TestCase):
     def test_index_timeout_retries_once_and_then_verifies_tools(self):
         result, calls = self.run_fixture(False, 124, retry_exit=0)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(calls.count('sudo apt-get -o Acquire::Retries=1'), 2)
+        self.assertEqual(calls.count('--kill-after=3s 85s sudo apt-get'), 2)
         self.assertIn('sleep 3', calls)
         self.assertIn('retrying once', result.stderr)
         self.assertIn('ffprobe -version', calls)
@@ -63,5 +63,9 @@ class MediaToolsTests(unittest.TestCase):
     def test_fallback_installs_and_rechecks_both_tools(self):
         result, calls = self.run_fixture(False)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('install -y -qq ffmpeg', calls)
+        install = next(line for line in calls.splitlines() if line.startswith('--kill-after=10s 180s '))
+        self.assertIn('install -y -qq --no-install-recommends ffmpeg', install)
+        for option in ('Acquire::Retries=1', 'Acquire::http::Timeout=30',
+                       'Acquire::https::Timeout=30', 'Acquire::Languages=none', 'DPkg::Lock::Timeout=30'):
+            self.assertIn(option, install)
         self.assertIn('ffprobe -version', calls)

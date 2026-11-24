@@ -10,8 +10,9 @@ if media_tools_ready; then
   echo 'Verified existing ffmpeg and ffprobe'
   exit 0
 fi
+apt_network=(-o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Languages=none)
 update_index() {
-  timeout --kill-after=3s 85s sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+  timeout --kill-after=3s 85s sudo apt-get "${apt_network[@]}" update -qq
 }
 echo 'Refreshing media package index'
 if update_index; then
@@ -28,7 +29,7 @@ else
   fi
 fi
 echo 'Installing FFmpeg media tools'
-timeout --kill-after=10s 180s sudo apt-get -o DPkg::Lock::Timeout=30 install -y -qq ffmpeg ||
+timeout --kill-after=10s 180s sudo apt-get "${apt_network[@]}" -o DPkg::Lock::Timeout=30 install -y -qq --no-install-recommends ffmpeg ||
   { status=$?; echo "FFmpeg package installation failed (exit $status)" >&2; exit "$status"; }
 media_tools_ready || { echo 'ffmpeg/ffprobe verification failed' >&2; exit 2; }
 echo 'Verified installed ffmpeg and ffprobe'
