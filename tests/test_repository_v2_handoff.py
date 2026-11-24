@@ -1,7 +1,7 @@
 import hashlib,json,tempfile,unittest
 from pathlib import Path
 from unittest.mock import patch
-from scripts.repository_v2_handoff import prepare,observed_inputs
+from scripts.repository_v2_handoff import PROJECT,prepare,observed_inputs
 class HandoffTests(unittest.TestCase):
  def test_existing_build_binding_rejects_wrong_media_or_receipt(self):
   with tempfile.TemporaryDirectory() as d:
@@ -17,11 +17,27 @@ class HandoffTests(unittest.TestCase):
    for name,path,payload in [('transcription','receipts/transcription.json',transcription),('captions','captions.json',captions)]:
     (a/path).write_text(json.dumps(payload));report['checks'][name]={'receipt_sha256':hashlib.sha256((a/path).read_bytes()).hexdigest()}
    for name in ('v2-production-status.json','v2-draft.json'):(root/'state'/name).write_text(json.dumps(report))
-   (a/'ccsd.json').write_text(json.dumps({'project_id':'fixture','publication_enabled':False,'scenes':[{'audio':{'dialogue':[{'text':'Actual dialogue'}]}}]}))
+   source_project={'project_id':'fixture','publication_enabled':False,'scenes':[{'audio':{'dialogue':[{'text':'Actual dialogue'}]}}]}
+   rendered_project={**source_project,'caption_track':captions}
+   (a/'ccsd.json').write_text(json.dumps(rendered_project))
    metadata={'title':'Fixture','description':'Public draft','tags':[],'publication_enabled':False}
-   with patch('scripts.repository_v2_handoff.git',return_value=json.dumps(metadata)):
+   source_bytes=json.dumps(source_project,indent=2).replace('\n','\r\n').encode()
+   source_objects={f"{report['source_commit']}:{PROJECT}/metadata.json":json.dumps(metadata).encode(),
+                   f"{report['source_commit']}:{PROJECT}/ccsd.json":source_bytes}
+   with patch('scripts.repository_v2_handoff.git',side_effect=lambda _root,_operation,ref,*,text:source_objects[ref] if not text else source_objects[ref].decode()):
     result=prepare(root,a,root/'out');self.assertEqual(result['candidate_sha256'],digest)
     self.assertEqual(json.loads((root/'out/audit-input.json').read_text())['transcript'],'Actual dialogue');self.assertFalse(result['production_approved'])
+    self.assertEqual(result['source_project_sha256'],hashlib.sha256(source_bytes).hexdigest())
+    for changed in ({**rendered_project,'scenes':[{'audio':{'dialogue':[{'text':'Different dialogue'}]}}]},
+                    {**rendered_project,'caption_track':{**captions,'cues':[]}}):
+     (a/'ccsd.json').write_text(json.dumps(changed))
+     with self.assertRaisesRegex(ValueError,'Rendered CCSD differs'):prepare(root,a,root/'bad')
+     self.assertFalse((root/'bad').exists())
+    (a/'ccsd.json').write_text(json.dumps(rendered_project))
+    draft=root/'state/v2-draft.json'
+    draft.write_text(json.dumps({**report,'source_commit':'b'*40}))
+    with self.assertRaisesRegex(ValueError,'shared source commit'):prepare(root,a,root/'bad')
+    draft.write_text(json.dumps(report))
     (a/'render/v2-boss-fight.mp4').write_bytes(b'wrong')
     with self.assertRaisesRegex(ValueError,'not current video'):prepare(root,a,root/'bad')
     (a/'render/v2-boss-fight.mp4').write_bytes(media);(a/'receipts/render.json').write_text('{}')
