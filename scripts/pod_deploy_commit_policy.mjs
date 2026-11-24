@@ -15,9 +15,6 @@ export const REPORT_ONLY_PATHS=Object.freeze([
  // Hash manifest receipt only. Every source file that can change the manifest
  // remains outside this allowlist and therefore still requires deployment.
  'state/runtime-integrity-manifest.json',
- // Live-probe receipt only. A later application release carries this metadata;
- // rebuilding identical runtime bytes cannot make a failed probe pass.
- 'state/live-deployment-health.json',
  'POD_COMPLETION_CHECKLIST.md',
  'POD_IMPLEMENTATION_STATUS.md',
  'POD_FREE_DEPLOYMENT.md',

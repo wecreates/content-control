@@ -117,6 +117,7 @@ class SmokeInputTests(unittest.TestCase):
         self.assertEqual(receipt['status'], 'FAIL')
         self.assertFalse(receipt['checks']['caption_hash_matches'])
         self.assertFalse(receipt['checks']['probe_completed'])
+        self.assertFalse(receipt['checks']['deployed_source_commit_matches'])
 
     def test_live_surface_uses_exact_caption_url_and_stale_guard(self):
         source = (REPO / '.github/workflows/live-render-deployment-smoke.yml').read_text()
@@ -124,10 +125,21 @@ class SmokeInputTests(unittest.TestCase):
         self.assertIn('/media?sha256=$EXPECTED', source)
         self.assertIn('verify_live_caption_response.py /tmp/live-probe/media.headers "$EXPECTED"', source)
         self.assertIn('head -c 1024 public-review/episode1-v10-free.mp4 | cmp', source)
-        self.assertIn("if: always() && steps.source_guard.outcome == 'success'", source)
-        post_rebase = source.split('if git pull --rebase origin main; then', 1)[1].split('git push', 1)[0]
-        self.assertIn('python scripts/live_probe_identity.py HEAD', post_rebase)
-        self.assertIn('python scripts/review_smoke_inputs.py', post_rebase)
+        self.assertIn('verify_deployed_source_identity.py /tmp/live-probe/health.json "$EXPECTED_SOURCE_SHA"', source)
+        self.assertIn('python scripts/live_probe_identity.py origin/main', source)
+
+    def test_live_evidence_is_artifact_only_and_cannot_advance_main(self):
+        source = (REPO / '.github/workflows/live-render-deployment-smoke.yml').read_text()
+        self.assertIn('permissions:\n  contents: read\n', source)
+        for mutation in ('git add', 'git commit', 'git push', 'gh workflow run'):
+            self.assertNotIn(mutation, source)
+        self.assertNotIn('Persist live deployment evidence', source)
+        self.assertIn('uses: actions/upload-artifact@v4', source)
+        artifact = source.split('uses: actions/upload-artifact@v4', 1)[1]
+        self.assertIn("if: always() && steps.bundle.outcome == 'success'", artifact)
+        self.assertIn('name: live-render-deployment-smoke-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}', artifact)
+        self.assertIn("cp state/live-deployment-health.json \"$bundle/live-deployment-health.json\"", source)
+        self.assertIn("'origin':'github_actions'", source)
 
     def test_live_probe_rejects_stale_captions_or_host_for_same_video(self):
         def git(*args):
@@ -138,9 +150,9 @@ class SmokeInputTests(unittest.TestCase):
             git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
                 'commit', '--no-gpg-sign', '-m', message)
 
-        def identity(*args, env=None):
+        def identity(*args, ref='HEAD', env=None):
             return subprocess.run(
-                [sys.executable, str(REPO / 'scripts/live_probe_identity.py'), 'HEAD', *args],
+                [sys.executable, str(REPO / 'scripts/live_probe_identity.py'), ref, *args],
                 cwd=self.root, env=env, text=True, capture_output=True)
 
         git('init', '-q')
@@ -150,9 +162,10 @@ class SmokeInputTests(unittest.TestCase):
         self.assertEqual(captured.returncode, 0, captured.stderr)
         self.assertEqual(captured.stdout.splitlines(),
                          [f'CANDIDATE_SHA={self.hash}', f'CAPTION_SHA={original_sha}',
-                          f'PROBE_BASE_URL={self.base_url}'])
+                          f'PROBE_BASE_URL={self.base_url}', f'EXPECTED_SOURCE_SHA={subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.root, text=True).strip()}'])
         captured_env = dict(os.environ, CANDIDATE_SHA=self.hash, CAPTION_SHA=original_sha,
-                            PROBE_BASE_URL=self.base_url)
+                            PROBE_BASE_URL=self.base_url,
+                            EXPECTED_SOURCE_SHA=captured.stdout.splitlines()[-1].split('=', 1)[1])
         corrected = self.vtt + b' with corrected wording'
         corrected_sha = hashlib.sha256(corrected).hexdigest()
         (self.root / 'public-review/episode1-v10-free.vtt').write_bytes(corrected)
@@ -163,6 +176,8 @@ class SmokeInputTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('refusing stale live probe evidence', result.stderr)
         captured_env['CAPTION_SHA'] = corrected_sha
+        captured_env['EXPECTED_SOURCE_SHA'] = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=self.root, text=True).strip()
         result = identity(env=captured_env)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.write('deployment-contract.json', {'public_base_url': 'https://new.synthetic.invalid'})
@@ -170,6 +185,24 @@ class SmokeInputTests(unittest.TestCase):
         result = identity(env=captured_env)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('refusing stale live probe evidence', result.stderr)
+
+    def test_live_probe_rejects_tree_and_blob_object_refs(self):
+        def git(*args):
+            return subprocess.check_output(['git', *args], cwd=self.root, text=True).strip()
+
+        subprocess.run(['git', 'init', '-q'], cwd=self.root, check=True)
+        subprocess.run(['git', 'add', 'state', 'public-review'], cwd=self.root, check=True)
+        subprocess.run(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                        'commit', '--no-gpg-sign', '-m', 'Fixture'], cwd=self.root,
+                       check=True, capture_output=True)
+        for ref in (git('rev-parse', 'HEAD^{tree}'),
+                    git('rev-parse', 'HEAD:state/content-control-health.json')):
+            with self.subTest(ref=ref):
+                result = subprocess.run(
+                    [sys.executable, str(REPO / 'scripts/live_probe_identity.py'), ref, '--capture'],
+                    cwd=self.root, text=True, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('Cannot read live probe identity', result.stderr)
 
 
 if __name__ == '__main__':

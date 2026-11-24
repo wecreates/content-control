@@ -17,11 +17,13 @@ on:
       - 'control/publication-owner-gate.json'
       - 'control/publication-separation.json'
       - 'scripts/verify_free_production_health.py'
+      - 'scripts/load_live_deployment_evidence.py'
       - 'scripts/watchdog_scope.py'
       - 'tests/test_watchdog_scope.py'
       - 'tests/test_security_repair_dispatch.py'
       - 'tests/test_watchdog_routing.py'
       - 'tests/test_watchdog_routing_history.py'
+      - 'tests/test_live_deployment_evidence.py'
       - 'scripts/verify_workflow_control.py'
       - 'scripts/audit_system_wiring.py'
       - 'state/system-wiring-health.json'
@@ -123,6 +125,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p test_security_repair_dispatch.py -v
           python -m unittest discover -s tests -p test_watchdog_routing.py -v
+          python -m unittest tests.test_live_deployment_evidence -v
           python -m unittest tests.test_watchdog_scope tests.test_watchdog_routing_history
       - name: Verify accepted production state
         id: verify
@@ -231,7 +234,7 @@ jobs:
               routes.add("review-server-smoke.yml")
           elif failed & {"provenance_candidate_match","provenance_inputs_current","sbom_valid"}:
               routes.add("runtime-provenance.yml")
-          elif "live_deployment_green" in failed:
+          elif failed & {"live_deployment_green","deployed_source_commit_matches"}:
               routes.add("live-render-deployment-smoke.yml")
 
           auxiliary={
@@ -242,7 +245,8 @@ jobs:
               "provenance_candidate_match","provenance_inputs_current","sbom_valid",
               "workflow_control_green","system_wiring_green","deployment_contract_green",
               "acceptance_ledger_candidate_match","caption_candidate_match",
-              "review_server_smoke_candidate_match","candidate_identity_consistent","candidate_converged"
+              "review_server_smoke_candidate_match","candidate_identity_consistent","candidate_converged",
+              "deployed_source_commit_matches"
           }
           if failed-auxiliary:
               routes.add("free-vision-qa.yml")

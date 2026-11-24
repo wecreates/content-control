@@ -21,6 +21,37 @@ export function jobMatchesCurrentGrant(job, grant) {
   (job.enqueued_grant_generation ?? null) === (grant.generation ?? null));
 }
 
+function ownerOnboardingJourney(state, providers, now) {
+ const signup = state.owner_onboarding;
+ const signupValid = signup && typeof signup === 'object' && !Array.isArray(signup) &&
+  signup.schema_version === 1 && typeof signup.id === 'string' && grantGeneration.test(signup.id) &&
+  signup.identity_provider === 'github' && Number.isSafeInteger(signup.completed_at) &&
+  signup.completed_at > 0 && signup.completed_at <= now;
+ const result = {status:'SIGNUP_REQUIRED', signup_status:'NOT_RETAINED', signup_completed_at:null,
+                 provider_verified_at:null, first_successful_job_completed_at:null,
+                 publication_enabled:false, external_writes_enabled:false,
+                 scope:'Retained owner identity, current provider verification and first successful read; no account, job or provider-result identifiers.'};
+ if (!signupValid) return result;
+ result.signup_status = 'OWNER_IDENTITY_RETAINED';
+ result.signup_completed_at = signup.completed_at;
+ result.status = 'CONNECTION_REQUIRED';
+ const verified = providers.filter(provider => provider.provider_verified).map(provider => ({
+  provider, grant:state.connections[provider.platform],
+ })).filter(({grant}) => Number.isSafeInteger(grant?.verified_at) && grant.verified_at >= signup.completed_at && grant.verified_at <= now)
+   .sort((a,b) => a.grant.verified_at - b.grant.verified_at);
+ if (!verified.length) return result;
+ result.provider_verified_at = verified[0].grant.verified_at;
+ result.status = 'FIRST_JOB_REQUIRED';
+ const completed = verified.filter(({provider}) => provider.status === 'FIRST_READ_RETAINED' &&
+  Number.isSafeInteger(provider.first_read_completed_at) &&
+  provider.first_read_completed_at >= signup.completed_at && provider.first_read_completed_at <= now)
+  .sort((a,b) => a.provider.first_read_completed_at - b.provider.first_read_completed_at);
+ if (!completed.length) return result;
+ result.first_successful_job_completed_at = completed[0].provider.first_read_completed_at;
+ result.status = 'COMPLETE';
+ return result;
+}
+
 export function ownerReadProgress(state, configured, now) {
  const providers = ['youtube', 'instagram'].map(platform => {
   const result = {platform, status:'PROVIDER_CONFIGURATION_REQUIRED', provider_verified:false,
@@ -56,6 +87,7 @@ export function ownerReadProgress(state, configured, now) {
           first_read_job_status:phase};
  });
  return {scope:'Owner OAuth configuration and retained evidence for the current grant.',
+         onboarding_journey:ownerOnboardingJourney(state, providers, now),
          providers, publication_enabled:false, external_writes_enabled:false};
 }
 export class EncryptedSocialStore {

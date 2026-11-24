@@ -425,6 +425,7 @@ def health_fixture(root):
     write_json(root, "state/live-deployment-health.json", {
         "status": "PASS", "candidate_sha256": candidate, "caption_sha256": caption,
         "live_expected_sha256": candidate, "live_actual_sha256": candidate,
+        "expected_source_commit": "a" * 40, "deployed_source_commit": "a" * 40,
         "public_base_url": "https://review.synthetic.invalid",
         "publication_enabled": False, "checks": {"fixture": True},
     })
@@ -456,14 +457,15 @@ from unittest.mock import patch
 sys.path.insert(0, sys.argv[1])
 import load_live_npm_security_evidence as npm
 import load_live_python_security_evidence as python
+import load_live_deployment_evidence as live
 if sys.argv[3] == 'synthetic_component':
     def load_fixture(name, root, repository, *, include_identity=False):
         assert repository == 'wecreates/content-control' and include_identity
         return json.loads((pathlib.Path(root) / 'state' / name).read_text())
-    with patch.object(npm, 'load_live_npm_report', side_effect=lambda *args, **kw: load_fixture('runtime-security-audit.json', *args, **kw)), patch.object(python, 'load_live_python_report', side_effect=lambda *args, **kw: load_fixture('python-security-audit.json', *args, **kw)):
+    with patch.object(npm, 'load_live_npm_report', side_effect=lambda *args, **kw: load_fixture('runtime-security-audit.json', *args, **kw)), patch.object(python, 'load_live_python_report', side_effect=lambda *args, **kw: load_fixture('python-security-audit.json', *args, **kw)), patch.object(live, 'load_live_deployment_report', side_effect=lambda *args, **kw: load_fixture('live-deployment-health.json', *args, **kw)):
         runpy.run_path(sys.argv[2], run_name='__main__')
 else:
-    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
+    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(live.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
         runpy.run_path(sys.argv[2], run_name='__main__')
 """
         return subprocess.run([sys.executable, "-B", "-c", wrapper, str(ROOT / 'scripts'), str(HEALTH),
@@ -527,6 +529,30 @@ else:
                 self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
                 self.assertEqual(run_routes(report['watchdog']['failed_checks']),
                                  {'live-render-deployment-smoke.yml'})
+
+    def test_ready_hash_bound_live_service_with_wrong_or_missing_source_stays_red(self):
+        for value in (None, "b" * 40, "A" * 40):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                path = root / "state/live-deployment-health.json"
+                live = json.loads(path.read_text())
+                if value is None:
+                    live.pop("deployed_source_commit")
+                else:
+                    live["deployed_source_commit"] = value
+                live["status"] = "FAIL"
+                live["checks"]["deployed_source_commit_matches"] = False
+                path.write_text(json.dumps(live))
+                result = self.run_health(root)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["watchdog"]["failed_checks"],
+                                 ["deployed_source_commit_matches"])
+                self.assertTrue(report["watchdog"]["checks"]["live_deployment_green"])
+                self.assertTrue(report["watchdog"]["candidate_converged"])
+                self.assertEqual(run_routes(report["watchdog"]["failed_checks"]),
+                                 {"live-render-deployment-smoke.yml"})
 
     def test_receipts_expose_only_supplied_verified_run_identity(self):
         with tempfile.TemporaryDirectory() as tmp:
