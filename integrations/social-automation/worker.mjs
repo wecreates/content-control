@@ -15,6 +15,15 @@ export class SocialReadWorker {
     this.inflight = this.run().finally(() => {this.inflight = null;});
     return this.inflight;
   }
+  async kick() {
+    // A provider connection can finish while an older cycle is still reading
+    // its pre-connection snapshot. In that case, retain one follow-up cycle so
+    // the newly verified grant is observed immediately instead of waiting for
+    // the scheduler timer. A normal idle kick remains one cycle.
+    const followup = Boolean(this.inflight);
+    await this.cycle();
+    return followup && this.active ? this.cycle() : this.status();
+  }
   async run() {
     try {
       const state = await this.runtime.store.read();
