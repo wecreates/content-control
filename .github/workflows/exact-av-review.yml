@@ -222,7 +222,8 @@ jobs:
         id: offline
         env:
           MEDIA_PATH: ${{ steps.source.outputs.media }}
-        run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out "$REVIEW_RECEIPTS_DIR/offline-review"
+          EXPECTED_SHA256: ${{ steps.prepare.outputs.candidate_sha256 }}
+        run: python scripts/offline_av_review.py --video "$MEDIA_PATH" --out "$REVIEW_RECEIPTS_DIR/offline-review" --sha256 "$EXPECTED_SHA256"
       - name: Record disabled API identity configuration
         if: inputs.run_free_api_diagnostic && (vars.GEMINI_AV_IDENTITY_ENABLED != 'true' || vars.GEMINI_AV_WIF_PROVIDER == '' || vars.GEMINI_AV_READ_SERVICE_ACCOUNT == '')
         run: |

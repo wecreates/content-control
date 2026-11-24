@@ -189,6 +189,15 @@ class ExactAVWorkflowTests(unittest.TestCase):
         self.assertIs(offline['full_audio_review'], False)
         self.assertIs(offline['full_video_review'], False)
 
+    def test_offline_package_rejects_candidate_changed_after_preparation(self):
+        self.assertEqual(self.prepare().returncode, 0)
+        with (self.root / self.env['MEDIA_PATH']).open('ab') as media:
+            media.write(b'changed after exact review request')
+        result = self.offline()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Candidate does not match expected SHA-256', result.stderr)
+        self.assertFalse((self.receipts / 'offline-review').exists())
+
     def test_v2_and_long_source_materialize_expected_media(self):
         for format_name, workflow, artifact, media in (
                 ('v2', 'content-control-v2.yml', 'content-control-v2-acceptance', 'render/v2-boss-fight.mp4'),

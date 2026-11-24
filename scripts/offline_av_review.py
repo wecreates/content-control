@@ -3,6 +3,7 @@ import argparse
 from fractions import Fraction
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import wave
@@ -136,12 +137,24 @@ def review_packets(output, source_hash, segment_seconds=10, *, audio_clock=None)
     return result
 
 
-def build(video, output, *, captions=None):
+def require_pin(expected, observed, label):
+    if expected is None:
+        return
+    if not isinstance(expected, str) or not re.fullmatch(r'[a-f0-9]{64}', expected):
+        raise ValueError(f'Expected {label} SHA-256 must be 64 lowercase hexadecimal characters')
+    if observed != expected:
+        raise ValueError(f'{label.capitalize()} does not match expected SHA-256')
+
+
+def build(video, output, *, captions=None, expected_sha256=None,
+          expected_caption_sha256=None):
     source = Path(video).resolve(strict=True)
     output = Path(output).resolve()
     # Never overwrite originals, previous evidence, or aliases.
     if output.exists():
         raise ValueError('Output must be a new directory')
+    if expected_caption_sha256 is not None and captions is None:
+        raise ValueError('An expected caption SHA-256 requires a caption file')
     caption_path = None if captions is None else Path(captions).resolve(strict=True)
     if caption_path is not None:
         try:
@@ -152,7 +165,9 @@ def build(video, output, *, captions=None):
         if caption_bytes.splitlines()[0].split(maxsplit=1)[:1] != [b'WEBVTT']:
             raise ValueError('A bounded local WebVTT file is required')
         caption_hash = hashlib.sha256(caption_bytes).hexdigest()
+        require_pin(expected_caption_sha256, caption_hash, 'caption')
     source_hash = sha(source)
+    require_pin(expected_sha256, source_hash, 'candidate')
     probe = json.loads(subprocess.check_output([
         'ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(source)], timeout=30))
     if sha(source) != source_hash:
@@ -200,11 +215,9 @@ def build(video, output, *, captions=None):
         'production_approved': False, 'publication_enabled': False,
         'audio_clock': clock,
         'frame_sampling': '1 FPS; sample n represents the fps filter output, not complete motion coverage',
-        'scope': 'Local access package and decode diagnostics only; listening, motion judgment, synchronization, character identity and competitor comparison require actual review.',
-        'files': {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}}
+        'scope': 'Local access package and decode diagnostics only; listening, motion judgment, synchronization, character identity and competitor comparison require actual review.'}
     if caption_path is not None:
         receipt['caption_sha256'] = caption_hash
-    (output / 'evidence.json').write_text(json.dumps(receipt, indent=2) + '\n')
     track = '' if caption_path is None else '<track kind="captions" src="captions.vtt" srclang="en" label="English">'
     (output / 'index.html').write_text('''<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>Unapproved candidate — local audiovisual review</title>
@@ -217,6 +230,8 @@ def build(video, output, *, captions=None):
 <p id="t"></p><script>const v=document.querySelector('video');v.ontimeupdate=()=>document.querySelector('#t').textContent=v.currentTime.toFixed(3)+' seconds';</script>
 <p>Log observed intervals and timestamped defects for hook, escalation, visual storytelling, character consistency, voice, sound mix, pacing, phone readability, payoff and factual accuracy. Review two distinct references with audio before claiming parity. Use exact_av_review.mjs to validate the resulting review; this page never approves or publishes.</p>
 <a href="evidence.json">Integrity and scope</a> · <a href="playback-mix.wav">Playback-aligned audio</a>''')
+    receipt['files'] = {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}
+    (output / 'evidence.json').write_text(json.dumps(receipt, indent=2) + '\n')
     return receipt
 
 
@@ -225,7 +240,10 @@ if __name__ == '__main__':
     parser.add_argument('--video', required=True)
     parser.add_argument('--out', required=True)
     parser.add_argument('--captions', help='Optional exact local WebVTT for the review player')
+    parser.add_argument('--sha256', help='Fail unless the candidate matches this expected SHA-256')
+    parser.add_argument('--caption-sha256', help='Fail unless the supplied WebVTT matches this expected SHA-256')
     args = parser.parse_args()
-    result = build(args.video, args.out, captions=args.captions)
+    result = build(args.video, args.out, captions=args.captions, expected_sha256=args.sha256,
+                   expected_caption_sha256=args.caption_sha256)
     print(json.dumps({k: result[k] for k in ['candidate_sha256', 'technical_decode', 'status', 'publication_enabled']}))
 
