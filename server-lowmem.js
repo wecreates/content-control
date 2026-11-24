@@ -20,6 +20,7 @@ import {createHostedComparisonGate} from "./scripts/hosted_comparison_receipt.mj
 const hostedComparisonGate=createHostedComparisonGate();
 
 import {createProductionStatusRouter,createDraftPreviewHoldRouter} from "./production-status.js";
+import {buildPreviewIdentity,previewRequestMatches,selectCurrentPreview} from "./preview-identity.js";
 
 const app=express();
 app.use("/compare",express.static(path.resolve("comparison-ui"),{index:"index.html",dotfiles:"deny"}));
@@ -92,7 +93,8 @@ function episode3Acceptance(){
   const captionReady=Boolean(publicationLocked&&h?.status==="GREEN"&&expected&&h?.caption_sha256&&captionHash===h.caption_sha256&&fs.existsSync(episode3CaptionsPath));
   const videoReady=Boolean(h?.status==="GREEN"&&publicationLocked&&actual&&expected&&actual===expected);
   const ready=videoReady&&captionReady;
-  return {health:h,actual,expected,captionHash,captionReady,videoReady,ready};
+  const evidencePresent=Boolean(h||actual||captionHash);
+  return {health:h,actual,expected,captionHash,captionCandidateSha256:expected,captionReady,videoReady,publicationLocked,evidencePresent,ready};
 }
 function v2Acceptance(){
   const h=readJson(v2HealthPath);
@@ -127,7 +129,20 @@ function acceptance(){
   );
   const videoReady=Boolean(h?.status==="GREEN"&&h?.publication_enabled===false&&actual&&expected&&actual===expected);
   const ready=videoReady&&captionReady;
-  return {health:h,captionHealth:c,captionHash,actual,expected,videoReady,captionReady,ready};
+  const publicationLocked=h?.publication_enabled===false&&c?.publication_enabled===false;
+  const evidencePresent=Boolean(h||c||actual||captionHash);
+  return {health:h,captionHealth:c,captionHash,captionCandidateSha256:c?.candidate_sha256||null,actual,expected,videoReady,captionReady,publicationLocked,evidencePresent,ready};
+}
+function episode3PreviewIdentity(){
+  const preview=episode3Acceptance();
+  return buildPreviewIdentity({id:"episode3-cashback-casino",engine:"remotion-episode3-free",watchPath:"/episode3/watch",mediaPath:"/episode3/media",captionsPath:"/episode3/captions"},{...preview,qaStatus:preview.health?.status});
+}
+function canonicalPreviewIdentity(){
+  const preview=acceptance();
+  return buildPreviewIdentity({id:"episode1-v10-free",engine:"remotion-v10-free",watchPath:"/watch",mediaPath:"/media",captionsPath:"/captions"},{...preview,qaStatus:preview.health?.status});
+}
+function currentPreviewAcceptance(){
+  return selectCurrentPreview([episode3PreviewIdentity(),canonicalPreviewIdentity()]);
 }
 app.disable("x-powered-by");
 app.use((req,res,next)=>{
@@ -146,19 +161,16 @@ app.get("/social",(req,res)=>{res.setHeader("Cache-Control","no-store");res.send
 app.get("/social/runtime-view.mjs",(req,res)=>{res.setHeader("Cache-Control","no-store");res.type('text/javascript').sendFile(path.resolve("social-ui/runtime-view.mjs"));});
 
 app.get("/",(req,res)=>{
-  const canonical=acceptance();
-  const ep3=episode3Acceptance();
+  const preview=currentPreviewAcceptance();
   const clone=referenceCloneAcceptance();
-  const latest=clone.ready?"/clone/watch":ep3.ready?"/episode3/watch":canonical.ready?"/watch":null;
+  const latest=clone.ready?"/clone/watch":preview?.ready?preview.watchUrl:null;
   res.setHeader("Cache-Control","no-store, max-age=0");
   res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px;box-sizing:border-box}main{max-width:560px;margin:0 auto}.card{border:1px solid #ddd;border-radius:16px;padding:20px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06)}a{display:inline-block;padding:12px 16px;border-radius:10px;background:#111;color:#fff;text-decoration:none;font-weight:700}.muted{color:#666}.ok{color:#08783f;font-weight:700}.wait{color:#8a5a00;font-weight:700}</style></head><body><main><div class="card"><h1>Content Control Review</h1><p><a href="/social">Social operations</a></p><p class="${latest?'ok':'wait'}">${latest?'Verified review is ready.':'No verified review is ready yet.'}</p><p class="muted">This page stays visible during cold starts and deployment propagation. Publication is disabled.</p>${latest?`<a href="${latest}">Open latest verified video</a>`:'<p>QA/render pipeline is still working.</p>'}</div></main></body></html>`);
 });
 
 app.get("/latest",(req,res)=>{
-  const ep3=episode3Acceptance();
-  if(ep3.ready) return res.redirect(302,"/episode3/watch");
-  const canonical=acceptance();
-  if(canonical.ready) return res.redirect(302,"/watch");
+  const preview=currentPreviewAcceptance();
+  if(preview?.ready) return res.redirect(302,preview.watchUrl);
   res.setHeader("Cache-Control","no-store");
   return res.status(503).type("html").send('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{background:#fff;color:#111;font-family:system-ui}body{padding:24px}</style><h2>No verified video is ready yet.</h2><p>The review service is online and publication is disabled.</p>');
 });
@@ -187,20 +199,29 @@ app.get("/health",(req,res)=>{
 });
 
 app.get("/readyz",(req,res)=>{
-  const a=acceptance();
+  // Deployment readiness remains the canonical Episode 1 contract. Episode 3
+  // has its own exact contract at /episode3/health; cross-pairing either health
+  // payload with a different watch route is invalid evidence.
+  const a=canonicalPreviewIdentity();
   res.setHeader("Cache-Control","no-store");
   res.status(a.ready?200:503).json({
     ok:a.ready,
     production_approved:false,
-    engine:"remotion-v10-free",
+    id:a.id,
+    engine:a.engine,
     publication:false,
-    qaStatus:a.health?.status||"missing",
+    qaStatus:a.qaStatus,
     expectedSha256:a.expected,
     actualSha256:a.actual,
     hashBound:a.actual!==null&&a.actual===a.expected,
-    captionReady:a.captionReady,
-    captionSha256:a.captionHash,
-    captionCandidateSha256:a.captionHealth?.candidate_sha256||null,
+    captionReady:a.ready&&a.captionSha256!==null,
+    captionSha256:a.captionSha256,
+    captionCandidateSha256:a.captionCandidateSha256,
+    identityConsistent:a.identityConsistent,
+    identityFailedChecks:a.failedChecks,
+    watchUrl:a.watchUrl,
+    mediaUrl:a.mediaUrl,
+    captionsUrl:a.captionsUrl,
     renderStatus:renderState.status
   });
 });
@@ -338,9 +359,9 @@ app.get("/episode2/watch",(req,res)=>{
 });
 
 app.get("/episode3/health",(req,res)=>{
-  const a=episode3Acceptance();
+  const a=episode3PreviewIdentity();
   res.setHeader("Cache-Control","no-store");
-  res.status(a.ready?200:503).json({ok:a.ready,id:"episode3-cashback-casino",publication:false,qaStatus:a.health?.status||"missing",expectedSha256:a.expected,actualSha256:a.actual,hashBound:a.actual!==null&&a.actual===a.expected,captionReady:a.captionReady,captionSha256:a.captionHash});
+  res.status(a.ready?200:503).json({ok:a.ready,id:a.id,publication:false,qaStatus:a.qaStatus,expectedSha256:a.expected,actualSha256:a.actual,hashBound:a.actual!==null&&a.actual===a.expected,captionReady:a.ready&&a.captionSha256!==null,captionSha256:a.captionSha256,captionCandidateSha256:a.captionCandidateSha256,identityConsistent:a.identityConsistent,identityFailedChecks:a.failedChecks,watchUrl:a.watchUrl,mediaUrl:a.mediaUrl,captionsUrl:a.captionsUrl});
 });
 app.get("/episode3/media",(req,res)=>{
   const a=episode3Acceptance();
@@ -358,14 +379,15 @@ app.get("/episode3/captions",(req,res)=>{
 });
 app.get("/episode3/watch",(req,res)=>{
   const a=episode3Acceptance();
+  const requestBound=previewRequestMatches(req.query,a.expected,a.captionHash);
   const short=(a.expected||"unverified").slice(0,12);
-  const ready=Boolean(a.ready);
+  const ready=Boolean(a.ready&&requestBound);
   const body=ready
     ? '<div class="player-wrap"><div id="loadingCard" class="loading-card"><div class="spinner"></div><strong>Loading verified video…</strong><span style="margin-top:8px;color:#666">The page will stay visible while media buffers.</span></div><video id="player" controls playsinline preload="metadata" poster="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%221280%22%3E%3Crect width=%22720%22 height=%221280%22 fill=%22%23f5f5f5%22/%3E%3Ctext x=%22360%22 y=%22640%22 text-anchor=%22middle%22 font-family=%22Arial%22 font-size=%2240%22 fill=%22%23666%22%3ELoading video…%3C/text%3E%3C/svg%3E" src="/episode3/media?sha256='+a.expected+'"><track kind="captions" src="/episode3/captions?sha256='+a.captionHash+'" srclang="en" label="English" default></video></div><p id="status">Checking media…</p>'
-    : '<section class="pending"><div class="spinner"></div><h3>Video is not ready yet.</h3><p>The review page is working, but the Episode 3 render has not passed hash-bound QA yet.</p><p><a href="/watch">Open the last verified video</a></p></section>';
+    : '<section class="pending"><div class="spinner"></div><h3>Video is not ready yet.</h3><p>The review page is working, but the requested Episode 3 media and caption identity is unavailable or has changed.</p><p><a href="/latest">Open the current verified video</a></p></section>';
   res.setHeader("Cache-Control","no-store, max-age=0");
   res.setHeader("Pragma","no-cache");
-  res.type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Content Control — Cashback Casino</title><style>
+  res.status(ready?200:503).type("html").send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="review-candidate-sha256" content="${ready?a.expected:''}"><meta name="review-caption-sha256" content="${ready?a.captionHash:''}"><title>Content Control — Cashback Casino</title><style>
   html{background:#fff;color-scheme:light}html,body{min-height:100%;background:#fff;color:#111}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px;box-sizing:border-box}main{max-width:560px;margin:0 auto}h2{font-size:22px;line-height:1.2;margin:8px 0 14px}.player-wrap{position:relative;width:100%;aspect-ratio:9/16;max-height:82vh;background:#f5f5f5;border:1px solid #dedede;border-radius:14px;overflow:hidden}.player-wrap video{display:block;width:100%;height:100%;object-fit:contain;background:#f5f5f5}.loading-card{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;color:#111;z-index:2}.loading-card.hidden{display:none}.pending{min-height:58vh;border:1px solid #dedede;border-radius:14px;padding:28px 20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:#fff}.pending p{max-width:36ch;color:#555}.spinner{width:38px;height:38px;border:4px solid #ddd;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}@keyframes spin{to{transform:rotate(360deg)}}a{color:#075ea8}small{color:#666}#status{color:#666;font-size:14px}
   </style></head><body><main><h2>2% Cashback Turned Dave's Brain Into a Casino</h2>${body}<p><small>ENTERTAINMENT-FIRST • hash ${short} • publication disabled</small></p></main>
   <script>
@@ -410,12 +432,14 @@ app.get("/clone/watch",(req,res)=>{
 });
 app.get("/watch",(req,res)=>{
   const a=acceptance();
+  const requestBound=previewRequestMatches(req.query,a.expected,a.captionHash);
   const short=(a.expected||"unverified").slice(0,12);
-  const body=a.ready
+  const ready=Boolean(a.ready&&requestBound);
+  const body=ready
     ? '<video controls playsinline preload="metadata" src="/media?sha256='+a.expected+'"><track kind="captions" src="/captions?sha256='+a.captionHash+'" srclang="en" label="English" default></video>'
-    : '<p>Accepted artifact is not ready. Repair pipeline required.</p><script>setTimeout(()=>location.reload(),5000)</script>';
+    : '<p>The requested candidate and caption identity is unavailable or has changed. Repair pipeline required.</p>';
   res.setHeader("Cache-Control","no-store");
-  res.type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{display:block;width:100%;max-height:90vh;background:#f5f5f5;border:1px solid #dedede;border-radius:14px}small{color:#666}</style><main><h2>Content Control Review</h2>${body}<p><small>FREE_QA • hash ${short} • publication disabled</small></p></main>`);
+  res.status(ready?200:503).type("html").send(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="review-candidate-sha256" content="${ready?a.expected:''}"><meta name="review-caption-sha256" content="${ready?a.captionHash:''}"><title>Content Control Review</title><style>html{background:#fff;color-scheme:light}body{margin:0;background:#fff;color:#111;font-family:system-ui;padding:16px}main{max-width:560px;margin:auto}video{display:block;width:100%;max-height:90vh;background:#f5f5f5;border:1px solid #dedede;border-radius:14px}small{color:#666}</style><main><h2>Content Control Review</h2>${body}<p><small>FREE_QA • hash ${short} • publication disabled</small></p></main>`);
 });
 
 app.use((req,res)=>res.status(404).json({error:"not found",publication:false}));
