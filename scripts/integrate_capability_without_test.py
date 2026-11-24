@@ -1,9 +1,35 @@
 #!/usr/bin/env python3
-import argparse,json
+"""Record a blocked integration when no capability-specific consumer is available."""
+import argparse
+import json
 from pathlib import Path
+
+
 def main():
- ap=argparse.ArgumentParser();ap.add_argument("--task",required=True);ap.add_argument("--out",required=True);a=ap.parse_args();t=json.loads(a.task)
- # Implementation phase receipt only. Validation is intentionally deferred to the global test phase.
- r={"schema_version":1,"status":"PASS","capability_id":t["capability_id"],"domain":t["domain"],"upgrade_state":"INTEGRATED","proven_state":"INTEGRATED","validation_deferred":True,"validation_phase":"after_all_integrated","publication_enabled":False}
- Path(a.out).parent.mkdir(parents=True,exist_ok=True);Path(a.out).write_text(json.dumps(r,indent=2,sort_keys=True)+"\n");print(json.dumps({"status":"PASS","id":r["capability_id"],"state":"INTEGRATED"}))
-if __name__=="__main__":main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--task', required=True, type=json.loads)
+    parser.add_argument('--out', required=True, type=Path)
+    args = parser.parse_args()
+    task = args.task
+    if not isinstance(task, dict) or task.get('publication_enabled') is not False:
+        parser.error('invalid_task_or_publication_policy')
+    capability_id = task.get('capability_id')
+    domain = task.get('domain')
+    if type(capability_id) is not int or capability_id <= 0 or not isinstance(domain, str) or not domain.strip():
+        parser.error('invalid_capability_identity')
+
+    receipt = {
+        'schema_version': 1, 'status': 'BLOCKED', 'capability_id': capability_id, 'domain': domain,
+        'reason': 'capability_specific_implementation_evidence_required',
+        'completion_verified': False, 'publication_enabled': False,
+    }
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+    print(json.dumps({
+        'status': receipt['status'], 'id': capability_id, 'completion_verified': False,
+    }))
+    return 2
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

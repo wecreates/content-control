@@ -1,16 +1,37 @@
 #!/usr/bin/env python3
-import argparse,json
+"""Retain capability progress while available receipts remain diagnostic."""
+import argparse
+import json
 from pathlib import Path
-ORDER=["MISSING","INSTALLED","IMPLEMENTED","INTEGRATED","TESTED","RENDER_PROVEN"]
+
+
 def main():
- ap=argparse.ArgumentParser();ap.add_argument("--progress",required=True);ap.add_argument("--evidence-dir",required=True);ap.add_argument("--out",required=True);a=ap.parse_args()
- try:d=json.loads(Path(a.progress).read_text())
- except:d={"schema_version":1,"capabilities":{},"publication_enabled":False}
- for p in Path(a.evidence_dir).glob("*.json"):
-  try:e=json.loads(p.read_text());cid=str(e["capability_id"]);state=e.get("proven_state","INSTALLED")
-  except:continue
-  row=d.setdefault("capabilities",{}).setdefault(cid,{"state":"INSTALLED","evidence":[]})
-  if e.get("status")=="PASS" and ORDER.index(state)>ORDER.index(row.get("state","INSTALLED")):
-   row["state"]=state;row.setdefault("evidence",[]).append(str(p))
- d["publication_enabled"]=False;Path(a.out).write_text(json.dumps(d,indent=2,sort_keys=True)+"\n");print(json.dumps({"status":"PASS","total":len(d["capabilities"]),"tested":sum(x.get("state")=="TESTED" for x in d["capabilities"].values()),"render_proven":sum(x.get("state")=="RENDER_PROVEN" for x in d["capabilities"].values())}))
-if __name__=="__main__":main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--progress', required=True, type=Path)
+    parser.add_argument('--evidence-dir', required=True, type=Path)
+    parser.add_argument('--out', required=True, type=Path)
+    args = parser.parse_args()
+    try:
+        progress = json.loads(args.progress.read_text())
+    except (OSError, ValueError):
+        parser.error('invalid_progress')
+    if not isinstance(progress, dict) or not isinstance(progress.get('capabilities'), dict):
+        parser.error('invalid_progress')
+    if progress.get('publication_enabled') is not False:
+        parser.error('publication_must_remain_disabled')
+
+    # Current producers report an integration placeholder or broad domain
+    # diagnostics. Per-capability verification must precede lifecycle changes.
+    receipts_observed = sum(path.is_file() for path in args.evidence_dir.glob('*.json'))
+    args.out.write_text(json.dumps(progress, indent=2, sort_keys=True) + '\n')
+    print(json.dumps({
+        'status': 'PROGRESS_RETAINED',
+        'total': len(progress['capabilities']),
+        'receipts_observed': receipts_observed,
+        'capabilities_promoted': 0,
+        'publication_enabled': False,
+    }))
+
+
+if __name__ == '__main__':
+    main()
