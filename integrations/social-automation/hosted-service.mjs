@@ -69,7 +69,17 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       }
     },
     beginAuthorization:async(platform,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.begin(platform,context);},
-    completeAuthorization:async(platform,callback,context)=>{if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');return oauth.complete(platform,callback,context);},
+    completeAuthorization:async(platform,callback,context)=>{
+      if(shutdown.signal.aborted)throw Error('OAUTH_STOPPED');
+      if(!oauth)throw Error('OAUTH_NOT_CONFIGURED');
+      const result=await oauth.complete(platform,callback,context);
+      // A newly verified account should not wait for the next scheduler minute
+      // before its first read enters the durable queue. The worker owns all
+      // retry, grant-binding and result-retention semantics; kick() retains one
+      // follow-up when the callback overlaps an older in-flight cycle.
+      if(worker?.active)void worker.kick().catch(()=>{});
+      return result;
+    },
     stop: async () => {shutdown.abort(); if (worker) await worker.stop(); if(store?.close)await store.close();},
   };
   const bootstrapRequested = env.SOCIAL_STORAGE_INITIALIZE === 'true';
