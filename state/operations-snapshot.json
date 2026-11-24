@@ -1,17 +1,17 @@
 {
   "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
-  "caption_sha256": null,
-  "caption_status": "FAIL",
+  "caption_sha256": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
+  "caption_status": "PASS",
   "checks": {
     "acceptance_ledger_candidate_match": true,
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
+    "candidate_converged": true,
     "candidate_identity_consistent": false,
-    "caption_candidate_match": false,
-    "caption_health_green": false,
-    "dependency_security_clean": true,
+    "caption_candidate_match": true,
+    "caption_health_green": true,
+    "dependency_security_clean": false,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -21,7 +21,7 @@
     "live_deployment_green": false,
     "local_audio_runtime": true,
     "mobile_playback_green": true,
-    "narration_transcription_green": false,
+    "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
     "provenance_inputs_current": true,
@@ -34,7 +34,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": true,
+    "runtime_integrity_manifest": false,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -47,43 +47,28 @@
   "component_checks_passed": false,
   "dependency_audit_evidence": {
     "npm": {
-      "hosted_identity": {
-        "artifact_id": 14881654572,
-        "github_artifact_digest": "sha256:53e068e613383a7b78ecf3efe8939fee0c56c92acf33d235f9379346d0a43a91",
-        "run_attempt": 1,
-        "run_id": 45309091771,
-        "source_sha": "ef3b7feec3f9c99ab315c3ee7089d0801bf265e8"
-      },
-      "status": "PASS"
+      "hosted_identity": null,
+      "status": "ERROR"
     },
     "python": {
       "hosted_identity": null,
       "status": "ERROR"
     }
   },
-  "dependency_vulnerabilities": {
-    "critical": 0,
-    "high": 0,
-    "info": 0,
-    "low": 0,
-    "moderate": 0,
-    "total": 0
-  },
+  "dependency_vulnerabilities": {},
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
+    "runtime_integrity_manifest",
+    "dependency_security_clean",
     "python_dependency_security_clean",
-    "narration_transcription_green",
-    "caption_candidate_match",
-    "caption_health_green",
     "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "candidate_identity_consistent"
   ],
   "live_deployment_status": "FAIL",
   "machine_system_complete": false,
   "mobile_playback_status": "PASS",
-  "narration_transcription_status": "FAIL",
+  "narration_transcription_status": "PASS",
   "production_ready": false,
   "public_health_url": "https://content-control-render-worker.onrender.com/readyz",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
