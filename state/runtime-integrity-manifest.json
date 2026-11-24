@@ -111,8 +111,8 @@
       "sha256": "0d4c15674419e8d5c1e7f30c3dfddfe3aa20cdda21bf7a691f1d10b3c2b689d6"
     },
     "scripts/free_transcription_qa.py": {
-      "bytes": 10728,
-      "sha256": "ec22e95628168c3bd76f3aefc92db3aee8ead2540b36fdbe737c9eaa985b418b"
+      "bytes": 12314,
+      "sha256": "b9383f440c31a220d0de2ac47fcdaaae28490d526459e09d3fa8cdca9c0df7aa"
     },
     "scripts/persist_caption_evidence.py": {
       "bytes": 9720,
