@@ -29,6 +29,11 @@ app.use("/api/production",createProductionStatusRouter());
 app.use("/v2/draft",createDraftPreviewHoldRouter());
 const monitorStore=await loadMonitorStore();
 const PORT=Number(process.env.PORT||10000);
+function renderSourceCommit(env=process.env){
+  const value=env?.RENDER_GIT_COMMIT;
+  return typeof value==="string"&&/^[0-9a-f]{40}$/.test(value)?value:null;
+}
+const deployedSourceCommit=renderSourceCommit();
 const output=path.resolve("public-review/episode1-v10-free.mp4");
 const healthPath=path.resolve("state/content-control-health.json");
 const captionHealthPath=path.resolve("state/caption-health.json");
@@ -183,7 +188,7 @@ app.get("/livez",(req,res)=>{
 
 app.get("/health",(req,res)=>{
   res.setHeader("Cache-Control","no-store");
-  res.json({alive:true,service:"content-control-review",evidence_ready:null,readiness_url:"/readyz",production_approved:false,publication:false});
+  res.json({alive:true,service:"content-control-review",evidence_ready:null,readiness_url:"/readyz",deployed_source_commit:deployedSourceCommit,production_approved:false,publication:false});
 });
 
 app.get("/readyz",(req,res)=>{
@@ -191,6 +196,7 @@ app.get("/readyz",(req,res)=>{
   res.setHeader("Cache-Control","no-store");
   res.status(a.ready?200:503).json({
     ok:a.ready,
+    deployed_source_commit:deployedSourceCommit,
     production_approved:false,
     engine:"remotion-v10-free",
     publication:false,
