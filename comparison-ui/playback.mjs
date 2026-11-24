@@ -18,13 +18,20 @@ export function createPlaybackTracker(sessionId) {
    if(!s||![s.time,s.duration,s.wall,s.rate].every(Number.isFinite)||s.duration<=0||s.time<0||s.time>s.duration||s.rate<=0||s.rate>2||s.playing!==true||s.visible!==true){previous=null;return;}
    if(previous){
     const wall=(s.wall-previous.wall)/1000,delta=s.time-previous.time;
+    const forward=s.time>=previous.latestTime,sameRate=s.rate===previous.rate;
+    // Nearby callbacks can share a clock tick. Defer credit until elapsed time
+    // is observable, while retaining the first anchor and detecting rewinds.
+    if(wall===0&&forward&&sameRate&&s.audible===previous.audible&&delta<=.001*s.rate){
+     previous.latestTime=s.time;
+     return;
+    }
     // Never bridge a stalled callback, backward movement, rate switch or seek.
-    if(wall>0&&wall<=1&&delta>0&&delta<=wall*s.rate+.05&&s.rate===previous.rate){
+    if(wall>0&&wall<=1&&forward&&sameRate&&delta>0&&delta<=wall*s.rate+.05){
      add(video,previous.time,s.time);
      if(previous.audible===true&&s.audible===true)add(audio,previous.time,s.time);
     }
    }
-   previous={...s};
+   previous={...s,latestTime:s.time};
   },
   snapshot(identity){
    if(identity?.identity_verified!==true||!/^[a-f0-9]{64}$/.test(identity.sha256||''))throw Error('Playback session needs verified file identity');
