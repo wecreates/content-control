@@ -66,6 +66,7 @@ class WatchdogRoutingTests(unittest.TestCase):
         self.assertEqual(routes(['provenance_inputs_current', 'live_deployment_green']),
                          ['runtime-provenance.yml'])
         self.assertEqual(routes(['live_deployment_green']), ['live-render-deployment-smoke.yml'])
+        self.assertEqual(routes(['deployed_source_commit_matches']), ['live-render-deployment-smoke.yml'])
         self.assertEqual(routes(['workflow_control_green', 'candidate_converged']), [])
 
     def test_empty_duplicates_and_unknown_preserve_fallback(self):

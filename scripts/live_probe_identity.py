@@ -7,8 +7,14 @@ import subprocess
 
 
 def read_identity(ref):
+    source = subprocess.check_output(
+        ['git', 'rev-parse', '--verify', '--end-of-options', f'{ref}^{{commit}}'],
+        text=True).strip()
+    if re.fullmatch(r'[0-9a-f]{40}', source) is None:
+        raise ValueError('Live probe requires an exact source commit')
+
     def load(path):
-        return json.loads(subprocess.check_output(['git', 'show', f'{ref}:{path}']))
+        return json.loads(subprocess.check_output(['git', 'show', f'{source}:{path}']))
 
     health = load('state/content-control-health.json')
     captions = load('state/caption-health.json')
@@ -24,7 +30,7 @@ def read_identity(ref):
                        for value in (candidate, caption))
             or captions.get('candidate_sha256') != candidate):
         raise ValueError('Live probe requires current, bound video and caption receipts')
-    return candidate, caption, base
+    return candidate, caption, base, source
 
 
 def main():
@@ -33,14 +39,15 @@ def main():
     parser.add_argument('--capture', action='store_true')
     args = parser.parse_args()
     try:
-        candidate, caption, base = read_identity(args.ref)
+        candidate, caption, base, source = read_identity(args.ref)
     except (AttributeError, OSError, ValueError, subprocess.CalledProcessError) as error:
         raise SystemExit(f'Cannot read live probe identity from {args.ref}: {error}') from error
     if args.capture:
-        print(f'CANDIDATE_SHA={candidate}\nCAPTION_SHA={caption}\nPROBE_BASE_URL={base}')
-    elif (candidate, caption, base) != tuple(os.environ.get(name) for name in
-                                             ('CANDIDATE_SHA', 'CAPTION_SHA', 'PROBE_BASE_URL')):
-        raise SystemExit('Video, caption, or deployment URL changed; refusing stale live probe evidence')
+        print(f'CANDIDATE_SHA={candidate}\nCAPTION_SHA={caption}\nPROBE_BASE_URL={base}\nEXPECTED_SOURCE_SHA={source}')
+    elif (candidate, caption, base, source) != tuple(os.environ.get(name) for name in
+                                                     ('CANDIDATE_SHA', 'CAPTION_SHA', 'PROBE_BASE_URL',
+                                                      'EXPECTED_SOURCE_SHA')):
+        raise SystemExit('Video, caption, deployment URL, or source changed; refusing stale live probe evidence')
 
 
 if __name__ == '__main__':

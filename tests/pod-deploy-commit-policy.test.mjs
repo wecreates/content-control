@@ -65,28 +65,13 @@ test('runtime integrity workflow skips only its generated manifest receipt',asyn
   assert.equal(git('log','-1','--format=%s').trim(),'Update runtime integrity manifest [skip render]');
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
-test('live deployment receipts skip identical runtime rebuilds but mixed changes deploy',async()=>{
- const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-live-health-commit-'));
- const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'});
- try{
-  git('init','--quiet');git('config','user.name','Synthetic Test');git('config','user.email','fixture@example.invalid');
-  await fs.mkdir(path.join(root,'state'));await fs.mkdir(path.join(root,'scripts'));
-  await fs.copyFile(new URL('../scripts/pod_deploy_commit_policy.mjs',import.meta.url),path.join(root,'scripts/pod_deploy_commit_policy.mjs'));
-  await fs.writeFile(path.join(root,'state/live-deployment-health.json'),'{}\n');
-  git('add','.');git('commit','--quiet','-m','Fixture baseline');
-  const workflow=await fs.readFile(new URL('../.github/workflows/live-render-deployment-smoke.yml',import.meta.url),'utf8');
-  const line=workflow.split('\n').find(line=>line.includes('git diff --cached --quiet || git commit -m'));
-  assert.ok(line?.includes('pod_deploy_commit_policy.mjs'));
-  await fs.writeFile(path.join(root,'state/live-deployment-health.json'),'{"status":"FAIL"}\n');
-  git('add','state/live-deployment-health.json');
-  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
-  assert.equal(git('log','-1','--format=%s').trim(),'Update live Render deployment health [skip render]');
-  await fs.writeFile(path.join(root,'state/live-deployment-health.json'),'{"status":"PASS"}\n');
-  await fs.writeFile(path.join(root,'state/content-control-health.json'),'new runtime candidate\n');
-  git('add','state');
-  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
-  assert.equal(git('log','-1','--format=%s').trim(),'Update live Render deployment health');
- }finally{await fs.rm(root,{recursive:true,force:true});}
+test('live deployment receipts are artifact-only and cannot advance the deployed branch',async()=>{
+ const workflow=await fs.readFile(new URL('../.github/workflows/live-render-deployment-smoke.yml',import.meta.url),'utf8');
+ assert.match(workflow,/^permissions:\n  contents: read\n(?=\S)/m);
+ assert.doesNotMatch(workflow,/\bgit\s+(?:add|commit|push)\b|\bgh\s+workflow\s+run\b/);
+ assert.match(workflow,/uses: actions\/upload-artifact@v4\n\s+if: always\(\) && steps\.source_guard\.outcome == 'success'/);
+ assert.match(workflow,/uses: actions\/upload-artifact@v4[\s\S]+state\/live-deployment-health\.json/);
+ assert.equal(REPORT_ONLY_PATHS.includes('state/live-deployment-health.json'),false);
 });
 test('watchdog workflow uses staged policy for real report-only and mixed commits',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-watchdog-commit-'));
