@@ -80,6 +80,16 @@ read separate for YouTube and Instagram. It reads existing vault records and
 does not start jobs or contact providers. The response omits account IDs,
 credentials, job IDs and provider results.
 
+After a successful configured-owner GitHub identity check, the encrypted vault
+retains a random onboarding ID, the identity-provider name and the completion
+time. The owner-only onboarding response uses that record to order the retained
+identity, current provider verification and first successful read as
+`SIGNUP_REQUIRED`, `CONNECTION_REQUIRED`, `FIRST_JOB_REQUIRED` or `COMPLETE`.
+It exposes no GitHub ID, account ID, job ID, grant generation, token or provider
+result. A legacy vault without this record cannot claim a complete journey; the
+next successful owner sign-in creates it. This is evidence for the configured
+single-owner path, not a multi-customer registration system or live acceptance.
+
 `first_read_job_status` reports `NOT_QUEUED`, `QUEUED`, `RETRY_PENDING`,
 `BLOCKED`, or `COMPLETED` for the current verified grant. A retained successful
 read takes precedence over later work. Queued work takes precedence over retry
