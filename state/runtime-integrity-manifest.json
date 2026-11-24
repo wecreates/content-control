@@ -127,8 +127,8 @@
       "sha256": "bf0c464379502bbb17a8af14b46eb2eed6cf5fdbe9af72350e5f9bc30eed057c"
     },
     "server-lowmem.js": {
-      "bytes": 29768,
-      "sha256": "ecab65a8be899564213afb1678740363ca3f18830efa1d3dea400531b0dad9c5"
+      "bytes": 31934,
+      "sha256": "05d65e7575ec9b22d408c1247ba011e319d67f86214c1d8a6d671724589ff9ef"
     },
     "server.js": {
       "bytes": 29,
