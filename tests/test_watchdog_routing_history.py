@@ -421,7 +421,12 @@ def health_fixture(root):
         write_json(root, "state/" + name + ".json", {"status": "PASS", "checks": {"fixture": True}})
     write_json(root, "state/accepted-candidate-ledger.json", {"current_candidate_sha256": candidate})
     write_json(root, "state/acceptance-ledger-health.json", {"status": "PASS", "current_candidate_sha256": candidate, "checks": {"fixture": True}})
-    write_json(root, "state/live-deployment-health.json", {"status": "PASS", "candidate_sha256": candidate, "checks": {"fixture": True}})
+    write_json(root, "state/deployment-contract.json", {"public_base_url": "https://review.synthetic.invalid"})
+    write_json(root, "state/live-deployment-health.json", {
+        "status": "PASS", "candidate_sha256": candidate, "caption_sha256": caption,
+        "public_base_url": "https://review.synthetic.invalid",
+        "publication_enabled": False, "checks": {"fixture": True},
+    })
     write_json(root, "state/caption-health.json", {"status": "PASS", "candidate_sha256": candidate, "caption_sha256": caption, "narration_sha256": narration, "checks": {"fixture": True}})
     smoke = {"status": "PASS", "candidate_sha256": candidate, "publication_enabled": False}
     for name in ["accepted_route_verified", "fail_closed_corruption_verified", "range_streaming_verified", "security_headers_verified", "cache_policy_verified", "captions_verified"]:
@@ -474,6 +479,27 @@ else:
             self.assertEqual(report["watchdog"]["failed_checks"], [])
             self.assertFalse(report["completion"]["production_ready"])
             self.assertFalse(report["completion"]["publication_enabled"])
+
+    def test_same_video_with_stale_or_missing_live_inputs_stays_red(self):
+        for field, value in [('caption_sha256', 'a' * 64), ('caption_sha256', None),
+                             ('public_base_url', 'https://old.synthetic.invalid')]:
+            with self.subTest(field=field, value=value), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                health_fixture(root)
+                path = root / 'state/live-deployment-health.json'
+                live = json.loads(path.read_text())
+                live.pop(field)
+                if value is not None:
+                    live[field] = value
+                path.write_text(json.dumps(live))
+                result = self.run_health(root)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report['watchdog']['failed_checks'],
+                                 ['live_deployment_green', 'candidate_identity_consistent'])
+                self.assertEqual(report['watchdog']['status'], 'REPAIR_REQUIRED')
+                self.assertEqual(run_routes(report['watchdog']['failed_checks']),
+                                 {'live-render-deployment-smoke.yml'})
 
     def test_receipts_expose_only_supplied_verified_run_identity(self):
         with tempfile.TemporaryDirectory() as tmp:

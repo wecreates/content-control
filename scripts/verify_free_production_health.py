@@ -26,6 +26,7 @@ factual=json.loads((ROOT/"state/factual-compliance-health.json").read_text()) if
 ledger_health=json.loads((ROOT/"state/acceptance-ledger-health.json").read_text()) if (ROOT/"state/acceptance-ledger-health.json").exists() else {"status":"MISSING"}
 ledger=json.loads((ROOT/"state/accepted-candidate-ledger.json").read_text()) if (ROOT/"state/accepted-candidate-ledger.json").exists() else {}
 deployment=json.loads((ROOT/"state/deployment-health.json").read_text()) if (ROOT/"state/deployment-health.json").exists() else {"status":"MISSING"}
+deployment_contract=json.loads((ROOT/"state/deployment-contract.json").read_text()) if (ROOT/"state/deployment-contract.json").exists() else {}
 live_deployment=json.loads((ROOT/"state/live-deployment-health.json").read_text()) if (ROOT/"state/live-deployment-health.json").exists() else {"status":"MISSING"}
 sync_health=json.loads((ROOT/"state/sync-retention-health.json").read_text()) if (ROOT/"state/sync-retention-health.json").exists() else {"status":"MISSING"}
 transcription=json.loads((ROOT/"state/narration-transcription-health.json").read_text()) if (ROOT/"state/narration-transcription-health.json").exists() else {"status":"MISSING"}
@@ -78,7 +79,6 @@ checks["factual_compliance_green"]=factual.get("status")=="PASS" and all(factual
 checks["acceptance_ledger_candidate_match"]=ledger_health.get("current_candidate_sha256")==health.get("candidate_sha256") and ledger.get("current_candidate_sha256")==health.get("candidate_sha256")
 checks["acceptance_ledger_green"]=ledger_health.get("status")=="PASS" and all(ledger_health.get("checks",{}).values()) and checks["acceptance_ledger_candidate_match"]
 checks["deployment_contract_green"]=deployment.get("status")=="PASS" and all(deployment.get("checks",{}).values())
-checks["live_deployment_green"]=live_deployment.get("status")=="PASS" and all(live_deployment.get("checks",{}).values()) and live_deployment.get("candidate_sha256")==health.get("candidate_sha256")
 checks["sync_retention_green"]=sync_health.get("status")=="PASS" and all(sync_health.get("checks",{}).values())
 checks["narration_transcription_green"]=transcription.get("status")=="PASS" and all(transcription.get("checks",{}).values())
 caption_file=ROOT/"public-review/episode1-v10-free.vtt"
@@ -92,6 +92,17 @@ checks["caption_health_green"]=all([
     checks["caption_candidate_match"],
     caption_health.get("caption_sha256")==sha256(caption_file) if caption_file.is_file() else False,
     caption_health.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
+])
+deployment_url=deployment_contract.get("public_base_url")
+checks["live_deployment_green"]=all([
+    live_deployment.get("status")=="PASS",
+    all(live_deployment.get("checks",{}).values()),
+    live_deployment.get("publication_enabled") is False,
+    isinstance(deployment_url,str) and deployment_url.startswith("https://"),
+    live_deployment.get("public_base_url")==deployment_url,
+    live_deployment.get("candidate_sha256")==health.get("candidate_sha256"),
+    checks["caption_health_green"],
+    live_deployment.get("caption_sha256")==caption_health.get("caption_sha256"),
 ])
 checks["runtime_locks_present"]=all((ROOT/p).is_file() and (ROOT/p).stat().st_size>0 for p in ["package-lock.json","requirements-free-qa.lock.txt"])
 checks["review_server_smoke_candidate_match"]=smoke.get("candidate_sha256")==health.get("candidate_sha256")

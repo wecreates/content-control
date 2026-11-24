@@ -26,8 +26,10 @@ class SmokeInputTests(unittest.TestCase):
         (self.root / 'public-review/episode1-v10-free.mp4').write_bytes(self.media)
         (self.root / 'public-review/episode1-v10-free.vtt').write_bytes(self.vtt)
         self.hash = hashlib.sha256(self.media).hexdigest()
+        self.base_url = 'https://synthetic.invalid'
         self.write('content-control-health.json', {'status': 'GREEN', 'publication_enabled': False, 'candidate_sha256': self.hash})
         self.write('caption-health.json', {'status': 'PASS', 'publication_enabled': False, 'candidate_sha256': self.hash, 'caption_sha256': hashlib.sha256(self.vtt).hexdigest()})
+        self.write('deployment-contract.json', {'public_base_url': self.base_url})
 
     def write(self, name, value):
         (self.root / 'state' / name).write_text(json.dumps(value))
@@ -107,7 +109,6 @@ class SmokeInputTests(unittest.TestCase):
         self.assertFalse(receipt['fail_closed_corruption_verified'])
 
     def test_live_receipt_never_treats_two_missing_hashes_as_match(self):
-        self.write('deployment-contract.json', {'public_base_url': 'https://synthetic.invalid'})
         self.write('caption-health.json', {'status': 'FAIL'})
         script = self.receipt_script('live-render-deployment-smoke.yml', 'Write live deployment receipt')
         script = script.replace('${{ steps.probe.outcome }}', 'failure').replace('/tmp/live-probe', str(self.root / 'absent').replace('\\', '/'))
@@ -120,7 +121,55 @@ class SmokeInputTests(unittest.TestCase):
     def test_live_surface_uses_exact_caption_url_and_stale_guard(self):
         source = (REPO / '.github/workflows/live-render-deployment-smoke.yml').read_text()
         self.assertIn('/captions?sha256=$EXPECTED_CAPTION', source)
+        self.assertIn('/media?sha256=$EXPECTED', source)
+        self.assertIn('verify_live_caption_response.py /tmp/live-probe/media.headers "$EXPECTED"', source)
+        self.assertIn('head -c 1024 public-review/episode1-v10-free.mp4 | cmp', source)
         self.assertIn("if: always() && steps.source_guard.outcome == 'success'", source)
+        post_rebase = source.split('if git pull --rebase origin main; then', 1)[1].split('git push', 1)[0]
+        self.assertIn('python scripts/live_probe_identity.py HEAD', post_rebase)
+        self.assertIn('python scripts/review_smoke_inputs.py', post_rebase)
+
+    def test_live_probe_rejects_stale_captions_or_host_for_same_video(self):
+        def git(*args):
+            subprocess.run(['git', *args], cwd=self.root, check=True, capture_output=True)
+
+        def commit(message):
+            git('add', 'state', 'public-review')
+            git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                'commit', '--no-gpg-sign', '-m', message)
+
+        def identity(*args, env=None):
+            return subprocess.run(
+                [sys.executable, str(REPO / 'scripts/live_probe_identity.py'), 'HEAD', *args],
+                cwd=self.root, env=env, text=True, capture_output=True)
+
+        git('init', '-q')
+        commit('Initial snapshot')
+        original_sha = hashlib.sha256(self.vtt).hexdigest()
+        captured = identity('--capture')
+        self.assertEqual(captured.returncode, 0, captured.stderr)
+        self.assertEqual(captured.stdout.splitlines(),
+                         [f'CANDIDATE_SHA={self.hash}', f'CAPTION_SHA={original_sha}',
+                          f'PROBE_BASE_URL={self.base_url}'])
+        captured_env = dict(os.environ, CANDIDATE_SHA=self.hash, CAPTION_SHA=original_sha,
+                            PROBE_BASE_URL=self.base_url)
+        corrected = self.vtt + b' with corrected wording'
+        corrected_sha = hashlib.sha256(corrected).hexdigest()
+        (self.root / 'public-review/episode1-v10-free.vtt').write_bytes(corrected)
+        self.write('caption-health.json', {'status': 'PASS', 'publication_enabled': False,
+                                           'candidate_sha256': self.hash, 'caption_sha256': corrected_sha})
+        commit('Caption-only correction')
+        result = identity(env=captured_env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('refusing stale live probe evidence', result.stderr)
+        captured_env['CAPTION_SHA'] = corrected_sha
+        result = identity(env=captured_env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.write('deployment-contract.json', {'public_base_url': 'https://new.synthetic.invalid'})
+        commit('Deployment contract changed')
+        result = identity(env=captured_env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('refusing stale live probe evidence', result.stderr)
 
 
 if __name__ == '__main__':
