@@ -79,6 +79,12 @@ read separate for YouTube and Instagram. It reads existing vault records and
 does not start jobs or contact providers. The response omits account IDs,
 credentials, job IDs and provider results.
 
+`first_read_job_status` reports `NOT_QUEUED`, `QUEUED`, `RETRY_PENDING`,
+`BLOCKED`, or `COMPLETED` for the current verified grant. A retained successful
+read takes precedence over later work. Queued work takes precedence over retry
+and blocked history. A null phase means there is no eligible verified grant
+with a recorded generation. Provider errors remain private.
+
 A job records the grant generation when queued and again after a successful
 read. First-read evidence requires both to match the current verified grant.
 Reconnecting starts a new generation, including when the account is unchanged,
