@@ -72,8 +72,9 @@ adapters must have bounded network timeouts. This adapter does.
 Tests: `npm run test:social`. The existing social integration CI runs the worker,
 HTTP boundary, Opus and Watch bridge tests. Mock tests do not prove live access.
 
-The signed-in GitHub owner can open **Read job evidence** from
-`/social/connect`. The private, no-store `GET /api/social/onboarding` keeps
+The signed-in GitHub owner can see first-read progress on
+`/social/connect` and open **Read job evidence** for the structured details.
+The private, no-store `GET /api/social/onboarding` keeps
 provider configuration, account verification and the first retained successful
 read separate for YouTube and Instagram. It reads existing vault records and
 does not start jobs or contact providers. The response omits account IDs,
