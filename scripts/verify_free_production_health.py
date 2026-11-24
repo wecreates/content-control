@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 sys.dont_write_bytecode = True
-import hashlib, json
+import hashlib, json, re
 from pathlib import Path
 from watchdog_scope import completion_scope
 from normalize_npm_security_audit import security_report_is_clean
@@ -94,13 +94,20 @@ checks["caption_health_green"]=all([
     caption_health.get("narration_sha256")==sha256(ROOT/"public/audio/episode1-narration.mp3"),
 ])
 deployment_url=deployment_contract.get("public_base_url")
+candidate_sha256=health.get("candidate_sha256")
+valid_candidate_sha256=isinstance(candidate_sha256,str) and re.fullmatch(r"[0-9a-f]{64}",candidate_sha256) is not None
+live_expected_sha256=live_deployment.get("live_expected_sha256")
+live_actual_sha256=live_deployment.get("live_actual_sha256")
 checks["live_deployment_green"]=all([
     live_deployment.get("status")=="PASS",
     all(live_deployment.get("checks",{}).values()),
     live_deployment.get("publication_enabled") is False,
     isinstance(deployment_url,str) and deployment_url.startswith("https://"),
     live_deployment.get("public_base_url")==deployment_url,
-    live_deployment.get("candidate_sha256")==health.get("candidate_sha256"),
+    valid_candidate_sha256,
+    live_deployment.get("candidate_sha256")==candidate_sha256,
+    live_expected_sha256==candidate_sha256,
+    live_actual_sha256==candidate_sha256,
     checks["caption_health_green"],
     live_deployment.get("caption_sha256")==caption_health.get("caption_sha256"),
 ])
@@ -145,7 +152,7 @@ checks["candidate_identity_consistent"]=all([
     checks["live_deployment_green"],
 ])
 candidate_hashes={
-    "health":health.get("candidate_sha256"),
+    "health":candidate_sha256,
     "receipt":receipt.get("candidate_sha256"),
     "ledger":ledger.get("current_candidate_sha256"),
     "ledger_health":ledger_health.get("current_candidate_sha256"),
@@ -153,8 +160,10 @@ candidate_hashes={
     "smoke":smoke.get("candidate_sha256"),
     "provenance":provenance.get("candidate_sha256"),
     "live_deployment":live_deployment.get("candidate_sha256"),
+    "live_expected_sha256":live_expected_sha256,
+    "live_actual_sha256":live_actual_sha256,
 }
-candidate_converged=all(candidate_hashes.values()) and len(set(candidate_hashes.values()))==1
+candidate_converged=valid_candidate_sha256 and all(value==candidate_sha256 for value in candidate_hashes.values())
 checks["candidate_converged"]=candidate_converged
 
 status="GREEN" if all(checks.values()) else "REPAIR_REQUIRED"
@@ -238,17 +247,6 @@ completion={
     "watchdog_receipt":"state/free-production-watchdog.json",
 }
 (ROOT/"state/system-completion.json").write_text(json.dumps(completion,indent=2,sort_keys=True)+"\n")
-candidate_hashes={
-    "health":health.get("candidate_sha256"),
-    "receipt":receipt.get("candidate_sha256"),
-    "ledger":ledger.get("current_candidate_sha256"),
-    "ledger_health":ledger_health.get("current_candidate_sha256"),
-    "captions":caption_health.get("candidate_sha256"),
-    "smoke":smoke.get("candidate_sha256"),
-    "provenance":provenance.get("candidate_sha256"),
-    "live_deployment":live_deployment.get("candidate_sha256"),
-}
-candidate_converged=len({v for v in candidate_hashes.values() if v})==1 and all(candidate_hashes.values())
 ops={
     "schema_version":1,
     **completion_scope(status),

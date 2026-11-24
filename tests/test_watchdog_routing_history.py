@@ -424,6 +424,7 @@ def health_fixture(root):
     write_json(root, "state/deployment-contract.json", {"public_base_url": "https://review.synthetic.invalid"})
     write_json(root, "state/live-deployment-health.json", {
         "status": "PASS", "candidate_sha256": candidate, "caption_sha256": caption,
+        "live_expected_sha256": candidate, "live_actual_sha256": candidate,
         "public_base_url": "https://review.synthetic.invalid",
         "publication_enabled": False, "checks": {"fixture": True},
     })
@@ -477,8 +478,34 @@ else:
             self.assertEqual(result.returncode, 0, result.stderr)
             report = json.loads(result.stdout)
             self.assertEqual(report["watchdog"]["failed_checks"], [])
+            self.assertTrue(report["watchdog"]["candidate_converged"])
             self.assertFalse(report["completion"]["production_ready"])
             self.assertFalse(report["completion"]["publication_enabled"])
+
+    def test_live_digest_mismatch_or_absence_does_not_converge(self):
+        for field in ("live_expected_sha256", "live_actual_sha256"):
+            for value in ("a" * 64, None):
+                with self.subTest(field=field, value=value), tempfile.TemporaryDirectory() as tmp:
+                    root = Path(tmp)
+                    health_fixture(root)
+                    path = root / "state/live-deployment-health.json"
+                    live = json.loads(path.read_text())
+                    if value is None:
+                        del live[field]
+                    else:
+                        live[field] = value
+                    path.write_text(json.dumps(live))
+                    result = self.run_health(root)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    report = json.loads(result.stdout)
+                    watchdog = report["watchdog"]
+                    self.assertEqual(watchdog["candidate_hashes"]["live_deployment"], live["candidate_sha256"])
+                    self.assertEqual(watchdog["candidate_hashes"][field], value)
+                    self.assertFalse(watchdog["candidate_converged"])
+                    self.assertFalse(report["operations"]["checks"]["candidate_converged"])
+                    self.assertEqual(watchdog["failed_checks"],
+                                     ["live_deployment_green", "candidate_identity_consistent", "candidate_converged"])
+                    self.assertEqual(run_routes(watchdog["failed_checks"]), {"live-render-deployment-smoke.yml"})
 
     def test_same_video_with_stale_or_missing_live_inputs_stays_red(self):
         for field, value in [('caption_sha256', 'a' * 64), ('caption_sha256', None),
