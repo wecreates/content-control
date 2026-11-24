@@ -59,6 +59,13 @@ reports no production or publication approval. Accepted video evidence is checke
 separately by fail-closed `/readyz`; `/livez` remains the equivalent direct process
 probe. The separate live deployment smoke uses `/readyz` and still verifies the
 accepted artifact when one is available.
+The canonical readiness payload also names the exact unpublished Episode 1
+watch, media and caption URLs that it verifies. Episode 3 exposes the same
+contract separately at `/episode3/health`. Do not pair either response's hashes
+with another episode route. Newer Episode 3 evidence owns `/latest` even when
+incomplete or corrupt, so an older green Episode 1 cannot mask a broken current
+user-facing preview. This route-binding is a delivery-integrity prerequisite,
+not playback or creative acceptance.
 Additional OCR languages require installation and validation before jobs in those
 languages are enabled. A successful container gate is build/test evidence, not
 proof that Render has deployed that revision or that any live acceptance row passes.

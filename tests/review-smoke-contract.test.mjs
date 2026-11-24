@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
+import {previewRequestMatches} from '../preview-identity.js';
 
 test('the smoke workflow requires the exact caption hash emitted by the actual watch handler',()=>{
  const source=fs.readFileSync(new URL('../server-lowmem.js',import.meta.url),'utf8');
@@ -16,8 +17,8 @@ test('the smoke workflow requires the exact caption hash emitted by the actual w
  const candidateHash='a'.repeat(64),captionHash='b'.repeat(64);
  let handler;
  vm.runInNewContext(source.slice(source.indexOf('app.get("/watch",'),source.indexOf('app.use((req,res)=>')),
-  {app:{get:(route,fn)=>{assert.equal(route,'/watch');handler=fn;}},acceptance:()=>({ready:true,expected:candidateHash,captionHash})});
- let html;const response={setHeader(){},type(){return this;},send(body){html=body;}};handler({},response);
+  {app:{get:(route,fn)=>{assert.equal(route,'/watch');handler=fn;}},acceptance:()=>({ready:true,expected:candidateHash,captionHash}),previewRequestMatches});
+ let html;const response={setHeader(){},status(){return this;},type(){return this;},send(body){html=body;}};handler({query:{}},response);
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'review-smoke-contract-'));
  try{
   fs.mkdirSync(path.join(root,'state'));fs.writeFileSync(path.join(root,'state/caption-health.json'),JSON.stringify({caption_sha256:captionHash}));

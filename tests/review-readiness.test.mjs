@@ -12,6 +12,7 @@ test('actual HTTP liveness stays separate from blocked caption/media acceptance'
   app:{get:(path,fn)=>routes.set(path,fn)},readHealth:()=>({status:'GREEN',candidate_sha256:'a'.repeat(64),publication_enabled:false}),
   readCaptionHealth:()=>({status:'FAIL',publication_enabled:false}),fileHash:()=> 'a'.repeat(64),
   fs:{existsSync:()=>true},output:'SYNTHETIC video',captionsPath:'SYNTHETIC captions',renderState:{status:'idle'},
+  canonicalPreviewIdentity:()=>({ready:false,id:'episode1-v10-free',engine:'remotion-v10-free',qaStatus:'GREEN',expected:'a'.repeat(64),actual:'a'.repeat(64),captionSha256:null,captionCandidateSha256:'a'.repeat(64),identityConsistent:false,failedChecks:['caption_gate_ready'],watchUrl:null,mediaUrl:null,captionsUrl:null}),
   streamMp4:()=>{throw Error('Blocked media must not stream');}
  });
  const server=createServer((req,res)=>{res.status=n=>{res.statusCode=n;return res;};res.json=value=>res.end(JSON.stringify(value));routes.get(req.url)(req,res);});
