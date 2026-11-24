@@ -61,6 +61,16 @@ export class OwnerAuthentication {
     this.active();
     await this.store.update(d => {
       this.active();
+      if (d.owner_onboarding !== undefined) {
+        const record = d.owner_onboarding;
+        if (!record || typeof record !== 'object' || Array.isArray(record) || record.schema_version !== 1 ||
+            typeof record.id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(record.id) ||
+            record.identity_provider !== 'github' || !Number.isSafeInteger(record.completed_at) || record.completed_at <= 0 || record.completed_at > this.now()) {
+          throw Error('OWNER_AUTH_FAILED');
+        }
+      } else {
+        d.owner_onboarding = {schema_version:1, id:crypto.randomUUID(), identity_provider:'github', completed_at:this.now()};
+      }
       d.owner_sessions ??= {};
       for (const [key, s] of Object.entries(d.owner_sessions)) if (s.expires_at <= this.now()) delete d.owner_sessions[key];
       if (Object.keys(d.owner_sessions).length >= 10) throw Error('OWNER_AUTH_CAPACITY');
