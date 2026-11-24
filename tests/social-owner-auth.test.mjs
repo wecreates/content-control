@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
@@ -23,6 +24,10 @@ test('owner login binds browser and PKCE, consumes state, hashes sessions, verif
  const request={headers:{cookie:`${OWNER_COOKIE}=${session}`}};
  assert.equal(await auth.authorize(request),'github:42');
  assert.equal(calls.length,2);assert.equal(calls[0].options.redirect,'error');
+ const onboarding=(await store.read()).owner_onboarding;
+ assert.equal(onboarding.schema_version,1);assert.equal(onboarding.identity_provider,'github');
+ assert.equal(onboarding.completed_at,100000);assert.match(onboarding.id,/^[0-9a-f-]{36}$/);
+ assert.deepEqual(Object.keys(onboarding).sort(),['completed_at','id','identity_provider','schema_version']);
  const form=new URLSearchParams(calls[0].options.body);assert.equal(form.get('code_verifier').length,43);
  const saved=JSON.stringify(await store.read());for(const secret of [session,'PRIVATE_TOKEN','PRIVATE_CLIENT'])assert.ok(!saved.includes(secret));
  await assert.rejects(auth.complete({state,code:'code'},begin.binding),/OWNER_AUTH_FAILED/);
@@ -38,6 +43,13 @@ test('wrong identity, expired state and denied grants never create owner session
  begin=await auth.begin();state=new URL(begin.url).searchParams.get('state');
  await assert.rejects(auth.complete({state,error:'denied'},begin.binding),/OWNER_AUTH_FAILED/);assert.equal((await store.read()).owner_pending[ state ],undefined);
  await assert.rejects(auth.complete({state,code:'code'},begin.binding),/OWNER_AUTH_FAILED/);assert.equal(calls.length,2);
+});
+test('malformed retained onboarding identity fails closed instead of being repaired',async t=>{
+ const {auth,store}=await fixture(t);
+ await store.update(d=>{d.owner_onboarding={schema_version:1,id:crypto.randomUUID(),identity_provider:'github',completed_at:true};});
+ const begin=await auth.begin(),state=new URL(begin.url).searchParams.get('state');
+ await assert.rejects(auth.complete({state,code:'code'},begin.binding),/OWNER_AUTH_FAILED/);
+ const saved=await store.read();assert.equal(saved.owner_sessions,undefined);assert.equal(saved.owner_onboarding.completed_at,true);
 });
 test('HTTP login rejects cross-origin starts and emits protected cookies; disabled host fails closed',async t=>{
  const {auth}=await fixture(t);const app=express();let contexts=[];
@@ -109,7 +121,10 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  };
  let response=await fetch(url,{headers});
  assert.equal(response.headers.get('cache-control'),'no-store');
- assert.equal((await response.json()).providers[0].status,'CONNECTION_REQUIRED');
+ let progress=await response.json();
+ assert.equal(progress.providers[0].status,'CONNECTION_REQUIRED');
+ assert.equal(progress.onboarding_journey.status,'CONNECTION_REQUIRED');
+ assert.equal(progress.onboarding_journey.signup_status,'OWNER_IDENTITY_RETAINED');
  assert.match(await page(),/YouTube<\/strong> — Connect this account to start onboarding\./);
  const local=new SocialAutomation({store,adapters:{youtube:{
   verify:async grant=>({verified:true,account_id:grant.account_id}),
@@ -120,6 +135,8 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  const pending=await (await fetch(url,{headers})).json();
  assert.equal(pending.providers[0].status,'FIRST_READ_PENDING');
  assert.equal(pending.providers[0].first_read_job_status,'NOT_QUEUED');
+ assert.equal(pending.onboarding_journey.status,'FIRST_JOB_REQUIRED');
+ assert.ok(pending.onboarding_journey.provider_verified_at>=pending.onboarding_journey.signup_completed_at);
  assert.equal(pending.worker_status,'DISABLED');
  assert.match(await page(),/YouTube<\/strong> — The account is verified\. No read is queued yet\./);
  await local.enqueue({id:'private-job-id',platform:'youtube',operation:'read_profile'});
@@ -129,10 +146,14 @@ test('owner onboarding endpoint reports retained read evidence without provider 
  const saved=await fs.readFile(store.file);
  response=await fetch(url,{headers});
  assert.equal(response.status,200);
- const output=await response.text(), progress=JSON.parse(output);
+ const output=await response.text();progress=JSON.parse(output);
  assert.deepEqual(progress.providers.map(p=>p.status),['FIRST_READ_RETAINED','PROVIDER_CONFIGURATION_REQUIRED']);
  assert.deepEqual(progress.providers.map(p=>p.first_read_job_status),['COMPLETED',null]);
  assert.equal(progress.providers[0].first_read_operation,'read_profile');
+ assert.equal(progress.onboarding_journey.status,'COMPLETE');
+ assert.ok(progress.onboarding_journey.first_successful_job_completed_at>=progress.onboarding_journey.provider_verified_at);
+ assert.equal(progress.onboarding_journey.publication_enabled,false);
+ assert.equal(progress.onboarding_journey.external_writes_enabled,false);
  assert.equal(progress.worker_status,'DISABLED');
  assert.equal(progress.publication_enabled,false);
  assert.equal(progress.external_writes_enabled,false);
