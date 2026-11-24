@@ -56,6 +56,7 @@ on:
       - 'tests/test_gemini_free_av_review.py'
       - 'control/gemini-free-av-policy.json'
       - 'scripts/offline_av_review.py'
+      - 'scripts/ci_media_tools.sh'
       - 'tests/test_offline_av_review.py'
       - 'tests/test_review_packets.py'
       - 'tests/exact-av-review.test.mjs'
@@ -82,7 +83,7 @@ jobs:
   offline-review-clock:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,11 +91,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: |
-          if ! command -v ffmpeg || ! command -v ffprobe; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq ffmpeg
-          fi
+      - name: Install local media fixture tools
+        run: bash scripts/ci_media_tools.sh
       - run: python -m unittest tests.test_offline_av_review tests.test_review_packets
   tests:
     if: github.event.repository.private == false
