@@ -96,24 +96,24 @@ class NarrationWorkflowTests(unittest.TestCase):
         self.prepare()
         bin_path = self.root / 'bin'
         bin_path.mkdir()
-        (bin_path / 'bash').symlink_to('/bin/bash')
-        (self.root / 'scripts').mkdir()
-        (self.root / 'scripts/ci_media_tools.sh').write_text('exit 13\n')
+        python = bin_path / 'python'
+        python.write_text('#!/bin/sh\nexit 13\n')
+        python.chmod(0o755)
         result = self.run_step('Install pinned transcription runtime', PATH=str(bin_path))
         self.assertEqual(result.returncode, 13)
         self.assert_negative()
         self.assertEqual(self.enforce('skipped').returncode, 2)
 
-    def test_runtime_installs_and_checks_ffmpeg_before_transcription(self):
+    def test_source_runtime_uses_pinned_python_dependencies_without_apt(self):
         shell = step('Install pinned transcription runtime')
-        self.assertIn('bash scripts/ci_media_tools.sh', shell)
-        self.assertLess(shell.index('bash scripts/ci_media_tools.sh'), shell.index('pip install -r'))
+        self.assertEqual(shell, 'python -m pip install -r requirements-transcription.txt')
 
     def test_narration_uses_independent_spoken_number_decoding(self):
         # Preserve spoken units instead of ASR numeric notation. The approved
         # script is never passed to the recognizer as a prompt.
         command = shlex.split(step('Transcribe actual narration and compare to approved script').replace('\\\n', ' '))
         self.assertIn('--spoken-numbers', command)
+        self.assertIn('--source-mp3', command)
         self.assertEqual(command[command.index('--model') + 1], 'base.en')
         self.assertNotIn('--initial-prompt', command)
 

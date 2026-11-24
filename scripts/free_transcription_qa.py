@@ -85,6 +85,42 @@ def decode_transcription_audio(path):
     if not np.isfinite(samples).all():raise ValueError("Decoded audio contains nonfinite samples")
     return samples,len(samples)/16000
 
+def decode_source_mp3(path):
+    """Decode the local narration MP3 using the Whisper runtime's PyAV wheel."""
+    import av
+    import numpy as np
+
+    source = Path(path).resolve(strict=True)
+    if not source.is_file():
+        raise ValueError("Audio input must be a local file")
+    rate = 16000
+    resampler = av.AudioResampler(format="flt", layout="mono", rate=rate)
+    chunks = []
+    sample_count = 0
+
+    def append(frames):
+        nonlocal sample_count
+        for frame in frames:
+            sample_count += frame.samples
+            if sample_count > 3600 * rate:
+                raise ValueError("Decoded source narration exceeds the supported duration")
+            chunks.append(frame.to_ndarray().reshape(-1))
+
+    with source.open("rb") as audio:
+        # The explicit demuxer and local file handle do not admit other inputs.
+        with av.open(audio, format="mp3") as container:
+            if not container.streams.audio:
+                raise ValueError("Source narration has no audio stream")
+            for frame in container.decode(audio=0):
+                append(resampler.resample(frame))
+            append(resampler.resample(None))
+    if not chunks:
+        raise ValueError("Decoded audio is empty")
+    samples = np.concatenate(chunks)
+    if not np.isfinite(samples).all():
+        raise ValueError("Decoded audio contains nonfinite samples")
+    return samples, sample_count / rate
+
 def spoken_number_suppression(tokenizer):
     """Constrain ASR output notation, never supply expected narration to decoder.
 
@@ -122,6 +158,7 @@ def main():
     ap.add_argument("--output",required=True)
     ap.add_argument("--model",default="tiny.en")
     ap.add_argument("--spoken-numbers",action="store_true",help="Decode numbers as spoken words; no script prompting")
+    ap.add_argument("--source-mp3", action="store_true", help="Decode the local source MP3 with PyAV")
     a=ap.parse_args()
 
     from faster_whisper import WhisperModel
@@ -129,7 +166,8 @@ def main():
 
     contract=json.loads(Path(a.contract).read_text())
     expected=contract["narration_text"]
-    audio_samples,media_duration=decode_transcription_audio(a.audio)
+    decode = decode_source_mp3 if a.source_mp3 else decode_transcription_audio
+    audio_samples,media_duration=decode(a.audio)
     narration_end=transcription_window_end(contract,media_duration)
     model=WhisperModel(a.model,device="cpu",compute_type="int8")
     segments,info=model.transcribe(

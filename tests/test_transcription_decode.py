@@ -1,3 +1,4 @@
+import importlib.util
 import math
 import shutil
 import struct
@@ -5,7 +6,9 @@ import tempfile
 import unittest
 import wave
 from pathlib import Path
-from scripts.free_transcription_qa import decode_transcription_audio
+from scripts.free_transcription_qa import decode_source_mp3, decode_transcription_audio
+
+SOURCE_NARRATION = Path(__file__).resolve().parents[1] / 'public/audio/episode1-narration.mp3'
 
 @unittest.skipUnless(shutil.which('ffmpeg'), 'FFmpeg required')
 class TranscriptionDecodeTests(unittest.TestCase):
@@ -34,5 +37,27 @@ class TranscriptionDecodeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(FileNotFoundError):
                 decode_transcription_audio(Path(td)/'missing.wav')
+
+@unittest.skipUnless(importlib.util.find_spec('av'), 'PyAV required')
+class SourceMp3DecodeTests(unittest.TestCase):
+    def test_actual_narration_decodes_to_finite_float_mono(self):
+        import numpy as np
+        audio, duration = decode_source_mp3(SOURCE_NARRATION)
+        self.assertEqual(audio.dtype, np.float32)
+        self.assertEqual(audio.ndim, 1)
+        self.assertEqual(duration, audio.size / 16000)
+        self.assertGreater(duration, 0)
+        self.assertTrue(np.isfinite(audio).all())
+        self.assertGreater(float(np.max(np.abs(audio))), 0.01)
+
+    def test_missing_or_corrupt_source_is_rejected(self):
+        import av
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / 'bad.mp3'
+            with self.assertRaises(FileNotFoundError):
+                decode_source_mp3(source)
+            source.write_bytes(b'not an MP3')
+            with self.assertRaises((ValueError, av.FFmpegError)):
+                decode_source_mp3(source)
 
 if __name__=='__main__':unittest.main()
