@@ -115,11 +115,11 @@
       "accepted": true,
       "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
       "git_blob_sha1": "ac48fd9e3732bbe4a52c13d34bb511785ef3c562",
-      "health_sha256": "33b1f713cd604169d6ff08d8a13f3a1da4e27750930a8751ea37875a4b250786",
+      "health_sha256": "001e03db4bd060c344770e46ea10aedb89c62b86a7bc04f4011961cf2a369231",
       "media_path": "public-review/episode1-v10-free.mp4",
       "publication_enabled": false,
-      "qa_receipt_sha256": "42f6518d3b8923fca29a87ec8c784e894b1642a470987c8ac9762f766074d897",
-      "repository_commit": "05bcb9a54d4bb8de2936d027d0cd4b9d121b8d70"
+      "qa_receipt_sha256": "20b662c7287ab4ebaf6f64933282ee04d59a876fb902f02241a448c3f56276a2",
+      "repository_commit": "03b97d721a30eee98084f5cd2bf98bc22d3d8edd"
     }
   ],
   "max_entries": 20,
