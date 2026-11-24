@@ -69,8 +69,11 @@ test('live deployment receipts are artifact-only and cannot advance the deployed
  const workflow=await fs.readFile(new URL('../.github/workflows/live-render-deployment-smoke.yml',import.meta.url),'utf8');
  assert.match(workflow,/^permissions:\n  contents: read\n(?=\S)/m);
  assert.doesNotMatch(workflow,/\bgit\s+(?:add|commit|push)\b|\bgh\s+workflow\s+run\b/);
- assert.match(workflow,/uses: actions\/upload-artifact@v4\n\s+if: always\(\) && steps\.source_guard\.outcome == 'success'/);
- assert.match(workflow,/uses: actions\/upload-artifact@v4[\s\S]+state\/live-deployment-health\.json/);
+ assert.match(workflow,/- uses: actions\/checkout@v4\n\s+with:\n\s+ref: \$\{\{ github\.sha \}\}[\s\S]*?persist-credentials: false/);
+ assert.match(workflow,/uses: actions\/upload-artifact@v4\n\s+if: always\(\) && steps\.bundle\.outcome == 'success'/);
+ assert.match(workflow,/name: live-render-deployment-smoke-\$\{\{ github\.sha \}\}-\$\{\{ github\.run_id \}\}-\$\{\{ github\.run_attempt \}\}/);
+ assert.match(workflow,/if-no-files-found: error/);
+ assert.match(workflow,/receipt_schema_version/);
  assert.equal(REPORT_ONLY_PATHS.includes('state/live-deployment-health.json'),false);
 });
 test('watchdog workflow uses staged policy for real report-only and mixed commits',async()=>{

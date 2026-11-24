@@ -457,14 +457,15 @@ from unittest.mock import patch
 sys.path.insert(0, sys.argv[1])
 import load_live_npm_security_evidence as npm
 import load_live_python_security_evidence as python
+import load_live_deployment_evidence as live
 if sys.argv[3] == 'synthetic_component':
     def load_fixture(name, root, repository, *, include_identity=False):
         assert repository == 'wecreates/content-control' and include_identity
         return json.loads((pathlib.Path(root) / 'state' / name).read_text())
-    with patch.object(npm, 'load_live_npm_report', side_effect=lambda *args, **kw: load_fixture('runtime-security-audit.json', *args, **kw)), patch.object(python, 'load_live_python_report', side_effect=lambda *args, **kw: load_fixture('python-security-audit.json', *args, **kw)):
+    with patch.object(npm, 'load_live_npm_report', side_effect=lambda *args, **kw: load_fixture('runtime-security-audit.json', *args, **kw)), patch.object(python, 'load_live_python_report', side_effect=lambda *args, **kw: load_fixture('python-security-audit.json', *args, **kw)), patch.object(live, 'load_live_deployment_report', side_effect=lambda *args, **kw: load_fixture('live-deployment-health.json', *args, **kw)):
         runpy.run_path(sys.argv[2], run_name='__main__')
 else:
-    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
+    with patch.object(npm.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(python.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')), patch.object(live.GitHubAPI, 'get', side_effect=ValueError('Synthetic API unavailable')):
         runpy.run_path(sys.argv[2], run_name='__main__')
 """
         return subprocess.run([sys.executable, "-B", "-c", wrapper, str(ROOT / 'scripts'), str(HEALTH),
