@@ -14,6 +14,7 @@ async function providerCall(operation, timeoutMs, parentSignal) {
 const platforms=new Set(['instagram','facebook','youtube','tiktok','threads','x','pinterest','linkedin','reddit']);
 const readOperations=new Set(['read_profile','read_media','read_analytics']);
 const grantGeneration = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const firstReadPhases = [['queued','QUEUED'], ['retry','RETRY_PENDING'], ['blocked','BLOCKED']];
 
 export function jobMatchesCurrentGrant(job, grant) {
  return Boolean(grant && job.account_id === grant.account_id &&
@@ -23,7 +24,7 @@ export function jobMatchesCurrentGrant(job, grant) {
 export function ownerReadProgress(state, configured, now) {
  const providers = ['youtube', 'instagram'].map(platform => {
   const result = {platform, status:'PROVIDER_CONFIGURATION_REQUIRED', provider_verified:false,
-                  first_read_completed_at:null, first_read_operation:null};
+                  first_read_completed_at:null, first_read_operation:null, first_read_job_status:null};
   if (!configured.includes(platform)) return result;
   const grant = state.connections[platform];
   if (!grant) return {...result, status:'CONNECTION_REQUIRED'};
@@ -34,16 +35,25 @@ export function ownerReadProgress(state, configured, now) {
       !Number.isSafeInteger(grant.verified_at) || grant.verified_at <= 0 || grant.verified_at > now) {
    return {...result, status:'VERIFICATION_REQUIRED'};
   }
-  const completed = grantGeneration.test(grant.generation || '') ? state.jobs.reduce((first, job) => {
-   if (!jobMatchesCurrentGrant(job, grant) || job.grant_generation !== grant.generation ||
-       job.platform !== platform || job.status !== 'completed' || !readOperations.has(job.operation) ||
-       !Number.isSafeInteger(job.completed_at) || job.completed_at < grant.verified_at || job.completed_at > now) {
-    return first;
+  let completed = null, phase = null;
+  if (grantGeneration.test(grant.generation || '')) {
+   const visibleStatuses = new Set();
+   for (const job of state.jobs) {
+    if (job.platform !== platform || !readOperations.has(job.operation) || !jobMatchesCurrentGrant(job, grant)) continue;
+    if (job.status !== 'completed') {
+     visibleStatuses.add(job.status);
+    } else if (job.grant_generation === grant.generation && Number.isSafeInteger(job.completed_at) &&
+               job.completed_at >= grant.verified_at && job.completed_at <= now &&
+               (!completed || job.completed_at < completed.completed_at)) {
+     completed = job;
+    }
    }
-   return !first || job.completed_at < first.completed_at ? job : first;
-  }, null) : null;
+   // Existing successful evidence wins, then outstanding work before old blocked jobs.
+   phase = completed ? 'COMPLETED' : firstReadPhases.find(([status]) => visibleStatuses.has(status))?.[1] ?? 'NOT_QUEUED';
+  }
   return {...result, provider_verified:true, status:completed ? 'FIRST_READ_RETAINED' : 'FIRST_READ_PENDING',
-          first_read_completed_at:completed?.completed_at ?? null, first_read_operation:completed?.operation ?? null};
+          first_read_completed_at:completed?.completed_at ?? null, first_read_operation:completed?.operation ?? null,
+          first_read_job_status:phase};
  });
  return {scope:'Owner OAuth configuration and retained evidence for the current grant.',
          providers, publication_enabled:false, external_writes_enabled:false};

@@ -102,14 +102,17 @@ test('owner onboarding endpoint reports retained read evidence without provider 
   expires_at:Date.now()+3600000,scopes:[]});
  const pending=await (await fetch(url,{headers})).json();
  assert.equal(pending.providers[0].status,'FIRST_READ_PENDING');
+ assert.equal(pending.providers[0].first_read_job_status,'NOT_QUEUED');
  assert.equal(pending.worker_status,'DISABLED');
  await local.enqueue({id:'private-job-id',platform:'youtube',operation:'read_profile'});
+ assert.equal((await (await fetch(url,{headers})).json()).providers[0].first_read_job_status,'QUEUED');
  await local.tick();
  const saved=await fs.readFile(store.file);
  response=await fetch(url,{headers});
  assert.equal(response.status,200);
  const output=await response.text(), progress=JSON.parse(output);
  assert.deepEqual(progress.providers.map(p=>p.status),['FIRST_READ_RETAINED','PROVIDER_CONFIGURATION_REQUIRED']);
+ assert.deepEqual(progress.providers.map(p=>p.first_read_job_status),['COMPLETED',null]);
  assert.equal(progress.providers[0].first_read_operation,'read_profile');
  assert.equal(progress.worker_status,'DISABLED');
  assert.equal(progress.publication_enabled,false);

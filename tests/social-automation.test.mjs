@@ -88,6 +88,7 @@ test('first retained read belongs to the current verified grant and survives enc
  assert.equal((await instagram()).status,'FIRST_READ_RETAINED');
  x.advance(10);
  await x.runtime.enqueue({id:'later',platform:'instagram',operation:'read_media'});
+ assert.equal((await instagram()).first_read_job_status,'COMPLETED');
  await x.runtime.tick();
  assert.equal((await instagram()).first_read_completed_at,100000);
  await x.store.update(d=>{ d.connections.instagram.status='reauthorization_required'; });
@@ -97,4 +98,44 @@ test('first retained read belongs to the current verified grant and survives enc
  assert.equal((await instagram()).status,'FIRST_READ_PENDING');
  x.advance(200000000);
  assert.equal((await instagram()).status,'REAUTHORIZATION_REQUIRED');
+});
+
+test('owner first-read phase shows actual retries and a blocked read without exposing old grant details',async t=>{
+ let reads=0;
+ const x=await setup(t,{read_media:async()=>{
+  if(++reads<=3)throw Error('PRIVATE_PROVIDER_FAILURE');
+  return {caption:'PRIVATE_RESULT'};
+ }});
+ const progress=async()=>ownerReadProgress(await x.store.read(),['instagram'],x.runtime.now());
+ const instagram=async()=>(await progress()).providers[1];
+ const phase=async()=> (await instagram()).first_read_job_status;
+ const worker=new SocialReadWorker({runtime:x.runtime,now:x.runtime.now});
+ assert.equal(await phase(),null);
+ await x.runtime.connect('instagram',x.grant);
+ const original=(await x.store.read()).connections.instagram;
+ assert.equal(await phase(),'NOT_QUEUED');
+ await x.runtime.enqueue({id:'private-first-job',platform:'instagram',operation:'read_media'});
+ assert.equal(await phase(),'QUEUED');
+ for(const [delay, expected] of [[120001,'RETRY_PENDING'],[240001,'RETRY_PENDING'],[0,'BLOCKED']]){
+  assert.equal((await worker.cycle()).status,expected==='BLOCKED'?'CYCLE_BLOCKED':'CYCLE_RETRY_PENDING');
+  assert.equal(await phase(),expected);
+  assert.equal((await instagram()).status,'FIRST_READ_PENDING');
+  x.advance(delay);
+ }
+ const before=await fs.readFile(x.file);
+ const view=JSON.stringify(await progress());
+ for(const privateValue of [original.generation,x.grant.account_id,x.grant.access_token,'private-first-job','PRIVATE_PROVIDER_FAILURE','PROVIDER_FAILED']){
+  assert.ok(!view.includes(privateValue));
+ }
+ assert.deepEqual(await fs.readFile(x.file),before);
+ await x.runtime.enqueue({id:'second-read',platform:'instagram',operation:'read_profile'});
+ assert.equal(await phase(),'QUEUED');
+ await x.runtime.connect('instagram',x.grant);
+ assert.equal(await phase(),'NOT_QUEUED');
+ assert.equal((await worker.cycle()).status,'CYCLE_COMPLETED');
+ assert.equal((await instagram()).status,'FIRST_READ_RETAINED');
+ assert.equal(await phase(),'COMPLETED');
+ assert.equal(reads,4);
+ await x.store.update(d=>{ delete d.connections.instagram.generation; });
+ assert.equal(await phase(),null);
 });
