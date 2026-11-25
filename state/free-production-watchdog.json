@@ -1,13 +1,13 @@
 {
   "actual_video_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-  "candidate_converged": false,
+  "candidate_converged": true,
   "candidate_hashes": {
     "captions": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "ledger": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "ledger_health": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "live_actual_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
-    "live_deployment": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
+    "live_deployment": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "live_expected_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "provenance": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
     "receipt": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
@@ -19,7 +19,7 @@
     "acceptance_ledger_green": true,
     "audio_assets_present": true,
     "audio_green": true,
-    "candidate_converged": false,
+    "candidate_converged": true,
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
@@ -36,7 +36,7 @@
     "narration_transcription_green": true,
     "no_paid_vision": true,
     "provenance_candidate_match": true,
-    "provenance_inputs_current": true,
+    "provenance_inputs_current": false,
     "publication_health_off": true,
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
@@ -46,7 +46,7 @@
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
     "review_server_smoke_green": true,
-    "runtime_integrity_manifest": false,
+    "runtime_integrity_manifest": true,
     "runtime_locks_present": true,
     "sbom_valid": true,
     "sync_retention_green": true,
@@ -67,20 +67,13 @@
     }
   },
   "failed_checks": [
-    "runtime_integrity_manifest",
     "dependency_security_clean",
     "python_dependency_security_clean",
     "live_deployment_green",
-    "candidate_identity_consistent",
-    "candidate_converged"
+    "provenance_inputs_current",
+    "candidate_identity_consistent"
   ],
-  "integrity_failures": [
-    {
-      "actual": "f5c92add939c2b48f316ccf5109720569f79c7b93a67b04c7d9231cfd0b4bf1c",
-      "expected": "ce623dcc769d0bc7cce8baefa2832eb9e5d2816e843d7b59369554eeb85abeb4",
-      "path": "public-review/episode1-v10-free.vtt"
-    }
-  ],
+  "integrity_failures": [],
   "production_ready": false,
   "publication_enabled": false,
   "repair_action": "reconcile_or_refresh_live_deployment",
