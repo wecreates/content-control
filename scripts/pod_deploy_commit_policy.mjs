@@ -18,6 +18,9 @@ export const REPORT_ONLY_PATHS=Object.freeze([
  // Live-probe receipt only. A later application release carries this metadata;
  // rebuilding identical runtime bytes cannot make a failed probe pass.
  'state/live-deployment-health.json',
+ // Scheduled sync verification only refreshes retained evidence. Rebuilding
+ // unchanged application bytes cannot change this observation.
+ 'state/sync-retention-health.json',
  'POD_COMPLETION_CHECKLIST.md',
  'POD_IMPLEMENTATION_STATUS.md',
  'POD_FREE_DEPLOYMENT.md',
