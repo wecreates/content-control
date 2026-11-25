@@ -28,6 +28,28 @@ test('watchdog observations alone skip Render but every mixed runtime change dep
   assert.equal(renderCommitMessage('Update watchdog',[report,other]),'Update watchdog');
  }
 });
+test('sync retention evidence skips an unchanged runtime rebuild',async()=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'pod-sync-retention-commit-'));
+ const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'});
+ try{
+  git('init','--quiet');git('config','user.name','Synthetic Test');git('config','user.email','fixture@example.invalid');
+  await fs.mkdir(path.join(root,'state'));await fs.mkdir(path.join(root,'scripts'));
+  await fs.copyFile(new URL('../scripts/pod_deploy_commit_policy.mjs',import.meta.url),path.join(root,'scripts/pod_deploy_commit_policy.mjs'));
+  await fs.writeFile(path.join(root,'state/sync-retention-health.json'),'{}\n');
+  git('add','.');git('commit','--quiet','-m','Fixture baseline');
+  const workflow=await fs.readFile(new URL('../.github/workflows/sync-retention-gate.yml',import.meta.url),'utf8');
+  const line=workflow.split('\n').find(line=>line.includes('git diff --cached --quiet || git commit -m'));
+  assert.ok(line?.includes('pod_deploy_commit_policy.mjs'));
+  await fs.writeFile(path.join(root,'state/sync-retention-health.json'),'{"status":"PASS"}\n');
+  git('add','state/sync-retention-health.json');
+  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
+  assert.equal(git('log','-1','--format=%s').trim(),'Update V10 sync retention health [skip render]');
+  await fs.writeFile(path.join(root,'server-lowmem.js'),'runtime bytes\n');
+  git('add','server-lowmem.js');
+  execFileSync('bash',['-eu','-c',line.trim()],{cwd:root,encoding:'utf8'});
+  assert.equal(git('log','-1','--format=%s').trim(),'Update V10 sync retention health');
+ }finally{await fs.rm(root,{recursive:true,force:true});}
+});
 test('runtime security audit workflow is read-only and publishes source-bound artifacts only',async()=>{
  const workflow=await fs.readFile(new URL('../.github/workflows/runtime-security-audit.yml',import.meta.url),'utf8');
  // The audit collects evidence; trusted promotion is a separate operation.
