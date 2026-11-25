@@ -117,7 +117,7 @@ def bind_review_preparation(directory, candidate, captions, tool_sha):
     expected = {'candidate.mp4': candidate, 'captions.vtt': captions}
     if not isinstance(files, dict) or any(files.get(name) != value for name, value in expected.items()):
         raise ValueError('Review preparation is missing bound media')
-    for name in ('candidate.mp4', 'captions.vtt', 'playback-mix.wav', 'review-packets.json'):
+    for name in ('candidate.mp4', 'captions.vtt', 'playback-mix.wav', 'review-packets.json', 'index.html'):
         path = directory / name
         if path.is_symlink() or not path.is_file() or path.stat().st_size > 512 * 1024 * 1024 or digest(path) != files.get(name):
             raise ValueError('Review preparation artifact identity changed: ' + name)
@@ -209,7 +209,8 @@ def produce(output, *, python=sys.executable, picture_python=None, timeout=900, 
             tool = root / 'scripts/offline_av_review.py'
             tool_hash = digest(tool)
             run(stage, [sys.executable, tool, '--video', output / 'video.mp4', '--captions',
-                        output / 'captions.vtt', '--out', offline_review])
+                        output / 'captions.vtt', '--sha256', candidate, '--caption-sha256',
+                        captions_sha, '--out', offline_review])
             try:
                 preparation = bind_review_preparation(offline_review, candidate, captions_sha, tool_hash)
                 if (digest(tool) != tool_hash or digest(output / 'video.mp4') != candidate

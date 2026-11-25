@@ -151,12 +151,15 @@ class ReviewProductionTests(unittest.TestCase):
                             if item.is_file():
                                 (output / item.name).write_bytes(item.read_bytes())
                     if log.name == 'offline-av-review.log':
-                        self.assertEqual(command[-6:], ['--video', str(output / 'video.mp4'), '--captions',
-                                                       str(output / 'captions.vtt'), '--out', str(prepared)])
+                        self.assertEqual(command[-10:], ['--video', str(output / 'video.mp4'), '--captions',
+                                                         str(output / 'captions.vtt'), '--sha256',
+                                                         pipeline.digest(output / 'video.mp4'), '--caption-sha256',
+                                                         pipeline.digest(output / 'captions.vtt'), '--out', str(prepared)])
                         prepared.mkdir()
                         for name, value in {'candidate.mp4': (output / 'video.mp4').read_bytes(),
                                             'captions.vtt': (output / 'captions.vtt').read_bytes(),
-                                            'playback-mix.wav': b'test mixer', 'review-packets.json': b'{}'}.items():
+                                            'playback-mix.wav': b'test mixer', 'review-packets.json': b'{}',
+                                            'index.html': b'<video src="candidate.mp4"></video>'}.items():
                             (prepared / name).write_bytes(value)
                         files = {item.name: pipeline.digest(item) for item in prepared.iterdir()}
                         (prepared / 'evidence.json').write_text(json.dumps({
@@ -176,6 +179,10 @@ class ReviewProductionTests(unittest.TestCase):
                 if valid:
                     self.assertEqual(result['review_preparation']['evidence_sha256'], pipeline.digest(prepared / 'evidence.json'))
                     self.assertFalse(result['review_preparation']['competitor_comparison_verified'])
+                    (prepared / 'index.html').write_text('Unbound replacement')
+                    with self.assertRaisesRegex(ValueError, 'artifact identity changed: index.html'):
+                        pipeline.bind_review_preparation(prepared, result['candidate_sha256'],
+                                                         result['caption_sha256'], '0' * 64)
                 else:
                     self.assertEqual(result['failed_step'], 'offline-av-review')
                     self.assertEqual(result['steps'][-1]['status'], 'FAIL')

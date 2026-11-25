@@ -42,9 +42,9 @@ Google's official video documentation distinguishes uploaded files in PROCESSING
 
 ## Implemented free alternative
 
-`scripts/offline_av_review.py` prepares an offline player from the exact original MP4, full mixed PCM audio, measured audio diagnostics, probe metadata and timestamped decoded frames. It requires an expected SHA256, checks it before and after preparation, rejects existing output directories and never writes approval. Only Python standard library and FFmpeg/FFprobe are needed. No account, service credits, inference or outbound upload is required.
+`scripts/offline_av_review.py` prepares an offline player from the original MP4, full mixed PCM audio, measured audio diagnostics and sampled decoded frames. Pass an independently retained SHA-256 with `--sha256` to require an exact match before preparation. When captions are supplied through `--captions`, `--caption-sha256` can pin those bytes too. The builder rechecks the inputs, rejects existing output directories and includes the HTML player in the hash inventory. Only Python standard library and FFmpeg/FFprobe are needed. No account, service credits, inference or outbound upload is required.
 
-The existing Exact AV Reviewer workflow now invokes this preparation after its existing provenance/hash checks. Its existing review validation and publication locks remain intact. The pack is a reliable accessible inspection alternative; it is NOT an autonomous semantic/listening judge. Open index.html alongside its assets in a local browser; frame buttons seek the original. No playback event automatically certifies review.
+The Exact AV Reviewer workflow passes the hash from its prior provenance and inspection step. Open `index.html` alongside its assets in a local browser to seek the original or listen to the playback-aligned WAV. The project records actual viewing and listening separately from package preparation.
 
 Example:
 
