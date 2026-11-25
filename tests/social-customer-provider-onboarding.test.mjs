@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import {EncryptedSocialStore} from '../social-automation.js';
+import {EncryptedSocialStore, SocialAutomation} from '../social-automation.js';
 import {CustomerAccountRegistry} from '../integrations/social-automation/customer-registry.mjs';
 import {CustomerProviderOnboarding} from '../integrations/social-automation/customer-provider-onboarding.mjs';
 
@@ -98,4 +98,33 @@ test('bounded worker repairs a retained verified connection missing its first jo
   state = await x.account.read();
   assert.equal(state.jobs.length, 1);
   assert.equal(state.jobs[0].status, 'completed');
+});
+
+test('reconnect status waits for a successful read on the new grant', async t => {
+  const x = await fixture(t);
+  const begin = await x.onboarding.begin('youtube', x.request);
+  await x.onboarding.complete('youtube', {state:new URL(begin.authorization_url).searchParams.get('state'), code:'code'}, x.request);
+  await x.onboarding.runOnce(x.request);
+  x.advance(120000);
+  await x.onboarding.runOnce(x.request);
+  const {connections, jobs} = await x.account.read();
+  assert.equal(jobs[0].status, 'completed');
+
+  // Persist the verified reconnect, as if the callback stopped before enqueueing.
+  const runtime = new SocialAutomation({store:x.account, adapters:x.onboarding.adapters, now:x.onboarding.now});
+  await runtime.connect('youtube', connections.youtube);
+  assert.deepEqual((await x.onboarding.status(x.request)).providers, [{
+    platform:'youtube', status:'VERIFIED', first_read_job_status:'NOT_QUEUED', attempts:0,
+  }]);
+
+  await x.onboarding.runDue();
+  assert.deepEqual((await x.onboarding.status(x.request)).providers, [{
+    platform:'youtube', status:'VERIFIED', first_read_job_status:'COMPLETED', attempts:1,
+  }]);
+  assert.equal((await x.account.read()).jobs.length, 2);
+
+  x.advance(3600000);
+  assert.deepEqual((await x.onboarding.status(x.request)).providers, [{
+    platform:'youtube', status:'REAUTHORIZATION_REQUIRED', first_read_job_status:'NOT_QUEUED', attempts:0,
+  }]);
 });
