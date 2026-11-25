@@ -12,10 +12,13 @@ on:
       - 'scripts/initialize_capability_progress.py'
       - 'scripts/complete_task_one_by_one.py'
       - 'scripts/upgrade_and_test_capability.py'
+      - 'scripts/apply_capability_evidence.py'
+      - 'scripts/integrate_capability_without_test.py'
       - 'tests/test_full_capability_validation.py'
       - 'tests/test_autonomous_completion_scheduler.py'
       - 'tests/test_task_registry_loading.py'
       - 'tests/test_ordered_capability_diagnostics.py'
+      - 'tests/test_capability_evidence_application.py'
 
 permissions:
   contents: read
@@ -36,3 +39,4 @@ jobs:
           python3 -m unittest discover -s tests -p test_autonomous_completion_scheduler.py -v
           python3 -m unittest discover -s tests -p test_task_registry_loading.py -v
           python3 -m unittest discover -s tests -p test_ordered_capability_diagnostics.py -v
+          python3 -m unittest discover -s tests -p test_capability_evidence_application.py -v
