@@ -1,5 +1,6 @@
 import express from 'express';
 import {OWNER_COOKIE, LOGIN_COOKIE, readCookie} from './owner-auth.mjs';
+import {CUSTOMER_COOKIE, CUSTOMER_LOGIN_COOKIE} from './customer-auth.mjs';
 const cookie = {httpOnly: true, secure: true, sameSite: 'lax', path: '/'};
 export function createOAuthRouter(service) {
   const router = express.Router();
@@ -47,6 +48,56 @@ export function createOAuthRouter(service) {
     res.redirect(303, '/social/connect');
   }));
   return router;
+}
+
+export function createCustomerRouter(service) {
+  const router = express.Router();
+  router.use((_req, res, next) => {res.set({'Cache-Control':'no-store', 'Referrer-Policy':'no-referrer', 'X-Content-Type-Options':'nosniff'}); next();});
+  const guarded = action => async(req, res) => {
+    try {
+      if (!service.customerAuth) return res.status(503).json({error:'CUSTOMER_AUTH_NOT_CONFIGURED', publication_enabled:false});
+      await action(req, res, service.customerAuth);
+    } catch {
+      res.status(403).json({error:'AUTHORIZATION_FAILED', publication_enabled:false});
+    }
+  };
+  const sameOrigin = (req, auth) => req.get('origin') === auth.origin;
+  router.post('/customer/auth/start', guarded(async(req, res, auth) => {
+    if (!sameOrigin(req, auth)) return res.status(403).json({error:'ORIGIN_REQUIRED', publication_enabled:false});
+    const result = await auth.begin();
+    res.cookie(CUSTOMER_LOGIN_COOKIE, result.binding, {...cookie, maxAge:600000});
+    res.redirect(303, result.url);
+  }));
+  router.get('/customer/auth/callback', guarded(async(req, res, auth) => {
+    const binding = readCookie(req, CUSTOMER_LOGIN_COOKIE);
+    res.clearCookie(CUSTOMER_LOGIN_COOKIE, cookie);
+    const result = await auth.complete(req.query, binding);
+    res.cookie(CUSTOMER_COOKIE, result.session, {...cookie, maxAge:28800000});
+    res.redirect(303, '/social/customer');
+  }));
+  router.get('/customer/auth/session', guarded(async(req, res, auth) => {
+    res.json({authenticated:Boolean(await auth.authorize(req)), publication_enabled:false});
+  }));
+  router.post('/customer/auth/logout', guarded(async(req, res, auth) => {
+    if (!sameOrigin(req, auth)) return res.status(403).json({error:'ORIGIN_REQUIRED', publication_enabled:false});
+    await auth.logout(req);
+    res.clearCookie(CUSTOMER_COOKIE, cookie);
+    res.redirect(303, '/social/customer');
+  }));
+  return router;
+}
+
+export function customerConnectionPage(service) {
+  return async(req, res) => {
+    res.set({'Cache-Control':'no-store', 'Referrer-Policy':'no-referrer',
+      'Content-Security-Policy':"default-src 'none'; form-action 'self' https://github.com; frame-ancestors 'none'; base-uri 'none'"});
+    let authenticated = false;
+    try {authenticated = Boolean(service.customerAuth && await service.customerAuth.authorize(req));} catch {}
+    const configured = Boolean(service.customerAuth);
+    res.type('html').send('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CYZOR customer onboarding</title><h1>CYZOR customer onboarding</h1><p>Publishing is disabled. This sign-in creates an isolated customer workspace; provider connections and first-job onboarding are not available yet.</p>' +
+      (!configured ? '<p>Customer sign-in is not configured.</p>' : !authenticated ? '<form method="post" action="/api/social/customer/auth/start"><button>Sign up or sign in with GitHub</button></form>' : '<p>Customer session verified.</p><form method="post" action="/api/social/customer/auth/logout"><button>Sign out</button></form>') +
+      '<p><a href="/social/connect">Owner connections</a></p></html>');
+  };
 }
 const providerNames = new Map([['youtube', 'YouTube'], ['instagram', 'Instagram']]);
 const connectionMessages = new Map([

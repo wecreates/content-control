@@ -97,15 +97,22 @@ to establish attributable first-read evidence. Expired or revoked grants
 require reauthorization. This owner-only view reports retained evidence.
 Customer signup and live onboarding remain separate.
 
-`CustomerAccountRegistry` is the local storage foundation for that future
-self-serve path. It accepts only a freshly verified GitHub numeric identity from
-an authentication boundary, derives a peppered identity index, creates an
-opaque customer ID and exposes an encrypted, customer-scoped connection/job
-namespace. Repeated signup is idempotent and separate verified identities cannot
-read or update each other's namespace. Existing owner records and routes are not
-changed. No public customer signup route, customer session, provider OAuth
-binding or live first job is activated by this module, so C11 self-serve
-acceptance remains open until those stages are implemented and exercised.
+`CustomerAccountRegistry` and the optional `/social/customer` boundary provide
+the first self-serve signup/session layer. GitHub supplies a verified numeric
+identity through a dedicated read:user OAuth app; the boundary derives a
+peppered identity index, creates an opaque customer ID and exposes an encrypted,
+customer-scoped connection/job namespace. Repeated signup is idempotent and
+separate verified identities cannot read or update each other's namespace.
+Browser state and opaque sessions are single-purpose, hashed in the encrypted
+vault, bounded and time limited. Raw GitHub IDs, access tokens and browser
+sessions are not retained. A customer may hold at most ten live sessions, so one
+identity cannot consume another identity's session capacity. If a verified
+identity is registered but session creation is interrupted, the next verified
+login reuses the same isolated account instead of creating a duplicate. Existing
+owner records, cookies and routes are not changed. Customer provider OAuth,
+verification, retry and a live first job are
+not activated, so C11 self-serve acceptance remains open until those stages are
+implemented and exercised.
 
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
@@ -195,6 +202,14 @@ Configuration via private hosted secret management:
 - Existing vault requirements above still apply, including an already-created
   encrypted file outside the repository. An empty valid vault may now bootstrap
   onboarding. No ephemeral or public storage fallback is created.
+
+Optional customer signup is separately enabled and does not authorize owner
+routes or provider access:
+- SOCIAL_CUSTOMER_AUTH_ENABLED=true
+- CUSTOMER_GITHUB_CLIENT_ID and CUSTOMER_GITHUB_CLIENT_SECRET: dedicated OAuth app
+- CUSTOMER_IDENTITY_PEPPER: at least 32 bytes of private random material
+- Customer callback: <SOCIAL_PUBLIC_ORIGIN>/api/social/customer/auth/callback
+- Customer page: <SOCIAL_PUBLIC_ORIGIN>/social/customer
 
 SOCIAL_WORKER_ENABLED remains a separate opt-in. Live login, provider consent,
 durability/recovery and full video analysis are NOT proven by unit tests.

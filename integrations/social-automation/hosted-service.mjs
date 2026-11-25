@@ -8,6 +8,8 @@ import {SocialOAuthCoordinator} from './oauth-coordinator.mjs';
 import {createYouTubeOAuth} from './google-oauth.mjs';
 import {createInstagramOAuth} from './meta-oauth.mjs';
 import {OwnerAuthentication} from './owner-auth.mjs';
+import {CustomerAuthentication} from './customer-auth.mjs';
+import {CustomerAccountRegistry} from './customer-registry.mjs';
 import {createPostgresStore,initializePostgresVault} from './postgres-store.mjs';
 
 // No paid provisioning, fallback storage or public import. Database initialization requires explicit operator opt-in.
@@ -23,6 +25,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   // Configuration names are safe to report; values and account identifiers never leave the vault.
   const configurationGroups = {
     owner: ['SOCIAL_PUBLIC_ORIGIN','OWNER_GITHUB_CLIENT_ID','OWNER_GITHUB_CLIENT_SECRET','OWNER_GITHUB_ID'],
+    customer: ['SOCIAL_PUBLIC_ORIGIN','CUSTOMER_GITHUB_CLIENT_ID','CUSTOMER_GITHUB_CLIENT_SECRET','CUSTOMER_IDENTITY_PEPPER'],
     youtube: ['YOUTUBE_OAUTH_CLIENT_ID','YOUTUBE_OAUTH_CLIENT_SECRET','YOUTUBE_OAUTH_REDIRECT_URI','YOUTUBE_CHANNEL_ID'],
     instagram: ['META_APP_ID','META_APP_SECRET','INSTAGRAM_OAUTH_REDIRECT_URI','INSTAGRAM_ACCOUNT_ID'],
   };
@@ -31,6 +34,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     return [name, {status: missing.length ? 'INCOMPLETE' : 'PRESENT_UNVERIFIED', missing_configuration: missing, live_verified: false}];
   }));
   const workerEnabled = env.SOCIAL_WORKER_ENABLED === 'true';
+  const customerAuthEnabled = env.SOCIAL_CUSTOMER_AUTH_ENABLED === 'true';
   const onboardingWorkerStatus = () => {
     if (!workerEnabled) return 'DISABLED';
     if (!worker?.active) return 'UNAVAILABLE';
@@ -77,7 +81,7 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
   const storageRequested = bootstrapRequested || checkRequested;
   const runtimeBootId = crypto.randomUUID();
   status.storage_bootstrap = {status:'NOT_REQUESTED',read_verified:false,durable_storage_verified:false};
-  if (!storageRequested && !workerEnabled && env.SOCIAL_OAUTH_ENABLED !== 'true') return service;
+  if (!storageRequested && !workerEnabled && env.SOCIAL_OAUTH_ENABLED !== 'true' && !customerAuthEnabled) return service;
   try {
     if (env.PUBLICATION_ENABLED && env.PUBLICATION_ENABLED !== 'false') throw Error('PUBLICATION_POLICY_BLOCKED');
     activationStage = 'storage_configuration';
@@ -128,12 +132,18 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
       }
     }
     activationStage = 'owner_configuration';
-    let ownerAuth;
+    let ownerAuth,customerAuth;
     if (env.SOCIAL_OAUTH_ENABLED === 'true') {
       ownerAuth = new OwnerAuthentication({store, origin: env.SOCIAL_PUBLIC_ORIGIN, clientId: env.OWNER_GITHUB_CLIENT_ID, clientSecret: env.OWNER_GITHUB_CLIENT_SECRET, ownerId: env.OWNER_GITHUB_ID, fetchImpl, shutdownSignal: shutdown.signal});
       authorizeOwner = req => ownerAuth.authorize(req);
     }
-    if (!Object.keys(saved.connections).length && typeof authorizeOwner!=='function') throw Error();
+    if (customerAuthEnabled) {
+      const registry = new CustomerAccountRegistry({store, identityPepper:env.CUSTOMER_IDENTITY_PEPPER, now});
+      customerAuth = new CustomerAuthentication({store, registry, origin:env.SOCIAL_PUBLIC_ORIGIN,
+        clientId:env.CUSTOMER_GITHUB_CLIENT_ID, clientSecret:env.CUSTOMER_GITHUB_CLIENT_SECRET,
+        fetchImpl, now, shutdownSignal:shutdown.signal});
+    }
+    if (!Object.keys(saved.connections).length && typeof authorizeOwner!=='function' && !customerAuth) throw Error();
     const runtime = new SocialAutomation({store, adapters: createProviderAdapters({fetchImpl, shutdownSignal: shutdown.signal, appSecret: env.META_APP_SECRET})});
     activationStage = 'provider_configuration';
     const oauthProviders={};
@@ -148,19 +158,24 @@ export async function initializeSocialService({env = process.env, fetchImpl = fe
     }
     if(typeof authorizeOwner==='function')oauth=new SocialOAuthCoordinator({store,runtime,providers:oauthProviders,authorizeOwner,shutdownSignal:shutdown.signal});
     service.ownerAuth = ownerAuth;
-    Object.assign(status, {oauth_routes_enabled: Boolean(ownerAuth), owner_login_enabled: Boolean(ownerAuth), oauth_providers: Object.keys(oauthProviders), configured_storage_mode: env.SOCIAL_STORAGE_MODE, storage_expires_at: env.SOCIAL_STORAGE_EXPIRES_AT || null, status: 'OAUTH_READY', reason: 'Owner authorization routes configured; live grants and durable storage are not independently verified.'});
+    service.customerAuth = customerAuth;
+    Object.assign(status, {oauth_routes_enabled: Boolean(ownerAuth), owner_login_enabled: Boolean(ownerAuth),
+      customer_signup_enabled:Boolean(customerAuth), oauth_providers: Object.keys(oauthProviders),
+      configured_storage_mode: env.SOCIAL_STORAGE_MODE, storage_expires_at: env.SOCIAL_STORAGE_EXPIRES_AT || null,
+      status: 'OAUTH_READY', reason: 'Configured authorization routes are ready; live grants and durable storage are not independently verified.'});
     if (!workerEnabled) return service;
     worker = new SocialReadWorker({runtime});
     Object.assign(status, {status: 'READ_WORKER_STARTED', configured_storage_mode: env.SOCIAL_STORAGE_MODE, provider_adapters_registered: Object.keys(runtime.adapters).filter(p=>!runtime.adapters[p].blocked_reason), reason: 'Read-only worker started; account results are reported per cycle. OAuth availability is reported separately; durable storage has not been independently verified.'});
     worker.start();
   } catch (error) {
-    const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'PRIVATE_STORE_INITIALIZATION_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
+    const safeCodes = new Set(['PUBLICATION_POLICY_BLOCKED', 'PRIVATE_STORE_CONFIGURATION_REQUIRED', 'STORAGE_EXPIRY_REQUIRED', 'STORAGE_EXPIRING', 'PRIVATE_STORE_UNAVAILABLE', 'PRIVATE_STORE_NOT_INITIALIZED', 'PRIVATE_STORE_INTEGRITY_FAILED', 'PRIVATE_STORE_INITIALIZATION_FAILED', 'OWNER_CONFIGURATION_REQUIRED', 'CUSTOMER_AUTH_CONFIGURATION_REQUIRED', 'OAUTH_CONFIGURATION_REQUIRED']);
     const reasonCode = safeCodes.has(error?.message) ? error.message : 'ACTIVATION_CONFIGURATION_INVALID';
     if(storageRequested && !status.storage_bootstrap.read_verified)status.storage_bootstrap = {status:'BLOCKED',read_verified:false,durable_storage_verified:false,reason_code:reasonCode};
     oauth = undefined;
     delete service.ownerAuth;
+    delete service.customerAuth;
     if(store?.close)await store.close().catch(()=>{});
-    Object.assign(status, {status: 'ACTIVATION_BLOCKED', activation_stage: activationStage, reason_code: reasonCode, oauth_routes_enabled: false, owner_login_enabled: false, worker_running: false, reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires TLS and an unexpired storage deadline; no fallback was created.'});
+    Object.assign(status, {status: 'ACTIVATION_BLOCKED', activation_stage: activationStage, reason_code: reasonCode, oauth_routes_enabled: false, owner_login_enabled: false, customer_signup_enabled:false, worker_running: false, reason: 'An initialized encrypted vault and complete authorization configuration are required. Database storage also requires TLS and an unexpired storage deadline; no fallback was created.'});
   }
   return service;
 }

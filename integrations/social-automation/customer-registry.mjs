@@ -126,4 +126,18 @@ export class CustomerAccountRegistry {
     validateCustomerRecord(state.customer_accounts?.[customerId], {id:customerId, identity_hash:hash});
     return new CustomerScopedStore({store:this.store, customerId, expectedIdentityHash:hash});
   }
+
+  // CustomerAuthentication calls this only after validating an opaque, hashed
+  // browser session. The reverse-index check prevents a corrupt or remapped
+  // session record from crossing customer scopes.
+  async openRegisteredCustomer(customerId) {
+    if (!CUSTOMER_ID.test(customerId || '')) throw Error('CUSTOMER_SESSION_INVALID');
+    const state = await this.store.read();
+    const record = state.customer_accounts?.[customerId];
+    validateCustomerRecord(record, {id:customerId});
+    if (state.customer_identity_index?.[record.identity_hash] !== customerId) {
+      throw Error('CUSTOMER_STORE_INTEGRITY_FAILED');
+    }
+    return new CustomerScopedStore({store:this.store, customerId, expectedIdentityHash:record.identity_hash});
+  }
 }
