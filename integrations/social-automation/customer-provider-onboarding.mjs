@@ -1,9 +1,16 @@
 import crypto from 'node:crypto';
-import {SocialAutomation} from '../../social-automation.js';
+import {jobMatchesCurrentGrant, SocialAutomation} from '../../social-automation.js';
 import {SocialOAuthCoordinator} from './oauth-coordinator.mjs';
 
 const safePlatform = value => typeof value === 'string' && /^[a-z][a-z0-9_-]{0,31}$/.test(value);
 const jobState = value => ({queued:'QUEUED', retry:'RETRY_PENDING', blocked:'BLOCKED', completed:'COMPLETED'})[value] || 'NOT_QUEUED';
+
+function firstReadId(customerId, platform, generation) {
+  const identity = crypto.createHash('sha256')
+    .update(customerId).update('\0').update(platform).update('\0').update(generation)
+    .digest('hex');
+  return `first-read-${identity.slice(0, 40)}`;
+}
 
 // Hosts inject only explicitly configured read-only providers and adapters. The
 // authenticated customer account is the sole namespace used for OAuth, grants
@@ -78,11 +85,8 @@ export class CustomerProviderOnboarding {
         typeof connection.account_id !== 'string' || !connection.account_id) {
       throw Error('CUSTOMER_CONNECTION_NOT_RETAINED');
     }
-    const identity = crypto.createHash('sha256')
-      .update(customerId).update('\0').update(platform).update('\0').update(connection.generation)
-      .digest('hex');
     return runtime.enqueue({
-      id:`first-read-${identity.slice(0, 40)}`,
+      id:firstReadId(customerId, platform, connection.generation),
       platform,
       operation:'read_profile',
       payload:{},
@@ -129,18 +133,32 @@ export class CustomerProviderOnboarding {
   }
 
   async status(context) {
-    const {runtime} = await this.scoped(context);
-    const observed = await runtime.status();
+    const {authorized, runtime} = await this.scoped(context);
+    const observed = await runtime.store.read();
+    const now = this.now();
     const providers = Object.keys(this.providers).sort().map(platform => {
-      const connection = observed.connections.find(item => item.platform === platform);
-      const jobs = observed.jobs.filter(item => item.platform === platform && item.operation === 'read_profile');
-      const latest = jobs.at(-1);
+      const grant = observed.connections[platform];
+      if (!grant) return {platform, status:'CONNECTION_REQUIRED', first_read_job_status:'NOT_QUEUED', attempts:0};
+      if (grant.status !== 'connected' || !Number.isFinite(grant.expires_at) || grant.expires_at <= now) {
+        return {platform, status:'REAUTHORIZATION_REQUIRED', first_read_job_status:'NOT_QUEUED', attempts:0};
+      }
+      let job;
+      if (typeof grant.generation === 'string' && grant.generation &&
+          Number.isSafeInteger(grant.verified_at) && grant.verified_at > 0 && grant.verified_at <= now) {
+        const id = firstReadId(authorized.customer_id, platform, grant.generation);
+        job = observed.jobs.find(item => item.id === id && item.platform === platform &&
+          item.operation === 'read_profile' && jobMatchesCurrentGrant(item, grant));
+        if (job?.status === 'completed' && (job.grant_generation !== grant.generation ||
+            !Number.isSafeInteger(job.completed_at) || job.completed_at < grant.verified_at || job.completed_at > now)) {
+          job = undefined;
+        }
+      }
       return {
         platform,
-        status:connection ? (connection.status === 'connected' ? 'VERIFIED' : 'REAUTHORIZATION_REQUIRED') : 'CONNECTION_REQUIRED',
-        first_read_job_status:jobState(latest?.status),
-        attempts:Number.isSafeInteger(latest?.attempts) ? latest.attempts : 0,
-        ...(latest?.reason ? {reason:latest.reason} : {}),
+        status:'VERIFIED',
+        first_read_job_status:jobState(job?.status),
+        attempts:Number.isSafeInteger(job?.attempts) ? job.attempts : 0,
+        ...(job?.reason ? {reason:job.reason} : {}),
       };
     });
     return {providers, publication_enabled:false, external_writes_enabled:false};
