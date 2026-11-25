@@ -84,6 +84,21 @@ export function createCustomerRouter(service) {
     res.clearCookie(CUSTOMER_COOKIE, cookie);
     res.redirect(303, '/social/customer');
   }));
+  router.post('/customer/oauth/:platform/start', guarded(async(req, res, auth) => {
+    if (!sameOrigin(req, auth)) return res.status(403).json({error:'ORIGIN_REQUIRED', publication_enabled:false});
+    if (!service.customerOnboarding) return res.status(503).json({error:'CUSTOMER_ONBOARDING_NOT_CONFIGURED', publication_enabled:false});
+    const result = await service.beginCustomerAuthorization(req.params.platform, req);
+    res.redirect(303, result.authorization_url);
+  }));
+  router.get('/customer/oauth/:platform/callback', guarded(async(req, res) => {
+    if (!service.customerOnboarding) return res.status(503).json({error:'CUSTOMER_ONBOARDING_NOT_CONFIGURED', publication_enabled:false});
+    await service.completeCustomerAuthorization(req.params.platform, req.query, req);
+    res.redirect(303, '/social/customer');
+  }));
+  router.get('/customer/onboarding', guarded(async(req, res) => {
+    if (!service.customerOnboarding) return res.status(503).json({error:'CUSTOMER_ONBOARDING_NOT_CONFIGURED', publication_enabled:false});
+    res.json(await service.customerOnboardingStatus(req));
+  }));
   return router;
 }
 
@@ -94,8 +109,11 @@ export function customerConnectionPage(service) {
     let authenticated = false;
     try {authenticated = Boolean(service.customerAuth && await service.customerAuth.authorize(req));} catch {}
     const configured = Boolean(service.customerAuth);
-    res.type('html').send('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CYZOR customer onboarding</title><h1>CYZOR customer onboarding</h1><p>Publishing is disabled. This sign-in creates an isolated customer workspace; provider connections and first-job onboarding are not available yet.</p>' +
-      (!configured ? '<p>Customer sign-in is not configured.</p>' : !authenticated ? '<form method="post" action="/api/social/customer/auth/start"><button>Sign up or sign in with GitHub</button></form>' : '<p>Customer session verified.</p><form method="post" action="/api/social/customer/auth/logout"><button>Sign out</button></form>') +
+    const providers = (typeof service.status === 'function' ? service.status().customer_oauth_providers : null) || [];
+    const providerForms = providers.filter(value => providerNames.has(value)).map(platform =>
+      `<form method="post" action="/api/social/customer/oauth/${platform}/start"><button>Authorize ${providerNames.get(platform)} read access</button></form>`).join('');
+    res.type('html').send('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CYZOR customer onboarding</title><h1>CYZOR customer onboarding</h1><p>Publishing is disabled. This sign-in creates an isolated customer workspace; provider access is read-only.</p>' +
+      (!configured ? '<p>Customer sign-in is not configured.</p>' : !authenticated ? '<form method="post" action="/api/social/customer/auth/start"><button>Sign up or sign in with GitHub</button></form>' : '<p>Customer session verified.</p>' + (providerForms || '<p>Customer provider onboarding is not configured.</p>') + (providerForms ? '<p><a href="/api/social/customer/onboarding">View first-read status</a></p>' : '') + '<form method="post" action="/api/social/customer/auth/logout"><button>Sign out</button></form>') +
       '<p><a href="/social/connect">Owner connections</a></p></html>');
   };
 }

@@ -110,9 +110,14 @@ identity cannot consume another identity's session capacity. If a verified
 identity is registered but session creation is interrupted, the next verified
 login reuses the same isolated account instead of creating a duplicate. Existing
 owner records, cookies and routes are not changed. Customer provider OAuth,
-verification, retry and a live first job are
-not activated, so C11 self-serve acceptance remains open until those stages are
-implemented and exercised.
+verification, retry and a live first job remain inactive by default. A
+`CustomerProviderOnboarding` boundary can bind an explicitly injected,
+read-only OAuth provider and adapter to the authenticated customer's encrypted
+namespace. It fixes the first operation to `read_profile`, verifies the grant,
+retains retry state and reports sanitized progress without account IDs, job IDs
+or results. No hosted customer provider configuration is supplied here and no
+provider was contacted, so C11 self-serve acceptance remains open until a real
+same-provider path is configured, deployed and exercised.
 
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api

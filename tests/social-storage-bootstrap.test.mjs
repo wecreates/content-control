@@ -9,6 +9,24 @@ test('bootstrap is opt-in and never falls back to another storage mode',async()=
  for(const settings of [{}, {...env,SOCIAL_STORAGE_INITIALIZE:'TRUE'}]){const f=fixture();await initializeSocialService({env:settings,...f});assert.deepEqual(f.calls,[]);}
  const f=fixture();const service=await initializeSocialService({env:{...env,SOCIAL_STORAGE_MODE:'private_durable'},...f});assert.equal(service.status().storage_bootstrap.status,'BLOCKED');assert.deepEqual(f.calls,[]);
 });
+test('customer-only bootstrap continues into the opt-in bounded onboarding worker',async()=>{
+ const f=fixture();
+ const settings={...env,SOCIAL_CUSTOMER_AUTH_ENABLED:'true',SOCIAL_CUSTOMER_WORKER_ENABLED:'true',
+  SOCIAL_PUBLIC_ORIGIN:'https://example.test',CUSTOMER_GITHUB_CLIENT_ID:'customer-client',
+  CUSTOMER_GITHUB_CLIENT_SECRET:'PRIVATE_CUSTOMER_CLIENT',CUSTOMER_IDENTITY_PEPPER:'p'.repeat(32)};
+ const customerProviders={youtube:{authorizationUrl:()=> 'https://accounts.example.test/',exchange:async()=>assert.fail('unexpected provider exchange')}};
+ const customerAdapters={youtube:{verify:async()=>assert.fail('unexpected provider verification'),read_profile:async()=>assert.fail('unexpected provider read')}};
+ const service=await initializeSocialService({env:settings,customerProviders,customerAdapters,...f});
+ await new Promise(resolve=>setImmediate(resolve));
+ const status=service.status();
+ assert.equal(status.customer_signup_enabled,true);
+ assert.equal(status.customer_worker_running,true);
+ assert.equal(status.customer_last_cycle.status,'CYCLE_COMPLETED');
+ assert.equal(status.customer_last_cycle.processed,0);
+ assert.ok(!f.calls.includes('close'));
+ await service.stop();
+ assert.equal(f.calls.filter(value=>value==='close').length,1);
+});
 test('initialization or read failure is sanitized, pool closes, no activation occurs',async()=>{
  for(const stage of ['initialize','read']){const f=fixture();if(stage==='initialize')f.initializeVault=async()=>{throw Error('SECRET_DATABASE_URI');};else f.store.read=async()=>{throw Error('PRIVATE_STORE_INTEGRITY_FAILED');};const service=await initializeSocialService({env,...f});const s=service.status();assert.equal(s.storage_bootstrap.status,'BLOCKED');assert.equal(s.oauth_routes_enabled,false);assert.equal(s.worker_running,false);assert.ok(!JSON.stringify(s).includes('SECRET_DATABASE_URI'));assert.equal(f.calls.at(-1),'close');}
 });

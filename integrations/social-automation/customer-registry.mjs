@@ -140,4 +140,19 @@ export class CustomerAccountRegistry {
     }
     return new CustomerScopedStore({store:this.store, customerId, expectedIdentityHash:record.identity_hash});
   }
+
+  // Internal worker enumeration. IDs never leave the service and every record
+  // plus reverse index is validated before the bounded worker opens a scope.
+  async listRegisteredCustomerIds() {
+    const state = await this.store.read();
+    customerCollections(state);
+    const ids = Object.keys(state.customer_accounts).sort();
+    if (ids.length > this.maxCustomers) throw Error('CUSTOMER_STORE_INTEGRITY_FAILED');
+    for (const id of ids) {
+      const record = state.customer_accounts[id];
+      validateCustomerRecord(record, {id});
+      if (state.customer_identity_index[record.identity_hash] !== id) throw Error('CUSTOMER_STORE_INTEGRITY_FAILED');
+    }
+    return ids;
+  }
 }
