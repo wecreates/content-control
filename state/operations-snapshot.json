@@ -11,7 +11,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -29,7 +29,7 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": false,
+    "python_dependency_security_clean": true,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
@@ -47,20 +47,37 @@
   "component_checks_passed": false,
   "dependency_audit_evidence": {
     "npm": {
-      "hosted_identity": null,
-      "status": "ERROR"
+      "hosted_identity": {
+        "artifact_id": 14974655032,
+        "github_artifact_digest": "sha256:05d2042d8fe8556f8b11778bcbaa85dbafc989b4562752e55f6b12132ee830ab",
+        "run_attempt": 1,
+        "run_id": 45507369713,
+        "source_sha": "1cb13700e67d8066968a22875e5c3041d04d29ee"
+      },
+      "status": "PASS"
     },
     "python": {
-      "hosted_identity": null,
-      "status": "ERROR"
+      "hosted_identity": {
+        "artifact_id": 14974425487,
+        "github_artifact_digest": "sha256:5ab1c4894aac5b72e0c07b7eac25d1f98f3de7b6133546a55b848731a87b0d70",
+        "run_attempt": 1,
+        "run_id": 45507362127,
+        "source_sha": "1cb13700e67d8066968a22875e5c3041d04d29ee"
+      },
+      "status": "PASS"
     }
   },
-  "dependency_vulnerabilities": {},
+  "dependency_vulnerabilities": {
+    "critical": 0,
+    "high": 0,
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "total": 0
+  },
   "deployment_contract_status": "PASS",
   "factual_compliance_status": "PASS",
   "failed_checks": [
-    "dependency_security_clean",
-    "python_dependency_security_clean",
     "live_deployment_green",
     "candidate_identity_consistent",
     "candidate_converged"
@@ -73,8 +90,8 @@
   "public_health_url": "https://content-control-render-worker.onrender.com/readyz",
   "public_watch_url": "https://content-control-render-worker.onrender.com/watch",
   "publication_enabled": false,
-  "python_dependency_vulnerabilities": null,
-  "python_security_status": "ERROR",
+  "python_dependency_vulnerabilities": 0,
+  "python_security_status": "PASS",
   "remaining_user_gate": "Live integration and current candidate acceptance remain required before any publication approval",
   "review_server_smoke_status": "PASS",
   "rollback_candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
