@@ -97,6 +97,16 @@ to establish attributable first-read evidence. Expired or revoked grants
 require reauthorization. This owner-only view reports retained evidence.
 Customer signup and live onboarding remain separate.
 
+`CustomerAccountRegistry` is the local storage foundation for that future
+self-serve path. It accepts only a freshly verified GitHub numeric identity from
+an authentication boundary, derives a peppered identity index, creates an
+opaque customer ID and exposes an encrypted, customer-scoped connection/job
+namespace. Repeated signup is idempotent and separate verified identities cannot
+read or update each other's namespace. Existing owner records and routes are not
+changed. No public customer signup route, customer session, provider OAuth
+binding or live first job is activated by this module, so C11 self-serve
+acceptance remains open until those stages are implemented and exercised.
+
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
 Existing independent SDK probe: `scripts/instagram_official_read.py`.
