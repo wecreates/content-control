@@ -23,7 +23,7 @@
     "candidate_identity_consistent": false,
     "caption_candidate_match": true,
     "caption_health_green": true,
-    "dependency_security_clean": false,
+    "dependency_security_clean": true,
     "deployment_contract_green": true,
     "factual_compliance_green": true,
     "florence_green": true,
@@ -41,7 +41,7 @@
     "publication_owner_gate_off": true,
     "publication_receipt_off": true,
     "publication_separation_off": true,
-    "python_dependency_security_clean": false,
+    "python_dependency_security_clean": true,
     "receipt_green": true,
     "reference_frames_present": true,
     "review_server_smoke_candidate_match": true,
@@ -58,17 +58,27 @@
   },
   "dependency_audit_evidence": {
     "npm": {
-      "hosted_identity": null,
-      "status": "ERROR"
+      "hosted_identity": {
+        "artifact_id": 15157053137,
+        "github_artifact_digest": "sha256:ba41f40642ee8e55dbf80e1a4f6f502abdb2ec715ec84fafcc4a7414ab4a5b30",
+        "run_attempt": 1,
+        "run_id": 45904961569,
+        "source_sha": "a28c5e08085d4b67e03cb73cd036c57176a6c520"
+      },
+      "status": "PASS"
     },
     "python": {
-      "hosted_identity": null,
-      "status": "ERROR"
+      "hosted_identity": {
+        "artifact_id": 15157561690,
+        "github_artifact_digest": "sha256:9841d9b53c4092114860460bb1baf4c4db90230e5bf0079719ec3c233bf13667",
+        "run_attempt": 1,
+        "run_id": 45904957637,
+        "source_sha": "a28c5e08085d4b67e03cb73cd036c57176a6c520"
+      },
+      "status": "PASS"
     }
   },
   "failed_checks": [
-    "dependency_security_clean",
-    "python_dependency_security_clean",
     "live_deployment_green",
     "candidate_identity_consistent",
     "candidate_converged"
