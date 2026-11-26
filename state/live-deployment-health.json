@@ -1,11 +1,11 @@
 {
-  "candidate_sha256": "6478b9b1cb9777265e9c2369670282be62be49ddd007729f61c1ade4454e2dab",
+  "candidate_sha256": "be71199000e09ab67267dcc7d5fcbaf934727fe83b083c2f74e965298af92bc3",
   "caption_sha256": "f5c92add939c2b48f316ccf5109720569f79c7b93a67b04c7d9231cfd0b4bf1c",
   "checks": {
-    "actual_hash_matches": true,
+    "actual_hash_matches": false,
     "caption_hash_matches": false,
     "captions_present": false,
-    "expected_hash_matches": true,
+    "expected_hash_matches": false,
     "hash_bound": true,
     "health_200_and_green": true,
     "probe_completed": false,
@@ -15,6 +15,8 @@
   },
   "failed_checks": [
     "probe_completed",
+    "expected_hash_matches",
+    "actual_hash_matches",
     "watch_page_present",
     "range_streaming_present",
     "captions_present",
