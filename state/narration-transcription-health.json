@@ -1,5 +1,5 @@
 {
-  "actual_transcript": "Dave's card charged him six hundred ninety-five dollars again. Chad points to a twenty dollar credit after an eighty dollar purchase, but the math is simple. Eighty minus twenty is sixty. Points monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
+  "actual_transcript": "Dave's card charged him six hundred ninety five dollars again. Chad points to a twenty dollar credit after an eighty dollar purchase, but the math is simple. Eighty minus twenty is sixty. Points, Monk counts only benefits Dave would have bought anyway. Then he compares that real value with the annual fee. If the value is higher, the card may make sense. If the fee is higher, rethink it. Ignore the flex and keep the math.",
   "audio_sha256": "77ae2168527509c49a02ab08d9e54f8c04fd5774309bba82e8eefa88974074fb",
   "checks": {
     "content_token_recall_ok": true,
@@ -26,31 +26,31 @@
     {
       "end": 2.86,
       "start": 0.0,
-      "text": "Dave's card charged him six hundred ninety-five dollars again."
+      "text": "Dave's card charged him six hundred ninety five dollars again."
     },
     {
-      "end": 7.12,
-      "start": 3.78,
+      "end": 7.1,
+      "start": 3.8,
       "text": "Chad points to a twenty dollar credit after an eighty dollar purchase,"
     },
     {
-      "end": 8.9,
-      "start": 7.96,
+      "end": 8.92,
+      "start": 7.9,
       "text": "but the math is simple."
     },
     {
       "end": 10.88,
-      "start": 9.54,
+      "start": 9.5,
       "text": "Eighty minus twenty is sixty."
     },
     {
-      "end": 14.38,
-      "start": 12.0,
-      "text": "Points monk counts only benefits Dave would have bought anyway."
+      "end": 14.4,
+      "start": 11.64,
+      "text": "Points, Monk counts only benefits Dave would have bought anyway."
     },
     {
       "end": 17.46,
-      "start": 15.28,
+      "start": 15.26,
       "text": "Then he compares that real value with the annual fee."
     },
     {
@@ -59,13 +59,13 @@
       "text": "If the value is higher, the card may make sense."
     },
     {
-      "end": 23.3,
+      "end": 23.28,
       "start": 21.22,
       "text": "If the fee is higher, rethink it."
     },
     {
       "end": 25.66,
-      "start": 24.2,
+      "start": 24.18,
       "text": "Ignore the flex and keep the math."
     }
   ],
@@ -153,457 +153,457 @@
   "words": [
     {
       "end": 0.3,
-      "probability": 0.9802033603191376,
+      "probability": 0.9725813865661621,
       "start": 0.0,
       "word": " Dave's"
     },
     {
-      "end": 0.5,
-      "probability": 0.9793078303337097,
+      "end": 0.52,
+      "probability": 0.9738136529922485,
       "start": 0.3,
       "word": " card"
     },
     {
       "end": 0.76,
-      "probability": 0.971269965171814,
-      "start": 0.5,
+      "probability": 0.9689860343933105,
+      "start": 0.52,
       "word": " charged"
     },
     {
-      "end": 1.12,
-      "probability": 0.9979495406150818,
+      "end": 1.1,
+      "probability": 0.9966272115707397,
       "start": 0.76,
       "word": " him"
     },
     {
       "end": 1.34,
-      "probability": 0.016878433525562286,
-      "start": 1.12,
+      "probability": 0.02001006156206131,
+      "start": 1.1,
       "word": " six"
     },
     {
       "end": 1.64,
-      "probability": 0.9935023188591003,
+      "probability": 0.9932901859283447,
       "start": 1.34,
       "word": " hundred"
     },
     {
-      "end": 1.86,
-      "probability": 0.9380902051925659,
+      "end": 1.84,
+      "probability": 0.9316058158874512,
       "start": 1.64,
       "word": " ninety"
     },
     {
       "end": 2.2,
-      "probability": 0.6172265857458115,
-      "start": 1.86,
-      "word": "-five"
+      "probability": 0.7422094941139221,
+      "start": 1.84,
+      "word": " five"
     },
     {
       "end": 2.56,
-      "probability": 0.9975301623344421,
+      "probability": 0.9956517815589905,
       "start": 2.2,
       "word": " dollars"
     },
     {
       "end": 2.86,
-      "probability": 0.9879783391952515,
+      "probability": 0.9881141781806946,
       "start": 2.56,
       "word": " again."
     },
     {
       "end": 4.04,
-      "probability": 0.9584416151046753,
-      "start": 3.78,
+      "probability": 0.9330117702484131,
+      "start": 3.8,
       "word": " Chad"
     },
     {
       "end": 4.32,
-      "probability": 0.9863730669021606,
+      "probability": 0.9801535606384277,
       "start": 4.04,
       "word": " points"
     },
     {
       "end": 4.62,
-      "probability": 0.996401309967041,
+      "probability": 0.9959126114845276,
       "start": 4.32,
       "word": " to"
     },
     {
       "end": 4.7,
-      "probability": 0.9893866777420044,
+      "probability": 0.9852826595306396,
       "start": 4.62,
       "word": " a"
     },
     {
       "end": 4.9,
-      "probability": 0.9432195425033569,
+      "probability": 0.9550469517707825,
       "start": 4.7,
       "word": " twenty"
     },
     {
       "end": 5.28,
-      "probability": 0.839436411857605,
+      "probability": 0.9411311745643616,
       "start": 4.9,
       "word": " dollar"
     },
     {
       "end": 5.6,
-      "probability": 0.9967429041862488,
+      "probability": 0.9939978122711182,
       "start": 5.28,
       "word": " credit"
     },
     {
       "end": 6.02,
-      "probability": 0.9834626317024231,
+      "probability": 0.982830286026001,
       "start": 5.6,
       "word": " after"
     },
     {
       "end": 6.16,
-      "probability": 0.9911590218544006,
+      "probability": 0.9893485307693481,
       "start": 6.02,
       "word": " an"
     },
     {
-      "end": 6.34,
-      "probability": 0.922936201095581,
+      "end": 6.32,
+      "probability": 0.9235700964927673,
       "start": 6.16,
       "word": " eighty"
     },
     {
       "end": 6.68,
-      "probability": 0.9433174729347229,
-      "start": 6.34,
+      "probability": 0.9574643969535828,
+      "start": 6.32,
       "word": " dollar"
     },
     {
-      "end": 7.12,
-      "probability": 0.9947432279586792,
+      "end": 7.1,
+      "probability": 0.99092698097229,
       "start": 6.68,
       "word": " purchase,"
     },
     {
       "end": 8.14,
-      "probability": 0.993770182132721,
-      "start": 7.96,
+      "probability": 0.9927622675895691,
+      "start": 7.9,
       "word": " but"
     },
     {
       "end": 8.26,
-      "probability": 0.9929603934288025,
+      "probability": 0.9932858347892761,
       "start": 8.14,
       "word": " the"
     },
     {
       "end": 8.4,
-      "probability": 0.9876246452331543,
+      "probability": 0.983737051486969,
       "start": 8.26,
       "word": " math"
     },
     {
       "end": 8.58,
-      "probability": 0.9953692555427551,
+      "probability": 0.9924934506416321,
       "start": 8.4,
       "word": " is"
     },
     {
-      "end": 8.9,
-      "probability": 0.998058021068573,
+      "end": 8.92,
+      "probability": 0.9971407651901245,
       "start": 8.58,
       "word": " simple."
     },
     {
       "end": 9.74,
-      "probability": 0.7157851010560989,
-      "start": 9.54,
+      "probability": 0.7007008343935013,
+      "start": 9.5,
       "word": " Eighty"
     },
     {
       "end": 10.0,
-      "probability": 0.9781084060668945,
+      "probability": 0.9763604998588562,
       "start": 9.74,
       "word": " minus"
     },
     {
       "end": 10.32,
-      "probability": 0.9260668754577637,
+      "probability": 0.9323080778121948,
       "start": 10.0,
       "word": " twenty"
     },
     {
       "end": 10.58,
-      "probability": 0.9871275424957275,
+      "probability": 0.9666684865951538,
       "start": 10.32,
       "word": " is"
     },
     {
       "end": 10.88,
-      "probability": 0.941448986530304,
+      "probability": 0.9306282997131348,
       "start": 10.58,
       "word": " sixty."
     },
     {
-      "end": 12.0,
-      "probability": 0.953606903553009,
-      "start": 12.0,
-      "word": " Points"
+      "end": 11.98,
+      "probability": 0.9426608681678772,
+      "start": 11.64,
+      "word": " Points,"
     },
     {
-      "end": 12.26,
-      "probability": 0.15338134765625,
-      "start": 12.0,
-      "word": " monk"
+      "end": 12.28,
+      "probability": 0.582629919052124,
+      "start": 12.22,
+      "word": " Monk"
     },
     {
-      "end": 12.56,
-      "probability": 0.9568625092506409,
-      "start": 12.26,
+      "end": 12.58,
+      "probability": 0.46650415658950806,
+      "start": 12.28,
       "word": " counts"
     },
     {
       "end": 12.94,
-      "probability": 0.9007575511932373,
-      "start": 12.56,
+      "probability": 0.5688081383705139,
+      "start": 12.58,
       "word": " only"
     },
     {
       "end": 13.26,
-      "probability": 0.9856593012809753,
+      "probability": 0.9511868357658386,
       "start": 12.94,
       "word": " benefits"
     },
     {
-      "end": 13.68,
-      "probability": 0.9081161022186279,
+      "end": 13.66,
+      "probability": 0.5836979150772095,
       "start": 13.26,
       "word": " Dave"
     },
     {
       "end": 13.86,
-      "probability": 0.9947535991668701,
-      "start": 13.68,
+      "probability": 0.9779679179191589,
+      "start": 13.66,
       "word": " would"
     },
     {
       "end": 13.94,
-      "probability": 0.9445290565490723,
+      "probability": 0.9429596066474915,
       "start": 13.86,
       "word": " have"
     },
     {
       "end": 14.1,
-      "probability": 0.9973893761634827,
+      "probability": 0.9954301118850708,
       "start": 13.94,
       "word": " bought"
     },
     {
-      "end": 14.38,
-      "probability": 0.9261715412139893,
+      "end": 14.4,
+      "probability": 0.8358176946640015,
       "start": 14.1,
       "word": " anyway."
     },
     {
       "end": 15.32,
-      "probability": 0.9922473430633545,
-      "start": 15.28,
+      "probability": 0.9912113547325134,
+      "start": 15.26,
       "word": " Then"
     },
     {
       "end": 15.44,
-      "probability": 0.9782134890556335,
+      "probability": 0.9678468108177185,
       "start": 15.32,
       "word": " he"
     },
     {
       "end": 15.72,
-      "probability": 0.996561586856842,
+      "probability": 0.996161937713623,
       "start": 15.44,
       "word": " compares"
     },
     {
       "end": 16.0,
-      "probability": 0.9944896697998047,
+      "probability": 0.9925569295883179,
       "start": 15.72,
       "word": " that"
     },
     {
       "end": 16.18,
-      "probability": 0.9938939213752747,
+      "probability": 0.9880423545837402,
       "start": 16.0,
       "word": " real"
     },
     {
       "end": 16.64,
-      "probability": 0.9991051554679871,
+      "probability": 0.9984496831893921,
       "start": 16.18,
       "word": " value"
     },
     {
       "end": 16.8,
-      "probability": 0.9934231638908386,
+      "probability": 0.9908566474914551,
       "start": 16.64,
       "word": " with"
     },
     {
       "end": 16.92,
-      "probability": 0.997794508934021,
+      "probability": 0.9969010353088379,
       "start": 16.8,
       "word": " the"
     },
     {
       "end": 17.16,
-      "probability": 0.9950384497642517,
+      "probability": 0.9916559457778931,
       "start": 16.92,
       "word": " annual"
     },
     {
       "end": 17.46,
-      "probability": 0.991634726524353,
+      "probability": 0.9727398753166199,
       "start": 17.16,
       "word": " fee."
     },
     {
       "end": 18.22,
-      "probability": 0.9927449226379395,
+      "probability": 0.9929370284080505,
       "start": 18.04,
       "word": " If"
     },
     {
       "end": 18.34,
-      "probability": 0.9975923895835876,
+      "probability": 0.9969504475593567,
       "start": 18.22,
       "word": " the"
     },
     {
       "end": 18.6,
-      "probability": 0.998559296131134,
+      "probability": 0.9976980090141296,
       "start": 18.34,
       "word": " value"
     },
     {
       "end": 18.78,
-      "probability": 0.9874118566513062,
+      "probability": 0.9851855635643005,
       "start": 18.6,
       "word": " is"
     },
     {
       "end": 19.06,
-      "probability": 0.9927456974983215,
+      "probability": 0.9909151196479797,
       "start": 18.78,
       "word": " higher,"
     },
     {
       "end": 19.48,
-      "probability": 0.9955551028251648,
-      "start": 19.4,
+      "probability": 0.9910064339637756,
+      "start": 19.36,
       "word": " the"
     },
     {
       "end": 19.66,
-      "probability": 0.9943517446517944,
+      "probability": 0.9909844398498535,
       "start": 19.48,
       "word": " card"
     },
     {
       "end": 19.86,
-      "probability": 0.9913014769554138,
+      "probability": 0.9647133350372314,
       "start": 19.66,
       "word": " may"
     },
     {
       "end": 20.06,
-      "probability": 0.9957138299942017,
+      "probability": 0.9919290542602539,
       "start": 19.86,
       "word": " make"
     },
     {
       "end": 20.32,
-      "probability": 0.9959379434585571,
+      "probability": 0.9946487545967102,
       "start": 20.06,
       "word": " sense."
     },
     {
       "end": 21.46,
-      "probability": 0.9917730689048767,
+      "probability": 0.9901691675186157,
       "start": 21.22,
       "word": " If"
     },
     {
       "end": 21.6,
-      "probability": 0.9970114231109619,
+      "probability": 0.9939508438110352,
       "start": 21.46,
       "word": " the"
     },
     {
       "end": 21.76,
-      "probability": 0.9927564263343811,
+      "probability": 0.9847843647003174,
       "start": 21.6,
       "word": " fee"
     },
     {
       "end": 21.94,
-      "probability": 0.9982752799987793,
+      "probability": 0.9973605275154114,
       "start": 21.76,
       "word": " is"
     },
     {
-      "end": 22.26,
-      "probability": 0.9952815175056458,
+      "end": 22.24,
+      "probability": 0.9929004907608032,
       "start": 21.94,
       "word": " higher,"
     },
     {
-      "end": 22.92,
-      "probability": 0.9818025231361389,
-      "start": 22.7,
+      "end": 22.9,
+      "probability": 0.9826629161834717,
+      "start": 22.46,
       "word": " rethink"
     },
     {
-      "end": 23.3,
-      "probability": 0.997373104095459,
-      "start": 22.92,
+      "end": 23.28,
+      "probability": 0.9898064732551575,
+      "start": 22.9,
       "word": " it."
     },
     {
-      "end": 24.2,
-      "probability": 0.9495654106140137,
-      "start": 24.2,
+      "end": 24.18,
+      "probability": 0.9379969239234924,
+      "start": 24.18,
       "word": " Ignore"
     },
     {
       "end": 24.4,
-      "probability": 0.9973920583724976,
-      "start": 24.2,
+      "probability": 0.9905866980552673,
+      "start": 24.18,
       "word": " the"
     },
     {
       "end": 24.62,
-      "probability": 0.9053072929382324,
+      "probability": 0.8958139419555664,
       "start": 24.4,
       "word": " flex"
     },
     {
       "end": 25.08,
-      "probability": 0.9573736786842346,
+      "probability": 0.9569504857063293,
       "start": 24.62,
       "word": " and"
     },
     {
       "end": 25.28,
-      "probability": 0.9970725774765015,
+      "probability": 0.9952325224876404,
       "start": 25.08,
       "word": " keep"
     },
     {
       "end": 25.5,
-      "probability": 0.9976938366889954,
+      "probability": 0.9948903322219849,
       "start": 25.28,
       "word": " the"
     },
     {
       "end": 25.66,
-      "probability": 0.9910679459571838,
+      "probability": 0.9777417778968811,
       "start": 25.5,
       "word": " math."
     }
