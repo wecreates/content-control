@@ -35,6 +35,10 @@ on:
       - 'scripts/review_smoke_inputs.py'
       - 'tests/test_review_smoke_inputs.py'
       - 'tests/review-readiness.test.mjs'
+      - 'scripts/verify_owner_onboarding_acceptance.py'
+      - 'scripts/verify_preview_delivery_acceptance.py'
+      - 'tests/test_owner_onboarding_acceptance.py'
+      - 'tests/test_preview_delivery_acceptance.py'
       - 'tests/review-caption-identity.test.mjs'
       - 'scripts/hosted_comparison_receipt.mjs'
       - 'tests/comparison-fixtures.mjs'
@@ -91,6 +95,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Verify preview and onboarding receipt contracts
+        run: python -m unittest tests.test_preview_delivery_acceptance tests.test_owner_onboarding_acceptance
       - name: Install local media fixture tools
         run: bash scripts/ci_media_tools.sh
       - run: python -m unittest tests.test_offline_av_review tests.test_review_packets

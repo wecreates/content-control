@@ -39,6 +39,14 @@ test('worker stops scheduling after revoked authorization and never starts twice
  worker.start();worker.start();await worker.cycle();await worker.stop();await worker.cycle();
  assert.equal(reads,1);assert.equal(timers,1);assert.equal(clears,1);assert.equal(worker.status().publication_enabled,false);assert.equal(worker.status().worker_running,false);
 });
+test('worker kick retains one follow-up when authorization overlaps an older cycle',async t=>{
+ const {runtime}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id}),read_media:async()=>({})});
+ const worker=new SocialReadWorker({runtime,now:()=>100000});worker.active=true;
+ const {promise:held,resolve:release}=Promise.withResolvers();let runs=0;
+ worker.run=async()=>{if(++runs===1)await held;return worker.status();};
+ const existing=worker.cycle();const kicked=worker.kick();release();await Promise.all([existing,kicked]);
+ assert.equal(runs,2);await worker.stop();
+});
 test('overlapping store instances refuse concurrent writes without deleting owner lock',async t=>{
  const {store}=await fixture(t,{verify:async g=>({verified:true,account_id:g.account_id})});let release,started;const ready=new Promise(r=>started=r);const held=store.update(async d=>{started();await new Promise(r=>release=r);d.marker=1;});await ready;
  const second=new EncryptedSocialStore({file:store.file,key:'b'.repeat(64)});await assert.rejects(second.update(d=>{d.marker=2}),/PRIVATE_STORE_BUSY/);await fs.access(store.file+'.lock');release();await held;assert.equal((await second.read()).marker,1);
@@ -68,6 +76,44 @@ test('hosted service runs a configured private vault without exposing its result
  while(service.status().last_cycle.last_completed_at===null&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,10));
  assert.equal(service.status().last_cycle.status,'CYCLE_COMPLETED');
  await service.stop();const state=await store.read();assert.equal(state.jobs[0].status,'completed');assert.equal(state.jobs[0].result.full_analysis,false);assert.ok(!JSON.stringify(service.status()).includes('PRIVATE_USERNAME'));
+});
+
+test('successful OAuth connection immediately starts the current-grant first read',async t=>{
+ const {initializeSocialService}=await import('../integrations/social-automation/hosted-service.mjs');
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'hosted-first-read-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
+ const store=new EncryptedSocialStore({file:path.join(dir,'vault'),key:'d'.repeat(64)});await store.update(()=>{});
+ let playlistReads=0;
+ const fetchImpl=async url=>{
+  url=new URL(url);
+  if(url.hostname==='oauth2.googleapis.com')return response({access_token:'PRIVATE_ACCESS',token_type:'Bearer',expires_in:3600,scope:'https://www.googleapis.com/auth/youtube.readonly'});
+  if(url.pathname.endsWith('/channels'))return response({items:[{id:'PRIVATE_CHANNEL',contentDetails:{relatedPlaylists:{uploads:'PRIVATE_UPLOADS'}}}]});
+  if(url.pathname.endsWith('/playlistItems')){playlistReads++;return response({items:[{contentDetails:{videoId:'PRIVATE_VIDEO'}}]});}
+  throw Error('unexpected provider URL');
+ };
+ const env={SOCIAL_WORKER_ENABLED:'true',SOCIAL_STORAGE_MODE:'postgres_encrypted',
+  SOCIAL_STORAGE_EXPIRES_AT:'2035-01-01T00:00:00Z',YOUTUBE_OAUTH_CLIENT_ID:'YT_CLIENT',
+  YOUTUBE_OAUTH_CLIENT_SECRET:'PRIVATE_SECRET',YOUTUBE_OAUTH_REDIRECT_URI:'https://example.test/youtube/callback',
+  YOUTUBE_CHANNEL_ID:'PRIVATE_CHANNEL'};
+ const service=await initializeSocialService({env,fetchImpl,authorizeOwner:async()=> 'verified-owner',
+  postgresStoreFactory:()=>({read:()=>store.read(),update:fn=>store.update(fn),close:async()=>{}})});
+ t.after(()=>service.stop());
+ const initialDeadline=performance.now()+5000;
+ while(service.status().last_cycle?.last_completed_at===null&&performance.now()<initialDeadline)await new Promise(resolve=>setTimeout(resolve,10));
+ assert.equal(service.status().last_cycle.status,'CYCLE_IDLE');
+ const begin=await service.beginAuthorization('youtube',{});
+ const state=new URL(begin.authorization_url).searchParams.get('state');
+ const connected=await service.completeAuthorization('youtube',{state,code:'authorized'},{});
+ assert.equal(connected.status,'connected');
+ const deadline=performance.now()+5000;
+ let saved;
+ do {saved=await store.read();if(saved.jobs.some(job=>job.status==='completed'))break;await new Promise(resolve=>setTimeout(resolve,10));} while(performance.now()<deadline);
+ assert.equal(playlistReads,1);
+ assert.equal(saved.jobs.length,1);
+ assert.equal(saved.jobs[0].status,'completed');
+ assert.equal(saved.jobs[0].grant_generation,saved.connections.youtube.generation);
+ assert.equal(saved.jobs[0].result.items[0].id,'PRIVATE_VIDEO');
+ assert.equal(service.status().publication_enabled,false);
+ assert.equal(service.status().external_writes_enabled,false);
 });
 
 test('vault inside application directory cannot be activated',async t=>{

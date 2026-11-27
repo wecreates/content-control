@@ -35,3 +35,28 @@ either requested identity has changed. These checks establish byte/route
 coherence only; they are not physical-phone playback, listening, creative
 acceptance, deployment freshness, or permission to publish. Publication remains
 disabled.
+
+## Private preview evidence binding
+
+After a Money Factory cycle export has passed its queue-independent durable
+delivery verifier, capture this deployment's canonical `/readyz` response.
+Use its returned `watchUrl` to record complete playback on the physical phone,
+then retain the screen recording and structured observation. Bind those
+receipts without contacting the deployment or changing any state:
+
+```sh
+python scripts/verify_preview_delivery_acceptance.py \
+  readyz.json delivery-package.json verified-delivery.json phone.json \
+  phone-recording.mp4 <expected-40-hex-source-commit> \
+  <trusted-64-hex-delivery-identity>
+```
+
+The command requires one fresh deployed source, candidate, caption identity,
+and externally supplied durable delivery identity across every receipt. It
+recomputes the Money Factory delivery identity from the export receipt fields
+and file hashes, including the caption file. It also hashes the retained
+recording and requires explicit complete-playback,
+audio, caption, and inline-phone observations. A passing result establishes
+receipt coherence only: an independent reviewer must still watch and listen to
+the recording before phone playback, creative quality, or full audiovisual
+acceptance can be claimed. Publishing and external writes remain disabled.

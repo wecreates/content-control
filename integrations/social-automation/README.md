@@ -80,6 +80,16 @@ read separate for YouTube and Instagram. It reads existing vault records and
 does not start jobs or contact providers. The response omits account IDs,
 credentials, job IDs and provider results.
 
+After a successful configured-owner GitHub identity check, the encrypted vault
+retains a random onboarding ID, the identity-provider name and the completion
+time. The owner-only onboarding response uses that record to order the retained
+identity, current provider verification and first successful read as
+`SIGNUP_REQUIRED`, `CONNECTION_REQUIRED`, `FIRST_JOB_REQUIRED` or `COMPLETE`.
+It exposes no GitHub ID, account ID, job ID, grant generation, token or provider
+result. A legacy vault without this record cannot claim a complete journey; the
+next successful owner sign-in creates it. This is evidence for the configured
+single-owner path, not a multi-customer registration system or live acceptance.
+
 `first_read_job_status` reports `NOT_QUEUED`, `QUEUED`, `RETRY_PENDING`,
 `BLOCKED`, or `COMPLETED` for the current verified grant. A retained successful
 read takes precedence over later work. Queued work takes precedence over retry
@@ -96,6 +106,21 @@ connection without a generation can still run reads but must be reconnected
 to establish attributable first-read evidence. Expired or revoked grants
 require reauthorization. This owner-only view reports retained evidence.
 Customer signup and live onboarding remain separate.
+
+A captured live onboarding response can be checked without provider access by
+pairing it with the same deployment's captured `/readyz` response:
+`python scripts/verify_owner_onboarding_acceptance.py onboarding.json readyz.json
+<expected-lowercase-40-hex-source-commit>`. The verifier fails closed unless
+both responses report the same exact deployed source, both server observations
+are no more than five minutes old and no more than 30 seconds apart, readiness is green,
+publishing and external writes remain disabled, the worker has completed a scheduler cycle,
+and the sanitized journey binds retained signup, provider verification and the
+first successful current-grant read in chronological order. The completed read
+and verification timestamp must come from the same provider row. All milestones
+must be retained by the onboarding observation time. It only prints a
+secret-safe receipt; it does not sign in, call providers, enqueue work, deploy,
+publish or write files. A passing receipt is not phone, durable-delivery,
+creative or full audiovisual acceptance.
 
 Primary API reference: Meta's official Instagram API collection:
 https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api

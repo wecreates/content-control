@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {EncryptedSocialStore,SocialAutomation,ownerReadProgress,socialRuntimeReadiness} from '../social-automation.js';
+import test from 'node:test';import assert from 'node:assert/strict';import crypto from 'node:crypto';import fs from 'node:fs/promises';import os from 'node:os';import path from 'node:path';import {EncryptedSocialStore,SocialAutomation,ownerReadProgress,socialRuntimeReadiness} from '../social-automation.js';
 import {SocialReadWorker} from '../integrations/social-automation/worker.mjs';
 async function setup(t,adapter={}){const dir=await fs.mkdtemp(path.join(os.tmpdir(),'social-runtime-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));const file=path.join(dir,'vault');const store=new EncryptedSocialStore({file,key:'a'.repeat(64)});let now=100000;const runtime=new SocialAutomation({store,now:()=>now,adapters:{instagram:{verify:async g=>({account_id:g.account_id,verified:true}),...adapter}}});return {store,runtime,file,advance:n=>now+=n,grant:{access_token:'PRIVATE_TOKEN',account_id:'private_account',scopes:['basic'],expires_at:now+172800000}};}
 test('credentials encrypted and public projection excludes secrets across restart',async t=>{const x=await setup(t);await x.runtime.connect('instagram',x.grant);assert.ok(!(await fs.readFile(x.file,'utf8')).includes('PRIVATE_TOKEN'));const restored=new EncryptedSocialStore({file:x.file,key:'a'.repeat(64)});assert.equal((await restored.read()).connections.instagram.access_token,'PRIVATE_TOKEN');assert.ok(!JSON.stringify(await x.runtime.status()).includes('PRIVATE_TOKEN'));await assert.rejects(new EncryptedSocialStore({file:x.file,key:'b'.repeat(64)}).read(),/INTEGRITY/)});
@@ -98,6 +98,56 @@ test('first retained read belongs to the current verified grant and survives enc
  assert.equal((await instagram()).status,'FIRST_READ_PENDING');
  x.advance(200000000);
  assert.equal((await instagram()).status,'REAUTHORIZATION_REQUIRED');
+});
+
+test('onboarding journey requires retained owner identity and chronological current-grant evidence',async t=>{
+ const x=await setup(t,{read_profile:async()=>({title:'PRIVATE_RESULT'})});
+ await x.runtime.connect('instagram',x.grant);
+ await x.runtime.enqueue({id:'private-onboarding-job',platform:'instagram',operation:'read_profile'});
+ await x.runtime.tick();
+ let view=ownerReadProgress(await x.store.read(),['instagram'],x.runtime.now()).onboarding_journey;
+ assert.equal(view.status,'SIGNUP_REQUIRED');assert.equal(view.signup_completed_at,null);
+ await x.store.update(d=>{d.owner_onboarding={schema_version:1,id:crypto.randomUUID(),identity_provider:'github',completed_at:100001};});
+ view=ownerReadProgress(await x.store.read(),['instagram'],100001).onboarding_journey;
+ assert.equal(view.status,'CONNECTION_REQUIRED');assert.equal(view.provider_verified_at,null);
+ await x.store.update(d=>{d.owner_onboarding.completed_at=99999;});
+ view=ownerReadProgress(await x.store.read(),['instagram'],100000).onboarding_journey;
+ assert.equal(view.status,'COMPLETE');assert.equal(view.signup_completed_at,99999);
+ assert.equal(view.provider_verified_at,100000);assert.equal(view.first_successful_job_completed_at,100000);
+ const encoded=JSON.stringify(view);
+ for(const privateValue of ['private_account','PRIVATE_TOKEN','PRIVATE_RESULT','private-onboarding-job'])assert.ok(!encoded.includes(privateValue));
+});
+
+test('onboarding pairs the first completed read with its own provider verification',()=>{
+ const grant=(platform,verified_at)=>({
+  account_id:`private-${platform}`,status:'connected',expires_at:9000,
+  generation:crypto.randomUUID(),verified_at,
+ });
+ const youtube=grant('youtube',2000);
+ const instagram=grant('instagram',2500);
+ const job=(platform,connection,completed_at)=>({
+  platform,account_id:connection.account_id,status:'completed',operation:'read_profile',
+  enqueued_grant_generation:connection.generation,grant_generation:connection.generation,completed_at,
+ });
+ const state={
+  owner_onboarding:{schema_version:1,id:crypto.randomUUID(),identity_provider:'github',completed_at:1000},
+  connections:{instagram,youtube},
+  jobs:[],
+ };
+ const view=()=>ownerReadProgress(state,['instagram','youtube'],5000);
+ assert.equal(view().onboarding_journey.status,'FIRST_JOB_REQUIRED');
+ assert.equal(view().onboarding_journey.provider_verified_at,2000);
+
+ state.jobs.push(job('youtube',youtube,4000),job('instagram',instagram,3000));
+ const completed=view();
+ assert.equal(completed.onboarding_journey.status,'COMPLETE');
+ assert.equal(completed.onboarding_journey.provider_verified_at,2500);
+ assert.equal(completed.onboarding_journey.first_successful_job_completed_at,3000);
+ assert.equal(completed.providers.find(({platform})=>platform==='instagram').provider_verified_at,2500);
+
+ state.jobs[0].completed_at=3000;
+ assert.equal(view().onboarding_journey.provider_verified_at,2000);
+ assert.equal(view().onboarding_journey.first_successful_job_completed_at,3000);
 });
 
 test('owner first-read phase shows actual retries and a blocked read without exposing old grant details',async t=>{
