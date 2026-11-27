@@ -132,16 +132,16 @@
     "analysis_status": "COMPLETE",
     "artistic_acceptance": "UNASSESSED",
     "best_reference_similarity_by_candidate": [
-      0.449109822511673,
-      0.3860960602760315,
-      0.39850175380706787,
-      0.39780765771865845,
-      0.3830251693725586,
-      0.3564046621322632,
-      0.4233710765838623,
-      0.4176000654697418,
-      0.4207582175731659,
-      0.4320065379142761
+      0.4491097629070282,
+      0.386096328496933,
+      0.39850157499313354,
+      0.3978077173233032,
+      0.3830251097679138,
+      0.35640427470207214,
+      0.42337071895599365,
+      0.417600154876709,
+      0.4207580089569092,
+      0.43200650811195374
     ],
     "checks": {
       "florence_completed": true,
@@ -188,62 +188,62 @@
     "frame_matches": [
       {
         "candidate": "cand-000001.jpg",
-        "cosine_similarity": 0.449109822511673,
+        "cosine_similarity": 0.4491097629070282,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-000002.jpg",
-        "cosine_similarity": 0.3860960602760315,
+        "cosine_similarity": 0.386096328496933,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-000003.jpg",
-        "cosine_similarity": 0.39850175380706787,
+        "cosine_similarity": 0.39850157499313354,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-000004.jpg",
-        "cosine_similarity": 0.39780765771865845,
+        "cosine_similarity": 0.3978077173233032,
         "reference": "ref-07.jpg"
       },
       {
         "candidate": "cand-000005.jpg",
-        "cosine_similarity": 0.3830251693725586,
+        "cosine_similarity": 0.3830251097679138,
         "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-000006.jpg",
-        "cosine_similarity": 0.3564046621322632,
+        "cosine_similarity": 0.35640427470207214,
         "reference": "ref-09.jpg"
       },
       {
         "candidate": "cand-000007.jpg",
-        "cosine_similarity": 0.4233710765838623,
+        "cosine_similarity": 0.42337071895599365,
         "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-000008.jpg",
-        "cosine_similarity": 0.4176000654697418,
+        "cosine_similarity": 0.417600154876709,
         "reference": "ref-08.jpg"
       },
       {
         "candidate": "cand-000009.jpg",
-        "cosine_similarity": 0.4207582175731659,
+        "cosine_similarity": 0.4207580089569092,
         "reference": "ref-01.jpg"
       },
       {
         "candidate": "cand-000010.jpg",
-        "cosine_similarity": 0.4320065379142761,
+        "cosine_similarity": 0.43200650811195374,
         "reference": "ref-09.jpg"
       }
     ],
-    "global_similarity": 0.6425085663795471,
+    "global_similarity": 0.6425086855888367,
     "limitations": [
       "Embedding similarity is descriptive, not calibrated artistic parity.",
       "Sampled frames do not establish timing, animation quality, or full-video parity.",
       "Captions may omit details or hallucinate; they are not visual approval."
     ],
-    "mean_best_frame_similarity": 0.40646809339523315,
+    "mean_best_frame_similarity": 0.40646806359291077,
     "openclip_model": "ViT-B-32/laion2b_s34b_b79k",
     "openclip_status": "COMPLETE",
     "production_ready": false,
@@ -387,8 +387,8 @@
           "sha256": "6fcdf1b671ec25320e7e1ee6477fe9d03eff9425f268ac2be27a6619b08eb9ef"
         }
       ],
-      "run_id": "45885287914",
-      "source_revision": "ea3a27927374ffdc3c2b3bbceae6776bc841d7cb"
+      "run_id": "46057034708",
+      "source_revision": "8b340749985b2fd8274aaaaf8d3d79dbf9a948d2"
     },
     "publication_enabled": false,
     "runtime_versions": {
