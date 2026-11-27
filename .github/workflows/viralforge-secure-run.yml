@@ -1,0 +1,96 @@
+name: ViralForge Secure Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: Optional finance topic override
+        required: false
+        type: string
+      video_type:
+        description: Video format
+        required: true
+        default: shorts
+        type: choice
+        options:
+          - shorts
+          - longform
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PUBLICATION_ENABLED: "false"
+      VIDEO_PRIVACY: "private"
+      PYTHONPATH: agentic-studio
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: agentic-studio/requirements.txt
+
+      - name: Require Gemini secret without exposing it
+        shell: bash
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::GEMINI_API_KEY repository secret is not configured"
+            exit 1
+          fi
+          echo "::add-mask::$GEMINI_API_KEY"
+
+      - name: Install ViralForge
+        run: pip install -r agentic-studio/requirements.txt
+
+      - name: Run full integration gate
+        run: python -m unittest -v tests/test_agentic_studio_integration.py
+
+      - name: Run ViralForge
+        shell: bash
+        env:
+          VIRALFORGE_TOPIC: ${{ inputs.topic }}
+          VIRALFORGE_VIDEO_TYPE: ${{ inputs.video_type }}
+        run: |
+          python - <<'PY'
+          import os, sys
+          sys.path.insert(0, "agentic-studio")
+          import pipeline_cloud
+          result = pipeline_cloud.run(
+              topic_override=os.environ.get("VIRALFORGE_TOPIC", ""),
+              video_type=os.environ.get("VIRALFORGE_VIDEO_TYPE", "shorts"),
+              output_dir="viralforge-output",
+          )
+          print("ViralForge QA:", result.get("ok"))
+          print("Publication:", result.get("publication"))
+          print("YouTube privacy:", result.get("youtubePrivacy"))
+          PY
+
+      - name: Upload QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viralforge-qa-${{ github.run_id }}
+          path: |
+            viralforge-output/research.json
+            viralforge-output/script.json
+            viralforge-output/audio_manifest.json
+            viralforge-output/handoff.json
+            viralforge-output/qa.json
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload private review video
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viralforge-private-review-${{ github.run_id }}
+          path: viralforge-output/viralforge-candidate.mp4
+          if-no-files-found: error
+          retention-days: 7
